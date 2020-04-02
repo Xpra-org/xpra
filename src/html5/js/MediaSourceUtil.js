@@ -5,7 +5,7 @@
  */
 'use strict';
 
-var MediaSourceConstants = {
+const MediaSourceConstants = {
 
 		CODEC_DESCRIPTION : {
 				"mp4a"			: 'mpeg4: aac',
@@ -101,14 +101,14 @@ var MediaSourceConstants = {
 };
 
 
-var MediaSourceUtil = {
+const MediaSourceUtil = {
 
 		getMediaSourceClass : function() {
 			return window.MediaSource || window.WebKitMediaSource;
 		},
 
 		getMediaSource : function() {
-			var ms = MediaSourceUtil.getMediaSourceClass();
+			const ms = MediaSourceUtil.getMediaSourceClass();
 			if(!ms) {
 				throw new Error("no MediaSource support!");
 			}
@@ -120,11 +120,11 @@ var MediaSourceUtil = {
 			if(Utilities.isIE()) {
 				return {};
 			}
-			var codecs_supported = {};
+			const codecs_supported = {};
 			if(AV && AV.Decoder && AV.Decoder.find) {
-				for (var codec_option in MediaSourceConstants.AURORA_CODECS) {
-					var codec_string = MediaSourceConstants.AURORA_CODECS[codec_option];
-					var decoder = AV.Decoder.find(codec_string);
+				for (const codec_option in MediaSourceConstants.AURORA_CODECS) {
+					const codec_string = MediaSourceConstants.AURORA_CODECS[codec_option];
+					const decoder = AV.Decoder.find(codec_string);
 					if(decoder) {
 						Utilities.log("audio codec aurora OK  '"+codec_option+"' / '"+codec_string+"'");
 						codecs_supported[codec_option] = codec_string;
@@ -138,7 +138,7 @@ var MediaSourceUtil = {
 		},
 
 		getMediaSourceAudioCodecs : function(ignore_blacklist) {
-			var media_source_class = MediaSourceUtil.getMediaSourceClass();
+			const media_source_class = MediaSourceUtil.getMediaSourceClass();
 			if(!media_source_class) {
 				Utilities.log("audio forwarding: no media source API support");
 				return [];
@@ -147,16 +147,16 @@ var MediaSourceUtil = {
 			if(Utilities.isIE()) {
 				return [];
 			}
-			var codecs_supported = [];
-			for (var codec_option in MediaSourceConstants.CODEC_STRING) {
-				var codec_string = MediaSourceConstants.CODEC_STRING[codec_option];
+			const codecs_supported = [];
+			for (const codec_option in MediaSourceConstants.CODEC_STRING) {
+				const codec_string = MediaSourceConstants.CODEC_STRING[codec_option];
 				try {
 					if(!media_source_class.isTypeSupported(codec_string)) {
 						Utilities.log("audio codec MediaSource NOK: '"+codec_option+"' / '"+codec_string+"'");
 						//add whitelisting here?
 						continue;
 					}
-					var blacklist = [];
+					let blacklist = [];
 					if (Utilities.isFirefox() || Utilities.isSafari()) {
 						blacklist += ["opus+mka", "vorbis+mka"];
 						if (Utilities.isSafari()) {
@@ -191,9 +191,9 @@ var MediaSourceUtil = {
 		},
 
 		getSupportedAudioCodecs : function() {
-			var codecs_supported = MediaSourceUtil.getMediaSourceAudioCodecs();
-			var aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
-			for (var codec_option in aurora_codecs) {
+			const codecs_supported = MediaSourceUtil.getMediaSourceAudioCodecs();
+			const aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
+			for (const codec_option in aurora_codecs) {
 				if(codec_option in codecs_supported) {
 					//we already have native MediaSource support!
 					continue;
@@ -207,9 +207,9 @@ var MediaSourceUtil = {
 			if(!codecs) {
 				return null;
 			}
-			var codec_options = Object.keys(codecs);
-			for (var i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
-				var codec_option = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
+			const codec_options = Object.keys(codecs);
+			for (let i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
+				const codec_option = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
 				if(codec_options.includes(codec_option)) {
 					return codec_option;
 				}
@@ -219,7 +219,7 @@ var MediaSourceUtil = {
 
 		addMediaSourceEventDebugListeners : function(media_source, source_type) {
 			function debug_source_event(event) {
-				var msg = ""+source_type+" source "+event;
+				let msg = ""+source_type+" source "+event;
 				try {
 					msg += ": "+media_source.readyState;
 				}
@@ -251,7 +251,7 @@ var MediaSourceUtil = {
 
 		addSourceBufferEventDebugListeners : function(asb, element_type) {
 			function debug_buffer_event(event) {
-				var msg = ""+element_type+" buffer "+event;
+				const msg = ""+element_type+" buffer "+event;
 				console.debug(msg);
 			}
 			asb.addEventListener('updatestart', function(e) { debug_buffer_event('updatestart'); });
@@ -261,16 +261,16 @@ var MediaSourceUtil = {
 		},
 
 		get_supported_codecs : function(mediasource, aurora, http, ignore_audio_blacklist) {
-			var codecs_supported = {};
+			const codecs_supported = {};
 			if (mediasource) {
-				var mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
-				for (var codec_option in mediasource_codecs) {
+				const mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
+				for (const codec_option in mediasource_codecs) {
 					codecs_supported["mediasource:"+codec_option] = MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
 				}
 			}
 			if (aurora) {
-				var aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
-				for (var codec_option in aurora_codecs) {
+				const aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
+				for (const codec_option in aurora_codecs) {
 					if(codec_option in codecs_supported) {
 						//we already have native MediaSource support!
 						continue;
@@ -279,9 +279,9 @@ var MediaSourceUtil = {
 				}
 			}
 			if (http) {
-				var stream_codecs = ["mp3"];
-				for (var i in stream_codecs) {
-					var codec_option = stream_codecs[i];
+				const stream_codecs = ["mp3"];
+				for (const i in stream_codecs) {
+					const codec_option = stream_codecs[i];
 					console.log("stream codecs=", stream_codecs, "codec=", codec_option);
 					codecs_supported["http-stream:"+codec_option] = "http stream: "+MediaSourceConstants.CODEC_DESCRIPTION[codec_option];
 				}
@@ -290,11 +290,11 @@ var MediaSourceUtil = {
 		},
 
 		get_best_codec : function(codecs_supported) {
-			var best_codec = null;
-			var best_distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.length;
-			for (var codec_option in codecs_supported) {
-				var cs = codec_option.split(":")[1];
-				var distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.indexOf(cs);
+			let best_codec = null;
+			let best_distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.length;
+			for (const codec_option in codecs_supported) {
+				const cs = codec_option.split(":")[1];
+				const distance = MediaSourceConstants.PREFERRED_CODEC_ORDER.indexOf(cs);
 				if (distance>=0 && distance<best_distance) {
 					best_codec = codec_option;
 					best_distance = distance;

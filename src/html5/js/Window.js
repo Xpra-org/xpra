@@ -22,7 +22,7 @@
  */
 function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_redirect, tray, client_properties, geometry_cb, mouse_move_cb, mouse_down_cb, mouse_up_cb, mouse_scroll_cb, set_focus_cb, window_closed_cb, htmldiv) {
 	// use me in jquery callbacks as we lose 'this'
-	var me = this;
+	const me = this;
 	// there might be more than one client
 	this.client = client;
 	this.log = function() { client.log.apply(client, arguments); };
@@ -212,7 +212,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.spinnerdiv = jQuery('#spinner'+String(wid));
 
 	// listen for mouse wheel events on my window
-	var div = document.getElementById(wid);
+	const div = document.getElementById(wid);
 	function on_mousescroll(e) {
 		me.on_mousescroll(e);
 	}
@@ -242,11 +242,11 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		this.canvas.addEventListener("pointermove", function(ev) {
 			me.debug("mouse", "pointermove:", ev);
 			if (me.pointer_down==ev.pointerId) {
-				var dx = ev.offsetX-me.pointer_last_x;
-				var dy = ev.offsetY-me.pointer_last_y;
+				const dx = ev.offsetX-me.pointer_last_x;
+				const dy = ev.offsetY-me.pointer_last_y;
 				me.pointer_last_x = ev.offsetX;
 				me.pointer_last_y = ev.offsetY;
-				var mult = 20.0*(window.devicePixelRatio || 1);
+				const mult = 20.0*(window.devicePixelRatio || 1);
 				ev.wheelDeltaX = Math.round(dx*mult);
 				ev.wheelDeltaY = Math.round(dy*mult);
 				on_mousescroll(ev);
@@ -302,14 +302,14 @@ XpraWindow.prototype.ensure_visible = function() {
 		//moving them would mess that up
 		return;
 	}
-	var oldx = this.x;
-	var oldy = this.y;
+	const oldx = this.x;
+	const oldy = this.y;
 	// for now make sure we don't out of top left
 	// this will be much smarter!
-	var min_visible = 10;
-	var desktop_size = this.client._get_desktop_size();
-	var ww = desktop_size[0];
-	var wh = desktop_size[1];
+	const min_visible = 10;
+	const desktop_size = this.client._get_desktop_size();
+	const ww = desktop_size[0];
+	const wh = desktop_size[1];
 	//this.log("x=", this.x, "y=", this.y, "w=", this.w, "h=", this.h, "leftoffset=", this.leftoffset, "topoffset=", this.topoffset, " - ww=", ww, "wh=", wh);
 	if(oldx + this.w <= min_visible) {
 		this.x = min_visible - this.w + this.leftoffset;
@@ -415,7 +415,7 @@ XpraWindow.prototype.toString = function() {
 
 
 XpraWindow.prototype.update_zindex = function() {
-	var z = 5000 + this.stacking_layer;
+	let z = 5000 + this.stacking_layer;
 	if (this.tray) {
 		z = 0;
 	}
@@ -430,12 +430,12 @@ XpraWindow.prototype.update_zindex = function() {
 	else if (this.windowtype=="UTILITY" || this.windowtype=="DIALOG") {
 		z = 15000;
 	}
-	var above = this.metadata["above"];
+	const above = this.metadata["above"];
 	if (above) {
 		z += 5000;
 	}
 	else {
-		var below = this.metadata["below"];
+		const below = this.metadata["below"];
 		if (below) {
 			z -= 5000;
 		}
@@ -454,7 +454,7 @@ XpraWindow.prototype.update_zindex = function() {
 XpraWindow.prototype.update_metadata = function(metadata, safe) {
 	//update our metadata cache with new key-values:
 	this.debug("main", "update_metadata(", metadata, ")");
-	for (var attrname in metadata) {
+	for (let attrname in metadata) {
 		this.metadata[attrname] = metadata[attrname];
 	}
 	if(safe) {
@@ -471,9 +471,9 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
 XpraWindow.prototype.set_metadata_safe = function(metadata) {
 	if ("title" in metadata) {
 		this.title = metadata["title"];
-		var decodedTitle = decodeURIComponent(escape(this.title));
+		const decodedTitle = decodeURIComponent(escape(this.title));
 		jQuery('#title' + this.wid).html(decodedTitle);
-        var trimmedTitle = Utilities.trimString(decodedTitle,30);
+		const trimmedTitle = Utilities.trimString(decodedTitle, 30);
 		jQuery('#windowlistitemtitle'+this.wid).text(trimmedTitle);
 	}
 	if ("has-alpha" in metadata) {
@@ -490,7 +490,7 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		this.apply_size_constraints();
 	}
 	if ("opacity" in metadata) {
-		var opacity = metadata["opacity"];
+		let opacity = metadata["opacity"];
 		if (opacity<0) {
 			opacity = 1.0;
 		}
@@ -500,11 +500,11 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		jQuery(this.div).css('opacity', ''+opacity);
 	}
 	//if the attribute is set, add the corresponding css class:
-	var attrs = ["modal", "above", "below"];
-	for (var i = 0; i < attrs.length; i++) {
-		var attr = attrs[i];
+	const attrs = ["modal", "above", "below"];
+	for (let i = 0; i < attrs.length; i++) {
+		const attr = attrs[i];
 		if (attr in metadata) {
-			var value = metadata[attr];
+			const value = metadata[attr];
 			if (value) {
 				jQuery(this.div).addClass(attr);
 			}
@@ -517,12 +517,12 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		this.apply_size_constraints();
 	}
 	if ("class-instance" in metadata) {
-		var wm_class = metadata["class-instance"];
-		var classes = jQuery(this.div).prop("classList");
+		const wm_class = metadata["class-instance"];
+		const classes = jQuery(this.div).prop("classList");
 		if (classes) {
 			//remove any existing "wmclass-" classes not in the new wm_class list:
-			for (var i = 0; i < classes.length; i++) {
-				var tclass = ""+classes[i];
+			for (let i = 0; i < classes.length; i++) {
+				const tclass = ""+classes[i];
 				if (tclass.indexOf("wmclass-")===0 && wm_class && !wm_class.includes(tclass)) {
 					jQuery(this.div).removeClass(tclass);
 				}
@@ -530,8 +530,8 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		}
 		if (wm_class) {
 			//add new wm-class:
-			for (var i = 0; i < wm_class.length; i++) {
-				var tclass = wm_class[i].replace(/[^0-9a-zA-Z]/g, '');
+			for (let i = 0; i < wm_class.length; i++) {
+				const tclass = wm_class[i].replace(/[^0-9a-zA-Z]/g, '');
 				if (tclass && !jQuery(this.div).hasClass(tclass)) {
 					jQuery(this.div).addClass("wmclass-"+tclass);
 				}
@@ -550,23 +550,24 @@ XpraWindow.prototype.apply_size_constraints = function() {
 	else {
 		jQuery(this.div).draggable('enable');
 	}
-	var hdec = 0, wdec = 0;
+	let hdec = 0;
+	const wdec = 0;
 	if (this.decorations) {
 		//adjust for header
 		hdec = jQuery('#head' + this.wid).outerHeight(true);
 	}
-	var min_size = null, max_size = null;
-	var size_constraints = this.metadata["size-constraints"];
+	let min_size = null, max_size = null;
+	const size_constraints = this.metadata["size-constraints"];
 	if (size_constraints) {
 		min_size = size_constraints["minimum-size"];
 		max_size = size_constraints["maximum-size"];
 	}
-	var minw=null, minh=null;
+	let minw=null, minh=null;
 	if (min_size) {
 		minw = min_size[0]+wdec;
 		minh = min_size[1]+hdec;
 	}
-	var maxw=null, maxh=null;
+	let maxw=null, maxh=null;
 	if (max_size) {
 		maxw = max_size[0]+wdec;
 		maxh = max_size[1]+hdec;
@@ -747,7 +748,7 @@ XpraWindow.prototype.fill_screen = function() {
 	// should be as simple as this
 	// in future we may have a taskbar for minimized windows
 	// which should be subtracted from screen size
-	var screen_size = this.client._get_desktop_size();
+	const screen_size = this.client._get_desktop_size();
 	this.x = 0 + this.leftoffset;
 	this.y = 0 + this.topoffset;
 	this.w = (screen_size[0] - this.leftoffset) - this.rightoffset;
@@ -785,7 +786,7 @@ XpraWindow.prototype.handle_resized = function(e) {
  * store internal geometry, external is always in CSS left and top
  */
 XpraWindow.prototype.handle_moved = function(e) {
-	var left = Math.round(e.position.left),
+	const left = Math.round(e.position.left),
 		top = Math.round(e.position.top);
 	this.debug("geometry", "handle_moved(", e, ") left=", left, ", top=", top);
 	// add on padding to the event position so that
@@ -811,7 +812,7 @@ XpraWindow.prototype.screen_resized = function() {
 	if (this.client.server_is_shadow) {
 		//note: when this window is created,
 		// it may not have been added to the client's list yet
-		var ids = Object.keys(this.client.id_to_window);
+		const ids = Object.keys(this.client.id_to_window);
 		if (ids.length==0 || ids[0]==this.wid) {
 			//single window, recenter it:
 			this.recenter();
@@ -825,7 +826,7 @@ XpraWindow.prototype.screen_resized = function() {
 };
 
 XpraWindow.prototype.recenter = function(force_update_geometry) {
-	var x = this.x,
+	let x = this.x,
 		y = this.y;
 	this.debug("geometry", "recenter() x=", x, ", y=", y, ", desktop size: ", this.client.desktop_width, this.client.desktop_height);
 	x = Math.round((this.client.desktop_width-this.w)/2);
@@ -847,9 +848,9 @@ XpraWindow.prototype.recenter = function(force_update_geometry) {
 
 
 XpraWindow.prototype.match_screen_size = function() {
-	var maxw = this.client.desktop_width;
-	var maxh = this.client.desktop_height;
-	var neww = 0, newh = 0;
+	const maxw = this.client.desktop_width;
+	const maxh = this.client.desktop_height;
+	let neww = 0, newh = 0;
 	if (this.client.server_resize_exact) {
 		neww = maxw;
 		newh = maxh;
@@ -862,11 +863,11 @@ XpraWindow.prototype.match_screen_size = function() {
 		}
 		//try to find the best screen size to use,
 		//cannot be larger than the browser area
-		var best = 0;
-		var w = 0, h = 0;
-		var screen_sizes = this.client.server_screen_sizes;
-		var screen_size;
-		for (var i = 0; i < screen_sizes.length; i++) {
+		let best = 0;
+		let w = 0, h = 0;
+		const screen_sizes = this.client.server_screen_sizes;
+		let screen_size;
+		for (let i = 0; i < screen_sizes.length; i++) {
 			screen_size = screen_sizes[i];
 			w = screen_size[0];
 			h = screen_size[1];
@@ -879,7 +880,7 @@ XpraWindow.prototype.match_screen_size = function() {
 		if (neww==0 && newh==0) {
 			//not found, try to find the smallest one:
 			best = 0;
-			for (var i = 0; i < screen_sizes.length; i++) {
+			for (let i = 0; i < screen_sizes.length; i++) {
 				screen_size = screen_sizes[i];
 				w = screen_size[0];
 				h = screen_size[1];
@@ -930,10 +931,10 @@ XpraWindow.prototype.resize = function(w, h) {
 };
 
 XpraWindow.prototype.initiate_moveresize = function(mousedown_event, x_root, y_root, direction, button, source_indication) {
-	var dir_str = MOVERESIZE_DIRECTION_STRING[direction];
+	const dir_str = MOVERESIZE_DIRECTION_STRING[direction];
 	this.log("initiate_moveresize", dir_str, [x_root, y_root, direction, button, source_indication]);
 	if (direction==MOVERESIZE_MOVE && mousedown_event) {
-		var e = mousedown_event;
+		const e = mousedown_event;
 		e.type = "mousedown.draggable";
 		e.target = this.div[0];
 		this.div.trigger(e);
@@ -944,11 +945,11 @@ XpraWindow.prototype.initiate_moveresize = function(mousedown_event, x_root, y_r
 		jQuery(this.div).draggable('enable');
 	}
 	else if (direction in MOVERESIZE_DIRECTION_JS_NAME) {
-		var js_dir = MOVERESIZE_DIRECTION_JS_NAME[direction];
-		var resize_widget = jQuery(this.div).find(".ui-resizable-handle.ui-resizable-"+js_dir).first();
+		const js_dir = MOVERESIZE_DIRECTION_JS_NAME[direction];
+		const resize_widget = jQuery(this.div).find(".ui-resizable-handle.ui-resizable-"+js_dir).first();
 		if (resize_widget) {
-			var pageX = resize_widget.offset().left;
-			var pageY = resize_widget.offset().top;
+			const pageX = resize_widget.offset().left;
+			const pageY = resize_widget.offset().top;
 			resize_widget.trigger("mouseover");
 			resize_widget.trigger({ type: "mousedown", which: 1, pageX: pageX, pageY: pageY });
 		}
@@ -984,13 +985,13 @@ XpraWindow.prototype.handle_mouse_click = function(button, pressed, mx, my, modi
 
 
 XpraWindow.prototype.update_icon = function(width, height, encoding, img_data) {
-	var src = "/favicon.png";
+	let src = "/favicon.png";
 	if (encoding=="png") {
 		//move title to the right:
 		$("#title"+ String(this.wid)).css('left', 32);
 		if (typeof img_data === 'string') {
-			var uint = new Uint8Array(img_data.length);
-			for(var i=0;i<img_data.length;++i) {
+			const uint = new Uint8Array(img_data.length);
+			for(let i=0;i<img_data.length;++i) {
 				uint[i] = img_data.charCodeAt(i);
 			}
 			img_data = uint;
@@ -1010,7 +1011,7 @@ XpraWindow.prototype.reset_cursor = function() {
 
 XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data) {
 	if (encoding=="png") {
-		var cursor_url = "url('data:image/"+encoding+";base64," + window.btoa(img_data) + "')";
+		const cursor_url = "url('data:image/" + encoding + ";base64," + window.btoa(img_data) + "')";
 		jQuery("#"+String(this.wid)).css("cursor", cursor_url+", default");
 		//CSS3 with hotspot:
 		jQuery("#"+String(this.wid)).css("cursor", cursor_url+" "+xhot+" "+yhot+", auto");
@@ -1045,7 +1046,7 @@ XpraWindow.prototype.draw = function() {
  * The following function inits the Broadway h264 decoder
  */
 XpraWindow.prototype._init_broadway = function(enc_width, enc_height, width, height) {
-	var me = this;
+	const me = this;
 	this.broadway_decoder = new Decoder({
 		"rgb": 	true,
 		"size": { "width" : enc_width, "height" : enc_height },
@@ -1062,10 +1063,10 @@ XpraWindow.prototype._broadway_paint = function(buffer, enc_width, enc_height, w
 	if(!this.broadway_decoder) {
 		return;
 	}
-	var img = this.offscreen_canvas_ctx.createImageData(p_width, p_height);
+	const img = this.offscreen_canvas_ctx.createImageData(p_width, p_height);
 	img.data.set(buffer);
-	var x = this.broadway_paint_location[0];
-	var y = this.broadway_paint_location[1];
+	const x = this.broadway_paint_location[0];
+	const y = this.broadway_paint_location[1];
 	this.offscreen_canvas_ctx.putImageData(img, x, y, 0, 0, enc_width, enc_height);
 	if(enc_width!=width || enc_height!=height) {
 		//scale it:
@@ -1102,8 +1103,8 @@ XpraWindow.prototype._close_video = function() {
 
 XpraWindow.prototype._push_video_buffers = function() {
 	this.debug("draw", "_push_video_buffers()");
-	var vsb = this.video_source_buffer;
-	var vb = this.video_buffers;
+	const vsb = this.video_source_buffer;
+	const vb = this.video_buffers;
 	if(!vb || !vsb || !this.video_source_ready) {
 		return;
 	}
@@ -1111,16 +1112,16 @@ XpraWindow.prototype._push_video_buffers = function() {
 		return;
 	}
 	while(vb.length>0 && !vsb.updating) {
-		var buffers = vb.splice(0, 20);
-		var buffer = [].concat.apply([], buffers);
+		const buffers = vb.splice(0, 20);
+		const buffer = [].concat.apply([], buffers);
 		vsb.appendBuffer(new Uint8Array(buffer).buffer);
 		/*
 		 * one at a time:
-		var img_data = vb.shift();
-        var array = new Uint8Array(img_data);
-	    vsb.appendBuffer(array.buffer);
+		const img_data = vb.shift();
+		const array = new Uint8Array(img_data);
+		vsb.appendBuffer(array.buffer);
 		 */
-	    this.video_buffers_count += buffers.length;
+		this.video_buffers_count += buffers.length;
 	}
 	if(vb.length>0) {
 		setTimeout(this._push_video_buffers, 25);
@@ -1128,7 +1129,7 @@ XpraWindow.prototype._push_video_buffers = function() {
 }
 
 XpraWindow.prototype._init_video = function(width, height, coding, profile, level) {
-	var me = this;
+	const me = this;
 	this.media_source = MediaSourceUtil.getMediaSource();
 	//MediaSourceUtil.addMediaSourceEventDebugListeners(this.media_source, "video");
 	//<video> element:
@@ -1153,7 +1154,7 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	this.video_buffers_count = 0;
 	this.video_source_ready = false;
 
-	var codec_string = "";
+	let codec_string = "";
 	if(coding=="h264+mp4" || coding=="mpeg4+mp4") {
 		//ie: 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"'
 		codec_string = 'video/mp4; codecs="avc1.' + MediaSourceConstants.H264_PROFILE_CODE[profile] + MediaSourceConstants.H264_LEVEL_CODE[level]+'"';
@@ -1170,8 +1171,8 @@ XpraWindow.prototype._init_video = function(width, height, coding, profile, leve
 	this.log("video codec string: "+codec_string+" for "+coding+" profile '"+profile+"', level '"+level+"'");
 	this.media_source.addEventListener('sourceopen', function() {
 		me.log("video media source open");
-		var vsb = me.media_source.addSourceBuffer(codec_string);
-	    vsb.mode = "sequence";
+		const vsb = me.media_source.addSourceBuffer(codec_string);
+		vsb.mode = "sequence";
 		me.video_source_buffer = vsb;
 		if (me.debug_categories.includes("draw")) {
 			MediaSourceUtil.addSourceBufferEventDebugListeners(vsb, "video");
@@ -1193,9 +1194,9 @@ XpraWindow.prototype._non_video_paint = function(coding) {
 		//push video under the canvas:
 		this.video.style.zIndex = "-1";
 		//copy video to canvas:
-		var width = this.video.getAttribute("width");
-		var height = this.video.getAttribute("height");
-        this.offscreen_canvas_ctx.drawImage(this.video, 0, 0, width, height);
+		const width = this.video.getAttribute("width");
+		const height = this.video.getAttribute("height");
+		this.offscreen_canvas_ctx.drawImage(this.video, 0, 0, width, height);
 	}
 }
 
@@ -1207,7 +1208,7 @@ XpraWindow.prototype._non_video_paint = function(coding) {
  */
 XpraWindow.prototype.paint = function paint() {
 	//process all paint request in order using the paint_queue:
-	var item = Array.prototype.slice.call(arguments);
+	const item = Array.prototype.slice.call(arguments);
 	this.paint_queue.push(item);
 	this.may_paint_now();
 }
@@ -1218,16 +1219,16 @@ XpraWindow.prototype.paint = function paint() {
  */
 XpraWindow.prototype.may_paint_now = function paint() {
 	this.debug("draw", "may_paint_now() paint pending=", this.paint_pending, ", paint queue length=", this.paint_queue.length);
-	var now = Utilities.monotonicTime();
+	let now = Utilities.monotonicTime();
 	while ((this.paint_pending==0 || (now-this.paint_pending)>=2000) && this.paint_queue.length>0) {
 		this.paint_pending = now;
-		var item = this.paint_queue.shift();
+		const item = this.paint_queue.shift();
 		this.do_paint.apply(this, item);
 		now = Utilities.monotonicTime();
 	}
 }
 
-var DEFAULT_BOX_COLORS = {
+const DEFAULT_BOX_COLORS = {
         "png"     : "yellow",
         "h264"    : "blue",
         "vp8"     : "green",
@@ -1246,7 +1247,7 @@ var DEFAULT_BOX_COLORS = {
 
 XpraWindow.prototype.get_jsmpeg_renderer = function get_jsmpeg_renderer() {
 	if (this.jsmpeg_renderer==null) {
-		var options = new Object();
+		const options = new Object();
 		//webgl is still buggy
 		//if (JSMpeg.Renderer.WebGL.IsSupported()) {
 		//	this.jsmpeg_renderer = new JSMpeg.Renderer.WebGL(options);
@@ -1268,11 +1269,11 @@ XpraWindow.prototype._close_jsmpeg = function _close_jsmpeg() {
 
 XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_data, packet_sequence, rowstride, options, decode_callback) {
 	this.debug("draw", "do_paint(", img_data.length, " bytes of ", ("zlib" in options?"zlib ":""), coding, " data ", width, "x", height, " at ", x, ",", y, ") focused=", this.focused);
-	var me = this;
+	const me = this;
 
-	var enc_width = width;
-	var enc_height = height;
-	var scaled_size = options["scaled_size"];
+	let enc_width = width;
+	let enc_height = height;
+	const scaled_size = options["scaled_size"];
 	if(scaled_size) {
 		enc_width = scaled_size[0];
 		enc_height = scaled_size[1];
@@ -1287,7 +1288,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		img_data = null;
 		me.paint_pending = 0;
 		if (me.paint_debug && !skip_box) {
-			var color = DEFAULT_BOX_COLORS[coding] || "white";
+			const color = DEFAULT_BOX_COLORS[coding] || "white";
 			paint_box(color, x, y, width, height);
 		}
 		decode_callback();
@@ -1303,28 +1304,30 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	try {
 		if (coding=="rgb32") {
 			this._non_video_paint(coding);
-			var img = this.offscreen_canvas_ctx.createImageData(width, height);
+			const img = this.offscreen_canvas_ctx.createImageData(width, height);
 			//show("options="+(options).toSource());
 			if (options!=null && options["zlib"]>0) {
 				//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
-				var inflated = new Zlib.Inflate(img_data).decompress();
+				const inflated = new Zlib.Inflate(img_data).decompress();
 				//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
 				img_data = inflated;
 			} else if (options!=null && options["lz4"]>0) {
 				// in future we need to make sure that we use typed arrays everywhere...
+				let d;
 				if(img_data.subarray) {
-					var d = img_data.subarray(0, 4);
+					d = img_data.subarray(0, 4);
 				} else {
-					var d = img_data.slice(0, 4);
+					d = img_data.slice(0, 4);
 				}
 				// will always be little endian
-				var length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+				const length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
 				// decode the LZ4 block
-				var inflated = new Buffer(length);
+				const inflated = new Buffer(length);
+				let uncompressedSize;
 				if(img_data.subarray) {
-					var uncompressedSize = LZ4.decodeBlock(img_data.subarray(4), inflated);
+					uncompressedSize = LZ4.decodeBlock(img_data.subarray(4), inflated);
 				} else {
-					var uncompressedSize = LZ4.decodeBlock(img_data.slice(4), inflated);
+					uncompressedSize = LZ4.decodeBlock(img_data.slice(4), inflated);
 				}
 				img_data = inflated.slice(0, uncompressedSize);
 			}
@@ -1342,7 +1345,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		}
 		else if (coding=="jpeg" || coding=="png" || coding=="webp") {
 			this._non_video_paint(coding);
-			var j = new Image();
+			const j = new Image();
 			j.onload = function () {
 				if (j.width==0 || j.height==0) {
 					paint_error("invalid image size: "+j.width+"x"+j.height);
@@ -1360,37 +1363,37 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			j.src = "data:image/"+coding+";base64," + Utilities.ArrayBufferToBase64(img_data);
 		}
 		else if (coding=="mpeg1") {
-			var frame = options["frame"] || 0;
+			const frame = options["frame"] || 0;
 			if (frame==0 || this.jsmpeg_decoder==null) {
-				var options = new Object();
+				const options = new Object();
 				options.streaming = true;
 				options.decodeFirstFrame = false;
 				this.jsmpeg_decoder = new JSMpeg.Decoder.MPEG1Video(options);
 				//TODO: instead of delegating, we should probably subclass the renderer
 				// (but which one! GL or not?):
-				var renderer = new Object();
+				const renderer = new Object();
 				renderer.render = function render(Y, Cr, Cb) {
-					var jsmpeg_renderer = me.get_jsmpeg_renderer();
+					const jsmpeg_renderer = me.get_jsmpeg_renderer();
 					jsmpeg_renderer.render(Y, Cr, Cb);
-					var canvas = jsmpeg_renderer.canvas;
+					const canvas = jsmpeg_renderer.canvas;
 					me.offscreen_canvas_ctx.drawImage(canvas, x, y, width, height);
 					paint_box("olive", x, y, width, height);
 				}
 				renderer.resize = function resize(newWidth, newHeight) {
-					var jsmpeg_renderer = me.get_jsmpeg_renderer();
+					const jsmpeg_renderer = me.get_jsmpeg_renderer();
 					jsmpeg_renderer.resize(newWidth, newHeight);
 				}
 				this.jsmpeg_decoder.connect(renderer);
 			}
-			var pts = frame;
+			const pts = frame;
 			this.jsmpeg_decoder.write(pts, img_data);
-			var decoded = this.jsmpeg_decoder.decode();
+			const decoded = this.jsmpeg_decoder.decode();
 			this.debug("draw", coding, "frame", frame, "data len=", img_data.length, "decoded=", decoded);
 			//TODO: only call painted when we have actually painted the frame?
 			painted();
 		}
 		else if (coding=="h264") {
-			var frame = options["frame"] || 0;
+			const frame = options["frame"] || 0;
 			if(frame==0) {
 				this._close_broadway();
 			}
@@ -1409,13 +1412,13 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			painted();
 		}
 		else if (coding=="h264+mp4" || coding=="vp8+webm" || coding=="mpeg4+mp4") {
-			var frame = options["frame"] || -1;
+			const frame = options["frame"] || -1;
 			if(frame==0) {
 				this._close_video();
 			}
 			if(!this.video) {
-				var profile = options["profile"] || "baseline";
-				var level  = options["level"] || "3.0";
+				const profile = options["profile"] || "baseline";
+				const level = options["level"] || "3.0";
 				this._init_video(width, height, coding, profile, level);
 			}
 			else {
@@ -1431,7 +1434,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				}
 				this._push_video_buffers();
 				//try to throttle input:
-				var delay = Math.max(10, 50*(this.video_buffers.length-25));
+				const delay = Math.max(10, 50 * (this.video_buffers.length - 25));
 				setTimeout(function() {
 					painted();
 					me.may_paint_now();
@@ -1441,10 +1444,10 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		}
 		else if (coding=="scroll") {
 			this._non_video_paint(coding);
-			for(var i=0,j=img_data.length;i<j;++i) {
-				var scroll_data = img_data[i];
+			for(let i=0,j=img_data.length;i<j;++i) {
+				const scroll_data = img_data[i];
 				this.debug("draw", "scroll", i, ":", scroll_data);
-				var sx = scroll_data[0],
+ 				const sx = scroll_data[0],
 					sy = scroll_data[1],
 					sw = scroll_data[2],
 					sh = scroll_data[3],

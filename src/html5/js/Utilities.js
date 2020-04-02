@@ -9,7 +9,7 @@
 
 'use strict';
 
-var Utilities = {
+const Utilities = {
 	VERSION	: "4.0",
 	REVISION : "0",
 	LOCAL_MODIFICATIONS : "0",
@@ -48,9 +48,9 @@ var Utilities = {
 	},
 
 	getHexUUID: function() {
-		var s = [];
-		var hexDigits = "0123456789abcdef";
-		for (var i = 0; i < 36; i++) {
+		const s = [];
+		const hexDigits = "0123456789abcdef";
+		for (let i = 0; i < 36; i++) {
 			if (i==8 || i==13 || i==18 || i==23) {
 				s[i] = "-";
 			}
@@ -58,7 +58,7 @@ var Utilities = {
 				s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
 			}
 		}
-		var uuid = s.join("");
+		const uuid = s.join("");
 		return uuid;
 	},
 
@@ -66,7 +66,7 @@ var Utilities = {
 		if(l<32 || l>256) {
 			throw 'invalid salt length';
 		}
-		var s = '';
+		let s = '';
 		while (s.length<l) {
 			s += Utilities.getHexUUID();
 		}
@@ -74,18 +74,18 @@ var Utilities = {
 	},
 
 	xorString: function(str1, str2){
-		var result = '';
+		let result = '';
 		if(str1.length !== str2.length) {
 			throw 'strings must be equal length';
 		}
-		for(var i = 0; i < str1.length; i++) {
+		for(let i = 0; i < str1.length; i++) {
 			result += String.fromCharCode(str1[i].charCodeAt(0) ^ str2[i].charCodeAt(0));
 		}
 		return result;
 	},
 
 	trimString: function(str, trimLength){
-		var trimString = str.length > trimLength ?
+		const trimString = str.length > trimLength ?
                     str.substring(0, trimLength - 3) + "..." :
                     str;
 		return trimString;
@@ -137,13 +137,12 @@ var Utilities = {
 	},
 
 	getFirstBrowserLanguage : function () {
-		var nav = window.navigator,
-			browserLanguagePropertyKeys = ['language', 'browserLanguage', 'systemLanguage', 'userLanguage'],
-			i,
-			language;
+		const nav = window.navigator,
+			browserLanguagePropertyKeys = ['language', 'browserLanguage', 'systemLanguage', 'userLanguage'];
+		let language;
 		// support for HTML 5.1 "navigator.languages"
 		if (Array.isArray(nav.languages)) {
-			for (i = 0; i < nav.languages.length; i++) {
+			for (let i = 0; i < nav.languages.length; i++) {
 				language = nav.languages[i];
 				if (language && language.length) {
 					return language;
@@ -151,8 +150,8 @@ var Utilities = {
 			}
 		}
 		// support for other well known properties in browsers
-		for (i = 0; i < browserLanguagePropertyKeys.length; i++) {
-			var prop = browserLanguagePropertyKeys[i];
+		for (let i = 0; i < browserLanguagePropertyKeys.length; i++) {
+			const prop = browserLanguagePropertyKeys[i];
 			language = nav[prop];
 			//console.debug(prop, "=", language);
 			if (language && language.length) {
@@ -163,22 +162,22 @@ var Utilities = {
 	},
 
 	getKeyboardLayout: function() {
-		var v = Utilities.getFirstBrowserLanguage();
+		let v = Utilities.getFirstBrowserLanguage();
 		console.debug("getFirstBrowserLanguage()=", v);
 		if (v==null) {
 			return "us";
 		}
-		var layout = LANGUAGE_TO_LAYOUT[v];
+		let layout = LANGUAGE_TO_LAYOUT[v];
 		if (!layout) {
 			//ie: v="en_GB";
 			v = v.split(',')[0];
-			var l = v.split('-', 2);
+			let l = v.split('-', 2);
 			if (l.length === 1){
 				l = v.split('_', 2);
 			}
 			//ie: "en"
 			layout=l[1].toLowerCase();
-			var tmp = LANGUAGE_TO_LAYOUT[v];
+			const tmp = LANGUAGE_TO_LAYOUT[v];
 			if (tmp) {
 				layout = tmp;
 			}
@@ -188,8 +187,8 @@ var Utilities = {
 	},
 
 	canUseWebP : function() {
-	    var elem = document.createElement('canvas');
-	    var ctx = elem.getContext('2d');
+	    const elem = document.createElement('canvas');
+	    const ctx = elem.getContext('2d');
 	    if (!ctx) {
 	    	return false;
 	    }
@@ -204,7 +203,7 @@ var Utilities = {
 		if (Utilities.audio_context) {
 			return Utilities.audio_context;
 		}
-		var acc = Utilities.getAudioContextClass();
+		const acc = Utilities.getAudioContextClass();
 		if(!acc) {
 			return null;
 		}
@@ -226,22 +225,22 @@ var Utilities = {
 
 
 	isFirefox : function() {
-		var ua = navigator.userAgent.toLowerCase();
+		const ua = navigator.userAgent.toLowerCase();
 		return ua.includes("firefox");
 	},
 	isOpera : function() {
-		var ua = navigator.userAgent.toLowerCase();
+		const ua = navigator.userAgent.toLowerCase();
 		return ua.includes("opera");
 	},
 	isSafari : function() {
-		var ua = navigator.userAgent.toLowerCase();
+		const ua = navigator.userAgent.toLowerCase();
 		return ua.includes("safari") && !ua.includes('chrome');
 	},
 	isEdge : function() {
 		return navigator.userAgent.includes("Edge");
 	},
 	isChrome : function () {
-		var isChromium = window.chrome,
+		const isChromium = window.chrome,
 			winNav = window.navigator,
 			vendorName = winNav.vendor,
 			isOpera = winNav.userAgent.includes("OPR"),
@@ -262,17 +261,16 @@ var Utilities = {
 	},
 
 	is_64bit : function() {
-		var _to_check = [] ;
+		let _to_check = [] ;
 		if (window.navigator.cpuClass)
 			_to_check.push((window.navigator.cpuClass + "").toLowerCase());
 		if (window.navigator.platform)
 			_to_check.push((window.navigator.platform + "").toLowerCase());
 		if (navigator.userAgent)
 			_to_check.push((navigator.userAgent + "").toLowerCase());
-		var _64bits_signatures = ["x86_64", "x86-64", "Win64", "x64;", "amd64", "AMD64", "WOW64", "x64_64", "ia64", "sparc64", "ppc64", "IRIX64"];
-		var _i, _c;
-		for (_c=0; _c<_to_check.length; _c++) {
-			for (_i=0 ; _i<_64bits_signatures.length; _i++) {
+		const _64bits_signatures = ["x86_64", "x86-64", "Win64", "x64;", "amd64", "AMD64", "WOW64", "x64_64", "ia64", "sparc64", "ppc64", "IRIX64"];
+		for (let _c=0; _c<_to_check.length; _c++) {
+			for (let _i=0 ; _i<_64bits_signatures.length; _i++) {
 				if (_to_check[_c].indexOf(_64bits_signatures[_i].toLowerCase())!=-1) {
 					return true;
 				}
@@ -322,8 +320,8 @@ var Utilities = {
 	},
 
 	isEventSupported : function(event) {
-		var testEl = document.createElement('div');
-		var isSupported;
+		let testEl = document.createElement('div');
+		let isSupported;
 
 		event = 'on' + event;
 		isSupported = (event in testEl);
@@ -340,11 +338,11 @@ var Utilities = {
 	//BSD license
 	normalizeWheel : function(/*object*/ event) /*object*/ {
 		// Reasonable defaults
-		var PIXEL_STEP  = 10;
-		var LINE_HEIGHT = 40;
-		var PAGE_HEIGHT = 800;
+		const PIXEL_STEP  = 10;
+		const LINE_HEIGHT = 40;
+		const PAGE_HEIGHT = 800;
 
-		var sX = 0, sY = 0,       // spinX, spinY
+		let sX = 0, sY = 0,       // spinX, spinY
 			pX = 0, pY = 0;       // pixelX, pixelY
 
 		// Legacy
@@ -389,11 +387,11 @@ var Utilities = {
 	},
 
 	saveFile : function(filename, data, mimetype) {
-	    var a = document.createElement("a");
+	    const a = document.createElement("a");
 	    a.setAttribute("style", "display: none");
 	    document.body.appendChild(a);
-	    var blob = new Blob([data], mimetype);
-	    var url = window.URL.createObjectURL(blob);
+	    const blob = new Blob([data], mimetype);
+	    const url = window.URL.createObjectURL(blob);
 	    if (navigator.msSaveOrOpenBlob) {
 	    	navigator.msSaveOrOpenBlob(blob, filename);
 	    } else {
@@ -412,17 +410,17 @@ var Utilities = {
 	},
 
 	StringToUint8 : function(str) {
-		var u8a = new Uint8Array(str.length);
-		for(var i=0,j=str.length;i<j;++i){
+		const u8a = new Uint8Array(str.length);
+		for(let i=0,j=str.length;i<j;++i){
 			u8a[i] = str.charCodeAt(i);
 		}
 		return u8a;
 	},
 
 	Uint8ToString : function(u8a){
-		var CHUNK_SZ = 0x8000;
-		var c = [];
-		for (var i=0; i < u8a.length; i+=CHUNK_SZ) {
+		const CHUNK_SZ = 0x8000;
+		const c = [];
+		for (let i=0; i < u8a.length; i+=CHUNK_SZ) {
 			c.push(String.fromCharCode.apply(null, u8a.subarray(i, i+CHUNK_SZ)));
 		}
 		return c.join("");
@@ -431,14 +429,14 @@ var Utilities = {
 	ArrayBufferToBase64 : function(uintArray) {
 		// apply in chunks of 10400 to avoid call stack overflow
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
-		var s = "";
-		var skip = 10400;
+		let s = "";
+		const skip = 10400;
 		if (uintArray.subarray) {
-			for (var i=0, len=uintArray.length; i<len; i+=skip) {
+			for (let i=0, len=uintArray.length; i<len; i+=skip) {
 				s += String.fromCharCode.apply(null, uintArray.subarray(i, Math.min(i + skip, len)));
 			}
 		} else {
-			for (var i=0, len=uintArray.length; i<len; i+=skip) {
+			for (let i=0, len=uintArray.length; i<len; i+=skip) {
 				s += String.fromCharCode.apply(null, uintArray.slice(i, Math.min(i + skip, len)));
 			}
 		}
@@ -446,12 +444,12 @@ var Utilities = {
 	},
 
 	convertDataURIToBinary : function (dataURI) {
-		var BASE64_MARKER = ';base64,';
-		var base64Index = dataURI.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
-		var base64 = dataURI.substring(base64Index);
-		var raw = window.atob(base64);
-		var rawLength = raw.length;
-		var array = new Uint8Array(new ArrayBuffer(rawLength));
+		const BASE64_MARKER = ';base64,';
+		const base64Index = dataURI.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+		const base64 = dataURI.substring(base64Index);
+		const raw = window.atob(base64);
+		const rawLength = raw.length;
+		const array = new Uint8Array(new ArrayBuffer(rawLength));
 
 		for(i = 0; i < rawLength; i++) {
 			array[i] = raw.charCodeAt(i);
@@ -461,26 +459,26 @@ var Utilities = {
 
 
 	parseINIString : function (data) {
-	    var regex = {
+	    const regex = {
 	        section: /^\s*\[\s*([^\]]*)\s*\]\s*$/,
 	        param: /^\s*([^=]+?)\s*=\s*(.*?)\s*$/,
 	        comment: /^\s*;.*$/
 	    };
-	    var value = {};
-	    var lines = data.split(/[\r\n]+/);
-	    var section = null;
+	    const value = {};
+	    const lines = data.split(/[\r\n]+/);
+	    let section = null;
 	    lines.forEach(function(line){
 	        if(regex.comment.test(line)){
 	            return;
 	        }else if(regex.param.test(line)){
-	            var match = line.match(regex.param);
+	            const match = line.match(regex.param);
 	            if(section){
 	                value[section][match[1]] = match[2];
 	            }else{
 	                value[match[1]] = match[2];
 	            }
 	        }else if(regex.section.test(line)){
-	            var match = line.match(regex.section);
+	            const match = line.match(regex.section);
 	            value[match[1]] = {};
 	            section = match[1];
 	        }else if(line.length == 0 && section){
@@ -497,19 +495,19 @@ var Utilities = {
 	 * This method parses that string into a user-friendly key/value pair object.
 	 */
 	ParseResponseHeaders : function(headerStr) {
-		var headers = {};
+		const headers = {};
 		if (!headerStr) {
 			return headers;
 		}
-		var headerPairs = headerStr.split('\u000d\u000a');
-		for (var i = 0; i < headerPairs.length; i++) {
-			var headerPair = headerPairs[i];
+		const headerPairs = headerStr.split('\u000d\u000a');
+		for (let i = 0; i < headerPairs.length; i++) {
+			const headerPair = headerPairs[i];
 			// Can't use split() here because it does the wrong thing
 			// if the header value has the string ": " in it.
-			var index = headerPair.indexOf('\u003a\u0020');
+			const index = headerPair.indexOf('\u003a\u0020');
 			if (index > 0) {
-				var key = headerPair.substring(0, index);
-				var val = headerPair.substring(index + 2);
+				const key = headerPair.substring(0, index);
+				const val = headerPair.substring(index + 2);
 				headers[key] = val;
 			}
 		}
@@ -517,9 +515,9 @@ var Utilities = {
 	},
 
 	parseParams : function(q) {
-		var params = {},
-				e,
-				a = /\+/g,	// Regex for replacing addition symbol with a space
+		const params = {};
+		let e;
+		const a = /\+/g,	// Regex for replacing addition symbol with a space
 				r = /([^&=]+)=?([^&]*)/g,
 				d = function (s) { return decodeURIComponent(s.replace(a, " ")); };
 		while (e = r.exec(q))
@@ -528,7 +526,7 @@ var Utilities = {
 	},
 
 	getparam : function(prop) {
-		var getParameter = window.location.getParameter;
+		let getParameter = window.location.getParameter;
 		if (!getParameter) {
 			getParameter = function(key) {
 				if (!window.location.queryStringParams)
@@ -536,7 +534,7 @@ var Utilities = {
 				return window.location.queryStringParams[key];
 			};
 		}
-		var value = getParameter(prop);
+		let value = getParameter(prop);
 		try {
 			if (value === undefined && typeof(sessionStorage) !== undefined) {
 				value = sessionStorage.getItem(prop);
@@ -550,7 +548,7 @@ var Utilities = {
 
 
 	getboolparam : function(prop, default_value) {
-		var v = Utilities.getparam(prop);
+		const v = Utilities.getparam(prop);
 		if(v===null) {
 			return default_value;
 		}
@@ -562,7 +560,7 @@ var Utilities = {
 			return false;
 		}
 		try {
-			var key = "just for testing sessionStorage support";
+			const key = "just for testing sessionStorage support";
 		    sessionStorage.setItem(key, "store-whatever");
 		    sessionStorage.removeItem(key);
 		    return true;
@@ -574,11 +572,11 @@ var Utilities = {
 
 
 	getConnectionInfo : function() {
-		var c = navigator.connection;
+		const c = navigator.connection;
 		if (!c) {
 			return {};
 		}
-		var i = {};
+		const i = {};
 		if (c.type) {
 			i["type"] = c.type;
 		}
@@ -599,19 +597,19 @@ var Utilities = {
 };
 
 
-var MOVERESIZE_SIZE_TOPLEFT      = 0;
-var MOVERESIZE_SIZE_TOP          = 1;
-var MOVERESIZE_SIZE_TOPRIGHT     = 2;
-var MOVERESIZE_SIZE_RIGHT        = 3;
-var MOVERESIZE_SIZE_BOTTOMRIGHT  = 4;
-var MOVERESIZE_SIZE_BOTTOM       = 5;
-var MOVERESIZE_SIZE_BOTTOMLEFT   = 6;
-var MOVERESIZE_SIZE_LEFT         = 7;
-var MOVERESIZE_MOVE              = 8;
-var MOVERESIZE_SIZE_KEYBOARD     = 9;
-var MOVERESIZE_MOVE_KEYBOARD     = 10;
-var MOVERESIZE_CANCEL            = 11;
-var MOVERESIZE_DIRECTION_STRING = {
+const MOVERESIZE_SIZE_TOPLEFT      = 0;
+const MOVERESIZE_SIZE_TOP          = 1;
+const MOVERESIZE_SIZE_TOPRIGHT     = 2;
+const MOVERESIZE_SIZE_RIGHT        = 3;
+const MOVERESIZE_SIZE_BOTTOMRIGHT  = 4;
+const MOVERESIZE_SIZE_BOTTOM       = 5;
+const MOVERESIZE_SIZE_BOTTOMLEFT   = 6;
+const MOVERESIZE_SIZE_LEFT         = 7;
+const MOVERESIZE_MOVE              = 8;
+const MOVERESIZE_SIZE_KEYBOARD     = 9;
+const MOVERESIZE_MOVE_KEYBOARD     = 10;
+const MOVERESIZE_CANCEL            = 11;
+const MOVERESIZE_DIRECTION_STRING = {
                                0    : "SIZE_TOPLEFT",
                                1    : "SIZE_TOP",
                                2    : "SIZE_TOPRIGHT",
@@ -625,7 +623,7 @@ var MOVERESIZE_DIRECTION_STRING = {
                                10   : "MOVE_KEYBOARD",
                                11	: "CANCEL",
                                };
-var MOVERESIZE_DIRECTION_JS_NAME = {
+const MOVERESIZE_DIRECTION_JS_NAME = {
         0	: "nw",
         1	: "n",
         2	: "ne",
@@ -637,7 +635,7 @@ var MOVERESIZE_DIRECTION_JS_NAME = {
         };
 
 //convert a language code into an X11 keyboard layout code:
-var LANGUAGE_TO_LAYOUT = {
+const LANGUAGE_TO_LAYOUT = {
 		"en_GB"	: "gb",
 		"en"	: "us",
 		"zh"	: "cn",

@@ -15,9 +15,9 @@
 
 "use strict";
 
-var XPRA_CLIENT_FORCE_NO_WORKER = false;
-var CLIPBOARD_IMAGES = true;
-var CLIPBOARD_EVENT_DELAY = 100;
+const XPRA_CLIENT_FORCE_NO_WORKER = false;
+const CLIPBOARD_IMAGES = true;
+const CLIPBOARD_EVENT_DELAY = 100;
 
 function XpraClient(container) {
 	// the container div is the "screen" on the HTML page where we
@@ -28,7 +28,7 @@ function XpraClient(container) {
 	}
 	// assign callback for window resize event
 	if (window.jQuery) {
-		var me = this;
+		const me = this;
 		jQuery(window).resize(jQuery.debounce(250, function (e) {
 			me._screen_resized(e, me);
 		}));
@@ -187,6 +187,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.topindex = 0;
 	this.focus = -1;
 
+	const me = this;
 	jQuery("#screen").mousedown(function (e) {
 		me.on_mousedown(e);
 	});
@@ -196,8 +197,8 @@ XpraClient.prototype.init_state = function(container) {
 	jQuery("#screen").mousemove(function (e) {
 		me.on_mousemove(e);
 	});
-	var me = this;
-	var div = document.getElementById("screen");
+
+	const div = document.getElementById("screen");
 	function on_mousescroll(e) {
 		me.on_mousescroll(e);
 	}
@@ -221,14 +222,14 @@ XpraClient.prototype.send = function() {
 XpraClient.prototype.send_log = function(level, args) {
 	if(this.remote_logging && this.server_remote_logging && this.connected) {
 		try {
-			var sargs = [];
-			for(var i = 0; i < args.length; i++) {
+			const sargs = [];
+			for(let i = 0; i < args.length; i++) {
 				sargs.push(unescape(encodeURIComponent(String(args[i]))));
 			}
 			this.send(["logging", level, sargs]);
 		} catch (e) {
 			this.cerror("remote logging failed");
-			for(var i = 0; i < args.length; i++) {
+			for(let i = 0; i < args.length; i++) {
 				this.clog(" argument", i, typeof args[i], ":", "'"+args[i]+"'");
 			}
 		}
@@ -236,8 +237,8 @@ XpraClient.prototype.send_log = function(level, args) {
 }
 XpraClient.prototype.exc = function() {
 	//first argument is the exception:
-	var exception = arguments[0];
-	var args = Array.from(arguments);
+	const exception = arguments[0];
+	let args = Array.from(arguments);
 	args = args.splice(1);
 	if (args.length>0) {
 		this.cerror(args);
@@ -277,8 +278,8 @@ XpraClient.prototype.clog = function() {
 	Utilities.clog.apply(Utilities, arguments);
 }
 XpraClient.prototype.debug = function() {
-	var category = arguments[0];
-	var args = Array.from(arguments);
+	const category = arguments[0];
+	let args = Array.from(arguments);
 	args = args.splice(1);
 	if (this.debug_categories.includes(category)) {
 		if (category!="network") {
@@ -357,7 +358,7 @@ XpraClient.prototype.callback_close = function(reason) {
 }
 
 XpraClient.prototype.connect = function() {
-	var details = this.host + ":" + this.port + this.path;
+	let details = this.host + ":" + this.port + this.path;
 	if (this.ssl) {
 		details += " with ssl";
 	}
@@ -374,10 +375,10 @@ XpraClient.prototype.connect = function() {
 	if(window.Worker) {
 		this.clog("we have webworker support");
 		// spawn worker that checks for a websocket
-		var me = this;
-		var worker = new Worker('js/lib/wsworker_check.js');
+		const me = this;
+		const worker = new Worker('js/lib/wsworker_check.js');
 		worker.addEventListener('message', function(e) {
-			var data = e.data;
+			const data = e.data;
 			switch (data['result']) {
 			case true:
 				// yey, we can use websocket in worker!
@@ -416,7 +417,7 @@ XpraClient.prototype.open_protocol = function() {
 	// set protocol to deliver packets to our packet router
 	this.protocol.set_packet_handler(this._route_packet, this);
 	// make uri
-	var uri = "ws://";
+	let uri = "ws://";
 	if (this.ssl)
 		uri = "wss://";
 	uri += this.host;
@@ -448,15 +449,15 @@ XpraClient.prototype.request_refresh = function(wid) {
 }
 
 XpraClient.prototype.redraw_windows = function() {
-	for (var i in this.id_to_window) {
-		var iwin = this.id_to_window[i];
+	for (const i in this.id_to_window) {
+		const iwin = this.id_to_window[i];
 		this.request_redraw(iwin);
 	}
 }
 
 XpraClient.prototype.close_windows = function() {
-	for (var i in this.id_to_window) {
-		var iwin = this.id_to_window[i];
+	for (const i in this.id_to_window) {
+		const iwin = this.id_to_window[i];
 		window.removeWindowListItem(i);
 		iwin.destroy();
 	}
@@ -500,7 +501,7 @@ XpraClient.prototype.disable_encoding = function(encoding) {
 	// remove an encoding from our hello.encodings.core list
 	// as if we don't support it
 	this.clog("disable", encoding);
-	var index = this.supported_encodings.indexOf(encoding);
+	const index = this.supported_encodings.indexOf(encoding);
 	if(index > -1) {
 		this.supported_encodings.splice(index, 1);
 	}
@@ -508,8 +509,8 @@ XpraClient.prototype.disable_encoding = function(encoding) {
 
 XpraClient.prototype._route_packet = function(packet, ctx) {
 	// ctx refers to `this` because we came through a callback
-	var packet_type = "";
-	var fn = "";
+	let packet_type = "";
+	let fn = "";
 	packet_type = packet[0];
 	ctx.debug("network", "received a", packet_type, "packet");
 	fn = ctx.packet_handlers[packet_type];
@@ -528,12 +529,12 @@ XpraClient.prototype._screen_resized = function(event, ctx) {
 	}
 	this.desktop_width = this.container.clientWidth;
 	this.desktop_height = this.container.clientHeight;
-	var newsize = [this.desktop_width, this.desktop_height];
-	var packet = ["desktop_size", newsize[0], newsize[1], this._get_screen_sizes()];
+	const newsize = [this.desktop_width, this.desktop_height];
+	const packet = ["desktop_size", newsize[0], newsize[1], this._get_screen_sizes()];
 	ctx.send(packet);
 	// call the screen_resized function on all open windows
-	for (var i in ctx.id_to_window) {
-		var iwin = ctx.id_to_window[i];
+	for (const i in ctx.id_to_window) {
+		const iwin = ctx.id_to_window[i];
 		iwin.screen_resized();
 	}
 }
@@ -542,7 +543,7 @@ XpraClient.prototype._screen_resized = function(event, ctx) {
  * Keyboard
  */
 XpraClient.prototype.init_keyboard = function() {
-	var me = this;
+	const me = this;
 	// modifier keys:
 	this.num_lock_modifier = null;
 	this.alt_modifier = null;
@@ -554,13 +555,13 @@ XpraClient.prototype.init_keyboard = function() {
 	this.capture_keyboard = true;
 	// assign the key callbacks
 	document.addEventListener('keydown', function(e) {
-		var r = me._keyb_onkeydown(e, me);
+		const r = me._keyb_onkeydown(e, me);
 		if (!r) {
 			e.preventDefault();
 		}
 	});
 	document.addEventListener('keyup', function (e) {
-		var r = me._keyb_onkeyup(e, me);
+		const r = me._keyb_onkeyup(e, me);
 		if (!r) {
 			e.preventDefault();
 		}
@@ -575,7 +576,7 @@ XpraClient.prototype._keyb_get_modifiers = function(event) {
 	 * then we translate them.
 	 */
 	//convert generic modifiers "meta" and "alt" into their x11 name:
-	var modifiers = get_event_modifiers(event);
+	const modifiers = get_event_modifiers(event);
 	return this.translate_modifiers(modifiers);
 }
 
@@ -586,17 +587,17 @@ XpraClient.prototype.translate_modifiers = function(modifiers) {
 	 * And also swap keys for macos clients.
 	 */
 	//convert generic modifiers "meta" and "alt" into their x11 name:
-	var alt = this.alt_modifier;
-	var control = this.control_modifier;
-	var meta = this.meta_modifier;
-	var altgr = this.altgr_modifier;
+	const alt = this.alt_modifier;
+	let control = this.control_modifier;
+	let meta = this.meta_modifier;
+	const altgr = this.altgr_modifier;
 	if (this.swap_keys) {
 		meta = this.control_modifier;
 		control = this.meta_modifier;
 	}
 
-	var new_modifiers = modifiers.slice();
-	var index = modifiers.indexOf("meta");
+	const new_modifiers = modifiers.slice();
+	let index = modifiers.indexOf("meta");
 	if (index>=0 && meta)
 		new_modifiers[index] = meta;
 	index = modifiers.indexOf("control");
@@ -640,11 +641,11 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 	 * This function may send the new detected keyboard layout.
 	 * (ignoring the keyboard_layout preference)
 	 */
-	var now = Utilities.monotonicTime();
+	const now = Utilities.monotonicTime();
 	if (now<this.browser_language_change_embargo_time) {
 		return;
 	}
-	var new_layout = null;
+	let new_layout = null;
 	if (key_layout) {
 		new_layout = key_layout;
 	}
@@ -652,7 +653,7 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 		//we may have used a different layout for a specific key,
 		//and now this new key doesn't need it anymore,
 		//so we may want to switch back to the original layout:
-		var l = Utilities.getFirstBrowserLanguage();
+		const l = Utilities.getFirstBrowserLanguage();
 		if (l && this.browser_language != l) {
 			//if the browser language has changed,
 			//this takes precedence over the configuration
@@ -697,13 +698,13 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	if (window.event)
 		event = window.event;
 
-	var keyname = event.code || "";
-	var keycode = event.which || event.keyCode;
+	let keyname = event.code || "";
+	const keycode = event.which || event.keyCode;
 	if (keycode==229) {
 		//this usually fires when we have received the event via "oninput" already
 		return;
 	}
-	var str = event.key || String.fromCharCode(keycode);
+	let str = event.key || String.fromCharCode(keycode);
 
 	this.debug("keyboard", "processKeyEvent(", pressed, ", ", event, ") key=", keyname, "keycode=", keycode);
 
@@ -712,7 +713,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		this.num_lock = !this.num_lock;
 	}
 
-	var key_language = null;
+	let key_language = null;
 	//special case for numpad,
 	//try to distinguish arrowpad and numpad:
 	//(for arrowpad, keyname==str)
@@ -729,7 +730,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		keyname = CHAR_TO_NAME[str];
 		if (keyname.includes("_")) {
 			//ie: Thai_dochada
-			var lang = keyname.split("_")[0];
+			const lang = keyname.split("_")[0];
 			key_language = KEYSYM_TO_LAYOUT[lang];
 		}
 	}
@@ -740,7 +741,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 
 	this._check_browser_language(key_language);
 
-	var DOM_KEY_LOCATION_RIGHT = 2;
+	const DOM_KEY_LOCATION_RIGHT = 2;
 	if (keyname.match("_L$") && event.location==DOM_KEY_LOCATION_RIGHT)
 		keyname = keyname.replace("_L", "_R")
 
@@ -754,18 +755,18 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	//if (this.num_lock && keycode>=96 && keycode<106)
 	//	keyname = "KP_"+(keycode-96);
 
-	var raw_modifiers = get_event_modifiers(event);
-	var modifiers = this._keyb_get_modifiers(event);
-	var keyval = keycode;
-	var group = 0;
+	const raw_modifiers = get_event_modifiers(event);
+	const modifiers = this._keyb_get_modifiers(event);
+	const keyval = keycode;
+	const group = 0;
 
-	var shift = modifiers.includes("shift");
-	var capslock = modifiers.includes("capslock");
+	const shift = modifiers.includes("shift");
+	const capslock = modifiers.includes("capslock");
 	if ((capslock && shift) || (!capslock && !shift)) {
 		str = str.toLowerCase();
 	}
 
-	var ostr = str;
+	const ostr = str;
 	if (this.swap_keys) {
 		if (keyname=="Control_L") {
 			keyname = "Meta_L";
@@ -788,12 +789,12 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	//if (keyname=="Control_L" || keyname=="Control_R")
 	this._poll_clipboard(event);
 
-	var allow_default = false;
+	let allow_default = false;
 	if (this.clipboard_enabled) {
 		//allow some key events that need to be seen by the browser
 		//for handling the clipboard:
-		var clipboard_modifier_keys = ["Control_L", "Control_R", "Shift_L", "Shift_R"];
-		var clipboard_modifier = "control";
+		let clipboard_modifier_keys = ["Control_L", "Control_R", "Shift_L", "Shift_R"];
+		let clipboard_modifier = "control";
 		if (Utilities.isMacOS()) {
 			//Apple does things differently, as usual:
 			clipboard_modifier_keys = ["Meta_L", "Meta_R", "Shift_L", "Shift_R"];
@@ -809,9 +810,9 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 			this.debug("keyboard", "passing clipboard combination Shift+Insert to browser");
 			allow_default = true;
 		}
-		var clipboard_mod_set = raw_modifiers.includes(clipboard_modifier);
+		const clipboard_mod_set = raw_modifiers.includes(clipboard_modifier);
 		if (clipboard_mod_set) {
-			var l = keyname.toLowerCase();
+			const l = keyname.toLowerCase();
 			if (l=="c" || l=="x" || l=="v") {
 				this.debug("keyboard", "passing clipboard combination to browser:", clipboard_modifier, "+", keyname);
 				allow_default = true;
@@ -823,7 +824,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	}
 
 	if (this.topwindow != null) {
-		var packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
+		let packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
 		this.key_packets.push(packet);
 		if (pressed && Utilities.isMacOS() && raw_modifiers.includes("meta") && ostr!="meta") {
 			//macos will swallow the key release event if the meta modifier is pressed,
@@ -835,12 +836,12 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		//if there is a chance that we're in the process of handling
 		//a clipboard event (a click or control-v)
 		//then we send with a slight delay:
-		var delay = 0;
-		var now = Utilities.monotonicTime();
+		let delay = 0;
+		const now = Utilities.monotonicTime();
 		if (this.clipboard_delayed_event_time>now) {
 			delay = this.clipboard_delayed_event_time-now;
 		}
-		var me = this;
+		const me = this;
 		setTimeout(function () {
 			while (me.key_packets.length>0) {
 				me.send(me.key_packets.shift());
@@ -871,9 +872,9 @@ XpraClient.prototype._get_keyboard_layout = function() {
 
 XpraClient.prototype._get_keycodes = function() {
 	//keycodes.append((nn(keyval), nn(name), nn(keycode), nn(group), nn(level)))
-	var keycodes = [];
-	var kc;
-	for(var keycode in CHARCODE_TO_NAME) {
+	const keycodes = [];
+	let kc;
+	for(const keycode in CHARCODE_TO_NAME) {
 		kc = parseInt(keycode);
 		keycodes.push([kc, CHARCODE_TO_NAME[keycode], kc, 0, 0]);
 	}
@@ -887,7 +888,7 @@ XpraClient.prototype._get_desktop_size = function() {
 
 XpraClient.prototype._get_DPI = function() {
 	"use strict";
-	var dpi_div = document.getElementById("dpi");
+	const dpi_div = document.getElementById("dpi");
 	if (dpi_div != undefined) {
 		//show("dpiX="+dpi_div.offsetWidth+", dpiY="+dpi_div.offsetHeight);
 		if (dpi_div.offsetWidth>0 && dpi_div.offsetHeight>0)
@@ -901,12 +902,12 @@ XpraClient.prototype._get_DPI = function() {
 }
 
 XpraClient.prototype._get_screen_sizes = function() {
-	var dpi = this._get_DPI();
-	var screen_size = [this.container.clientWidth, this.container.clientHeight];
-	var wmm = Math.round(screen_size[0]*25.4/dpi);
-	var hmm = Math.round(screen_size[1]*25.4/dpi);
-	var monitor = ["Canvas", 0, 0, screen_size[0], screen_size[1], wmm, hmm];
-	var screen = ["HTML", screen_size[0], screen_size[1],
+	const dpi = this._get_DPI();
+	const screen_size = [this.container.clientWidth, this.container.clientHeight];
+	const wmm = Math.round(screen_size[0]*25.4/dpi);
+	const hmm = Math.round(screen_size[1]*25.4/dpi);
+	const monitor = ["Canvas", 0, 0, screen_size[0], screen_size[1], wmm, hmm];
+	const screen = ["HTML", screen_size[0], screen_size[1],
 				wmm, hmm,
 				[monitor],
 				0, 0, screen_size[0], screen_size[1]
@@ -927,7 +928,7 @@ XpraClient.prototype._get_encodings = function() {
 }
 
 XpraClient.prototype._update_capabilities = function(appendobj) {
-	for (var attr in appendobj) {
+	for (const attr in appendobj) {
 		this.capabilities[attr] = appendobj[attr];
 	}
 }
@@ -936,7 +937,7 @@ XpraClient.prototype._update_capabilities = function(appendobj) {
  * Ping
  */
 XpraClient.prototype._check_server_echo = function(ping_sent_time) {
-	var last = this.server_ok;
+	const last = this.server_ok;
 	this.server_ok = this.last_ping_echoed_time >= ping_sent_time;
 	//this.clog("check_server_echo", this.server_ok, "last", last, "last_time", this.last_ping_echoed_time, "this_this", ping_sent_time);
 	if(last != this.server_ok) {
@@ -945,8 +946,8 @@ XpraClient.prototype._check_server_echo = function(ping_sent_time) {
 		} else {
 			this.clog("server connection is OK");
 		}
-		for (var i in this.id_to_window) {
-			var iwin = this.id_to_window[i];
+		for (const i in this.id_to_window) {
+			const iwin = this.id_to_window[i];
 			iwin.set_spinner(this.server_ok);
 		}
 	}
@@ -971,7 +972,7 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 
 
 XpraClient.prototype._emit_event = function(event_type) {
-	var event = document.createEvent("Event");
+	const event = document.createEvent("Event");
 	event.initEvent(event_type, true, true);
 	document.dispatchEvent(event);
 }
@@ -1011,8 +1012,8 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 	}
 	this.clog("hello capabilities", this.capabilities);
 	// verify:
-	for (var key in this.capabilities) {
-		var value = this.capabilities[key];
+	for (const key in this.capabilities) {
+		const value = this.capabilities[key];
 		if(key==null) {
 			throw new Error("invalid null key in hello packet data");
 		}
@@ -1026,11 +1027,11 @@ XpraClient.prototype._send_hello = function(challenge_response, client_salt) {
 
 XpraClient.prototype._make_hello_base = function() {
 	this.capabilities = {};
-	var digests = ["hmac", "hmac+md5", "xor"]
+	const digests = ["hmac", "hmac+md5", "xor"];
 	if (typeof forge!=='undefined') {
 		try {
 			this.debug("network", "forge.md.algorithms=", forge.md.algorithms);
-			for (var hash in forge.md.algorithms) {
+			for (const hash in forge.md.algorithms) {
 				digests.push("hmac+"+hash);
 			}
 			this.debug("network", "digests:", digests);
@@ -1083,13 +1084,13 @@ XpraClient.prototype._make_hello_base = function() {
 			"bandwidth-limit"	: this.bandwidth_limit,
 		})
 	}
-	var ci = Utilities.getConnectionInfo();
+	const ci = Utilities.getConnectionInfo();
 	if (ci) {
 		this._update_capabilities({
 			"connection-data"	: ci,
 		})
 	}
-	var LZ4 = require('lz4');
+	const LZ4 = require('lz4');
 	if(LZ4) {
 		this._update_capabilities({
 			"lz4"						: true,
@@ -1126,7 +1127,7 @@ XpraClient.prototype._make_hello_base = function() {
 }
 
 XpraClient.prototype._make_hello = function() {
-	var selections = null;
+	let selections = null;
 	if (navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText) {
 		//we don't need the primary contents,
 		//we can use the async clipboard
@@ -1249,8 +1250,8 @@ XpraClient.prototype._new_ui_event = function() {
  */
 XpraClient.prototype.getMouse = function(e, window) {
 	// get mouse position take into account scroll
-	var mx = e.clientX + jQuery(document).scrollLeft();
-	var my = e.clientY + jQuery(document).scrollTop();
+	let mx = e.clientX + jQuery(document).scrollLeft();
+	let my = e.clientY + jQuery(document).scrollTop();
 
 	// check last mouse position incase the event
 	// hasn't provided it - bug #854
@@ -1268,7 +1269,7 @@ XpraClient.prototype.getMouse = function(e, window) {
 		this.last_mouse_y = my;
 	}
 
-	var mbutton = 0;
+	let mbutton = 0;
 	if ("which" in e)  // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
 		mbutton = Math.max(0, e.which);
 	else if ("button" in e)  // IE, Opera (zero based)
@@ -1302,12 +1303,12 @@ XpraClient.prototype.do_window_mouse_move = function(e, window) {
 	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
-	var mouse = this.getMouse(e, window),
+	const mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
-	var modifiers = this._keyb_get_modifiers(e);
-	var buttons = [];
-	var wid = 0;
+	const modifiers = this._keyb_get_modifiers(e);
+	const buttons = [];
+	let wid = 0;
 	if (window) {
 		wid = window.wid;
 	}
@@ -1328,16 +1329,16 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
-	var send_delay = 0;
+	let send_delay = 0;
 	if (this._poll_clipboard(e)) {
 		send_delay = CLIPBOARD_EVENT_DELAY;
 	}
-	var mouse = this.getMouse(e, window),
+	const mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
-	var modifiers = this._keyb_get_modifiers(e);
-	var buttons = [];
-	var wid = 0;
+	const modifiers = this._keyb_get_modifiers(e);
+	const buttons = [];
+	let wid = 0;
 	if (window) {
 		wid = window.wid;
 	}
@@ -1345,7 +1346,7 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	if (wid>0 && this.focus != wid) {
 		this._window_set_focus(window);
 	}
-	var button = mouse.button;
+	let button = mouse.button;
 	this.debug("mouse", "click:", button, pressed, x, y);
 	if (button==4) {
 		button = 8;
@@ -1353,7 +1354,7 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 	else if (button==5) {
 		button = 9;
 	}
-	var me = this;
+	const me = this;
 	setTimeout(function() {
 		this.clipboard_delayed_event_time = Utilities.monotonicTime()+CLIPBOARD_EVENT_DELAY;
 		me.send(["button-action", wid, button, pressed, [x, y], modifiers, buttons]);
@@ -1368,20 +1369,20 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 	if (this.server_readonly || this.mouse_grabbed || !this.connected) {
 		return;
 	}
-	var mouse = this.getMouse(e, window),
+	const mouse = this.getMouse(e, window),
 		x = Math.round(mouse.x),
 		y = Math.round(mouse.y);
-	var modifiers = this._keyb_get_modifiers(e);
-	var buttons = [];
-	var wid = 0;
+	const modifiers = this._keyb_get_modifiers(e);
+	const buttons = [];
+	let wid = 0;
 	if (window) {
 		wid = window.wid;
 	}
-	var wheel = Utilities.normalizeWheel(e);
+	const wheel = Utilities.normalizeWheel(e);
 	this.debug("mouse", "normalized wheel event:", wheel);
 	//clamp to prevent event floods:
-	var px = Math.min(1200, wheel.pixelX);
-	var py = Math.min(1200, wheel.pixelY);
+	let px = Math.min(1200, wheel.pixelX);
+	let py = Math.min(1200, wheel.pixelY);
 	if (this.scroll_reverse_x) {
 		px = -px;
 	}
@@ -1389,18 +1390,18 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 		py = -py;
 	}
 	
-	var apx = Math.abs(px);
-	var apy = Math.abs(py);
+	const apx = Math.abs(px);
+	const apy = Math.abs(py);
 	if (this.server_precise_wheel) {
 		if (apx>0) {
-			var btn_x = (px>=0) ? 6 : 7;
-			var xdist = Math.round(px*1000/120);
+			const btn_x = (px>=0) ? 6 : 7;
+			const xdist = Math.round(px*1000/120);
 			this.send(["wheel-motion", wid, btn_x, -xdist,
 				[x, y], modifiers, buttons]);
 		}
 		if (apy>0) {
-			var btn_y = (py>=0) ? 5 : 4;
-			var ydist = Math.round(py*1000/120);
+			const btn_y = (py>=0) ? 5 : 4;
+			const ydist = Math.round(py*1000/120);
 			this.send(["wheel-motion", wid, btn_y, -ydist,
 				[x, y], modifiers, buttons]);
 		}
@@ -1420,10 +1421,10 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 		this.wheel_delta_y += py;
 	}
 	//send synthetic click+release as many times as needed:
-	var wx = Math.abs(this.wheel_delta_x);
-	var wy = Math.abs(this.wheel_delta_y);
-	var btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
-	var btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
+	let wx = Math.abs(this.wheel_delta_x);
+	let wy = Math.abs(this.wheel_delta_y);
+	const btn_x = (this.wheel_delta_x>=0) ? 6 : 7;
+	const btn_y = (this.wheel_delta_y>=0) ? 5 : 4;
 	while (wx>=120) {
 		wx -= 120;
 		this.send(["button-action", wid, btn_x, true, [x, y], modifiers, buttons]);
@@ -1444,12 +1445,12 @@ XpraClient.prototype._poll_clipboard = function(e) {
 	//see if the clipboard contents have changed:
 	if (navigator.clipboard && navigator.clipboard.readText) {
 		this.debug("clipboard", "polling using", navigator.clipboard.readText);
-		var client = this;
+		const client = this;
 		//warning: this can take a while,
 		//so we may send the click before the clipboard contents...
 		navigator.clipboard.readText().then(function(text) {
 			client.debug("clipboard", "paste event, text=", text);
-			var clipboard_buffer = unescape(encodeURIComponent(text));
+			const clipboard_buffer = unescape(encodeURIComponent(text));
 			if (clipboard_buffer!=client.clipboard_buffer) {
 				client.debug("clipboard", "clipboard contents have changed");
 				client.clipboard_buffer = clipboard_buffer;
@@ -1461,8 +1462,8 @@ XpraClient.prototype._poll_clipboard = function(e) {
 		return false;
 	}
 	//fallback code:
-	var datatype = "text/plain";
-	var clipboardData = (e.originalEvent || e).clipboardData;
+	let datatype = "text/plain";
+	let clipboardData = (e.originalEvent || e).clipboardData;
 	//IE: must use window.clipboardData because the event clipboardData is null!
 	if (!clipboardData) {
 		clipboardData = window.clipboardData;
@@ -1474,7 +1475,7 @@ XpraClient.prototype._poll_clipboard = function(e) {
 	if (Utilities.isIE()) {
 		datatype = "Text";
 	}
-	var clipboard_buffer = unescape(encodeURIComponent(clipboardData.getData(datatype)));
+	const clipboard_buffer = unescape(encodeURIComponent(clipboardData.getData(datatype)));
 	this.debug("clipboard", "paste event, data=", clipboard_buffer);
 	if (clipboard_buffer==this.clipboard_buffer) {
 		return false;
@@ -1498,20 +1499,20 @@ XpraClient.prototype._window_set_focus = function(win) {
 	if (win.override_redirect || win.tray) {
 		return;
 	}
-	var client = win.client;
-	var wid = win.wid;
+	const client = win.client;
+	const wid = win.wid;
 	if (client.focus == wid) {
 		return;
 	}
-	var top_stacking_layer = Object.keys(client.id_to_window).length;
-	var old_stacking_layer = win.stacking_layer;
+	const top_stacking_layer = Object.keys(client.id_to_window).length;
+	const old_stacking_layer = win.stacking_layer;
 	client.focus = wid;
 	client.topwindow = wid;
 	client.send(["focus", wid, []]);
 	//set the focused flag on all windows,
 	//adjust stacking order:
-	var iwin = null;
-	for (var i in client.id_to_window) {
+	let iwin = null;
+	for (const i in client.id_to_window) {
 		iwin = client.id_to_window[i];
 		iwin.focused = (i==wid);
 		if (iwin.focused) {
@@ -1568,8 +1569,8 @@ XpraClient.prototype._process_error = function(packet, ctx) {
 XpraClient.prototype.do_reconnect = function() {
 	//try again:
 	this.reconnect_in_progress = true;
-	var me = this;
-	var protocol = this.protocol;
+	const me = this;
+	const protocol = this.protocol;
 	setTimeout(function(){
 		try {
 			me.close_windows();
@@ -1619,7 +1620,7 @@ XpraClient.prototype.close = function() {
 
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
 	// save the disconnect reason
-	var reason = packet[1];
+	const reason = packet[1];
 	ctx.debug("main", "disconnect reason:", reason);
 	if (ctx.reconnect_in_progress) {
 		return;
@@ -1636,7 +1637,7 @@ XpraClient.prototype._process_startup_complete = function(packet, ctx) {
 }
 
 XpraClient.prototype._connection_change = function(e) {
-	var ci = Utilities.getConnectionInfo();
+	const ci = Utilities.getConnectionInfo();
 	this.clog("connection status - change event=", e, ", connection info=", ci, "tell server:", this.server_connection_data);
 	if (ci && this.server_connection_data) {
 		this.send(["connection-data", ci]);
@@ -1651,7 +1652,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		clearTimeout(ctx.hello_timer);
 		ctx.hello_timer = null;
 	}
-	var hello = packet[1];
+	const hello = packet[1];
 	ctx.server_display = hello["display"] || "";
 	ctx.server_platform = hello["platform"] || "";
 	ctx.server_remote_logging = hello["remote-logging.multi-line"];
@@ -1674,15 +1675,15 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.protocol.set_cipher_out(ctx.cipher_out_caps, ctx.encryption_key);
 	}
 	// find the modifier to use for Num_Lock
-	var modifier_keycodes = hello['modifier_keycodes']
+	const modifier_keycodes = hello['modifier_keycodes']
 	if (modifier_keycodes) {
-		for (var modifier in modifier_keycodes) {
+		for (const modifier in modifier_keycodes) {
 			if (modifier_keycodes.hasOwnProperty(modifier)) {
-				var mappings = modifier_keycodes[modifier];
-				for (var keycode in mappings) {
-					var keys = mappings[keycode];
-					for (var index in keys) {
-						var key=keys[index];
+				const mappings = modifier_keycodes[modifier];
+				for (const keycode in mappings) {
+					const keys = mappings[keycode];
+					for (const index in keys) {
+						const key=keys[index];
 						if (key=="Num_Lock") {
 							ctx.num_lock_modifier = modifier;
 						}
@@ -1692,11 +1693,11 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		}
 	}
 
-	var version = hello["version"];
+	const version = hello["version"];
 	try {
-		var vparts = version.split(".");
-		var vno = [];
-		for (var i=0; i<vparts.length;i++) {
+		const vparts = version.split(".");
+		const vno = [];
+		for (let i=0; i<vparts.length;i++) {
 			vno[i] = parseInt(vparts[i]);
 		}
 		if (vno[0]<=0 && vno[1]<10) {
@@ -1713,16 +1714,16 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.log("got hello: server version", version, "accepted our connection");
 	//figure out "alt" and "meta" keys:
 	if ("modifier_keycodes" in hello) {
-		var modifier_keycodes = hello["modifier_keycodes"];
-		for (var mod in modifier_keycodes) {
+		const modifier_keycodes = hello["modifier_keycodes"];
+		for (const mod in modifier_keycodes) {
 			//show("modifier_keycode["+mod+"]="+modifier_keycodes[mod].toSource());
-			var keys = modifier_keycodes[mod];
-			for (var i=0; i<keys.length; i++) {
-				var key = keys[i];
+			const keys = modifier_keycodes[mod];
+			for (let i=0; i<keys.length; i++) {
+				const key = keys[i];
 				//the first value is usually the integer keycode,
 				//the second one is the actual key name,
 				//doesn't hurt to test both:
-				for (var j=0; j<key.length; j++) {
+				for (let j=0; j<key.length; j++) {
 					if ("Alt_L"==key[j])
 						ctx.alt_modifier = mod;
 					else if ("Meta_L"==key[j])
@@ -1754,8 +1755,8 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 					ctx.warn("audio codec "+ctx.audio_codec+" is not supported by the server");
 					ctx.audio_codec = null;
 					//find the best one we can use:
-					for(var i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
-						var codec = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
+					for (const i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
+						const codec = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
 						if ((codec in ctx.audio_codecs) && (ctx.server_audio_codecs.indexOf(codec)>=0)){
 							if (ctx.mediasource_codecs[codec]) {
 								ctx.audio_framework = "mediasource";
@@ -1803,7 +1804,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.remote_printing = Boolean(hello["printing"]);
 	if (ctx.remote_printing && ctx.printing) {
 		// send our printer definition
-		var printers = {
+		const printers = {
 			"HTML5 client": {
 				"printer-info": "Print to PDF in client browser",
 				"printer-make-and-model": "HTML5 client version",
@@ -1833,33 +1834,33 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_encodings = function(packet, ctx) {
-	var caps = packet[1];
+	const caps = packet[1];
 	ctx.log("update encodings:", caps);
 }
 
 
 XpraClient.prototype.process_xdg_menu = function() {
 	this.log("received xdg start menu data");
-	var key;
+	let key;
 	//remove current menu:
 	$('#startmenu li').remove();
-	var startmenu = document.getElementById("startmenu");
+	const startmenu = document.getElementById("startmenu");
 	for(key in this.xdg_menu){
-		var category = this.xdg_menu[key];
-		var li = document.createElement("li");
+		const category = this.xdg_menu[key];
+		const li = document.createElement("li");
 		li.className = "-hasSubmenu";
 
-		var catDivLeft = document.createElement("div");
+		const catDivLeft = document.createElement("div");
 			catDivLeft.className="menu-divleft";
 		catDivLeft.appendChild(this.xdg_image(category.IconData, category.IconType));
 
-		var a = document.createElement("a");
+		const a = document.createElement("a");
 		a.appendChild(catDivLeft);
 		a.appendChild(document.createTextNode(this.xdg_menu[key].Name));
 		a.href = "#";
 		li.appendChild(a);
 
-		var ul = document.createElement("ul");
+		const ul = document.createElement("ul");
 
 		//TODO need to figure out how to do this properly
 		a.onmouseenter= function(){
@@ -1869,21 +1870,21 @@ XpraClient.prototype.process_xdg_menu = function() {
 			this.parentElement.childNodes[1].className="";
 		};
 
-		var xdg_menu_cats = category.Entries;
+		const xdg_menu_cats = category.Entries;
 		for(key in xdg_menu_cats){
-			var entry = xdg_menu_cats[key];
-			var li2 = document.createElement("li");
-			var a2 = document.createElement("a");
+			const entry = xdg_menu_cats[key];
+			const li2 = document.createElement("li");
+			const a2 = document.createElement("a");
 
-			var name = entry.Name;
+			let name = entry.Name;
 			name = Utilities.trimString(name,15);
-			var command = entry.Exec.replace(/%[uUfF]/g,"");
+			const command = entry.Exec.replace(/%[uUfF]/g, "");
 
-			var divLeft = document.createElement("div");
+			const divLeft = document.createElement("div");
 			divLeft.className = "menu-divleft";
 			divLeft.appendChild(this.xdg_image(entry.IconData, entry.IconType));
 
-			var titleDiv = document.createElement("div");
+			const titleDiv = document.createElement("div");
 			titleDiv.appendChild(document.createTextNode(name));
 			titleDiv.className = "menu-content-left";
 			divLeft.appendChild(titleDiv);
@@ -1891,9 +1892,9 @@ XpraClient.prototype.process_xdg_menu = function() {
 			a2.appendChild(divLeft);
 			a2.title = command;
 
-			var me = this;
+			const me = this;
 			a2.onclick = function(){
-				var ignore = "False";
+				const ignore = "False";
 				me.start_command(this.innerText, this.title, ignore);
 				document.getElementById("menu_list").className="-hide";
 			};
@@ -1914,7 +1915,7 @@ XpraClient.prototype.process_xdg_menu = function() {
 
 
 XpraClient.prototype._process_setting_change = function(packet, ctx) {
-	var setting = packet[1],
+	const setting = packet[1],
 		value = packet[2];
 	if (setting=="xdg-menu") {
 		ctx.xdg_menu = value;
@@ -1925,7 +1926,7 @@ XpraClient.prototype._process_setting_change = function(packet, ctx) {
 }
 
 XpraClient.prototype.xdg_image = function(icon_data, icon_type) {
-	var img = new Image();
+	const img = new Image();
 	if (typeof icon_data !== 'undefined'){
 		if (typeof icon_data === 'string') {
 			icon_data = Utilities.StringToUint8(icon_data);
@@ -1964,11 +1965,11 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 			return;
 		}
 	}
-	var digest = packet[3];
-	var server_salt = packet[1];
-	var client_salt = null;
-	var salt_digest = packet[4] || "xor";
-	var l = server_salt.length;
+	const digest = packet[3];
+	const server_salt = packet[1];
+	let client_salt = null;
+	const salt_digest = packet[4] || "xor";
+	let l = server_salt.length;
 	if (salt_digest=="xor") {
 		//don't use xor over unencrypted connections unless explicitly allowed:
 		if (digest == "xor") {
@@ -1988,13 +1989,13 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 	}
 	client_salt = Utilities.getSalt(l);
 	ctx.clog("challenge using salt digest", salt_digest);
-	var salt = ctx._gendigest(salt_digest, client_salt, server_salt);
+	const salt = ctx._gendigest(salt_digest, client_salt, server_salt);
 	if (!salt) {
 		this.callback_close("server requested an unsupported salt digest " + salt_digest);
 		return;
 	}
 	ctx.clog("challenge using digest", digest);
-	var challenge_response = ctx._gendigest(digest, ctx.password, salt);
+	const challenge_response = ctx._gendigest(digest, ctx.password, salt);
 	if (challenge_response) {
 		ctx._send_hello(challenge_response, client_salt);
 	}
@@ -2005,17 +2006,17 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 
 XpraClient.prototype._gendigest = function(digest, password, salt) {
 	if (digest.startsWith("hmac")) {
-		var hash="md5";
+		let hash = "md5";
 		if (digest.indexOf("+")>0) {
 			hash = digest.split("+")[1];
 		}
 		this.clog("hmac using hash", hash);
-		var hmac = forge.hmac.create();
+		const hmac = forge.hmac.create();
 		hmac.start(hash, password);
 		hmac.update(salt);
 		return hmac.digest().toHex();
 	} else if (digest == "xor") {
-		var trimmed_salt = salt.slice(0, password.length);
+		const trimmed_salt = salt.slice(0, password.length);
 		return Utilities.xorString(trimmed_salt, password);
 	} else {
 		return null;
@@ -2027,39 +2028,39 @@ XpraClient.prototype._send_ping = function() {
 	if (this.reconnect_in_progress) {
 		return;
 	}
-	var me = this;
-	var now_ms = Math.ceil(Utilities.monotonicTime());
+	const me = this;
+	const now_ms = Math.ceil(Utilities.monotonicTime());
 	this.send(["ping", now_ms]);
 	// add timeout to wait for ping timout
 	this.ping_timeout_timer = setTimeout(function () {
 		me._check_echo_timeout(now_ms);
 	}, this.PING_TIMEOUT);
 	// add timeout to detect temporary ping miss for spinners
-	var wait = 2000;
+	const wait = 2000;
 	this.ping_grace_timer = setTimeout(function () {
 		me._check_server_echo(now_ms);
 	}, wait);
 }
 
 XpraClient.prototype._process_ping = function(packet, ctx) {
-	var echotime = packet[1];
+	const echotime = packet[1];
 	ctx.last_ping_server_time = echotime;
 	if (packet.length>2) {
 		//prefer system time (packet[1] is monotonic)
 		ctx.last_ping_server_time = packet[2];
 	}
-	var sid = "";
+	let sid = "";
 	if (packet.length>=4) {
 		sid = packet[3];
 	}
 	ctx.last_ping_local_time = new Date().getTime();
-	var l1=0, l2=0, l3=0;
+	const l1 = 0, l2=0, l3=0;
 	ctx.send(["ping_echo", echotime, l1, l2, l3, 0, sid]);
 }
 
 XpraClient.prototype._process_ping_echo = function(packet, ctx) {
 	ctx.last_ping_echoed_time = packet[1];
-	var l1 = packet[2],
+	const l1 = packet[2],
 		l2 = packet[3],
 		l3 = packet[4];
 	ctx.client_ping_latency = packet[5];
@@ -2075,7 +2076,7 @@ XpraClient.prototype._process_ping_echo = function(packet, ctx) {
  */
 XpraClient.prototype.start_info_timer = function() {
 	if (this.info_timer==null) {
-		var me = this;
+		const me = this;
 		this.info_timer = setInterval(function () {
 			if (me.info_timer!=null) {
 				me.send_info_request();
@@ -2094,7 +2095,7 @@ XpraClient.prototype._process_info_response = function(packet, ctx) {
 	ctx.info_request_pending = false;
 	ctx.server_last_info = packet[1];
 	ctx.debug("network", "info-response:", ctx.server_last_info);
-	var event = document.createEvent("Event");
+	const event = document.createEvent("Event");
 	event.initEvent('info-response', true, true);
 	event.data = ctx.server_last_info;
 	document.dispatchEvent(event);
@@ -2112,33 +2113,33 @@ XpraClient.prototype.stop_info_timer = function() {
  * System Tray forwarding
  */
 XpraClient.prototype._process_new_tray = function(packet, ctx) {
-	var wid = packet[1],
-		w = packet[2],
-		h = packet[3],
-		metadata = packet[4];
-	var mydiv = document.createElement("div");
+	const wid = packet[1];
+	let w = packet[2];
+	let h = packet[3];
+	const metadata = packet[4];
+	const mydiv = document.createElement("div");
 	mydiv.id = String(wid);
-	var mycanvas = document.createElement("canvas");
+	const mycanvas = document.createElement("canvas");
 	mydiv.appendChild(mycanvas);
 
-	var float_tray = document.getElementById("float_tray");
-	var float_menu = document.getElementById("float_menu");
+	const float_tray = document.getElementById("float_tray");
+	const float_menu = document.getElementById("float_menu");
 	$('#float_menu').children().show();
 	//increase size for tray icon
-	var new_width = float_menu_width + float_menu_item_size - float_menu_padding + 5;
+	const new_width = float_menu_width + float_menu_item_size - float_menu_padding + 5;
 	float_menu.style.width = new_width + "px";
 	float_menu_width=$('#float_menu').width() + 10;
 	mydiv.style.backgroundColor = "white";
 
 	float_tray.appendChild(mydiv);
-	var x = 0;
-	var y = 0;
+	const x = 0;
+	const y = 0;
 	w = float_menu_item_size;
 	h = float_menu_item_size;
 
 	mycanvas.width = w;
 	mycanvas.height = h;
-	var win = new XpraWindow(ctx, mycanvas, wid, x, y, w, h,
+	const win = new XpraWindow(ctx, mycanvas, wid, x, y, w, h,
 		metadata,
 		false,
 		true,
@@ -2155,10 +2156,10 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 	ctx.send_tray_configure(wid);
 }
 XpraClient.prototype.send_tray_configure = function(wid) {
-	var div = jQuery("#" + String(wid));
-	var x = Math.round(div.offset().left);
-	var y = Math.round(div.offset().top);
-	var w = float_menu_item_size,
+	const div = jQuery("#" + String(wid));
+	const x = Math.round(div.offset().left);
+	const y = Math.round(div.offset().top);
+	const w = float_menu_item_size,
 		h = float_menu_item_size;
 	this.clog("tray", wid, "position:", x, y);
 	this.send(["configure-window", Number(wid), x, y, w, h, {}]);
@@ -2174,10 +2175,10 @@ XpraClient.prototype._tray_closed = function(win) {
 }
 
 XpraClient.prototype.reconfigure_all_trays = function() {
-	var float_menu = document.getElementById("float_menu");
+	const float_menu = document.getElementById("float_menu");
 	float_menu_width = (float_menu_item_size*4) + float_menu_padding;
-	for (var twid in this.id_to_window) {
-		var twin = this.id_to_window[twid];
+	for (const twid in this.id_to_window) {
+		const twin = this.id_to_window[twid];
 		if (twin && twin.tray) {
 			float_menu_width = float_menu_width + float_menu_item_size;
 			this.send_tray_configure(twid);
@@ -2195,17 +2196,17 @@ XpraClient.prototype.reconfigure_all_trays = function() {
  */
 XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_redirect, client_properties) {
 	// each window needs their own DIV that contains a canvas
-	var mydiv = document.createElement("div");
+	const mydiv = document.createElement("div");
 	mydiv.id = String(wid);
-	var mycanvas = document.createElement("canvas");
+	const mycanvas = document.createElement("canvas");
 	mydiv.appendChild(mycanvas);
-	var screen = document.getElementById("screen");
+	const screen = document.getElementById("screen");
 	screen.appendChild(mydiv);
 	// set initial sizes
 	mycanvas.width = w;
 	mycanvas.height = h;
 	// create the XpraWindow object to own the new div
-	var win = new XpraWindow(this, mycanvas, wid, x, y, w, h,
+	const win = new XpraWindow(this, mycanvas, wid, x, y, w, h,
 		metadata,
 		override_redirect,
 		false,
@@ -2219,37 +2220,37 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 		this._window_closed
 		);
 	if(win && !override_redirect && win.metadata["window-type"]=="NORMAL"){
-		var decodedTitle = decodeURIComponent(escape(win.title));
-		var trimmedTitle = Utilities.trimString(decodedTitle,30);
+		const decodedTitle = decodeURIComponent(escape(win.title));
+		const trimmedTitle = Utilities.trimString(decodedTitle,30);
 		window.addWindowListItem(wid, trimmedTitle);
 	}
 	this.id_to_window[wid] = win;
 	if (!override_redirect) {
-		var geom = win.get_internal_geometry();
+		const geom = win.get_internal_geometry();
 		this.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
 		this._window_set_focus(win);
 	}
 }
 
 XpraClient.prototype._new_window_common = function(packet, override_redirect) {
-	var wid = packet[1],
-		x = packet[2],
-		y = packet[3],
-		w = packet[4],
-		h = packet[5],
-		metadata = packet[6];
+	const wid = packet[1];
+	let x = packet[2];
+	let y = packet[3];
+	const w = packet[4];
+	let h = packet[5];
+	const metadata = packet[6];
 	if (wid in this.id_to_window)
 		throw new Error("we already have a window " + wid);
 	if (w<=0 || h<=0) {
 		this.error("window dimensions are wrong:", w, h);
 		w, h = 1, 1;
 	}
-	var client_properties = {}
+	let client_properties = {}
 	if (packet.length>=8)
 		client_properties = packet[7];
 	if (x==0 && y==0 && !metadata["set-initial-position"]) {
 		//find a good position for it
-		var l = Object.keys(this.id_to_window).length;
+		const l = Object.keys(this.id_to_window).length;
 		if (l==0) {
 			//first window: center it
 			if (w<=this.desktop_width) {
@@ -2273,7 +2274,7 @@ XpraClient.prototype._window_closed = function(win) {
 }
 
 XpraClient.prototype._get_client_properties = function(win) {
-	var cp = win.client_properties;
+	const cp = win.client_properties;
 	cp["encodings.rgb_formats"] = this.RGB_FORMATS;
 	return cp;
 }
@@ -2281,8 +2282,8 @@ XpraClient.prototype._get_client_properties = function(win) {
 XpraClient.prototype._window_geometry_changed = function(win) {
 	// window callbacks are called from the XpraWindow function context
 	// so use win.client instead of `this` to refer to the client
-	var geom = win.get_internal_geometry();
-	var wid = win.wid;
+	const geom = win.get_internal_geometry();
+	const wid = win.wid;
 	win.client.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
 }
 
@@ -2295,7 +2296,7 @@ XpraClient.prototype._process_new_override_redirect = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_window_metadata = function(packet, ctx) {
-	var wid = packet[1],
+	const wid = packet[1],
 		metadata = packet[2],
 		win = ctx.id_to_window[wid];
 	if (win!=null) {
@@ -2304,10 +2305,10 @@ XpraClient.prototype._process_window_metadata = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_initiate_moveresize = function(packet, ctx) {
-	var wid = packet[1],
+	const wid = packet[1],
 		win = ctx.id_to_window[wid];
 	if (win!=null) {
-		var x_root = packet[2],
+		const x_root = packet[2],
 			y_root = packet[3],
 			direction = packet[4],
 			button = packet[5],
@@ -2317,10 +2318,10 @@ XpraClient.prototype._process_initiate_moveresize = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_pointer_position = function(packet, ctx) {
-	var wid = packet[1],
-		x = packet[2],
+	const wid = packet[1];
+	let x = packet[2],
 		y = packet[3];
-	var win = ctx.id_to_window[wid];
+	const win = ctx.id_to_window[wid];
 	if (packet.length>=6) {
 		//we can use window relative coordinates:
 		if (win) {
@@ -2328,9 +2329,9 @@ XpraClient.prototype._process_pointer_position = function(packet, ctx) {
 			y = win.y + packet[5];
 		}
 	}
-	var shadow_pointer = document.getElementById("shadow_pointer");
-	var style = shadow_pointer.style;
-	var cursor_url = null,
+	const shadow_pointer = document.getElementById("shadow_pointer");
+	const style = shadow_pointer.style;
+	let cursor_url = null,
 		w = 32,
 		h = 32,
 		xhot = 0,
@@ -2364,8 +2365,8 @@ XpraClient.prototype.on_last_window = function() {
 }
 
 XpraClient.prototype._process_lost_window = function(packet, ctx) {
-	var wid = packet[1];
-	var win = ctx.id_to_window[wid];
+	const wid = packet[1];
+	const win = ctx.id_to_window[wid];
 	if(win && !win.override_redirect && win.metadata["window-type"]=="NORMAL"){
 		window.removeWindowListItem(wid);
 	}
@@ -2388,42 +2389,42 @@ XpraClient.prototype._process_lost_window = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_raise_window = function(packet, ctx) {
-	var wid = packet[1];
-	var win = ctx.id_to_window[wid];
+	const wid = packet[1];
+	const win = ctx.id_to_window[wid];
 	if (win!=null) {
 		ctx._window_set_focus(win);
 	}
 }
 
 XpraClient.prototype._process_window_resized = function(packet, ctx) {
-	var wid = packet[1];
-	var width = packet[2];
-	var height = packet[3];
-	var win = ctx.id_to_window[wid];
+	const wid = packet[1];
+	const width = packet[2];
+	const height = packet[3];
+	const win = ctx.id_to_window[wid];
 	if (win!=null) {
 		win.resize(width, height);
 	}
 }
 
 XpraClient.prototype._process_window_move_resize = function(packet, ctx) {
-	var wid = packet[1];
-	var x = packet[2];
-	var y = packet[3];
-	var width = packet[4];
-	var height = packet[5];
-	var win = ctx.id_to_window[wid];
+	const wid = packet[1];
+	const x = packet[2];
+	const y = packet[3];
+	const width = packet[4];
+	const height = packet[5];
+	const win = ctx.id_to_window[wid];
 	if (win!=null) {
 		win.move_resize(x, y, width, height);
 	}
 }
 
 XpraClient.prototype._process_configure_override_redirect = function(packet, ctx) {
-	var wid = packet[1];
-	var x = packet[2];
-	var y = packet[3];
-	var width = packet[4];
-	var height = packet[5];
-	var win = ctx.id_to_window[wid];
+	const wid = packet[1];
+	const x = packet[2];
+	const y = packet[3];
+	const width = packet[4];
+	const height = packet[5];
+	const win = ctx.id_to_window[wid];
 	if (win!=null) {
 		win.move_resize(x, y, width, height);
 	}
@@ -2436,12 +2437,12 @@ XpraClient.prototype._process_desktop_size = function(packet, ctx) {
 }
 
 XpraClient.prototype._process_bell = function(packet, ctx) {
-	var percent = packet[3];
-	var pitch = packet[4];
-	var duration = packet[5];
+	const percent = packet[3];
+	const pitch = packet[4];
+	const duration = packet[5];
 	if (ctx.audio_context!=null) {
-		var oscillator = ctx.audio_context.createOscillator();
-		var gainNode = ctx.audio_context.createGain();
+		const oscillator = ctx.audio_context.createOscillator();
+		const gainNode = ctx.audio_context.createGain();
 		oscillator.connect(gainNode);
 		gainNode.connect(ctx.audio_context.destination);
 		gainNode.gain.setValueAtTime(percent, ctx.audio_context.currentTime);
@@ -2450,7 +2451,7 @@ XpraClient.prototype._process_bell = function(packet, ctx) {
 		setTimeout(function(){oscillator.stop()}, duration);
 	}
 	else {
-		var snd = new Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");
+		const snd = new Audio("data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=");
 		snd.play();
 	}
 	return;
@@ -2462,17 +2463,17 @@ XpraClient.prototype._process_bell = function(packet, ctx) {
 XpraClient.prototype._process_notify_show = function(packet, ctx) {
 	//TODO: add UI switch to disable notifications
 	//unused:
-	//var dbus_id = packet[1];
-	//var app_name = packet[3];
-	//var app_icon = packet[5];
-	var nid = packet[2];
-	var replaces_nid = packet[4];
-	var summary = packet[6];
-	var body = packet[7];
-	var expire_timeout = packet[8];
-	var icon = packet[9];
-	var actions = packet[10];
-	var hints = packet[11];
+	//const dbus_id = packet[1];
+	//const app_name = packet[3];
+	//const app_icon = packet[5];
+	const nid = packet[2];
+	const replaces_nid = packet[4];
+	const summary = packet[6];
+	const body = packet[7];
+	const expire_timeout = packet[8];
+	const icon = packet[9];
+	const actions = packet[10];
+	const hints = packet[11];
 	if(window.closeNotification) {
 		if (replaces_nid>0) {
 			window.closeNotification(replaces_nid);
@@ -2482,24 +2483,24 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 
 	if ("Notification" in window && actions.length==0) {
 		function notify() {
-			var icon_url = "";
+			let icon_url = "";
 			if (icon) {
 				icon_url = "data:image/png;base64," + Utilities.ArrayBufferToBase64(icon);
 			}
 			/*
-			var nactions = [];
+			const nactions = [];
 			if (actions) {
 				ctx.log("actions=", actions);
-				for (var i=0; i<actions.length/2;++i) {
+				for (let i=0; i<actions.length/2;++i) {
 					nactions.push({
 						"action"	: actions[i*2],
 						"title"		: actions[i*2+1],
 					});
 				}
 			}*/
-			var notification = new Notification(summary, { body: body, icon: icon_url });
+			const notification = new Notification(summary, { body: body, icon: icon_url });
 			notification.onclose = function() {
-				var reason = 2;	//closed by the user - best guess...
+				const reason = 2;	//closed by the user - best guess...
 				ctx.send(["notification-close", nid, reason, ""]);
 			};
 			notification.onclick = function() {
@@ -2545,8 +2546,8 @@ XpraClient.prototype._process_notify_close = function(packet, ctx) {
  * Cursors
  */
 XpraClient.prototype.reset_cursor = function(packet, ctx) {
-	for (var wid in ctx.id_to_window) {
-		var window = ctx.id_to_window[wid];
+	for (const wid in ctx.id_to_window) {
+		const window = ctx.id_to_window[wid];
 		window.reset_cursor();
 	}
 	return;
@@ -2562,32 +2563,32 @@ XpraClient.prototype._process_cursor = function(packet, ctx) {
 		return;
 	}
 	//we require a png encoded cursor packet:
-	var encoding = packet[1];
+	const encoding = packet[1];
 	if (encoding!="png") {
 		ctx.warn("invalid cursor encoding: "+encoding);
 		return;
 	}
-	var w = packet[4];
-	var h = packet[5];
-	var xhot = packet[6];
-	var yhot = packet[7];
-	var img_data = packet[9];
-	for (var wid in ctx.id_to_window) {
-		var window = ctx.id_to_window[wid];
+	const w = packet[4];
+	const h = packet[5];
+	const xhot = packet[6];
+	const yhot = packet[7];
+	const img_data = packet[9];
+	for (const wid in ctx.id_to_window) {
+		const window = ctx.id_to_window[wid];
 		window.set_cursor(encoding, w, h, xhot, yhot, img_data);
 	}
 }
 
 XpraClient.prototype._process_window_icon = function(packet, ctx) {
-	var wid = packet[1];
-	var w = packet[2];
-	var h = packet[3];
-	var encoding = packet[4];
-	var img_data = packet[5];
+	const wid = packet[1];
+	const w = packet[2];
+	const h = packet[3];
+	const encoding = packet[4];
+	const img_data = packet[5];
 	ctx.debug("main", "window-icon: ", encoding, " size ", w, "x", h);
-	var win = ctx.id_to_window[wid];
+	const win = ctx.id_to_window[wid];
 	if (win) {
-		var src = win.update_icon(w, h, encoding, img_data);
+		const src = win.update_icon(w, h, encoding, img_data);
 		//update favicon too:
 		if (wid==ctx.focus || ctx.server_is_desktop || ctx.server_is_shadow) {
 			jQuery("#favicon").attr("href", src);
@@ -2630,15 +2631,15 @@ XpraClient.prototype.request_redraw = function(win) {
 		}
 		// schedule a screen refresh if one is not already due:
 		if (this.draw_pending==0) {
-			var now = Utilities.monotonicTime();
+			const now = Utilities.monotonicTime();
 			this.draw_pending = now;
-			var me = this;
+			const me = this;
 			window.requestAnimationFrame(function() {
 				me.debug("draw", "animation frame:", me.pending_redraw.length, "windows to paint, processing delay", Utilities.monotonicTime()-me.draw_pending, "ms");
 				me.draw_pending = 0;
 				// draw all the windows in the list:
 				while (me.pending_redraw.length>0) {
-					var w = me.pending_redraw.shift();
+					const w = me.pending_redraw.shift();
 					w.draw();
 				}
 			});
@@ -2657,9 +2658,9 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		//no valid draw packet, likely handle errors for that here
 		return;
 	}
-	var ptype = packet[0],
+	const ptype = packet[0],
 		wid = packet[1];
-	var win = ctx.id_to_window[wid];
+	const win = ctx.id_to_window[wid];
 	if (ptype=="eos") {
 		ctx.debug("draw", "eos for window", wid);
 		if (win) {
@@ -2668,7 +2669,7 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		return;
 	}
 
-	var start = Utilities.monotonicTime(),
+	const start = Utilities.monotonicTime(),
 		x = packet[2],
 		y = packet[3],
 		width = packet[4],
@@ -2676,11 +2677,11 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 		coding = packet[6],
 		data = packet[7],
 		packet_sequence = packet[8],
-		rowstride = packet[9],
-		options = {};
+		rowstride = packet[9];
+	let options = {};
 	if (packet.length>10)
 		options = packet[10];
-	var protocol = ctx.protocol;
+	const protocol = ctx.protocol;
 	if (!protocol) {
 		return;
 	}
@@ -2697,8 +2698,8 @@ XpraClient.prototype._process_draw_queue = function(packet, ctx){
 			width, height,
 			coding, data, packet_sequence, rowstride, options,
 			function (error) {
-				var flush = options["flush"] || 0;
-				var decode_time = -1;
+				const flush = options["flush"] || 0;
+				let decode_time = -1;
 				if(flush==0) {
 					ctx.request_redraw(win);
 				}
@@ -2731,13 +2732,13 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 	this.debug("audio", "init_audio() enabled=", this.audio_enabled, ", mediasource enabled=", this.audio_mediasource_enabled, ", aurora enabled=", this.audio_aurora_enabled, ", http-stream enabled=", this.audio_httpstream_enabled);
 	if(this.audio_mediasource_enabled) {
 		this.mediasource_codecs = MediaSourceUtil.getMediaSourceAudioCodecs(ignore_audio_blacklist);
-		for (var codec_option in this.mediasource_codecs) {
+		for (const codec_option in this.mediasource_codecs) {
 			this.audio_codecs[codec_option] = this.mediasource_codecs[codec_option];
 		}
 	}
 	if(this.audio_aurora_enabled) {
 		this.aurora_codecs = MediaSourceUtil.getAuroraAudioCodecs();
-		for (var codec_option in this.aurora_codecs) {
+		for (const codec_option in this.aurora_codecs) {
 			if(codec_option in this.audio_codecs) {
 				//we already have native MediaSource support!
 				continue;
@@ -2746,9 +2747,9 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 		}
 	}
 	if (this.audio_httpstream_enabled) {
-		var stream_codecs = ["mp3"];
-		for (var i in stream_codecs) {
-			var codec_option = stream_codecs[i];
+		const stream_codecs = ["mp3"];
+		for (const i in stream_codecs) {
+			const codec_option = stream_codecs[i];
 			if (!(codec_option in this.audio_codecs)) {
 				this.audio_codecs[codec_option] = codec_option;
 			}
@@ -2799,16 +2800,16 @@ XpraClient.prototype.init_audio = function(ignore_audio_blacklist) {
 XpraClient.prototype._sound_start_receiving = function() {
 	if (!this.audio_framework || !this.audio_codec) {
 		//choose a codec + framework to use
-		var codecs_supported = MediaSourceUtil.get_supported_codecs(this.audio_mediasource_enabled,
+		const codecs_supported = MediaSourceUtil.get_supported_codecs(this.audio_mediasource_enabled,
 				this.audio_aurora_enabled,
 				this.audio_httpstream_enabled,
 				false);
-		var audio_codec = MediaSourceUtil.get_best_codec(codecs_supported);
+		const audio_codec = MediaSourceUtil.get_best_codec(codecs_supported);
 		if (!audio_codec) {
 			this.log("no codec found");
 			return;
 		}
-		var acparts = audio_codec.split(":");
+		const acparts = audio_codec.split(":");
 		this.audio_framework = acparts[0];
 		this.audio_codec = acparts[1];
 	}
@@ -2842,7 +2843,7 @@ XpraClient.prototype._sound_start_httpstream = function() {
 	this.audio.setAttribute('autoplay', true);
 	this.audio.setAttribute('controls', false);
 	this.audio.setAttribute('loop', true);
-	var url = "http";
+	let url = "http";
 	if (this.ssl) {
 		url = "https";
 	}
@@ -2854,7 +2855,7 @@ XpraClient.prototype._sound_start_httpstream = function() {
 		url += "/";
 	}
 	url += "audio.mp3?uuid="+this.uuid;
-	var source = document.createElement("source");
+	const source = document.createElement("source");
 	source.type = "audio/mpeg";
 	source.src = url;
 	this.audio.appendChild(source);
@@ -2868,7 +2869,7 @@ XpraClient.prototype._sound_start_aurora = function() {
 }
 
 XpraClient.prototype._sound_start_mediasource = function() {
-	var me = this;
+	const me = this;
 
 	function audio_error(event) {
 		if(me.audio) {
@@ -2913,7 +2914,7 @@ XpraClient.prototype._sound_start_mediasource = function() {
 			return;
 		}
 		//ie: codec_string = "audio/mp3";
-		var codec_string = MediaSourceConstants.CODEC_STRING[me.audio_codec];
+		const codec_string = MediaSourceConstants.CODEC_STRING[me.audio_codec];
 		if(codec_string==null) {
 			me.error("invalid codec '"+me.audio_codec+"'");
 			me.close_audio();
@@ -2922,7 +2923,7 @@ XpraClient.prototype._sound_start_mediasource = function() {
 		me.log("using audio codec string for "+me.audio_codec+": "+codec_string);
 
 		//Create a SourceBuffer:
-		var asb = null;
+		let asb;
 		try {
 			asb = me.media_source.addSourceBuffer(codec_string);
 		} catch (e) {
@@ -3020,10 +3021,10 @@ XpraClient.prototype._process_sound_data = function(packet, ctx) {
 	}
 
 	try {
-		var codec = packet[1];
-		var buf = packet[2];
-		var options = packet[3];
-		var metadata = packet[4];
+		const codec = packet[1];
+		const buf = packet[2];
+		const options = packet[3];
+		const metadata = packet[4];
 
 		if (options["start-of-stream"] == 1) {
 			ctx._audio_start_stream();
@@ -3052,9 +3053,9 @@ XpraClient.prototype.on_audio_state_change = function(newstate, details) {
 }
 
 XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
-	var MIN_START_BUFFERS = 4;
-	var MAX_BUFFERS = 250;
-	var CONCAT = true;
+	let MIN_START_BUFFERS = 4;
+	const MAX_BUFFERS = 250;
+	const CONCAT = true;
 	this.debug("audio", "sound-data: ", codec, ", ", buf.length, "bytes");
 	if (this.audio_buffers.length>=MAX_BUFFERS) {
 		this.warn("audio queue overflowing: "+this.audio_buffers.length+", stopping");
@@ -3065,7 +3066,7 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 	if (metadata) {
 		this.debug("audio", "audio metadata=", metadata);
 		//push metadata first:
-		for (var i = 0; i < metadata.length; i++) {
+		for (let i = 0; i < metadata.length; i++) {
 			this.debug("audio", "metadata[", i, "]=", metadata[i], ", length=", metadata[i].length, ", type=", Object.prototype.toString.call(metadata[i]));
 			this.audio_buffers.push(Utilities.StringToUint8(metadata[i]));
 		}
@@ -3075,7 +3076,7 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 	if (buf != null) {
 		this.audio_buffers.push(buf);
 	}
-	var ab = this.audio_buffers;
+	const ab = this.audio_buffers;
 	if (this._audio_ready() && (this.audio_buffers_count>0 || ab.length >= MIN_START_BUFFERS)) {
 		if (CONCAT) {
 			if (ab.length==1) {
@@ -3084,14 +3085,14 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 			}
 			else {
 				//concatenate all pending buffers into one:
-				var size = 0;
-				for (var i=0,j=ab.length;i<j;++i) {
+				let size = 0;
+				for (let i=0,j=ab.length;i<j;++i) {
 					size += ab[i].length;
 				}
 				buf = new Uint8Array(size);
 				size = 0;
-				for (var i=0,j=ab.length;i<j;++i) {
-					var v = ab[i];
+				for (let i=0,j=ab.length;i<j;++i) {
+					const v = ab[i];
 					if (v.length>0) {
 						buf.set(v, size);
 						size += v.length;
@@ -3103,7 +3104,7 @@ XpraClient.prototype.add_sound_data = function(codec, buf, metadata) {
 		}
 		else {
 			this.audio_buffers_count += ab.length;
-			for (var i=0,j=ab.length;i<j;++i) {
+			for (let i=0,j=ab.length;i<j;++i) {
 				this.push_audio_buffer(ab[i]);
 			}
 		}
@@ -3117,8 +3118,8 @@ XpraClient.prototype._audio_start_stream = function() {
 		//nothing to do: ready to play
 		return;
 	}
+	const me = this;
 	if (this.audio_framework=="mediasource") {
-		var me = this;
 		this.audio.play().then(function(result) {
 			me.debug("audio", "stream playing", result);
 		}, function(err) {
@@ -3144,7 +3145,7 @@ XpraClient.prototype._audio_ready = function() {
 			this.debug("audio", "mediasource state=", MediaSourceConstants.READY_STATE[this.audio.readyState], ", network state=", MediaSourceConstants.NETWORK_STATE[this.audio.networkState]);
 			this.debug("audio", "audio paused=", this.audio.paused, ", queue size=", this.audio_buffers.length, ", source ready=", this.audio_source_ready, ", source buffer updating=", this.audio_source_buffer.updating);
 		}
-		var asb = this.audio_source_buffer;
+		const asb = this.audio_source_buffer;
 		return (asb!=null) && (!asb.updating);
 	}
 	else {
@@ -3155,17 +3156,17 @@ XpraClient.prototype._audio_ready = function() {
 XpraClient.prototype.push_audio_buffer = function(buf) {
 	if (this.audio_framework=="mediasource") {
 		this.audio_source_buffer.appendBuffer(buf);
-		var b = this.audio_source_buffer.buffered;
+		const b = this.audio_source_buffer.buffered;
 		if (b && b.length>=1) {
-			//for (var i=0; i<b.length;i++) {
+			//for (let i=0; i<b.length;i++) {
 			//	this.clog("buffered[", i, "]=", b.start(i), b.end(i));
 			//}
-			var p = this.audio.played;
-			//for (var i=0; i<p.length;i++) {
+			const p = this.audio.played;
+			//for (let i=0; i<p.length;i++) {
 			//	this.clog("played[", i, "]=", p.start(i), p.end(i));
 			//}
-			var e = b.end(0)
-			var buf_size = Math.round(1000*(e - this.audio.currentTime));
+			const e = b.end(0);
+			const buf_size = Math.round(1000*(e - this.audio.currentTime));
 			this.debug("audio", "buffer size=", buf_size, "ms, currentTime=", this.audio.currentTime);
 		}
 	}
@@ -3204,10 +3205,10 @@ XpraClient.prototype.send_clipboard_token = function(data) {
 		return;
 	}
 	this.debug("clipboard", "sending clipboard token with data:", data);
-	var claim = true;	//Boolean(navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText);
-	var greedy = true;
-	var synchronous = true;
-	var packet;
+	const claim = true;	//Boolean(navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText);
+	const greedy = true;
+	const synchronous = true;
+	let packet;
 	if (data) {
 		packet = ["clipboard-token", "CLIPBOARD", ["UTF8_STRING", "text/plain"],
 			"UTF8_STRING", "UTF8_STRING", 8, "bytes", data,
@@ -3225,13 +3226,13 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	if (!ctx.clipboard_enabled) {
 		return;
 	}
-	var selection = packet[1];
-	var targets = [];
-	var target = null;
-	var dtype = null;
-	var dformat = null;
-	var wire_encoding = null;
-	var wire_data = null;
+	const selection = packet[1];
+	let targets = [];
+	let target = null;
+	let dtype = null;
+	let dformat = null;
+	let wire_encoding = null;
+	let wire_data = null;
 	if (packet.length>=3) {
 		targets = packet[2];
 	}
@@ -3245,7 +3246,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 		ctx.clipboard_server_buffers[selection] = [target, dtype, dformat, wire_encoding, wire_data];
 	}
 
-	var is_valid_target = target && ctx.clipboard_targets.includes(target);
+	const is_valid_target = target && ctx.clipboard_targets.includes(target);
 	ctx.debug("clipboard", "clipboard token received");
 	ctx.debug("clipboard", "targets=", targets);
 	ctx.debug("clipboard", "target=", target, "is valid:", is_valid_target);
@@ -3258,7 +3259,7 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 	// when we get a click, control-C or control-X event
 	// (when access to the clipboard is allowed)
 	if (is_valid_target) {
-		var is_text = dtype.toLowerCase().indexOf("text")>=0 || dtype.toLowerCase().indexOf("string")>=0;
+		const is_text = dtype.toLowerCase().indexOf("text")>=0 || dtype.toLowerCase().indexOf("string")>=0;
 		if (is_text) {
 			try {
 				wire_data = Utilities.Uint8ToString(wire_data);
@@ -3282,11 +3283,11 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 		}
 		else if (CLIPBOARD_IMAGES && dtype=="image/png" && dformat==8 && wire_encoding=="bytes" && navigator.clipboard && navigator.clipboard.write) {
 			ctx.debug("clipboard", "png image received");
-			var blob = new Blob([wire_data], {type: dtype});
+			const blob = new Blob([wire_data], {type: dtype});
 			ctx.debug("clipboard", "created blob", blob);
-			var item = new ClipboardItem({"image/png": blob});
+			const item = new ClipboardItem({"image/png": blob});
 			ctx.debug("clipboard", "created ClipboardItem", item);
-			var items = [item];
+			const items = [item];
 			ctx.debug("clipboard", "created ClipboardItem list", items);
 			navigator.clipboard.write(items).then(function() {
 				ctx.debug("clipboard", "copied png image to clipboard");
@@ -3309,9 +3310,9 @@ XpraClient.prototype._process_set_clipboard_enabled = function(packet, ctx) {
 XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 	// we shouldn't be handling clipboard requests
 	// unless we have support for navigator.clipboard:
-	var request_id = packet[1],
+	const request_id = packet[1],
 		selection = packet[2];
-		//target = packet[3];
+	//target = packet[3];
 
 	ctx.debug("clipboard", selection+" request");
 
@@ -3326,17 +3327,17 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 		if (navigator.clipboard.read) {
 			ctx.debug("clipboard", "request using read()");
 			navigator.clipboard.read().then(function(data) {
-				var item = null;
-				var itemtype = null;
+				let item = null;
+				let itemtype = null;
 				ctx.debug("clipboard", "request via read() data=", data);
-				for (var i = 0; i < data.length; i++) {
+				for (let i = 0; i < data.length; i++) {
 					item = data[i];
 					ctx.debug("clipboard", "item", i, "types:", item.types);
-					for (var j = 0; j < item.types.length; j++) {
+					for (let j = 0; j < item.types.length; j++) {
 						itemtype = item.types[j];
 						if (itemtype == "text/plain") {
 							item.getType(itemtype).then(function(blob) {
-								var fileReader = new FileReader();
+								const fileReader = new FileReader();
 								fileReader.onload = function(event) {
 									ctx.send_clipboard_string(request_id, selection, event.target.result);
 								};
@@ -3350,7 +3351,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 						}
 						else if (itemtype == "image/png") {
 							item.getType(itemtype).then(function(blob) {
-								var fileReader = new FileReader();
+								const fileReader = new FileReader();
 								fileReader.onload = function(event) {
 									ctx.send_clipboard_contents(request_id, selection, itemtype, 8, "bytes", event.target.result);
 								};
@@ -3375,7 +3376,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 			ctx.debug("clipboard", "clipboard request using readText()");
 			navigator.clipboard.readText().then(function(text) {
 				ctx.debug("clipboard", "clipboard request via readText() text=", text);
-				var primary_server_buffer = ctx.clipboard_server_buffers["PRIMARY"];
+				const primary_server_buffer = ctx.clipboard_server_buffers["PRIMARY"];
 				if (primary_server_buffer && primary_server_buffer[2]==8 && primary_server_buffer[3]=="bytes" && text==primary_server_buffer[4]) {
 					//we have set the clipboard contents to the PRIMARY selection
 					//and the server is asking for the CLIPBOARD selection
@@ -3393,27 +3394,27 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 			return;
 		}
 	}
-	var clipboard_buffer = ctx.get_clipboard_buffer() || "";
+	const clipboard_buffer = ctx.get_clipboard_buffer() || "";
 	ctx.send_clipboard_string(request_id, selection, clipboard_buffer, "UTF8_STRING");
 }
 
 XpraClient.prototype.resend_clipboard_server_buffer = function(request_id, selection) {
-	var server_buffer = this.clipboard_server_buffers["CLIPBOARD"];
+	const server_buffer = this.clipboard_server_buffers["CLIPBOARD"];
 	this.debug("clipboard", "resend_clipboard_server_buffer:", server_buffer);
 	if (!server_buffer) {
 		this.send_clipboard_string(request_id, selection, "", "UTF8_STRING");
 		return;
 	}
-	var target = server_buffer[0];
-	var dtype = server_buffer[1];
-	var dformat = server_buffer[2];
-	var wire_encoding = server_buffer[3];
-	var wire_data = server_buffer[4];
+	const target = server_buffer[0];
+	const dtype = server_buffer[1];
+	const dformat = server_buffer[2];
+	const wire_encoding = server_buffer[3];
+	const wire_data = server_buffer[4];
 	this.send_clipboard_contents(request_id, selection, dtype, dformat, wire_encoding, wire_data);
 }
 
 XpraClient.prototype.send_clipboard_string = function(request_id, selection, clipboard_buffer, datatype) {
-	var packet;
+	let packet;
 	if (clipboard_buffer == "") {
 		packet = ["clipboard-contents-none", request_id, selection];
 	} else {
@@ -3424,7 +3425,7 @@ XpraClient.prototype.send_clipboard_string = function(request_id, selection, cli
 }
 
 XpraClient.prototype.send_clipboard_contents = function(request_id, selection, datatype, dformat, encoding, clipboard_buffer) {
-	var packet;
+	let packet;
 	if (clipboard_buffer == "") {
 		packet = ["clipboard-contents-none", request_id, selection];
 	} else {
@@ -3437,11 +3438,11 @@ XpraClient.prototype.send_clipboard_contents = function(request_id, selection, d
  * File transfers and printing
  */
 XpraClient.prototype._process_send_file = function(packet, ctx) {
-	var basefilename = packet[1];
-	var mimetype = packet[2];
-	var printit = packet[3];
-	var datasize = packet[5];
-	var data = packet[6];
+	const basefilename = packet[1];
+	const mimetype = packet[2];
+	const printit = packet[3];
+	const datasize = packet[5];
+	const data = packet[6];
 
 	// check the data size for file
 	if(data.length != datasize) {
@@ -3478,8 +3479,8 @@ XpraClient.prototype.print_document = function(filename, data, mimetype) {
 		return;
 	}
 	this.log("got "+data.length+" bytes of PDF to print");
-	var b64data = btoa(uintToString(data));
-	var win = window.open(
+	const b64data = btoa(uintToString(data));
+	const win = window.open(
 			'data:application/pdf;base64,'+b64data,
 			'_blank'
 	);
@@ -3494,31 +3495,31 @@ XpraClient.prototype.send_file = function(filename, mimetype, size, buffer) {
 		this.warn("cannot send file: file transfers are disabled!");
 		return;
 	}
-	var packet = ["send-file", filename, mimetype, false, this.remote_open_files, size, buffer, {}];
+	const packet = ["send-file", filename, mimetype, false, this.remote_open_files, size, buffer, {}];
 	this.send(packet);
 }
 
 XpraClient.prototype.start_command = function(name, command, ignore) {
-	var packet = ["start-command", name, command, ignore];
+	const packet = ["start-command", name, command, ignore];
 	this.send(packet);
 }
 
 XpraClient.prototype._process_open_url = function(packet, ctx) {
-	var url = packet[1];
-	//var send_id = packet[2];
+	const url = packet[1];
+	//const send_id = packet[2];
 	if (!ctx.open_url) {
 		ctx.cwarn("Warning: received a request to open URL '%s'", url);
 		ctx.clog(" but opening of URLs is disabled");
 		return
 	}
 	ctx.clog("opening url:", url);
-	var new_window = window.open(url, '_blank');
+	const new_window = window.open(url, '_blank');
 	if(!new_window || new_window.closed || typeof new_window.closed=='undefined')
 	{
 		//Popup blocked, display link in notification
-		var summary = "Open URL";
-		var body = "<a href=\""+url+"\" target=\"_blank\">"+url+"</a>";
-		var timeout = 10;
+		const summary = "Open URL";
+		const body = "<a href=\""+url+"\" target=\"_blank\">"+url+"</a>";
+		const timeout = 10;
 		window.doNotification("", 0, summary, body, timeout, null, null, null, null, null);
 	}
 }

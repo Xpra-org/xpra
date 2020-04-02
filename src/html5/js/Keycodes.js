@@ -58,11 +58,11 @@ NUMPAD_TO_NAME = {
 		"ArrowUp"			: "KP_Up",
 		"PageUp"			: "KP_Prior",
 };
-for (var i=0; i<=9; i++) {
+for (let i=0; i<=9; i++) {
 	KEY_TO_NAME["Numpad"+i]	= ""+i;
 	KEY_TO_NAME["KP"+i]	= "KP"+i;
 }
-for (var i=1; i<=20; i++) {
+for (let i=1; i<=20; i++) {
 	KEY_TO_NAME["F"+i]	= "F"+i;
 }
 
@@ -1624,10 +1624,10 @@ CHAR_TO_NAME = {
 	" "					: "space",
 	};
 //console.debug("KEYSYM_TO_UNICODE=", KEYSYM_TO_UNICODE);
-for (var keysym in KEYSYM_TO_UNICODE) {
-    var u = KEYSYM_TO_UNICODE[keysym];
-    var char = String.fromCharCode(u);
-    CHAR_TO_NAME[char] = keysym;
+for (let keysym in KEYSYM_TO_UNICODE) {
+	const u = KEYSYM_TO_UNICODE[keysym];
+	const char = String.fromCharCode(u);
+	CHAR_TO_NAME[char] = keysym;
 }
 //console.debug("CHAR_TO_NAME=", KEYSYM_TO_UNICODE);
 
@@ -1725,7 +1725,7 @@ CHARCODE_TO_NAME = {
 	221	: "bracketright",
 	222	: "apostrophe",
 };
-for (var i=0; i<26; i++) {
+for (let i=0; i<26; i++) {
 	CHARCODE_TO_NAME[65+i] = "abcdefghijklmnopqrstuvwxyz"[i];
 }
 for (i=0; i<10; i++) {
@@ -1751,7 +1751,7 @@ CHARCODE_TO_NAME[220] = "dead_circumflex"
  * @returns {Array} of strings
  */
 function get_event_modifiers(event) {
-	var modifiers = [];
+	const modifiers = [];
 	if (event.getModifierState) {
 		if (event.getModifierState("Control"))
 			modifiers.push("control");

@@ -29,7 +29,7 @@ function XpraProtocolWorkerHost() {
 }
 
 XpraProtocolWorkerHost.prototype.open = function(uri) {
-	var me = this;
+	const me = this;
 	if (this.worker) {
 		//re-use the existing worker:
 		this.worker.postMessage({'c': 'o', 'u': uri});
@@ -37,7 +37,7 @@ XpraProtocolWorkerHost.prototype.open = function(uri) {
 	}
 	this.worker = new Worker('js/Protocol.js');
 	this.worker.addEventListener('message', function(e) {
-		var data = e.data;
+		const data = e.data;
 		switch (data.c) {
 			case 'r':
 				me.worker.postMessage({'c': 'o', 'u': uri});
@@ -106,7 +106,7 @@ function XpraProtocol() {
 }
 
 XpraProtocol.prototype.open = function(uri) {
-	var me = this;
+	const me = this;
 	// (re-)init
 	this.raw_packets = [];
 	this.rQ = [];
@@ -171,13 +171,13 @@ XpraProtocol.prototype.process_receive_queue = function() {
 }
 
 XpraProtocol.prototype.do_process_receive_queue = function() {
-	var i = 0, j = 0;
+	let i = 0, j = 0;
 	if (this.header.length<8 && this.rQ.length>0) {
 		//add from receive queue data to header until we get the 8 bytes we need:
 		while (this.header.length<8 && this.rQ.length>0) {
-			var slice = this.rQ[0];
-			var needed = 8-this.header.length;
-			var n = Math.min(needed, slice.length);
+			const slice = this.rQ[0];
+			const needed = 8-this.header.length;
+			const n = Math.min(needed, slice.length);
 			//copy at most n characters:
 			for (i = 0; i < n; i++) {
 				this.header.push(slice[i]);
@@ -211,8 +211,8 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		return false;
 	}
 
-	var proto_flags = this.header[1];
-	var proto_crypto = proto_flags & 0x2;
+	const proto_flags = this.header[1];
+	const proto_crypto = proto_flags & 0x2;
 	if (proto_flags!=0) {
 		// check for crypto protocol flag
 		if (!(proto_crypto)) {
@@ -221,31 +221,31 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		}
 	}
 
-	var level = this.header[2];
+	const level = this.header[2];
 	if (level & 0x20) {
 		this.protocol_error("lzo compression is not supported");
 		return false;
 	}
-	var index = this.header[3];
+	const index = this.header[3];
 	if (index>=20) {
 		this.protocol_error("invalid packet index: "+index);
 		return false;
 	}
-	var packet_size = 0;
+	let packet_size = 0;
 	for (i=0; i<4; i++) {
 		packet_size = packet_size*0x100;
 		packet_size += this.header[4+i];
 	}
 
 	// work out padding if necessary
-	var padding = 0
+	let padding = 0;
 	if (proto_crypto) {
 		padding = (this.cipher_in_block_size - packet_size % this.cipher_in_block_size);
 		packet_size += padding;
 	}
 
 	// verify that we have enough data for the full payload:
-	var rsize = 0;
+	let rsize = 0;
 	for (i=0,j=this.rQ.length;i<j;++i) {
 		rsize += this.rQ[i].length;
 	}
@@ -256,7 +256,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 	// done parsing the header, the next packet will need a new one:
 	this.header = [];
 
-	var packet_data = null;
+	let packet_data = null;
 	if (this.rQ[0].length==packet_size) {
 		//exact match: the payload is in a buffer already:
 		packet_data = this.rQ.shift();
@@ -266,8 +266,8 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		packet_data = new Uint8Array(packet_size);
 		rsize = 0;
 		while (rsize < packet_size) {
-			var slice = this.rQ[0];
-			var needed = packet_size - rsize;
+			const slice = this.rQ[0];
+			const needed = packet_size - rsize;
 			//console.log("slice:", slice.length, "bytes, needed", needed);
 			if (slice.length>needed) {
 				//add part of this slice:
@@ -287,7 +287,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 	// decrypt if needed
 	if (proto_crypto) {
 		this.cipher_in.update(forge.util.createBuffer(uintToString(packet_data)));
-		var decrypted = this.cipher_in.output.getBytes();
+		const decrypted = this.cipher_in.output.getBytes();
 		packet_data = [];
 		for (i=0; i<decrypted.length; i++)
 			packet_data.push(decrypted[i].charCodeAt(0));
@@ -296,17 +296,18 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 
 	//decompress it if needed:
 	if (level!=0) {
+		let inflated;
 		if (level & 0x10) {
 			// lz4
 			// python-lz4 inserts the length of the uncompressed data as an int
 			// at the start of the stream
-			var d = packet_data.subarray(0, 4);
+			const d = packet_data.subarray(0, 4);
 			// output buffer length is stored as little endian
-			var length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+			const length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
 			// decode the LZ4 block
 			// console.log("lz4 decompress packet size", packet_size, ", lz4 length=", length);
-			var inflated = new Uint8Array(length);
-			var uncompressedSize = LZ4.decodeBlock(packet_data, inflated, 4);
+			inflated = new Uint8Array(length);
+			const uncompressedSize = LZ4.decodeBlock(packet_data, inflated, 4);
 			// if lz4 errors out at the end of the buffer, ignore it:
 			if (uncompressedSize<=0 && packet_size+uncompressedSize!=0) {
 				this.protocol_error("failed to decompress lz4 data, error code: "+uncompressedSize);
@@ -316,7 +317,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 			inflated = BrotliDecode(packet_data);
 		} else {
 			// zlib
-			var inflated = new Zlib.Inflate(packet_data).decompress();
+			inflated = new Zlib.Inflate(packet_data).decompress();
 		}
 		//debug("inflated("+packet_data+")="+inflated);
 		packet_data = inflated;
@@ -328,10 +329,10 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		this.raw_packets[index] = packet_data;
 	} else {
 		//decode raw packet string into objects:
-		var packet = null;
+		let packet = null;
 		try {
 			packet = bdecode(packet_data);
-			for (var index in this.raw_packets) {
+			for (let index in this.raw_packets) {
 				packet[index] = this.raw_packets[index];
 			}
 			this.raw_packets = {}
@@ -345,9 +346,9 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		try {
 			// pass to our packet handler
 			if((packet[0] === 'draw') && (packet[6] !== 'scroll')){
-				var img_data = packet[7];
+				const img_data = packet[7];
 				if (typeof img_data === 'string') {
-					var uint = new Uint8Array(img_data.length);
+					const uint = new Uint8Array(img_data.length);
 					for(i=0,j=img_data.length;i<j;++i) {
 						uint[i] = img_data.charCodeAt(i);
 					}
@@ -356,7 +357,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 			}
 			if (this.is_worker){
 				this.mQ[this.mQ.length] = packet;
-				var me = this;
+				const me = this;
 				setTimeout(function() {
 						me.process_message_queue();
 					}, this.process_interval);
@@ -375,13 +376,13 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 
 XpraProtocol.prototype.process_send_queue = function() {
 	while(this.sQ.length !== 0 && this.websocket) {
-		var packet = this.sQ.shift();
+		const packet = this.sQ.shift();
 		if(!packet){
 			return;
 		}
 
 		//debug("send worker:"+packet);
-		var bdata = null;
+		let bdata = null;
 		try {
 			bdata = bencode(packet);
 		}
@@ -389,33 +390,33 @@ XpraProtocol.prototype.process_send_queue = function() {
 			console.error("Error: failed to bencode packet:", packet);
 			continue;
 		}
-		var proto_flags = 0;
-		var payload_size = bdata.length;
+		let proto_flags = 0;
+		const payload_size = bdata.length;
 		// encryption
 		if(this.cipher_out) {
 			proto_flags = 0x2;
-			var padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
-			for (var i = padding_size - 1; i >= 0; i--) {
+			const padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
+			for (let i = padding_size - 1; i >= 0; i--) {
 				bdata += String.fromCharCode(padding_size);
 			};
 			this.cipher_out.update(forge.util.createBuffer(bdata));
 			bdata = this.cipher_out.output.getBytes();
 		}
-		var actual_size = bdata.length;
+		const actual_size = bdata.length;
 		//convert string to a byte array:
-		var cdata = [];
-		for (var i=0; i<actual_size; i++)
+		const cdata = [];
+		for (let i=0; i<actual_size; i++)
 			cdata.push(ord(bdata[i]));
-		var level = 0;
+		const level = 0;
 		/*
-		var use_zlib = false;		//does not work...
+		const use_zlib = false;		//does not work...
 		if (use_zlib) {
 			cdata = new Zlib.Deflate(cdata).compress();
 			level = 1;
 		}*/
 		//struct.pack('!BBBBL', ord("P"), proto_flags, level, index, payload_size)
-		var header = ["P".charCodeAt(0), proto_flags, level, 0];
-		for (var i=3; i>=0; i--)
+		let header = ["P".charCodeAt(0), proto_flags, level, 0];
+		for (let i=3; i>=0; i--)
 			header.push((payload_size >> (8*i)) & 0xFF);
 		//concat data to header, saves an intermediate array which may or may not have
 		//been optimised out by the JS compiler anyway, but it's worth a shot
@@ -430,20 +431,20 @@ XpraProtocol.prototype.process_send_queue = function() {
 
 XpraProtocol.prototype.process_message_queue = function() {
 	while(this.mQ.length !== 0){
-		var packet = this.mQ.shift();
+		const packet = this.mQ.shift();
 
 		if(!packet){
 			return;
 		}
 
-		var raw_draw_buffer = (packet[0] === 'draw') && (packet[6] !== 'scroll');
+		const raw_draw_buffer = (packet[0] === 'draw') && (packet[6] !== 'scroll');
 		postMessage({'c': 'p', 'p': packet}, raw_draw_buffer ? [packet[7].buffer] : []);
 	}
 }
 
 XpraProtocol.prototype.send = function(packet) {
 	this.sQ[this.sQ.length] = packet;
-	var me = this;
+	const me = this;
 	setTimeout(function() {
 		me.process_send_queue();
 		}, this.process_interval);
@@ -457,7 +458,7 @@ XpraProtocol.prototype.set_packet_handler = function(callback, ctx) {
 XpraProtocol.prototype.set_cipher_in = function(caps, key) {
 	this.cipher_in_block_size = 32;
 	// stretch the password
-	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_in_block_size);
+	const secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_in_block_size);
 	// start the cipher
 	this.cipher_in = forge.cipher.createDecipher('AES-CBC', secret);
 	this.cipher_in.start({iv: caps['cipher.iv']});
@@ -466,7 +467,7 @@ XpraProtocol.prototype.set_cipher_in = function(caps, key) {
 XpraProtocol.prototype.set_cipher_out = function(caps, key) {
 	this.cipher_out_block_size = 32;
 	// stretch the password
-	var secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_out_block_size);
+	const secret = forge.pkcs5.pbkdf2(key, caps['cipher.key_salt'], caps['cipher.key_stretch_iterations'], this.cipher_out_block_size);
 	// start the cipher
 	this.cipher_out = forge.cipher.createCipher('AES-CBC', secret);
 	this.cipher_out.start({iv: caps['cipher.iv']});
@@ -487,16 +488,16 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 		'lib/brotli_decode.js',
 		'lib/forge.js');
 	// make protocol instance
-	var protocol = new XpraProtocol();
+	const protocol = new XpraProtocol();
 	protocol.is_worker = true;
 	// we create a custom packet handler which posts packet as a message
 	protocol.set_packet_handler(function (packet, ctx) {
-		var raw_draw_buffer = (packet[0] === 'draw') && (packet[6] !== 'scroll');
+		const raw_draw_buffer = (packet[0] === 'draw') && (packet[6] !== 'scroll');
 		postMessage({'c': 'p', 'p': packet}, raw_draw_buffer ? [packet[7].buffer] : []);
 	}, null);
 	// attach listeners from main thread
 	self.addEventListener('message', function(e) {
-		var data = e.data;
+		const data = e.data;
 		switch (data.c) {
 		case 'o':
 			protocol.open(data.u);
@@ -528,5 +529,5 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 
 
 // initialise LZ4 library
-var Buffer = require('buffer').Buffer;
-var LZ4 = require('lz4');
+const Buffer = require('buffer').Buffer;
+const LZ4 = require('lz4');

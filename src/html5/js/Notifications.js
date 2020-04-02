@@ -13,8 +13,8 @@ $(function() {
 
 	window.doNotification = function(type, nid, title, message, timeout, icon, actions, hints, onAction, onClose){
 		console.debug("doNotification", type, nid, title, message, timeout, icon, actions, hints, onAction, onClose);
-		var nID = 'notification' + nid;
-		var a = $('<div id="' + nID + '" class="alert ' + type + '">'+
+		const nID = 'notification' + nid;
+		const a = $('<div id="' + nID + '" class="alert ' + type + '">'+
 					'<img class="notification_icon" id="notification_icon' + nID + '"></img>'+
 					'<span class="title">'+title+'</span>'+
 					'<span class="message">' + message + '</span>'+
@@ -22,23 +22,23 @@ $(function() {
 				  '</div>');
 		$('.notifications').prepend(a);
 		if (actions) {
-			var notification_buttons = $('<div class="notification_buttons"></div>');
+			const notification_buttons = $('<div class="notification_buttons"></div>');
 			a.append(notification_buttons);
-			for (var i = 0; i < actions.length; i+=2) {
-				var action_id = actions[i];
-				var action_label = actions[i+1];
-				var notification_button = window._notification_button(nid, action_id, action_label, onAction, onClose);
+			for (let i = 0; i < actions.length; i+=2) {
+				const action_id = actions[i];
+				const action_label = actions[i+1];
+				const notification_button = window._notification_button(nid, action_id, action_label, onAction, onClose);
 				notification_buttons.append(notification_button);
 			}
 		}
 		$('.notifications').prepend(a);
 		if (icon) {
-			var encoding = icon[0],
+			const encoding = icon[0],
 				//w = icon[1],
 				//h = icon[2],
 				img_data = icon[3];
 			if (encoding=="png") {
-				var src = "data:image/"+encoding+";base64," + window.btoa(img_data);
+				const src = "data:image/"+encoding+";base64," + window.btoa(img_data);
 				$("#notification_icon"+nID).attr('src', src);
 			}
 		}
@@ -61,8 +61,8 @@ $(function() {
 
 		if(timeout){
 			a.data('timeLeft', timeout);
-			var it = setInterval(function() {
-				var tleft = a.data('timeLeft') - 1;
+			const it = setInterval(function() {
+				const tleft = a.data('timeLeft') - 1;
 				if (a.data('timeLeft') === 0) {
 					a.find('.dismiss').trigger('click');
 					if (onClose) {
@@ -79,7 +79,7 @@ $(function() {
 	};
 
 	window._notification_button = function(nid, action_id, action_label, onAction, onClose) {
-		var notification_button = $('<div class="notification_button" id=notification"'+action_id+'">'+action_label+'</div>');
+		const notification_button = $('<div class="notification_button" id=notification"'+action_id+'">'+action_label+'</div>');
 		notification_button.on("click", function() {
 			window.closeNotification(nid);
 			if (onAction) {
@@ -93,21 +93,21 @@ $(function() {
 	}
 
 	window.cancelNotificationTimer = function(nid) {
-		var timer = window.notification_timers[nid];
+		const timer = window.notification_timers[nid];
 		if (timer) {
 			window.clearInterval(timer);
 			delete window.notification_timers[nid];
 		}
 	}
 	window.cancelNotificationTimers = function() {
-		for (var nid in window.notification_timers) {
+		for (const nid in window.notification_timers) {
 			window.cancelNotificationTimer(nid);
 		}
 	}
 
 	window.closeNotification = function(nid) {
 		window.cancelNotificationTimer(nid);
-		var nID = 'notification' + nid;
+		const nID = 'notification' + nid;
 		$('.notifications').find('#'+nID).find('.dismiss').trigger('click');
 	}
 
