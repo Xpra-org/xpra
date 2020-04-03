@@ -424,6 +424,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.source_remove(rft)
 
     def schedule_recheck_focus(self):
+        if FOCUS_RECHECK_DELAY<0:
+            self.recheck_focus()
+            return
         if self.recheck_focus_timer==0:
             self.recheck_focus_timer = self.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
         return True
