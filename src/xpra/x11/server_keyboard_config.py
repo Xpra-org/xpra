@@ -486,10 +486,10 @@ class KeyboardConfig(KeyboardConfigBase):
             for level in levels:
                 keycode = self.keycode_translation.get((keyname, level))
                 if keycode:
-                    klog("=%i (level=%i, shift=%s, mode=%i)", keycode, level, shift, mode)
+                    keysyms = self.keycode_mappings.get(keycode)
+                    klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
                     if self.xkbmap_raw:
                         break
-                    keysyms = self.keycode_mappings.get(keycode)
                     level0 = levels[0]
                     if len(keysyms)>level0 and keysyms[level0]=="":
                         #if the keysym we would match for this keycode is 'NoSymbol',
