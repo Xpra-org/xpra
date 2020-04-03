@@ -478,7 +478,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         create_input_devices,
         source_env,
         )
-    script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
+    script = None
+    if POSIX and getuid()!=0:
+        script = xpra_runner_shell_script(xpra_file, cwd, opts.socket_dir)
 
     uid = int(opts.uid)
     gid = int(opts.gid)
@@ -573,7 +575,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
 
-    if POSIX and not ROOT:
+    if script:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
         write_runner_shell_scripts(script)
