@@ -2350,12 +2350,11 @@ def run_stopexit(mode, error_cb, opts, extra_args):
                 break
             sleep(0.2)
         #next 5 seconds: actually try to connect
-        for _ in range(10):
+        for _ in range(5):
             final_state = sockdir.get_server_state(sockfile, 1)
             if final_state is DotXpra.DEAD:
                 break
-            else:
-                sleep(0.5)
+            sleep(1)
         if final_state is DotXpra.DEAD:
             print("xpra at %s has exited." % display)
             return 0
