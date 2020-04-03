@@ -17,6 +17,12 @@ log = Logger("printing")
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 
+def printer_name(name):
+    try:
+        return name.decode("utf8")
+    except Exception:
+        return bytestostr(name)
+
 
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
@@ -137,10 +143,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 #ie: on FOO (via xpra)
                 location = "on %s (%s)" % (self.hostname, PRINTER_LOCATION_STRING)
         try:
-            try:
-                printer = name.decode("utf8")
-            except UnicodeDecodeError:
-                printer = name.decode("latin1")
+            printer = printer_name(name)
             def printer_added():
                 #once the printer has been added, register it in the list
                 #(so it will be removed on exit)
@@ -161,16 +164,13 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             self.remove_printer(k)
 
     def remove_printer(self, name):
+        printer = printer_name(name)
         try:
             self.printers_added.remove(name)
         except KeyError:
             log("not removing printer '%s' - since we didn't add it", name)
         else:
             try:
-                try:
-                    printer = name.decode("utf8")
-                except UnicodeDecodeError:
-                    printer = name.decode("latin1")
                 from xpra.platform.pycups_printing import remove_printer
                 remove_printer(printer)
                 log.info("removed remote printer '%s'", printer)
