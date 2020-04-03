@@ -59,15 +59,15 @@ if [ ! -e "${SIGNTOOL}" ]; then
 		SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
 	fi
 fi
-
-################################################################################
-# Get version information, generate filenames
-fi
 if [ ! -e "${SIGNTOOL}" ]; then
 	SIGNTOOL=`find /c/Program\ Files* -wholename "*/x64/signtool.exe"`
 fi
 if [ -e "${SIGNTOOL}" ]; then
 	cp "$SIGNTOOL" ./
+fi
+
+################################################################################
+# Get version information, generate filenames
 
 #record in source tree:
 rm xpra/src_info.py xpra/build_info.py >& /dev/null
