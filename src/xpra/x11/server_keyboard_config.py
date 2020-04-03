@@ -467,8 +467,17 @@ class KeyboardConfig(KeyboardConfigBase):
             #first, try to honour shift state:
             shift = ("shift" in modifiers) ^ ("lock" in modifiers)
             mode = 0
+            numlock = 0
+            numlock_modifier = None
+            for mod, keynames in self.keynames_for_mod.items():
+                if "Num_Lock" in keynames:
+                    numlock_modifier = mod
+                    break
             for mod in modifiers:
                 names = self.keynames_for_mod.get(mod, [])
+                if "Num_Lock" in names:
+                    numlock = 1
+                    break
                 for name in names:
                     if name in ("ISO_Level3_Shift", "Mode_switch"):
                         mode = 1
@@ -509,7 +518,11 @@ class KeyboardConfig(KeyboardConfigBase):
                         else:
                             kmlog("adding '%s' to modifiers", mod)
                             modifiers.append(mod)
-                    if (level & 1) ^ shift:
+                    #keypad overrules shift state (see #2702):
+                    if keyname.startswith("KP_"):
+                        if numlock_modifier and not numlock:
+                            toggle_modifier(numlock_modifier)
+                    elif (level & 1) ^ shift:
                         #shift state does not match
                         toggle_modifier("shift")
                     if int(bool(level & 2)) ^ mode:
