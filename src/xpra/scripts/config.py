@@ -999,7 +999,7 @@ def get_defaults():
                     "desktop-fullscreen": False,
                     "global-menus"      : True,
                     "forward-xdg-open"  : True,
-                    "modal-windows"     : True,
+                    "modal-windows"     : False,
                     "bandwidth-detection" : True,
                     "ssh-upgrade"       : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
