@@ -63,6 +63,12 @@ fi
 if [ ! -e "${SIGNTOOL}" ]; then
 	SIGNTOOL="${PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe"
 fi
+if [ ! -e "${SIGNTOOL}" ]; then
+	SIGNTOOL=`find /c/Program\ Files* -wholename "*/x64/signtool.exe"`
+fi
+if [ -e "${SIGNTOOL}" ]; then
+	cp "$SIGNTOOL" ./
+fi
 
 ################################################################################
 # Get version information, generate filenames
@@ -454,7 +460,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	if [ "${DO_SIGN}" == "1" ]; then
 		SIGNTOOL_LOG="win32/signtool.log"
 		echo "* Signing EXE"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
+		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
 			echo "signtool command failed, see ${SIGNTOOL_LOG}:"
 			cat ${SIGNTOOL_LOG}
@@ -489,7 +495,7 @@ if [ "${DO_MSI}" == "1" ]; then
 	if [ "${DO_SIGN}" == "1" ]; then
 		SIGNTOOL_LOG="win32/signtool.log"
 		echo "* Signing MSI"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > ${SIGNTOOL_LOG}
+		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
 			echo "signtool command failed, see ${SIGNTOOL_LOG}:"
 			cat ${SIGNTOOL_LOG}
