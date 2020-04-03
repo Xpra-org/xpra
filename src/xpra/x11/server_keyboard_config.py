@@ -477,7 +477,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 names = self.keynames_for_mod.get(mod, [])
                 if "Num_Lock" in names:
                     numlock = 1
-                    break
                 for name in names:
                     if name in ("ISO_Level3_Shift", "Mode_switch"):
                         mode = 1
