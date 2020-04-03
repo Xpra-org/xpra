@@ -62,6 +62,12 @@ fi
 
 ################################################################################
 # Get version information, generate filenames
+fi
+if [ ! -e "${SIGNTOOL}" ]; then
+	SIGNTOOL=`find /c/Program\ Files* -wholename "*/x64/signtool.exe"`
+fi
+if [ -e "${SIGNTOOL}" ]; then
+	cp "$SIGNTOOL" ./
 
 #record in source tree:
 rm xpra/src_info.py xpra/build_info.py >& /dev/null
@@ -435,7 +441,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	if [ "${DO_SIGN}" == "1" ]; then
 		SIGNTOOL_LOG="win32/signtool.log"
 		echo "* Signing EXE"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
+		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
 			echo "signtool command failed, see ${SIGNTOOL_LOG}:"
 			cat ${SIGNTOOL_LOG}
@@ -470,7 +476,7 @@ if [ "${DO_MSI}" == "1" ]; then
 	if [ "${DO_SIGN}" == "1" ]; then
 		SIGNTOOL_LOG="win32/signtool.log"
 		echo "* Signing MSI"
-		cmd.exe //c "${SIGNTOOL}" sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > ${SIGNTOOL_LOG}
+		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
 			echo "signtool command failed, see ${SIGNTOOL_LOG}:"
 			cat ${SIGNTOOL_LOG}
