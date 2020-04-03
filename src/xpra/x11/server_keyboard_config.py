@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -503,8 +503,16 @@ class KeyboardConfig(KeyboardConfigBase):
         #first, try to honour shift state:
         shift = ("shift" in modifiers) ^ ("lock" in modifiers)
         mode = 0
+        numlock = 0
+        numlock_modifier = None
+        for mod, keynames in self.keynames_for_mod.items():
+            if "Num_Lock" in keynames:
+                numlock_modifier = mod
+                break
         for mod in modifiers:
             names = self.keynames_for_mod.get(mod, [])
+            if "Num_Lock" in names:
+                numlock = 1
             for name in names:
                 if name in ("ISO_Level3_Shift", "Mode_switch"):
                     mode = 1
@@ -547,7 +555,11 @@ class KeyboardConfig(KeyboardConfigBase):
                     else:
                         kmlog("adding '%s' to modifiers", mod)
                         modifiers.append(mod)
-                if (level & 1) ^ shift:
+                #keypad overrules shift state (see #2702):
+                if keyname.startswith("KP_"):
+                    if numlock_modifier and not numlock:
+                        toggle_modifier(numlock_modifier)
+                elif (level & 1) ^ shift:
                     #shift state does not match
                     toggle_modifier("shift")
                 if int(bool(level & 2)) ^ mode:

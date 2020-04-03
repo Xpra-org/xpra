@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -181,35 +181,38 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
         keycodes = tuple(x11_keycodes_for_keysym.get(keysym, set()))
         if keysym in DEBUG_KEYSYMS:
             log.info("set_keycode_translation: find_keycode%s x11 keycodes=%s", (kc, keysym, i), keycodes)
-        def rlog(v, msg):
+        def rlog(keycode, msg):
             if keysym in DEBUG_KEYSYMS:
-                log.info("set_keycode_translation: find_keycode%s=%s (%s)", (kc, keysym, i), v, msg)
-            return v
+                log.info("set_keycode_translation: find_keycode%s=%s (%s)", (kc, keysym, i), keycode, msg)
+            return keycode
         if not keycodes:
             return None
-        #no other option, use it:
-        if len(keycodes)==1:
-            return keycodes[0]
         for keycode in keycodes:
             defs = x11_keycodes.get(keycode)
             if keysym in DEBUG_KEYSYMS:
                 log.info("x11 keycode %i: %s", keycode, defs)
             assert defs, "bug: keycode %i not found in %s" % (keycode, x11_keycodes)
             if len(defs)>i and defs[i]==keysym:
-                return rlog(keycode, "exact index match")
+                rlog(keycode, "exact index match")
+                return keycode, True
         #if possible, use the same one:
         if kc in keycodes:
-            return rlog(kc, "using same keycode as client")
-        return rlog(keycodes[0], "using first match")
+            rlog(kc, "using same keycode as client")
+            return kc, False
+        keycode = keycodes[0]
+        rlog(keycode, "using first match")
+        return keycode, False
     #generate the translation map:
     trans = {}
     for keycode, defs in keycodes.items():
         for keysym,i in tuple(defs):             #ie: ('1', 0) or ('A', 1), etc
-            x11_keycode = find_keycode(keycode, keysym, i)
-            if x11_keycode:
+            m = find_keycode(keycode, keysym, i)
+            if m:
+                x11_keycode, index_matched = m
                 trans[(keycode, keysym)] = x11_keycode
-                trans[(keysym, i)] = x11_keycode
                 trans[keysym] = x11_keycode
+                if index_matched:
+                    trans[(keysym, i)] = x11_keycode
     if not xkbmap_x11_keycodes:
         #now add all the keycodes we may not have mapped yet
         #(present in x11_keycodes but not keycodes)
