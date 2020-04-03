@@ -2063,6 +2063,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     if WIN32:
+        external_includes += ["pycuda"]
         nvcc_exe = "nvcc.exe"
         CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
         path_options = [os.path.join(CUDA_DIR, x, "bin") for x in (
