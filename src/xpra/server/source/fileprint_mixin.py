@@ -7,7 +7,7 @@
 import os
 
 from xpra.util import envbool, typedict
-from xpra.os_util import get_machine_id
+from xpra.os_util import get_machine_id, bytestostr
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -16,6 +16,12 @@ log = Logger("printing")
 
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
+
+def printer_name(name):
+    try:
+        return name.decode("utf8")
+    except Exception:
+        return bytestostr(name)
 
 
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
@@ -117,10 +123,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             attributes["socket-path"] = self.choose_socket_path()
         log("printer attributes: %s", attributes)
         for name,props in printers.items():
-            try:
-                printer = name.decode("utf8")
-            except UnicodeDecodeError:
-                printer = name.decode("latin1")
+            printer = printer_name(name)
             if printer not in self.printers:
                 self.setup_printer(printer, props, attributes)
 
@@ -165,17 +168,14 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         for k in tuple(self.printers_added):
             self.remove_printer(k)
 
-    def remove_printer(self, name : str):
+    def remove_printer(self, name):
+        printer = printer_name(name)
         try:
-            self.printers_added.remove(name)
+            self.printers_added.remove(printer)
         except KeyError:
             log("not removing printer '%s' - since we didn't add it", name)
         else:
             try:
-                try:
-                    printer = name.decode("utf8")
-                except UnicodeDecodeError:
-                    printer = name.decode("latin1")
                 from xpra.platform.pycups_printing import remove_printer
                 remove_printer(printer)
                 log.info("removed remote printer '%s'", printer)
