@@ -656,8 +656,8 @@ class SessionInfo(Gtk.Window):
                     l.append(v)
             addavg(self.avg_batch_delay, "batch", "delay")
             addavg(self.avg_damage_out_latency, "damage", "out_latency")
-            spl = tuple(1000.0*x[1] for x in self.client.server_ping_latency)
-            cpl = tuple(1000.0*x[1] for x in self.client.client_ping_latency)
+            spl = tuple(1000.0*x[1] for x in tuple(self.client.server_ping_latency))
+            cpl = tuple(1000.0*x[1] for x in tuple(self.client.client_ping_latency))
             if spl and cpl:
                 self.avg_ping_latency.append(iround(sum(spl+cpl)/len(spl+cpl)))
             pc = tuple(self.client.pixel_counter)
