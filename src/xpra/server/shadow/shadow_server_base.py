@@ -301,7 +301,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             if rwm:
                 mouselog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
                 for ss in self._server_sources.values():
-                    ss.update_mouse(wid, x, y, rx, ry)
+                    um = getattr(ss, "update_mouse", None)
+                    if um:
+                        um(wid, x, y, rx, ry)
             else:
                 mouselog("poll_pointer_position() model not found for position=%s", (x, y))
         else:
