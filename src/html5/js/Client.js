@@ -2165,13 +2165,13 @@ XpraClient.prototype.send_tray_configure = function(wid) {
 	this.send(["configure-window", Number(wid), x, y, w, h, {}]);
 };
 XpraClient.prototype._tray_geometry_changed = function(win) {
-	this.debug("tray", "tray geometry changed (ignored)");
+	win.client.debug("tray", "tray geometry changed (ignored)");
 };
 XpraClient.prototype._tray_set_focus = function(win) {
-	this.debug("tray", "tray set focus (ignored)");
+	win.client.debug("tray", "tray set focus (ignored)");
 };
 XpraClient.prototype._tray_closed = function(win) {
-	this.debug("tray", "tray closed (ignored)");
+	win.client.debug("tray", "tray closed (ignored)");
 };
 
 XpraClient.prototype.reconfigure_all_trays = function() {
