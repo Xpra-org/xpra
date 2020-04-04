@@ -15,7 +15,7 @@ $(function() {
 		console.debug("doNotification", type, nid, title, message, timeout, icon, actions, hints, onAction, onClose);
 		const nID = 'notification' + nid;
 		const a = $('<div id="' + nID + '" class="alert ' + type + '">'+
-					'<img class="notification_icon" id="notification_icon' + nID + '"></img>'+
+					'<img class="notification_icon" id="notification_icon' + nID + '">'+
 					'<span class="title">'+title+'</span>'+
 					'<span class="message">' + message + '</span>'+
 					'<div class="dismiss">&#215;</div>'+
