@@ -797,10 +797,10 @@
 						if (window.clipboardData && window.clipboardData.setData) {
 							try {
 								if (Utilities.isIE()) {
-									clipboardData.setData("Text", clipboard_buffer);
+									window.clipboardData.setData("Text", clipboard_buffer);
 								}
 								else {
-									clipboardData.setData(clipboard_datatype, clipboard_buffer);
+									window.clipboardData.setData(clipboard_datatype, clipboard_buffer);
 								}
 								success = true;
 							}
