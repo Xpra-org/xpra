@@ -2098,6 +2098,8 @@ class ServerCore:
                         sysinfo[attr] = getter()
                     except ModuleNotFoundError:
                         log("sysconfig.%s", fn, exc_info=True)
+                        if attr=="config-vars" and WIN32:
+                            continue
                         if first_time(fn):
                             log.warn("Warning: failed to collect %s sysconfig information", attr)
                     except Exception:
