@@ -119,26 +119,23 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                     if LOCAL_MODIFICATIONS:
                         data = data.replace('LOCAL_MODIFICATIONS : "0",',
                                             'LOCAL_MODIFICATIONS : "%i",' % LOCAL_MODIFICATIONS)
-                if minifier=="uglifyjs":
-                    for regexp, replacewith in {
-                        r"^\s*for\s*\(\s*let\s+"     : "for(var ",
-                        r"^\s*let\s+"                : "var ",
-                        r"^\s*for\s*\(\s*const\s+"   : "for(var ",
-                        r"^\s*const\s+"              : "var ",
-                        }.items():
-                        p = re.compile(regexp)
-                        newdata = []
-                        for line in data.splitlines():
-                            newdata.append(p.sub(replacewith, line))
-                        data = "\n".join(newdata)
+                for regexp, replacewith in {
+                    r"^\s*for\s*\(\s*let\s+"     : "for(var ",
+                    r"^\s*let\s+"                : "var ",
+                    r"^\s*for\s*\(\s*const\s+"   : "for(var ",
+                    r"^\s*const\s+"              : "var ",
+                    }.items():
+                    p = re.compile(regexp)
+                    newdata = []
+                    for line in data.splitlines():
+                        newdata.append(p.sub(replacewith, line))
+                    data = "\n".join(newdata)
 
                 if minifier:
-                    f = tempfile.NamedTemporaryFile(prefix="uglify-%s" % bname, delete=False)
-                    f.file.write(data.encode("latin1"))
-                    f.file.flush()
-                    f.close()
-                    os.chmod(f.name, 0o644)
-                    fsrc = f.name
+                    fsrc = src+".tmp"
+                    with open(fsrc, "wb") as f:
+                        f.write(data.encode("latin1"))
+                    os.chmod(fsrc, 0o644)
 
                     if minifier=="uglifyjs":
                         minify_cmd = ["uglifyjs",
@@ -163,7 +160,7 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                         r = get_status_output(minify_cmd)[0]
                         if r!=0:
                             raise Exception("Error: failed to minify '%s', command %s returned error %i" % (
-                                f, minify_cmd, r))
+                                bname, minify_cmd, r))
                     finally:
                         os.unlink(fsrc)
                     os.chmod(dst, 0o644)
@@ -230,17 +227,19 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
 
 
 def main():
-    if len(sys.argv)==1:
-        install_dir = os.path.join(sys.prefix, "share/xpra/www")
-    elif len(sys.argv)==2:
+    minifier = "uglifyjs"
+    install_dir = os.path.join(sys.prefix, "share/xpra/www")
+    if len(sys.argv)>=2:
         install_dir = sys.argv[1]
-    else:
+    if len(sys.argv)>=3:
+        minifier = sys.argv[2]
+    if len(sys.argv)>=4:
         print("invalid number of arguments: %i" % len(sys.argv))
         print("usage:")
         print("%s [installation-directory]" % sys.argv[0])
         sys.exit(1)
 
-    install_html5(install_dir)
+    install_html5(install_dir, minifier)
 
 if __name__ == "__main__":
     main()

@@ -320,6 +320,9 @@ if "clean" not in sys.argv:
         print("Warning: you probably want to build at least the client or server!")
     if DEFAULT and not pillow_ENABLED:
         print("Warning: including Python Pillow is VERY STRONGLY recommended")
+    if minify_ENABLED and WIN32:
+        print("Warning: minifier is not supported on MS Windows")
+        minify_ENABLED = False
     if html5_ENABLED and minify_ENABLED:
         r = get_status_output(["uglifyjs", "--version"])[0]
         if r==0:
