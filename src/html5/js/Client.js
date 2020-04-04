@@ -2348,7 +2348,7 @@ XpraClient.prototype._process_pointer_position = function(packet, ctx) {
 		h = 32;
 		xhot = 8;
 		yhot = 3;
-		cursor_url = "../icons/default_cursor.png";
+		cursor_url = "icons/default_cursor.png";
 	}
 	x -= xhot;
 	y -= yhot;
