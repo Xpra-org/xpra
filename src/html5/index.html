@@ -207,16 +207,16 @@
 		</div>
 
 		<script>
-			var default_settings = {}
-			var getparam = function(prop) {
-				var v = Utilities.getparam(prop);
+			const default_settings = {};
+			const getparam = function(prop) {
+				let v = Utilities.getparam(prop);
 				if (v==null && prop in default_settings) {
 					v = default_settings[prop];
 				}
 				return v;
 			}
-			var getboolparam = function(prop, default_value) {
-				var v = Utilities.getparam(prop);
+			const getboolparam = function(prop, default_value) {
+				let v = Utilities.getparam(prop);
 				if (v==null && prop in default_settings) {
 					v = default_settings[prop];
 				}
@@ -224,16 +224,16 @@
 					return default_value;
 				}
 				return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())!==-1;
-			}
+			};
 
-			var float_menu_item_size = 30;
-			var float_menu_padding = 20;
-			var float_menu_width = (float_menu_item_size*4) + float_menu_padding;
+			const float_menu_item_size = 30;
+			const float_menu_padding = 20;
+			let float_menu_width = (float_menu_item_size*4) + float_menu_padding;
 
-			var cdebug = function () {
+			let cdebug = function () {
 				Utilities.clog.apply(Utilities, arguments);
 			}
-			var clog = function () {
+			let clog = function () {
 				Utilities.clog.apply(Utilities, arguments);
 			};
 
@@ -303,7 +303,7 @@
 				client.stop_info_timer();
 			}
 			document.addEventListener('info-response', function (e) {
-				var info = e.data;
+				const info = e.data;
 				$("#endpoint").html(client.uri);
 				$("#server_display").html(client.server_display);
 				//$("#server_hostname").html(info["hostname"] || "");
@@ -315,20 +315,20 @@
 					$("#server_load").html(""+client.server_load);
 				}
 				function toHHMMSS(t) {
-					var s = "";
-					var hh = Math.floor(t/1000/60/60);
+					let s = "";
+					const hh = Math.floor(t/1000/60/60);
 					if (hh>0)
 						s += ""+hh+":";
-					var mm = Math.floor(t/1000/60) % 60;
+					const mm = Math.floor(t/1000/60) % 60;
 					s += ("0" + mm).slice(-2);	//left pad with "0"
-					var ss = Math.floor(t/1000) % 60;
+					const ss = Math.floor(t/1000) % 60;
 					s += ":"+("0" + ss).slice(-2);	//left pad with "0"
 					return s
 				}
 				//this one shows bogus values!?:
 				//var elapsed = (new Date()).getTime()-info["server.start_time"];
 				//$("#session_started").html(toHHMMSS(elapsed));
-				var elapsed = (new Date()).getTime()-client.client_start_time;
+				const elapsed = (new Date()).getTime()-client.client_start_time;
 				$("#session_connected").html(toHHMMSS(elapsed));
 				if (client.server_ping_latency>=0)
 					$("#server_latency").html(client.server_ping_latency);
@@ -348,8 +348,9 @@
 			function hide_bugreport() {
 				$('#bugreport').hide();
 				//focus back on our capture widget:
-				$("#pasteboard").prop('autofocus');
-				$("#pasteboard").focus();
+				const pasteboard_element = $("#pasteboard");
+				pasteboard_element.prop('autofocus');
+				pasteboard_element.focus();
 			}
 			function show_bugreport(event) {
 				//stop capturing input, so we can interact with the bugreport form:
@@ -366,19 +367,19 @@
 			}
 			function generate_bugreport() {
 				client.capture_keyboard = true;
-				var zip = new JSZip();
+				const zip = new JSZip();
 				zip.file("Summary.txt", ""+$("#bugreport_summary").val()+"\n\n"+$("#bugreport_description").val());
 				zip.file("Server-Info.txt", ""+JSON.stringify(client.server_last_info));
 				//screenshot:
-				var canvas = document.createElement('canvas')
+				const canvas = document.createElement('canvas');
 				canvas.width = client.desktop_width;
 				canvas.height = client.desktop_height;
-				var ctx = canvas.getContext('2d')
-				for (var i in client.id_to_window) {
-					var iwin = client.id_to_window[i];
+				const ctx = canvas.getContext('2d');
+				for (let i in client.id_to_window) {
+					const iwin = client.id_to_window[i];
 					ctx.drawImage(iwin.draw_canvas, iwin.x, iwin.y);
 				}
-				var png_base64 = canvas.toDataURL("image/png");
+				const png_base64 = canvas.toDataURL("image/png");
 				zip.file("screenshot.png", Utilities.convertDataURIToBinary(png_base64));
 				zip.generateAsync({type:"blob"})
 				.then(function(content) {
@@ -387,13 +388,14 @@
 				hide_bugreport();
 			}
 
-			var touchaction_scroll = true;
+			let touchaction_scroll = true;
+
 			function toggle_touchaction() {
 				touchaction_scroll = !touchaction_scroll;
 				set_touchaction();
 			}
 			function set_touchaction() {
-				var touchaction, label;
+				let touchaction, label;
 				if (touchaction_scroll) {
 					touchaction = "none";
 					label = "zoom";
@@ -415,41 +417,41 @@
 					window.alert("Incomplete Xpra HTML5 client installation: jQuery is missing, cannot continue.");
 					return;
 				}
-				var https = document.location.protocol=="https:";
+				const https = document.location.protocol=="https:";
 
 				// look at url parameters
-				var username = getparam("username") || null;
-				var password = getparam("password") || null;
-				var sound = getboolparam("sound", true) || null;
-				var audio_codec = getparam("audio_codec") || null;
-				var encoding = getparam("encoding") || null;
-				var bandwidth_limit = getparam("bandwidth_limit") || 0;
-				var action = getparam("action") || "connect";
-				var submit = getboolparam("submit", true);
-				var server = getparam("server") || window.location.hostname;
-				var port = getparam("port") || window.location.port;
-				var ssl = getboolparam("ssl", https);
-				var path = getparam("path") || window.location.pathname;
-				var encryption = getboolparam("encryption", false);
-				var key = getparam("key") || null;
-				var keyboard_layout = getparam("keyboard_layout") || null;
-				var start = getparam("start");
-				var exit_with_children = getboolparam("exit_with_children", false);
-				var exit_with_client = getboolparam("exit_with_client", false);
-				var sharing = getboolparam("sharing", false);
-				var video = getboolparam("video", Utilities.is_64bit());
-				var mediasource_video = getboolparam("mediasource_video", false);
-				var remote_logging = getboolparam("remote_logging", true);
-				var insecure = getboolparam("insecure", false);
-				var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
-				var clipboard = getboolparam("clipboard", true);
-				var printing = getboolparam("printing", true);
-				var file_transfer = getboolparam("file_transfer", true);
-				var steal = getboolparam("steal", true);
-				var reconnect = getboolparam("reconnect", true);
-				var swap_keys = getboolparam("swap_keys", Utilities.isMacOS());
-				var scroll_reverse_x = getboolparam("scroll_reverse_x", false);
-				var scroll_reverse_y = getboolparam("scroll_reverse_y", Utilities.isMacOS());
+				const username = getparam("username") || null;
+				const password = getparam("password") || null;
+				const sound = getboolparam("sound", true) || null;
+				const audio_codec = getparam("audio_codec") || null;
+				const encoding = getparam("encoding") || null;
+				const bandwidth_limit = getparam("bandwidth_limit") || 0;
+				const action = getparam("action") || "connect";
+				const submit = getboolparam("submit", true);
+				const server = getparam("server") || window.location.hostname;
+				const port = getparam("port") || window.location.port;
+				const ssl = getboolparam("ssl", https);
+				const path = getparam("path") || window.location.pathname;
+				const encryption = getboolparam("encryption", false);
+				const key = getparam("key") || null;
+				const keyboard_layout = getparam("keyboard_layout") || null;
+				const start = getparam("start");
+				const exit_with_children = getboolparam("exit_with_children", false);
+				const exit_with_client = getboolparam("exit_with_client", false);
+				const sharing = getboolparam("sharing", false);
+				const video = getboolparam("video", Utilities.is_64bit());
+				const mediasource_video = getboolparam("mediasource_video", false);
+				const remote_logging = getboolparam("remote_logging", true);
+				const insecure = getboolparam("insecure", false);
+				const ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
+				const clipboard = getboolparam("clipboard", true);
+				const printing = getboolparam("printing", true);
+				const file_transfer = getboolparam("file_transfer", true);
+				const steal = getboolparam("steal", true);
+				const reconnect = getboolparam("reconnect", true);
+				const swap_keys = getboolparam("swap_keys", Utilities.isMacOS());
+				const scroll_reverse_x = getboolparam("scroll_reverse_x", false);
+				const scroll_reverse_y = getboolparam("scroll_reverse_y", Utilities.isMacOS());
 				try {
 					sessionStorage.removeItem("password");
 				}
@@ -457,9 +459,9 @@
 					//ignore
 				}
 
-				var progress_timer = null;
-				var progress_value = 0;
-				var progress_offset = 0;
+				let progress_timer;
+				const progress_value = 0;
+				let progress_offset = 0;
 				// show connection progress:
 				function connection_progress(state, details, progress) {
 					clog("connection_progress(", state, ", ", details, ", ", progress, ")");
@@ -472,7 +474,7 @@
 					$('#progress-label').text(state || " ");
 					$('#progress-details').text(details || " ");
 					$('#progress-bar').val(progress);
-					progress_value = progress;
+					const progress_value = progress;
 					if (progress_timer) {
 						window.clearTimeout(progress_timer);
 						progress_timer = null;
@@ -492,11 +494,13 @@
 					}
 				}
 
-				var debug_categories = [];
-				var categories = ["main", "keyboard", "geometry", "mouse", "clipboard", "draw", "audio", "network"];
-				for(var i=0, len=categories.length; i < len; i++) {
-					var category = categories[i];
-					var debug = getboolparam("debug_"+category, false);
+				let debug;
+				const debug_categories = [];
+				const categories = ["main", "keyboard", "geometry", "mouse", "clipboard", "draw", "audio", "network"];
+
+				for(let i=0; i<categories.length; i++) {
+					const category = categories[i];
+					debug = getboolparam("debug_"+category, false);
 					if (debug) {
 						debug_categories.push(category);
 					}
@@ -504,7 +508,7 @@
 				clog("debug enabled for:", debug_categories);
 
 				// create the client
-				var client = new XpraClient('screen');
+				const client = new XpraClient('screen');
 				client.debug_categories = debug_categories;
 				client.remote_logging = remote_logging;
 				client.sharing = sharing;
@@ -558,7 +562,7 @@
 				// encodings can be disabled like so
 				// client.disable_encoding("h264");
 				if(action && (action!="connect")) {
-					sns = {
+					const sns = {
 							"mode" 	: action,
 					};
 					if (exit_with_children) {
@@ -583,7 +587,7 @@
 					client.audio_enabled = true;
 					clog("sound enabled, audio codec string: "+audio_codec);
 					if(audio_codec && audio_codec.includes(":")) {
-						var acparts = audio_codec.split(":");
+						const acparts = audio_codec.split(":");
 						client.audio_framework = acparts[0];
 						client.audio_codec = acparts[1];
 					}
@@ -613,16 +617,16 @@
 				}
 
 				// attach a callback for when client closes
-				var debug_main = getboolparam("debug_main", false);
+				const debug_main = getboolparam("debug_main", false);
 				if(!debug_main) {
 					client.callback_close = function(reason) {
 						if(submit) {
-							var message = "Connection closed (socket closed)";
+							let message = "Connection closed (socket closed)";
 							if(reason) {
 								message = reason;
 							}
-							var url = "./connect.html";
-							var has_session_storage = Utilities.hasSessionStorage();
+							let url = "./connect.html";
+							const has_session_storage = Utilities.hasSessionStorage();
 							function add_prop(prop, value) {
 								if (has_session_storage) {
 									if (value===null || value==="undefined") {
@@ -639,7 +643,7 @@
 								}
 							}
 							add_prop("disconnect", message);
-							var props = {
+							const props = {
 									"username"			: username,
 									"insecure"			: insecure,
 									"server"			: server,
@@ -659,9 +663,9 @@
 									"mediasource_video"	: mediasource_video,
 									"remote_logging"	: remote_logging,
 									"ignore_audio_blacklist" : ignore_audio_blacklist,
-									}
-							for (var i=0, len=client.debug_categories.length; i < len; i++) {
-								var category = client.debug_categories[i];
+									};
+							for (let i=0; i<client.debug_categories.length; i++) {
+								const category = client.debug_categories[i];
 								props["debug_"+category] = true;
 							}
 							if (insecure || Utilities.hasSessionStorage()) {
@@ -670,8 +674,8 @@
 							else {
 								props["password"] = "";
 							}
-							for (var name in props) {
-								var value = props[name];
+							for (let name in props) {
+								const value = props[name];
 								add_prop(name, value);
 							}
 							window.location=url;
@@ -692,32 +696,32 @@
 
 			function init_tablet_input(client) {
 			   	//keyboard input for tablets:
-				var pasteboard = $('#pasteboard');
-			   	pasteboard.on("input", function(e) {
-			   		var txt = pasteboard.val();
-			   		pasteboard.val("");
+				const pasteboard = $('#pasteboard');
+				pasteboard.on("input", function(e) {
+					const txt = pasteboard.val();
+					pasteboard.val("");
 			   		cdebug("keyboard", "oninput: '"+txt+"'");
 			   		if (!client.topwindow) {
 			   			return;
 			   		}
-			   		for (var i = 0, len = txt.length; i < len; i++) {
-			   			var str = txt[i];
-			   			var keycode = str.charCodeAt(0);
-						var keyname = str;
+					for (let i = 0; i < txt.length; i++) {
+						const str = txt[i];
+						const keycode = str.charCodeAt(0);
+						let keyname = str;
 						if (str in CHAR_TO_NAME) {
 							keyname = CHAR_TO_NAME[str];
 							if (keyname.includes("_")) {
 								//ie: Thai_dochada
-								var lang = keyname.split("_")[0];
-								key_language = KEYSYM_TO_LAYOUT[lang];
+								const lang = keyname.split("_")[0];
+								const key_language = KEYSYM_TO_LAYOUT[lang];
 								client._check_browser_language(key_language);
 							}
 						}
 				   		try {
-				   			modifiers = [];
-				   			keyval = keycode;
-				   			group = 0;
-							packet = ["key-action", client.topwindow, keyname, true, modifiers, keyval, str, keycode, group];
+				   			const modifiers = [];
+				   			const keyval = keycode;
+				   			const group = 0;
+							let packet = ["key-action", client.topwindow, keyname, true, modifiers, keyval, str, keycode, group];
 							cdebug("keyboard", packet);
 							client.send(packet);
 							packet = ["key-action", client.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
@@ -732,14 +736,14 @@
 			}
 
 			function init_clipboard(client) {
-				var pasteboard = $('#pasteboard');
+				const pasteboard = $('#pasteboard');
 				//clipboard hooks:
 				pasteboard.on('paste', function (e) {
-					var paste_data;
+					let paste_data;
 					if (navigator.clipboard && navigator.clipboard.readText) {
 						navigator.clipboard.readText().then(function(text) {
 							cdebug("clipboard", "paste event, text=", text);
-							var paste_data = unescape(encodeURIComponent(text));
+							const paste_data = unescape(encodeURIComponent(text));
 							client.clipboard_buffer = paste_data;
 							client.send_clipboard_token(paste_data);
 						}, function(err) {
@@ -747,8 +751,8 @@
 						});
 					}
 					else {
-						var datatype = "text/plain";
-						var clipboardData = (e.originalEvent || e).clipboardData;
+						let datatype = "text/plain";
+						let clipboardData = (e.originalEvent || e).clipboardData;
 						//IE: must use window.clipboardData because the event clipboardData is null!
 						if (!clipboardData) {
 							clipboardData = window.clipboardData;
@@ -764,7 +768,7 @@
 					return false;
 				});
 				pasteboard.on('copy', function (e) {
-					var clipboard_buffer = client.get_clipboard_buffer();
+					const clipboard_buffer = client.get_clipboard_buffer();
 					pasteboard.text(decodeURIComponent(escape(clipboard_buffer)));
 					pasteboard.select();
 					cdebug("clipboard", "copy event, clipboard buffer=", clipboard_buffer);
@@ -772,7 +776,7 @@
 					return true;
 				});
 				pasteboard.on('cut', function (e) {
-					var clipboard_buffer = client.get_clipboard_buffer();
+					const clipboard_buffer = client.get_clipboard_buffer();
 					pasteboard.text(decodeURIComponent(escape(clipboard_buffer)));
 					pasteboard.select();
 					cdebug("clipboard", "cut event, clipboard buffer=", clipboard_buffer);
@@ -782,9 +786,9 @@
 				$('#screen').on('click', function (e) {
 					cdebug("clipboard", "click pending=", client.clipboard_pending, "buffer=", client.clipboard_buffer);
 					if (client.clipboard_pending) {
-						var clipboard_buffer = client.get_clipboard_buffer();
-						var clipboard_datatype = (client.get_clipboard_datatype() || "").toLowerCase();
-						var is_text = clipboard_datatype.indexOf("text")>=0 || clipboard_datatype.indexOf("string")>=0;
+						let clipboard_buffer = client.get_clipboard_buffer();
+						const clipboard_datatype = (client.get_clipboard_datatype() || "").toLowerCase();
+						const is_text = clipboard_datatype.indexOf("text")>=0 || clipboard_datatype.indexOf("string")>=0;
 						if (!is_text) {
 							//maybe just abort here instead?
 							clipboard_buffer = "";
@@ -793,8 +797,8 @@
 						pasteboard.select();
 						cdebug("clipboard", "click event, with pending clipboard datatype=", clipboard_datatype, ", buffer=", clipboard_buffer);
 						//for IE:
-						var success = false;
-						if (window.clipboardData && window.clipboardData.setData) {
+						let success = false;
+						if (window.hasOwnProperty("clipboardData") && window.clipboardData.hasOwnProperty("setData") && typeof window.clipboardData.setData === "function") {
 							try {
 								if (Utilities.isIE()) {
 									window.clipboardData.setData("Text", clipboard_buffer);
@@ -826,16 +830,16 @@
 			function init_file_transfer(client) {
 				function send_file(f) {
 					clog("file:", f.name, ", type:", f.type, ", size:", f.size, "last modified:", f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a');
-					var fileReader = new FileReader();
+					const fileReader = new FileReader();
 					fileReader.onloadend = function (evt) {
-						var u8a = new Uint8Array(evt.target.result);
-						var buf = Utilities.Uint8ToString(u8a);
+						const u8a = new Uint8Array(evt.target.result);
+						const buf = Utilities.Uint8ToString(u8a);
 						client.send_file(f.name, f.type, f.size, buf);
 					};
 					fileReader.readAsArrayBuffer(f);
 				}
 				function sendAllFiles(files) {
-					for (var i = 0, f; f = files[i]; i++) {
+					for (let i = 0, f; f = files[i]; i++) {
 						send_file(f);
 					}
 				}
@@ -849,7 +853,7 @@
 					evt.preventDefault();
 					evt.dataTransfer.dropEffect = 'copy';
 				}
-				var screen = document.getElementById('screen');
+				const screen = document.getElementById('screen');
 				screen.addEventListener('dragover', handleDragOver, false);
 				screen.addEventListener('drop', handleFileSelect, false);
 
@@ -870,13 +874,13 @@
 					return;
 				}
 				function update_clock() {
-					var now = new Date().getTime();
-					var server_time = client.last_ping_server_time + (now - client.last_ping_local_time) + client.server_ping_latency;
-					var date = new Date(server_time);
-					var clock_text = $("#clock_text");
-					var width = clock_text.width();
+					const now = new Date().getTime();
+					const server_time = client.last_ping_server_time + (now - client.last_ping_local_time)+client.server_ping_latency;
+					const date = new Date(server_time);
+					const clock_text = $("#clock_text");
+					const width = clock_text.width();
 					clock_text.text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
-					var clock_menu_text = $("#clock_menu_text");
+					const clock_menu_text = $("#clock_menu_text");
 					clock_menu_text.text(date.toLocaleDateString()+" "+date.toLocaleTimeString());
 					if (width != clock_text.width()) {
 						//trays have been shifted left or right:
@@ -884,7 +888,7 @@
 					}
 					//try to land at the half-second point,
 					//so that we never miss displaying a second:
-					var delay = (1500-(server_time % 1000)) % 1000;
+					let delay = (1500 - (server_time % 1000)) % 1000;
 					if (delay<10) {
 						delay = 1000;
 					}
@@ -910,8 +914,8 @@
 						return;
 					}
 					client.audio_state = newstate;
-					var tooltip = "";
-					var data_icon = "";
+					let tooltip;
+					let data_icon;
 					if (newstate=="playing") {
 						data_icon = "volume_up";
 						tooltip = "audio playing,\nclick to stop";
@@ -948,10 +952,10 @@
 			}
 			
 			function toggle_fullscreen() {
-				var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
-					if (!f_el) {
-						var elem = document.getElementById("fullscreen_button");
-						var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+				const f_el = document.hasOwnProperty("requestFullScreen") || document.hasOwnProperty("webkitRequestFullScreen") || document.hasOwnProperty("mozRequestFullScreen") || document.hasOwnProperty("msRequestFullscreen");
+				if (!f_el) {
+						const elem = document.getElementById("fullscreen_button");
+						const req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
 						if (req) {
 							req.call(document.body);
 						}
@@ -973,7 +977,7 @@
 			}
 			
 			function expand_float_menu(){
-				var expanded_width = (float_menu_item_size*4);
+				const expanded_width = (float_menu_item_size*4);
 				document.getElementById('float_menu').style.width = expanded_width +'px';
 				$('#float_menu').children().show();
 				if(client){
@@ -985,7 +989,7 @@
 				document.getElementById('float_menu').style.width ='0px'; $('#float_menu').children().hide();
 			}
 
-			var client = null;
+			let client;
 			function init_page() {
 				if (!getboolparam("floating_menu", true)) {
 					$("#float_menu").hide();
@@ -999,7 +1003,7 @@
 					expand_float_menu();
 				}
 
-				var touchaction = getparam("touchaction") || "scroll";
+				const touchaction = getparam("touchaction") || "scroll";
 				touchaction_scroll = touchaction == "scroll";
 				set_touchaction();
 				
@@ -1027,7 +1031,7 @@
 				init_clock(client, getboolparam("clock", true));
 				init_audio(client);
 				document.addEventListener("visibilitychange", function (e) {
-					window_ids = Object.keys(client.id_to_window).map(Number);
+					const window_ids = Object.keys(client.id_to_window).map(Number);
 					clog("visibilitychange hidden=", document.hidden, "connected=", client.connected);
 					if (client.connected) {
 						if (document.hidden) {
@@ -1048,9 +1052,9 @@
 					toggle_fullscreen();
 				});
 
-				var screen_change_events = "webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange";
+				const screen_change_events = "webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange";
 				$(document).on(screen_change_events, function () {
-					var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
+					const f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
 					clog("fullscreenchange:", f_el);
 					if (f_el == null) {
 						//we're not in fullscreen mode now, so show fullscreen icon again:
@@ -1066,13 +1070,13 @@
 
 			$(document).ready(function() {
 				clog("document is ready, browser is", navigator.platform, "64-bit:", Utilities.is_64bit());
-				var xhr = new XMLHttpRequest();
+				const xhr = new XMLHttpRequest();
 				xhr.open("GET", "./default-settings.txt");
 				xhr.onload = function() {
-					var tmp_default_settings = Utilities.parseINIString(xhr.responseText);
+					const tmp_default_settings = Utilities.parseINIString(xhr.responseText);
 					//update the default settings object
 					//so getparam will look there
-					for (key in tmp_default_settings) {
+					for (const key in tmp_default_settings) {
 						default_settings[key] = tmp_default_settings[key];
     				}
 					init_page();

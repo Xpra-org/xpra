@@ -58,8 +58,7 @@ const Utilities = {
 				s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
 			}
 		}
-		const uuid = s.join("");
-		return uuid;
+		return s.join("");
 	},
 
 	getSalt: function(l) {
@@ -85,10 +84,9 @@ const Utilities = {
 	},
 
 	trimString: function(str, trimLength){
-		const trimString = str.length > trimLength ?
-                    str.substring(0, trimLength - 3) + "..." :
-                    str;
-		return trimString;
+		return str.length>trimLength ?
+			str.substring(0, trimLength-3)+"..." :
+			str;
 	},
 
 	getPlatformProcessor: function() {
@@ -240,7 +238,7 @@ const Utilities = {
 		return navigator.userAgent.includes("Edge");
 	},
 	isChrome : function () {
-		const isChromium = window.chrome,
+		const isChromium = window.hasOwnProperty("chrome"),
 			winNav = window.navigator,
 			vendorName = winNav.vendor,
 			isOpera = winNav.userAgent.includes("OPR"),
@@ -342,8 +340,7 @@ const Utilities = {
 		const LINE_HEIGHT = 40;
 		const PAGE_HEIGHT = 800;
 
-		let sX = 0, sY = 0,       // spinX, spinY
-			pX = 0, pY = 0;       // pixelX, pixelY
+		let sX = 0, sY = 0;       // spinX, spinY
 
 		// Legacy
 		if ('detail'      in event) { sY = event.detail; }
@@ -357,8 +354,8 @@ const Utilities = {
 			sY = 0;
 		}
 
-		pX = sX * PIXEL_STEP;
-		pY = sY * PIXEL_STEP;
+		let pX = sX * PIXEL_STEP; // pixelX
+		let pY = sY * PIXEL_STEP; // pixelY
 
 		if ('deltaY' in event) { pY = event.deltaY; }
 		if ('deltaX' in event) { pX = event.deltaX; }

@@ -256,7 +256,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 	// done parsing the header, the next packet will need a new one:
 	this.header = [];
 
-	let packet_data = null;
+	let packet_data;
 	if (this.rQ[0].length==packet_size) {
 		//exact match: the payload is in a buffer already:
 		packet_data = this.rQ.shift();

@@ -276,8 +276,9 @@
 
 function doConnect() {
 	// url to client
-	var url = "./index.html";
-	var has_session_storage = Utilities.hasSessionStorage();
+	let url = "./index.html";
+	const has_session_storage = Utilities.hasSessionStorage();
+
 	function add_prop(prop, value) {
 		if (has_session_storage) {
 			if (value===null || value==="undefined") {
@@ -294,16 +295,16 @@ function doConnect() {
 		}
 	}
 	add_prop("submit", true);
-	var val_props = ["server", "port", "path", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec"];
-	for (var i = 0; i < val_props.length; i++) {
-		var prop = val_props[i];
-		var value = document.getElementById(prop).value;
+	const val_props = ["server", "port", "path", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec"];
+	for (let i = 0; i < val_props.length; i++) {
+		const prop = val_props[i];
+		const value = document.getElementById(prop).value;
 		if (value.length>0) {
 			add_prop(prop, value);
 		}
 	}
 
-	var start = null;
+	let start;
 	if (document.getElementById("action_connect").checked) {
 		add_prop("action", "connect");
 	}
@@ -322,7 +323,7 @@ function doConnect() {
 		add_prop("start", start);
 	}
 
-	var bool_props = ["clipboard", "printing", "file_transfer",
+	const bool_props = ["clipboard", "printing", "file_transfer",
 		"sound", "ignore_audio_blacklist",
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
@@ -330,24 +331,24 @@ function doConnect() {
 		"video", "mediasource_video",
 		"ssl", "insecure", "floating_menu", "autohide", "clock",
 		"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
-		];
-	for (var i = 0; i < bool_props.length; i++) {
-		var prop = bool_props[i];
+	];
+	for (let i = 0; i < bool_props.length; i++) {
+		const prop = bool_props[i];
 		add_prop(prop, document.getElementById(prop).checked);
 	}
 	window.location = url;
 }
 
 function fill_form(default_settings) {
-	var getparam = function(prop) {
-		var v = Utilities.getparam(prop);
+	const getparam = function(prop) {
+		let v = Utilities.getparam(prop);
 		if (v==null && prop in default_settings) {
 			v = default_settings[prop];
 		}
 		return v;
 	}
-	var getboolparam = function(prop, default_value) {
-		var v = Utilities.getparam(prop);
+	const getboolparam = function(prop, default_value) {
+		let v = Utilities.getparam(prop);
 		if (v==null && prop in default_settings) {
 			v = default_settings[prop];
 		}
@@ -357,17 +358,17 @@ function fill_form(default_settings) {
 		return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())!==-1;
 	};
 
-	var disconnect_reason = getparam("disconnect") || null;
+	const disconnect_reason = getparam("disconnect") || null;
 	if(disconnect_reason) {
 		document.getElementById("alert-disconnect").style.display = "block";
 		document.getElementById("disconnect-reason").innerHTML = disconnect_reason;
 	}
 
 	//Populate the form:
-	var url = window.location.href;
-	var link = document.createElement('a');
+	const url = window.location.href;
+	const link = document.createElement('a');
 	link.setAttribute('href', url);
-	var pathname = link.pathname;
+	let pathname = link.pathname;
 	if (pathname && pathname.endsWith("connect.html")) {
 		pathname = pathname.substring(0, pathname.length-"connect.html".length);
 	}
@@ -378,14 +379,14 @@ function fill_form(default_settings) {
 	document.getElementById("port").value = getparam("port") || link.port;
 	document.getElementById("path").value = getparam("path") || pathname;
 	document.getElementById("username").value = getparam("username") || "";
-	var https = document.location.protocol=="https:";
-	var ssl = getboolparam("ssl", https);
-	var insecure = getboolparam("insecure", false);
+	const https = document.location.protocol=="https:";
+	const ssl = getboolparam("ssl", https);
+	const insecure = getboolparam("insecure", false);
 	$('input#ssl').prop("checked", ssl);
 	$('input#insecure').prop("checked", insecure);
-	var ssl_input = document.getElementById("ssl");
-	var insecure_input = document.getElementById("insecure");
-	var has_session_storage = Utilities.hasSessionStorage();
+	const ssl_input = document.getElementById("ssl");
+	const insecure_input = document.getElementById("insecure");
+	const has_session_storage = Utilities.hasSessionStorage();
 	if (has_session_storage) {
 		//passwords would be sent on URL,
 		//so show insecure checkbox whenever ssl is off:
@@ -408,7 +409,7 @@ function fill_form(default_settings) {
 		$('input#password').prop("disabled", !has_session_storage && !ssl_input.checked && !insecure_input.checked);
 	};
 
-	var action = getparam("action") || "";
+	const action = getparam("action") || "";
 	if(action=="shadow") {
 		document.getElementById("action_shadow").checked = true;
 	}
@@ -422,8 +423,8 @@ function fill_form(default_settings) {
 		document.getElementById("action_connect").checked = true;
 	}
 	function set_exit_actions(disabled) {
-		var opacity = disabled ? 0.6 : 1;
-	   	$('input#exit_with_children').prop("disabled", disabled);
+		const opacity = disabled ? 0.6 : 1;
+		$('input#exit_with_children').prop("disabled", disabled);
 	   	$('input#exit_with_client').prop("disabled", disabled);
 	   	$('li.exit_with_children span').css("opacity", opacity);
 	   	$('li.exit_with_client span').css("opacity", opacity);
@@ -433,44 +434,44 @@ function fill_form(default_settings) {
 	   	}
 	}
 	$(document).on('click', '[name="action"]', function() {
-		var action = $(this).val();
+		const action = $(this).val();
 		set_exit_actions(action=="connect");
 	});
 	$('input:radio[value="'+action+'"]').click();
 
-	var encoding = getparam("encoding") || "auto";
+	const encoding = getparam("encoding") || "auto";
 	document.getElementById('encoding').value = encoding;
 
-	var bandwidth_limit = getparam("bandwidth_limit");
+	let bandwidth_limit = getparam("bandwidth_limit");
 	if(bandwidth_limit==null) {
-		var ci = Utilities.getConnectionInfo();
+		const ci = Utilities.getConnectionInfo();
 		if (ci) {
 			bandwidth_limit = ci["downlink"];
 		}
 	}
 	document.getElementById('bandwidth_limit').value = bandwidth_limit || 0;
 
-	var keyboard_layout = getparam("keyboard_layout");
+	let keyboard_layout = getparam("keyboard_layout");
 	if (keyboard_layout==null) {
 		keyboard_layout = Utilities.getKeyboardLayout();
 	}
 	document.getElementById('keyboard_layout').value = keyboard_layout;
 	try {
-		var req = new XMLHttpRequest()
+		const req = new XMLHttpRequest();
 		req.open('GET', "/favicon.png?echo-headers", true);
 		req.onload = function (e) {
 			if (req.readyState === 4) {
 				if (req.status === 200) {
-					var headers = Utilities.ParseResponseHeaders(req.getAllResponseHeaders());
+					const headers = Utilities.ParseResponseHeaders(req.getAllResponseHeaders());
 					console.debug("headers:", headers);
-					var lang = headers["Echo-Accept-Language"];
+					let lang = headers["Echo-Accept-Language"];
 					//ie: lang = "en-gb,en-us;q=0.8,en;q=0.6"
 					if (lang) {
 						//just the first option:
 						console.debug("accept-language:", lang);
 						lang = lang.split(",")[0];		//ie: lang="en-gb"
 						console.debug("first language:", lang);
-						var locale = lang.split("-")[1];
+						let locale = lang.split("-")[1];
 						if (locale) {
 							locale = locale.toLowerCase();
 							console.debug("request locale:", locale);
@@ -492,26 +493,25 @@ function fill_form(default_settings) {
 		console.warn("Warning: failed to get HTTP header probe:", e);
 	}
 
-	var audio_codec = getparam("audio_codec") || "";
-	var audio_codec_select = document.getElementById("audio_codec");
-	var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
+	const audio_codec = getparam("audio_codec") || "";
+	const audio_codec_select = document.getElementById("audio_codec");
+	const ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
 	if(ignore_audio_blacklist) {
 		$('input#ignore_audio_blacklist').prop("value", true);
 	}
 
-	var codecs_supported = MediaSourceUtil.get_supported_codecs(getboolparam("mediasource", true),
+	const codecs_supported = MediaSourceUtil.get_supported_codecs(getboolparam("mediasource", true),
 			getboolparam("aurora", true),
 			getboolparam("http-stream", true),
 			ignore_audio_blacklist);
-	var best_codec = audio_codec;
+	let best_codec = audio_codec;
 	if(!best_codec) {
 		best_codec = MediaSourceUtil.get_best_codec(codecs_supported);
 	}
-	for (var codec_option in codecs_supported) {
-	    var option = document.createElement("option");
-	    option.value = codec_option;
-	    var description = MediaSourceConstants.CODEC_DESCRIPTION[codec_option] || codecs_supported[codec_option];
-	    option.textContent = description;
+	for (let codec_option in codecs_supported) {
+		const option = document.createElement("option");
+		option.value = codec_option;
+		option.textContent = MediaSourceConstants.CODEC_DESCRIPTION[codec_option] || codecs_supported[codec_option];
     	option.selected = (codec_option==best_codec);
 	    audio_codec_select.add(option);
 	}
@@ -524,16 +524,16 @@ function fill_form(default_settings) {
 			document.getElementById("sound").checked = true;
 		};
 	}
-	var sound = getboolparam("sound");
+	const sound = getboolparam("sound");
 	$('input#sound').prop("checked", sound && Object.keys(codecs_supported).length>0);
 
-	var bool_props = ["clipboard", "printing", "file_transfer",
-			"exit_with_children", "exit_with_client",
-			"sharing", "steal", "reconnect", "swap_keys",
-			"video", "mediasource_video", "floating_menu", "autohide", "clock",
-			"scroll_reverse_x", "scroll_reverse_y",
-			"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
-	var default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "floating_menu", "clock", "exit_with_children", "exit_with_client"];
+	const bool_props = ["clipboard", "printing", "file_transfer",
+		"exit_with_children", "exit_with_client",
+		"sharing", "steal", "reconnect", "swap_keys",
+		"video", "mediasource_video", "floating_menu", "autohide", "clock",
+		"scroll_reverse_x", "scroll_reverse_y",
+		"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network"];
+	const default_on = ["steal", "clipboard", "printing", "file_transfer", "reconnect", "floating_menu", "clock", "exit_with_children", "exit_with_client"];
 	if (Utilities.is_64bit()) {
 		default_on.push("video");
 	}
@@ -541,19 +541,19 @@ function fill_form(default_settings) {
 		default_on.push("swap_keys");
 		default_on.push("scroll_reverse_y");
 	}
-	for (var i = 0; i < bool_props.length; i++) {
-		var prop = bool_props[i];
-		var def = default_on.includes(prop);
+	for (let i = 0; i < bool_props.length; i++) {
+		const prop = bool_props[i];
+		const def = default_on.includes(prop);
 		document.getElementById(prop).checked = getboolparam(prop, def);
 	}
 	function toggle_mediasource_video() {
 		$('#mediasource_video').prop("disabled", !video.checked);
 	}
-	var video = document.getElementById("video");
+	const video = document.getElementById("video");
 	video.onchange = toggle_mediasource_video;
 	toggle_mediasource_video();
 
-	var floating_menu_checkbox = $("#floating_menu");
+	const floating_menu_checkbox = $("#floating_menu");
 	function set_menu_attributes_visibility() {
 		if (floating_menu_checkbox.is(':checked')) {
 			$("#clock").removeAttr("disabled");
@@ -582,21 +582,21 @@ function fill_form(default_settings) {
 	}
 	function submit_if_enter(e) {
 	    if (!e) {
-	    	var e = window.event;
+	    	const e = window.event;
 	    }
 	    if (e.keyCode == 13) {
 		    e.preventDefault();
 		    doConnect();
 	    }
 	}
-	var submit_text_fields = ["server", "port", "username", "password"];
-	for (var i = 0; i < submit_text_fields.length; i++) {
+	const submit_text_fields = ["server", "port", "username", "password"];
+	for (let i = 0; i < submit_text_fields.length; i++) {
 		document.getElementById(submit_text_fields[i]).addEventListener("keydown", submit_if_enter);
 	}
 }
 
 $(document).ready(function() {
-	var xhr = new XMLHttpRequest();
+	const xhr = new XMLHttpRequest();
 	xhr.open("GET", "./default-settings.txt");
 	xhr.onload = function() {
 		fill_form(Utilities.parseINIString(xhr.responseText));

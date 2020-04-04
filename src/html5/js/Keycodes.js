@@ -1727,7 +1727,7 @@ CHARCODE_TO_NAME = {
 for (let i=0; i<26; i++) {
 	CHARCODE_TO_NAME[65+i] = "abcdefghijklmnopqrstuvwxyz"[i];
 }
-for (i=0; i<10; i++) {
+for (let i=0; i<10; i++) {
 	CHARCODE_TO_NAME[48+i] = ""+i;
 	CHARCODE_TO_NAME[96+i] = ""+i;
 	//fix for OSX numpad?

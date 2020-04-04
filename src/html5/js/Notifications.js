@@ -20,7 +20,8 @@ $(function() {
 					'<span class="message">' + message + '</span>'+
 					'<div class="dismiss">&#215;</div>'+
 				  '</div>');
-		$('.notifications').prepend(a);
+		const notifications_elements = $('.notifications');
+		notifications_elements.prepend(a);
 		if (actions) {
 			const notification_buttons = $('<div class="notification_buttons"></div>');
 			a.append(notification_buttons);
@@ -61,9 +62,9 @@ $(function() {
 
 		if(timeout){
 			a.data('timeLeft', timeout);
-			const it = setInterval(function() {
-				const tleft = a.data('timeLeft') - 1;
-				if (a.data('timeLeft') === 0) {
+			window.notification_timers[nid] = setInterval(function() {
+				const tleft = a.data('timeLeft')-1;
+				if (a.data('timeLeft')===0) {
 					a.find('.dismiss').trigger('click');
 					if (onClose) {
 						onClose(nid, 1, "timeout");
@@ -73,7 +74,6 @@ $(function() {
 					a.data('timeLeft', tleft);
 				}
 			}, 1000);
-			window.notification_timers[nid] = it;
 		}
 		return a;
 	};

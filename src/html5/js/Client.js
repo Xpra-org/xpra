@@ -188,7 +188,8 @@ XpraClient.prototype.init_state = function(container) {
 	this.focus = -1;
 
 	const me = this;
-	jQuery("#screen").mousedown(function (e) {
+	const screen_element = jQuery("#screen");
+	screen_element.mousedown(function (e) {
 		me.on_mousedown(e);
 	});
 	jQuery("#screen").mouseup(function (e) {
@@ -280,7 +281,7 @@ XpraClient.prototype.clog = function() {
 XpraClient.prototype.debug = function() {
 	const category = arguments[0];
 	let args = Array.from(arguments);
-	args = args.splice(1);
+	//args = args.splice(1);
 	if (this.debug_categories.includes(category)) {
 		if (category!="network") {
 			//logging.DEBUG = 10
@@ -509,11 +510,9 @@ XpraClient.prototype.disable_encoding = function(encoding) {
 
 XpraClient.prototype._route_packet = function(packet, ctx) {
 	// ctx refers to `this` because we came through a callback
-	let packet_type = "";
-	let fn = "";
-	packet_type = packet[0];
+	const packet_type = packet[0];
 	ctx.debug("network", "received a", packet_type, "packet");
-	fn = ctx.packet_handlers[packet_type];
+	const fn = ctx.packet_handlers[packet_type];
 	if (fn==undefined) {
 		this.cerror("no packet handler for ", packet_type);
 		this.clog(packet);
@@ -645,7 +644,7 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 	if (now<this.browser_language_change_embargo_time) {
 		return;
 	}
-	let new_layout = null;
+	let new_layout;
 	if (key_layout) {
 		new_layout = key_layout;
 	}
@@ -1127,7 +1126,7 @@ XpraClient.prototype._make_hello_base = function() {
 };
 
 XpraClient.prototype._make_hello = function() {
-	let selections = null;
+	let selections;
 	if (navigator.clipboard && navigator.clipboard.readText && navigator.clipboard.writeText) {
 		//we don't need the primary contents,
 		//we can use the async clipboard
@@ -1675,7 +1674,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.protocol.set_cipher_out(ctx.cipher_out_caps, ctx.encryption_key);
 	}
 	// find the modifier to use for Num_Lock
-	const modifier_keycodes = hello['modifier_keycodes']
+	const modifier_keycodes = hello['modifier_keycodes'];
 	if (modifier_keycodes) {
 		for (const modifier in modifier_keycodes) {
 			if (modifier_keycodes.hasOwnProperty(modifier)) {
@@ -1755,7 +1754,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 					ctx.warn("audio codec "+ctx.audio_codec+" is not supported by the server");
 					ctx.audio_codec = null;
 					//find the best one we can use:
-					for (const i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
+					for (let i = 0; i < MediaSourceConstants.PREFERRED_CODEC_ORDER.length; i++) {
 						const codec = MediaSourceConstants.PREFERRED_CODEC_ORDER[i];
 						if ((codec in ctx.audio_codecs) && (ctx.server_audio_codecs.indexOf(codec)>=0)){
 							if (ctx.mediasource_codecs[codec]) {
@@ -1814,7 +1813,7 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		ctx.send(["printers", printers]);
 	}
 	ctx.server_connection_data = hello["connection-data"];
-	if (navigator.connection) {
+	if (navigator.hasOwnProperty("connection")) {
 		navigator.connection.onchange = function() {
 			ctx._connection_change();
 		};
@@ -2114,8 +2113,8 @@ XpraClient.prototype.stop_info_timer = function() {
  */
 XpraClient.prototype._process_new_tray = function(packet, ctx) {
 	const wid = packet[1];
-	let w = packet[2];
-	let h = packet[3];
+	//let w = packet[2];
+	//let h = packet[3];
 	const metadata = packet[4];
 	const mydiv = document.createElement("div");
 	mydiv.id = String(wid);
@@ -2134,25 +2133,24 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 	float_tray.appendChild(mydiv);
 	const x = 0;
 	const y = 0;
-	w = float_menu_item_size;
-	h = float_menu_item_size;
+	const w = float_menu_item_size;
+	const h = float_menu_item_size;
 
 	mycanvas.width = w;
 	mycanvas.height = h;
-	const win = new XpraWindow(ctx, mycanvas, wid, x, y, w, h,
-		metadata,
-		false,
-		true,
-		{},
-		ctx._tray_geometry_changed,
-		ctx._window_mouse_move,
-		ctx._window_mouse_down,
-		ctx._window_mouse_up,
-		ctx._window_mouse_scroll,
-		ctx._tray_set_focus,
-		ctx._tray_closed
-		);
-	ctx.id_to_window[wid] = win;
+	ctx.id_to_window[wid] = new XpraWindow(ctx, mycanvas, wid, x, y, w, h,
+			metadata,
+			false,
+			true,
+			{},
+			ctx._tray_geometry_changed,
+			ctx._window_mouse_move,
+			ctx._window_mouse_down,
+			ctx._window_mouse_up,
+			ctx._window_mouse_scroll,
+			ctx._tray_set_focus,
+			ctx._tray_closed
+	);
 	ctx.send_tray_configure(wid);
 };
 XpraClient.prototype.send_tray_configure = function(wid) {
@@ -2243,9 +2241,9 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 		throw new Error("we already have a window " + wid);
 	if (w<=0 || h<=0) {
 		this.error("window dimensions are wrong:", w, h);
-		w, h = 1, 1;
+		let w = 1, h = 1;
 	}
-	let client_properties = {}
+	let client_properties = {};
 	if (packet.length>=8)
 		client_properties = packet[7];
 	if (x==0 && y==0 && !metadata["set-initial-position"]) {
@@ -2331,11 +2329,7 @@ XpraClient.prototype._process_pointer_position = function(packet, ctx) {
 	}
 	const shadow_pointer = document.getElementById("shadow_pointer");
 	const style = shadow_pointer.style;
-	let cursor_url = null,
-		w = 32,
-		h = 32,
-		xhot = 0,
-		yhot = 0;
+	let cursor_url, w, h, xhot, yhot;
 	if (win.png_cursor_data) {
 		w = win.png_cursor_data[0];
 		h = win.png_cursor_data[1];
@@ -2534,7 +2528,7 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 };
 
 XpraClient.prototype._process_notify_close = function(packet, ctx) {
-	nid = packet[1];
+	const nid = packet[1];
 	if(window.closeNotification) {
 		window.closeNotification(nid);
 	}

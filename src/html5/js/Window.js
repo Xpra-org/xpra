@@ -1012,7 +1012,8 @@ XpraWindow.prototype.reset_cursor = function() {
 XpraWindow.prototype.set_cursor = function(encoding, w, h, xhot, yhot, img_data) {
 	if (encoding=="png") {
 		const cursor_url = "url('data:image/" + encoding + ";base64," + window.btoa(img_data) + "')";
-		jQuery("#"+String(this.wid)).css("cursor", cursor_url+", default");
+		const window_element = jQuery("#"+String(this.wid));
+		window_element.css("cursor", cursor_url+", default");
 		//CSS3 with hotspot:
 		jQuery("#"+String(this.wid)).css("cursor", cursor_url+" "+xhot+" "+yhot+", auto");
 		this.png_cursor_data = [w, h, xhot, yhot, img_data];
