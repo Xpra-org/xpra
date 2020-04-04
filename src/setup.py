@@ -1304,6 +1304,7 @@ if WIN32:
             add_gui_exe("xpra/client/gtk_base/example/tray.py", "xpra.ico",         "SystemTray_Test")
             add_gui_exe("xpra/client/gtk_base/u2f_tool.py",     "authentication.ico", "U2F_Tool")
         if client_ENABLED or server_ENABLED:
+            add_console_exe("win32/python_exec.py",             "python.ico",       "Python_exec_cmd")
             add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile_cmd")
             add_console_exe("win32/python_execfile.py",         "python.ico",       "Python_execfile_gui")
             add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
