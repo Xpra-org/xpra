@@ -176,7 +176,7 @@ const Utilities = {
 				l = v.split('_', 2);
 			}
 			//ie: "en"
-			layout=l[1].toLowerCase();
+			layout = l[0].toLowerCase();
 			const tmp = LANGUAGE_TO_LAYOUT[v];
 			if (tmp) {
 				layout = tmp;
