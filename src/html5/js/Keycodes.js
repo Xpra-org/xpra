@@ -1626,8 +1626,8 @@ CHAR_TO_NAME = {
 //console.debug("KEYSYM_TO_UNICODE=", KEYSYM_TO_UNICODE);
 for (var keysym in KEYSYM_TO_UNICODE) {
     var u = KEYSYM_TO_UNICODE[keysym];
-    var char = String.fromCharCode(u);
-    CHAR_TO_NAME[char] = keysym;
+    var character = String.fromCharCode(u);
+    CHAR_TO_NAME[character] = keysym;
 }
 //console.debug("CHAR_TO_NAME=", KEYSYM_TO_UNICODE);
 
