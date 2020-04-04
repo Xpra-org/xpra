@@ -179,8 +179,8 @@ var Utilities = {
 		if (l.length === 1){
 			return '';
 		}
-		//ie: "gb"
-		layout=l[1].toLowerCase();
+		//ie: "en"
+		layout = l[0].toLowerCase();
 		console.debug("getKeyboardLayout()=", layout);
 		return layout;
 	},
