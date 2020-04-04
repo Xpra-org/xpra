@@ -236,7 +236,7 @@
 			}
 			var clog = function () {
 				Utilities.clog.apply(Utilities, arguments);
-			}
+			};
 
 			function confirm_shutdown_server() {
 				if (confirm("Shutdown this server?")) {
@@ -258,12 +258,12 @@
 			function connection_established() {
 				//this may be a re-connection,
 				//so make sure we cleanup any left-overs
-				clog("connection-established")
+				clog("connection-established");
 				cleanup_dialogs();
 				$("button.menu-button").prop('disabled', false);
 			}
 			function connection_lost() {
-				clog("connection-lost")
+				clog("connection-lost");
 				cleanup_dialogs();
 				$("button.menu-button").prop('disabled', true);
 			}
@@ -1012,10 +1012,10 @@
 				//which may forward it to the server once connected:
 				clog = function() {
 					client.log.apply(client, arguments);
-				}
+				};
 				cdebug = function() {
 					client.debug.apply(client, arguments);
-				}
+				};
 				init_tablet_input(client);
 				if (client.clipboard_enabled) {
 					init_clipboard(client);
@@ -1078,13 +1078,13 @@
 						default_settings[key] = tmp_default_settings[key];
     				}
 					init_page();
-				}
+				};
 				xhr.onerror  = function() {
 					init_page();
-				}
+				};
 				xhr.onabort = function() {
 					init_page();
-				}
+				};
 				xhr.send();
 			});
 		</script>

@@ -727,4 +727,4 @@ const LANGUAGE_TO_LAYOUT = {
 		//"xh"	: "??",
  		//"ji"	: "??",
 		//"zu"	: "??",
-}
+};

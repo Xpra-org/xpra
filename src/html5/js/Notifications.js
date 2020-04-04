@@ -98,18 +98,18 @@ $(function() {
 			window.clearInterval(timer);
 			delete window.notification_timers[nid];
 		}
-	}
+	};
 	window.cancelNotificationTimers = function() {
 		for (const nid in window.notification_timers) {
 			window.cancelNotificationTimer(nid);
 		}
-	}
+	};
 
 	window.closeNotification = function(nid) {
 		window.cancelNotificationTimer(nid);
 		const nID = 'notification' + nid;
 		$('.notifications').find('#'+nID).find('.dismiss').trigger('click');
-	}
+	};
 
 	window.clearNotifications = function(){
 		window.cancelNotificationTimers();

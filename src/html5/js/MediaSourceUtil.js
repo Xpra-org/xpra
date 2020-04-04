@@ -302,4 +302,4 @@ const MediaSourceUtil = {
 			}
 			return best_codec;
 		},
-}
+};

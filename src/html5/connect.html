@@ -355,7 +355,7 @@ function fill_form(default_settings) {
 			return default_value;
 		}
 		return ["true", "on", "1", "yes", "enabled"].indexOf(String(v).toLowerCase())!==-1;
-	}
+	};
 
 	var disconnect_reason = getparam("disconnect") || null;
 	if(disconnect_reason) {
@@ -568,7 +568,7 @@ function fill_form(default_settings) {
 	set_menu_attributes_visibility();
 
 	//this may override default values (ie: terminate flags are off for connect mode):
-	set_exit_actions(action=="connect" || action=="")
+	set_exit_actions(action=="connect" || action=="");
 
 	$("#expandopts").click(function() {
 		$("#hiddenopts").slideToggle();
@@ -600,13 +600,13 @@ $(document).ready(function() {
 	xhr.open("GET", "./default-settings.txt");
 	xhr.onload = function() {
 		fill_form(Utilities.parseINIString(xhr.responseText));
-	}
+	};
 	xhr.onerror  = function() {
 		fill_form({});
-	}
+	};
 	xhr.onabort = function() {
 		fill_form({});
-	}
+	};
 	xhr.send();
 });
 

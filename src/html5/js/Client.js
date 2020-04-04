@@ -925,13 +925,13 @@ XpraClient.prototype._get_encodings = function() {
 		this.clog("return just enabled encodings: ", this.enabled_encodings);
 		return this.enabled_encodings;
 	}
-}
+};
 
 XpraClient.prototype._update_capabilities = function(appendobj) {
 	for (const attr in appendobj) {
 		this.capabilities[attr] = appendobj[attr];
 	}
-}
+};
 
 /**
  * Ping
@@ -1831,12 +1831,12 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 	ctx.on_connection_progress("Session started", "", 100);
 	ctx.on_connect();
 	ctx.connected = true;
-}
+};
 
 XpraClient.prototype._process_encodings = function(packet, ctx) {
 	const caps = packet[1];
 	ctx.log("update encodings:", caps);
-}
+};
 
 
 XpraClient.prototype.process_xdg_menu = function() {
@@ -2265,19 +2265,19 @@ XpraClient.prototype._new_window_common = function(packet, override_redirect) {
 			y = 96;
 		}
 	}
-	this._new_window(wid, x, y, w, h, metadata, override_redirect, client_properties)
+	this._new_window(wid, x, y, w, h, metadata, override_redirect, client_properties);
 	this._new_ui_event();
-}
+};
 
 XpraClient.prototype._window_closed = function(win) {
 	win.client.send(["close-window", win.wid]);
-}
+};
 
 XpraClient.prototype._get_client_properties = function(win) {
 	const cp = win.client_properties;
 	cp["encodings.rgb_formats"] = this.RGB_FORMATS;
 	return cp;
-}
+};
 
 XpraClient.prototype._window_geometry_changed = function(win) {
 	// window callbacks are called from the XpraWindow function context
@@ -2337,10 +2337,10 @@ XpraClient.prototype._process_pointer_position = function(packet, ctx) {
 		xhot = 0,
 		yhot = 0;
 	if (win.png_cursor_data) {
-		w = win.png_cursor_data[0],
-		h = win.png_cursor_data[1],
-		xhot = win.png_cursor_data[2],
-		yhot = win.png_cursor_data[3],
+		w = win.png_cursor_data[0];
+		h = win.png_cursor_data[1];
+		xhot = win.png_cursor_data[2];
+		yhot = win.png_cursor_data[3];
 		cursor_url = "data:image/png;base64," + window.btoa(win.png_cursor_data[4]);
 	}
 	else {
@@ -3497,12 +3497,12 @@ XpraClient.prototype.send_file = function(filename, mimetype, size, buffer) {
 	}
 	const packet = ["send-file", filename, mimetype, false, this.remote_open_files, size, buffer, {}];
 	this.send(packet);
-}
+};
 
 XpraClient.prototype.start_command = function(name, command, ignore) {
 	const packet = ["start-command", name, command, ignore];
 	this.send(packet);
-}
+};
 
 XpraClient.prototype._process_open_url = function(packet, ctx) {
 	const url = packet[1];

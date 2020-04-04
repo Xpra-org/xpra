@@ -1126,7 +1126,7 @@ XpraWindow.prototype._push_video_buffers = function() {
 	if(vb.length>0) {
 		setTimeout(this._push_video_buffers, 25);
 	}
-}
+};
 
 XpraWindow.prototype._init_video = function(width, height, coding, profile, level) {
 	const me = this;
@@ -1243,7 +1243,7 @@ const DEFAULT_BOX_COLORS = {
         "mpeg4"   : "black",
         "scroll"  : "brown",
         "mpeg1"   : "olive",
-        }
+        };
 
 XpraWindow.prototype.get_jsmpeg_renderer = function get_jsmpeg_renderer() {
 	if (this.jsmpeg_renderer==null) {
