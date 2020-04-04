@@ -1280,7 +1280,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	}
 	function paint_box(color, px, py, pw, ph) {
 		me.offscreen_canvas_ctx.strokeStyle = color;
-		me.offscreen_canvas_ctx.lineWidth = "2";
+		me.offscreen_canvas_ctx.lineWidth = 2;
 		me.offscreen_canvas_ctx.strokeRect(px, py, pw, ph);
 	}
 
