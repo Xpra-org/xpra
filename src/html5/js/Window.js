@@ -1288,7 +1288,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	function painted(skip_box) {
 		img_data = null;
 		me.paint_pending = 0;
-		if (me.paint_debug && !skip_box) {
+		if (!skip_box && me.debug_categories.includes("draw")) {
 			const color = DEFAULT_BOX_COLORS[coding] || "white";
 			paint_box(color, x, y, width, height);
 		}
