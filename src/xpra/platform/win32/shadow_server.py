@@ -203,8 +203,10 @@ def init_capture(w, h, pixel_depth=32):
                 capture = None
                 log("NvFBC_Capture", exc_info=True)
                 log.warn("Warning: NvFBC screen capture initialization failed:")
-                log.warn(" %s", e)
-                log.warn(" using the slower GDI capture code")
+                for x in str(e).replace(". ", ":").split(":"):
+                    if x.strip() and x!="nvfbc":
+                        log.warn(" %s", x.strip())
+                log.warn(" xpra is using the slower GDI capture code")
                 del e
     if not capture:
         if SHADOW_GDI:
