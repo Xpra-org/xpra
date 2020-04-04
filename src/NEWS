@@ -1,3 +1,20 @@
+v3.0.9 (2020-04-04)
+======================
+	-- fix focus race condition
+	-- fix keypad regression (AltGr changes, again)
+	-- fix MS Windows shadow servers
+	-- fix race condition collecting latency data for session info
+	-- fix missing pycuda dependency for nvenc on MS Windows
+	-- fix missing signatures on MS Windows EXE and MSI builds
+	-- fix scoring of NVENC codec (should be used ahead of sofware encoders)
+	-- HTML5 fixes: invalid IMG tag, reserved keyword, language detection, draw debugging, etc
+	-- don't try to read /proc if not on Posix
+	-- support more versions of Visual Studio when compiling CUDA kernels
+	-- use a more specific python3 interpreter version
+	-- update application content-type mappings
+	-- remove out of date information from man page
+
+
 v3.0.8 (2020-03-31)
 ======================
 	-- fix handling of dpi command line switch (correctly this time?)

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.8
+%define version 3.0.9
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -869,6 +869,21 @@ fi
 
 
 %changelog
+* Sat Apr 04 2020 Antoine Martin <antoine@xpra.org> 3.0.9-2xpra1
+- fix focus race condition
+- fix keypad regression (AltGr changes, again)
+- fix MS Windows shadow servers
+- fix race condition collecting latency data for session info
+- fix missing pycuda dependency for nvenc on MS Windows
+- fix missing signatures on MS Windows EXE and MSI builds
+- fix scoring of NVENC codec (should be used ahead of sofware encoders)
+- HTML5 fixes: invalid IMG tag, reserved keyword, language detection, draw debugging, etc
+- don't try to read /proc if not on Posix
+- support more versions of Visual Studio when compiling CUDA kernels
+- use a more specific python3 interpreter version
+- update application content-type mappings
+- remove out of date information from man page
+
 * Wed Apr 01 2020 Antoine Martin <antoine@xpra.org> 3.0.8-2xpra1
 - rebuilt with ssh run-xpra script fix
 

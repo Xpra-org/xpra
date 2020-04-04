@@ -1,3 +1,20 @@
+xpra (3.0.9-1) UNRELEASED; urgency=low
+  * fix focus race condition
+  * fix keypad regression (AltGr changes, again)
+  * fix MS Windows shadow servers
+  * fix race condition collecting latency data for session info
+  * fix missing pycuda dependency for nvenc on MS Windows
+  * fix missing signatures on MS Windows EXE and MSI builds
+  * fix scoring of NVENC codec (should be used ahead of sofware encoders)
+  * HTML5 fixes: invalid IMG tag, reserved keyword, language detection, draw debugging, etc
+  * don't try to read /proc if not on Posix
+  * support more versions of Visual Studio when compiling CUDA kernels
+  * use a more specific python3 interpreter version
+  * update application content-type mappings
+  * remove out of date information from man page
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 04 Apr 2020 13:56:33 +0700
+
 xpra (3.0.8-1) UNRELEASED; urgency=low
   * rebuilt with ssh run-xpra script fix
 
