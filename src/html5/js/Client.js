@@ -400,7 +400,7 @@ XpraClient.prototype.connect = function() {
 	} else {
 		// no webworker support
 		this.clog("no webworker support at all.");
-		me._do_connect(false);
+		this._do_connect(false);
 	}
 };
 
@@ -829,7 +829,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		if (pressed && Utilities.isMacOS() && raw_modifiers.includes("meta") && ostr!="meta") {
 			//macos will swallow the key release event if the meta modifier is pressed,
 			//so simulate one immediately:
-			packet = ["key-action", me.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
+			packet = ["key-action", this.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
 			this.key_packets.push(packet);
 		}
 
@@ -1578,7 +1578,7 @@ XpraClient.prototype.do_reconnect = function() {
 			me.clear_timers();
 			me.init_state();
 			if (protocol) {
-				this.protocol = null;
+				me.protocol = null;
 				protocol.terminate();
 			}
 			me.emit_connection_lost();
@@ -2930,7 +2930,7 @@ XpraClient.prototype._sound_start_mediasource = function() {
 		}
 		me.audio_source_buffer = asb;
 		asb.mode = "sequence";
-		if (this.debug) {
+		if (me.debug) {
 			MediaSourceUtil.addSourceBufferEventDebugListeners(asb, "audio");
 		}
 		asb.addEventListener('error', 				function(e) { audio_error("audio buffer"); });
