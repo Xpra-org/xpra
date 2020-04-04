@@ -318,7 +318,7 @@ XpraWindow.prototype.ensure_visible = function() {
 		this.x = Math.min(oldx, ww - min_visible);
 	}
 	if(oldy <= min_visible) {
-		this.y = 0 + this.topoffset;
+		this.y = parseInt(this.topoffset);
 	}
 	else if (oldy >= wh - min_visible) {
 		this.y = Math.min(oldy, wh - min_visible);
@@ -749,8 +749,8 @@ XpraWindow.prototype.fill_screen = function() {
 	// in future we may have a taskbar for minimized windows
 	// which should be subtracted from screen size
 	const screen_size = this.client._get_desktop_size();
-	this.x = 0 + this.leftoffset;
-	this.y = 0 + this.topoffset;
+	this.x = this.leftoffset;
+	this.y = this.topoffset;
 	this.w = (screen_size[0] - this.leftoffset) - this.rightoffset;
 	this.h = (screen_size[1] - this.topoffset) - this.bottomoffset;
 	this.debug("geometry", "fill_screen() ", this.x, this.y, this.w, this.h);
@@ -1194,8 +1194,8 @@ XpraWindow.prototype._non_video_paint = function(coding) {
 		//push video under the canvas:
 		this.video.style.zIndex = "-1";
 		//copy video to canvas:
-		const width = this.video.getAttribute("width");
-		const height = this.video.getAttribute("height");
+		const width = parseInt(this.video.getAttribute("width"));
+		const height = parseInt(this.video.getAttribute("height"));
 		this.offscreen_canvas_ctx.drawImage(this.video, 0, 0, width, height);
 	}
 };
@@ -1247,7 +1247,7 @@ const DEFAULT_BOX_COLORS = {
 
 XpraWindow.prototype.get_jsmpeg_renderer = function get_jsmpeg_renderer() {
 	if (this.jsmpeg_renderer==null) {
-		const options = new Object();
+		const options = {};
 		//webgl is still buggy
 		//if (JSMpeg.Renderer.WebGL.IsSupported()) {
 		//	this.jsmpeg_renderer = new JSMpeg.Renderer.WebGL(options);
@@ -1308,9 +1308,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			//show("options="+(options).toSource());
 			if (options!=null && options["zlib"]>0) {
 				//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
-				const inflated = new Zlib.Inflate(img_data).decompress();
-				//show("rgb32 data inflated from "+img_data.length+" to "+inflated.length+" bytes");
-				img_data = inflated;
+				img_data = new Zlib.Inflate(img_data).decompress();
 			} else if (options!=null && options["lz4"]>0) {
 				// in future we need to make sure that we use typed arrays everywhere...
 				let d;
@@ -1365,7 +1363,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 		else if (coding=="mpeg1") {
 			const frame = options["frame"] || 0;
 			if (frame==0 || this.jsmpeg_decoder==null) {
-				const options = new Object();
+				const options = {};
 				options.streaming = true;
 				options.decodeFirstFrame = false;
 				this.jsmpeg_decoder = new JSMpeg.Decoder.MPEG1Video(options);
@@ -1385,8 +1383,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				};
 				this.jsmpeg_decoder.connect(renderer);
 			}
-			const pts = frame;
-			this.jsmpeg_decoder.write(pts, img_data);
+			this.jsmpeg_decoder.write(frame, img_data);
 			const decoded = this.jsmpeg_decoder.decode();
 			this.debug("draw", coding, "frame", frame, "data len=", img_data.length, "decoded=", decoded);
 			//TODO: only call painted when we have actually painted the frame?

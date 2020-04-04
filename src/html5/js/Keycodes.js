@@ -1696,7 +1696,6 @@ CHARCODE_TO_NAME = {
 	144	: "Num_Lock",
 	145	: "Scroll_Lock",
 	160	: "dead_circumflex",
-	167 : "underscore",
 	161	: "exclam",
 	162	: "quotedbl",
 	163	: "numbersign",
