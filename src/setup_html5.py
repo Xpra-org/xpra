@@ -121,10 +121,10 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                                             'LOCAL_MODIFICATIONS : "%i",' % LOCAL_MODIFICATIONS)
                 if minifier=="uglifyjs":
                     for regexp, replacewith in {
-                        "^\s*for\s*\(\s*let\s+"     : "for(var ",
-                        "^\s*let\s+"                : "var ",
-                        "^\s*for\s*\(\s*const\s+"   : "for(var ",
-                        "^\s*const\s+"              : "var ",
+                        r"^\s*for\s*\(\s*let\s+"     : "for(var ",
+                        r"^\s*let\s+"                : "var ",
+                        r"^\s*for\s*\(\s*const\s+"   : "for(var ",
+                        r"^\s*const\s+"              : "var ",
                         }.items():
                         p = re.compile(regexp)
                         newdata = []
