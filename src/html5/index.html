@@ -929,8 +929,9 @@
 						tooltip = "audio off,\nclick to start";
 					}
 					clog("audio-state:", newstate);
-					$("#sound_button").attr("data-icon", data_icon);
-					$("#sound_button").attr("title", tooltip);
+					const sound_button_element = $("#sound_button");
+					sound_button_element.attr("data-icon", data_icon);
+					sound_button_element.attr("title", tooltip);
 				};
 				if (client.audio_enabled) {
 					$("#sound_button").click(function() {
@@ -991,13 +992,14 @@
 
 			let client;
 			function init_page() {
+				const float_menu_element = $('#float_menu');
 				if (!getboolparam("floating_menu", true)) {
-					$("#float_menu").hide();
+					float_menu_element.hide();
 				}
 
 				if (getboolparam("autohide", false)) {
-					$('#float_menu').on('mouseover', expand_float_menu);
-					$('#float_menu').on('mouseout', retract_float_menu);
+					float_menu_element.on('mouseover', expand_float_menu);
+					float_menu_element.on('mouseout', retract_float_menu);
 				}
 				else {
 					expand_float_menu();

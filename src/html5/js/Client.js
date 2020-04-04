@@ -192,10 +192,10 @@ XpraClient.prototype.init_state = function(container) {
 	screen_element.mousedown(function (e) {
 		me.on_mousedown(e);
 	});
-	jQuery("#screen").mouseup(function (e) {
+	screen_element.mouseup(function (e) {
 		me.on_mouseup(e);
 	});
-	jQuery("#screen").mousemove(function (e) {
+	screen_element.mousemove(function (e) {
 		me.on_mousemove(e);
 	});
 
@@ -2123,11 +2123,12 @@ XpraClient.prototype._process_new_tray = function(packet, ctx) {
 
 	const float_tray = document.getElementById("float_tray");
 	const float_menu = document.getElementById("float_menu");
-	$('#float_menu').children().show();
+	const float_menu_element = $('#float_menu');
+	float_menu_element.children().show();
 	//increase size for tray icon
 	const new_width = float_menu_width + float_menu_item_size - float_menu_padding + 5;
 	float_menu.style.width = new_width + "px";
-	float_menu_width=$('#float_menu').width() + 10;
+	float_menu_width = float_menu_element.width() + 10;
 	mydiv.style.backgroundColor = "white";
 
 	float_tray.appendChild(mydiv);

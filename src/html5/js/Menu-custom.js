@@ -100,16 +100,17 @@ function removeWindowListItem(itemId){
 }
 
 $(function() {
-	$("#float_menu").draggable({
+	const float_menu = $("#float_menu");
+	float_menu.draggable({
 		cancel: '.noDrag',
 		containment: 'window',
 		scroll: false
 	});
-	$("#float_menu").on("dragstart",function(ev,ui){
+	float_menu.on("dragstart",function(ev,ui){
 		client.mouse_grabbed = true;
 		//set_focus_cb(0);
 	});
-	$("#float_menu").on("dragstop",function(ev,ui){
+	float_menu.on("dragstop",function(ev,ui){
 		client.mouse_grabbed = false;
 		client.reconfigure_all_trays();
 	});

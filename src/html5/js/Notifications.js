@@ -32,7 +32,7 @@ $(function() {
 				notification_buttons.append(notification_button);
 			}
 		}
-		$('.notifications').prepend(a);
+		notifications_elements.prepend(a);
 		if (icon) {
 			const encoding = icon[0],
 				//w = icon[1],
