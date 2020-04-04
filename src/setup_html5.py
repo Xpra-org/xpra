@@ -131,15 +131,15 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                         for line in data.splitlines():
                             newdata.append(p.sub(replacewith, line))
                         data = "\n".join(newdata)
-                f = tempfile.NamedTemporaryFile(prefix="uglify-%s" % bname, delete=False)
-                f.file.write(data.encode("latin1"))
-                f.file.flush()
-                f.close()
-                os.chmod(f.name, 0o644)
-                fsrc = f.name
-                rm = f.name
 
                 if minifier:
+                    f = tempfile.NamedTemporaryFile(prefix="uglify-%s" % bname, delete=False)
+                    f.file.write(data.encode("latin1"))
+                    f.file.flush()
+                    f.close()
+                    os.chmod(f.name, 0o644)
+                    fsrc = f.name
+
                     if minifier=="uglifyjs":
                         minify_cmd = ["uglifyjs",
                                       "--screw-ie8",
@@ -161,12 +161,16 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                                       ]
                     try:
                         r = get_status_output(minify_cmd)[0]
+                        if r!=0:
+                            raise Exception("Error: failed to minify '%s', command %s returned error %i" % (
+                                f, minify_cmd, r))
                     finally:
-                        if rm and False:
-                            os.unlink(rm)
-                    if r!=0:
-                        raise Exception("Error: failed to minify '%s', command %s returned error %i" % (f, minify_cmd, r))
+                        os.unlink(fsrc)
+                    os.chmod(dst, 0o644)
                     print("minified %s" % (fname, ))
+                else:
+                    with open(dst, mode="bw") as f:
+                        f.write(data.encode("latin1"))
             else:
                 shutil.copyfile(src, dst)
                 os.chmod(dst, 0o644)
