@@ -529,5 +529,5 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 
 
 // initialise LZ4 library
-const Buffer = require('buffer').Buffer;
-const LZ4 = require('lz4');
+var Buffer = require('buffer').Buffer;
+var LZ4 = require('lz4');
