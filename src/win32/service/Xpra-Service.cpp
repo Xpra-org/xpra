@@ -223,7 +223,7 @@ VOID WINAPI SvcMain(DWORD dwArgc, LPTSTR *lpszArgv)
 VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 {
     HANDLE event_log = RegisterEventSource(NULL, SVCNAME);
-    const char* message = "Going to start Xpra proxy server";
+    const char* message = "Going to start Xpra shadow server";
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
     char buf[64];
 
@@ -244,8 +244,8 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 
     //LPTSTR command = "\"E:\\Xpra\\trunk\\src\\dist\\Xpra-Proxy.exe\"";
     //LPCTSTR cwd = "E:\\Xpra\\trunk\\src\\dist\\";
-    LPTSTR command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\"";
-    LPCTSTR cwd = "C:\\Program Files\\Xpra\\";
+    LPTSTR command = "C:\\Windows\\System32\\psexec.exe -accepteula -nobanner -w \"C:\\Program Files\\Xpra\" -s -x \"C:\\Program Files\\Xpra\\Xpra.exe\" \"shadow\" \"--bind-tcp=0.0.0.0:14500,auth=sys\"";
+    LPCTSTR cwd = "C:\\Program Files\\Xpra";
     if (!CreateProcess(NULL, command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
     {
         snprintf(buf, 64, "CreateProcess failed (%d).\n", GetLastError());
@@ -257,7 +257,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
         return;
     }
 
-    snprintf(buf, 64, "Xpra proxy started with pid=%d.\n", pi.dwProcessId);
+    snprintf(buf, 64, "Xpra shadow started with pid=%d.\n", pi.dwProcessId);
     message = (const char*) &buf;
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
     ReportSvcStatus( SERVICE_RUNNING, NO_ERROR, 0 );
