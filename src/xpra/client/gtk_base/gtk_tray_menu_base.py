@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import os
 import re
 from gi.repository import GLib, Gtk
 
-from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
+from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict, typedict
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
     menuitem, get_pixbuf_from_data, scaled_image,
@@ -24,6 +24,7 @@ from xpra.client import mixin_features
 from xpra.log import Logger
 
 log = Logger("menu")
+execlog = Logger("exec")
 clipboardlog = Logger("menu", "clipboard")
 webcamlog = Logger("menu", "webcam")
 avsynclog = Logger("menu", "av-sync")
@@ -1618,6 +1619,7 @@ class GTKTrayMenuBase:
             set_sensitive(start_menu_item, True)
             menu = self.build_start_menu()
             start_menu_item.set_submenu(menu)
+            start_menu_item.set_tooltip_text(None)
         def start_menu_init():
             update_menu_data()
             def on_xdg_menu_changed(setting, value):
@@ -1629,22 +1631,30 @@ class GTKTrayMenuBase:
 
     def build_start_menu(self):
         menu = Gtk.Menu()
-        log("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
-        for category, category_props in sorted(self.client.server_xdg_menu.items()):
-            log("build_start_menu() category: %s", category)
+        execlog("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
+        execlog("self.client.server_xdg_menu=%s", self.client.server_xdg_menu)
+        for cat, category_props in sorted(self.client.server_xdg_menu.items()):
+            category = cat.decode("utf-8")
+            execlog(" * category: %s", category)
             #log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):
+                execlog("category properties is not a dict: %s", type(category_props))
                 continue
-            entries = category_props.get(b"Entries", {})
+            cp = typedict(category_props)
+            execlog("  category_props(%s)=%s", category, category_props)
+            entries = cp.dictget("Entries")
             if not entries:
+                execlog("  no entries for category '%s'", category)
                 continue
-            icondata = category_props.get(b"IconData")
-            category_menu_item = self.start_menuitem(category.decode("utf-8"), icondata)
+            icondata = cp.bytesget("IconData")
+            category_menu_item = self.start_menuitem(category, icondata)
             cat_menu = Gtk.Menu()
             category_menu_item.set_submenu(cat_menu)
             menu.append(category_menu_item)
-            for app_name, command_props in sorted(entries.items()):
-                log("build_start_menu() app_name=%s", app_name)
+            for an, cp in sorted(entries.items()):
+                app_name = an.decode("utf-8")
+                command_props = typedict(cp)
+                execlog("  - app_name=%s", app_name)
                 app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
                 cat_menu.append(app_menu_item)
         menu.show_all()
@@ -1693,12 +1703,12 @@ class GTKTrayMenuBase:
                 smi.set_image(image)
         return smi
 
-    def make_applaunch_menu_item(self, app_name, command_props):
-        icondata = command_props.get(b"IconData")
-        app_menu_item = self.start_menuitem(app_name.decode("utf-8"), icondata)
+    def make_applaunch_menu_item(self, app_name : str, command_props : typedict):
+        icondata = command_props.bytesget("IconData")
+        app_menu_item = self.start_menuitem(app_name, icondata)
         def app_launch(*args):
             log("app_launch(%s) command_props=%s", args, command_props)
-            command = command_props.get(b"command")
+            command = command_props.bytesget("command")
             try:
                 command = re.sub(b'\\%[fFuU]', b'', command)
             except Exception:
