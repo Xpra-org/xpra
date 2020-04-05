@@ -50,7 +50,10 @@ class DotXpra:
     #find the matching sockets, and return:
     #(state, local_display, sockpath)
     def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
-        return {PIPE_PREFIX.rstrip("\\"): [(LIVE, display, pipe_name) for display, pipe_name in self.get_all_namedpipes().items()]}
+        np = self.get_all_namedpipes()
+        if not np:
+            return {}
+        return {PIPE_PREFIX.rstrip("\\"): [(LIVE, display, pipe_name) for display, pipe_name in np.items()]}
 
     def get_all_namedpipes(self):
         log = get_util_logger()
