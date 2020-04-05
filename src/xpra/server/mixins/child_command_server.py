@@ -94,6 +94,7 @@ class ChildCommandServer(StubServerMixin):
                 log.error(" %s", e)
             from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
             load_xdg_menu_data()
+            
 
     def setup_menu_watcher(self):
         try:
@@ -167,12 +168,16 @@ class ChildCommandServer(StubServerMixin):
 
 
     def _get_xdg_menu_data(self, force_reload=False):
-        if not self.start_new_commands or not POSIX or OSX:
-            return None
         if not EXPORT_XDG_MENU_DATA:
             return None
-        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-        return load_xdg_menu_data(force_reload)
+        if not self.start_new_commands:
+            return None
+        if POSIX or OSX:
+            from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
+            return load_xdg_menu_data(force_reload)
+        elif WIN32:
+            from xpra.platform.win32.menu_helper import load_menu
+            return load_menu()
 
     def get_caps(self, source) -> dict:
         caps = {}
@@ -184,6 +189,7 @@ class ChildCommandServer(StubServerMixin):
             if not source.xdg_menu_update:
                 #we have to send it now:
                 xdg_menu = self._get_xdg_menu_data()
+                log.warn("%i entries sent in hello", len(xdg_menu))
                 if xdg_menu:
                     l = len(str(xdg_menu))
                     #arbitrary: don't use more than half
@@ -197,8 +203,9 @@ class ChildCommandServer(StubServerMixin):
         return caps
 
     def send_initial_data(self, ss, caps, send_ui, share_count):
-        xdg_menu = self._get_xdg_menu_data()
         if ss.xdg_menu_update:
+            xdg_menu = self._get_xdg_menu_data()
+            log.warn("%i entries sent in initial data", len(xdg_menu))
             ss.send_setting_change("xdg-menu", xdg_menu or {})
 
     def schedule_xdg_menu_reload(self):
@@ -226,6 +233,7 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "start-after-connect-done"  : self.start_after_connect_done,
             "start-new"                 : self.start_new_commands,
+            "start-menu"                : self._get_xdg_menu_data(),
             }
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
@@ -249,6 +257,8 @@ class ChildCommandServer(StubServerMixin):
     def get_full_child_command(self, cmd, use_wrapper=True) -> list:
         #make sure we have it as a list:
         if not isinstance(cmd, (list, tuple)):
+            if WIN32:
+                return [cmd]
             import shlex
             cmd = shlex.split(str(cmd))
         if not use_wrapper or not self.exec_wrapper:

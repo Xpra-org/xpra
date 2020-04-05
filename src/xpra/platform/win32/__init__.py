@@ -11,7 +11,7 @@ import errno
 import os.path
 import sys
 import ctypes
-from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int
+from ctypes import WINFUNCTYPE, WinDLL, POINTER, byref, c_int, wintypes, create_unicode_buffer
 from ctypes.wintypes import BOOL, HANDLE, DWORD, LPWSTR, LPCWSTR, LPVOID, POINT, WORD, SMALL_RECT
 
 from xpra.util import envbool
@@ -71,6 +71,29 @@ def is_wine():
         #no wine key, assume not present and wait for input
         pass
     return False
+
+
+def get_csidl_folder(csidl):
+    try:
+        buf = create_unicode_buffer(wintypes.MAX_PATH)
+        shell32 = WinDLL("shell32", use_last_error=True)
+        SHGetFolderPath = shell32.SHGetFolderPathW
+        SHGetFolderPath(0, csidl, None, 0, buf)
+        return buf.value
+    except:
+        return None
+
+def get_common_startmenu_dir():
+    CSIDL_COMMON_STARTMENU = 0x16
+    return get_csidl_folder(CSIDL_COMMON_STARTMENU)
+
+def get_startmenu_dir():
+    CSIDL_STARTMENU = 0xb
+    return get_csidl_folder(CSIDL_STARTMENU)
+
+def get_commonappdata_dir():
+    CSIDL_COMMON_APPDATA = 35
+    return get_csidl_folder(CSIDL_COMMON_APPDATA)
 
 
 prg_name = "Xpra"
