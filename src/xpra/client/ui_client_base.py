@@ -522,9 +522,11 @@ class UIXpraClient(ClientBaseClass):
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(bytestostr(value)))
             return
         log("_process_setting_change: %s=%s", setting, value)
-        #xdg-menu is too big to log
-        if setting not in ("xdg-menu", ):
-            log.info("server setting changed: %s=%s", setting, repr_ellipsized(str(value)))
+        #xdg-menu is too big to log, and we have to update our attribute:
+        if setting=="xdg-menu":
+            self.server_xdg_menu = value
+        else:
+            log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
 
     def server_setting_changed(self, setting, value):
