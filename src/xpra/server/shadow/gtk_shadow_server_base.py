@@ -247,7 +247,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             traylog.warn("Warning: failed to load systemtray:")
             traylog.warn(" %s", e)
         except Exception as e:
-            traylog.error("Error setting up system tray", exc_info=True)
+            traylog("error setting up %s", self.tray_widget, exc_info=True)
+            traylog.error("Error setting up system tray:")
+            traylog.error(" %s", e)
 
 
     def make_tray_widget(self):
