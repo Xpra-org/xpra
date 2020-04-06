@@ -9,6 +9,7 @@ xpra (3.0.9-1) UNRELEASED; urgency=low
   * fix start menu updates getting lost
   * fix OpenGL diagnostic messages getting cut off
   * fix change of encoding from the system tray
+  * fix quality and speed changes from the system tray
   * use regular X11 system tray with i3
   * hide confusing named-pipe prefix in empty output on MS Windows
   * HTML5 fixes: invalid IMG tag, reserved keyword, language detection, draw debugging, etc
