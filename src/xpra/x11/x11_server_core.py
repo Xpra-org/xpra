@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -22,8 +22,8 @@ from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.x11.common import MAX_WINDOW_SIZE
-from xpra.os_util import monotonic_time, strtobytes, bytestostr, get_loaded_kernel_modules
-from xpra.util import engs, csv, typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
+from xpra.os_util import monotonic_time, strtobytes
+from xpra.util import typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -44,7 +44,6 @@ grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
 xinputlog = Logger("xinput")
-gllog = Logger("screen", "opengl")
 
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
@@ -106,7 +105,6 @@ class X11ServerCore(GTKServerBase):
         super().server_init()
 
     def do_init(self, opts):
-        self.opengl = opts.opengl
         self.randr = opts.resize_display
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
@@ -135,7 +133,6 @@ class X11ServerCore(GTKServerBase):
                 self.init_randr()
         with xlog:
             self.init_cursor()
-        self.query_opengl()
         with xlog:
             self.x11_filter = init_x11_filter()
         assert self.x11_filter
@@ -191,61 +188,6 @@ class X11ServerCore(GTKServerBase):
             return X11Window.get_depth(X11Window.getDefaultRootWindow())
         return 0
 
-    def query_opengl(self):
-        self.opengl_props = {}
-        if self.opengl.lower()=="noprobe":
-            gllog("query_opengl() skipped: %s", self.opengl)
-            return
-        blacklisted_kernel_modules = get_loaded_kernel_modules("vboxguest", "vboxvideo")
-        if blacklisted_kernel_modules:
-            gllog.warn("Warning: skipped OpenGL probing,")
-            gllog.warn(" found %i blacklisted kernel module%s:",
-                       len(blacklisted_kernel_modules), engs(blacklisted_kernel_modules))
-            gllog.warn(" %s", csv(blacklisted_kernel_modules))
-            self.opengl_props["error"] = "VirtualBox guest detected: %s" % csv(blacklisted_kernel_modules)
-        else:
-            try:
-                from subprocess import Popen, PIPE
-                from xpra.platform.paths import get_xpra_command
-                cmd = self.get_full_child_command(get_xpra_command()+["opengl", "--opengl=yes"])
-                env = self.get_child_env()
-                proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
-                out,err = proc.communicate()
-                gllog("out(%s)=%s", cmd, out)
-                gllog("err(%s)=%s", cmd, err)
-                if proc.returncode==0:
-                    #parse output:
-                    for line in out.splitlines():
-                        parts = line.split(b"=")
-                        if len(parts)!=2:
-                            continue
-                        k = bytestostr(parts[0].strip())
-                        v = bytestostr(parts[1].strip())
-                        self.opengl_props[k] = v
-                    gllog("opengl props=%s", self.opengl_props)
-                    gllog.info("OpenGL is supported on display '%s'", os.environ.get("DISPLAY"))
-                    renderer = self.opengl_props.get("renderer")
-                    if renderer:
-                        gllog.info(" using '%s' renderer", renderer)
-                else:
-                    self.opengl_props["error-details"] = str(err).strip("\n\r")
-                    error = "unknown error"
-                    for x in str(err).splitlines():
-                        if x.startswith("RuntimeError: "):
-                            error = x[len("RuntimeError: "):]
-                            break
-                        if x.startswith("ImportError: "):
-                            error = x[len("ImportError: "):]
-                            break
-                    self.opengl_props["error"] = error
-                    log.warn("Warning: OpenGL support check failed:")
-                    log.warn(" %s", error)
-            except Exception as e:
-                gllog("query_opengl()", exc_info=True)
-                gllog.error("Error: OpenGL support check failed")
-                gllog.error(" '%s'", e)
-                self.opengl_props["error"] = str(e)
-        gllog("OpenGL: %s", self.opengl_props)
 
     def init_x11_atoms(self):
         #some applications (like openoffice), do not work properly
@@ -379,15 +321,11 @@ class X11ServerCore(GTKServerBase):
                     capabilities["screen-sizes"] = sizes
             if self.default_cursor_image and source.wants_default_cursor:
                 capabilities["cursor.default"] = self.default_cursor_image
-            if self.opengl_props:
-                capabilities["opengl"] = self.opengl_props
         return capabilities
 
     def do_get_info(self, proto, server_sources):
         start = monotonic_time()
         info = super().do_get_info(proto, server_sources)
-        if self.opengl_props:
-            info["opengl"] = self.opengl_props
         sinfo = info.setdefault("server", {})
         sinfo.update({
             "type"                  : "Python/gtk/x11",
