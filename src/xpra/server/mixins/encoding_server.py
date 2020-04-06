@@ -162,7 +162,7 @@ class EncodingServer(StubServerMixin):
 
 
     def _process_encoding(self, proto, packet):
-        encoding = packet[1]
+        encoding = packet[1].decode("latin1")
         ss = self.get_server_source(proto)
         if ss is None:
             return
