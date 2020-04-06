@@ -329,7 +329,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
             log("glInitFragmentProgramARB missing")
             unsafe()
         else:
-            log("glInitFragmentProgramARB works")
+            log("glInitFragmentProgramARB found")
 
         from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
         if not glInitTextureRectangleARB():
@@ -338,7 +338,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
             log("glInitTextureRectangleARB missing")
             unsafe()
         else:
-            log("glInitTextureRectangleARB works")
+            log("glInitTextureRectangleARB found")
 
         from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
             glBindProgramARB, glProgramStringARB
