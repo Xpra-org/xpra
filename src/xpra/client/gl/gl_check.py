@@ -276,29 +276,36 @@ def check_PyOpenGL_support(force_enable) -> dict:
             props["safe"] = safe
 
         #check for specific functions we need:
-        from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \
-            glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
-            glEnableClientState, glGenTextures, glDisable, \
-            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
-            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple, \
-            glTexImage2D, \
-            glMultiTexCoord2i, \
-            glVertex2i, glEnd
+        from OpenGL.GL import (
+            glActiveTexture, glTexSubImage2D, glTexCoord2i,
+            glViewport, glMatrixMode, glLoadIdentity, glOrtho,
+            glEnableClientState, glGenTextures, glDisable,
+            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
+            glTexImage2D,
+            glMultiTexCoord2i,
+            glVertex2i, glEnd,
+            )
         check_functions(force_enable,
-            glActiveTexture, glTexSubImage2D, glTexCoord2i, \
-            glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
-            glEnableClientState, glGenTextures, glDisable, \
-            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
-            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple, \
-            glTexImage2D, \
-            glMultiTexCoord2i, \
+            glActiveTexture, glTexSubImage2D, glTexCoord2i,
+            glViewport, glMatrixMode, glLoadIdentity, glOrtho,
+            glEnableClientState, glGenTextures, glDisable,
+            glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+            glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
+            glTexImage2D,
+            glMultiTexCoord2i,
             glVertex2i, glEnd)
         #check for framebuffer functions we need:
-        from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
-            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
+        from OpenGL.GL.ARB.framebuffer_object import (
+            GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+            )
         check_functions(force_enable,
-            GL_FRAMEBUFFER, \
-            GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D)
+            GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0,
+            glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D,
+            )
 
         glEnablei = None
         try:
@@ -314,7 +321,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
         missing_extensions = [ext for ext in required_extensions if ext not in extensions]
         if missing_extensions:
             if not force_enable:
-                raise_fatal_error("OpenGL driver lacks support for extension: %s" % ext)
+                raise_fatal_error("OpenGL driver lacks support for extension: %s" % csv(missing_extensions))
             log("some extensions are missing: %s", csv(missing_extensions))
             unsafe()
         else:
@@ -323,25 +330,23 @@ def check_PyOpenGL_support(force_enable) -> dict:
         #this allows us to do CSC via OpenGL:
         #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
         from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
-        if not glInitFragmentProgramARB():
-            if not force_enable:
-                raise_fatal_error("OpenGL output requires glInitFragmentProgramARB")
-            log("glInitFragmentProgramARB missing")
-            unsafe()
-        else:
-            log("glInitFragmentProgramARB found")
-
         from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
-        if not glInitTextureRectangleARB():
-            if not force_enable:
-                raise_fatal_error("OpenGL output requires glInitTextureRectangleARB")
-            log("glInitTextureRectangleARB missing")
-            unsafe()
-        else:
-            log("glInitTextureRectangleARB found")
+        for name, fn in {
+            "glInitFragmentProgramARB"  : glInitFragmentProgramARB,
+            "glInitTextureRectangleARB" : glInitTextureRectangleARB,
+            }.items():
+            if not fn():
+                if not force_enable:
+                    raise_fatal_error("OpenGL output requires %s" % name)
+                log("%s missing", name)
+                unsafe()
+            else:
+                log("%s found", name)
 
-        from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
-            glBindProgramARB, glProgramStringARB
+        from OpenGL.GL.ARB.vertex_program import (
+            glGenProgramsARB, glDeleteProgramsARB,
+            glBindProgramARB, glProgramStringARB,
+            )
         check_functions(force_enable,
                         glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
