@@ -1071,11 +1071,11 @@ class GTKTrayMenuBase:
         return self.client.speed
     def set_min_speed(self, s):
         self.client.min_speed = s
-        self.client.speed = 0
+        self.client.speed = -1
         self.client.send_min_speed()
         self.client.send_speed()
     def set_speed(self, s):
-        self.client.min_speed = 0
+        self.client.min_speed = -1
         self.client.speed = s
         self.client.send_min_speed()
         self.client.send_speed()
