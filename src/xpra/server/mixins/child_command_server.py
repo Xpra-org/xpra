@@ -24,6 +24,17 @@ MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 EXPORT_XDG_MENU_DATA = envint("XPRA_EXPORT_XDG_MENU_DATA", True)
 
 
+def noicondata(menu_data):
+    newdata = {}
+    for k,v in menu_data.items():
+        if k in ("IconData", b"IconData"):
+            continue
+        if isinstance(v, dict):
+            newdata[k] = noicondata(v)
+        else:
+            newdata[k] = v
+    return newdata
+
 """
 Mixin for servers that can handle file transfers and forwarded printers.
 Printer forwarding is only supported on Posix servers with the cups backend script.
@@ -233,7 +244,7 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "start-after-connect-done"  : self.start_after_connect_done,
             "start-new"                 : self.start_new_commands,
-            "start-menu"                : self._get_xdg_menu_data(),
+            "start-menu"                : noicondata(self._get_xdg_menu_data()),
             }
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
