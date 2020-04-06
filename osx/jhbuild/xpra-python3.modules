@@ -145,9 +145,9 @@
 
 	<distutils id="python3-parsing" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/a2/56/0404c03c83cfcca229071d3c921d7d79ed385060bbe969fde3fd8f774ebd/pyparsing-2.4.6.tar.gz"
-			hash="sha256:4c830582a84fb022400b85429791bc551f1f4871c33f23e44f353119e92f969f"
-			version="2.4.6"/>
+			module="/packages/c1/47/dfc9c342c9842bbe0036c7f763d2d6686bcf5eb1808ba3e170afdb282210/pyparsing-2.4.7.tar.gz"
+			hash="sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1"
+			version="2.4.7"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
