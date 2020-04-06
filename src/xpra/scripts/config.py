@@ -11,7 +11,7 @@ from xpra.util import csv
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
-    is_Debian,
+    is_Debian, is_arm,
     )
 
 def warn(msg):
@@ -60,7 +60,7 @@ def has_sound_support():
 
 def get_xorg_bin():
     # Detect Xorg Binary
-    if os.uname()[4].startswith("arm") and is_Debian() and os.path.exists("/usr/bin/Xorg"):
+    if is_arm() and is_Debian() and os.path.exists("/usr/bin/Xorg"):
         #Raspbian breaks if we use a different binary..
         return "/usr/bin/Xorg"
     for p in (
@@ -128,8 +128,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
         warn("Warning: sorry, no support for Xdummy on %s" % sys.platform)
         return get_Xvfb_command()
-    import platform
-    if platform.uname()[4].startswith("arm"):
+    if is_arm():
         #arm struggles to launch Xdummy, so use Xvfb:
         return get_Xvfb_command()
 
@@ -969,7 +968,7 @@ def get_defaults():
                     "dbus-proxy"        : not OSX and not WIN32,
                     "mmap"              : "yes",
                     "mmap-group"        : "auto",
-                    "speaker"           : ["disabled", "on"][has_sound_support()],
+                    "speaker"           : ["disabled", "on"][has_sound_support() and not is_arm()],
                     "microphone"        : ["disabled", "off"][has_sound_support()],
                     "video-scaling"     : "auto",
                     "readonly"          : False,

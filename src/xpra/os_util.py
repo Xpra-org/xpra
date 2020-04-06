@@ -298,6 +298,11 @@ def is_RedHat() -> bool:
     return is_distribution_variant(b"RedHat")
 
 
+def is_arm() -> bool:
+    import platform
+    return platform.uname()[4].startswith("arm")
+
+
 _linux_distribution = None
 def get_linux_distribution():
     global _linux_distribution
