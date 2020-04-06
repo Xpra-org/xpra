@@ -106,7 +106,7 @@
             hash="sha256:055aa87ec166c7afb985d0816c07ff440e1eb899881a318c51c69a0aeea8e279"
             module="rockdaboot/libpsl/archive/libpsl-0.21.0.tar.gz" />
   </autotools>
-  
+
   <autotools id="libsoup" autogen-sh="configure"
              autogenargs="set_more_warnings=no --enable-introspection=no">
     <branch module="libsoup/2.68/libsoup-2.68.4.tar.xz" version="2.68.4"

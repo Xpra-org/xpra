@@ -167,7 +167,7 @@
   </meson>
 
   <autotools id="gtk+" autogen-sh="autoreconf"
-             autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection">
+             autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection --disable-visibility">
     <branch module="gtk+/2.24/gtk+-2.24.32.tar.xz" version="2.24.32"
             hash="sha256:b6c8a93ddda5eabe3bfee1eb39636c9a03d2a56c7b62828b359bf197943c582e">
       <!--patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/0004-Bug-571582-GtkSelection-implementation-for-quartz.patch" strip="1"/-->
@@ -200,7 +200,7 @@
 
   <meson id="libepoxy">
     <branch repo="github-tarball" version="1.5.4"
-    		hash="sha256:0bd2cc681dfeffdef739cb29913f8c3caa47a88a451fd2bc6e606c02997289d2"
+            hash="sha256:0bd2cc681dfeffdef739cb29913f8c3caa47a88a451fd2bc6e606c02997289d2"
             module="anholt/libepoxy/releases/download/1.5.4/libepoxy-1.5.4.tar.xz"/>
     <dependencies>
       <dep package="xorg-util-macros"/>

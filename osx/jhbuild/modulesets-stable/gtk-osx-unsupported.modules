@@ -68,9 +68,8 @@
     </dependencies>
   </autotools>
 
-  <autotools id="libgpg-error" autogen-sh="autogen.sh"
-             autogenargs="--disable-doc"
-             autogen-template="%(srcdir)s/%(autogen-sh)s &amp;&amp; %(srcdir)s/configure --prefix %(prefix)s  %(autogenargs)s">
+  <autotools id="libgpg-error" autogen-sh="autoreconf"
+             autogenargs="--disable-doc">
     <branch repo="gnupg.org" version="1.27"
             module="gcrypt/libgpg-error/libgpg-error-1.27.tar.bz2">
             <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/libgpg-error-cflags-for-cc-for-build.patch"

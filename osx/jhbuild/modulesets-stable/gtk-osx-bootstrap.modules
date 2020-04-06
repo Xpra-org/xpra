@@ -152,9 +152,9 @@
     <dependencies>
       <dep package="ragel"/>
       <dep package="glib"/>
-      <dep package="icu"/>
     </dependencies>
     <after>
+      <dep package="icu"/>
       <dep package="icu55"/>
     </after>
   </autotools>

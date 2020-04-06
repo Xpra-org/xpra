@@ -78,9 +78,9 @@
 
   <autotools id="python" autogenargs="--enable-shared"
 	     supports-non-srcdir-builds="no" autogen-sh="autoreconf">
-    <branch repo="python"
-            module="2.7.17/Python-2.7.17.tgz" version="2.7.17"
-            hash="sha256:f22059d09cdf9625e0a7284d24a13062044f5bf59d93a7f3382190dfa94cecde">
+       <branch repo="python"
+               module="2.7.17/Python-2.7.17.tgz" version="2.7.17"
+               hash="sha256:f22059d09cdf9625e0a7284d24a13062044f5bf59d93a7f3382190dfa94cecde">
   <!-- related to https://bugs.python.org/issue11445 -->
   <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/python-ldflags.patch" strip="1"/>
     </branch>
@@ -97,8 +97,8 @@
 
   <autotools id="python3" autogenargs="--enable-shared" autogen-sh="configure">
     <branch repo="python" module="3.8.2/Python-3.8.2.tar.xz" version="3.8.2"
-    	hash="sha256:2646e7dc233362f59714c6193017bb2d6f7b38d6ab4a0cb5fbac5c36c4d845df"
-    	/>
+            hash="sha256:2646e7dc233362f59714c6193017bb2d6f7b38d6ab4a0cb5fbac5c36c4d845df"
+            />
     <dependencies>
       <dep package="gettext-runtime"/>
       <dep package='readline'/>
@@ -174,6 +174,7 @@
     <branch version="2.24.0" module="pygtk/2.24/pygtk-2.24.0.tar.bz2"
             hash="sha256:cd1c1ea265bd63ff669e92a2d3c2a88eb26bcd9e5363e0f82c896e649f206912">
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/pygtk-libtool.patch" strip="1"/>
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/pygtk-pango1.4x.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="pygobject"/>
@@ -204,16 +205,5 @@
       <dep package="gtkspell"/>
     </dependencies>
   </autotools>
-
-  <distutils id="python-six">
-	<branch repo="pymodules"
-		module="dd/bf/4138e7bfb757de47d1f4b6994648ec67a51efe58fa907c1e11e350cddfca/six-1.12.0.tar.gz"
-		hash="sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"
-		version="1.12.0"/>
-    <dependencies>
-      <dep package="libxml2"/>
-      <dep package="libxslt"/>
-    </dependencies>
-  </distutils>
 
 </moduleset>
