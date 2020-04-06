@@ -332,6 +332,9 @@ def is_unity() -> bool:
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("unity")>=0
 
 def is_gnome() -> bool:
+    if os.environ.get("XDG_SESSION_DESKTOP", "").split("-", 1)[0] in ("i3", "ubuntu", ):
+        #"i3-gnome" is not really gnome... ie: the systray does work!
+        return False
     return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("gnome")>=0
 
 def is_kde() -> bool:
