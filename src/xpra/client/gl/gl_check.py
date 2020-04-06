@@ -12,6 +12,7 @@ from xpra.util import envbool, envint, csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
+from xpra.sound.gstreamer_util import force_enabled
 
 log = Logger("opengl")
 
@@ -59,7 +60,7 @@ def is_pyopengl_memoryview_safe(pyopengl_version, accel_version) -> bool:
     return False        #probably something like '0b2' which is broken
 
 
-def check_functions(*functions):
+def check_functions(force_enable, *functions):
     missing = []
     available = []
     for x in functions:
@@ -72,7 +73,9 @@ def check_functions(*functions):
         else:
             available.append(name)
     if missing:
-        raise_fatal_error("some required OpenGL functions are missing:\n%s" % csv(missing))
+        if not force_enable:
+            raise_fatal_error("some required OpenGL functions are missing:\n%s" % csv(missing))
+        log("some functions are missing: %s", csv(missing))
     else:
         log("All the required OpenGL functions are available: %s " % csv(available))
 
@@ -88,6 +91,8 @@ def get_max_texture_size() -> int:
     except ImportError as e:
         log("OpenGL: %s", e)
         log("using GL_MAX_TEXTURE_SIZE=%s as default", texture_size)
+    except Exception as e:
+        log("failed to query GL_MAX_RECTANGLE_TEXTURE_SIZE: %s", e)
     else:
         log("Texture size GL_MAX_RECTANGLE_TEXTURE_SIZE=%s", rect_texture_size)
     return min(rect_texture_size, texture_size)
@@ -95,6 +100,8 @@ def get_max_texture_size() -> int:
 
 def check_PyOpenGL_support(force_enable) -> dict:
     props = {}
+    def unsafe():
+        props["safe"] = False
     try:
         if CRASH:
             import ctypes
@@ -123,9 +130,9 @@ def check_PyOpenGL_support(force_enable) -> dict:
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
         from OpenGL.GL import glGetString, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)
-        if gl_version_str is None:
+        if gl_version_str is None and not force_enabled:
             raise_fatal_error("OpenGL version is missing - cannot continue")
-            return  {}
+            return props
         #b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
         log("GL_VERSION=%s", bytestostr(gl_version_str))
         vparts = bytestostr(gl_version_str).split(" ", 1)[0].split(".")
@@ -135,12 +142,16 @@ def check_PyOpenGL_support(force_enable) -> dict:
         except (IndexError, ValueError) as e:
             log("failed to parse gl version '%s': %s", bytestostr(gl_version_str), e)
             log(" assuming this is at least 1.1 to continue")
+            unsafe()
         else:
             props["opengl"] = gl_major, gl_minor
             MIN_VERSION = (1,1)
             if (gl_major, gl_minor) < MIN_VERSION:
-                raise_fatal_error("OpenGL output requires version %s or greater, not %s.%s" %
+                if not force_enabled:
+                    raise_fatal_error("OpenGL output requires version %s or greater, not %s.%s" %
                                   (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
+                    return props
+                unsafe()
             else:
                 log("found valid OpenGL version: %s.%s", gl_major, gl_minor)
 
@@ -166,20 +177,24 @@ def check_PyOpenGL_support(force_enable) -> dict:
                 gl_check_error("PyOpenGL vs accelerate version mismatch: %s vs %s" % (pyopengl_version, accel_version))
         vsplit = pyopengl_version.split('.')
         #we now require PyOpenGL 3.1 or later
-        if vsplit[:3]<['3','1'] and not force_enable:
-            raise_fatal_error("PyOpenGL version %s is too old and buggy" % pyopengl_version)
-            return {}
+        if vsplit[:3]<['3','1']:
+            if not force_enable:
+                raise_fatal_error("PyOpenGL version %s is too old and buggy" % pyopengl_version)
+                return {}
+            unsafe()
         props["zerocopy"] = bool(OpenGL_accelerate) and is_pyopengl_memoryview_safe(pyopengl_version, accel_version)
 
         try:
             extensions = glGetString(GL_EXTENSIONS).decode().split(" ")
+            log("OpenGL extensions found: %s", csv(extensions))
+            props["extensions"] = extensions
         except Exception:
             log("error querying extensions", exc_info=True)
             extensions = []
-            raise_fatal_error("OpenGL could not find the list of GL extensions -"+
-                              " does the graphics driver support OpenGL?")
-        log("OpenGL extensions found: %s", csv(extensions))
-        props["extensions"] = extensions
+            if not force_enable:
+                raise_fatal_error("OpenGL could not find the list of GL extensions -"+
+                                  " does the graphics driver support OpenGL?")
+            unsafe()
 
         from OpenGL.arrays.arraydatatype import ArrayDatatype
         try:
@@ -201,7 +216,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
                 v = fixstring(v.decode())
                 log("%s: %s", d, v)
             except Exception:
-                if fatal:
+                if fatal and not force_enable:
                     gl_check_error("OpenGL property '%s' is missing" % d)
                 else:
                     log("OpenGL property '%s' is missing", d)
@@ -215,6 +230,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
                 if force_enable:
                     log.warn("Warning: '%s' OpenGL driver requires version %i.%i", vendor, req_maj, req_min)
                     log.warn(" version %i.%i was found", gl_major, gl_minor)
+                    unsafe()
                 else:
                     gl_check_error("OpenGL version %i.%i is too old, %i.%i is required for %s" % (
                         gl_major, gl_minor, req_maj, req_min, vendor))
@@ -256,7 +272,8 @@ def check_PyOpenGL_support(force_enable) -> dict:
         if greylisted and not whitelisted:
             log.warn("Warning: %s '%s' is greylisted,", *greylisted)
             log.warn(" you may want to turn off OpenGL if you encounter bugs")
-        props["safe"] = safe
+        if props.get("safe") is None:
+            props["safe"] = safe
 
         #check for specific functions we need:
         from OpenGL.GL import glActiveTexture, glTexSubImage2D, glTexCoord2i, \
@@ -267,7 +284,8 @@ def check_PyOpenGL_support(force_enable) -> dict:
             glTexImage2D, \
             glMultiTexCoord2i, \
             glVertex2i, glEnd
-        check_functions(glActiveTexture, glTexSubImage2D, glTexCoord2i, \
+        check_functions(force_enable,
+            glActiveTexture, glTexSubImage2D, glTexCoord2i, \
             glViewport, glMatrixMode, glLoadIdentity, glOrtho, \
             glEnableClientState, glGenTextures, glDisable, \
             glBindTexture, glPixelStorei, glEnable, glBegin, glFlush, \
@@ -278,7 +296,8 @@ def check_PyOpenGL_support(force_enable) -> dict:
         #check for framebuffer functions we need:
         from OpenGL.GL.ARB.framebuffer_object import GL_FRAMEBUFFER, \
             GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D
-        check_functions(GL_FRAMEBUFFER, \
+        check_functions(force_enable,
+            GL_FRAMEBUFFER, \
             GL_COLOR_ATTACHMENT0, glGenFramebuffers, glBindFramebuffer, glFramebufferTexture2D)
 
         glEnablei = None
@@ -292,29 +311,39 @@ def check_PyOpenGL_support(force_enable) -> dict:
             GL_ALPHA_SUPPORTED = False
         props["transparency"] = GL_ALPHA_SUPPORTED
 
-        for ext in required_extensions:
-            if ext not in extensions:
+        missing_extensions = [ext for ext in required_extensions if ext not in extensions]
+        if missing_extensions:
+            if not force_enable:
                 raise_fatal_error("OpenGL driver lacks support for extension: %s" % ext)
-            else:
-                log("Extension %s is present", ext)
+            log("some extensions are missing: %s", csv(missing_extensions))
+            unsafe()
+        else:
+            log("All required extensions are present: %s", required_extensions)
 
         #this allows us to do CSC via OpenGL:
         #see http://www.opengl.org/registry/specs/ARB/fragment_program.txt
         from OpenGL.GL.ARB.fragment_program import glInitFragmentProgramARB
         if not glInitFragmentProgramARB():
-            raise_fatal_error("OpenGL output requires glInitFragmentProgramARB")
+            if not force_enable:
+                raise_fatal_error("OpenGL output requires glInitFragmentProgramARB")
+            log("glInitFragmentProgramARB missing")
+            unsafe()
         else:
             log("glInitFragmentProgramARB works")
 
         from OpenGL.GL.ARB.texture_rectangle import glInitTextureRectangleARB
         if not glInitTextureRectangleARB():
-            raise_fatal_error("OpenGL output requires glInitTextureRectangleARB")
+            if not force_enable:
+                raise_fatal_error("OpenGL output requires glInitTextureRectangleARB")
+            log("glInitTextureRectangleARB missing")
+            unsafe()
         else:
             log("glInitTextureRectangleARB works")
 
         from OpenGL.GL.ARB.vertex_program import glGenProgramsARB, glDeleteProgramsARB, \
             glBindProgramARB, glProgramStringARB
-        check_functions(glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
+        check_functions(force_enable,
+                        glGenProgramsARB, glDeleteProgramsARB, glBindProgramARB, glProgramStringARB)
 
         texture_size_limit = get_max_texture_size()
         props["texture-size-limit"] = int(texture_size_limit)
