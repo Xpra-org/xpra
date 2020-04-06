@@ -1,4 +1,4 @@
-v3.0.9 (2020-04-04)
+v3.0.9 (2020-04-06)
 ======================
 	-- fix focus race condition
 	-- fix keypad regression (AltGr changes, again)
@@ -7,12 +7,18 @@ v3.0.9 (2020-04-04)
 	-- fix missing pycuda dependency for nvenc on MS Windows
 	-- fix missing signatures on MS Windows EXE and MSI builds
 	-- fix scoring of NVENC codec (should be used ahead of sofware encoders)
+	-- fix start menu updates getting lost
+	-- fix OpenGL diagnostic messages getting cut off
+	-- fix change of encoding from the system tray
+	-- use regular X11 system tray with i3
+	-- hide confusing named-pipe prefix in empty output on MS Windows
 	-- HTML5 fixes: invalid IMG tag, reserved keyword, language detection, draw debugging, etc
 	-- don't try to read /proc if not on Posix
 	-- support more versions of Visual Studio when compiling CUDA kernels
 	-- use a more specific python3 interpreter version
 	-- update application content-type mappings
 	-- remove out of date information from man page
+	-- MacOS: openssl 1.1.1f
 
 
 v3.0.8 (2020-03-31)
