@@ -424,7 +424,7 @@ cdef class Decoder:
             return "dec_avcodec.Decoder(*closed*)"
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
-    def get_info(self):                      #@DuplicatedSignature
+    def get_info(self) -> dict:                      #@DuplicatedSignature
         info = {
             "version"   : get_version(),
             "encoding"  : self.encoding,

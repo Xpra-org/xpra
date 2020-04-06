@@ -330,7 +330,7 @@ cdef class ColorspaceConverter:
         log("sws context=%#x", <uintptr_t> self.context)
         assert self.context!=NULL, "sws_getContext returned NULL"
 
-    def get_info(self):         #@DuplicatedSignature
+    def get_info(self) -> dict:         #@DuplicatedSignature
         info = get_info()
         info.update({
                 "flags"     : get_swscale_flags_strs(self.flags),

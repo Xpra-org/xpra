@@ -195,7 +195,7 @@ class GlobalPerformanceStatistics:
             mayaddfac("congestion", {}, 1+self.congestion_value, self.congestion_value*10)
         return factors
 
-    def get_connection_info(self):
+    def get_connection_info(self) -> dict:
         latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))
         info = {
             "mmap_bytecount"  : self.mmap_bytes_sent,

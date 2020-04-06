@@ -174,7 +174,7 @@ class WindowsMixin(StubSourceMixin):
         info.update(self.get_window_info())
         return info
 
-    def get_window_info(self):
+    def get_window_info(self) -> dict:
         """
             Adds encoding and window specific information
         """

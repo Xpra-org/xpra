@@ -235,7 +235,7 @@ class ServerBase(ServerBaseClass):
         self.timeout_add(500, self.clean_quit)
 
 
-    def get_mdns_info(self):
+    def get_mdns_info(self) -> dict:
         mdns_info = ServerCore.get_mdns_info(self)
         if MDNS_CLIENT_COUNT:
             mdns_info["clients"] = len(self._server_sources)
@@ -401,7 +401,7 @@ class ServerBase(ServerBaseClass):
         return get_client_connection_class(caps)
 
 
-    def _process_hello_ui(self, ss, c, auth_caps, send_ui, share_count):
+    def _process_hello_ui(self, ss, c, auth_caps, send_ui : bool, share_count : int):
         #adds try:except around parse hello ui code:
         try:
             if self._closing:
@@ -581,7 +581,7 @@ class ServerBase(ServerBaseClass):
                      proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, None)
 
-    def get_ui_info(self, proto, client_uuids=None, *args):
+    def get_ui_info(self, proto, client_uuids=None, *args) -> dict:
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
@@ -593,11 +593,11 @@ class ServerBase(ServerBaseClass):
                 log.error("Error gathering UI info on %s", c, exc_info=True)
         return info
 
-    def get_thread_info(self, proto):
+    def get_thread_info(self, proto) -> dict:
         return get_thread_info(proto, tuple(self._server_sources.keys()))
 
 
-    def get_info(self, proto=None, client_uuids=None):
+    def get_info(self, proto=None, client_uuids=None) -> dict:
         log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic_time()
         info = ServerCore.get_info(self, proto)
@@ -619,7 +619,7 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 
-    def get_packet_handlers_info(self):
+    def get_packet_handlers_info(self) -> dict:
         info = ServerCore.get_packet_handlers_info(self)
         info.update({
             "authenticated" : sorted(self._authenticated_packet_handlers.keys()),
@@ -628,7 +628,7 @@ class ServerBase(ServerBaseClass):
         return info
 
 
-    def get_features_info(self):
+    def get_features_info(self) -> dict:
         i = {
              "sharing"          : self.sharing is not False,
              "idle_timeout"     : self.idle_timeout,
@@ -636,7 +636,7 @@ class ServerBase(ServerBaseClass):
         i.update(self.get_server_features())
         return i
 
-    def do_get_info(self, proto, server_sources=None):
+    def do_get_info(self, proto, server_sources=None) -> dict:
         start = monotonic_time()
         info = {}
         def up(prefix, d):
@@ -749,12 +749,12 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # http server and http audio stream:
-    def get_http_info(self):
+    def get_http_info(self) -> dict:
         info = ServerCore.get_http_info(self)
         info["clients"] = len(self._server_sources)
         return info
 
-    def get_http_scripts(self):
+    def get_http_scripts(self) -> dict:
         scripts = ServerCore.get_http_scripts(self)
         scripts["/audio.mp3"] = self.http_audio_mp3_request
         return scripts
@@ -937,7 +937,7 @@ class ServerBase(ServerBaseClass):
                 c.reset_focus(self)
 
 
-    def get_all_protocols(self):
+    def get_all_protocols(self) -> list:
         return list(self._potential_protocols) + list(self._server_sources.keys())
 
 

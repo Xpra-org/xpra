@@ -202,7 +202,7 @@ class ProxyInstance:
             "window" : self.get_window_info(),
             }
 
-    def get_window_info(self):
+    def get_window_info(self) -> dict:
         info = {}
         now = monotonic_time()
         for wid, encoder in self.video_encoders.items():

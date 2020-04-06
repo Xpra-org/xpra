@@ -443,7 +443,7 @@ cdef class Encoder:
         self.first_frame_timestamp = 0
 
 
-    def get_info(self):             #@DuplicatedSignature
+    def get_info(self) -> dict:             #@DuplicatedSignature
         cdef float pps
         if self.profile is None:
             return {}

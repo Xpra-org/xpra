@@ -209,7 +209,7 @@ cdef class Decoder:
     def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
-    def get_info(self):                 #@DuplicatedSignature
+    def get_info(self) -> dict:                 #@DuplicatedSignature
         return {
                 "type"      : self.get_type(),
                 "width"     : self.get_width(),

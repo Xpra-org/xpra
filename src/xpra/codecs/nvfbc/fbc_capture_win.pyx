@@ -586,7 +586,7 @@ cdef class NvFBC_SysCapture:
         raiseNvFBC(res, "NvFBCToSysSetUp")
         self.setup = True
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info
@@ -730,7 +730,7 @@ cdef class NvFBC_CUDACapture:
         raiseNvFBC(res, "NvFBCCudaSetup")
         self.setup = True
 
-    def get_info(self):
+    def get_info(self) -> dict:
         info = get_info()
         info["pixel-format"] = self.pixel_format
         return info

@@ -1947,7 +1947,7 @@ cdef class Encoder:
         assert self.bitstreamBuffer!=NULL
 
 
-    def get_info(self):                     #@DuplicatedSignature
+    def get_info(self) -> dict:                     #@DuplicatedSignature
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
         cdef double pps
         info = get_info()

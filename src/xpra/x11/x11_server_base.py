@@ -204,7 +204,7 @@ class X11ServerBase(X11ServerCore):
         info.setdefault("display", {})["icc"] = self.get_icc_info()
         return info
 
-    def get_icc_info(self):
+    def get_icc_info(self) -> dict:
         icc_info = {
             "sync"  : SYNC_ICC,
             }

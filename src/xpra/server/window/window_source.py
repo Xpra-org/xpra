@@ -533,7 +533,7 @@ class WindowSource(WindowIconSource):
                 fps = len(lde) // elapsed
         return fps
 
-    def get_quality_speed_info(self):
+    def get_quality_speed_info(self) -> dict:
         info = {}
         def add_list_info(prefix, v, vinfo):
             if not v:
@@ -549,7 +549,7 @@ class WindowSource(WindowIconSource):
         add_list_info("speed", self._encoding_speed, self._encoding_speed_info)
         return info
 
-    def get_property_info(self):
+    def get_property_info(self) -> dict:
         return {
                 "fullscreen"            : self.fullscreen or False,
                 #speed / quality properties (not necessarily the same as the video encoder settings..):

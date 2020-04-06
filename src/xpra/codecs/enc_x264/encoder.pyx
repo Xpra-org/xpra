@@ -644,7 +644,7 @@ cdef class Encoder:
             f.close()
 
 
-    def get_info(self):             #@DuplicatedSignature
+    def get_info(self) -> dict:             #@DuplicatedSignature
         cdef double pps
         if self.profile is None:
             return {}

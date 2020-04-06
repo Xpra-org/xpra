@@ -830,7 +830,7 @@ class ServerCore:
                 socktypes = ["ssh"]
         return socktypes
 
-    def get_mdns_info(self):
+    def get_mdns_info(self) -> dict:
         from xpra.platform.info import get_username
         mdns_info = {
             "display"  : self.display_name,
@@ -1448,7 +1448,7 @@ class ServerCore:
         ji = json.dumps(self.get_http_info())
         return self.send_http_response(handler, ji, "application/json")
 
-    def get_http_info(self):
+    def get_http_info(self) -> dict:
         return {
             "mode"              : self.get_server_mode(),
             "type"              : "Python",
@@ -1980,7 +1980,7 @@ class ServerCore:
         log("id info request from %s", proto._conn)
         proto.send_now(("hello", self.get_session_id_info()))
 
-    def get_session_id_info(self):
+    def get_session_id_info(self) -> dict:
         #minimal information for identifying the session
         id_info = {
             "session-type"  : self.session_type,
@@ -2025,14 +2025,14 @@ class ServerCore:
         log("get_all_info: non ui info collected in %ims", (end-start)*1000)
         callback(proto, ui_info)
 
-    def get_ui_info(self, _proto, *_args):
+    def get_ui_info(self, _proto, *_args) -> dict:
         #this function is for info which MUST be collected from the UI thread
         return {}
 
-    def get_thread_info(self, proto):
+    def get_thread_info(self, proto) -> dict:
         return get_thread_info(proto)
 
-    def get_minimal_server_info(self):
+    def get_minimal_server_info(self) -> dict:
         now = time()
         info = {
             "mode"              : self.get_server_mode(),
@@ -2046,7 +2046,7 @@ class ServerCore:
             }
         return info
 
-    def get_server_info(self):
+    def get_server_info(self) -> dict:
         #this function is for non UI thread info
         si = {}
         si.update(self.get_minimal_server_info())
@@ -2133,12 +2133,12 @@ class ServerCore:
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
 
-    def get_packet_handlers_info(self):
+    def get_packet_handlers_info(self) -> dict:
         return {
             "default"   : sorted(self._default_packet_handlers.keys()),
             }
 
-    def get_socket_info(self):
+    def get_socket_info(self) -> dict:
         si = {}
         for socktype, _, info, _ in self._socket_info:
             if info:

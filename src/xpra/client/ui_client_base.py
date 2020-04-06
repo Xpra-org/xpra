@@ -295,7 +295,7 @@ class UIXpraClient(ClientBaseClass):
         assert name is not None and command is not None and ignore is not None
         self.send("start-command", name, command, ignore, sharing)
 
-    def get_version_info(self):
+    def get_version_info(self) -> dict:
         return get_version_info_full()
 
 

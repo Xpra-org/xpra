@@ -488,7 +488,7 @@ cdef class Encoder:
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
 
-    def get_info(self):                     #@DuplicatedSignature
+    def get_info(self) -> dict:                     #@DuplicatedSignature
         info = get_info()
         info.update({
             "frames"    : int(self.frames),

@@ -54,7 +54,7 @@ class Encoder:
     def is_ready(self):
         return True
 
-    def get_info(self):             #@DuplicatedSignature
+    def get_info(self) -> dict:             #@DuplicatedSignature
         info = get_info()
         if self.src_format is None:
             return info

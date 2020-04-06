@@ -110,7 +110,7 @@ def get_iterations() -> int:
     return DEFAULT_ITERATIONS
 
 
-def new_cipher_caps(proto, cipher, encryption_key, padding_options):
+def new_cipher_caps(proto, cipher, encryption_key, padding_options) -> dict:
     assert backend
     iv = get_iv()
     key_salt = get_salt()

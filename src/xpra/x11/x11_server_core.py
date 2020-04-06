@@ -250,7 +250,7 @@ class X11ServerCore(GTKServerBase):
         self.input_devices = "xtest"
 
 
-    def get_child_env(self):
+    def get_child_env(self) -> dict:
         #adds fakeXinerama:
         env = super().get_child_env()
         if self.fake_xinerama and self.libfakeXinerama_so:
@@ -323,7 +323,7 @@ class X11ServerCore(GTKServerBase):
                 capabilities["cursor.default"] = self.default_cursor_image
         return capabilities
 
-    def do_get_info(self, proto, server_sources):
+    def do_get_info(self, proto, server_sources) -> dict:
         start = monotonic_time()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
@@ -335,7 +335,7 @@ class X11ServerCore(GTKServerBase):
         log("X11ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
         return info
 
-    def get_ui_info(self, proto, wids=None, *args):
+    def get_ui_info(self, proto, wids=None, *args) -> dict:
         log("do_get_info thread=%s", threading.current_thread())
         info = super().get_ui_info(proto, wids, *args)
         #this is added here because the server keyboard config doesn't know about "keys_pressed"..
@@ -375,7 +375,7 @@ class X11ServerCore(GTKServerBase):
         return info
 
 
-    def get_cursor_info(self):
+    def get_cursor_info(self) -> dict:
         #(NOT from UI thread)
         #copy to prevent race:
         cd = self.last_cursor_image
@@ -392,7 +392,7 @@ class X11ServerCore(GTKServerBase):
                 cinfo[x] = v
         return cinfo
 
-    def get_window_info(self, window):
+    def get_window_info(self, window) -> dict:
         info = super().get_window_info(window)
         info["XShm"] = window.uses_XShm()
         info["geometry"] = window.get_geometry()

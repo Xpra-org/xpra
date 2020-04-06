@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import shlex
 
 from xpra.util import typedict
 from xpra.os_util import WIN32
@@ -105,12 +106,12 @@ class StubServerMixin:
         Parse capabilities from a new connection.
         """
 
-    def add_new_client(self, ss, c, send_ui, share_count):
+    def add_new_client(self, ss, c, send_ui, share_count : int):
         """
         A new client is being handled, take any action needed.
         """
 
-    def send_initial_data(self, ss, caps, send_ui, share_count):
+    def send_initial_data(self, ss, caps, send_ui, share_count : int):
         """
         A new connection has been accepted, send initial data.
         """
@@ -126,13 +127,12 @@ class StubServerMixin:
         return os.environ.copy()
 
 
-    def get_full_child_command(self, cmd, use_wrapper=True) -> list:
+    def get_full_child_command(self, cmd, use_wrapper : bool=True) -> list:
         #make sure we have it as a list:
         if isinstance(cmd, (list, tuple)):
             return cmd
         if WIN32:
             return [cmd]
-        import shlex
         return shlex.split(str(cmd))
 
 

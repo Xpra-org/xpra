@@ -179,7 +179,7 @@ class GTKServerBase(ServerBase):
         cursorlog("send_initial_cursors() cursor_sizes=%s", self.cursor_sizes)
         ss.send_cursor()
 
-    def get_ui_cursor_info(self):
+    def get_ui_cursor_info(self) -> dict:
         #(from UI thread)
         #now cursor size info:
         display = Gdk.Display.get_default()

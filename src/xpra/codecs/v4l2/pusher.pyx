@@ -394,7 +394,7 @@ cdef class Pusher:
             self.device = None
             d.close()
 
-    def get_info(self):             #@DuplicatedSignature
+    def get_info(self) -> dict:             #@DuplicatedSignature
         info = get_info()
         info.update({
             "frames"    : int(self.frames),

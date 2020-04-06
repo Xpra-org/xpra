@@ -190,7 +190,7 @@ class WindowVideoSource(WindowSource):
         self.may_update_av_sync_delay()
 
 
-    def get_property_info(self):
+    def get_property_info(self) -> dict:
         i = WindowSource.get_property_info(self)
         if self.scaling_control is None:
             i["scaling.control"] = "auto"
@@ -242,7 +242,7 @@ class WindowVideoSource(WindowSource):
         info.setdefault("encoding", {}).update(einfo)
         return info
 
-    def get_pipeline_info(self):
+    def get_pipeline_info(self) -> dict:
         lp = self.last_pipeline_params
         if not lp:
             return {}

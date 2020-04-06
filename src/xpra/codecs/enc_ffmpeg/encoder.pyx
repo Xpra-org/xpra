@@ -1043,7 +1043,7 @@ cdef class Encoder:
             return "enc_ffmpeg.Encoder(*closed*)"
         return "enc_ffmpeg.Encoder(%s)" % self.get_info()
 
-    def get_info(self):                      #@DuplicatedSignature
+    def get_info(self) -> dict:                      #@DuplicatedSignature
         info = {
                 "version"   : get_version(),
                 "encoding"  : self.encoding,

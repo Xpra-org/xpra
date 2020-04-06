@@ -210,7 +210,7 @@ cdef class ColorspaceConverter:
         self.time = 0
         self.frames = 0
 
-    def get_info(self):         #@DuplicatedSignature
+    def get_info(self) -> dict:         #@DuplicatedSignature
         info = get_info()
         info.update({
                 "frames"    : int(self.frames),

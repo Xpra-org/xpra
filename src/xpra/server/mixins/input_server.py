@@ -93,7 +93,7 @@ class InputServer(StubServerMixin):
         self.key_repeat_delay, self.key_repeat_interval = self.key_repeat
         self.set_keymap(ss)
 
-    def get_keyboard_info(self):
+    def get_keyboard_info(self) -> dict:
         start = monotonic_time()
         info = {
              "repeat"           : {
