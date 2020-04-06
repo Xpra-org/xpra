@@ -1512,11 +1512,6 @@ def run_client(error_cb, opts, extra_args, mode):
                 continue
             prevarg = sys.argv[i-1]
             if prevarg[0]=="-" and (prevarg.find("=")<0 or len(prevarg)==2):
-        except InitException as e:
-            log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            log.warn("Warning: failed to connect:")
-            log.warn(" %s", e)
-            GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
                 #ie: [.., "--csc-modules", "all"] or [.., "-d", "all"]
                 continue
             index = i
