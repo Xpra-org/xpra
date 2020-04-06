@@ -94,7 +94,7 @@ class ChildCommandServer(StubServerMixin):
                 log.error(" %s", e)
             from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
             load_xdg_menu_data()
-            
+
 
     def setup_menu_watcher(self):
         try:
@@ -246,21 +246,16 @@ class ChildCommandServer(StubServerMixin):
 
     def get_child_env(self):
         #subclasses may add more items (ie: fakexinerama)
-        env = os.environ.copy()
+        env = super().get_child_env()
         env.update(self.source_env)
         env.update(self.start_env)
         if self.child_display:
             env["DISPLAY"] = self.child_display
         return env
 
-
     def get_full_child_command(self, cmd, use_wrapper=True) -> list:
         #make sure we have it as a list:
-        if not isinstance(cmd, (list, tuple)):
-            if WIN32:
-                return [cmd]
-            import shlex
-            cmd = shlex.split(str(cmd))
+        cmd = super().get_full_child_command(cmd, use_wrapper)
         if not use_wrapper or not self.exec_wrapper:
             return cmd
         return self.exec_wrapper + cmd

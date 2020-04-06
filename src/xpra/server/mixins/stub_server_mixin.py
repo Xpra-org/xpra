@@ -3,7 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.util import typedict
+from xpra.os_util import WIN32
+
 
 class StubServerMixin:
     """
@@ -116,6 +120,21 @@ class StubServerMixin:
         Cleanup method for a specific connection.
         (to cleanup / free up resources associated with a specific client or connection)
         """
+
+
+    def get_child_env(self):
+        return os.environ.copy()
+
+
+    def get_full_child_command(self, cmd, use_wrapper=True) -> list:
+        #make sure we have it as a list:
+        if isinstance(cmd, (list, tuple)):
+            return cmd
+        if WIN32:
+            return [cmd]
+        import shlex
+        return shlex.split(str(cmd))
+
 
     def add_packet_handler(self, packet_type, handler, main_thread=True):
         pass
