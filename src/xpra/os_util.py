@@ -332,6 +332,9 @@ def is_Arch():
 def is_CentOS():
     return is_distribution_variant(b"CentOS")
 
+    if os.environ.get("XDG_SESSION_DESKTOP", "").split("-", 1)[0] in ("i3", "ubuntu", ):
+        #"i3-gnome" is not really gnome... ie: the systray does work!
+        return False
 def is_RedHat():
     return is_distribution_variant(b"RedHat")
 
