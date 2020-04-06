@@ -360,6 +360,12 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         target = str(event.target)
         log("clipboard request for %s from window %#x: %s, target=%s, prop=%s",
             self._selection, requestor.get_xid(), wininfo, target, prop)
+        if not target:
+            log.warn("Warning: ignoring clipboard request without a TARGET")
+            return
+        if not prop:
+            log.warn("Warning: ignoring clipboard request without a property")
+            return
         def nodata():
             self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
         if not self._enabled:
