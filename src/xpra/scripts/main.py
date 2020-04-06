@@ -2046,7 +2046,7 @@ def do_run_glcheck(opts, show=False) -> dict:
             sys.stderr.flush()
         return {
             "success"   : False,
-            "message"   : str(e),
+            "message"   : str(e).replace("\n", " "),
             }
     finally:
         if saved_level is not None:

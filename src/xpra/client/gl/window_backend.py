@@ -119,7 +119,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
             log("paint_callback(%s, %s)", success, message)
             draw_result.update({
                 "success"   : success,
-                "message"   : message,
+                "message"   : message.replace("\n", " "),
                 })
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
         pix = AtomicInteger(0x7f)
