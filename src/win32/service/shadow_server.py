@@ -29,7 +29,7 @@ def main():
     #os.environ["XPRA_ALL_DEBUG"] = "1"
     #os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "1"
     from xpra.platform import init, set_default_name
-    set_default_name("Xpra-Proxy")
+    set_default_name("Xpra-Shadow")
     init()
 
     from xpra.scripts.main import main
