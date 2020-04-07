@@ -62,6 +62,13 @@ def do_get_icon_dir():
     from xpra.platform.paths import get_resources_dir
     return os.path.join(get_resources_dir(), "icons")
 
+def do_get_default_log_dirs():
+    dd = _get_data_dir()
+    temp = os.environ.get("TEMP", "C:\\TEMP\\")
+    if dd==temp:
+        return [temp]
+    return [dd, temp]
+
 
 def get_program_data_dir():
     #ie: "C:\ProgramData"
