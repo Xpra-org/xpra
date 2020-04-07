@@ -27,6 +27,11 @@ from xpra.os_util import (
 from xpra.util import envbool, unsetenv
 from xpra.platform.dotxpra import DotXpra
 
+def noerr(fn, *args):
+    try:
+        fn(*args)
+    except Exception:
+        pass
 
 _cleanups = []
 def run_cleanups():
@@ -582,7 +587,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     import datetime
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
-    if start_vfb or opts.daemon:
+    log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "")=="1"
+    if start_vfb or log_to_file:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
         log_dir = opts.log_dir or ""
@@ -595,26 +601,23 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if "XPRA_LOG_DIR" not in os.environ:
             os.environ["XPRA_LOG_DIR"] = log_dir
 
-        if opts.daemon:
-            from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
-            log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
-                                     username, uid, gid, extra_expand)
-            logfd = open_log_file(log_filename0)
-            if ROOT and (uid>0 or gid>0):
-                try:
-                    os.fchown(logfd, uid, gid)
-                except OSError:
-                    pass
-            stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
+    if log_to_file:
+        from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
+        log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
+                                 username, uid, gid, extra_expand)
+        logfd = open_log_file(log_filename0)
+        if POSIX and ROOT and (uid>0 or gid>0):
             try:
-                stderr.write("Entering daemon mode; "
-                         + "any further errors will be reported to:\n"
-                         + ("  %s\n" % log_filename0))
-                stderr.flush()
-            except IOError:
-                #we tried our best, logging another error won't help
-                pass
-            os.environ["XPRA_SERVER_LOG"] = log_filename0
+                os.fchown(logfd, uid, gid)
+            except OSError as e:
+                noerr(stderr.write, "failed to chown the log file '%s'\n" % log_filename0)
+                noerr(stderr.flush)
+        stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
+        noerr(stderr.write, "Entering daemon mode; "
+                     + "any further errors will be reported to:\n"
+                     + ("  %s\n" % log_filename0))
+        noerr(stderr.flush)
+        os.environ["XPRA_SERVER_LOG"] = log_filename0
 
     #warn early about this:
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
@@ -712,11 +715,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             del e
 
     if opts.daemon:
-        def noerr(fn, *args):
-            try:
-                fn(*args)
-            except Exception:
-                pass
         log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
         if log_filename0 != log_filename1:
