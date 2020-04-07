@@ -663,12 +663,14 @@ keymd5(host_key),
         auth = []
         if configbool("noneauthentication", NONE_AUTH):
             auth.append("none")
+        if password and configbool("passwordauthentication", PASSWORD_AUTH):
+            auth.append("password")
         if configbool("agentauthentication", AGENT_AUTH):
             auth.append("agent")
         # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
         if configbool("keyauthentication", KEY_AUTH):
             auth.append("key")
-        if configbool("passwordauthentication", PASSWORD_AUTH):
+        if not password and configbool("passwordauthentication", PASSWORD_AUTH):
             auth.append("password")
     #def doauth(authtype):
     #    return authtype in auth and not transport.is_authenticated()
