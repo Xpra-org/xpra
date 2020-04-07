@@ -627,6 +627,9 @@ keymd5(host_key),
     if not transport.is_authenticated() and NONE_AUTH:
         auth_none()
 
+    if not transport.is_authenticated() and PASSWORD_AUTH and password:
+        auth_password()
+
     if not transport.is_authenticated() and AGENT_AUTH:
         auth_agent()
 
@@ -636,9 +639,6 @@ keymd5(host_key),
 
     if not transport.is_authenticated() and PASSWORD_AUTH:
         auth_interactive()
-
-    if not transport.is_authenticated() and PASSWORD_AUTH and password:
-        auth_password()
 
     if not transport.is_authenticated() and PASSWORD_AUTH and not password:
         for _ in range(1+PASSWORD_RETRY):
