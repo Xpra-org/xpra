@@ -396,6 +396,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         if must_discard(target):
             log.info("clipboard %s rejecting request for invalid target '%s'", self._selection, target)
+            log.info(" coming from %s", wininfo)
             nodata()
             return
 
