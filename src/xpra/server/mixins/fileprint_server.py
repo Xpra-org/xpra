@@ -11,7 +11,7 @@ import os.path
 import hashlib
 
 from xpra.simple_stats import to_std_unit
-from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32
+from xpra.os_util import bytestostr, osexpand, load_binary_file, WIN32, POSIX
 from xpra.util import engs, repr_ellipsized, XPRA_FILETRANSFER_NOTIFICATION_ID
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -69,11 +69,13 @@ class FilePrintServer(StubServerMixin):
         return f
 
     def get_info(self, _proto):
-        d = {
-            "lpadmin"              : self.lpadmin,
-            "lpinfo"               : self.lpinfo,
-            "add-printer-options"  : self.add_printer_options,
-            }
+        d = {}
+        if POSIX:
+            d.update({
+                "lpadmin"              : self.lpadmin,
+                "lpinfo"               : self.lpinfo,
+                "add-printer-options"  : self.add_printer_options,
+                })
         if self.file_transfer.printing:
             from xpra.platform.printing import get_info
             d.update(get_info())
