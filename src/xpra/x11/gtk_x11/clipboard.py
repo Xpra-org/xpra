@@ -382,12 +382,14 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         if not self.owned:
             log.warn("Warning: clipboard selection request received,")
+            log.warn(" coming from %s", wininfo)
             log.warn(" but we don't own the selection,")
             log.warn(" sending an empty reply")
             nodata()
             return
         if not self._can_receive:
             log.warn("Warning: clipboard selection request received,")
+            log.warn(" coming from %s", wininfo)
             log.warn(" but receiving remote data is disabled,")
             log.warn(" sending an empty reply")
             nodata()
