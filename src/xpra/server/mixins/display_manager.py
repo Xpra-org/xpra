@@ -72,6 +72,8 @@ class DisplayManager(StubServerMixin):
                 from xpra.platform.paths import get_xpra_command
                 cmd = self.get_full_child_command(get_xpra_command()+["opengl", "--opengl=yes"])
                 env = self.get_child_env()
+                #we want the output so we can parse it:
+                env["XPRA_REDIRECT_OUTPUT"] = "0"
                 proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
                 out,err = proc.communicate()
                 gllog("out(%s)=%s", cmd, out)
@@ -86,10 +88,13 @@ class DisplayManager(StubServerMixin):
                         v = bytestostr(parts[1].strip())
                         props[k] = v
                     gllog("opengl props=%s", props)
-                    gllog.info("OpenGL is supported on display '%s'", self.display_name)
-                    renderer = props.get("renderer")
-                    if renderer:
-                        gllog.info(" using '%s' renderer", renderer)
+                    if props:
+                        gllog.info("OpenGL is supported on display '%s'", self.display_name)
+                        renderer = props.get("renderer")
+                        if renderer:
+                            gllog.info(" using '%s' renderer", renderer)
+                    else:
+                        gllog.info("No OpenGL information available")
                 else:
                     props["error-details"] = str(err).strip("\n\r")
                     error = "unknown error"

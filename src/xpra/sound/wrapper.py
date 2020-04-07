@@ -45,6 +45,8 @@ def get_sound_wrapper_env():
     if WIN32:
         #disable bencoder to skip warnings with the py3k Sound subapp
         env["XPRA_USE_BENCODER"] = "0"
+        #we don't want the output to go to a log file
+        env["XPRA_REDIRECT_OUTPUT"] = "0"
     elif POSIX and not OSX:
         try:
             from xpra.sound.pulseaudio.pulseaudio_util import add_audio_tagging_env
