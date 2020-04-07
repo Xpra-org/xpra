@@ -410,16 +410,20 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
         req_target = target
         if self.targets and target not in self.targets:
-            log.info("client %s is requesting an unknown target: '%s'", wininfo, target)
+            if first_time("client-%s-invalidtarget-%s" % (wininfo, target)):
+                l = log.info
+            else:
+                l = log.debug
+            l("client %s is requesting an unknown target: '%s'", wininfo, target)
             translated_targets = TRANSLATED_TARGETS.get(target, ())
             can_translate = tuple(x for x in translated_targets if x in self.targets)
             if can_translate:
                 req_target = can_translate[0]
-                log.info(" using '%s' instead", req_target)
+                l(" using '%s' instead", req_target)
             else:
-                log.info(" valid targets: %s", csv(self.targets))
+                l(" valid targets: %s", csv(self.targets))
                 if must_discard_extra(target):
-                    log.info(" dropping the request")
+                    l(" dropping the request")
                     nodata()
                     return
 
