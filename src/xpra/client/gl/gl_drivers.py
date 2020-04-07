@@ -28,6 +28,7 @@ VERSION_REQ = {
 BLACKLIST = {
     "renderer" :
         [
+            "SVGA3D",
             "Software Rasterizer",
             "Mesa DRI Intel(R) Ivybridge Desktop",
             "Mesa DRI Intel(R) Haswell Mobile",
