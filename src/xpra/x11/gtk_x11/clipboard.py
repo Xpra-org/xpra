@@ -362,9 +362,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self._selection, requestor.get_xid(), wininfo, target, prop)
         if not target:
             log.warn("Warning: ignoring clipboard request without a TARGET")
+            log.warn(" coming from %s", wininfo)
             return
         if not prop:
             log.warn("Warning: ignoring clipboard request without a property")
+            log.warn(" coming from %s", wininfo)
             return
         def nodata():
             self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
