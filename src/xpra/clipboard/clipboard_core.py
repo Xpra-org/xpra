@@ -48,6 +48,7 @@ DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets("DISCARD", 
     r"^CorePasteboardFlavorType",
     r"^dyn\.",
     r"^resource-transfer-format",           #eclipse
+    r"^x-special/",                         #ie: gnome file copy
     )))
 #targets some applications are known to request,
 #even when the peer did not expose them as valid targets,
