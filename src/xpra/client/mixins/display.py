@@ -323,8 +323,9 @@ class DisplayClient(StubClientMixin):
         max_w, max_h = self.server_max_desktop_size             #ie: server limited to 8192x4096?
         w, h = self.get_root_size()                             #ie: 5760, 2160
         sw, sh = self.cp(w, h)                                  #ie: upscaled to: 11520x4320
-        scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s",
-                   self.server_actual_desktop_size, self.get_root_size())
+        scalinglog("may_adjust_scaling() server max desktop size=%s, server actual desktop size=%s",
+                   self.server_max_desktop_size, self.server_actual_desktop_size)
+        scalinglog("may_adjust_scaling() client root size=%s", self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
         #server size is too small for the client screen size with the current scaling value,
         #calculate the minimum scaling to fit it:
