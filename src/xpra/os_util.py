@@ -367,11 +367,14 @@ def is_WSL() -> bool:
 
 
 def get_generic_os_name() -> str:
+    return do_get_generic_os_name().lower()
+
+def do_get_generic_os_name() -> str:
     for k,v in {
-            "linux"     : "linux",
-            "darwin"    : "macos",
-            "win"       : "win32",
-            "freebsd"   : "freebsd",
+            "linux"     : "Linux",
+            "darwin"    : "MacOS",
+            "win"       : "Win32",
+            "freebsd"   : "FreeBSD",
             }.items():
         if sys.platform.startswith(k):
             return v

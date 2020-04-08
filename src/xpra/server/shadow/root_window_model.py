@@ -7,7 +7,10 @@
 import socket
 
 from xpra.util import prettify_plug_name
-from xpra.os_util import get_generic_os_name, load_binary_file
+from xpra.os_util import (
+    get_generic_os_name, do_get_generic_os_name,
+    load_binary_file, get_linux_distribution,
+    )
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 
@@ -129,8 +132,13 @@ class RootWindowModel:
                 "base-size" : size,
                 }
         if prop=="class-instance":
-            osn = get_generic_os_name()
-            return ("xpra-%s" % osn, "Xpra-%s" % osn.upper())
+            osn = do_get_generic_os_name()
+            if osn=="Linux":
+                try:
+                    osn += "-"+get_linux_distribution()[0].replace(" ", "-")
+                except Exception:
+                    pass
+            return ("xpra-%s" % osn.lower(), "Xpra %s" % osn.replace("-", " "))
         if prop=="icons":
             try:
                 icon_name = get_icon_filename((get_generic_os_name() or "").lower()+".png")
