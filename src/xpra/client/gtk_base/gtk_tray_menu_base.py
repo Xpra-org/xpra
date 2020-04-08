@@ -742,11 +742,11 @@ class GTKTrayMenuBase(object):
         return self.client.quality
     def set_min_quality(self, q):
         self.client.min_quality = q
-        self.client.quality = 0
+        self.client.quality = -1
         self.client.send_min_quality()
         self.client.send_quality()
     def set_quality(self, q):
-        self.client.min_quality = 0
+        self.client.min_quality = -1
         self.client.quality = q
         self.client.send_min_quality()
         self.client.send_quality()
