@@ -326,24 +326,32 @@ class DisplayClient(StubClientMixin):
         scalinglog("may_adjust_scaling() server desktop size=%s, client root size=%s",
                    self.server_actual_desktop_size, self.get_root_size())
         scalinglog(" scaled client root size using %sx%s: %s", self.xscale, self.yscale, (sw, sh))
-        if sw<(max_w+1) and sh<(max_h+1):
-            #no change needed
-            return
         #server size is too small for the client screen size with the current scaling value,
         #calculate the minimum scaling to fit it:
         def clamp(v):
             return max(MIN_SCALING, min(MAX_SCALING, v))
-        x = clamp(w/max_w)
-        y = clamp(h/max_h)
+        if self.desktop_fullscreen:
+            sw, sh = self.server_actual_desktop_size
+            x = clamp(w/sw)
+            y = clamp(h/sh)
+        else:
+            if sw<(max_w+1) and sh<(max_h+1):
+                #no change needed
+                return
+            x = clamp(w/max_w)
+            y = clamp(h/max_h)
+            #avoid wonky scaling:
+            if not 0.75<x/y<1.25:
+                x = y = min(x, y)
         def mint(v):
             #prefer int over float,
             #and even tolerate a 0.1% difference to get it:
             if iround(v)*1000==iround(v*1000):
                 return int(v)
             return v
-        mscale = max(mint(x), mint(y))
-        self.xscale = mscale
-        self.yscale = mscale
+        self.xscale = mint(x)
+        self.yscale = mint(y)
+        scalinglog(" xscale=%s, yscale=%s", self.xscale, self.yscale)
         #to use the same scale for both axes:
         #self.xscale = mint(max(x, y))
         #self.yscale = self.xscale
