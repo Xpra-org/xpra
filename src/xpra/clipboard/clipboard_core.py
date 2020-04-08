@@ -59,6 +59,7 @@ DISCARD_EXTRA_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets("DISC
     r"^SAVE_TARGETS$",
     r"^COMPOUND_TEXT",
     r"GTK_TEXT_BUFFER_CONTENTS",
+    r"^text/plain;charset=utf-8",
     )))
 log("DISCARD_TARGETS=%s", csv(DISCARD_TARGETS))
 log("DISCARD_EXTRA_TARGETS=%s", csv(DISCARD_EXTRA_TARGETS))
