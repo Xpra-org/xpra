@@ -259,17 +259,34 @@ def ssh_paramiko_connect_to(display_desc):
             host_config = ssh_config.lookup(host)
             if host_config:
                 log("got host config for '%s': %s", host, host_config)
-                host = host_config.get("hostname", host)
-                username = host_config.get("user", username)
-                port = host_config.get("port", port)
+                chost = host_config.get("hostname", host)
+                cusername = host_config.get("user", username)
+                cport = host_config.get("port", port)
                 try:
-                    port = int(port)
+                    port = int(cport)
                 except ValueError:
-                    raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % port)
+                    raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % cport)
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
-                    log("found proxycommand='%s' for host '%s'", proxycommand, host)
+                    log("found proxycommand='%s' for host '%s'", proxycommand, chost)
+                    for sub, value in {
+                        "%%"    : "%",          #A literal ‘%’
+                        #"%C"    : "??",        #Hash of %l%h%p%r.
+                        "%d"    : os.path.expanduser("~"),   #Local user's home directory.
+                        "%h"    : chost,         #The remote hostname.
+                        "%i"    : os.getuid() if POSIX else 0,    #The local user ID.
+                        "%L"    : socket.gethostname(), #The local hostname.
+                        "%l"    : socket.getfqdn(),     #The local hostname, including the domain name.
+                        "%n"    : host,         #The original remote hostname, as given on the command line.
+                        "%p"    : cport,        #The remote port.
+                        "%r"    : cusername,    #The remote username.
+                        "%T"    : "NONE",       #The local tun(4) or tap(4) network interface assigned
+                                                #if tunnel forwarding was requested, or "NONE" otherwise.
+                        "%u"    : get_username(),   #The local username.
+                        }.items():
+                        proxycommand = proxycommand.replace(sub, value)
                     sock = ProxyCommand(proxycommand)
+                    log("ProxyCommand(%s)=%s", proxycommand, sock)
                     from xpra.child_reaper import getChildReaper
                     cmd = getattr(sock, "cmd", [])
                     def proxycommand_ended(proc):
@@ -281,18 +298,18 @@ def ssh_paramiko_connect_to(display_desc):
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
                     ssh_client.load_system_host_keys()
-                    log("ssh proxy command connect to %s", (host, port, sock))
-                    ssh_client.connect(host, port, sock=sock)
+                    log("ssh proxy command connect to %s", (chost, cport, sock))
+                    ssh_client.connect(chost, cport, sock=sock)
                     transport = ssh_client.get_transport()
-                    do_ssh_paramiko_connect_to(transport, host,
-                                               username, password,
+                    do_ssh_paramiko_connect_to(transport, chost,
+                                               cusername, password,
                                                host_config or ssh_config.lookup("*"),
                                                proxy_keys,
                                                paramiko_config)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-                    peername = (host, port)
+                    peername = (chost, cport)
                     conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-                    conn.target = host_target_string("ssh", username, host, port, display)
+                    conn.target = host_target_string("ssh", cusername, chost, cport, display)
                     conn.timeout = SOCKET_TIMEOUT
                     conn.start_stderr_reader()
                     conn.process = (sock.process, "ssh", cmd)
