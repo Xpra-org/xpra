@@ -869,8 +869,7 @@ fi
 
 
 %changelog
-* Mon Apr 06 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
-- fix focus race condition
+* Wed Apr 08 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
 - fix keypad regression (AltGr changes, again)
 - fix MS Windows shadow servers
 - fix race condition collecting latency data for session info
@@ -881,6 +880,13 @@ fi
 - fix OpenGL diagnostic messages getting cut off
 - fix change of encoding from the system tray
 - fix quality and speed changes from the system tray
+- fix clipboard and popup menu problems with Eclipse
+- fix name of shadow server process on MS Windows, used in log file names
+- fix audio query subprocess with MS shadow servers
+- fix unlikely race condition in speaker forwarding shutdown sequence
+- fix desktop-fullscreen=yes automatic scaling
+- if we have an ssh password we can use, try that first
+- blacklist VirtualBox's SVGA3D OpenGL driver (fixes black windows)
 - use regular X11 system tray with i3
 - hide confusing named-pipe prefix in empty output on MS Windows
 - HTML5 fixes: invalid IMG tag, reserved keyword, language detection, draw debugging, etc
