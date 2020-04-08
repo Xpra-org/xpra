@@ -2035,10 +2035,10 @@ def do_run_glcheck(opts, show=False) -> dict:
             if pixel_depth not in (0, 16, 24, 30) and pixel_depth<32:
                 pixel_depth = 0
             draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=show)
-            success = draw_result.pop("success", False)
             opengl_props.update(draw_result)
-            if not success:
+            if not draw_result.get("success", False):
                 opengl_props["safe"] = False
+        log("do_run_glcheck(.., %s)=%s", show, opengl_props)
         return opengl_props
     except Exception as e:
         if is_debug_enabled("opengl"):
