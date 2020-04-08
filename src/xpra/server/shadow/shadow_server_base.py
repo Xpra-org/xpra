@@ -420,7 +420,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def _process_window_common(self, wid):
         window = self._id_to_window.get(wid)
-        assert window is not None
+        assert window is not None, "wid %s does not exist" % wid
         return window
 
     def _process_map_window(self, proto, packet):
