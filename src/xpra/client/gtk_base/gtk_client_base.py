@@ -12,7 +12,8 @@ from gi.repository import Gtk, Gdk, GdkPixbuf
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.util import (
-    updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time, typedict,
+    updict, pver, iround, flatten_dict,
+    envbool, envint, repr_ellipsized, csv, first_time, typedict,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
@@ -61,6 +62,9 @@ USE_LOCAL_CURSORS = envbool("XPRA_USE_LOCAL_CURSORS", not WIN32 and not is_Wayla
 EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
+OPENGL_MIN_SIZE = envint("XPRA_OPENGL_MIN_SIZE", 32)
+NO_OPENGL_WINDOW_TYPES = os.environ.get("XPRA_NO_OPENGL_WINDOW_TYPES",
+                                        "DOCK,TOOLBAR,MENU,UTILITY,SPLASH,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(",")
 
 
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
@@ -1124,6 +1128,18 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #verify texture limits:
         ms = min(self.sx(self.gl_texture_size_limit), *self.gl_max_viewport_dims)
         if w>ms or h>ms:
+            return (self.ClientWindowClass,)
+        #avoid opengl for small windows:
+        if w<=OPENGL_MIN_SIZE or h<=OPENGL_MIN_SIZE:
+            log.warn("not using opengl for small window: %ix%i", w, h)
+            return (self.ClientWindowClass,)
+        #avoid opengl for tooltips:
+        window_types = metadata.strtupleget("window-type")
+        if any(x in (NO_OPENGL_WINDOW_TYPES) for x in window_types):
+            log("not using opengl for %s window-type", csv(window_types))
+            return (self.ClientWindowClass,)
+        if metadata.intget("transient-for", 0)>0:
+            log("not using opengl for transient-for window")
             return (self.ClientWindowClass,)
         if WIN32:
             #win32 opengl doesn't do alpha (not sure why):
