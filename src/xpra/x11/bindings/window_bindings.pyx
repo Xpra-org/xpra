@@ -963,7 +963,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         e.xselection.requestor = xwindow
         e.xselection.selection = self.xatom(selection)
         e.xselection.target = self.xatom(target)
-        e.xselection.property = self.xatom(property)
         e.xselection.time = time
         if property:
             e.xselection.property = self.xatom(property)
