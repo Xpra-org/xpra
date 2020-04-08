@@ -35,6 +35,8 @@ def get_nvml_driver_version():
 
 
 def get_proc_driver_version():
+    if os.name!="posix":
+        return ""
     from xpra.os_util import load_binary_file
     proc_file = "/proc/driver/nvidia/version"
     v = load_binary_file(proc_file)
