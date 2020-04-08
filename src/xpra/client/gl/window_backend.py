@@ -115,12 +115,11 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         coding = "rgb32"
         widget = window_backing._backing
         widget.realize()
-        def paint_callback(success, message):
+        def paint_callback(success, message=""):
             log("paint_callback(%s, %s)", success, message)
-            draw_result.update({
-                "success"   : success,
-                "message"   : message.replace("\n", " "),
-                })
+            draw_result["success"] = success
+            if message:
+                draw_result["message"] = message.replace("\n", " ")
         log("OpenGL: testing draw on %s widget %s with %s : %s", window, widget, coding, pixel_format)
         pix = AtomicInteger(0x7f)
         REPAINT_DELAY = envint("XPRA_REPAINT_DELAY", int(show)*16)
