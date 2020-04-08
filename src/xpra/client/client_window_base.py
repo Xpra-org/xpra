@@ -485,7 +485,7 @@ class ClientWindowBase(ClientWidgetBase):
                     if not closetoint(fsv1) or not closetoint(fsv2):
                         #the scaled value is not close to an int,
                         #so we can't honour it:
-                        geomlog("cannot honour '%s' due to scaling, scaled values are not integers: %s, %s",
+                        geomlog("cannot honour '%s' due to scaling, scaled values are not both integers: %s, %s",
                                 a, fsv1, fsv2)
                         continue
                 hints[h1], hints[h2] = sv1, sv2
