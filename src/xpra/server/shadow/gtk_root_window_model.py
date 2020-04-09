@@ -42,6 +42,8 @@ def take_png_screenshot(window):
     log("grabbing screenshot")
     w,h = window.get_geometry()[2:4]
     pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, w, h)
+    if not pixbuf:
+        return None
     data = pixbuf_save_to_memory(pixbuf, "png")
     rowstride = w*3
     return w, h, "png", rowstride, data
