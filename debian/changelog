@@ -14,6 +14,11 @@ xpra (3.0.9-1) UNRELEASED; urgency=low
   * fix audio query subprocess with MS shadow servers
   * fix unlikely race condition in speaker forwarding shutdown sequence
   * fix desktop-fullscreen=yes automatic scaling
+  * fix missing bug report data due to uninitialized X11 bindings
+  * fix bug report error if we cannot grab a screenshot (ie: Wayland)
+  * fix error saving binary data with python3 builds of the bug report tool
+  * fix errors querying the display under Wayland
+  * hide scary stacktraces when shutting down ssh proxy commands
   * if we have an ssh password we can use, try that first
   * blacklist VirtualBox's SVGA3D OpenGL driver (fixes black windows)
   * use regular X11 system tray with i3
@@ -26,7 +31,7 @@ xpra (3.0.9-1) UNRELEASED; urgency=low
   * remove out of date information from man page
   * MacOS: openssl 1.1.1f
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 06 Apr 2020 22:08:11 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 09 Apr 2020 21:31:32 +0700
 
 xpra (3.0.8-1) UNRELEASED; urgency=low
   * rebuilt with ssh run-xpra script fix

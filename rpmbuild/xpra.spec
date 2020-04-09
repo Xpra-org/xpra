@@ -869,7 +869,7 @@ fi
 
 
 %changelog
-* Wed Apr 08 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
+* Thu Apr 09 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
 - fix keypad regression (AltGr changes, again)
 - fix MS Windows shadow servers
 - fix race condition collecting latency data for session info
@@ -885,6 +885,11 @@ fi
 - fix audio query subprocess with MS shadow servers
 - fix unlikely race condition in speaker forwarding shutdown sequence
 - fix desktop-fullscreen=yes automatic scaling
+- fix missing bug report data due to uninitialized X11 bindings
+- fix bug report error if we cannot grab a screenshot (ie: Wayland)
+- fix error saving binary data with python3 builds of the bug report tool
+- fix errors querying the display under Wayland
+- hide scary stacktraces when shutting down ssh proxy commands
 - if we have an ssh password we can use, try that first
 - blacklist VirtualBox's SVGA3D OpenGL driver (fixes black windows)
 - use regular X11 system tray with i3

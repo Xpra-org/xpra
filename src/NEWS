@@ -1,4 +1,4 @@
-v3.0.9 (2020-04-08)
+v3.0.9 (2020-04-09)
 ======================
 	-- fix keypad regression (AltGr changes, again)
 	-- fix MS Windows shadow servers
@@ -15,6 +15,11 @@ v3.0.9 (2020-04-08)
 	-- fix audio query subprocess with MS shadow servers
 	-- fix unlikely race condition in speaker forwarding shutdown sequence
 	-- fix desktop-fullscreen=yes automatic scaling
+	-- fix missing bug report data due to uninitialized X11 bindings
+	-- fix bug report error if we cannot grab a screenshot (ie: Wayland)
+	-- fix error saving binary data with python3 builds of the bug report tool
+	-- fix errors querying the display under Wayland
+	-- hide scary stacktraces when shutting down ssh proxy commands
 	-- if we have an ssh password we can use, try that first
 	-- blacklist VirtualBox's SVGA3D OpenGL driver (fixes black windows)
 	-- use regular X11 system tray with i3
