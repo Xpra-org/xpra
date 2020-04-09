@@ -293,7 +293,8 @@ class WindowModel(BaseWindowModel):
         size_hints = self.get_property("size-hints")
         ax, ay = size_hints.get("position", (x, y))
         aw, ah = size_hints.get("size", (w, h))
-        geomlog("initial X11 position and size: requested(%s, %s)=%s", (x, y, w, h), size_hints, (ax, ay, aw, ah))
+        geomlog("initial X11 position and size: requested(%s, %s, %s)=%s",
+                (x, y, w, h), size_hints, geom, (ax, ay, aw, ah))
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
         set_if_unset("requested-position", (ax, ay))
         set_if_unset("requested-size", (aw, ah))
