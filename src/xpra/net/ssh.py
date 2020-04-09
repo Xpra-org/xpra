@@ -284,7 +284,7 @@ def ssh_paramiko_connect_to(display_desc):
                                                 #if tunnel forwarding was requested, or "NONE" otherwise.
                         "%u"    : get_username(),   #The local username.
                         }.items():
-                        proxycommand = proxycommand.replace(sub, value)
+                        proxycommand = proxycommand.replace(sub, str(value))
                     sock = ProxyCommand(proxycommand)
                     log("ProxyCommand(%s)=%s", proxycommand, sock)
                     from xpra.child_reaper import getChildReaper
