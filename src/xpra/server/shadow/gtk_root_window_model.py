@@ -42,6 +42,8 @@ def take_png_screenshot(window):
     pixbuf = get_pixbuf_from_window(window, 0, 0, w, h)
     data = pixbuf_save_to_memory(pixbuf, "png")
     rowstride = w*3
+    if not pixbuf:
+        return None
     return w, h, "png", rowstride, data
 
 
