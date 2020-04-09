@@ -269,22 +269,6 @@ def ssh_paramiko_connect_to(display_desc):
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
                     log("found proxycommand='%s' for host '%s'", proxycommand, chost)
-                    for sub, value in {
-                        "%%"    : "%",          #A literal ‘%’
-                        #"%C"    : "??",        #Hash of %l%h%p%r.
-                        "%d"    : os.path.expanduser("~"),   #Local user's home directory.
-                        "%h"    : chost,         #The remote hostname.
-                        "%i"    : os.getuid() if POSIX else 0,    #The local user ID.
-                        "%L"    : socket.gethostname(), #The local hostname.
-                        "%l"    : socket.getfqdn(),     #The local hostname, including the domain name.
-                        "%n"    : host,         #The original remote hostname, as given on the command line.
-                        "%p"    : cport,        #The remote port.
-                        "%r"    : cusername,    #The remote username.
-                        "%T"    : "NONE",       #The local tun(4) or tap(4) network interface assigned
-                                                #if tunnel forwarding was requested, or "NONE" otherwise.
-                        "%u"    : get_username(),   #The local username.
-                        }.items():
-                        proxycommand = proxycommand.replace(sub, str(value))
                     sock = ProxyCommand(proxycommand)
                     log("ProxyCommand(%s)=%s", proxycommand, sock)
                     from xpra.child_reaper import getChildReaper
