@@ -206,11 +206,12 @@ def _get_randr_dpi():
             randr_bindings = RandRBindings()
             if randr_bindings.has_randr():
                 wmm, hmm = randr_bindings.get_screen_size_mm()
-                w, h =  randr_bindings.get_screen_size()
-                dpix = iround(w * 25.4 / wmm)
-                dpiy = iround(h * 25.4 / hmm)
-                screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
-                return dpix, dpiy
+                if wmm>0 and hmm>0:
+                    w, h =  randr_bindings.get_screen_size()
+                    dpix = iround(w * 25.4 / wmm)
+                    dpiy = iround(h * 25.4 / hmm)
+                    screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
+                    return dpix, dpiy
     return -1, -1
 
 def get_xdpi():
