@@ -81,8 +81,8 @@ class GTKKeyboardHelper(KeyboardHelper):
 
 def main():
     #use gtk as display source:
-    from xpra.os_util import POSIX
-    if POSIX:
+    from xpra.os_util import POSIX, OSX
+    if POSIX and not OSX:
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
     from xpra.util import print_nested_dict
