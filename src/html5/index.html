@@ -829,7 +829,7 @@
 
 			function init_file_transfer(client) {
 				function send_file(f) {
-					clog("file:", f.name, ", type:", f.type, ", size:", f.size, "last modified:", f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a');
+					clog("file:", f.name, ", type:", f.type, ", size:", f.size);
 					const fileReader = new FileReader();
 					fileReader.onloadend = function (evt) {
 						const u8a = new Uint8Array(evt.target.result);
