@@ -8,11 +8,16 @@ import sys
 
 
 def main(argv=()):
+    from xpra.os_util import POSIX, OSX
     from xpra.platform import program_context
     from xpra.platform.gui import init, set_default_icon
     with program_context("Xpra-Bug-Report", "Xpra Bug Report"):
         from xpra.log import enable_color
         enable_color()
+
+        if POSIX and not OSX:
+            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+            init_gdk_display_source()
 
         set_default_icon("bugs.png")
         init()
