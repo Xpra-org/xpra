@@ -95,7 +95,7 @@ const Utilities = {
 			return navigator.oscpu;
 		}
 		//ie:
-		if (navigator.cpuClass) {
+		if (navigator.hasOwnProperty("cpuClass")) {
 			return navigator.cpuClass;
 		}
 		return 'unknown';
@@ -260,7 +260,7 @@ const Utilities = {
 
 	is_64bit : function() {
 		let _to_check = [] ;
-		if (window.navigator.cpuClass)
+		if (window.navigator.hasOwnProperty("cpuClass"))
 			_to_check.push((window.navigator.cpuClass + "").toLowerCase());
 		if (window.navigator.platform)
 			_to_check.push((window.navigator.platform + "").toLowerCase());
@@ -569,21 +569,21 @@ const Utilities = {
 
 
 	getConnectionInfo : function() {
-		const c = navigator.connection;
-		if (!c) {
+		if (!navigator.hasOwnProperty("connection")) {
 			return {};
 		}
+		const c = navigator.connection;
 		const i = {};
 		if (c.type) {
 			i["type"] = c.type;
 		}
-		if (c.effectiveType) {
+		if (c.hasOwnProperty("effectiveType")) {
 			i["effective-type"] = c.effectiveType;
 		}
 		if (!isNaN(c.downlink) && !isNaN(c.downlink) && c.downlink>0 && isFinite(c.downlink)) {
 			i["downlink"] = Math.round(c.downlink*1000*1000);
 		}
-		if (!isNaN(c.downlinkMax) && !isNaN(c.downlinkMax) && c.downlinkMax>0 && isFinite(c.downlinkMax)) {
+		if (c.hasOwnProperty("downlinkMax") && !isNaN(c.downlinkMax) && !isNaN(c.downlinkMax) && c.downlinkMax>0 && isFinite(c.downlinkMax)) {
 			i["downlink.max"] = Math.round(c.downlinkMax*1000*1000);
 		}
 		if (!isNaN(c.rtt) && c.rtt>0) {

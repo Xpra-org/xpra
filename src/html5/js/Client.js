@@ -134,7 +134,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.clipboard_server_buffers = {};
 	this.clipboard_pending = false;
 	this.clipboard_targets = ["UTF8_STRING", "TEXT", "STRING", "text/plain"];
-	if (CLIPBOARD_IMAGES && navigator.clipboard && navigator.clipboard.write) {
+	if (CLIPBOARD_IMAGES && navigator.clipboard && navigator.clipboard.hasOwnProperty("write")) {
 		this.clipboard_targets.push("image/png");
 	}
 	else {
@@ -3273,7 +3273,8 @@ XpraClient.prototype._process_clipboard_token = function(packet, ctx) {
 				}
 			}
 		}
-		else if (CLIPBOARD_IMAGES && dtype=="image/png" && dformat==8 && wire_encoding=="bytes" && navigator.clipboard && navigator.clipboard.write) {
+		else if (CLIPBOARD_IMAGES && dtype=="image/png" && dformat==8 && wire_encoding=="bytes"
+				&& navigator.clipboard && navigator.clipboard.hasOwnProperty("write")) {
 			ctx.debug("clipboard", "png image received");
 			const blob = new Blob([wire_data], {type: dtype});
 			ctx.debug("clipboard", "created blob", blob);
@@ -3316,7 +3317,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 	}
 
 	if (navigator.clipboard) {
-		if (navigator.clipboard.read) {
+		if (navigator.clipboard.hasOwnProperty("read")) {
 			ctx.debug("clipboard", "request using read()");
 			navigator.clipboard.read().then(function(data) {
 				let item = null;
@@ -3364,7 +3365,7 @@ XpraClient.prototype._process_clipboard_request = function(packet, ctx) {
 			});
 			return;
 		}
-		else if (navigator.clipboard.readText) {
+		else if (navigator.clipboard.hasOwnProperty("readText")) {
 			ctx.debug("clipboard", "clipboard request using readText()");
 			navigator.clipboard.readText().then(function(text) {
 				ctx.debug("clipboard", "clipboard request via readText() text=", text);
