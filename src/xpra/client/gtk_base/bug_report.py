@@ -344,7 +344,7 @@ class BugReport:
                             log.error("Error: cannot create mmap file:")
                             log.error(" %s", e)
                         else:
-                            zf.write(temp.name, cfile, zipfile.ZIP_STORED, 0)
+                            zf.write(temp.name, cfile, zipfile.ZIP_STORED)
                     finally:
                         if temp:
                             os.unlink(temp.name)
