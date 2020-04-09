@@ -535,7 +535,7 @@ class WindowModel(BaseWindowModel):
         w, h = self.calc_constrained_size(w, h, hints)
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow!=w or coh!=h
-        moved = x!=0 or y!=0
+        moved = x!=cox or y!=coy
         if resized:
             if moved:
                 self._internal_set_property("set-initial-position", True)
