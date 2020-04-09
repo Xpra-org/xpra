@@ -217,6 +217,14 @@ class SSHProxyCommandConnection(SSHSocketConnection):
                 }
             }
 
+    def close(self):
+        try:
+            super().close()
+        except Exception:
+            #this can happen if the proxy command gets a SIGINT,
+            #it's closed already and we don't care
+            log("SSHProxyCommandConnection.close()", exc_info=True)
+
 
 def ssh_paramiko_connect_to(display_desc):
     #plain socket attributes:
