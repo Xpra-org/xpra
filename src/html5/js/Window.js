@@ -460,7 +460,7 @@ XpraWindow.prototype.update_metadata = function(metadata, safe) {
 	if(safe) {
 		this.set_metadata_safe(metadata);
 	} else {
-		this.set_metadata(metadata)
+		this.set_metadata(metadata);
 	}
 	this.update_zindex();
 };

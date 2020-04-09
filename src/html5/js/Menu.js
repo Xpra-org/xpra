@@ -58,7 +58,7 @@ SOFTWARE.
         ul.classList.add("-animating");
         ul.classList.add("-visible");
         setTimeout(function(){
-            ul.classList.remove("-animating")
+            ul.classList.remove("-animating");
         }, 25);
     }
 

@@ -335,7 +335,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 			for (let index in this.raw_packets) {
 				packet[index] = this.raw_packets[index];
 			}
-			this.raw_packets = {}
+			this.raw_packets = {};
 		}
 		catch (e) {
 			//FIXME: maybe we should error out and disconnect here?

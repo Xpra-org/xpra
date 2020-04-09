@@ -346,7 +346,7 @@ function fill_form(default_settings) {
 			v = default_settings[prop];
 		}
 		return v;
-	}
+	};
 	const getboolparam = function(prop, default_value) {
 		let v = Utilities.getparam(prop);
 		if (v==null && prop in default_settings) {
