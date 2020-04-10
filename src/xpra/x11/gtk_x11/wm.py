@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,6 +16,7 @@ from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
 from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
+from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                              #@UnresolvedImport
     add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
@@ -219,7 +220,9 @@ class Wm(GObject.GObject):
         self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
 
         # Load up our full-screen widget
-        self._world_window = None
+        self._world_window = WorldWindow(self._display.get_default_screen())
+        self.notify("toplevel")
+        self._world_window.show_all()
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.
