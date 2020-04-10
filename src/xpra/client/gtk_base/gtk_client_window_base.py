@@ -436,15 +436,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if NotifyInferior is not None:
             detail = getattr(event, "detail", None)
             if detail==NotifyInferior:
-                log("dropped NotifyInferior focus event")
+                focuslog("dropped NotifyInferior focus event")
                 return True
         self._focus_latest = False
         return self.schedule_recheck_focus()
 
     def do_xpra_focus_in_event(self, event):
-        focuslog("do_xpra_focus_in_event(%s)", event)
-        self._focus_latest = True
-        return self.schedule_recheck_focus()
+        focuslog("do_xpra_focus_in_event(%s) been_mapped=%s", event, self._been_mapped)
+        if self._been_mapped:
+            self._focus_latest = True
+            return self.schedule_recheck_focus()
 
 
     def init_max_window_size(self):
