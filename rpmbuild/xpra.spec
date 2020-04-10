@@ -869,7 +869,9 @@ fi
 
 
 %changelog
-* Thu Apr 09 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
+* Fri Apr 10 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
+- fix HTML5 client XSS
+- fix focus issues
 - fix keypad regression (AltGr changes, again)
 - fix MS Windows shadow servers
 - fix race condition collecting latency data for session info

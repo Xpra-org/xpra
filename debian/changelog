@@ -1,4 +1,6 @@
 xpra (3.0.9-1) UNRELEASED; urgency=low
+  * fix HTML5 client XSS
+  * fix focus issues
   * fix keypad regression (AltGr changes, again)
   * fix MS Windows shadow servers
   * fix race condition collecting latency data for session info
@@ -31,7 +33,7 @@ xpra (3.0.9-1) UNRELEASED; urgency=low
   * remove out of date information from man page
   * MacOS: openssl 1.1.1f
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 09 Apr 2020 21:31:32 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 10 Apr 2020 20:37:12 +0700
 
 xpra (3.0.8-1) UNRELEASED; urgency=low
   * rebuilt with ssh run-xpra script fix

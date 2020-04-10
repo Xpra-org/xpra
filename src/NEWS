@@ -1,5 +1,7 @@
-v3.0.9 (2020-04-09)
+v3.0.9 (2020-04-10)
 ======================
+	-- fix HTML5 client XSS
+	-- fix focus issues
 	-- fix keypad regression (AltGr changes, again)
 	-- fix MS Windows shadow servers
 	-- fix race condition collecting latency data for session info
