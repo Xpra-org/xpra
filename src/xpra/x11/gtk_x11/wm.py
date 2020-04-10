@@ -21,6 +21,7 @@ from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.models.window import WindowModel, configure_bits
+from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                              #@UnresolvedImport
     add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
@@ -232,7 +233,9 @@ class Wm(gobject.GObject):
         self.size_constraints = DEFAULT_SIZE_CONSTRAINTS
 
         # Load up our full-screen widget
-        self._world_window = None
+        self._world_window = WorldWindow(self._display.get_default_screen())
+        self.notify("toplevel")
+        self._world_window.show_all()
         if not is_gtk3():
             self._world_window = WorldWindow(self._display.get_default_screen())
             self.notify("toplevel")

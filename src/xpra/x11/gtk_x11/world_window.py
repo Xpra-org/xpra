@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -124,12 +124,13 @@ class WorldWindow(gtk.Window):
 
     def __repr__(self):
         xid = 0
-        if self.window:
-            xid = get_xwindow(self.window)
+        w = self.get_window()
+        if w:
+            xid = w.get_xid()
         return "WorldWindow(%#x)" % xid
 
     def _resize(self, *_args):
-        s = screen_get_default()
+        s = self.get_screen()
         x = s.get_width()
         y = s.get_height()
         log("sizing world to %sx%s", x, y)
@@ -166,11 +167,17 @@ class WorldWindow(gtk.Window):
             # *will* get the focus, and thus a real FocusIn event.
             send_wm_take_focus(self.get_window(), CurrentTime)
 
+    def add(self, widget):
+        w = widget.get_window()
+        log("add(%s) realized=%s, widget window=%s", widget, self.get_realized(), w)
+        #the DesktopManager does not have a window..
+        if w:
+            super().add(widget)
+
     def do_focus_in_event(self, event):
         htf = self.get_property("has-toplevel-focus")
         focuslog("world window got focus: %s, has-toplevel-focus=%s", event, htf)
         if not htf:
-            #super(WorldWindow, self).do_focus_in_event(*args)
             gtk.Window.do_focus_in_event(self, event)
             self.reset_x_focus()
 
@@ -188,8 +195,9 @@ class WorldWindow(gtk.Window):
         # sending a WM_TAKE_FOCUS to our own window, which will go to the X
         # server and then come back to our own process, which will then issue
         # an XSetInputFocus on itself.
-        now = x11_get_server_time(self.window)
-        send_wm_take_focus(self.window, now)
+        w = self.get_window()
+        now = x11_get_server_time(w)
+        send_wm_take_focus(w, now)
 
     def reset_x_focus(self):
         focuslog("reset_x_focus: widget with focus: %s", self.get_focus())
