@@ -717,12 +717,13 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #nothing to do!
             return
         self._focus_history.append(wid)
-        had_focus = self._id_to_window.get(self._has_focus)
+        hfid = self._has_focus
+        had_focus = self._id_to_window.get(hfid)
         def reset_focus():
             toplevel = None
             if self._wm:
                 toplevel = self._wm.get_property("toplevel")
-            focuslog("reset_focus() %s / %s had focus (toplevel=%s)", self._has_focus, had_focus, toplevel)
+            focuslog("reset_focus() %s / %s had focus (toplevel=%s)", hfid, had_focus, toplevel)
             #this will call clear_keys_pressed() if the server is an InputServer:
             self.reset_focus()
             # FIXME: kind of a hack:
