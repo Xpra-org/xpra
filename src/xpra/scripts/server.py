@@ -396,8 +396,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     upgrading_desktop = mode == "upgrade-desktop"
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
-    clobber   = int(upgrading or upgrading_desktop)*CLOBBER_UPGRADE | int(use_display)*CLOBBER_USE_DISPLAY
-    start_vfb = not (shadowing or proxying or clobber)
 
     if not proxying and POSIX and not OSX:
         #we don't support wayland servers,
@@ -491,9 +489,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     gid = int(opts.gid)
     username = get_username_for_uid(uid)
     home = get_home_for_uid(uid)
-    xauth_data = None
-    if start_vfb:
-        xauth_data = get_hex_uuid()
     ROOT = POSIX and getuid()==0
 
     protected_fds = []
@@ -518,6 +513,12 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             stderr.write("Error: invalid displayfd '%s':\n" % opts.displayfd)
             stderr.write(" %s\n" % e)
             del e
+
+    clobber   = int(upgrading or upgrading_desktop)*CLOBBER_UPGRADE | int(use_display)*CLOBBER_USE_DISPLAY
+    start_vfb = not (shadowing or proxying or clobber)
+    xauth_data = None
+    if start_vfb:
+        xauth_data = get_hex_uuid()
 
     # if pam is present, try to create a new session:
     pam = None
