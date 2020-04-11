@@ -514,7 +514,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             stderr.write(" %s\n" % e)
             del e
 
-    print(upgrading, upgrading_desktop, CLOBBER_UPGRADE, use_display, CLOBBER_USE_DISPLAY)
     clobber = int(upgrading or upgrading_desktop)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
     start_vfb = not (shadowing or proxying or clobber)
     xauth_data = None
