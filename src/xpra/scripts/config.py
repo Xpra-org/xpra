@@ -664,12 +664,9 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 
 #keep track of the options added since v1,
 #so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V1 = [
-    "attach", "open-files", "open-url", "pixel-depth",
-    "uid", "gid", "chdir", "min-port", "rfb-upgrade", "bandwidth-limit",
-    "forward-xdg-open", "modal-windows", "bandwidth-detection",
-    "bind-ssh", "ssh-auth", "ssh-upgrade",
+OPTIONS_ADDED_SINCE_V3 = [
     "source", "source-start",
+    "use-existing",
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
