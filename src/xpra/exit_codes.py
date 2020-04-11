@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,6 +24,7 @@ EXIT_SSH_KEY_FAILURE = 17
 EXIT_CONNECTION_FAILED = 18
 EXIT_SSL_CERTIFICATE_VERIFY_FAILURE = 19
 EXIT_NO_DISPLAY = 20
+EXIT_SERVER_ALREADY_EXISTS = 21
 
 
 EXIT_STR = {
@@ -48,4 +49,5 @@ EXIT_STR = {
     EXIT_CONNECTION_FAILED      : "CONNECTION_FAILED",
     EXIT_SSL_CERTIFICATE_VERIFY_FAILURE : "SSL_CERTIFICATE_VERIFY_FAILURE",
     EXIT_NO_DISPLAY             : "NO_DISPLAY",
+    EXIT_SERVER_ALREADY_EXISTS  : "SERVER_ALREADY_EXISTS",
     }

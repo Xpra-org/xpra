@@ -9,7 +9,10 @@ from time import sleep
 
 from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.scripts.main import InitExit
-from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
+from xpra.exit_codes import (
+    EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
+    EXIT_SERVER_ALREADY_EXISTS,
+    )
 from xpra.os_util import (
     hexstr,
     getuid, get_username_for_uid, get_groups, get_group_id,
@@ -491,9 +494,10 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 if state not in (DotXpra.DEAD, DotXpra.UNKNOWN):
                     if state==DotXpra.INACCESSIBLE:
                         raise InitException("An xpra server is already running at %s\n" % (sockpath,))
-                    raise InitException("You already have an xpra server running at %s\n"
-                         "  (did you want 'xpra upgrade'?)"
-                         % (sockpath,))
+                    raise InitExit(EXIT_SERVER_ALREADY_EXISTS,
+                                   "You already have an xpra server running at %s\n"
+                                   "  (did you want 'xpra upgrade'?)"
+                                   % (sockpath,))
             #remove exisiting sockets if clobber is set,
             #otherwise verify there isn't a server already running
             #and create the directories for the sockets:
