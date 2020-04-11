@@ -486,7 +486,12 @@ def do_parse_cmdline(cmdline, defaults):
                       +" Default: %s seconds" % defaults.server_idle_timeout)
     legacy_bool_parse("fake-xinerama")
     legacy_bool_parse("use-display")
+    legacy_bool_parse("use-existing")
     if supports_server:
+        group.add_option("--use-existing", action="store", metavar="yes|no|auto",
+                          dest="use_existing", default=defaults.use_existing,
+                          help="When starting a server, use an existing one if it already exists."
+                          +" Default: %s" % enabled_str(defaults.use_existing))
         group.add_option("--use-display", action="store", metavar="yes|no|auto",
                           dest="use_display", default=defaults.use_display,
                           help="Use an existing display rather than starting one with the xvfb command."

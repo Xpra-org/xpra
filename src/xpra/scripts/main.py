@@ -118,9 +118,9 @@ def main(script_file, cmdline):
         def err(*args):
             raise InitException(*args)
         return run_mode(script_file, err, options, args, mode, defaults)
-    except SystemExit:
+    except SystemExit as e:
         debug_exc()
-        raise
+        return e.code
     except InitExit as e:
         debug_exc()
         if str(e) and e.args and (e.args[0] or len(e.args)>1):
@@ -1987,7 +1987,7 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     if current_display:
         return current_display
     if len(displays)!=1:
-        raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(displays))
+        raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(sorted(displays)))
     return displays[0]
 
 
@@ -2076,6 +2076,16 @@ def run_glcheck(opts):
     return 0
 
 
+def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
+    if OSX or WIN32:
+        #no need for a specific display
+        return ":0"
+    if len(args)==1 and args[0] and args[0][0]==":":
+        #display_name was provided:
+        return args[0]
+    return guess_X11_display(dotxpra, None, uid, gid)
+
+
 def start_server_subprocess(script_file, args, mode, opts, username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
     log = get_util_logger()
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
@@ -2093,18 +2103,9 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
     else:
         assert mode=="shadow"
         assert len(args) in (0, 1), "starting shadow server: expected 0 or 1 arguments but got %s: %s" % (len(args), args)
-        display_name = None
-        if OSX or WIN32:
-            #no need for a specific display
-            display_name = ":0"
-        else:
-            if len(args)==1 and args[0] and args[0][0]==":":
-                #display_name was provided:
-                display_name = args[0]
-            else:
-                display_name = guess_X11_display(dotxpra, None, uid, gid)
-            #we now know the display name, so add it:
-            args = [display_name]
+        display_name = pick_shadow_display(dotxpra, args, uid, gid)
+        #we now know the display name, so add it:
+        args = [display_name]
         opts.exit_with_client = True
 
     #get the list of existing sockets so we can spot the new ones:
@@ -2306,30 +2307,51 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     no_gtk()
     if mode in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
-        server_mode = {
-                       "_proxy_start"           : "start",
-                       "_proxy_start_desktop"   : "start-desktop",
-                       "_proxy_shadow_start"    : "shadow",
-                       }[mode]
-        #strip defaults, only keep extra ones:
-        for x in ("start", "start-child",
-                  "start-after-connect", "start-child-after-connect",
-                  "start-on-connect", "start-child-on-connect",
-                  "start-on-last-client-exit", "start-child-on-last-client-exit",
-                  ):
-            fn = x.replace("-", "_")
-            v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
-            setattr(opts, fn, v)
-        proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
-        if not socket_path:
-            #if we return non-zero, we will try the next run-xpra script in the list..
-            return 0
-        display = parse_display_name(error_cb, opts, "socket:%s" % socket_path)
-        if proc and proc.poll() is None:
-            #start a thread just to reap server startup process (yuk)
-            #(as the server process will exit as it daemonizes)
-            from xpra.make_thread import start_thread
-            start_thread(proc.wait, "server-startup-reaper")
+        use_existing = parse_bool("use-existing", opts.use_existing)
+        state = None
+        sys.stderr.write("use-existing=%s, args=%s\n" % (use_existing, args))
+        if use_existing:
+            dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+            display_name = None
+            if not args and mode=="_proxy_shadow_start":
+                try:
+                    display_name = pick_shadow_display(dotxpra, args)
+                except:
+                    #failed to guess!
+                    pass
+                else:
+                    args = [display_name]
+            elif args:
+                display = pick_display(error_cb, opts, args)
+                display_name = display.get("display_name")
+            if display_name:
+                state = dotxpra.get_display_state(display_name)
+                sys.stderr.write("found existing display %s : %s\n" % (display_name, state))
+        if state!=DotXpra.LIVE:
+            server_mode = {
+                           "_proxy_start"           : "start",
+                           "_proxy_start_desktop"   : "start-desktop",
+                           "_proxy_shadow_start"    : "shadow",
+                           }[mode]
+            #strip defaults, only keep extra ones:
+            for x in ("start", "start-child",
+                      "start-after-connect", "start-child-after-connect",
+                      "start-on-connect", "start-child-on-connect",
+                      "start-on-last-client-exit", "start-child-on-last-client-exit",
+                      ):
+                fn = x.replace("-", "_")
+                v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
+                setattr(opts, fn, v)
+            proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
+            if not socket_path:
+                #if we return non-zero, we will try the next run-xpra script in the list..
+                return 0
+            display = parse_display_name(error_cb, opts, "socket:%s" % socket_path)
+            if proc and proc.poll() is None:
+                #start a thread just to reap server startup process (yuk)
+                #(as the server process will exit as it daemonizes)
+                from xpra.make_thread import start_thread
+                start_thread(proc.wait, "server-startup-reaper")
     else:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args)

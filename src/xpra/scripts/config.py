@@ -666,7 +666,8 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 #so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V3 = [
     "source", "source-start",
-    "use-existing",
+    #"use-existing",        this was added in v4,
+    #    but we only pass it on if not set to the default value (None = auto)
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
@@ -742,6 +743,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
+    "use-existing",
     ]
 tmp = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
