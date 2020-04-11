@@ -11,7 +11,7 @@ from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.scripts.main import InitExit
 from xpra.exit_codes import (
     EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
-    EXIT_SERVER_ALREADY_EXISTS,
+    EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
     )
 from xpra.os_util import (
     hexstr,
@@ -302,7 +302,8 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
         tcp_socket = create_tcp_socket(host, iport)
     except Exception as e:
         log("create_tcp_socket%s", (host, iport), exc_info=True)
-        raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e)) from None
+        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                       "failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e)) from None
     def cleanup_tcp_socket():
         log.info("closing %s socket '%s:%s'", socktype.lower(), host, iport)
         try:
@@ -334,7 +335,8 @@ def setup_udp_socket(host, iport, socktype="udp"):
         udp_socket = create_udp_socket(host, iport)
     except Exception as e:
         log("create_udp_socket%s", (host, iport), exc_info=True)
-        raise InitException("failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
+        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                       "failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
     def cleanup_udp_socket():
         log.info("closing %s socket %s:%s", socktype, host, iport)
         try:
@@ -381,7 +383,8 @@ def setup_vsock_socket(cid, iport):
         from xpra.net.vsock import bind_vsocket     #@UnresolvedImport
         vsock_socket = bind_vsocket(cid=cid, port=iport)
     except Exception as e:
-        raise InitException("failed to setup vsock socket on %s:%s %s" % (cid, iport, e)) from None
+        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                       "failed to setup vsock socket on %s:%s %s" % (cid, iport, e)) from None
     def cleanup_vsock_socket():
         log.info("closing vsock socket %s:%s", cid, iport)
         try:
@@ -436,7 +439,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
         if WIN32:
             socket_dirs = [""]
         else:
-            raise InitException("at least one socket directory must be set to use unix domain sockets")
+            raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                           "at least one socket directory must be set to use unix domain sockets")
     from xpra.platform.dotxpra import DotXpra, norm_makepath
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None:
@@ -632,7 +636,8 @@ def handle_socket_error(sockpath, sperms, e):
     else:
         log.error("Error: failed to create socket '%s':", sockpath)
         log.error(" %s", e)
-        raise InitException("failed to create socket %s" % sockpath)
+        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
+                       "failed to create socket %s" % sockpath)
 
 
 #warn just once:
