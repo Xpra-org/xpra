@@ -51,15 +51,6 @@ class GLClientWindowBase(GTK3ClientWindow):
                 except:
                     pass
 
-    def toggle_debug(self, *_args):
-        b = self._backing
-        if not b:
-            return
-        if b.paint_box_line_width>0:
-            b.paint_box_line_width = 0
-        else:
-            b.paint_box_line_width = b.default_paint_box_line_width
-
     def magic_key(self, *args):
         b = self._backing
         if self.border:
