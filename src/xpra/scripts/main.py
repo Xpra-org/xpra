@@ -2329,6 +2329,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     no_gtk()
+    display = None
     if mode in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
         attach = parse_bool("attach", opts.attach)
         state = None
@@ -2375,7 +2376,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 #(as the server process will exit as it daemonizes)
                 from xpra.make_thread import start_thread
                 start_thread(proc.wait, "server-startup-reaper")
-    else:
+    if not display:
         #use display specified on command line:
         display = pick_display(error_cb, opts, args)
     server_conn = connect_or_fail(display, opts)
