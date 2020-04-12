@@ -25,14 +25,9 @@ from xpra.os_util import (
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
     )
-from xpra.util import envbool, unsetenv
+from xpra.util import envbool, unsetenv, noerr
 from xpra.platform.dotxpra import DotXpra
 
-def noerr(fn, *args):
-    try:
-        fn(*args)
-    except Exception:
-        pass
 
 _cleanups = []
 def run_cleanups():
