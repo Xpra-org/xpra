@@ -98,7 +98,7 @@ class CairoBackingBase(WindowBackingBase):
         if self.paint_box_line_width:
             gc.restore()
             encoding = options.get("encoding")
-            if options and encoding:
+            if encoding:
                 color = get_paint_box_color(encoding)
                 gc.set_line_width(self.paint_box_line_width)
                 gc.set_source_rgba(*color)
