@@ -374,6 +374,22 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         if mode in ("start", "start-desktop", "shadow") and display_is_remote:
             #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
+
+        if mode in ("start", "start-desktop") and options.attach is True and args and options.use_existing:
+            #maybe the server is already running
+            #and we don't need to bother trying to start it:
+            try:
+                display = pick_display(error_cb, options, args)
+            except Exception:
+                pass
+            else:
+                dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+                display_name = display.get("display_name")
+                if display_name:
+                    state = dotxpra.get_display_state(display_name)
+                    if state==DotXpra.LIVE:
+                        return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+
         if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
             (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
             try:
