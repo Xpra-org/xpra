@@ -26,8 +26,10 @@ def register_os_signals(callback, commandtype="", signals=(signal.SIGINT, signal
         except OSError:
             pass
         callback(signum)
+        return True
     def os_signal(signum, _frame):
         GLib.idle_add(handle_signal, signum)
+        return True
     for signum in signals:
         if POSIX:
             #replace the previous definition if we had one:
@@ -47,8 +49,10 @@ def register_SIGUSR_signals(commandtype="Server"):
     def sigusr1(_sig):
         log.info("SIGUSR1")
         dump_all_frames(log.info)
+        return True
     def sigusr2(*_args):
         log.info("SIGUSR2")
         dump_gc_frames(log.info)
+        return True
     register_os_signals(sigusr1, commandtype, (signal.SIGUSR1, ))
     register_os_signals(sigusr2, commandtype, (signal.SIGUSR2, ))
