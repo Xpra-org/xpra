@@ -215,9 +215,9 @@ class ChildCommandServer(StubServerMixin):
 
     def send_initial_data(self, ss, caps, send_ui, share_count):
         if ss.xdg_menu_update:
-            xdg_menu = self._get_xdg_menu_data()
+            xdg_menu = self._get_xdg_menu_data() or {}
             log("%i entries sent in initial data", len(xdg_menu))
-            ss.send_setting_change("xdg-menu", xdg_menu or {})
+            ss.send_setting_change("xdg-menu", xdg_menu)
 
     def schedule_xdg_menu_reload(self):
         xmrt = self.xdg_menu_reload_timer
