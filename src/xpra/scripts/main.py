@@ -23,6 +23,8 @@ from xpra.exit_codes import (
     EXIT_STR,
     EXIT_OK, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED,
     EXIT_NO_DISPLAY,
+    EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR,
+    EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, pollwait,
@@ -282,55 +284,56 @@ def systemd_run_wrap(mode, args, systemd_run_args):
         return 128+signal.SIGINT
 
 
-def isdisplaytype(args, dtype) -> bool:
-    return len(args)>0 and (args[0].startswith("%s/" % dtype) or args[0].startswith("%s:" % dtype))
+def isdisplaytype(args, *dtypes) -> bool:
+    if not args:
+        return False
+    d = args[0]
+    return any((d.startswith("%s/" % dtype) or d.startswith("%s:" % dtype) for dtype in dtypes))
 
 def check_display():
     from xpra.platform.gui import can_access_display
     if not can_access_display():
         raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
 
+def use_systemd_run(s):
+    if not SYSTEMD_RUN or not POSIX:
+        return False
+    systemd_run = parse_bool("systemd-run", s)
+    if systemd_run in (True, False):
+        return systemd_run
+    #detect if we should use it:
+    if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")):
+        #would fail
+        return False
+    from xpra.os_util import is_systemd_pid1
+    if not is_systemd_pid1():
+        return False
+    #test it:
+    cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
+    proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
+    r = pollwait(proc, timeout=1)
+    if r is None:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+    return r==0
+
+
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
     if POSIX and getuid()==0 and options.uid==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
-    ssh_display = isdisplaytype(args, "ssh")
-    tcp_display = isdisplaytype(args, "tcp")
-    ssl_display = isdisplaytype(args, "ssl")
-    vsock_display = isdisplaytype(args, "vsock")
-    display_is_remote = ssh_display or tcp_display or ssl_display or vsock_display
-
+    display_is_remote = isdisplaytype("ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow") and not display_is_remote:
-        systemd_run = parse_bool("systemd-run", options.systemd_run)
-        if systemd_run is None:
-            #detect if we should use it:
-            if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")):
-                #would fail
-                systemd_run = False
-            else:
-                from xpra.os_util import is_systemd_pid1
-                if is_systemd_pid1():
-                    cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
-                    proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
-                    r = pollwait(proc, timeout=1)
-                    if r is None:
-                        try:
-                            proc.terminate()
-                        except:
-                            pass
-                    systemd_run = r==0
-                else:
-                    systemd_run = False
-        if systemd_run:
-            #check if we have wrapped it already (or if disabled via env var)
-            if SYSTEMD_RUN:
-                #make sure we run via the same interpreter,
-                #inject it into the command line if we have to:
-                argv = list(sys.argv)
-                if argv[0].find("python")<0:
-                    argv.insert(0, "python3")
-                return systemd_run_wrap(mode, argv, options.systemd_run_args)
+        if use_systemd_run(options.systemd_run):
+            #make sure we run via the same interpreter,
+            #inject it into the command line if we have to:
+            argv = list(sys.argv)
+            if argv[0].find("python")<0:
+                argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
+            return systemd_run_wrap(mode, argv, options.systemd_run_args)
 
     configure_env(options.env)
     configure_logging(options, mode)
@@ -356,6 +359,16 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         "request-start", "request-start-desktop", "request-shadow",
         ):
         options.encodings = validated_encodings(options.encodings)
+    return do_run_mode(script_file, error_cb, options, args, mode, defaults)
+
+
+def do_run_mode(script_file, error_cb, options, args, mode, defaults):
+
+    ssh_display = isdisplaytype(args, "ssh")
+    tcp_display = isdisplaytype(args, "tcp")
+    ssl_display = isdisplaytype(args, "ssl")
+    vsock_display = isdisplaytype(args, "vsock")
+    display_is_remote = ssh_display or tcp_display or ssl_display or vsock_display
 
     try:
         if mode in ("start", "start-desktop", "shadow") and display_is_remote:
@@ -389,10 +402,6 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                         if app.completed_startup:
                             #if we had connected to the session,
                             #we can ignore more error codes:
-                            from xpra.exit_codes import (
-                                EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR,
-                                EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
-                                )
                             NO_RETRY += [
                                     EXIT_CONNECTION_LOST,
                                     EXIT_REMOTE_ERROR,
@@ -1740,7 +1749,6 @@ def get_client_app(error_cb, opts, extra_args, mode):
     return app
 
 def run_opengl_probe():
-    from xpra.os_util import pollwait
     from xpra.platform.paths import get_nodock_command
     log = Logger("opengl")
     cmd = get_nodock_command()+["opengl-probe"]

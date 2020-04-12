@@ -727,7 +727,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             del e
 
     if not check_xvfb(1):
-        noerr(stderr.write, "vfb failed to start\n")
+        noerr(stderr.write, "vfb failed to start, exiting\n")
         return EXIT_VFB_ERROR
 
     if opts.daemon:
@@ -753,7 +753,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     del stderr
 
     if not check_xvfb():
-        noerr(stderr.write, "vfb failed to start\n")
+        noerr(stderr.write, "vfb failed to start, exiting\n")
         return EXIT_VFB_ERROR
 
     #create devices for vfb if needed:
