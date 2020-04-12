@@ -589,6 +589,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def toggle_debug(self, *_args):
         b = self._backing
+        log.info("toggling debug on backing %s for window %i", b, self._id)
         if not b:
             return
         if b.paint_box_line_width>0:
