@@ -51,4 +51,4 @@ def register_SIGUSR_signals(commandtype="Server"):
         log.info("SIGUSR2")
         dump_gc_frames(log)
     register_os_signals(sigusr1, commandtype, (signal.SIGUSR1, ))
-    register_os_signals(sigusr1, commandtype, (signal.SIGUSR2, ))
+    register_os_signals(sigusr2, commandtype, (signal.SIGUSR2, ))
