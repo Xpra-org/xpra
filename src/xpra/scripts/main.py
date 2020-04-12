@@ -18,7 +18,10 @@ import shlex
 import traceback
 
 from xpra.platform.dotxpra import DotXpra
-from xpra.util import csv, envbool, envint, nonl, pver, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
+from xpra.util import (
+    csv, envbool, envint, nonl, pver, parse_simple_dict, noerr,
+    DEFAULT_PORT, DEFAULT_PORTS,
+    )
 from xpra.exit_codes import (
     EXIT_STR,
     EXIT_OK, EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_CONNECTION_FAILED,
@@ -325,7 +328,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
     if POSIX and getuid()==0 and options.uid==0 and mode!="proxy" and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
-    display_is_remote = isdisplaytype("ssh", "tcp", "ssl", "vsock")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow") and not display_is_remote:
         if use_systemd_run(options.systemd_run):
             #make sure we run via the same interpreter,
@@ -363,19 +366,14 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
 
 
 def do_run_mode(script_file, error_cb, options, args, mode, defaults):
-
-    ssh_display = isdisplaytype(args, "ssh")
-    tcp_display = isdisplaytype(args, "tcp")
-    ssl_display = isdisplaytype(args, "ssl")
-    vsock_display = isdisplaytype(args, "vsock")
-    display_is_remote = ssh_display or tcp_display or ssl_display or vsock_display
-
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     try:
         if mode in ("start", "start-desktop", "shadow") and display_is_remote:
             #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(error_cb, options, args, mode, defaults)
 
-        if mode in ("start", "start-desktop") and options.attach is True and args and options.use_existing:
+        if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
+            assert not display_is_remote
             #maybe the server is already running
             #and we don't need to bother trying to start it:
             try:
@@ -388,6 +386,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                 if display_name:
                     state = dotxpra.get_display_state(display_name)
                     if state==DotXpra.LIVE:
+                        noerr(sys.stdout.write, "existing live display found, attaching")
                         return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
 
         if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
@@ -2331,16 +2330,16 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     no_gtk()
     if mode in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
-        use_existing = parse_bool("use-existing", opts.use_existing)
+        attach = parse_bool("attach", opts.attach)
         state = None
-        sys.stderr.write("use-existing=%s, args=%s\n" % (use_existing, args))
-        if use_existing:
+        if attach is not False:
+            #maybe this server already exists?
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
             display_name = None
             if not args and mode=="_proxy_shadow_start":
                 try:
                     display_name = pick_shadow_display(dotxpra, args)
-                except:
+                except Exception:
                     #failed to guess!
                     pass
                 else:

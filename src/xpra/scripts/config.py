@@ -559,7 +559,6 @@ OPTION_TYPES = {
                     "start-via-proxy"   : bool,
                     "attach"            : bool,
                     "use-display"       : str,
-                    "use-existing"      : str,
                     "fake-xinerama"     : str,
                     "resize_display"    : bool,
                     "tray"              : bool,
@@ -666,8 +665,6 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 #so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V3 = [
     "source", "source-start",
-    #"use-existing",        this was added in v4,
-    #    but we only pass it on if not set to the default value (None = auto)
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
@@ -726,7 +723,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "input-method",
     "microphone", "speaker", "sound-source", "pulseaudio",
     "idle-timeout", "server-idle-timeout",
-    "use-display", "use-existing",
+    "use-display",
     "fake-xinerama", "resize_display", "dpi", "pixel-depth",
     "readonly", "keyboard-sync", "cursors", "bell", "notifications", "xsettings",
     "system-tray", "sharing", "lock", "windows", "webcam", "html",
@@ -743,7 +740,6 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
-    "use-existing",
     ]
 tmp = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
@@ -966,7 +962,6 @@ def get_defaults():
                     "start-via-proxy"   : False,
                     "attach"            : None,
                     "use-display"       : "no",
-                    "use-existing"      : "auto",
                     "fake-xinerama"     : fake_xinerama,
                     "resize-display"    : not OSX and not WIN32,
                     "tray"              : True,
