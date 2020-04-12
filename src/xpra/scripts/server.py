@@ -17,6 +17,7 @@ import traceback
 from xpra.scripts.main import info, warn, no_gtk, validate_encryption, parse_env, configure_env
 from xpra.scripts.config import InitException, FALSE_OPTIONS, parse_bool
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
+from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
@@ -606,6 +607,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
         log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
+        if os.path.exists(log_filename0) and not display_name.startswith("S"):
+            #don't overwrite the log file just yet,
+            #as we may still fail to start
+            log_filename0 += ".new"
         logfd = open_log_file(log_filename0)
         if POSIX and ROOT and (uid>0 or gid>0):
             try:
@@ -619,6 +624,12 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                      + ("  %s\n" % log_filename0))
         noerr(stderr.flush)
         os.environ["XPRA_SERVER_LOG"] = log_filename0
+    else:
+        #server log does not exist:
+        try:
+            del os.environ["XPRA_SERVER_LOG"]
+        except KeyError:
+            pass
 
     #warn early about this:
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
@@ -687,8 +698,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if display_name!=odisplay_name and pam:
             pam.set_items({"XDISPLAY" : display_name})
 
-        def check_xvfb():
-            return check_xvfb_process(xvfb)
+        def check_xvfb(timeout=0):
+            return check_xvfb_process(xvfb, timeout=timeout)
     else:
         if POSIX and clobber:
             #if we're meant to be using a private XAUTHORITY file,
@@ -698,7 +709,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             if os.path.exists(xauthority):
                 log("found XAUTHORITY=%s", xauthority)
                 os.environ["XAUTHORITY"] = xauthority
-        def check_xvfb():
+        def check_xvfb(timeout=0):
             return True
 
     if POSIX and not OSX and displayfd>0:
@@ -714,6 +725,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             log.error("Error: failed to write '%s' to fd=%s", display_name, displayfd)
             log.error(" %s", str(e) or type(e))
             del e
+
+    if not check_xvfb(1):
+        noerr(stderr.write, "vfb failed to start\n")
+        return EXIT_VFB_ERROR
 
     if opts.daemon:
         log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
@@ -733,19 +748,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             noerr(stderr.flush)
         noerr(stdout.close)
         noerr(stderr.close)
-    else:
-        #server log does not exist:
-        try:
-            del os.environ["XPRA_SERVER_LOG"]
-        except KeyError:
-            pass
     #we should not be using stdout or stderr from this point:
     del stdout
     del stderr
 
     if not check_xvfb():
-        #xvfb problem: exit now
-        return  1
+        noerr(stderr.write, "vfb failed to start\n")
+        return EXIT_VFB_ERROR
 
     #create devices for vfb if needed:
     devices = {}
@@ -912,7 +921,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     except KeyboardInterrupt:
         log.info("stopping on KeyboardInterrupt")
         app.cleanup()
-        return 0
+        return EXIT_OK
     except Exception:
         log.error("server error", exc_info=True)
         app.cleanup()

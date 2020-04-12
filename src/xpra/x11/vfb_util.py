@@ -17,6 +17,7 @@ from xpra.os_util import (
     shellsub,
     setuidgid, getuid, getgid,
     strtobytes, bytestostr, osexpand, monotonic_time,
+    pollwait,
     POSIX, OSX,
     )
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
@@ -367,11 +368,11 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
         log.error(" using command \"%s\":" % (" ".join(xauth_cmd)))
         log.error(" %s" % (e,))
 
-def check_xvfb_process(xvfb=None, cmd="Xvfb"):
+def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0):
     if xvfb is None:
         #we don't have a process to check
         return True
-    if xvfb.poll() is None:
+    if pollwait(xvfb, timeout) is None:
         #process is running
         return True
     log = get_vfb_logger()
