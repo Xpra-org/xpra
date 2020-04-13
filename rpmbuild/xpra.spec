@@ -869,9 +869,10 @@ fi
 
 
 %changelog
-* Fri Apr 10 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
+* Mon Apr 13 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra1
 - fix HTML5 client XSS
 - fix focus issues
+- fix server hangs and unpainted windows due to invalid dimensions
 - fix keypad regression (AltGr changes, again)
 - fix MS Windows shadow servers
 - fix race condition collecting latency data for session info
@@ -894,6 +895,7 @@ fi
 - hide scary stacktraces when shutting down ssh proxy commands
 - if we have an ssh password we can use, try that first
 - blacklist VirtualBox's SVGA3D OpenGL driver (fixes black windows)
+- don't use webp with image dimensions beyond its limits
 - use regular X11 system tray with i3
 - hide confusing named-pipe prefix in empty output on MS Windows
 - HTML5 fixes: invalid IMG tag, reserved keyword, language detection, draw debugging, etc
