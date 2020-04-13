@@ -1274,14 +1274,6 @@ class WindowSource(WindowIconSource):
             #in which case the dimensions may be zero (if so configured by the client)
             return
         ww, wh = self.window.get_dimensions()
-        if ww==0 or wh==0:
-            damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
-            return
-        if ww>MAX_WINDOW_SIZE or wh>MAX_WINDOW_SIZE:
-            if first_time("window-oversize-%i" % self.wid):
-                damagelog.warn("Warning: invalid window dimensions %ix%i for window %i", ww, wh, self.wid)
-                damagelog.warn(" window updates will be dropped until this is corrected")
-            return
         now = monotonic_time()
         if options is None:
             options = {}
@@ -1295,6 +1287,17 @@ class WindowSource(WindowIconSource):
             self.window_dimensions = ww, wh
             log("window dimensions changed: %ix%i", ww, wh)
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+        if ww==0 or wh==0:
+            damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
+            return
+        if ww>MAX_WINDOW_SIZE or wh>MAX_WINDOW_SIZE:
+            if first_time("window-oversize-%i" % self.wid):
+                damagelog("")
+                damagelog.warn("Warning: invalid window dimensions %ix%i for window %i", ww, wh, self.wid)
+                damagelog.warn(" window updates will be dropped until this is corrected")
+            else:
+                damagelog("ignoring damage for window %i size %ix%i", self.wid, ww, wh)
+            return
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
         self.do_damage(ww, wh, x, y, w, h, options)
