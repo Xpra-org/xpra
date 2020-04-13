@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.x11.common import MAX_WINDOW_SIZE
+from xpra.common import MAX_WINDOW_SIZE
 from xpra.log import Logger
 
 log = Logger("x11", "window")

@@ -30,3 +30,8 @@ GRAVITY_STR = {
 
 CLOBBER_UPGRADE = 0x1
 CLOBBER_USE_DISPLAY = 0x2
+
+#if you want to use a virtual screen bigger than 32767x32767
+#you will need to change those values, but some broken toolkits
+#will then misbehave (they use signed shorts instead of signed ints..)
+MAX_WINDOW_SIZE = 2**15-1

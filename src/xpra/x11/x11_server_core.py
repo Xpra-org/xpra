@@ -21,7 +21,7 @@ from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
-from xpra.x11.common import MAX_WINDOW_SIZE
+from xpra.common import MAX_WINDOW_SIZE
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.util import typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed

@@ -8,12 +8,13 @@ import os
 from gi.repository import GObject, Gdk
 
 from xpra.util import envbool
+from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
-from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
+from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.gtk_x11.world_window import WorldWindow

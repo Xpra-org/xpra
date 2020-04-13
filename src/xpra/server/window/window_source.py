@@ -14,6 +14,7 @@ from collections import deque
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.util import envint, envbool, csv, typedict, first_time
+from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.server.window.window_stats import WindowPerformanceStatistics
@@ -1275,6 +1276,11 @@ class WindowSource(WindowIconSource):
         ww, wh = self.window.get_dimensions()
         if ww==0 or wh==0:
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
+            return
+        if ww>MAX_WINDOW_SIZE or wh>MAX_WINDOW_SIZE:
+            if first_time("window-oversize-%i" % self.wid):
+                damagelog.warn("Warning: invalid window dimensions %ix%i for window %i", ww, wh, self.wid)
+                damagelog.warn(" window updates will be dropped until this is corrected")
             return
         now = monotonic_time()
         if options is None:
