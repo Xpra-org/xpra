@@ -94,6 +94,8 @@ TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb3
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/L"))
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32"))
 
+MAX_WINDOW_SIZE = 2**15-2**13
+
 
 class DelayedRegions(object):
     def __init__(self, damage_time, regions, encoding, options):
@@ -1290,6 +1292,11 @@ class WindowSource(WindowIconSource):
             self.window_dimensions = ww, wh
             log("window dimensions changed: %ix%i", ww, wh)
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+        if ww>MAX_WINDOW_SIZE or wh>MAX_WINDOW_SIZE:
+            if first_time("window-oversize-%i" % self.wid):
+                damagelog.warn("Warning: invalid window dimensions %ix%i for window %i", ww, wh, self.wid)
+                damagelog.warn(" window updates will be dropped until this is corrected")
+            return
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
         self.do_damage(ww, wh, x, y, w, h, options)
