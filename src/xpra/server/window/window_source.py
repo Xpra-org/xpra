@@ -916,7 +916,7 @@ class WindowSource(WindowIconSource):
         if depth>24 and "rgb32" in co and self.client_bit_depth>24:
             #the only encoding that can do higher bit depth at present
             return "rgb32"
-        if depth in (24, 32) and "webp" in co and w>=2 and h>=2:
+        if depth in (24, 32) and "webp" in co and 16383>=w>=2 and 16383>=h>=2:
             return "webp"
         if "png" in co and ((quality>=80 and speed<80) or depth<=16):
             return "png"
