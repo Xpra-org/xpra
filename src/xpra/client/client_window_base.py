@@ -472,6 +472,9 @@ class ClientWindowBase(ClientWidgetBase):
             geomlog("intpair(%s)=%s", a, v)
             if v:
                 v1, v2 = v
+                if a==b"maximum-size" and v1>=32000 and v2>=32000 and WIN32:
+                    #causes problems, see #2714
+                    continue
                 sv1 = client.sx(v1)
                 sv2 = client.sy(v2)
                 if a in (b"base-size", b"increment"):
