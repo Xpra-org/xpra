@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os.path
-import array
 import cairo
 
 import gi
