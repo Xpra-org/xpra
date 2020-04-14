@@ -262,7 +262,12 @@ class EncodingsMixin(StubSourceMixin):
 
         self.vrefresh = c.intget("vrefresh", -1)
 
-        default_min_delay = max(DamageBatchConfig.MIN_DELAY, 1000//(self.vrefresh or 60))
+        #assume 50Hz:
+        ms_per_frame = 1000//50
+        if 30<=self.vrefresh<=500:
+            #looks like a valid vrefresh value, use it:
+            ms_per_frame = 1000//self.vrefresh
+        default_min_delay = max(DamageBatchConfig.MIN_DELAY, ms_per_frame)
         dbc = self.default_batch_config
         dbc.always      = bool(batch_value("always", DamageBatchConfig.ALWAYS))
         dbc.min_delay   = batch_value("min_delay", default_min_delay, 0, 1000)
