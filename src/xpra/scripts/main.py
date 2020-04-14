@@ -1621,13 +1621,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
-        if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
-            os.environ["GDK_BACKEND"] = "x11"
-        if opts.opengl=="probe":
-            opts.opengl = run_opengl_probe()
         try:
-            from xpra.platform.gui import init as gui_init
-            gui_init()
             app = make_client(error_cb, opts)
         except RuntimeError as e:
             #exceptions at this point are still initialization exceptions
@@ -1801,6 +1795,13 @@ def run_opengl_probe():
     return "probe-failed:%s" % msg
 
 def make_client(error_cb, opts):
+    if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
+        os.environ["GDK_BACKEND"] = "x11"
+    if opts.opengl=="probe":
+        opts.opengl = run_opengl_probe()
+    from xpra.platform.gui import init as gui_init
+    gui_init()
+
     from xpra.scripts.config import FALSE_OPTIONS, OFF_OPTIONS
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
