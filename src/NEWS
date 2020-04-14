@@ -1,8 +1,11 @@
-v3.0.9 (2020-04-13)
+v3.0.9 (2020-04-14)
 ======================
 	-- fix HTML5 client XSS
 	-- fix focus issues
 	-- fix server hangs and unpainted windows due to invalid dimensions
+	-- fix window icons and cursors visual corruption or crashes
+	-- fix unbearably slow screen updates when vrefresh value is invalid
+	-- fix client OpenGL crashes with remote starts (run probe first)
 	-- fix keypad regression (AltGr changes, again)
 	-- fix MS Windows shadow servers
 	-- fix race condition collecting latency data for session info
