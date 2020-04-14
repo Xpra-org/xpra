@@ -141,10 +141,10 @@ def enable_alpha(window) -> bool:
 
 
 def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride) -> GdkPixbuf.Pixbuf:
-    data = array.array('B', strtobytes(rgb_data))
-    return GdkPixbuf.Pixbuf.new_from_data(data, GdkPixbuf.Colorspace.RGB,
-                                     has_alpha, 8, w, h, rowstride,
-                                     None, None)
+    data = GLib.Bytes(rgb_data)
+    log.info("get_pixbuf_from_data")
+    return GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
+                                           has_alpha, 8, w, h, rowstride)
 
 def color_parse(*args) -> Gdk.Color:
     try:
