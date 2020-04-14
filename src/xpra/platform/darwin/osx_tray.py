@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ from gi.repository import GdkPixbuf
 
 from xpra.os_util import monotonic_time
 from xpra.client.tray_base import TrayBase
+from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
 from xpra.platform.darwin import set_exit_cb
 from xpra.platform.gui import ready as gui_ready
@@ -67,7 +68,7 @@ class OSXTray(TrayBase):
                 self.last_attention_request_id = -1
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
-        tray_icon = GdkPixbuf.Pixbuf.new_from_data(pixels, GdkPixbuf.Colorspace.RGB, has_alpha, 8, w, h, rowstride, None, None)
+        tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
         self.icon_timestamp = monotonic_time()
 

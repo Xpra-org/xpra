@@ -10,7 +10,7 @@ import os
 import signal
 import math
 from collections import deque, namedtuple
-from gi.repository import GObject, Gtk, Gdk, GdkPixbuf
+from gi.repository import GObject, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
@@ -19,7 +19,7 @@ from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.server import server_features
 from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.gtk_common.gobject_util import one_arg_signal
-from xpra.gtk_common.gtk_util import get_default_root_window
+from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
@@ -1178,7 +1178,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
         if has_alpha:
             import cairo
-            pixbuf = GdkPixbuf.Pixbuf.new_from_data(img_data, GdkPixbuf.Colorspace.RGB, True, 8, width, height, rowstride, None, None)
+            pixbuf = get_pixbuf_from_data(img_data, True, width, height, rowstride)
             cr = overlaywin.cairo_create()
             cr.new_path()
             cr.rectangle(wx+x, wy+y, width, height)

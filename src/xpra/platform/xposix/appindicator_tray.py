@@ -27,7 +27,7 @@ log = Logger("tray", "posix")
 DELETE_TEMP_FILE = envbool("XPRA_APPINDICATOR_DELETE_TEMP_FILE", True)
 
 gi.require_version('AppIndicator3', '0.1')
-from gi.repository import AppIndicator3, GdkPixbuf #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+from gi.repository import AppIndicator3 #pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 
 PASSIVE = AppIndicator3.IndicatorStatus.PASSIVE
 ACTIVE = AppIndicator3.IndicatorStatus.ACTIVE
@@ -81,9 +81,8 @@ class AppindicatorTray(TrayBase):
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
         self.clean_last_tmp_icon()
         #use a temporary file (yuk)
-        from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
-        tray_icon = GdkPixbuf.Pixbuf.new_from_data(pixels, GdkPixbuf.Colorspace.RGB,
-                                                   has_alpha, 8, w, h, rowstride, None, None)
+        from xpra.gtk_common.gtk_util import pixbuf_save_to_memory, get_pixbuf_from_data
+        tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         png_data = pixbuf_save_to_memory(tray_icon)
         tmp_dir = osexpand(get_xpra_tmp_dir())
         if not os.path.exists(tmp_dir):
