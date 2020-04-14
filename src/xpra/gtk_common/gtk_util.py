@@ -171,6 +171,7 @@ if is_gtk3():
 
 
     def get_pixbuf_from_data(rgb_data, has_alpha, w, h, rowstride):
+        from gi.repository import GLib
         data = GLib.Bytes(rgb_data)
         return GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                            has_alpha, 8, w, h, rowstride)
