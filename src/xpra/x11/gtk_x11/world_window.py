@@ -126,7 +126,7 @@ class WorldWindow(gtk.Window):
         xid = 0
         w = self.get_window()
         if w:
-            xid = w.get_xid()
+            xid = get_xwindow(w)
         return "WorldWindow(%#x)" % xid
 
     def _resize(self, *_args):
