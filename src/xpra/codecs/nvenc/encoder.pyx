@@ -994,6 +994,17 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfuly mapped.",
       }
 
+OPEN_TRANSIENT_ERROR = (
+    NV_ENC_ERR_NO_ENCODE_DEVICE,
+    NV_ENC_ERR_UNSUPPORTED_DEVICE,
+    NV_ENC_ERR_INVALID_ENCODERDEVICE,
+    NV_ENC_ERR_INVALID_DEVICE,
+    NV_ENC_ERR_DEVICE_NOT_EXIST,
+    NV_ENC_ERR_OUT_OF_MEMORY,
+    NV_ENC_ERR_ENCODER_BUSY,
+    NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY,
+    )
+
 CAPS_NAMES = {
         NV_ENC_CAPS_NUM_MAX_BFRAMES             : "NUM_MAX_BFRAMES",
         NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES : "SUPPORTED_RATECONTROL_MODES",
@@ -2785,9 +2796,9 @@ cdef class Encoder:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
         if DEBUG_API:
             log("nvEncOpenEncodeSessionEx(..)=%s", r)
-        if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
+        if r in OPEN_TRANSIENT_ERROR:
             last_context_failure = monotonic_time()
-            msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
+            msg = "could not open encode session: %s" % nvencStatusInfo(r)
             log(msg)
             raise TransientCodecException(msg)
         if self.context==NULL:
@@ -2796,7 +2807,7 @@ cdef class Encoder:
             else:
                 msg = "context is NULL"
             last_context_failure = monotonic_time()
-            raise TransientCodecException("cannot open encoding session: %s, %i contexts are in use" % (msg, context_counter.get()))
+            raise Exception("cannot open encoding session: %s, %i contexts are in use" % (msg, context_counter.get()))
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
