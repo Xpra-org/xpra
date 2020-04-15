@@ -2783,14 +2783,20 @@ cdef class Encoder:
         self.context = NULL
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
+        if DEBUG_API:
+            log("nvEncOpenEncodeSessionEx(..)=%s", r)
         if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
             last_context_failure = monotonic_time()
             msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
             log(msg)
             raise TransientCodecException(msg)
         if self.context==NULL:
+            if r!=0:
+                msg = nvencStatusInfo(r)
+            else:
+                msg = "context is NULL"
             last_context_failure = monotonic_time()
-            raise TransientCodecException("cannot open encoding session, context is NULL, %i contexts are in use" % context_counter.get())
+            raise TransientCodecException("cannot open encoding session: %s, %i contexts are in use" % (msg, context_counter.get()))
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
