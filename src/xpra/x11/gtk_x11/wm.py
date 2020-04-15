@@ -236,10 +236,6 @@ class Wm(gobject.GObject):
         self._world_window = WorldWindow(self._display.get_default_screen())
         self.notify("toplevel")
         self._world_window.show_all()
-        if not is_gtk3():
-            self._world_window = WorldWindow(self._display.get_default_screen())
-            self.notify("toplevel")
-            self._world_window.show_all()
 
         # Okay, ready to select for SubstructureRedirect and then load in all
         # the existing clients.

@@ -96,6 +96,8 @@ def get_world_window():
 
 class WorldWindow(gtk.Window):
     def __init__(self, screen=screen_get_default()):
+        import traceback
+        traceback.print_stack()
         global world_window
         assert world_window is None, "a world window already exists! (%s)" % world_window
         world_window = self
