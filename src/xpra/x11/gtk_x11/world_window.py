@@ -10,7 +10,7 @@ from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.gdk_bindings import x11_get_server_time
 from xpra.gtk_common.gtk_util import get_default_root_window, screen_get_default, get_xwindow, is_realized
-from xpra.gtk_common.gobject_compat import import_gtk, import_gobject
+from xpra.gtk_common.gobject_compat import import_gtk, import_gobject, is_gtk3
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -122,6 +122,9 @@ class WorldWindow(gtk.Window):
         self.move(0, 0)
         self._resize()
 
+        if is_gtk3():
+            self.add = self._patched_add
+
     def __repr__(self):
         xid = 0
         w = self.get_window()
@@ -167,7 +170,7 @@ class WorldWindow(gtk.Window):
             # *will* get the focus, and thus a real FocusIn event.
             send_wm_take_focus(self.get_window(), CurrentTime)
 
-    def add(self, widget):
+    def _patched_add(self, widget):
         w = widget.get_window()
         log("add(%s) realized=%s, widget window=%s", widget, self.get_realized(), w)
         #the DesktopManager does not have a window..
