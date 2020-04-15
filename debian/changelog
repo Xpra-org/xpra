@@ -1,3 +1,8 @@
+xpra (3.0.9-2) UNRELEASED; urgency=low
+  * rebuild with fixup for python2 servers
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 15 Apr 2020 10:18:15 +0700
+
 xpra (3.0.9-1) UNRELEASED; urgency=low
   * fix HTML5 client XSS
   * fix focus issues
