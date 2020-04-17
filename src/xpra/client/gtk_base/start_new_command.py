@@ -129,12 +129,14 @@ class StartNewCommand:
             self.command_combo.set_active(0)
 
     def command_changed(self, *args):
+        if not self.entry:
+            return
         category = self.category_combo.get_active_text()
         entries = typedict(self.xdg_menu.dictget(category.encode("utf-8"), {})).dictget("Entries", {})
         command_name = self.command_combo.get_active_text()
         log("command_changed(%s) category=%s, entries=%s, command_name=%s", args, category, entries, command_name)
         command = ""
-        if entries and self.entry and command_name:
+        if entries and command_name:
             command_props = typedict(entries).dictget(command_name.encode("utf-8"), {})
             log("command properties=%s", command_props)
             command = typedict(command_props).strget(b"command", "")
