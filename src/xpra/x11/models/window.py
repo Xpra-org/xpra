@@ -537,7 +537,9 @@ class WindowModel(BaseWindowModel):
         w, h = self.calc_constrained_size(w, h, hints)
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow!=w or coh!=h
-        moved = x!=cox or y!=coy
+        moved = x!=0 or y!=0
+        geomlog("resize_corral_window%s hints=%s, constrained size=%s, geometry=%s, resized=%s, moved=%s",
+                (x, y, w, h), hints, (w, h), (cx, cy, cw, ch), resized, moved)
         if resized:
             if moved:
                 self._internal_set_property("set-initial-position", True)
