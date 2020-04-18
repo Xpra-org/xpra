@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ from gi.repository import GObject
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
 from xpra.x11.models.core import CoreX11WindowModel, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
+from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.log import Logger
@@ -215,6 +216,10 @@ class BaseWindowModel(CoreX11WindowModel):
         super().__init__(client_window)
         self.last_unmap_serial = 0
         self._input_field = True            # The WM_HINTS input field
+        #watch for changes to properties that are used to derive the content-type:
+        for x in get_content_type_properties():
+            if x in self.get_dynamic_property_names():
+                self.connect("notify::%s" % x, self._content_type_related_property_change)
 
     def serial_after_last_unmap(self, serial) -> bool:
         #"The serial member is set from the serial number reported in the protocol
@@ -379,6 +384,16 @@ class BaseWindowModel(CoreX11WindowModel):
         can_focus = bool(self._input_field) or "WM_TAKE_FOCUS" in self.get_property("protocols")
         self._updateprop("can-focus", can_focus)
 
+
+    def _content_type_related_property_change(self, *_args):
+        #watch for changes to properties that are used to derive the content-type:
+        content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True)
+        if content_type:
+            #the _XPRA_CONTENT_TYPE property takes precedence
+            return
+        content_type = guess_content_type(self)
+        metalog("content_type=%s", content_type)
+        self._updateprop("content-type", content_type)
 
     def _handle_xpra_content_type_change(self):
         content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""

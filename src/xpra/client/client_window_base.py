@@ -56,6 +56,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._set_initial_position = metadata.boolget("set-initial-position", False)
         self.size_constraints = typedict()
         self.geometry_hints = {}
+        self.content_type = ""
         self._fullscreen = None
         self._maximized = False
         self._above = False
@@ -429,6 +430,9 @@ class ClientWindowBase(ClientWidgetBase):
 
         if b"x11-property" in metadata:
             self.set_x11_property(*metadata.tupleget("x11-property"))
+
+        if b"content-type" in metadata:
+            self.content_type = metadata.strget("content-type")
 
 
     def set_x11_property(self, *x11_property):
