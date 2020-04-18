@@ -1136,6 +1136,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if metadata.intget("transient-for", 0)>0:
             log("not using opengl for transient-for window")
             return (self.ClientWindowClass,)
+        if metadata.strget("content-type")=="text":
+            return (self.ClientWindowClass,)
         if WIN32:
             #win32 opengl doesn't do alpha (not sure why):
             if override_redirect:
