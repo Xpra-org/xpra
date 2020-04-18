@@ -1113,7 +1113,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             err("Error loading OpenGL support:", e)
             opengllog("init_opengl(%s)", enable_opengl, exc_info=True)
 
-    def get_client_window_classes(self, w, h, metadata, override_redirect):
+    def get_client_window_classes(self, w : int, h : int, metadata : typedict, override_redirect : bool):
         log("get_client_window_class%s ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
             (w, h, metadata, override_redirect),
             self.ClientWindowClass, self.GLClientWindowClass,
@@ -1122,7 +1122,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return (self.GLClientWindowClass, self.ClientWindowClass)
         return (self.ClientWindowClass,)
 
-    def can_use_opengl(self, w, h, metadata, override_redirect):
+    def can_use_opengl(self, w : int, h : int, metadata : typedict, override_redirect : bool):
         if self.GLClientWindowClass is None or not self.opengl_enabled:
             return False
         #verify texture limits:
