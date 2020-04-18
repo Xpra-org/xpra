@@ -209,7 +209,8 @@ class WindowSource(WindowIconSource):
         if default_encoding_options.get("scaling.control") is None:
             self.scaling_control = None     #means "auto"
         else:
-            self.scaling_control = default_encoding_options.intget("scaling.control", 1)    #ClientConnection sets defaults with the client's scaling.control value
+            #ClientConnection sets defaults with the client's scaling.control value
+            self.scaling_control = default_encoding_options.intget("scaling.control", 1)
         self.scaling = None
         self.maximized = False          #set by the client!
         self.iconic = False
