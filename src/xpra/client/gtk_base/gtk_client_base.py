@@ -734,13 +734,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             ms += ["x11-property"]
             if XSHAPE:
                 ms += ["shape"]
-        #figure out if we can handle the "global menu" stuff:
-        if POSIX and not OSX:
-            try:
-                from xpra.dbus.helper import DBusHelper
-                assert DBusHelper
-            except ImportError:
-                pass
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
         updict(capabilities, "pointer", {
