@@ -1118,35 +1118,40 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             (w, h, metadata, override_redirect),
             self.ClientWindowClass, self.GLClientWindowClass,
             self.opengl_enabled, self.mmap_enabled, self.encoding)
+        if self.can_use_opengl(w, h, metadata, override_redirect):
+            return (self.GLClientWindowClass, self.ClientWindowClass)
+        return (self.ClientWindowClass,)
+
+    def can_use_opengl(self, w, h, metadata, override_redirect):
         if self.GLClientWindowClass is None or not self.opengl_enabled:
-            return (self.ClientWindowClass,)
+            return False
         #verify texture limits:
         ms = min(self.sx(self.gl_texture_size_limit), *self.gl_max_viewport_dims)
         if w>ms or h>ms:
-            return (self.ClientWindowClass,)
+            return False
         #avoid opengl for small windows:
         if w<=OPENGL_MIN_SIZE or h<=OPENGL_MIN_SIZE:
-            log.warn("not using opengl for small window: %ix%i", w, h)
-            return (self.ClientWindowClass,)
+            log("not using opengl for small window: %ix%i", w, h)
+            return False
         #avoid opengl for tooltips:
         window_types = metadata.strtupleget("window-type")
         if any(x in (NO_OPENGL_WINDOW_TYPES) for x in window_types):
             log("not using opengl for %s window-type", csv(window_types))
-            return (self.ClientWindowClass,)
+            return False
         if metadata.intget("transient-for", 0)>0:
             log("not using opengl for transient-for window")
-            return (self.ClientWindowClass,)
+            return False
         if metadata.strget("content-type")=="text":
-            return (self.ClientWindowClass,)
+            return False
         if WIN32:
             #win32 opengl doesn't do alpha (not sure why):
             if override_redirect:
-                return (self.ClientWindowClass,)
+                return False
             if metadata.boolget("has-alpha", False):
-                return (self.ClientWindowClass,)
+                return False
             if not metadata.boolget("decorations", True):
-                return (self.ClientWindowClass,)
-        return (self.GLClientWindowClass, self.ClientWindowClass)
+                return False
+        return True
 
     def toggle_opengl(self, *_args):
         self.opengl_enabled = not self.opengl_enabled
