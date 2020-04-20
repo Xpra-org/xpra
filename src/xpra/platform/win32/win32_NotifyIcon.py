@@ -205,8 +205,7 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
     finally:
         ReleaseDC(None, hdc)
     if not dataptr or not bitmap:
-        raise Exception("failed to create DIB section for hdc=%s, bpp=%s, size=%ix%i" % (
-                        hdc, bytes_per_pixel, w, h))
+        raise ctypes.WinError(ctypes.get_last_error())
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
     img_data = create_string_buffer(rgb_data)
     ctypes.memmove(dataptr, byref(img_data), w*h*bytes_per_pixel)
