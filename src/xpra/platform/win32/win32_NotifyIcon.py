@@ -182,7 +182,8 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
         if bitmap:
             DeleteObject(bitmap)
 
-def rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h):
+def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
+    log("rgb_to_bitmap%s", (rgb_data, bytes_per_pixel, w, h))
     assert bytes_per_pixel in (3, 4)        #only BGRA or BGR are supported
     header = BITMAPV5HEADER()
     header.bV5Size = sizeof(BITMAPV5HEADER)
@@ -203,7 +204,9 @@ def rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h):
         bitmap = CreateDIBSection(hdc, byref(header), win32con.DIB_RGB_COLORS, byref(dataptr), None, 0)
     finally:
         ReleaseDC(None, hdc)
-    assert dataptr and bitmap, "failed to create DIB section"
+    if not dataptr or not bitmap:
+        raise Exception("failed to create DIB section for hdc=%s, bpp=%s, size=%ix%i" % (
+                        hdc, bytes_per_pixel, w, h))
     log("CreateDIBSection(..) got bitmap=%#x, dataptr=%s", int(bitmap), dataptr)
     img_data = create_string_buffer(rgb_data)
     ctypes.memmove(dataptr, byref(img_data), w*h*bytes_per_pixel)
