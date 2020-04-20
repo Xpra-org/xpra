@@ -12,7 +12,7 @@ import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD
 
-from xpra.util import csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
+from xpra.util import typedict, csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
@@ -149,15 +149,15 @@ BUTTON_MAP = {
 
 def image_to_ICONINFO(img):
     w, h = img.size
-    from xpra.codecs.argb.argb import rgba_to_bgra       #@UnresolvedImport
     if TRAY_ALPHA and img.mode.find("A")>=0:   #ie: RGBA
         rgb_format = "BGRA"
     else:
         rgb_format = "BGR"
-    rgb_data = memoryview_to_bytes(rgba_to_bgra(img.tobytes("raw", rgb_format)))
+    rgb_data = img.tobytes("raw", rgb_format)
     return make_ICONINFO(w, h, rgb_data, rgb_format=rgb_format)
 
 def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
+    log("make_ICONINFO(%i, %i, %i bytes, %s)", w, h, len(rgb_data), rgb_format)
     bitmap = 0
     mask = 0
     try:
@@ -343,7 +343,7 @@ class win32NotifyIcon:
             img_format = "RGBA"
         else:
             img_format = "RGBX"
-        rgb_format = (options or {}).get("rgb_format", "RGBA")
+        rgb_format = typedict(options or {}).strget("rgb_format", "RGBA")
         img = Image.frombuffer(img_format, (w, h), pixels, "raw", rgb_format, rowstride, 1)
         assert img, "failed to load image from buffer (%i bytes for %ix%i %s)" % (len(pixels), w, h, rgb_format)
         #apparently, we have to use SM_CXSMICON (small icon) and not SM_CXICON (regular size):
