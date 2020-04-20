@@ -47,7 +47,8 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
     product_type = DWORD(0)
     from xpra.platform.win32.common import GetProductInfo as k32GetProductInfo
     v = k32GetProductInfo(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, byref(product_type))
-    log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s", dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, hex(product_type.value))
+    log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s",
+        dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, hex(product_type.value))
     return bool(v)
 #win7 is actually 6.1:
 try:
@@ -185,6 +186,7 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
 def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
     log("rgb_to_bitmap%s", (rgb_data, bytes_per_pixel, w, h))
     assert bytes_per_pixel in (3, 4)        #only BGRA or BGR are supported
+    assert w>0 and h>0
     header = BITMAPV5HEADER()
     header.bV5Size = sizeof(BITMAPV5HEADER)
     header.bV5Width = w
@@ -218,7 +220,9 @@ class win32NotifyIcon:
     #this allows us to know which hwnd refers to which instance:
     instances = {}
 
-    def __init__(self, app_id=0, title="", move_callbacks=None, click_callback=None, exit_callback=None, command_callback=None, iconPathName=None):
+    def __init__(self, app_id=0, title="",
+                 move_callbacks=None, click_callback=None, exit_callback=None, command_callback=None,
+                 iconPathName=None):
         log("win32NotifyIcon: app_id=%i, title='%s'", app_id, nonl(title))
         self.app_id = app_id
         self.title = title
@@ -289,7 +293,8 @@ class win32NotifyIcon:
         #flags |= NIF_SHOWTIP
         nid.uVersion = 4
         nid.uFlags = flags
-        log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s", nid, nonl(title), self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
+        log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s",
+            nid, nonl(title), self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
         return nid
 
     def delete_tray_window(self):
