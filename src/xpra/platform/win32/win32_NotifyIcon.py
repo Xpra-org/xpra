@@ -170,7 +170,7 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
         iconinfo.hbmMask = mask
         iconinfo.hbmColor = bitmap
         hicon = CreateIconIndirect(byref(iconinfo))
-        log("CreateIconIndirect()=%#x", hicon)
+        log("CreateIconIndirect()=%#x", hicon or 0)
         if not hicon:
             raise ctypes.WinError(ctypes.get_last_error())
         return hicon
