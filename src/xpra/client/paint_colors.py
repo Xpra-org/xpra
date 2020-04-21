@@ -23,7 +23,7 @@ DEFAULT_BOX_COLORS = {
     "mpeg2"     : "lime",
     }
 
-ALPHA = 0.3
+ALPHA = 0.6
 #converted from gtk lookups:
 BOX_COLORS = {
     "h264"      : (0.0,                 0.0,                    0.9999847412109375, ALPHA),
