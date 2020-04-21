@@ -14,7 +14,7 @@ from threading import Lock, Event
 from queue import Queue
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
-from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
+from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict, nonl
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException,may_log_packet    #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
@@ -837,7 +837,7 @@ class Protocol:
                     #try to handle the first buffer:
                     buf = read_buffers[0]
                     if not header and buf[0]!=ord("P"):
-                        self.invalid_header(self, buf, "invalid packet header byte %s" % buf)
+                        self.invalid_header(self, buf, "invalid packet header byte %s" % nonl(bytestostr(buf)))
                         return
                     #how much to we need to slice off to complete the header:
                     read = min(len(buf), HEADER_SIZE-len(header))
