@@ -723,18 +723,22 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
             #same for recent debian versions:
             #ie: "xpra-2.0.2/debian/xpra/usr" -> "usr"
             i = dirs.index("debian")
-            if dirs[i+1] == "xpra":
-                dirs = dirs[i+2:]
-        elif "pkg" in dirs:
-            #archlinux
-            #ie: "/build/xpra/pkg/xpra/etc" -> "etc"
-            i = dirs.index("pkg")
-            if dirs[i+1] == "xpra":
-                dirs = dirs[i+2:]
+            while i>=0 and len(dirs)>i+1:
+                if dirs[i+1] == "xpra":
+                    dirs = dirs[i+2:]
+                i = dirs.index("debian")
         elif "BUILDROOT" in dirs:
             #strip rpm style build root:
             #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
             dirs = dirs[dirs.index("BUILDROOT")+2:]
+        elif "pkg" in dirs:
+            #archlinux
+            #ie: "/build/xpra/pkg/xpra/etc" -> "etc"
+            i = dirs.index("pkg")
+            while i>=0 and len(dirs)>i+1:
+                if dirs[i+1] == "xpra":
+                    dirs = dirs[i+2:]
+                i = dirs.index("pkg")
         elif pkgdir and install_dir.startswith(pkgdir):
             #arch build dir:
             dirs = install_dir.lstrip(pkgdir).split(os.path.sep)
