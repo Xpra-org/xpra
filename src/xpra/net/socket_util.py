@@ -203,10 +203,10 @@ def create_sockets(opts, error_cb):
 
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_udp = parse_bind_ip(opts.bind_udp)
-    bind_ssl = parse_bind_ip(opts.bind_ssl)
-    bind_ssh = parse_bind_ip(opts.bind_ssh)
-    bind_ws  = parse_bind_ip(opts.bind_ws)
-    bind_wss = parse_bind_ip(opts.bind_wss)
+    bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
+    bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
+    bind_ws  = parse_bind_ip(opts.bind_ws, 80)
+    bind_wss = parse_bind_ip(opts.bind_wss, 443)
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
