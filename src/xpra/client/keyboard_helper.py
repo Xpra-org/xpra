@@ -220,7 +220,7 @@ class KeyboardHelper:
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
         #find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
-        log("key_handled_as_shortcut: shortcut(%s)=%s", key_name, shortcuts)
+        log("key_handled_as_shortcut%s shortcuts=%s", (window, key_name, modifiers, depressed), shortcuts)
         if not shortcuts:
             return False
         if len(shortcuts)>1:
@@ -241,6 +241,8 @@ class KeyboardHelper:
         for rm in req_mods:
             if rm not in modifiers:
                 #modifier is missing, bail out
+                log("not matched %s for %s: %s not in %s",
+                    shortcut, key_name, rm, modifiers)
                 return False
             try:
                 extra_modifiers.remove(rm)
