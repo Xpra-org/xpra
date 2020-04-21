@@ -1350,13 +1350,9 @@ class ServerCore:
         return True, conn, peek_data
 
     def invalid_header(self, proto, data, msg=""):
-        netlog("invalid_header(%s, %s bytes: '%s', %s)",
-               proto, len(data or ""), msg, ellipsizer(data))
-        netlog(" input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
+        netlog("invalid header: input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
                proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_attributes))
-        info = guess_header_protocol(data)[1]
-        err = "invalid packet format, %s" % info
-        proto.gibberish(err, data)
+        proto._invalid_header(proto, data, msg)
 
     ######################################################################
     # http / websockets:

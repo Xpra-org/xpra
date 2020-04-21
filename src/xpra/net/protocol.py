@@ -14,7 +14,7 @@ from threading import Lock, Event
 from queue import Queue
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
-from xpra.util import repr_ellipsized, csv, envint, envbool, typedict
+from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException,may_log_packet    #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
@@ -24,6 +24,7 @@ from xpra.net.compression import (
     InvalidCompressionException, Compressed, LevelCompressed, Compressible, LargeStructure,
     )
 from xpra.net import packet_encoding
+from xpra.net.socket_util import guess_header_protocol
 from xpra.net.packet_encoding import (
     decode, sanity_checks as packet_encoding_sanity_checks,
     InvalidPacketEncodingException,
@@ -760,13 +761,19 @@ class Protocol:
     #delegates to invalid_header()
     #(so this can more easily be intercepted and overriden
     # see tcp-proxy)
-    def _invalid_header(self, data, msg=""):
-        self.invalid_header(self, data, msg)
+    def invalid_header(self, proto, data, msg="invalid packet header"):
+        self._invalid_header(proto, data, msg)
 
-    def invalid_header(self, _proto, data, msg="invalid packet header"):
-        err = "%s: '%s'" % (msg, hexstr(data[:HEADER_SIZE]))
-        if len(data)>1:
-            err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
+    def _invalid_header(self, proto, data, msg=""):
+        log("invalid_header(%s, %s bytes: '%s', %s)",
+               proto, len(data or ""), msg, ellipsizer(data))
+        guess = guess_header_protocol(data)
+        if guess[0]:
+            err = "invalid packet format, %s" % guess[1]
+        else:
+            err = "%s: '%s'" % (msg, hexstr(data[:HEADER_SIZE]))
+            if len(data)>1:
+                err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
 
 
@@ -830,7 +837,7 @@ class Protocol:
                     #try to handle the first buffer:
                     buf = read_buffers[0]
                     if not header and buf[0]!=ord("P"):
-                        self._invalid_header(buf, "invalid packet header byte %s" % buf)
+                        self.invalid_header(self, buf, "invalid packet header byte %s" % buf)
                         return
                     #how much to we need to slice off to complete the header:
                     read = min(len(buf), HEADER_SIZE-len(header))
@@ -853,7 +860,7 @@ class Protocol:
 
                     #sanity check size (will often fail if not an xpra client):
                     if data_size>self.abs_max_packet_size:
-                        self._invalid_header(header, "invalid size in packet header: %s" % data_size)
+                        self.invalid_header(self, header, "invalid size in packet header: %s" % data_size)
                         return
 
                     if protocol_flags & FLAGS_CIPHER:
@@ -861,7 +868,7 @@ class Protocol:
                             cryptolog.warn("Warning: received cipher block,")
                             cryptolog.warn(" but we don't have a cipher to decrypt it with,")
                             cryptolog.warn(" not an xpra client?")
-                            self._invalid_header(header, "invalid encryption packet flag (no cipher configured)")
+                            self.invalid_header(self, header, "invalid encryption packet flag (no cipher configured)")
                             return
                         padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
                         payload_size = data_size + padding_size

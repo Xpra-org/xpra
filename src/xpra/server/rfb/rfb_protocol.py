@@ -69,7 +69,7 @@ class RFBProtocol:
         if len(packet)<12:
             return 0
         if not packet.startswith(b'RFB '):
-            self._invalid_header(packet, "invalid RFB protocol handshake packet header")
+            self.invalid_header(self, packet, "invalid RFB protocol handshake packet header")
             return 0
         #ie: packet==b'RFB 003.008\n'
         self._protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
@@ -112,7 +112,7 @@ class RFBProtocol:
             self.send(self._challenge)
             return 1
         if self._authenticator and self._authenticator.requires_challenge():
-            self._invalid_header(packet, "invalid security handshake response, authentication is required")
+            self.invalid_header(self, packet, "invalid security handshake response, authentication is required")
             return 0
         log("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
         #Security Handshake, send SecurityResult Handshake
@@ -342,10 +342,10 @@ class RFBProtocol:
     #delegates to invalid_header()
     #(so this can more easily be intercepted and overriden
     # see tcp-proxy)
-    def _invalid_header(self, data, msg=""):
-        self.invalid_header(self, data, msg)
+    def invalid_header(self, proto, data, msg=""):
+        self._invalid_header(proto, data, msg)
 
-    def invalid_header(self, _proto, data, msg="invalid packet header"):
+    def _invalid_header(self, _proto, data, msg="invalid packet header"):
         self._packet_parser = self._parse_invalid
         err = "%s: '%s'" % (msg, hexstr(data[:8]))
         if len(data)>1:
