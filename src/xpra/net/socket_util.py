@@ -14,13 +14,13 @@ from xpra.exit_codes import (
     EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
     )
 from xpra.os_util import (
-    hexstr,
+    hexstr, bytestostr,
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
 from xpra.util import (
     envint, envbool, csv, parse_simple_dict,
-    ellipsizer,
+    ellipsizer, repr_ellipsized,
     DEFAULT_PORT,
     )
 
@@ -638,6 +638,19 @@ def handle_socket_error(sockpath, sperms, e):
         log.error(" %s", e)
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
                        "failed to create socket %s" % sockpath)
+
+
+def guess_header_protocol(v):
+    c = int(v[0])
+    s = bytestostr(v)
+    get_network_logger().debug("guess_header_protocol(%r) first char=%#x", repr_ellipsized(s), c)
+    if c==0x16:
+        return "ssl", "SSL packet?"
+    if s[:4]=="SSH-":
+        return "ssh", "SSH packet"
+    if len(s)>=3 and s.split(" ")[0] in ("GET", "POST"):
+        return "HTTP", "HTTP %s request" % s.split(" ")[0]
+    return None, "character %#x, not an xpra client?" % c
 
 
 #warn just once:

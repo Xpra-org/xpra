@@ -26,7 +26,7 @@ from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES
 from xpra.net.socket_util import (
-    hosts, mdns_publish, peek_connection,
+    hosts, mdns_publish, peek_connection, guess_header_protocol,
     add_listen_socket, accept_connection,
     )
 from xpra.net.bytestreams import (
@@ -50,7 +50,7 @@ from xpra.make_thread import start_thread
 from xpra.util import (
     first_time,
     csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
-    ellipsizer, repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat,
+    ellipsizer, dump_all_frames, nonl, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
     )
@@ -1132,7 +1132,7 @@ class ServerCore:
                 return
 
         if peek_data and (socktype=="rfb" or (peek_data[0] not in ("P", ord("P")))):
-            network_protocol, msg = self.guess_header_protocol(peek_data)
+            network_protocol, msg = guess_header_protocol(peek_data)
             self.new_conn_err(conn, sock, socktype, socket_info, network_protocol, "invalid packet header, %s" % msg)
             return
 
@@ -1354,22 +1354,9 @@ class ServerCore:
                proto, len(data or ""), msg, ellipsizer(data))
         netlog(" input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
                proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_attributes))
-        info = self.guess_header_protocol(data)[1]
+        info = guess_header_protocol(data)[1]
         err = "invalid packet format, %s" % info
         proto.gibberish(err, data)
-
-    def guess_header_protocol(self, v):
-        c = int(v[0])
-        s = bytestostr(v)
-        netlog("guess_header_protocol(%r) first char=%#x", repr_ellipsized(s), c)
-        if c==0x16:
-            return "ssl", "SSL packet?"
-        if s[:4]=="SSH-":
-            return "ssh", "SSH packet"
-        if len(s)>=3 and s.split(" ")[0] in ("GET", "POST"):
-            return "HTTP", "HTTP %s request" % s.split(" ")[0]
-        return None, "character %#x, not an xpra client?" % c
-
 
     ######################################################################
     # http / websockets:
