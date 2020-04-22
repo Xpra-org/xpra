@@ -1,3 +1,12 @@
+v3.0.10 (2020-04-22)
+======================
+	-- fix packaging with newer versions of py2app (MacOS)
+	-- fix logging spam in start-new-command dialog
+	-- fix building from source on archlinux
+	-- fix swapped red and blue colours channels in win32 systray
+	-- try harder to strip all temporary build prefixes
+
+
 v3.0.9 (2020-04-14)
 ======================
 	-- fix HTML5 client XSS

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.9
+%define version 3.0.10
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -869,6 +869,13 @@ fi
 
 
 %changelog
+* Wed Apr 22 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+- fix packaging with newer versions of py2app (MacOS)
+- fix logging spam in start-new-command dialog
+- fix building from source on archlinux
+- fix swapped red and blue colours channels in win32 systray
+- try harder to strip all temporary build prefixes
+
 * Wed Apr 15 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra3
 - rebuild with python2 fixup
 
