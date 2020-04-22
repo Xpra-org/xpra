@@ -12,7 +12,7 @@ from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, DONE, first_time,
     )
-from xpra.os_util import bytestostr, get_hex_uuid, POSIX, OSX
+from xpra.os_util import bytestostr, get_hex_uuid, POSIX, OSX, hexstr
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (
     EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
@@ -274,6 +274,8 @@ class InfoXpraClient(CommandConnectClient):
                     #and fallback to the bytestostr hack if that fails
                     def fixvalue(w):
                         if isinstance(w, bytes):
+                            if k.endswith(".data"):
+                                return hexstr(w)
                             try:
                                 return w.decode("utf-8")
                             except:
@@ -385,11 +387,11 @@ class VersionXpraClient(HelloRequestClient):
         return True
 
     def do_command(self, caps : typedict):
-        v = caps.get(b"version")
+        v = caps.strget(b"version")
         if not v:
             self.warn_and_quit(EXIT_FAILURE, "server did not provide the version information")
         else:
-            sys.stdout.write("%s\n" % (bytestostr(v),))
+            sys.stdout.write("%s\n" % (v,))
             self.quit(EXIT_OK)
 
 
