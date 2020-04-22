@@ -68,6 +68,12 @@ class StubClientMixin:
         """
         return {}
 
+    def get_info(self) -> dict:
+        """
+        Information contained in this mixin
+        """
+        return {}
+
     def parse_server_capabilities(self, caps : typedict) -> bool:
         """
         Parse server attributes specified in the hello capabilities.

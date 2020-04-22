@@ -60,6 +60,26 @@ class ClipboardClient(StubClientMixin):
                 log.error("error on clipboard helper '%s' cleanup", ch, exc_info=True)
 
 
+    def get_info(self) -> dict:
+        return {
+            "clipboard": {
+                "client" : {
+                    "enabled"   : self.clipboard_enabled,
+                    "type"      : self.client_clipboard_type,
+                    "direction" : self.client_clipboard_direction,
+                },
+                "server" : {
+                    "enabled"   : self.server_clipboard,
+                    "direction" : self.server_clipboard_direction,
+                    "selections": self.server_clipboards,
+                },
+                "requests" : {
+                    "local"     : self.local_clipboard_requests,
+                    "remote"    : self.remote_clipboard_requests,
+                    },
+                },
+            }
+
     def get_caps(self) -> dict:
         if not self.client_supports_clipboard:
             return {}

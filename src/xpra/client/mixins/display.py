@@ -96,6 +96,15 @@ class DisplayClient(StubClientMixin):
         raise NotImplementedError()
 
 
+    def get_info(self):
+        screen = self.get_screen_caps()
+        screen["scaling"] = self.get_scaling_caps()
+        screen["dpi"] = self.get_dpi_caps()
+        info = {
+            "screen"        : screen,
+            }
+        return info
+
     ######################################################################
     # hello:
     def get_caps(self) -> dict:

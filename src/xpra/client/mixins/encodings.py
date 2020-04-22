@@ -94,6 +94,24 @@ class Encodings(StubClientMixin):
         caps = typedict(packet[1])
         self._parse_server_capabilities(caps)
 
+
+    def get_info(self):
+        return {
+            "encodings" : {
+                "core"          : self.get_core_encodings(),
+                "window-icon"   : self.get_window_icon_encodings(),
+                "cursor"        : self.get_cursor_encodings(),
+                "quality"       : self.quality,
+                "min-quality"   : self.min_quality,
+                "speed"         : self.speed,
+                "min-speed"     : self.min_speed,
+                "encoding"      : self.encoding or "auto",
+                "video-scaling" : self.video_scaling if self.video_scaling is not None else "auto",
+                },
+            "server-encodings"  : self.server_core_encodings,
+            }
+
+
     def get_caps(self) -> dict:
         caps = {
             "encodings"                 : self.get_encodings(),

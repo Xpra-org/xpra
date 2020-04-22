@@ -84,17 +84,19 @@ class MmapClient(StubClientMixin):
         return True
 
 
+    def get_info(self):
+        if not self.mmap_enabled:
+            return {}
+        mmap_info = self.get_raw_caps()
+        mmap_info["group"] = self.mmap_group or ""
+        return {
+            "mmap" : mmap_info,
+            }
+
     def get_caps(self) -> dict:
         if not self.mmap_enabled:
             return {}
-        raw_caps = {
-            "file"          : self.mmap_filename,
-            "size"          : self.mmap_size,
-            "token"         : self.mmap_token,
-            "token_index"   : self.mmap_token_index,
-            "token_bytes"   : self.mmap_token_bytes,
-            "namespace"     : True, #this client understands "mmap.ATTRIBUTE" format
-            }
+        raw_caps = self.get_raw_caps()
         caps = {
             "mmap" : raw_caps,
             }
@@ -102,6 +104,16 @@ class MmapClient(StubClientMixin):
         for k,v in raw_caps.items():
             caps["mmap_%s" % k] = v
         return caps
+
+    def get_raw_caps(self):
+        return {
+            "file"          : self.mmap_filename,
+            "size"          : self.mmap_size,
+            "token"         : self.mmap_token,
+            "token_index"   : self.mmap_token_index,
+            "token_bytes"   : self.mmap_token_bytes,
+            "namespace"     : True, #this client understands "mmap.ATTRIBUTE" format
+            }
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename):
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)

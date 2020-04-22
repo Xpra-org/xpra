@@ -17,6 +17,7 @@ from xpra.child_reaper import reaper_cleanup
 from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, POSIX, is_Wayland
 from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs, csv,
+    merge_dicts,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
 from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_OK, EXIT_CONNECTION_LOST
@@ -56,6 +57,9 @@ if mixin_features.logging:
 if mixin_features.network_state:
     from xpra.client.mixins.network_state import NetworkState
     CLIENT_BASES.append(NetworkState)
+if mixin_features.network_listener:
+    from xpra.client.mixins.network_listener import NetworkListener
+    CLIENT_BASES.append(NetworkListener)
 if mixin_features.encoding:
     from xpra.client.mixins.encodings import Encodings
     CLIENT_BASES.append(Encodings)
@@ -248,6 +252,17 @@ class UIXpraClient(ClientBaseClass):
         XpraClientBase.signal_cleanup(self)
         reaper_cleanup()
         log("UIXpraClient.signal_cleanup() done")
+
+
+    def get_info(self):
+        info = {}
+        for c in CLIENT_BASES:
+            try:
+                i = c.get_info(self)
+                info = merge_dicts(info, i)
+            except Exception:
+                log.error("Error collection information from %s", c, exc_info=True)
+        return info
 
 
     def show_about(self, *_args):

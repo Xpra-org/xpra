@@ -1832,6 +1832,7 @@ def make_client(error_cb, opts):
     mixin_features.logging          = b(opts.remote_logging)
     mixin_features.tray             = b(opts.tray)
     mixin_features.network_state    = True
+    mixin_features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True)
     mixin_features.encoding         = opts.windows
     from xpra.client.gtk3.client import XpraClient
     return XpraClient()

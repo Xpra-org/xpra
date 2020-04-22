@@ -82,6 +82,15 @@ class NetworkState(StubClientMixin):
         self.cancel_ping_echo_timeout_timer()
 
 
+    def get_info(self) -> dict:
+        return {
+            "network" : {
+                "bandwidth-limit"       : self.bandwidth_limit,
+                "bandwidth-detection"   : self.bandwidth_detection,
+                "server-ok"             : self._server_ok,
+                }
+            }
+
     def get_caps(self) -> dict:
         caps = {
             "network-state" : True,
