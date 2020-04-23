@@ -20,6 +20,7 @@ DO_SIGN=${DO_SIGN:-1}
 BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-0}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
+BUNDLE_PAEXEC=${BUNDLE_PAEXEC:-0}
 ZIP_MODULES=${ZIP_MODULES:-1}
 
 PYTHON=python3
@@ -399,6 +400,10 @@ if [ "${BUNDLE_OPENSSL}" == "1" ]; then
 	#we need those libraries at the top level:
 	mv "${DIST}"/lib/libssl-*dll "${DIST}/"
 	mv "${DIST}"/lib/libcrypto-*dll "${DIST}/"
+fi
+
+if [ "${BUNDLE_PAEXEC}" == "1" ]; then
+	cp -fn "${MINGW_PREFIX}/bin/paexec.exe" "${DIST}/"
 fi
 
 if [ "${DO_VERPATCH}" == "1" ]; then
