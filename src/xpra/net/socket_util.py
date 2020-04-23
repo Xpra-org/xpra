@@ -424,6 +424,10 @@ def normalize_local_display_name(local_display_name):
         local_display_name = ":" + local_display_name
     else:
         after_sc = local_display_name[pos+1:]
+    if WIN32:
+        if after_sc.isalnum():
+            return local_display_name
+        raise Exception("non alphanumeric character in display name '%s'" % local_display_name)
     #we used to strip the screen from the display string, ie: ":0.0" -> ":0"
     #but now we allow it.. (untested!)
     for char in after_sc:

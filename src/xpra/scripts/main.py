@@ -1028,6 +1028,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                         warn(" %s\n" % e)
         return desc
     elif protocol=="socket":
+        assert not WIN32, "unix-domain sockets are not supported on MS Windows"
         #use the socketfile specified:
         slash = afterproto.find("/")
         if 0<afterproto.find(":")<slash:
@@ -1042,7 +1043,6 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             sockfile = parts[-1]
         else:
             sockfile = afterproto
-        assert not WIN32, "unix-domain sockets are not supported on MS Windows"
         desc.update({
                 "type"          : "unix-domain",
                 "local"         : True,
@@ -2104,7 +2104,7 @@ def run_glcheck(opts):
 def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
     if OSX or WIN32:
         #no need for a specific display
-        return ":0"
+        return "Main"
     if len(args)==1 and args[0] and args[0][0]==":":
         #display_name was provided:
         return args[0]
@@ -2202,7 +2202,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 cmd.append("--displayfd=%s" % w_pipe)
                 pass_fds = (w_pipe, )
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
-        proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
+        proc = Popen(cmd, stdin=None, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log("proc=%s", proc)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd
@@ -2222,6 +2222,18 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
             if n is not None:
                 matching_display = ":%s" % n
                 log("displayfd=%s", matching_display)
+    if WIN32:
+        assert mode=="shadow"
+        assert display_name
+        start = monotonic_time()
+        while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
+            state = dotxpra.get_display_state(display_name)
+            if state==DotXpra.LIVE:
+                log("found live server '%s'", display_name)
+                return proc, "named-pipe://%s" % display_name, display_name
+            log("get_display_state(%s)=%s (waiting)", display_name, state)
+            sleep(0.10)
+        raise Exception("failed to identify the new shadow server '%s'" % display_name)
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 
@@ -2352,7 +2364,8 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 display_name = display.get("display_name")
             if display_name:
                 state = dotxpra.get_display_state(display_name)
-                sys.stderr.write("found existing display %s : %s\n" % (display_name, state))
+                if state!=DotXpra.DEAD:
+                    sys.stderr.write("found existing display %s : %s\n" % (display_name, state))
         if state!=DotXpra.LIVE:
             server_mode = {
                            "_proxy_start"           : "start",
@@ -2372,7 +2385,11 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             if not socket_path:
                 #if we return non-zero, we will try the next run-xpra script in the list..
                 return 0
-            display = parse_display_name(error_cb, opts, "socket:%s" % socket_path)
+            if WIN32:
+                uri = "named-pipe://%s" % display_name
+            else:
+                uri = "socket://%s" % display_name
+            display = parse_display_name(error_cb, opts, uri)
             if proc and proc.poll() is None:
                 #start a thread just to reap server startup process (yuk)
                 #(as the server process will exit as it daemonizes)

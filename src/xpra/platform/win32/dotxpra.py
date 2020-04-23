@@ -33,6 +33,9 @@ class DotXpra:
     UNKNOWN = UNKNOWN
     INACCESSIBLE = INACCESSIBLE
 
+    def get_display_state(self, display):
+        return self.get_server_state(PIPE_PREFIX+display)
+
     def get_server_state(self, sockpath, _timeout=5):
         full_path = PIPE_PATH+sockpath
         if os.path.exists(full_path):
@@ -58,14 +61,16 @@ class DotXpra:
     def get_all_namedpipes(self):
         log = get_util_logger()
         xpra_pipes = {}
+        non_xpra = []
         for pipe_name in os.listdir(PIPE_PATH):
             if not pipe_name.startswith(PIPE_PREFIX):
-                log("found non-xpra pipe: %s", pipe_name)
+                non_xpra.append(pipe_name)
                 continue
             name = pipe_name[len(PIPE_PREFIX):]
             #found an xpra pipe
             #FIXME: filter using matching_display?
             xpra_pipes[name] = pipe_name
             log("found xpra pipe: %s", pipe_name)
+        log("found %i non-xpra pipes: %s", len(non_xpra), non_xpra)
         log("get_all_namedpipes()=%s", xpra_pipes)
         return xpra_pipes
