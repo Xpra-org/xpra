@@ -210,6 +210,10 @@ def get_server_modes():
     return server_modes
 
 
+def get_subcommands():
+    return tuple(x.split(" ")[0] for x in get_usage())
+
+
 def get_usage():
     command_options = [""]
     if supports_server:

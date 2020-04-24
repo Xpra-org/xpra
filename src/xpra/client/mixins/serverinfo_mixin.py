@@ -29,6 +29,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_linux_distribution = None
         self._remote_python_version = ""
         self._remote_lib_versions = {}
+        self._remote_subcommands = ()
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         self._remote_machine_id = c.strget("machine_id")
@@ -49,6 +50,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_platform_release = c.strget("platform.release")
         self._remote_platform_platform = c.strget("platform.platform")
         self._remote_python_version = c.strget("python.version")
+        self._remote_subcommands = c.strtupleget("subcommands")
         for x in ("glib", "gobject", "gtk", "gdk", "cairo", "pango", "sound.gst", "sound.pygst"):
             v = c.rawget("%s.version" % x, None)
             if v is not None:

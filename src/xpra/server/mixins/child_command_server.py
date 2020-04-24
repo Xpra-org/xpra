@@ -11,7 +11,7 @@ from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import monotonic_time, bytestostr, OSX, WIN32, POSIX
 from xpra.util import envint, csv
-from xpra.scripts.parsing import parse_env
+from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -211,6 +211,7 @@ class ChildCommandServer(StubServerMixin):
                         log.info("removed icons to reduce the size of the xdg menu data")
                         log.info("size reduced from %i to %i", l, len(str(xdg_menu)))
                     caps["xdg-menu"] = xdg_menu
+            caps["subcommands"] = get_subcommands()
         return caps
 
     def send_initial_data(self, ss, caps, send_ui, share_count):

@@ -455,8 +455,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_size_dialog = None
             fsd.destroy()
 
-    def download_server_log(self, *args):
+    def download_server_log(self, *_args):
         self.send_request_file("${XPRA_SERVER_LOG}", self.open_files)
+
+    def send_download_request(self, *_args):
+        command = ["xpra", "send-file"]
+        self.send_start_command("Client-Download-File", command, True)
 
     def show_file_upload(self, *args):
         if self.file_dialog:

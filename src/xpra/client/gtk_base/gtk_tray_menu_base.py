@@ -36,6 +36,7 @@ SHOW_TITLE_ITEM = envbool("XPRA_SHOW_TITLE_ITEM", True)
 SHOW_VERSION_CHECK = envbool("XPRA_SHOW_VERSION_CHECK", True)
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 SHOW_SERVER_LOG = envbool("XPRA_SHOW_SERVER_LOG", True)
+SHOW_DOWNLOAD = envbool("XPRA_SHOW_DOWNLOAD", True)
 STARTSTOP_SOUND_MENU = envbool("XPRA_SHOW_SOUND_MENU", True)
 WEBCAM_MENU = envbool("XPRA_SHOW_WEBCAM_MENU", True)
 RUNCOMMAND_MENU = envbool("XPRA_SHOW_RUNCOMMAND_MENU", True)
@@ -1503,6 +1504,8 @@ class GTKTrayMenuBase:
             menu.append(self.make_servertransfersmenuitem())
         if SHOW_UPLOAD:
             menu.append(self.make_uploadmenuitem())
+        if SHOW_DOWNLOAD:
+            menu.append(self.make_downloadmenuitem())
         if SHOW_SERVER_LOG:
             menu.append(self.make_serverlogmenuitem())
         if SHOW_SHUTDOWN:
@@ -1565,18 +1568,33 @@ class GTKTrayMenuBase:
         self.client.after_handshake(enable_upload)
         return self.upload
 
-
-    def make_serverlogmenuitem(self):
-        self.download = self.menuitem("Download Server Log", "download.png", cb=self.client.download_server_log)
+    def make_downloadmenuitem(self):
+        self.download = self.menuitem("Download File", "download.png", cb=self.client.send_download_request)
         def enable_download(*args):
-            log("enable_download%s server_file_transfer=%s", args, self.client.remote_file_transfer)
+            log("enable_download%s server_file_transfer=%s, server_start_new_commands=%s, subcommands=%s",
+                args, self.client.remote_file_transfer, self.client.server_start_new_commands, self.client._remote_subcommands)
             set_sensitive(self.download, self.client.remote_file_transfer)
-            if not self.client.remote_file_transfer:
-                self.upload.set_tooltip_text("Not supported by the server")
+            if not self.client.remote_file_transfer or not self.client.server_start_new_commands:
+                self.download.set_tooltip_text("Not supported by the server")
+            elif "send-file" not in self.client._remote_subcommands:
+                self.download.set_tooltip_text("'send-file' subcommand is not supported by the server")
             else:
-                self.upload.set_tooltip_text("Download the server log")
+                self.download.set_tooltip_text("Send a file to the server")
         self.client.after_handshake(enable_download)
         return self.download
+
+
+    def make_serverlogmenuitem(self):
+        self.download_log = self.menuitem("Download Server Log", "list.png", cb=self.client.download_server_log)
+        def enable_download(*args):
+            log("enable_download%s server_file_transfer=%s", args, self.client.remote_file_transfer)
+            set_sensitive(self.download_log, self.client.remote_file_transfer)
+            if not self.client.remote_file_transfer:
+                self.download_log.set_tooltip_text("Not supported by the server")
+            else:
+                self.download_log.set_tooltip_text("Download the server log")
+        self.client.after_handshake(enable_download)
+        return self.download_log
 
 
     def make_shutdownmenuitem(self):
