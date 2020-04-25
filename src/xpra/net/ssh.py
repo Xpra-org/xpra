@@ -715,33 +715,49 @@ keymd5(host_key),
         raise InitExit(EXIT_CONNECTION_FAILED, "SSH Authentication on %s failed" % host)
 
 
+def paramiko_run_test_command(transport, cmd):
+    from paramiko import SSHException
+    log("run_test_command('%s')", cmd)
+    try:
+        chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
+        chan.set_name("find %s" % cmd)
+    except SSHException as e:
+        log("open_session", exc_info=True)
+        raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
+    chan.exec_command(cmd)
+    out = chan.makefile().read()
+    err = chan.makefile_stderr().read()
+    code = chan.recv_exit_status()
+    log("exec_command('%s')=%s, out=%s, err=%s", cmd, code, out, err)
+    chan.close()
+    return out, err, code
+
 def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None, socket_dir=None, display_as_args=None):
     from paramiko import SSHException
     assert remote_xpra
     log("will try to run xpra from: %s", remote_xpra)
+    def rtc(cmd):
+        return paramiko_run_test_command(transport, cmd)
     for xpra_cmd in remote_xpra:
-        try:
-            chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
-            chan.set_name("find %s" % xpra_cmd)
-        except SSHException as e:
-            log("open_session", exc_info=True)
-            raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
-        cmd = "which %s" % xpra_cmd
-        log("exec_command('%s')", cmd)
-        chan.exec_command(cmd)
-        #poll until the command terminates:
-        start = monotonic_time()
-        while not chan.exit_status_ready():
-            if monotonic_time()-start>10:
-                chan.close()
-                raise InitExit(EXIT_TIMEOUT, "SSH test command '%s' timed out" % cmd)
-            log("exit status is not ready yet, sleeping")
-            time.sleep(0.01)
-        r = chan.recv_exit_status()
-        log("exec_command('%s')=%s", cmd, r)
-        chan.close()
-        if r!=0:
-            continue
+        if xpra_cmd.lower()=="xpra.exe":
+            #win32 mode
+            #quick and dirty test first:
+            r = rtc("ver")
+            if r[2]!=0:
+                continue
+            #let's find where xpra is installed:
+            r = rtc("FOR /F \"usebackq tokens=3*\" %A IN (`REG QUERY \"HKEY_LOCAL_MACHINE\Software\Xpra\" /v InstallPath`) DO (echo %A %B)")
+            if r[2]!=0:
+                continue
+            lines = r[0].splitlines()
+            idir = bytestostr(lines[-1])
+            xpra_cmd = '"%s\\paexec.exe" -i 1 -s "%s\\Xpra.exe"' % (idir, idir)
+            xpra_cmd = xpra_cmd.replace("\\", "\\\\")
+            log("using xpra.exe from '%s'", xpra_cmd)
+        else:
+            r = rtc("which %s" % xpra_cmd)
+            if r[2]!=0:
+                continue
         cmd = xpra_cmd + " " + " ".join(shellquote(x) for x in xpra_proxy_command)
         if socket_dir:
             cmd += " \"--socket-dir=%s\"" % socket_dir
