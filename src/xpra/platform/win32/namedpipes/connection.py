@@ -20,8 +20,6 @@ from xpra.platform.win32.common import (
 from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE,
     INFINITE,
-    )
-from xpra.platform.win32.namedpipes.common import (
     CreateEventA, CreateFileA,
     ReadFile, WriteFile,
     DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA,
@@ -101,6 +99,8 @@ class NamedPipeConnection(Connection):
             e = GetLastError()
             if e!=ERROR_IO_PENDING:
                 log("ReadFile: %s", IO_ERROR_STR.get(e, e))
+                if e in CONNECTION_CLOSED_ERRORS:
+                    raise ConnectionClosedException(CONNECTION_CLOSED_ERRORS[e])
             r = WaitForSingleObject(self.read_event, INFINITE)
             log("WaitForSingleObject(..)=%s, len=%s", WAIT_STR.get(r, r), read.value)
             if r and self.pipe_handle:
@@ -130,6 +130,8 @@ class NamedPipeConnection(Connection):
             e = GetLastError()
             if e!=ERROR_IO_PENDING:
                 log("WriteFile: %s", IO_ERROR_STR.get(e, e))
+                if e in CONNECTION_CLOSED_ERRORS:
+                    raise ConnectionClosedException(CONNECTION_CLOSED_ERRORS[e])
             r = WaitForSingleObject(self.write_event, INFINITE)
             log("WaitForSingleObject(..)=%s, len=%i", WAIT_STR.get(r, r), written.value)
             if not self.pipe_handle:
