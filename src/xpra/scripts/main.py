@@ -2111,6 +2111,51 @@ def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
     return guess_X11_display(dotxpra, None, uid, gid)
 
 
+def start_macos_shadow(cmd, env, cwd):
+    #launch the shadow server via launchctl so it will have GUI access:
+    LAUNCH_AGENT = "org.xpra.Agent"
+    LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
+    try:
+        os.stat(LAUNCH_AGENT_FILE)
+    except Exception as e:
+        #ignore access denied error, launchctl runs as root
+        import errno
+        if e.args[0]!=errno.EACCES:
+            warn("Error: shadow may not start,\n"
+                 +" the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
+    argfile = os.path.expanduser("~/.xpra/shadow-args")
+    with open(argfile, "w") as f:
+        f.write('["Xpra", "--no-daemon"')
+        for x in cmd[1:]:
+            f.write(', "%s"' % x)
+        f.write(']')
+    launch_commands = [
+                       ["launchctl", "unload", LAUNCH_AGENT_FILE],
+                       ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
+                       ["launchctl", "start", LAUNCH_AGENT],
+                       ]
+    log = get_util_logger()
+    log("start_server_subprocess: launch_commands=%s", launch_commands)
+    for x in launch_commands:
+        proc = Popen(x, env=env, cwd=cwd)
+        proc.wait()
+    proc = None
+
+def start_win32_shadow(proc, dotxpra, display_name):
+    start = monotonic_time()
+    log = get_util_logger()
+    while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
+        state = dotxpra.get_display_state(display_name)
+        if state==DotXpra.LIVE:
+            log("found live server '%s'", display_name)
+            #give it a bit of time:
+            #FIXME: poll until the server is ready instead
+            sleep(1)
+            return proc, "named-pipe://%s" % display_name, display_name
+        log("get_display_state(%s)=%s (waiting)", display_name, state)
+        sleep(0.10)
+    raise Exception("failed to identify the new shadow server '%s'" % display_name)
+
 def start_server_subprocess(script_file, args, mode, opts, username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
     log = get_util_logger()
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
@@ -2138,10 +2183,11 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         matching_display = None
     else:
         matching_display = display_name
-    existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
+    if not WIN32:
+        existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
                                                 matching_state=dotxpra.LIVE,
                                                 matching_display=matching_display))
-    log("start_server_subprocess: existing_sockets=%s", existing_sockets)
+        log("start_server_subprocess: existing_sockets=%s", existing_sockets)
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
     cmd += get_start_server_args(opts, uid, gid)      #ie: ["--exit-with-children", "--start-child=xterm"]
@@ -2155,32 +2201,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         new_server_uuid = get_hex_uuid()
         cmd.append("--env=XPRA_PROXY_START_UUID=%s" % new_server_uuid)
     if mode=="shadow" and OSX:
-        #launch the shadow server via launchctl so it will have GUI access:
-        LAUNCH_AGENT = "org.xpra.Agent"
-        LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
-        try:
-            os.stat(LAUNCH_AGENT_FILE)
-        except Exception as e:
-            #ignore access denied error, launchctl runs as root
-            import errno
-            if e.args[0]!=errno.EACCES:
-                warn("Error: shadow may not start,\n"
-                     +" the launch agent file '%s' seems to be missing:%s.\n" % (LAUNCH_AGENT_FILE, e))
-        argfile = os.path.expanduser("~/.xpra/shadow-args")
-        with open(argfile, "w") as f:
-            f.write('["Xpra", "--no-daemon"')
-            for x in cmd[1:]:
-                f.write(', "%s"' % x)
-            f.write(']')
-        launch_commands = [
-                           ["launchctl", "unload", LAUNCH_AGENT_FILE],
-                           ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
-                           ["launchctl", "start", LAUNCH_AGENT],
-                           ]
-        log("start_server_subprocess: launch_commands=%s", launch_commands)
-        for x in launch_commands:
-            proc = Popen(x, env=env, cwd=cwd)
-            proc.wait()
+        start_macos_shadow(cmd, env, cwd)
         proc = None
     else:
         #useful for testing failures that cause the whole XDG_RUNTIME_DIR to get nuked
@@ -2207,14 +2228,8 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd
             buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
-            try:
-                os.close(r_pipe)
-            except OSError:
-                pass
-            try:
-                os.close(w_pipe)
-            except OSError:
-                pass
+            noerr(os.close, r_pipe)
+            noerr(os.close, w_pipe)
             def displayfd_err(msg):
                 log.error("Error: displayfd failed")
                 log.error(" %s", msg)
@@ -2225,15 +2240,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
     if WIN32:
         assert mode=="shadow"
         assert display_name
-        start = monotonic_time()
-        while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
-            state = dotxpra.get_display_state(display_name)
-            if state==DotXpra.LIVE:
-                log("found live server '%s'", display_name)
-                return proc, "named-pipe://%s" % display_name, display_name
-            log("get_display_state(%s)=%s (waiting)", display_name, state)
-            sleep(0.10)
-        raise Exception("failed to identify the new shadow server '%s'" % display_name)
+        return start_win32_shadow(proc, dotxpra, display_name)
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 
@@ -2381,6 +2388,10 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 fn = x.replace("-", "_")
                 v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
                 setattr(opts, fn, v)
+            if WIN32:
+                #win32 can't daemonize,
+                #but at least hide the server startup messages:
+                script_file = script_file.replace("Xpra_cmd.exe", "Xpra.exe")
             proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
             if not socket_path:
                 #if we return non-zero, we will try the next run-xpra script in the list..
