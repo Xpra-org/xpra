@@ -181,6 +181,9 @@ begin
       Exec(ssh_keygen, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     end;
   end;
+  //store installation path:
+  RegWriteStringValue(HKEY_LOCAL_MACHINE, 'Software\Xpra',
+    'InstallPath', ExpandConstant('{app}'));
 end;
 
 
@@ -236,5 +239,15 @@ begin
     begin
       UnInstallOldVersion();
     end;
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if (CurUninstallStep=usPostUninstall) then
+  begin
+    //RegDeleteKeyIncludingSubkeys(HKEY_LOCAL_MACHINE, 'Software\Xpra');
+    if RegDeleteValue(HKEY_LOCAL_MACHINE, 'Software\Xpra', 'InstallPath') then
+      RegDeleteKeyIfEmpty(HKEY_LOCAL_MACHINE, 'Software\Xpra');
   end;
 end;
