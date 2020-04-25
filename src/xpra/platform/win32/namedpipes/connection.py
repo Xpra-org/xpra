@@ -21,7 +21,7 @@ from xpra.platform.win32.namedpipes.common import (
     OVERLAPPED, WAIT_STR, INVALID_HANDLE_VALUE,
     INFINITE,
     CreateEventA, CreateFileA,
-    ReadFile, WriteFile,
+    ReadFile, WriteFile, SetEvent,
     DisconnectNamedPipe, FlushFileBuffers, WaitNamedPipeA,
     GetLastError, SetNamedPipeHandleState, WaitForSingleObject, GetOverlappedResult,
     )
@@ -108,8 +108,9 @@ class NamedPipeConnection(Connection):
         if self.pipe_handle:
             if not GetOverlappedResult(self.pipe_handle, byref(self.read_overlapped), byref(read), False):
                 e = GetLastError()
-                if e!=ERROR_BROKEN_PIPE:
-                    raise Exception("overlapped read failed: %s" % IO_ERROR_STR.get(e, e))
+                if e in CONNECTION_CLOSED_ERRORS:
+                    raise ConnectionClosedException(CONNECTION_CLOSED_ERRORS[e])
+                raise Exception("overlapped read failed: %s" % IO_ERROR_STR.get(e, e))
         if read.value==0:
             data = None
         else:
@@ -165,18 +166,16 @@ class NamedPipeConnection(Connection):
             if code==ERROR_PIPE_NOT_CONNECTED:
                 l = log.debug
             l("Error: %s(%s) %i: %s", fn, ph, code, e)
-        try:
-            FlushFileBuffers(ph)
-        except Exception as e:
-            _close_err("FlushFileBuffers", e)
-        try:
-            DisconnectNamedPipe(ph)
-        except Exception as e:
-            _close_err("DisconnectNamedPipe", e)
-        try:
-            CloseHandle(ph)
-        except Exception as e:
-            _close_err("CloseHandle", e)
+        def logerr(fn, *args):
+            try:
+                fn(*args)
+            except Exception as e:
+                _close_err(fn, e)
+        logerr(SetEvent, self.read_event)
+        logerr(SetEvent, self.write_event)
+        logerr(FlushFileBuffers, ph)
+        logerr(DisconnectNamedPipe, ph)
+        logerr(CloseHandle, ph)
 
     def __repr__(self):
         return self.target

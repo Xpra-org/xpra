@@ -2412,7 +2412,8 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
     server_conn = connect_or_fail(display, opts)
     from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection
-    app = XpraProxy("xpra-pipe-proxy", TwoFileConnection(sys.stdout, sys.stdin, socktype="stdin/stdout"), server_conn)
+    pipe = TwoFileConnection(sys.stdout, sys.stdin, socktype="stdin/stdout")
+    app = XpraProxy("xpra-pipe-proxy", pipe, server_conn)
     app.run()
     return 0
 

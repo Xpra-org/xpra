@@ -1,16 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import signal
 import threading
 
 from xpra.net.bytestreams import untilConcludes
 from xpra.util import repr_ellipsized, envint, envbool
-from xpra.os_util import hexstr
+from xpra.os_util import hexstr, force_quit
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -86,8 +85,10 @@ class XpraProxy:
                     written = untilConcludes(self.is_active, noretry, to_conn.write, buf)
                     buf = buf[written:]
                     log("%s: written %s bytes", log_name, written)
+            log("%s copy loop ended", log_name)
         except Exception as e:
             log("%s: %s", log_name, e)
+        finally:
             self.quit()
 
     def is_active(self):
@@ -101,9 +102,6 @@ class XpraProxy:
         log("XpraProxy.quit(%s) %s: closing connections", args,  self._name)
         self._closed = True
         quit_cb = self._quit_cb
-        if quit_cb:
-            self._quit_cb = None
-            quit_cb(self)
         try:
             self._client_conn.close()
         except OSError:
@@ -112,6 +110,9 @@ class XpraProxy:
             self._server_conn.close()
         except OSError:
             pass
+        if quit_cb:
+            self._quit_cb = None
+            quit_cb(self)
 
     def do_quit(self, _proxy):
-        sys.exit(self._exit_code)
+        force_quit(self._exit_code)
