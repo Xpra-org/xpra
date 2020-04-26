@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-import time
 import os
 import socket
 import signal
@@ -18,10 +17,10 @@ from xpra.scripts.config import parse_bool
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.exit_codes import (
     EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE,
-    EXIT_CONNECTION_FAILED, EXIT_TIMEOUT,
+    EXIT_CONNECTION_FAILED,
     )
 from xpra.os_util import (
-    bytestostr, osexpand, monotonic_time, load_binary_file,
+    bytestostr, osexpand, load_binary_file,
     nomodule_context, umask_context, is_main_thread,
     WIN32, OSX, POSIX,
     )
@@ -738,27 +737,34 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
     log("will try to run xpra from: %s", remote_xpra)
     def rtc(cmd):
         return paramiko_run_test_command(transport, cmd)
+    tried = set()
     for xpra_cmd in remote_xpra:
-        if xpra_cmd.lower()=="xpra.exe":
-            #win32 mode
-            #quick and dirty test first:
+        if xpra_cmd.lower() in ("xpra.exe", "xpra_cmd.exe"):
+            #win32 mode, quick and dirty platform test first:
             r = rtc("ver")
             if r[2]!=0:
                 continue
             #let's find where xpra is installed:
             r = rtc("FOR /F \"usebackq tokens=3*\" %A IN (`REG QUERY \"HKEY_LOCAL_MACHINE\Software\Xpra\" /v InstallPath`) DO (echo %A %B)")
-            if r[2]!=0:
-                continue
-            lines = r[0].splitlines()
-            idir = bytestostr(lines[-1])
-            xpra_cmd = '"%s\\paexec.exe" -i 1 -s "%s\\Xpra.exe"' % (idir, idir)
-            xpra_cmd = xpra_cmd.replace("\\", "\\\\")
-            log("using xpra.exe from '%s'", xpra_cmd)
+            if r[2]==0:
+                #found in registry:
+                lines = r[0].splitlines()
+                installpath = bytestostr(lines[-1])
+                xpra_cmd = "%s\\%s" % (installpath, xpra_cmd)
+                xpra_cmd = xpra_cmd.replace("\\", "\\\\")
+                log("using '%s'", xpra_cmd)
+        elif xpra_cmd.endswith(".exe"):
+            #assume this path exists
+            pass
         else:
+            #assume Posix and find that command:
             r = rtc("which %s" % xpra_cmd)
             if r[2]!=0:
                 continue
-        cmd = xpra_cmd + " " + " ".join(shellquote(x) for x in xpra_proxy_command)
+        if xpra_cmd in tried:
+            continue
+        tried.add(xpra_cmd)
+        cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in xpra_proxy_command)
         if socket_dir:
             cmd += " \"--socket-dir=%s\"" % socket_dir
         if display_as_args:
