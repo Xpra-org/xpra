@@ -24,6 +24,7 @@ class DisplayMixinTest(ServerMixinTest):
         opts.bell = True
         opts.cursors = True
         opts.dpi = 144
+        opts.opengl = "no"
         def get_root_window_size():
             return 1024, 768
         def calculate_workarea(*_args):
