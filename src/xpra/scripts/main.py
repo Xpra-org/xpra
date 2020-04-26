@@ -2141,10 +2141,33 @@ def start_macos_shadow(cmd, env, cwd):
         proc.wait()
     proc = None
 
-def start_win32_shadow(proc, dotxpra, display_name):
+def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
+    log = Logger("server")
+    from xpra.platform.paths import get_app_dir
+    app_dir = get_app_dir()
+    cwd = app_dir
+    env = os.environ.copy()
+    exe = script_file
+    cmd = []
+    paexec = None
+    if envbool("XPRA_PAEXEC", True):
+        #use paexec to access the GUI session:
+        paexec = os.path.join(app_dir, "paexec.exe")
+        if os.path.exists(paexec) and os.path.isfile(paexec):
+            cmd = [
+                "paexec.exe",
+                "-i", "1", "-s",
+                ]
+            exe = paexec
+            #don't show a cmd window:
+            script_file = script_file.replace("Xpra_cmd.exe", "Xpra.exe")
+    cmd += [script_file, "shadow"] + args
+    cmd += get_start_server_args(opts)
+    log("proxy shadow start command: %s", cmd)
+    proc = Popen(cmd, executable=exe, env=env, cwd=cwd)
     start = monotonic_time()
-    log = get_util_logger()
-    while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
+    elapsed = 0
+    while elapsed<WAIT_SERVER_TIMEOUT:
         state = dotxpra.get_display_state(display_name)
         if state==DotXpra.LIVE:
             log("found live server '%s'", display_name)
@@ -2153,11 +2176,15 @@ def start_win32_shadow(proc, dotxpra, display_name):
             sleep(1)
             return proc, "named-pipe://%s" % display_name, display_name
         log("get_display_state(%s)=%s (waiting)", display_name, state)
+        if proc.poll() not in (None, 0):
+            raise Exception("shadow subprocess command returned %s", proc.returncode)
         sleep(0.10)
-    raise Exception("failed to identify the new shadow server '%s'" % display_name)
+        elapsed = monotonic_time()-start
+    proc.terminate()
+    raise Exception("timeout: failed to identify the new shadow server '%s'" % display_name)
 
 def start_server_subprocess(script_file, args, mode, opts, username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
-    log = get_util_logger()
+    log = Logger("server")
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
@@ -2183,11 +2210,15 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         matching_display = None
     else:
         matching_display = display_name
-    if not WIN32:
-        existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
-                                                matching_state=dotxpra.LIVE,
-                                                matching_display=matching_display))
-        log("start_server_subprocess: existing_sockets=%s", existing_sockets)
+    if WIN32:
+        assert mode=="shadow"
+        assert display_name
+        return proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name)
+
+    existing_sockets = set(dotxpra.socket_paths(check_uid=uid,
+                                            matching_state=dotxpra.LIVE,
+                                            matching_display=matching_display))
+    log("start_server_subprocess: existing_sockets=%s", existing_sockets)
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
     cmd += get_start_server_args(opts, uid, gid)      #ie: ["--exit-with-children", "--start-child=xterm"]
@@ -2223,7 +2254,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 cmd.append("--displayfd=%s" % w_pipe)
                 pass_fds = (w_pipe, )
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
-        proc = Popen(cmd, stdin=None, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
+        proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log("proc=%s", proc)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd
@@ -2237,10 +2268,6 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
             if n is not None:
                 matching_display = ":%s" % n
                 log("displayfd=%s", matching_display)
-    if WIN32:
-        assert mode=="shadow"
-        assert display_name
-        return start_win32_shadow(proc, dotxpra, display_name)
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, uid)
     return proc, socket_path, display
 
@@ -2298,7 +2325,7 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
 
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
-    log = get_util_logger()
+    log = Logger("server")
     log("identify_new_socket%s",
         (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
     #wait until the new socket appears:
@@ -2388,10 +2415,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 fn = x.replace("-", "_")
                 v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
                 setattr(opts, fn, v)
-            if WIN32:
-                #win32 can't daemonize,
-                #but at least hide the server startup messages:
-                script_file = script_file.replace("Xpra_cmd.exe", "Xpra.exe")
+
             proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
             if not socket_path:
                 #if we return non-zero, we will try the next run-xpra script in the list..
