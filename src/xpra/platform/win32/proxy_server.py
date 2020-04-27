@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,14 +7,15 @@ import os
 
 from xpra.server.proxy.proxy_server import ProxyServer as _ProxyServer
 from xpra.platform.paths import get_app_dir
+from xpra.util import envbool
 from xpra.os_util import pollwait
 from xpra.log import Logger
 
 log = Logger("proxy")
 
 
-def exec_command(username, command, env):
-    log("exec_command%s", (username, command, env))
+def exec_command(username, args, exe, cwd, env):
+    log("exec_command%s", (username, args, exe, cwd, env))
     from xpra.platform.win32.lsa_logon_lib import logon_msv1_s4u
     logon_info = logon_msv1_s4u(username)
     log("logon_msv1_s4u(%s)=%s", username, logon_info)
@@ -32,12 +33,12 @@ def exec_command(username, command, env):
     startupinfo = STARTUPINFO()
     startupinfo.lpDesktop = "WinSta0\\Default"
     startupinfo.lpTitle = "Xpra-Shadow"
-    cwd = get_app_dir()
     from subprocess import PIPE
-    log("env=%s", env)
-    proc = Popen(command, stdout=PIPE, stderr=PIPE, cwd=cwd, env=env,
+    proc = Popen(args, executable=exe,
+                 stdout=PIPE, stderr=PIPE,
+                 cwd=cwd, env=env,
                  startupinfo=startupinfo, creationinfo=creation_info)
-    log("Popen(%s)=%s", command, proc)
+    log("Popen(%s)=%s", args, proc)
     return proc
 
 
@@ -52,22 +53,36 @@ class ProxyServer(_ProxyServer):
         #hwinstaold = set_window_station("winsta0")
         #whoami = os.path.join(get_app_dir(), "whoami.exe")
         #exec_command([whoami])
-        xpra_command = os.path.join(get_app_dir(), "Xpra-Shadow.exe")
+        app_dir = get_app_dir()
+        shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")
+        paexec = os.path.join(app_dir, "paexec.exe")
         named_pipe = username.replace(" ", "_")
-        command = [
-            xpra_command,
+
+        #use paexec to access the GUI session:
+        if envbool("XPRA_PAEXEC", True) and os.path.exists(paexec) and os.path.isfile(paexec):
+            cmd = [
+                "paexec.exe",
+                "-i", "1", "-s",
+                ]
+            exe = paexec
+        else:
+            cmd = []
+            exe = shadow_command
+        
+        cmd += [
+            shadow_command,
             "--bind=%s" % named_pipe,
             #"--tray=no",
             ]
         from xpra.log import debug_enabled_categories
         if debug_enabled_categories:
-            command += ["-d", ",".join(tuple(debug_enabled_categories))]
+            cmd += ["-d", ",".join(tuple(debug_enabled_categories))]
         #command += ["-d", "all"]
         env = self.get_proxy_env()
         #env["XPRA_ALL_DEBUG"] = "1"
         #env["XPRA_REDIRECT_OUTPUT"] = "1"
         #env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
-        proc = exec_command(username, command, env)
+        proc = exec_command(username, cmd, exe, app_dir, env)
         r = pollwait(proc, 1)
         if r:
             log("poll()=%s", r)
@@ -82,4 +97,4 @@ class ProxyServer(_ProxyServer):
         log("sleep wait..")
         import time
         time.sleep(2)
-        return proc, "named-pipe://%s" % named_pipe, "Main"
+        return proc, "named-pipe://%s" % named_pipe, named_pipe
