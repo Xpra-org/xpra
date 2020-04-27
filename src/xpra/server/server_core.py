@@ -2046,6 +2046,9 @@ class ServerCore:
                 "path"  : self.pidfile,
                 "inode" : self.pidinode,
                 }
+        logfile = os.environ.get("XPRA_SERVER_LOG")
+        if logfile:
+            si["log-file"] = logfile
         if POSIX:
             si["load"] = tuple(int(x*1000) for x in os.getloadavg())
         if self.original_desktop_display:

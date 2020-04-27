@@ -353,6 +353,7 @@ def do_init():
             log_filename = os.path.join(data_dir, (get_prgname() or "Xpra")+".log")
         sys.stdout = open(log_filename, "a")
         sys.stderr = sys.stdout
+        os.environ["XPRA_LOG_FILENAME"] = log_filename
 
 
 MB_ICONEXCLAMATION  = 0x00000030

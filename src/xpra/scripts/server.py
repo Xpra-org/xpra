@@ -725,6 +725,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         noerr(stderr.write, "vfb failed to start, exiting\n")
         return EXIT_VFB_ERROR
 
+    if WIN32 and os.environ.get("XPRA_LOG_FILENAME"):
+        os.environ["XPRA_SERVER_LOG"] = os.environ["XPRA_LOG_FILENAME"]
     if opts.daemon:
         log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
