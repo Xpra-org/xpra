@@ -2149,7 +2149,6 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     env = os.environ.copy()
     exe = script_file
     cmd = []
-    paexec = None
     if envbool("XPRA_PAEXEC", True):
         #use paexec to access the GUI session:
         paexec = os.path.join(app_dir, "paexec.exe")
