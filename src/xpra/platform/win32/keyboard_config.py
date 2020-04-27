@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2014-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.platform.win32.common import MapVirtualKeyW, GetAsyncKeyState, VkKeyScanW, keybd_event
 from xpra.log import Logger
 
-log = Logger("keyboard", "win32")
+log = Logger("keyboard")
 
 MAPVK_VK_TO_VSC = 0
 def fake_key(keycode, press):
