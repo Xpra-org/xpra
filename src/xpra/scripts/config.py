@@ -1103,7 +1103,7 @@ def parse_number(numtype, k, v, auto=0):
         return auto
     try:
         return numtype(v)
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         warn("Warning: cannot parse value '%s' for '%s' as a type %s: %s" % (v, k, numtype, e))
         return None
 
