@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -16,7 +16,6 @@ from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_
 from xpra.util import envint, envbool, csv, typedict, first_time
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
-from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
