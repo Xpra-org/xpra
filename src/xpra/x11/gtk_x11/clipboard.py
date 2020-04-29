@@ -354,7 +354,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         #an app is requesting clipboard data from us
         log("do_selection_request_event(%s)", event)
         requestor = event.requestor
-        assert requestor
+        if not requestor:
+            log.warn("Warning: clipboard selection request without a window, dropped")
+            return
         wininfo = self.get_wininfo(requestor.get_xid())
         prop = event.property
         target = str(event.target)
