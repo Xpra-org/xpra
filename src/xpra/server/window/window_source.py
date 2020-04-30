@@ -51,6 +51,8 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 LOG_THEME_DEFAULT_ICONS = envbool("XPRA_LOG_THEME_DEFAULT_ICONS", False)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 
+MAX_WINDOW_SIZE = 2**15-2**13
+
 
 from xpra.os_util import StringIOClass, memoryview_to_bytes
 from xpra.server.window.window_stats import WindowPerformanceStatistics
@@ -1049,6 +1051,11 @@ class WindowSource(object):
             self.statistics.last_resized = now
             self.window_dimensions = ww, wh
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE/(ww*wh*4)))
+        if ww>MAX_WINDOW_SIZE or wh>MAX_WINDOW_SIZE:
+            if first_time("window-oversize-%i" % self.wid):
+                damagelog.warn("Warning: invalid window dimensions %ix%i for window %i", ww, wh, self.wid)
+                damagelog.warn(" window updates will be dropped until this is corrected")
+            return
         if self.full_frames_only:
             x, y, w, h = 0, 0, ww, wh
 
