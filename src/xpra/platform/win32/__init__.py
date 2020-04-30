@@ -5,10 +5,12 @@
 # later version. See the file COPYING for details.
 
 # Platform-specific code for Win32.
+import sys
+if not sys.platform.startswith("win"):
+    raise ImportError("not to be used on %s" % sys.platform)
 
 import errno
 import os.path
-import sys
 
 import win32con         #@UnresolvedImport
 import win32api         #@UnresolvedImport
