@@ -21,6 +21,7 @@ BUNDLE_PUTTY=${BUNDLE_PUTTY:-1}
 BUNDLE_OPENSSH=${BUNDLE_OPENSSH:-0}
 BUNDLE_OPENSSL=${BUNDLE_OPENSSL:-1}
 BUNDLE_PAEXEC=${BUNDLE_PAEXEC:-1}
+BUNDLE_DESKTOPLOGON=${BUNDLE_DESKTOPLOGON:-1}
 ZIP_MODULES=${ZIP_MODULES:-1}
 
 PYTHON=python3
@@ -32,6 +33,8 @@ BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	DO_TESTS="0"
 	DO_SERVICE="0"
+	BUNDLE_PAEXEC="0"
+	BUNDLE_DESKTOPLOGON="0"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x264 --without-nvenc --without-nvfbc"
 	shift
 fi
@@ -404,6 +407,12 @@ fi
 
 if [ "${BUNDLE_PAEXEC}" == "1" ]; then
 	cp -fn "${MINGW_PREFIX}/bin/paexec.exe" "${DIST}/"
+fi
+
+if [ "${BUNDLE_DESKTOPLOGON}" == "1" ]; then
+	for lib in AxMSTSCLib MSTSCLib DesktopLogon; do
+		cp -fn "${MINGW_PREFIX}/bin/$lib.dll" "${DIST}/"
+	done
 fi
 
 if [ "${DO_VERPATCH}" == "1" ]; then

@@ -284,6 +284,7 @@ class ProxyServer(ServerCore):
             disconnect(SESSION_NOT_FOUND, "no sessions found")
             return
         sessions = None
+        authenticator = None
         for authenticator in client_proto.authenticators:
             try:
                 auth_sessions = authenticator.get_sessions()
@@ -319,6 +320,7 @@ class ProxyServer(ServerCore):
                 uid = getuid()
                 gid = getgid()
             username = get_username_for_uid(uid)
+            password = None
             groups = get_groups(username)
             log("username(%i)=%s, groups=%s", uid, username, groups)
         else:
@@ -326,6 +328,7 @@ class ProxyServer(ServerCore):
             assert client_proto.authenticators
             for authenticator in client_proto.authenticators:
                 username = getattr(authenticator, "username", "")
+                password = authenticator.get_password()
                 if username:
                     break
         #ensure we don't loop back to the proxy:
@@ -346,8 +349,8 @@ class ProxyServer(ServerCore):
                 disconnect(SESSION_NOT_FOUND, "no displays found")
                 return
             try:
-                proc, socket_path, display = self.start_new_session(username, uid, gid, sns, displays)
-                log("start_new_session%s=%s", (username, uid, gid, sns, displays), (proc, socket_path, display))
+                proc, socket_path, display = self.start_new_session(username, password, uid, gid, sns, displays)
+                log("start_new_session%s=%s", (username, "..", uid, gid, sns, displays), (proc, socket_path, display))
             except Exception as e:
                 log("start_server_subprocess failed", exc_info=True)
                 log.error("Error: failed to start server subprocess:")
@@ -505,8 +508,8 @@ class ProxyServer(ServerCore):
                 message_queue.put("socket-handover-complete")
         start_thread(start_proxy_process, "start_proxy(%s)" % client_proto)
 
-    def start_new_session(self, username, uid, gid, new_session_dict=None, displays=()):
-        log("start_new_session%s", (username, uid, gid, new_session_dict, displays))
+    def start_new_session(self, username, _password, uid, gid, new_session_dict=None, displays=()):
+        log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
         sns = typedict(new_session_dict or {})
         mode = sns.get("mode", "start")
         assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode

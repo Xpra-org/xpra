@@ -8,7 +8,7 @@ import os
 from xpra.server.proxy.proxy_server import ProxyServer as _ProxyServer
 from xpra.platform.paths import get_app_dir
 from xpra.util import envbool
-from xpra.os_util import pollwait
+from xpra.os_util import pollwait, strtobytes
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -44,12 +44,19 @@ def exec_command(username, args, exe, cwd, env):
 
 class ProxyServer(_ProxyServer):
 
-    def start_new_session(self, username, uid, gid, new_session_dict=None, displays=()):
-        log("start_new_session%s", (username, uid, gid, new_session_dict, displays))
-        return self.start_win32_shadow(username, new_session_dict)
+    def start_new_session(self, username, password, uid, gid, new_session_dict=None, displays=()):
+        log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
+        return self.start_win32_shadow(username, password, new_session_dict)
 
-    def start_win32_shadow(self, username, new_session_dict):
-        log("start_win32_shadow%s", (username, new_session_dict))
+    def start_win32_shadow(self, username, password, new_session_dict):
+        log("start_win32_shadow%s", (username, "..", new_session_dict))
+        #first, Logon:
+        try:
+            from xpra.platform.win32.desktoplogon_lib import Logon
+            log.error("Logon(%s, %s)", username, password)
+            Logon(strtobytes(username), strtobytes(password))
+        except Exception:
+            log.error("Error: failed to logon as '%s'", username, exc_info=True)
         #hwinstaold = set_window_station("winsta0")
         #whoami = os.path.join(get_app_dir(), "whoami.exe")
         #exec_command([whoami])
@@ -66,6 +73,7 @@ class ProxyServer(_ProxyServer):
                 ]
             exe = paexec
         else:
+            log.warn("Warning: starting without paexec, expect a black screen")
             cmd = []
             exe = shadow_command
         
@@ -83,7 +91,7 @@ class ProxyServer(_ProxyServer):
         #env["XPRA_REDIRECT_OUTPUT"] = "1"
         #env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
         proc = exec_command(username, cmd, exe, app_dir, env)
-        r = pollwait(proc, 1)
+        r = pollwait(proc, 4)
         if r:
             log("poll()=%s", r)
             try:
@@ -94,7 +102,4 @@ class ProxyServer(_ProxyServer):
             raise Exception("shadow subprocess failed with exit code %s" % r)
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
         #TODO: poll the named pipe
-        log("sleep wait..")
-        import time
-        time.sleep(2)
         return proc, "named-pipe://%s" % named_pipe, named_pipe
