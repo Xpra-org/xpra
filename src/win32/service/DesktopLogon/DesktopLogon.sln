@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesktopLogon", "DesktopLogon.csproj", "{696AC917-61A1-4644-96AA-7FB4F9D16D72}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Debug|x64.ActiveCfg = Debug|x64
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Debug|x64.Build.0 = Debug|x64
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Release|x64.ActiveCfg = Release|x64
+		{696AC917-61A1-4644-96AA-7FB4F9D16D72}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {20674C14-E22A-4D6E-B51D-9D900F69261F}
+	EndGlobalSection
+EndGlobal
