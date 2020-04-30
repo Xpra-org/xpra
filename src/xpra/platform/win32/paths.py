@@ -168,6 +168,10 @@ if getattr(sys, 'frozen', False) is True:
     if len(APP_DIR)>3 and APP_DIR[1]==":" and APP_DIR[2]=="/":
         #it seems that mingw builds can get confused about the correct value for os.pathsep:
         APP_DIR = APP_DIR.replace("/", "\\")
+    try:
+        sys.path.remove(APP_DIR)
+    except ValueError:
+        pass
     sys.path.insert(0, APP_DIR)
     os.chdir(APP_DIR)
     #so we can easily load DLLs with ctypes:
