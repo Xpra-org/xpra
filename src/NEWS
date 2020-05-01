@@ -1,10 +1,13 @@
-v3.0.10 (2020-04-22)
+v3.0.10 (2020-05-01)
 ======================
-	-- fix packaging with newer versions of py2app (MacOS)
+	-- fix pacKaging with newer versions of py2app (MacOS)
 	-- fix logging spam in start-new-command dialog
 	-- fix building from source on archlinux
 	-- fix swapped red and blue colours channels in win32 systray
+	-- fix error parsing invalid config files
+	-- validate webp image dimensions for transparency encoding
 	-- try harder to strip all temporary build prefixes
+	-- MacOS: update to Python 2.7.18 for python2 builds
 
 
 v3.0.9 (2020-04-14)

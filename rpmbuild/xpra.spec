@@ -869,12 +869,15 @@ fi
 
 
 %changelog
-* Wed Apr 22 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+* Fri May 01 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
 - fix packaging with newer versions of py2app (MacOS)
 - fix logging spam in start-new-command dialog
 - fix building from source on archlinux
 - fix swapped red and blue colours channels in win32 systray
+- fix error parsing invalid config files
+- validate webp image dimensions for transparency encoding
 - try harder to strip all temporary build prefixes
+- MacOS: update to Python 2.7.18 for python2 builds
 
 * Wed Apr 15 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra3
 - rebuild with python2 fixup
