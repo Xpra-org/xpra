@@ -53,7 +53,6 @@ class ProxyServer(_ProxyServer):
         #first, Logon:
         try:
             from xpra.platform.win32.desktoplogon_lib import Logon
-            log.error("Logon(%s, %s)", username, password)
             Logon(strtobytes(username), strtobytes(password))
         except Exception:
             log.error("Error: failed to logon as '%s'", username, exc_info=True)
@@ -91,15 +90,18 @@ class ProxyServer(_ProxyServer):
         #env["XPRA_REDIRECT_OUTPUT"] = "1"
         #env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
         proc = exec_command(username, cmd, exe, app_dir, env)
+        #TODO: poll the named pipe instead of waiting
         r = pollwait(proc, 4)
-        if r:
-            log("poll()=%s", r)
+        if r is not None:
+            log("pollwait=%s", r)
             try:
                 log("stdout=%s", proc.stdout.read())
                 log("stderr=%s", proc.stderr.read())
             except (OSError, AttributeError):
                 log("failed to read stdout / stderr of subprocess", exc_info=True)
-            raise Exception("shadow subprocess failed with exit code %s" % r)
+            if r!=0:
+                raise Exception("shadow subprocess failed with exit code %s" % r)
+            else:
+                raise Exception("shadow subprocess has already terminated")
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
-        #TODO: poll the named pipe
         return proc, "named-pipe://%s" % named_pipe, named_pipe
