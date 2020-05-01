@@ -898,9 +898,19 @@ class WindowSource(WindowIconSource):
         if current_encoding in TRANSPARENCY_ENCODINGS:
             return current_encoding
         pixel_count = w*h
-        if "rgb32" in self.common_encodings and (pixel_count<self._rgb_auto_threshold or (quality>=90 and speed>=90) or (self.image_depth>24 and self.client_bit_depth>24)):
+        depth = self.image_depth
+        co = self.common_encodings
+        def canuse(e):
+            return e in co and e in TRANSPARENCY_ENCODINGS
+        if canuse("rgb32") and (
+            pixel_count<self._rgb_auto_threshold or
+            (quality>=90 and speed>=90) or
+            (depth>24 and self.client_bit_depth>24)
+            ):
             #the only encoding that can do higher bit depth at present
             return "rgb32"
+        if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2:
+            return "webp"
         for x in TRANSPARENCY_ENCODINGS:
             if x in self.common_encodings:
                 return x
