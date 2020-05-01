@@ -34,6 +34,7 @@ def main():
         "proxy",
         "--bind=xpra-proxy,auth=sys",
         "--bind-tcp=0.0.0.0:14500,auth=sys",
+        "--tray=no",
         #"--mdns=no",
         "-d", "win32,proxy",
         ] + sys.argv[1:]
