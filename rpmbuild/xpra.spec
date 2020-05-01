@@ -458,7 +458,7 @@ fi
 
 
 %changelog
-* Sat Mar 28 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
+* Fri May 01 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
 - fix avcodec2 race condition crash
 - fix crashes on X11 displays lacking RandR support
 - fix clients not exposing webcam capability flag
@@ -467,9 +467,12 @@ fi
 - fix null bytes in X11 error text properly
 - fix GDK window scaling setting wrongly propagated to the server
 - fix GDK scaling causing window painting issues (force off)
+- fix server hangs and unpainted windows due to invalid dimensions
 - fix unresponsive appindicator system tray
+- fix scoring of NVENC codec (should be used ahead of sofware encoders)
 - fix NVENC error when pynvml is not installed
 - fix NVENC temporary failure retry code path
+- fix pacKaging with newer versions of py2app (MacOS)
 - fix build errors caused by pygtk bindings build warnings
 - fix race condition error during window cleanup
 - fix CUDA reset_state function
@@ -489,17 +492,21 @@ fi
 - fix handling of dpi command line switch
 - fix geometry debug logging error
 - fix session info errors during client exit
+- fix webp image dimensions for transparency encoding
+- fix quality and speed changes from the system tray (compatibility issue with newer clients)
 - try harder not to use video for tiny areas
 - log CUDA device actually used - mutiple GPU setups
 - support CUDA 10.2
 - skip display number warnings when upgrading
 - more correct code for locating the 'Downloads' folder on MS Windows
 - disable GDK window scaling
+- blacklist VirtualBox's SVGA3D OpenGL driver (fixes black windows)
 - ignore OpenGL clear errors with some buggy drivers
 - disable OpenGL on more ancient Intel chipsets
 - make it possible to disable colourspace synchronization
 - support parallel installations of a newer python3 package
 - disable CSD on MS Windows (GTK3 CSD bug workaround)
+- don't try to read /proc if not on Posix
 
 * Sun Oct 06 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.14-1
 - fix html5 clipboard wrongly disabled
