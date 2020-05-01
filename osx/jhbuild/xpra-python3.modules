@@ -250,9 +250,9 @@
 
 	<distutils id="python3-cython" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/d9/82/d01e767abb9c4a5c07a6a1e6f4d5a8dfce7369318d31f48a52374094372e/Cython-0.29.15.tar.gz"
-			hash="sha256:60d859e1efa5cc80436d58aecd3718ff2e74b987db0518376046adedba97ac30"
-			version="0.29.15"/>
+			module="/packages/99/36/a3dc962cc6d08749aa4b9d85af08b6e354d09c5468a3e0edc610f44c856b/Cython-0.29.17.tar.gz"
+			hash="sha256:6361588cb1d82875bcfbad83d7dd66c442099759f895cf547995f00601f9caf2"
+			version="0.29.17"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
