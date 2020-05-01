@@ -1,6 +1,6 @@
 /**
  * This file is part of Xpra.
- * Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+ * Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
  *
  * This service code is based on "The Complete Service Sample":
  * https://msdn.microsoft.com/en-us/library/bb540476(v=VS.85).aspx
@@ -153,7 +153,7 @@ VOID SvcUninstall(void)
         SERVICE_CONTROL_STATUS_REASON_PARAMS reason;
         memset(&reason, 0, sizeof(SERVICE_CONTROL_STATUS_REASON_PARAMS));
         reason.dwReason = SERVICE_STOP_REASON_FLAG_PLANNED|SERVICE_STOP_REASON_MAJOR_OTHER|SERVICE_STOP_REASON_MINOR_INSTALLATION;
-		//SERVICE_CONTROL_STATUS_REASON_INFO=1
+        //SERVICE_CONTROL_STATUS_REASON_INFO=1
         if (!ControlServiceEx(schService, SERVICE_CONTROL_STOP, 1, &reason)) {
             printf("ControlServiceEx failed (%d)\n", GetLastError());
             CloseServiceHandle(schSCManager);
@@ -225,7 +225,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     HANDLE event_log = RegisterEventSource(NULL, SVCNAME);
     const char* message = "Going to start Xpra shadow server";
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-    char buf[64];
+    char buf[1024];
 
     // Create an event. The control handler function, SvcCtrlHandler,
     // signals this event when it receives the stop control code.
@@ -242,10 +242,46 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
 
-    //LPTSTR command = "\"E:\\Xpra\\trunk\\src\\dist\\Xpra-Proxy.exe\"";
-    //LPCTSTR cwd = "E:\\Xpra\\trunk\\src\\dist\\";
-    LPTSTR command = "C:\\Windows\\System32\\psexec.exe -accepteula -nobanner -w \"C:\\Program Files\\Xpra\" -s -x \"C:\\Program Files\\Xpra\\Xpra.exe\" \"shadow\" \"--bind-tcp=0.0.0.0:14500,auth=sys\"";
-    LPCTSTR cwd = "C:\\Program Files\\Xpra";
+    //LPCTSTR default_command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\"";
+    LPCTSTR default_command = "C:\\Windows\\System32\\psexec.exe -accepteula -nobanner -w \"C:\\Program Files\\Xpra\" -s -x \"C:\\Program Files\\Xpra\\Xpra.exe\" \"shadow\" \"--bind-tcp=0.0.0.0:14500,auth=sys\"";
+    LPCTSTR default_cwd = "C:\\Program Files\\Xpra\\";
+    LPTSTR command = (LPTSTR) default_command;
+    LPTSTR cwd = (LPTSTR) default_cwd;
+
+    DWORD lpcbData = 1024;
+    DWORD dwType = REG_SZ;
+    HKEY hKey = 0;
+    const char* subkey = "SOFTWARE\\Xpra";
+    if (!RegOpenKey(HKEY_LOCAL_MACHINE, subkey, &hKey)) {
+        if (!RegQueryValueEx(hKey, "InstallPath", NULL, &dwType, (LPBYTE) buf, &lpcbData)) {
+            cwd = (LPTSTR) malloc(1024);
+            command = (LPTSTR) malloc(1024);
+            StringCbPrintfA(cwd, 1024, "%s", buf);
+            //StringCbPrintfA(command, 512, "%s\\Xpra-Proxy.exe", buf);
+            StringCbPrintfA(command, 1024,
+            		"%s\\paexec.exe -w \"%s\" -s -x \"%s\\Xpra.exe\" \"shadow\" \"--bind-tcp=0.0.0.0:14500,auth=sys\"",
+					cwd, cwd, cwd);
+
+            StringCbPrintfA(buf, 1024, "Found installation path: '%s'\n", cwd);
+            message = (const char*) &buf;
+            ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+        }
+        else {
+            message = "Registry key entry 'InstallPath' is missing\n";
+            ReportEvent(event_log, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &message, NULL);
+            DeregisterEventSource(event_log);
+        }
+    }
+    else {
+        message = "Registry key is missing\n";
+        ReportEvent(event_log, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &message, NULL);
+        DeregisterEventSource(event_log);
+    }
+
+    StringCbPrintfA(buf, 1024, "Starting shadow: '%s'\n", command);
+    message = (const char*) &buf;
+    ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+
     if (!CreateProcess(NULL, command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
     {
         snprintf(buf, 64, "CreateProcess failed (%d).\n", GetLastError());
