@@ -24,11 +24,19 @@ LogonUser.restype = BOOL
 
 class Authenticator(SysAuthenticator):
 
+    def __init__(self, username, **kwargs):
+        super().__init__(username, **kwargs)
+        #fugly: keep hold of the password so the win32 proxy can use it 
+        self.password = None
+
     def get_uid(self):
         return 0
 
     def get_gid(self):
         return 0
+
+    def get_password(self):
+        return self.password
 
     def get_challenge(self, digests):
         if "xor" not in digests:
@@ -49,6 +57,7 @@ class Authenticator(SysAuthenticator):
         log("LogonUser(..)=%#x", status)
         if status:
             CloseHandle(token)
+            self.password = password_str
             return True
         log.error("Error: win32 authentication failed:")
         log.error(" %s", FormatError(GetLastError()))
