@@ -223,9 +223,11 @@ def get_sessions():
     WTSCloseServer(h)
     return sessions
 
-def find_session(username):
+def find_session(username, with_display=True):
     if username:
         for sid, info in get_sessions().items():
+            if with_display and not info.get("Display"):
+                continue
             if info.get("UserName", "").lower()==username.lower():
                 info["SessionID"] = sid
                 return info
