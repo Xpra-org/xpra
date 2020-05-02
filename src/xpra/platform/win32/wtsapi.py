@@ -28,6 +28,7 @@ class WTS_SESSION_INFOA(Structure):
         ("State",           c_int),
     ]
 PWTS_SESSION_INFOA = POINTER(WTS_SESSION_INFOA)
+PPWTS_SESSION_INFOA = POINTER(PWTS_SESSION_INFOA)
 WTSActive       = 0
 WTSConnected    = 1
 WTSConnectQuery = 2
@@ -132,7 +133,15 @@ WTSQuerySessionInformationA.restype = BOOL
 WTSQuerySessionInformationA.argtypes = [HANDLE, DWORD, c_int, POINTER(LPSTR), POINTER(DWORD)]
 WTSFreeMemory = wtsapi32.WTSFreeMemory
 WTSFreeMemory.restype = BOOL
-#WTSFreeMemory.argtypes = [c_void_p]
+#WTSFreeMemory.argtypes = [PVOID]
+WTSEnumerateSessionsA = wtsapi32.WTSEnumerateSessionsA
+WTSEnumerateSessionsA.restype = BOOL
+WTSEnumerateSessionsA.argtypes = [HANDLE, DWORD, DWORD, PPWTS_SESSION_INFOA, PDWORD]
+WTS_CURRENT_SERVER_HANDLE = 0
+WTSEnumerateProcessesExA = wtsapi32.WTSEnumerateProcessesExA
+WTSEnumerateProcessesExA.restype = BOOL
+WTSEnumerateProcessesExA.argtypes = [HANDLE, PDWORD, DWORD, POINTER(LPSTR), PDWORD]
+
 WTSDisconnectSession = wtsapi32.WTSDisconnectSession
 WTSDisconnectSession.restype = BOOL
 WTSDisconnectSession.argtypes = [HANDLE, DWORD, BOOL]
