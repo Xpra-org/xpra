@@ -171,39 +171,37 @@ WTSTerminateProcess.argtypes = [HANDLE, DWORD, DWORD]
 
 def get_session_info(session):
     info = {
-        "station-name"  : session.pWinStationName.decode("latin1"),
-        "state"         : CONNECT_STATE.get(session.State, session.State),
+        "StationName"  : session.pWinStationName.decode("latin1"),
+        "State"         : CONNECT_STATE.get(session.State, session.State),
         }
     csid = session.SessionId
     buf = LPSTR()
     size = DWORD()
     for q in (WTSInitialProgram, WTSApplicationName, WTSWorkingDirectory,
-              WTSUserName, WTSWinStationName, WTSDomainName,
+              WTSUserName, WTSDomainName,
               WTSClientName, WTSClientDirectory,
-              #WTSClientDisplay, ):
               ):
         if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, q, byref(buf), byref(size)):
-            #log.info("%s=%s (%i bytes)", WTS_INFO_CLASS.get(q, q), bytestostr(buf.value), size.value)
-            info[WTS_INFO_CLASS.get(q, q)] = buf.value
+            if buf.value:
+                info[WTS_INFO_CLASS.get(q, q)] = buf.value
     if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientDisplay, byref(buf), byref(size)):
         if size.value>=sizeof(WTS_CLIENT_DISPLAY):
             pdisplay = cast(buf, POINTER(WTS_CLIENT_DISPLAY))
             display = pdisplay[0]
             if display.HorizontalResolution>0 and display.VerticalResolution>0 and display.ColorDepth>0:
-                info["display"] = {
-                    "width"     : display.HorizontalResolution,
-                    "height"    : display.VerticalResolution,
-                    "depth"     : display.ColorDepth,
+                info["Display"] = {
+                    "Width"     : display.HorizontalResolution,
+                    "Height"    : display.VerticalResolution,
+                    "Depth"     : display.ColorDepth,
                     }
-        #if WTS_CLIENT_DISPLAY
-    if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSConnectState, byref(buf), byref(size)):
-        if size.value==4:
-            state = cast(buf, POINTER(DWORD)).contents.value
-            info["connect-state"] = CONNECT_STATE.get(state, state)
+    #if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSConnectState, byref(buf), byref(size)):
+    #    if size.value==4:
+    #        state = cast(buf, POINTER(DWORD)).contents.value
+    #        info["ConnectState"] = CONNECT_STATE.get(state, state)
     if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientProtocolType, byref(buf), byref(size)):
         if size.value==2:
             ptype = cast(buf, POINTER(WORD)).contents.value
-            info["type"] = {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype)
+            info["Type"] = {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype)
     return info
     
 
