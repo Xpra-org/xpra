@@ -35,8 +35,8 @@ def main():
         "--bind=xpra-proxy,auth=sys",
         "--bind-tcp=0.0.0.0:14500,auth=sys",
         "--tray=no",
+        #"-d", "win32,proxy",
         #"--mdns=no",
-        "-d", "win32,proxy",
         ] + sys.argv[1:]
     commonappdata = get_commonappdata_dir()
     if commonappdata:
