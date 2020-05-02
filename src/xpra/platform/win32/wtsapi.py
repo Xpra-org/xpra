@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from ctypes import POINTER, WinDLL, c_void_p, Structure, c_int
-from ctypes import byref, cast
+from ctypes import byref, cast, sizeof
 from ctypes.wintypes import WORD, DWORD, HANDLE, BOOL, LPSTR
+from xpra.util import print_nested_dict
 
 PDWORD = POINTER(DWORD)
 
@@ -27,6 +28,12 @@ class WTS_SESSION_INFOA(Structure):
         ("pWinStationName", LPSTR),
         ("State",           c_int),
     ]
+class WTS_CLIENT_DISPLAY(Structure):
+    _fields_ = [
+        ("HorizontalResolution",    DWORD),
+        ("VerticalResolution",      DWORD),
+        ("ColorDepth",              DWORD),
+        ]
 PWTS_SESSION_INFOA = POINTER(WTS_SESSION_INFOA)
 PPWTS_SESSION_INFOA = POINTER(PWTS_SESSION_INFOA)
 WTSActive       = 0
@@ -157,54 +164,70 @@ WTSShutdownSystem.argtypes = [HANDLE, DWORD]
 WTSTerminateProcess = wtsapi32.WTSTerminateProcess
 WTSTerminateProcess.restype = BOOL
 WTSTerminateProcess.argtypes = [HANDLE, DWORD, DWORD]
+
 #WTSVirtualChannelOpen
 #WTSWaitSystemEvent
 
 
-def print_session_info(csid):
+def get_session_info(session):
+    info = {
+        "station-name"  : session.pWinStationName.decode("latin1"),
+        "state"         : CONNECT_STATE.get(session.State, session.State),
+        }
+    csid = session.SessionId
     buf = LPSTR()
     size = DWORD()
     for q in (WTSInitialProgram, WTSApplicationName, WTSWorkingDirectory,
               WTSUserName, WTSWinStationName, WTSDomainName,
               WTSClientName, WTSClientDirectory,
-              WTSClientDisplay, ):
+              #WTSClientDisplay, ):
+              ):
         if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, q, byref(buf), byref(size)):
             #log.info("%s=%s (%i bytes)", WTS_INFO_CLASS.get(q, q), bytestostr(buf.value), size.value)
-            print(" %s=%s" % (WTS_INFO_CLASS.get(q, q), buf.value.decode("latin1")))
-        else:
-            print(" WTSQuerySessionInformationA failed for %s" % WTS_INFO_CLASS.get(q, q))
+            info[WTS_INFO_CLASS.get(q, q)] = buf.value
+    if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientDisplay, byref(buf), byref(size)):
+        if size.value>=sizeof(WTS_CLIENT_DISPLAY):
+            pdisplay = cast(buf, POINTER(WTS_CLIENT_DISPLAY))
+            display = pdisplay[0]
+            if display.HorizontalResolution>0 and display.VerticalResolution>0 and display.ColorDepth>0:
+                info["display"] = {
+                    "width"     : display.HorizontalResolution,
+                    "height"    : display.VerticalResolution,
+                    "depth"     : display.ColorDepth,
+                    }
+        #if WTS_CLIENT_DISPLAY
     if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSConnectState, byref(buf), byref(size)):
         if size.value==4:
             state = cast(buf, POINTER(DWORD)).contents.value
-            print(" WTSConnectState=%s" % (CONNECT_STATE.get(state, state),))
+            info["connect-state"] = CONNECT_STATE.get(state, state)
     if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientProtocolType, byref(buf), byref(size)):
         if size.value==2:
             ptype = cast(buf, POINTER(WORD)).contents.value
-            print(" WTSClientProtocolType=%s" % {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype))
+            info["type"] = {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype)
+    return info
+    
+
+def get_sessions():
+    cur = LPSTR(WTS_CURRENT_SERVER_HANDLE)
+    h = WTSOpenServerA(cur)
+    if not h:
+        return {}
+    session_info = PWTS_SESSION_INFOA()
+    count = DWORD()
+    sessions = {}
+    if WTSEnumerateSessionsA(h, 0, 1, byref(session_info), byref(count)):
+        for i in range(count.value):
+            session = session_info[i]
+            sessions[session.SessionId] = get_session_info(session)
+        WTSFreeMemory(session_info)
+    WTSCloseServer(h)
+    return sessions
 
 def main():
     from xpra.platform.win32.common import WTSGetActiveConsoleSessionId
     csid = WTSGetActiveConsoleSessionId()
     print("WTSGetActiveConsoleSessionId()=%s" % csid)
-    cur = LPSTR(WTS_CURRENT_SERVER_HANDLE)
-    h = WTSOpenServerA(cur)
-    print("WTSOpenServerA(WTS_CURRENT_SERVER_HANDLE)=%s" % (h,))
-    if h:
-        sessions = PWTS_SESSION_INFOA()
-        count = DWORD()
-        if WTSEnumerateSessionsA(h, 0, 1, byref(sessions), byref(count)):
-            print("WTSEnumerateSessionsA() found %i sessions" % count.value)
-            for i in range(count.value):
-                print("%i:" % i)
-                session = sessions[i]
-                print(" %#x" % session.SessionId)
-                print(" %s" % session.pWinStationName.decode("latin1"))
-                print(" %s" % CONNECT_STATE.get(session.State, session.State))
-                print_session_info(session.SessionId)
-
-            WTSFreeMemory(sessions)
-        WTSCloseServer(h)
-
+    print_nested_dict(get_sessions())
 
 if __name__=='__main__':
     main()
