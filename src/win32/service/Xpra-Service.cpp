@@ -223,7 +223,7 @@ VOID WINAPI SvcMain(DWORD dwArgc, LPTSTR *lpszArgv)
 VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 {
     HANDLE event_log = RegisterEventSource(NULL, SVCNAME);
-    const char* message = "Going to start Xpra shadow server";
+    const char* message = "Going to start Xpra proxy server";
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
     char buf[1024];
 
@@ -259,7 +259,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
             StringCbPrintfA(cwd, 1024, "%s", buf);
             //StringCbPrintfA(command, 512, "%s\\Xpra-Proxy.exe", buf);
             StringCbPrintfA(command, 1024,
-            		"%s\\paexec.exe -w \"%s\" -s -x \"%s\\Xpra.exe\" \"shadow\" \"--bind-tcp=0.0.0.0:14500,auth=sys\"",
+            		"%s\\paexec.exe -w \"%s\" -s -x \"%s\\Xpra-Proxy.exe\"",
 					cwd, cwd, cwd);
 
             StringCbPrintfA(buf, 1024, "Found installation path: '%s'\n", cwd);
@@ -278,7 +278,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
         DeregisterEventSource(event_log);
     }
 
-    StringCbPrintfA(buf, 1024, "Starting shadow: '%s'\n", command);
+    StringCbPrintfA(buf, 1024, "Starting proxy: '%s'\n", command);
     message = (const char*) &buf;
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
 
@@ -293,7 +293,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
         return;
     }
 
-    snprintf(buf, 64, "Xpra shadow started with pid=%d.\n", pi.dwProcessId);
+    snprintf(buf, 64, "Xpra proxy started with pid=%d.\n", pi.dwProcessId);
     message = (const char*) &buf;
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
     ReportSvcStatus( SERVICE_RUNNING, NO_ERROR, 0 );
