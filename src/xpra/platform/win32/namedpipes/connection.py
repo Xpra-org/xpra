@@ -84,7 +84,8 @@ class NamedPipeConnection(Connection):
         except Exception as e:
             code = GetLastError()
             log("untilConcludes(%s, ) exception: %s, error code=%s", fn, e, code, exc_info=True)
-            if code==ERROR_PIPE_NOT_CONNECTED:
+            closed = CONNECTION_CLOSED_ERRORS.get(code)
+            if closed:
                 return None
             raise IOError("%s: %s" % (e, code)) from None
 
