@@ -2153,13 +2153,20 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
         #use paexec to access the GUI session:
         paexec = os.path.join(app_dir, "paexec.exe")
         if os.path.exists(paexec) and os.path.isfile(paexec):
-            cmd = [
-                "paexec.exe",
-                "-i", "1", "-s",
-                ]
-            exe = paexec
-            #don't show a cmd window:
-            script_file = script_file.replace("Xpra_cmd.exe", "Xpra.exe")
+            from xpra.platform.win32.wtsapi import find_session
+            from xpra.platform import get_username
+            username = get_username()
+            info = find_session(username)
+            if info:
+                cmd = [
+                    "paexec.exe",
+                    "-i", str(info["SessionID"]), "-s",
+                    ]
+                exe = paexec
+                #don't show a cmd window:
+                script_file = script_file.replace("Xpra_cmd.exe", "Xpra.exe")
+            else:
+                log("session not found for user '%s', not using paexec", username)
     cmd += [script_file, "shadow"] + args
     cmd += get_start_server_args(opts)
     log("proxy shadow start command: %s", cmd)

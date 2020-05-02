@@ -63,18 +63,24 @@ class ProxyServer(_ProxyServer):
         shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")
         paexec = os.path.join(app_dir, "paexec.exe")
         named_pipe = username.replace(" ", "_")
+        cmd = []
+        exe = shadow_command
 
         #use paexec to access the GUI session:
         if envbool("XPRA_PAEXEC", True) and os.path.exists(paexec) and os.path.isfile(paexec):
-            cmd = [
-                "paexec.exe",
-                "-i", "1", "-s",
-                ]
-            exe = paexec
+            #find the session-id to shadow:
+            from xpra.platform.win32.wtsapi import find_session
+            info = find_session(username)
+            if info:
+                cmd = [
+                    "paexec.exe",
+                    "-i", str(info["SessionID"]), "-s",
+                    ]
+                exe = paexec
+            else:
+                log.warn("Warning: session not found for username '%s'", username)
         else:
             log.warn("Warning: starting without paexec, expect a black screen")
-            cmd = []
-            exe = shadow_command
         
         cmd += [
             shadow_command,

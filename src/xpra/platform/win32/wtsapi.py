@@ -183,7 +183,10 @@ def get_session_info(session):
               ):
         if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, q, byref(buf), byref(size)):
             if buf.value:
-                info[WTS_INFO_CLASS.get(q, q)] = buf.value
+                try:
+                    info[WTS_INFO_CLASS.get(q, q)] = buf.value.decode("latin1")
+                except:
+                    pass
     if WTSQuerySessionInformationA(WTS_CURRENT_SERVER_HANDLE, csid, WTSClientDisplay, byref(buf), byref(size)):
         if size.value>=sizeof(WTS_CLIENT_DISPLAY):
             pdisplay = cast(buf, POINTER(WTS_CLIENT_DISPLAY))
@@ -204,7 +207,6 @@ def get_session_info(session):
             info["Type"] = {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype)
     return info
     
-
 def get_sessions():
     cur = LPSTR(WTS_CURRENT_SERVER_HANDLE)
     h = WTSOpenServerA(cur)
@@ -221,11 +223,25 @@ def get_sessions():
     WTSCloseServer(h)
     return sessions
 
+def find_session(username):
+    if username:
+        for sid, info in get_sessions().items():
+            if info.get("UserName", "").lower()==username.lower():
+                info["SessionID"] = sid
+                return info
+    return None
+
+
+
 def main():
+    import sys
     from xpra.platform.win32.common import WTSGetActiveConsoleSessionId
     csid = WTSGetActiveConsoleSessionId()
     print("WTSGetActiveConsoleSessionId()=%s" % csid)
     print_nested_dict(get_sessions())
+    if len(sys.argv)>1:
+        for x in sys.argv[1:]:
+            print("find_session(%s)=%s" % (x, find_session(x)))
 
 if __name__=='__main__':
     main()
