@@ -243,7 +243,7 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     ZeroMemory(&pi, sizeof(pi));
 
     //LPCTSTR default_command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\"";
-    LPCTSTR default_command = "C:\\Program Files\\Xpra\\paexec.exe -w \"C:\\Program Files\\Xpra\" -s -x \"C:\\Program Files\\Xpra\\Xpra.exe\" \"shadow\" \"--bind-tcp=0.0.0.0:14500,auth=sys\"";
+    LPCTSTR default_command = "C:\\Program Files\\Xpra\\paexec.exe -w \"C:\\Program Files\\Xpra\" -s -x \"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\"";
     LPCTSTR default_cwd = "C:\\Program Files\\Xpra\\";
     LPTSTR command = (LPTSTR) default_command;
     LPTSTR cwd = (LPTSTR) default_cwd;
