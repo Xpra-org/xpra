@@ -23,7 +23,7 @@ def main():
     os.environ["XPRA_REDIRECT_OUTPUT"] = "1"
     #os.environ["XPRA_LOG_FILENAME"] = "E:\\Proxy.log"
     #os.environ["XPRA_ALL_DEBUG"] = "1"
-    os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "1"
+    #os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "1"
 
     from xpra.platform import init, set_default_name
     set_default_name("Xpra-Proxy")
