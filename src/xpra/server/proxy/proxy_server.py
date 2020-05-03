@@ -37,8 +37,9 @@ freeze_support()
 PROXY_SOCKET_TIMEOUT = envfloat("XPRA_PROXY_SOCKET_TIMEOUT", "0.1")
 PROXY_WS_TIMEOUT = envfloat("XPRA_PROXY_WS_TIMEOUT", "1.0")
 assert PROXY_SOCKET_TIMEOUT>0, "invalid proxy socket timeout"
-CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", getuid()!=0)
+CAN_STOP_PROXY = envbool("XPRA_CAN_STOP_PROXY", getuid()!=0 or WIN32)
 STOP_PROXY_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_SOCKET_TYPES", "unix-domain,named-pipe").split(",")
+STOP_PROXY_AUTH_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_AUTH_SOCKET_TYPES", "unix-domain").split(",")
 #something (a thread lock?) doesn't allow us to use multiprocessing on MS Windows:
 PROXY_INSTANCE_THREADED = envbool("XPRA_PROXY_INSTANCE_THREADED", WIN32)
 PROXY_CLEANUP_GRACE_PERIOD = envfloat("XPRA_PROXY_CLEANUP_GRACE_PERIOD", "0.5")
@@ -249,7 +250,7 @@ class ProxyServer(ServerCore):
                 self.send_disconnect(proto, msg)
                 return
             #connection must be authenticated:
-            if not proto.authenticators:
+            if socktype in STOP_PROXY_AUTH_SOCKET_TYPES and not proto.authenticators:
                 msg = "cannot stop proxy server from unauthenticated connections"
                 log.warn("Warning: %s", msg)
                 self.send_disconnect(proto, msg)
