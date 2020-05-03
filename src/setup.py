@@ -1324,7 +1324,8 @@ if WIN32:
             add_console_exe("xpra/server/auth/win32_auth.py",   "authentication.ico", "System-Auth-Test")
             add_console_exe("xpra/server/auth/ldap_auth.py",    "authentication.ico", "LDAP-Auth-Test")
             add_console_exe("xpra/server/auth/ldap3_auth.py",   "authentication.ico", "LDAP3-Auth-Test")
-            add_console_exe("win32/service/proxy.py",           "xpra_txt.ico",      "Xpra-Proxy")
+            add_console_exe("win32/service/proxy.py",           "xpra_txt.ico",     "Xpra-Proxy_cmd")
+            add_gui_exe("win32/service/proxy.py",               "xpra.ico",         "Xpra-Proxy")
             add_console_exe("xpra/platform/win32/lsa_logon_lib.py", "xpra_txt.ico",     "System-Logon-Test")
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
