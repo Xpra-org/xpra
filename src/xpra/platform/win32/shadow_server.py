@@ -12,7 +12,7 @@ from ctypes import (
     )
 from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, monotonic_time
 from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
@@ -345,6 +345,7 @@ class ShadowServer(GTKShadowServerBase):
         self.keycodes = {}
         self.cursor_handle = None
         self.cursor_data = None
+        self.cursor_errors = [0, 0]
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT)==0:
             raise InitException("all the monitors must use the same display format")
         el = get_win32_event_listener()
@@ -472,14 +473,22 @@ class ShadowServer(GTKShadowServerBase):
         #adjust pointer position for offset in client:
         try:
             x, y = pointer[:2]
-            assert SetPhysicalCursorPos(x, y)
+            if not SetPhysicalCursorPos(x, y):
+                #rate limit the warnings:
+                start, count = self.cursor_errors
+                now = monotonic_time()
+                elapsed = now-start
+                if count==0 or (count>1 and elapsed>10):
+                    log.warn("Warning: cannot move cursor")
+                    log.warn(" (%i events)", count+1)
+                    self.cursor_errors = [now, 1]
+                else:
+                    self.cursor_errors[1] = count+1
+
         except Exception as e:
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
-            if str(e).strip():
-                log.error(" %s", e)
-            else:
-                log.error(" %s", type(e))
+            log.error(" %s", e)
         return pointer
 
     def clear_keys_pressed(self):
