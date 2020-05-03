@@ -33,7 +33,7 @@ def main():
 	b = Gtk.Button()
 	def change_cursor(*_args):
 		info, cursor = cursors.pop(0)
-		print("%s : %s" % (info, cursor)) 
+		print("%s : %s" % (info, cursor))
 		w.get_window().set_cursor(cursor)
 		cursors.append((info, cursor))
 	b.connect("clicked", change_cursor)

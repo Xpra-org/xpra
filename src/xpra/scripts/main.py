@@ -999,7 +999,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             opts.username = username
         if ssh_port and ssh_port!=22:
             desc["ssh-port"] = ssh_port
-        key = desc.get("key", None) 
+        key = desc.get("key", None)
         full_ssh += add_ssh_args(username, password, host, ssh_port, key, is_putty, is_paramiko)
         if "proxy_host" in desc:
             proxy_username = desc.get("proxy_username", "")
@@ -1182,7 +1182,7 @@ def connect_or_fail(display_desc, opts):
     from xpra.net.bytestreams import ConnectionClosedException
     try:
         return connect_to(display_desc, opts)
-    except ConnectionClosedException as e: 
+    except ConnectionClosedException as e:
         raise InitExit(EXIT_CONNECTION_FAILED, "%s" % e) from None
     except InitException:
         raise

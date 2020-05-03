@@ -41,7 +41,7 @@ def main():
         GLib.idle_add(show_with_focus)
         Gtk.main()
         return 0
-    
+
 
 if __name__ == '__main__':
     main()

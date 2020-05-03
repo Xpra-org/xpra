@@ -43,7 +43,7 @@ class AudioMixinTest(ServerMixinTest):
 
 def main():
     from xpra.os_util import POSIX, OSX
-    if POSIX and not OSX: 
+    if POSIX and not OSX:
         #verify that pulseaudio is running:
         #otherwise the tests will fail
         #ie: during rpmbuild

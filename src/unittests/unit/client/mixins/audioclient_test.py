@@ -131,7 +131,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
 def main():
 	if WIN32:
 		return
-	if POSIX and not OSX: 
+	if POSIX and not OSX:
 		#verify that pulseaudio is running:
 		#otherwise the tests will fail
 		#ie: during rpmbuild

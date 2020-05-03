@@ -49,7 +49,7 @@ class FakeApplication:
         self.server_encodings_with_speed = []
         self.server_start_new_commands = True
         self.server_xdg_menu = False
-        self.server_commands_info = None        
+        self.server_commands_info = None
         self.speaker_allowed = True
         self.speaker_enabled = True
         self.microphone_enabled = True

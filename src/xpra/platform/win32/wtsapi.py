@@ -203,7 +203,7 @@ def get_session_info(session):
             ptype = cast(buf, POINTER(WORD)).contents.value
             info["Type"] = {0:"console", 1:"legacy", 2:"RDP"}.get(ptype, ptype)
     return info
-    
+
 def get_sessions():
     cur = LPSTR(WTS_CURRENT_SERVER_HANDLE)
     h = WTSOpenServerA(cur)

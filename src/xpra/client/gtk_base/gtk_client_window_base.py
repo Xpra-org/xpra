@@ -266,7 +266,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             draglog(" %s", csv(targets))
             return
         atom = Gdk.Atom.intern("text/uri-list", False)
-        widget.drag_get_data(context, atom, time)        
+        widget.drag_get_data(context, atom, time)
 
     def drag_motion_cb(self, wid, context, x, y, time):
         draglog("drag_motion_cb%s", (wid, context, x, y, time))

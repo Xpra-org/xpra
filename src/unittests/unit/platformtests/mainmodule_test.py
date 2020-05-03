@@ -14,7 +14,7 @@ from xpra.platform import (
     #set_name, set_prgname, set_application_name,
     get_prgname,
     get_application_name,
-    get_username, 
+    get_username,
     command_error, command_info,
     )
 from xpra.make_thread import start_thread
