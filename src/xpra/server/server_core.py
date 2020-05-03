@@ -344,8 +344,7 @@ class ServerCore:
     ######################################################################
     # run / stop:
     def signal_quit(self, signum, _frame=None):
-        self._closing = True
-        log.info("exiting")
+        self.closing()
         self.install_signal_handlers(deadly_signal)
         self.idle_add(self.clean_quit)
         self.idle_add(sys.exit, 128+signum)
@@ -353,7 +352,7 @@ class ServerCore:
     def clean_quit(self, upgrading=False):
         log("clean_quit(%s)", upgrading)
         self._upgrading = upgrading
-        self._closing = True
+        self.closing()
         self.cleanup()
         w = get_worker()
         log("clean_quit: worker=%s", w)
@@ -397,13 +396,16 @@ class ServerCore:
     def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
         self._upgrading = upgrading
-        if not self._closing:
-            self._closing = True
-            log.info("xpra is terminating.")
+        self.closing()
         sys.stdout.flush()
         self.do_quit()
         log("quit(%s) do_quit done!", upgrading)
         dump_all_frames()
+
+    def closing(self):
+        if not self._closing:
+            self._closing = True
+            log.info("xpra %s server is %s", self.get_server_mode(), ["terminating", "exiting"][bool(self._upgrading)])
 
     def do_quit(self):
         raise NotImplementedError()
