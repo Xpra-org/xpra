@@ -447,8 +447,8 @@ class SessionInfo(Gtk.Window):
             self.sound_queue_graph = None
         self.connect("realize", self.populate_graphs)
         self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
-        self.net_in_bytecount = deque(maxlen=N_SAMPLES+4)
-        self.net_out_bytecount = deque(maxlen=N_SAMPLES+4)
+        self.net_in_bitcount = deque(maxlen=N_SAMPLES+4)
+        self.net_out_bitcount = deque(maxlen=N_SAMPLES+4)
         self.sound_in_bitcount = deque(maxlen=N_SAMPLES+4)
         self.sound_out_bitcount = deque(maxlen=N_SAMPLES+4)
         self.sound_out_queue_min = deque(maxlen=N_SAMPLES*10+4)
@@ -605,8 +605,8 @@ class SessionInfo(Gtk.Window):
         self.show_opengl_state()
         self.show_window_renderers()
         #record bytecount every second:
-        self.net_in_bytecount.append(conn.input_bytecount)
-        self.net_out_bytecount.append(conn.output_bytecount)
+        self.net_in_bitcount.append(conn.input_bytecount*8)
+        self.net_out_bitcount.append(conn.output_bytecount*8)
         if mixin_features.audio and SHOW_SOUND_STATS:
             if self.client.sound_in_bytecount>0:
                 self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
@@ -1113,7 +1113,7 @@ class SessionInfo(Gtk.Window):
         h = min(maxh//ngraphs, max(H, (h-bh-20)//ngraphs, (rect.height-bh-20)//ngraphs))
         #bandwidth graph:
         labels, datasets = [], []
-        if self.net_in_bytecount and self.net_out_bytecount:
+        if self.net_in_bitcount and self.net_out_bitcount:
             def unit(scale):
                 if scale==1:
                     return ""
@@ -1121,13 +1121,13 @@ class SessionInfo(Gtk.Window):
                 if value==1:
                     return str(unit)
                 return "x%s%s" % (int(value), unit)
-            net_in_scale, net_in_data = values_to_diff_scaled_values(tuple(self.net_in_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
-            net_out_scale, net_out_data = values_to_diff_scaled_values(tuple(self.net_out_bytecount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            net_in_scale, net_in_data = values_to_diff_scaled_values(tuple(self.net_in_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
+            net_out_scale, net_out_data = values_to_diff_scaled_values(tuple(self.net_out_bitcount)[1:N_SAMPLES+3], scale_unit=1000, min_scaled_value=50)
             if SHOW_RECV:
-                labels += ["recv %sB/s" % unit(net_in_scale), "sent %sB/s" % unit(net_out_scale)]
+                labels += ["recv %sb/s" % unit(net_in_scale), "sent %sb/s" % unit(net_out_scale)]
                 datasets += [net_in_data, net_out_data]
             else:
-                labels += ["recv %sB/s" % unit(net_in_scale)]
+                labels += ["recv %sb/s" % unit(net_in_scale)]
                 datasets += [net_in_data]
         if mixin_features.windows and SHOW_PIXEL_STATS and self.client.windows_enabled:
             pixel_scale, in_pixels = values_to_scaled_values(tuple(self.pixel_in_data)[3:N_SAMPLES+4], min_scaled_value=100)
