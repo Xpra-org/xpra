@@ -236,12 +236,6 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
         return;
     }
 
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
-
     //LPCTSTR default_command = "\"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\"";
     LPCTSTR default_command = "C:\\Program Files\\Xpra\\paexec.exe -w \"C:\\Program Files\\Xpra\" -s -x \"C:\\Program Files\\Xpra\\Xpra-Proxy.exe\"";
     LPCTSTR default_cwd = "C:\\Program Files\\Xpra\\";
@@ -281,6 +275,14 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     StringCbPrintfA(buf, 1024, "Starting proxy: '%s'\n", command);
     message = (const char*) &buf;
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
 
     if (!CreateProcess(NULL, command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
     {
