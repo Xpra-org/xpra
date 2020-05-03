@@ -1982,7 +1982,7 @@ class ServerCore:
     def send_hello_info(self, proto):
         #Note: this can be overriden in subclasses to pass arguments to get_ui_info()
         #(ie: see server_base)
-        log.info("processing structured info request from %s", proto._conn)
+        log.info("processing info request from %s", proto._conn)
         def cb(proto, info):
             self.do_send_info(proto, info)
         self.get_all_info(cb, proto)

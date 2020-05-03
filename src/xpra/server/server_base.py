@@ -577,7 +577,7 @@ class ServerBase(ServerBaseClass):
         def cb(proto, info):
             self.do_send_info(proto, info)
             end = monotonic_time()
-            log.info("processed structured info request from %s in %ims",
+            log.info("processed info request from %s in %ims",
                      proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, None)
 
