@@ -101,7 +101,7 @@ class ProxyServer(_ProxyServer):
         #command += ["-d", "all"]
         env = self.get_proxy_env()
         #env["XPRA_ALL_DEBUG"] = "1"
-        #env["XPRA_REDIRECT_OUTPUT"] = "1"
+        env["XPRA_REDIRECT_OUTPUT"] = "1"
         #env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
         proc = exec_command(username, cmd, exe, app_dir, env)
         from xpra.platform.win32.dotxpra import DotXpra
