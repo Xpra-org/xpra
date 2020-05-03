@@ -9,7 +9,7 @@
 import errno
 from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.net.bytestreams import Connection
 from xpra.net.common import ConnectionClosedException
 from xpra.platform.win32.common import (
@@ -123,10 +123,11 @@ class NamedPipeConnection(Connection):
         return self._write(self._pipe_write, buf)
 
     def _pipe_write(self, buf):
-        size = len(buf)
+        bbuf = memoryview_to_bytes(buf)
+        size = len(bbuf)
         log("pipe_write: %i bytes", size)   #binascii.hexlify(buf))
         written = c_ulong(0)
-        r = WriteFile(self.pipe_handle, c_char_p(buf), len(buf), byref(written), byref(self.write_overlapped))
+        r = WriteFile(self.pipe_handle, c_char_p(bbuf), size, byref(written), byref(self.write_overlapped))
         log("WriteFile(..)=%s, len=%i", r, written.value)
         if not r and self.pipe_handle:
             e = GetLastError()
