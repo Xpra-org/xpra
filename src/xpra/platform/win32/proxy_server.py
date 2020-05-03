@@ -27,14 +27,16 @@ def exec_command(username, args, exe, cwd, env):
         )
     creation_info = CREATIONINFO()
     creation_info.dwCreationType = CREATION_TYPE_TOKEN
-    creation_info.dwLogonFlags = LOGON_WITH_PROFILE | STARTF_USESHOWWINDOW
+    creation_info.dwLogonFlags = LOGON_WITH_PROFILE
     creation_info.dwCreationFlags = CREATE_NEW_PROCESS_GROUP
     creation_info.hToken = logon_info.Token
     log("creation_info=%s", creation_info)
     startupinfo = STARTUPINFO()
+    startupinfo.dwFlags = STARTF_USESHOWWINDOW
     startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
     startupinfo.lpDesktop = "WinSta0\\Default"
     startupinfo.lpTitle = "Xpra-Shadow"
+
     from subprocess import PIPE
     proc = Popen(args, executable=exe,
                  stdout=PIPE, stderr=PIPE,
@@ -62,8 +64,6 @@ class ProxyServer(_ProxyServer):
             except Exception:
                 log.error("Error: failed to logon as '%s'", username, exc_info=True)
         #hwinstaold = set_window_station("winsta0")
-        #whoami = os.path.join(get_app_dir(), "whoami.exe")
-        #exec_command([whoami])
         app_dir = get_app_dir()
         shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")
         paexec = os.path.join(app_dir, "paexec.exe")
@@ -98,15 +98,12 @@ class ProxyServer(_ProxyServer):
         from xpra.log import debug_enabled_categories
         if debug_enabled_categories:
             cmd += ["-d", ",".join(tuple(debug_enabled_categories))]
-        #command += ["-d", "all"]
         env = self.get_proxy_env()
-        #env["XPRA_ALL_DEBUG"] = "1"
         env["XPRA_REDIRECT_OUTPUT"] = "1"
         #env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
         proc = exec_command(username, cmd, exe, app_dir, env)
         from xpra.platform.win32.dotxpra import DotXpra
         dotxpra = DotXpra()
-        #TODO: poll the named pipe instead of waiting
         for t in range(10):
             r = pollwait(proc, 1)
             if r is not None:
@@ -124,6 +121,7 @@ class ProxyServer(_ProxyServer):
                 state = dotxpra.get_display_state(named_pipe)
                 log("get_display_state(%s)=%s", state)
                 if state==DotXpra.LIVE:
+                    #TODO: test the named pipe
                     sleep(2)
                     break
         self.child_reaper.add_process(proc, "server-%s" % username, "xpra shadow", True, True)
