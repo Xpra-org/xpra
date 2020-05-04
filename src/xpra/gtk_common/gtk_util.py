@@ -183,6 +183,8 @@ def get_root_size():
             log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
             w, h = 1920, 1080
             log.warn(" using %ix%i instead", w, h)
+            if WIN32:
+                log.warn(" no access to the display?")
     return w, h
 
 def get_default_cursor() -> Gdk.Cursor:
