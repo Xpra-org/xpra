@@ -691,7 +691,7 @@ def find_session_by_name(opts, session_name):
 
 def parse_ssh_string(ssh_setting):
     if is_debug_enabled("ssh"):
-        get_util_logger().debug("parse_ssh_string(%s)" % ssh_setting)
+        Logger("ssh").debug("parse_ssh_string(%s)", ssh_setting)
     ssh_cmd = shlex.split(ssh_setting)
     if ssh_cmd[0]=="auto":
         #try paramiko:
@@ -702,10 +702,10 @@ def parse_ssh_string(ssh_setting):
             assert paramiko
             ssh_cmd = ["paramiko"]
             if is_debug_enabled("ssh"):
-                get_util_logger().info("using paramiko")
+                Logger("ssh").info("using paramiko ssh backend")
         except ImportError as e:
             if is_debug_enabled("ssh"):
-                get_util_logger().info("no paramiko: %s" % e)
+                Logger("ssh").info("no paramiko: %s" % e)
             from xpra.platform.features import DEFAULT_SSH_COMMAND
             ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
