@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from ctypes import (
     sizeof, byref, cast,
     get_last_error, create_string_buffer,
@@ -73,6 +74,16 @@ DELAY = envint("XPRA_CLIPBOARD_INITIAL_DELAY", 10)
 CONVERT_LINE_ENDINGS = envbool("XPRA_CONVERT_LINE_ENDINGS", True)
 log("win32 clipboard: RETRY=%i, DELAY=%i, CONVERT_LINE_ENDINGS=%s",
     RETRY, DELAY, CONVERT_LINE_ENDINGS)
+#can be used to blacklist problematic clipboard peers:
+#ie: VBoxTray.exe
+BLACKLISTED_CLIPBOARD_CLIENTS = [x for x in
+                                 os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "").split(",")
+                                 if x]
+log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
+
+
+def is_blacklisted(owner_info):
+    return any(owner_info.find(x)>=0 for x in BLACKLISTED_CLIPBOARD_CLIENTS)
 
 #initialize the window we will use
 #for communicating with the OS clipboard API:
@@ -138,6 +149,12 @@ class Win32Clipboard(ClipboardTimeoutHelper):
             log("clipboard event: %s, current owner: %s",
                 CLIPBOARD_EVENTS.get(msg), get_owner_info(owner, self.window))
         if msg==WM_CLIPBOARDUPDATE and owner!=self.window:
+            owner = GetClipboardOwner()
+            owner_info = get_owner_info(owner, self.window)
+            if is_blacklisted(owner_info):
+                #ie: don't try to sync from VirtualBox
+                log("CLIPBOARDUPDATE coming from '%s' ignored", owner_info)
+                return r
             for proxy in self._clipboard_proxies.values():
                 if not proxy._block_owner_change:
                     proxy.schedule_emit_token()
