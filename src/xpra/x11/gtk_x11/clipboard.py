@@ -380,7 +380,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 log.warn("receiving clipboard requests from blacklisted client %s", wininfo)
                 log.warn(" all requests will be silently ignored")
             log("responding with nodata for blacklisted client '%s'", wininfo)
-            nodata()
             return
         if not self.owned:
             log.warn("Warning: clipboard selection request received,")
