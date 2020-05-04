@@ -107,6 +107,8 @@ Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
 
 %prep
 %setup -q -c -n %{srcname}-%{version} -T -a0 -a1
+rm %{srcname}-%{version}/OpenGL/EGL/debug.py
+rm %{srcname}-%{version}/tests/osdemo.py
 
 
 %build
