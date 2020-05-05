@@ -460,6 +460,9 @@ class ClientWindowBase(ClientWidgetBase):
         pass        #see gtk client window base
 
 
+    def reset_size_constraints(self):
+        self.set_size_constraints(self.size_constraints, self.max_window_size)
+
     def set_size_constraints(self, size_constraints, max_window_size):
         if not SET_SIZE_CONSTRAINTS:
             return

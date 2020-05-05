@@ -904,6 +904,8 @@ class WindowClient(StubClientMixin):
             if window:
                 ww, wh = window._size
                 nw, nh = new_size_fn(ww, wh)
+                #this will apply the new scaling value to the size constraints:
+                window.reset_size_constraints()
                 window.resize(nw, nh)
         self.send_refresh_all()
 
