@@ -989,7 +989,7 @@ class GTKTrayMenuBase:
         c.set_draw_as_radio(True)
         c.set_active(False)
         def scaling_activated(item):
-            if scaling_submenu.updating:
+            if scaling_submenu.updating or not item.get_active():
                 return
             ensure_item_selected(scaling_submenu, item)
             self.client.scaleset(item.scalingvalue, item.scalingvalue)
