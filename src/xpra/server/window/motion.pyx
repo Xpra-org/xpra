@@ -301,7 +301,7 @@ cdef class ScrollData:
                 if count>MIN_LINE_COUNT:
                     line_defs[start] = count
                 count = 0
-        if count>0:
+        if count>MIN_LINE_COUNT:
             #last few lines ended as a match:
             line_defs[start] = count
         #clear the ones we have matched:
