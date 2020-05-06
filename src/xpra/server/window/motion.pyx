@@ -106,13 +106,14 @@ cdef class ScrollData:
         self.y = y
         #but cannot change size (checksums would not match):
         if height!=self.height or width!=self.width:
-            log("new image size: %ix%i (was %ix%i), clearing reference checksums", width, height, self.width, self.height)
-            if self.a1:
-                free(self.a1)
-                self.a1 = NULL
-            if self.distances:
-                free(self.distances)
-                self.distances = NULL
+            if self.a1!=NULL or self.distances!=NULL:
+                log("new image size: %ix%i (was %ix%i), clearing reference checksums", width, height, self.width, self.height)
+                if self.a1:
+                    free(self.a1)
+                    self.a1 = NULL
+                if self.distances:
+                    free(self.distances)
+                    self.distances = NULL
             self.width = width
             self.height = height
         #allocate new checksum array:
@@ -339,8 +340,7 @@ cdef class ScrollData:
         #if more than half has already been invalidated, drop it completely:
         if nonzero<=rect.height//2:
             log("invalidating whole scroll data as only %i of it remains valid", 100*nonzero//rect.height)
-            free(self.a2)
-            self.a2 = NULL
+            self.free()
 
 
     def get_best_match(self):
