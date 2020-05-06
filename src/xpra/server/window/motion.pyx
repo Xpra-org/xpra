@@ -6,8 +6,6 @@
 
 #cython: auto_pickle=False, boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
-import os
-import time
 import struct
 
 from xpra.util import envbool, repr_ellipsized, csv
@@ -21,9 +19,9 @@ from xpra.rectangle import rectangle
 cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)
 
 
-from libc.stdint cimport uint8_t, int16_t, uint16_t, int16_t, uint64_t, uintptr_t
+from libc.stdint cimport uint8_t, int16_t, uint16_t, uint64_t, uintptr_t
 from libc.stdlib cimport free, malloc
-from libc.string cimport memset, memcpy
+from libc.string cimport memset
 
 
 DEF MIN_LINE_COUNT = 5
