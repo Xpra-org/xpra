@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,13 +12,11 @@ from xpra.util import envbool, reverse_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer  #pylint: disable=syntax-error
 
-from libc.stdint cimport uint8_t, uint32_t, uintptr_t
+from libc.stdint cimport uint8_t
 from xpra.monotonic_time cimport monotonic_time
 
 LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)
 
-ctypedef int boolean
-ctypedef unsigned int JDIMENSION
 ctypedef int TJSAMP
 ctypedef int TJPF
 ctypedef int TJCS
