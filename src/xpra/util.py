@@ -573,18 +573,20 @@ def dump_frames(frames, logger=None):
 
 
 def detect_leaks():
-    try:
-        from pympler import tracker
-    except ImportError as e:
-        get_util_logger().warn("Warning: cannot enable memory leak detection:")
-        get_util_logger().warn(" %s", e)
-        return None
+    import tracemalloc
+    tracemalloc.start()
     import gc
     gc.enable()
     gc.set_debug(gc.DEBUG_LEAK)
-    tr = tracker.SummaryTracker()
+    last_snapshot = [tracemalloc.take_snapshot()]
     def print_leaks():
-        tr.print_diff()
+        s1 = last_snapshot[0]
+        s2 = tracemalloc.take_snapshot()
+        last_snapshot[0] = s2
+        top_stats = s2.compare_to(s1, 'lineno')
+        print("[ Top 10 differences ]")
+        for stat in top_stats[:10]:
+            print(stat)
         return True
     return print_leaks
 
