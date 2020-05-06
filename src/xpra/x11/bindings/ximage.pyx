@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@
 
 import errno as pyerrno
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import bytestostr
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer  #pylint: disable=syntax-error
 from xpra.monotonic_time cimport monotonic_time
 from xpra.x11.bindings.display_source import get_display_name
