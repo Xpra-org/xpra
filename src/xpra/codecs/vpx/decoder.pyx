@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,11 +14,11 @@ log = Logger("decoder", "vpx")
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport padbuf, MemBuf, memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
 from xpra.os_util import bytestostr, OSX
 from xpra.util import envint
 
-from libc.stdint cimport uint8_t, int64_t
+from libc.stdint cimport uint8_t
 from libc.string cimport memset, memcpy
 from libc.stdlib cimport malloc
 from xpra.monotonic_time cimport monotonic_time
