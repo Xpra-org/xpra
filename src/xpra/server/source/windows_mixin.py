@@ -559,9 +559,10 @@ class WindowsMixin(StubSourceMixin):
         if not self.can_send_window(window):
             return
         assert window is not None
-        damage_options = {}
         if options:
             damage_options = options.copy()
+        else:
+            damage_options = {}
         self.statistics.damage_last_events.append((wid, monotonic_time(), w*h))
         ws = self.make_window_source(wid, window)
         ws.damage(x, y, w, h, damage_options)
