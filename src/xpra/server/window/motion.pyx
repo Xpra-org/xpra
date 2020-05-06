@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#!python
 #cython: auto_pickle=False, boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
 import os
@@ -130,11 +129,11 @@ cdef class ScrollData:
         cdef size_t row_len = width*bpp
         assert row_len<=rowstride, "invalid row length: %ix%i=%i but rowstride is %i" % (width, bpp, width*bpp, rowstride)
         cdef uint64_t *a2 = self.a2
-        cdef unsigned long long seed = 0
+        DEF SEED = 0
         cdef uint16_t i
         with nogil:
             for i in range(height):
-                a2[i] = <uint64_t> xxh64(buf, row_len, seed)
+                a2[i] = <uint64_t> xxh64(buf, row_len, SEED)
                 buf += rowstride
 
     def calculate(self, uint16_t max_distance=1000):
