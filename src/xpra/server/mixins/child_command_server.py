@@ -245,8 +245,10 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "start-after-connect-done"  : self.start_after_connect_done,
             "start-new"                 : self.start_new_commands,
-            "start-menu"                : noicondata(self._get_xdg_menu_data()),
             }
+        md = self._get_xdg_menu_data()
+        if md:
+            info["start-menu"] = noicondata(md)
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
         return {"commands": info}
