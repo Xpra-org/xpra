@@ -54,6 +54,7 @@ class CairoBackingBase(WindowBackingBase):
             cr.set_operator(cairo.OPERATOR_SOURCE)
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
+            self._backing.flush()
 
     def close(self):
         if self._backing:
@@ -95,6 +96,7 @@ class CairoBackingBase(WindowBackingBase):
         gc.rectangle(0, 0, w, h)
         set_source_fn(gc, source, 0, 0)
         gc.paint()
+
         if self.paint_box_line_width:
             gc.restore()
             encoding = options.get("encoding")
@@ -147,6 +149,8 @@ class CairoBackingBase(WindowBackingBase):
             gc.fill()
             if self.paint_box_line_width>0:
                 self.cairo_paint_box(gc, "scroll", x, y, sw, sh)
+        del gc
+        self._backing.flush()
         fire_paint_callbacks(callbacks)
 
 
