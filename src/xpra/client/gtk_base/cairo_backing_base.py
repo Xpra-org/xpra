@@ -98,12 +98,14 @@ class CairoBackingBase(WindowBackingBase):
         if self.paint_box_line_width:
             gc.restore()
             encoding = options.get("encoding")
-            if encoding:
-                color = get_paint_box_color(encoding)
-                gc.set_line_width(self.paint_box_line_width)
-                gc.set_source_rgba(*color)
-                gc.rectangle(x, y, w, h)
-                gc.stroke()
+            self.cairo_paint_box(gc, encoding, x, y, w, h)
+
+    def cairo_paint_box(self, gc, encoding, x, y, w, h):
+        color = get_paint_box_color(encoding)
+        gc.set_line_width(self.paint_box_line_width)
+        gc.set_source_rgba(*color)
+        gc.rectangle(x, y, w, h)
+        gc.stroke()
 
 
     def _do_paint_rgb24(self, img_data, x : int, y : int, width : int, height : int, rowstride : int, options):
@@ -139,8 +141,12 @@ class CairoBackingBase(WindowBackingBase):
         gc.set_operator(cairo.OPERATOR_SOURCE)
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
             gc.set_source_surface(old_backing, xdelta, ydelta)
-            gc.rectangle(sx+xdelta, sy+ydelta, sw, sh)
+            x = sx+xdelta
+            y = sy+ydelta
+            gc.rectangle(x, y, sw, sh)
             gc.fill()
+            if self.paint_box_line_width>0:
+                self.cairo_paint_box(gc, "scroll", x, y, sw, sh)
         fire_paint_callbacks(callbacks)
 
 
