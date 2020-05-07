@@ -130,6 +130,7 @@ class ClientConnection(StubSourceMixin):
         log("%s.close()", self)
         self.close_event.set()
         self.protocol = None
+        self.statistics.reset(0)
 
 
     def compressed_wrapper(self, datatype, data, min_saving=128):

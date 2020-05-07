@@ -32,38 +32,40 @@ class GlobalPerformanceStatistics:
     #assume 100ms until we get some data to compute the real values
     DEFAULT_LATENCY = 0.1
 
-    def reset(self):
+    def reset(self, maxlen=NRECS):
+        def d(maxlen=maxlen):
+            return deque(maxlen=maxlen)
         # mmap state:
         self.mmap_size = 0
         self.mmap_bytes_sent = 0
         self.mmap_free_size = 0                             #how much of the mmap space is left (may be negative if we failed to write the last chunk)
         # queue statistics:
-        self.compression_work_qsizes = deque(maxlen=NRECS)  #size of the compression_work_queue before we add a new record to it
+        self.compression_work_qsizes = d()                  #size of the compression_work_queue before we add a new record to it
                                                             #(event_time, size)
-        self.packet_qsizes = deque(maxlen=NRECS)            #size of the packet_queue before we add a new packet to it
+        self.packet_qsizes = d()                            #size of the packet_queue before we add a new packet to it
                                                             #(event_time, size)
-        self.damage_packet_qpixels = deque(maxlen=NRECS)    #number of pixels waiting in the packet_queue for a specific window,
+        self.damage_packet_qpixels = d()                    #number of pixels waiting in the packet_queue for a specific window,
                                                             #before we add a new packet to it
                                                             #(event_time, wid, size)
-        self.damage_last_events = deque(maxlen=NRECS)       #records the x11 damage requests as they are received:
+        self.damage_last_events = d()                       #records the x11 damage requests as they are received:
                                                             #(wid, event time, no of pixels)
-        self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
+        self.client_decode_time = d()                       #records how long it took the client to decode frames:
                                                             #(wid, event_time, no of pixels, decoding_time*1000*1000)
-        self.client_latency = deque(maxlen=NRECS)           #how long it took for a packet to get to the client and get the echo back.
+        self.client_latency = d()                           #how long it took for a packet to get to the client and get the echo back.
                                                             #(wid, event_time, no of pixels, client_latency)
-        self.client_ping_latency = deque(maxlen=NRECS)      #time it took to get a ping_echo back from the client:
+        self.client_ping_latency = d()                      #time it took to get a ping_echo back from the client:
                                                             #(event_time, elapsed_time_in_seconds)
-        self.server_ping_latency = deque(maxlen=NRECS)      #time it took for the client to get a ping_echo back from us:
+        self.server_ping_latency = d()                      #time it took for the client to get a ping_echo back from us:
                                                             #(event_time, elapsed_time_in_seconds)
-        self.congestion_send_speed = deque(maxlen=NRECS//4) #when we are being throttled, record what speed we are sending at
+        self.congestion_send_speed = d(NRECS//4)            #when we are being throttled, record what speed we are sending at
                                                             #last NRECS: (event_time, lateness_pct, duration)
-        self.bytes_sent = deque(maxlen=NRECS//4)            #how much bandwidth we are using
+        self.bytes_sent = d(NRECS//4)                       #how much bandwidth we are using
                                                             #last NRECS: (sample_time, bytes)
-        self.quality = deque(maxlen=NRECS)                  #quality used for sending updates:
+        self.quality = d()                                  #quality used for sending updates:
                                                             #(event_time, no of pixels, quality)
-        self.speed = deque(maxlen=NRECS)                    #speed used for sending updates:
+        self.speed = d()                                    #speed used for sending updates:
                                                             #(event_time, no of pixels, speed)
-        self.frame_total_latency = deque(maxlen=NRECS)      #how long it takes from the time we get a damage event
+        self.frame_total_latency = d()                      #how long it takes from the time we get a damage event
                                                             #until we get the ack back from the client
                                                             #(wid, event_time, no_of_pixels, latency)
         self.client_load = None
