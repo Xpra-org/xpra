@@ -420,8 +420,12 @@ class WindowBackingBase:
                 fire_paint_callbacks(callbacks, -1, "no backing")
                 return
             bpp = len(rgb_format)*8
-            assert bpp in (24, 32), "invalid rgb format '%s'" % rgb_format
-            paint_fn = getattr(self, "_do_paint_rgb%i" % bpp)
+            if bpp==24:
+                paint_fn = self._do_paint_rgb24
+            elif bpp==32:
+                paint_fn = self._do_paint_rgb32
+            else:
+                raise Exception("invalid rgb format '%s'" % rgb_format)
             options[b"rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
