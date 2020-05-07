@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
-DETECT_MEMLEAKS = envbool("XPRA_DETECT_MEMLEAKS", False)
+DETECT_MEMLEAKS = envint("XPRA_DETECT_MEMLEAKS", 0)
 DETECT_FDLEAKS = envbool("XPRA_DETECT_FDLEAKS", False)
 
 MIN_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024*1024)
@@ -38,6 +38,7 @@ class NetworkStateServer(StubServerMixin):
         self.ping_timer = None
         self.mem_bytes = 0
         self.cpu_info = None
+        self.print_memleaks = None
 
     def init(self, opts):
         self.pings = opts.pings
@@ -58,7 +59,9 @@ class NetworkStateServer(StubServerMixin):
         if pt:
             self.ping_timer = None
             self.source_remove(pt)
-
+        pm = self.print_memleaks
+        if pm:
+            pm()
 
     def get_info(self, _source=None) -> dict:
         info = {
@@ -85,12 +88,12 @@ class NetworkStateServer(StubServerMixin):
 
     def init_leak_detection(self):
         if DETECT_MEMLEAKS:
-            print_leaks = detect_leaks()
-            if print_leaks:
+            self.print_memleaks = detect_leaks()
+            if bool(self.print_memleaks):
                 def leak_thread():
-                    while True:
-                        print_leaks()
-                        sleep(10)
+                    while not self._closing:
+                        self.print_memleaks()
+                        sleep(DETECT_MEMLEAKS)
                 from xpra.make_thread import start_thread
                 start_thread(leak_thread, "leak thread", daemon=True)
         if DETECT_FDLEAKS:
