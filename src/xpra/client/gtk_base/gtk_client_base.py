@@ -94,6 +94,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.last_clipboard_notification = 0
         #opengl bits:
         self.client_supports_opengl = False
+        self.opengl_force = False
         self.opengl_enabled = False
         self.opengl_props = {}
         self.gl_max_viewport_dims = 0, 0
@@ -988,7 +989,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     #OpenGL bits:
     def init_opengl(self, enable_opengl):
         opengllog("init_opengl(%s)", enable_opengl)
-        #enable_opengl can be True, False, probe-failed, probe-success, or None (auto-detect)
+        #enable_opengl can be True, False, force, probe-failed, probe-success, or None (auto-detect)
         #ie: "on:native,gtk", "auto", "no"
         #ie: "probe-failed:SIGSEGV"
         #ie: "probe-success"
@@ -1008,7 +1009,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         warnings = []
         self.opengl_props["info"] = ""
-        if enable_option!="probe-success":
+        if enable_option=="force":
+            self.opengl_force = True
+        elif enable_option!="probe-success":
             from xpra.scripts.config import OpenGL_safety_check
             from xpra.platform.gui import gl_check as platform_gl_check
             for check in (OpenGL_safety_check, platform_gl_check):
@@ -1050,7 +1053,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 get_gl_client_window_module,
                 test_gl_client_window,
                 )
-            force_enable = enable_option in TRUE_OPTIONS
+            force_enable = self.opengl_force or (enable_option in TRUE_OPTIONS)
             self.opengl_props, gl_client_window_module = get_gl_client_window_module(force_enable)
             if not gl_client_window_module:
                 opengllog.warn("Warning: no OpenGL backend module found")
@@ -1129,26 +1132,28 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def can_use_opengl(self, w : int, h : int, metadata : typedict, override_redirect : bool):
         if self.GLClientWindowClass is None or not self.opengl_enabled:
             return False
-        #verify texture limits:
-        ms = min(self.sx(self.gl_texture_size_limit), *self.gl_max_viewport_dims)
-        if w>ms or h>ms:
-            return False
-        #avoid opengl for small windows:
-        if w<=OPENGL_MIN_SIZE or h<=OPENGL_MIN_SIZE:
-            log("not using opengl for small window: %ix%i", w, h)
-            return False
-        #avoid opengl for tooltips:
-        window_types = metadata.strtupleget("window-type")
-        if any(x in (NO_OPENGL_WINDOW_TYPES) for x in window_types):
-            log("not using opengl for %s window-type", csv(window_types))
-            return False
-        if metadata.intget("transient-for", 0)>0:
-            log("not using opengl for transient-for window")
-            return False
-        if metadata.strget("content-type")=="text":
-            return False
+        if not self.opengl_force:
+            #verify texture limits:
+            ms = min(self.sx(self.gl_texture_size_limit), *self.gl_max_viewport_dims)
+            if w>ms or h>ms:
+                return False
+            #avoid opengl for small windows:
+            if w<=OPENGL_MIN_SIZE or h<=OPENGL_MIN_SIZE:
+                log("not using opengl for small window: %ix%i", w, h)
+                return False
+            #avoid opengl for tooltips:
+            window_types = metadata.strtupleget("window-type")
+            if any(x in (NO_OPENGL_WINDOW_TYPES) for x in window_types):
+                log("not using opengl for %s window-type", csv(window_types))
+                return False
+            if metadata.intget("transient-for", 0)>0:
+                log("not using opengl for transient-for window")
+                return False
+            if metadata.strget("content-type")=="text":
+                return False
         if WIN32:
-            #win32 opengl doesn't do alpha (not sure why):
+            #these checks can't be forced ('opengl_force')
+            #win32 opengl just doesn't do alpha or undecorated windows properly:
             if override_redirect:
                 return False
             if metadata.boolget("has-alpha", False):
