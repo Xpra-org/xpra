@@ -482,12 +482,13 @@ class X11ServerCore(GTKServerBase):
         max_w, max_h = self.root_window.get_geometry()[2:4]
         if self.randr:
             sizes = RandR.get_xrr_screen_sizes()
-            if self.randr and len(sizes)>=1:
+            if len(sizes)>=1:
                 for w,h in sizes:
                     max_w = max(max_w, w)
                     max_h = max(max_h, h)
             if max_w>MAX_WINDOW_SIZE or max_h>MAX_WINDOW_SIZE:
-                screenlog.warn("maximum size is very large: %sx%s, you may encounter window sizing problems", max_w, max_h)
+                screenlog.warn("Warning: maximum screen size is very large: %sx%s", max_w, max_h)
+                screenlog.warn(" you may encounter window sizing problems")
             screenlog("get_max_screen_size()=%s", (max_w, max_h))
         return max_w, max_h
 
