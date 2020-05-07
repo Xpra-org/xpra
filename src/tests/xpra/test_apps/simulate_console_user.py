@@ -4,6 +4,7 @@
 
 import sys
 import subprocess
+from time import sleep
 
 from xpra.test_apps.simulate_console_typing import print_text
 
@@ -15,12 +16,27 @@ def simulate_commands(commands):
 		print_text(cmd)
 		sys.stdout.write("\n")
 		sys.stdout.flush()
-		proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-		proc.wait()
+		if cmd:
+			proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+			proc.wait()
+		else:
+			sleep(0.5)
 		#time.sleep(0.1+random.random())
 
 def main():
-	commands = ["ls -la", "clear", "echo hello there", "", "dmesg", "df", "ps -ef"]
+	commands = [
+		"ls -la",
+		"clear",
+		"echo hello there",
+		"",
+		"dmesg",
+		"df",
+		] + \
+		[""]*20+ \
+		[
+			"ps -ef",
+			] + \
+			[""]*40
 	while True:
 		simulate_commands(commands)
 
