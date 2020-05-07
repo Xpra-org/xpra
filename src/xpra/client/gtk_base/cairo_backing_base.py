@@ -33,12 +33,16 @@ class CairoBackingBase(WindowBackingBase):
     def init(self, ww : int, wh : int, bw : int, bh : int):
         self.size = bw, bh
         self.render_size = ww, wh
+        self.create_surface()
+
+    def create_surface(self):
+        bw, bh = self.size
         old_backing = self._backing
         #should we honour self.depth here?
         self._backing = None
         if bw==0 or bh==0:
             #this can happen during cleanup
-            return
+            return None
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, bw, bh)
         cr = cairo.Context(self._backing)
         cr.set_operator(cairo.OPERATOR_CLEAR)
@@ -55,6 +59,7 @@ class CairoBackingBase(WindowBackingBase):
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
             self._backing.flush()
+        return cr
 
     def close(self):
         if self._backing:
@@ -136,10 +141,10 @@ class CairoBackingBase(WindowBackingBase):
 
     def do_paint_scroll(self, scrolls, callbacks):
         old_backing = self._backing
-        w, h = self.size
-        ww, wh = self.render_size
-        self.init(ww, wh, w, h)
-        gc = cairo.Context(self._backing)
+        gc = self.create_surface()
+        if not gc:
+            fire_paint_callbacks(callbacks, False, message="no context")
+            return
         gc.set_operator(cairo.OPERATOR_SOURCE)
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
             gc.set_source_surface(old_backing, xdelta, ydelta)
