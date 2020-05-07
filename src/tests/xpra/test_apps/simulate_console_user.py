@@ -3,6 +3,7 @@
 # Copyright (C) 2012, 2013 Antoine Martin <antoine@xpra.org>
 
 import sys
+import random
 import subprocess
 from time import sleep
 
@@ -13,15 +14,15 @@ def simulate_commands(commands):
 	for cmd in commands:
 		sys.stdout.write(prompt)
 		sys.stdout.flush()
-		print_text(cmd)
+		if cmd:
+			print_text(cmd)
+		else:
+			sleep(0.01+random.random()/4)
 		sys.stdout.write("\n")
 		sys.stdout.flush()
 		if cmd:
 			proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 			proc.wait()
-		else:
-			sleep(0.5)
-		#time.sleep(0.1+random.random())
 
 def main():
 	commands = [
@@ -35,8 +36,12 @@ def main():
 		[""]*20+ \
 		[
 			"ps -ef",
-			] + \
-			[""]*40
+		] + \
+		[""]*5 + \
+		["echo gap1"] + \
+		[""]*5 + \
+		["echo gap2"] + \
+		[""]*70
 	while True:
 		simulate_commands(commands)
 
