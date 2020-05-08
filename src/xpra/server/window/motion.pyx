@@ -282,14 +282,13 @@ cdef class ScrollData:
                 #this target line has been marked as matched already
                 continue
             #if DEBUG:
-            #    log("%i: a1=%i / a2=%i", i, a1[i], a2[i+distance])
+            #    log("%i: a1=%i / a2=%i", i, a1[i], a2[i2])
             if a1[i1]==a2[i2]:
                 #if DEBUG:
                 #    log("match at %i: %i", i, a1[i])
                 if count==0:
                     start = i1
                 count += 1
-                #mark the target line as dealt with:
             elif count>0:
                 #we had a match
                 if count>MIN_LINE_COUNT:
@@ -300,8 +299,8 @@ cdef class ScrollData:
             line_defs[start] = count
         #clear the ones we have matched:
         for start, count in line_defs.items():
-            for i in range(count):
-                line_state[start+distance+i] = 1
+            for i1 in range(count):
+                line_state[start+distance+i1] = 1
         #if DEBUG:
         #    log("match_distance(%i)=%s", distance, line_defs)
         return line_defs
