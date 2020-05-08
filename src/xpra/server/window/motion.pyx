@@ -92,6 +92,16 @@ cdef class ScrollData:
         if DEBUG:
             log("%s.update%s a1=%#x, a2=%#x, distances=%#x, current size: %ix%i", self, (repr_ellipsized(pixels), x, y, width, height, rowstride, bpp), <uintptr_t> self.a1, <uintptr_t> self.a2, <uintptr_t> self.distances, self.width, self.height)
         assert width>0 and height>0, "invalid dimensions: %ix%i" % (width, height)
+        #scroll area can move within the window:
+        self.x = x
+        self.y = y
+        #but cannot change size (checksums would not match):
+        if height!=self.height or width!=self.width:
+            if self.a1!=NULL or self.a2!=NULL or self.distances!=NULL:
+                log("new image size: %ix%i (was %ix%i), clearing reference checksums", width, height, self.width, self.height)
+                self.free()
+            self.width = width
+            self.height = height
         #this is a new picture, shift a2 into a1 if we have it:
         if self.a1:
             free(self.a1)
@@ -99,21 +109,6 @@ cdef class ScrollData:
         if self.a2:
             self.a1 = self.a2
             self.a2 = NULL
-        #scroll area can move within the window:
-        self.x = x
-        self.y = y
-        #but cannot change size (checksums would not match):
-        if height!=self.height or width!=self.width:
-            if self.a1!=NULL or self.distances!=NULL:
-                log("new image size: %ix%i (was %ix%i), clearing reference checksums", width, height, self.width, self.height)
-                if self.a1:
-                    free(self.a1)
-                    self.a1 = NULL
-                if self.distances:
-                    free(self.distances)
-                    self.distances = NULL
-            self.width = width
-            self.height = height
         #allocate new checksum array:
         assert self.a2==NULL
         cdef size_t asize = height*(sizeof(uint64_t))
