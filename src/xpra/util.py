@@ -575,18 +575,21 @@ def dump_frames(frames, logger=None):
 def detect_leaks():
     import tracemalloc
     tracemalloc.start()
-    import gc
-    gc.enable()
-    gc.set_debug(gc.DEBUG_LEAK)
     last_snapshot = [tracemalloc.take_snapshot()]
     def print_leaks():
         s1 = last_snapshot[0]
         s2 = tracemalloc.take_snapshot()
         last_snapshot[0] = s2
         top_stats = s2.compare_to(s1, 'lineno')
-        print("[ Top 10 differences ]")
-        for stat in top_stats[:10]:
+        print("[ Top 20 differences ]")
+        for stat in top_stats[:20]:
             print(stat)
+        for i, stat in enumerate(top_stats[:20]):
+            print()
+            print("top %i:" % i)
+            print("%s memory blocks: %.1f KiB" % (stat.count, stat.size / 1024))
+            for line in stat.traceback.format():
+                print(line)
         return True
     return print_leaks
 
