@@ -268,6 +268,7 @@ cdef class ScrollData:
         """
         cdef uint64_t *a1 = self.a1
         cdef uint64_t *a2 = self.a2
+        cdef uint64_t v
         assert abs(distance)<=self.height, "invalid distance %i for size %i" % (distance, self.height)
         cdef uint16_t rstart = 0
         cdef uint16_t rend = self.height-distance
@@ -278,15 +279,17 @@ cdef class ScrollData:
         line_defs = {}
         for i1 in range(rstart, rend):
             i2 = i1+distance
-            if line_state[i2]:
-                #this target line has been marked as matched already
-                continue
+            v = a1[i1]
             #if DEBUG:
             #    log("%i: a1=%i / a2=%i", i, a1[i], a2[i2])
-            if a1[i1]==a2[i2]:
+            if v==a2[i2] and v!=0:
                 #if DEBUG:
                 #    log("match at %i: %i", i, a1[i])
                 if count==0:
+                    if line_state[i2]:
+                        #this line has been matched already,
+                        #we don't need to start here
+                        continue
                     start = i1
                 count += 1
             elif count>0:
