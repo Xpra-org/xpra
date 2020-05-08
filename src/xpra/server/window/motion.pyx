@@ -19,7 +19,7 @@ from xpra.rectangle import rectangle
 cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)
 
 
-from libc.stdint cimport uint8_t, int16_t, uint16_t, uint64_t, uintptr_t
+from libc.stdint cimport uint8_t, int16_t, uint16_t, uint32_t, uint64_t, uintptr_t
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset
 
@@ -150,7 +150,7 @@ cdef class ScrollData:
         if self.distances==NULL:
             self.distances = <uint16_t*> memalign(2*l*sizeof(uint16_t))
             assert self.distances!=NULL, "distance memory allocation failed"
-        cdef uint16_t matches = 0
+        cdef uint32_t matches = 0
         with nogil:
             memset(self.distances, 0, 2*l*sizeof(uint16_t))
             for y2 in range(l):
