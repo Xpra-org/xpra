@@ -31,7 +31,7 @@ DEF MAXUINT64 = 2**64
 DEF MASK64 = 2**64-1
 
 def h(v):
-    return hex(v).lstrip("0x").rstrip("L")
+    return hex(v)[2:].rstrip("L")
 
 cdef inline uint64_t hashtoint64(s):
     return <uint64_t> struct.unpack(b"@L", s)[0]
@@ -40,7 +40,7 @@ cdef da(uint64_t *a, uint16_t l):
     return repr_ellipsized(csv(h(a[i]) for i in range(l)))
 
 cdef dd(uint16_t *d, uint16_t l):
-    return repr_ellipsized(csv(h(d[i]) for i in range(l)))
+    return csv(h(d[i]) for i in range(l))
 
 
 assert sizeof(uint64_t)==64//8, "uint64_t is not 64-bit: %i!" % sizeof(uint64_t)
@@ -221,14 +221,14 @@ cdef class ScrollData:
                             low = m_arr[j]
                             if low==0:
                                 break
-        #first collect the list of distances sorted by highest number of matches:
+        #first collect the list of distances:
         #(there can be more than one distance value for each match count):
         scroll_hits = {}
         for i in range(MAX_MATCHES):
             if m_arr[i]>min_hits:
                 scroll_hits.setdefault(m_arr[i], []).append(s_arr[i])
         if DEBUG:
-            log("scroll hits=%s", scroll_hits)
+            log("scroll hits=%s", dict(reversed(sorted(scroll_hits.items()))))
         #return a dict with the scroll distance as key,
         #and the list of matching lines in a dictionary:
         # {line-start : count, ..}
