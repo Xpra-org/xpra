@@ -25,7 +25,7 @@ from xpra.rectangle import rectangle
 cdef int DEBUG = envbool("XPRA_SCROLL_DEBUG", False)
 
 
-from libc.stdint cimport uint8_t, int16_t, uint16_t, int16_t, uint64_t, uintptr_t
+from libc.stdint cimport uint8_t, int16_t, uint16_t, int16_t, uint32_t, uint64_t, uintptr_t
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
 
@@ -160,7 +160,7 @@ cdef class ScrollData:
         if self.distances==NULL:
             self.distances = <uint16_t*> memalign(2*l*sizeof(uint16_t))
             assert self.distances!=NULL, "distance memory allocation failed"
-        cdef uint16_t matches = 0
+        cdef uint32_t matches = 0
         with nogil:
             memset(self.distances, 0, 2*l*sizeof(uint16_t))
             for y2 in range(l):
@@ -278,6 +278,7 @@ cdef class ScrollData:
         """
         cdef uint64_t *a1 = self.a1
         cdef uint64_t *a2 = self.a2
+        cdef uint64_t v
         assert abs(distance)<=self.height, "invalid distance %i for size %i" % (distance, self.height)
         cdef uint16_t rstart = 0
         cdef uint16_t rend = self.height-distance
@@ -288,15 +289,17 @@ cdef class ScrollData:
         line_defs = collections.OrderedDict()
         for i1 in range(rstart, rend):
             i2 = i1+distance
-            if line_state[i2]:
-                #this target line has been marked as matched already
-                continue
+            v = a1[i1]
             #if DEBUG:
             #    log("%i: a1=%i / a2=%i", i, a1[i], a2[i+distance])
-            if a1[i1]==a2[i2]:
+            if v==a2[i2] and v!=0:
                 #if DEBUG:
                 #    log("match at %i: %i", i, a1[i])
                 if count==0:
+                    if line_state[i2]:
+                        #this line has been matched already,
+                        #we don't need to start here
+                        continue
                     start = i1
                 count += 1
                 #mark the target line as dealt with:
