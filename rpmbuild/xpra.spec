@@ -869,7 +869,10 @@ fi
 
 
 %changelog
-* Fri May 01 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+* Fri May 08 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+- fix window corruption with 'scroll' encoder
+- fix desktop-scaling changes from the system tray
+- fix clipboard synchronization problems caused by clipit
 - fix packaging with newer versions of py2app (MacOS)
 - fix logging spam in start-new-command dialog
 - fix building from source on archlinux

@@ -1,4 +1,7 @@
 xpra (3.0.10-1) UNRELEASED; urgency=low
+  * fix window corruption with 'scroll' encoder
+  * fix desktop-scaling changes from the system tray
+  * fix clipboard synchronization problems caused by clipit
   * fix packaging with newer versions of py2app (MacOS)
   * fix logging spam in start-new-command dialog
   * fix building from source on archlinux
@@ -8,7 +11,7 @@ xpra (3.0.10-1) UNRELEASED; urgency=low
   * try harder to strip all temporary build prefixes
   * MacOS: update to Python 2.7.18 for python2 builds
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 01 May 2020 13:21:18 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 08 May 2020 22:06:27 +0700
 
 xpra (3.0.9-2) UNRELEASED; urgency=low
   * rebuild with fixup for python2 servers

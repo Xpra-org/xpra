@@ -1,6 +1,9 @@
-v3.0.10 (2020-05-01)
+v3.0.10 (2020-05-08)
 ======================
-	-- fix pacKaging with newer versions of py2app (MacOS)
+	-- fix window corruption with 'scroll' encoder
+	-- fix desktop-scaling changes from the system tray
+	-- fix clipboard synchronization problems caused by clipit
+	-- fix packaging with newer versions of py2app (MacOS)
 	-- fix logging spam in start-new-command dialog
 	-- fix building from source on archlinux
 	-- fix swapped red and blue colours channels in win32 systray
