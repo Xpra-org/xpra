@@ -553,7 +553,7 @@ class WindowVideoSource(WindowSource):
         vsr = self.video_subregion
         if vsr:
             vsr.cancel_refresh_timer()
-        self.scroll_data = None
+        self.free_scroll_data()
         self.last_scroll_time = 0
         WindowSource.cancel_damage(self)
         #we must clean the video encoder to ensure
@@ -570,7 +570,7 @@ class WindowVideoSource(WindowSource):
             else:
                 #keep the region, but cancel the refresh:
                 vs.cancel_refresh_timer()
-        self.scroll_data = None
+        self.free_scroll_data()
         self.last_scroll_time = 0
         if self.non_video_encodings:
             #refresh the whole window in one go:
@@ -1746,11 +1746,17 @@ class WindowVideoSource(WindowSource):
                 #don't scroll very low quality content, better to refresh it
                 scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)",
                           coding, client_options.get("scaled_size"), client_options.get("quality", 100))
-                sd.free()
+                self.free_scroll_data()
             else:
                 sd.invalidate(x, y, w, h)
         return packet
 
+
+    def free_scroll_data(self):
+        sd = self.scroll_data
+        if sd:
+            self.scroll_data = None
+            sd.free()
 
     def may_use_scrolling(self, image, options):
         scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video encodings=%s",
@@ -1780,7 +1786,7 @@ class WindowVideoSource(WindowSource):
         scroll_data = self.scroll_data
         if self.b_frame_flush_timer and scroll_data:
             scrolllog("no scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
-            self.scroll_data = None
+            self.free_scroll_data()
             return False
         try:
             start = monotonic_time()
@@ -1823,8 +1829,7 @@ class WindowVideoSource(WindowSource):
                 scrolllog.error("Error during scrolling detection")
                 scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
             #make sure we start again from scratch next time:
-            scroll_data.free()
-            self.scroll_data = None
+            self.free_scroll_data()
             return False
 
     def encode_scrolling(self, scroll_data, image, options, match_pct):
