@@ -67,6 +67,7 @@ def configure_bits(value_mask):
     return "|".join(v for k,v in CW_MASK_TO_NAME.items() if k&value_mask)
 
 
+FORCE_XSETINPUTFOCUS = envbool("XPRA_FORCE_XSETINPUTFOCUS", False)
 VALIDATE_CONFIGURE_REQUEST = envbool("XPRA_VALIDATE_CONFIGURE_REQUEST", False)
 CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP>=0
@@ -833,7 +834,7 @@ class WindowModel(BaseWindowModel):
         # XSetInputFocus well, while Qt apps ignore (!!!) WM_TAKE_FOCUS
         # (unless they have a modal window), and just expect to get focus from
         # the WM's XSetInputFocus.
-        if bool(self._input_field):
+        if bool(self._input_field) or FORCE_XSETINPUTFOCUS:
             focuslog("... using XSetInputFocus")
             X11Window.XSetInputFocus(self.xid, now)
         if "WM_TAKE_FOCUS" in self.get_property("protocols"):
