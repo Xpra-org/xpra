@@ -195,7 +195,7 @@ cdef class ScrollData:
         cdef int16_t matches
         cdef uint16_t* distances = self.distances
         cdef uint16_t l = self.height
-        cdef size_t asize = l*(sizeof(uint8_t))
+        cdef size_t asize = l*sizeof(uint8_t)
         #use a temporary buffer to track the lines we have already dealt with:
         cdef uint8_t *line_state = <uint8_t*> malloc(asize)
         assert line_state!=NULL, "state map memory allocation failed"
