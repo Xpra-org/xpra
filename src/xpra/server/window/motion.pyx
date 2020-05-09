@@ -26,10 +26,6 @@ from libc.string cimport memset
 
 DEF MIN_LINE_COUNT = 5
 
-DEF MAXINT64 = 2**63
-DEF MAXUINT64 = 2**64
-DEF MASK64 = 2**64-1
-
 def h(v):
     return hex(v)[2:].rstrip("L")
 
