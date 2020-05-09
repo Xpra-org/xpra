@@ -1853,13 +1853,13 @@ class WindowVideoSource(WindowSource):
             v = scroll_data.get_scroll_values()
             if v:
                 raw_scroll, non_scroll = v
-        if len(raw_scroll)>=20 or len(non_scroll)>=20:
-            #avoid fragmentation, which is too costly
-            #(too many packets, too many loops through the encoder code)
-            scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead",
-                      len(raw_scroll), len(non_scroll))
-            raw_scroll = {}
-            non_scroll = {0 : h}
+                if len(raw_scroll)>=20 or len(non_scroll)>=20:
+                    #avoid fragmentation, which is too costly
+                    #(too many packets, too many loops through the encoder code)
+                    scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead",
+                              len(raw_scroll), len(non_scroll))
+                    raw_scroll = {}
+                    non_scroll = {0 : h}
         scrolllog(" will send scroll data=%s, non-scroll=%s", raw_scroll, non_scroll)
         flush = len(non_scroll)
         #convert to a screen rectangle list for the client:
