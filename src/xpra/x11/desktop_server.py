@@ -43,7 +43,7 @@ metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 iconlog = Logger("icon")
 
-MODIFY_GSETTINGS = envbool("XPRA_MODIFY_GSETTINGS", False)
+MODIFY_GSETTINGS = envbool("XPRA_MODIFY_GSETTINGS", True)
 
 
 class DesktopModel(WindowModelStub, WindowDamageHandler):
@@ -329,7 +329,10 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def do_modify_gsettings(self, defs, value=False):
         modified = {}
+        schemas = Gio.Settings.list_schemas()
         for schema, attributes in defs.items():
+            if schema not in schemas:
+                continue
             try:
                 s = Gio.Settings.new(schema)
                 restore = []
