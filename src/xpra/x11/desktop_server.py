@@ -6,10 +6,10 @@
 
 import os
 import socket
-from gi.repository import GObject, Gdk
+from gi.repository import GObject, Gdk, Gio
 
 from xpra.os_util import get_generic_os_name, load_binary_file
-from xpra.util import updict, log_screen_sizes
+from xpra.util import updict, log_screen_sizes, envbool, csv
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
@@ -42,6 +42,8 @@ settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 iconlog = Logger("icon")
+
+MODIFY_GSETTINGS = envbool("XPRA_MODIFY_GSETTINGS", False)
 
 
 class DesktopModel(WindowModelStub, WindowDamageHandler):
@@ -288,6 +290,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         self.session_type = "desktop"
         self.resize_timer = None
         self.resize_value = None
+        self.gsettings_modified = {}
 
     def init(self, opts):
         for c in DESKTOPSERVER_BASES:
@@ -313,12 +316,45 @@ class XpraDesktopServer(DesktopServerBaseClass):
         add_catchall_receiver("xpra-xkb-event", self)
         with xlog:
             X11Keyboard.selectBellNotification(True)
+        if MODIFY_GSETTINGS:
+            self.modify_gsettings()
+
+    def modify_gsettings(self):
+        #try to suspend animations:
+        self.gsettings_modified = self.do_modify_gsettings({
+            "org.mate.interface" : ("gtk-enable-animations", "enable-animations"),
+            "org.gnome.desktop.interface" : ("enable-animations",),
+            "com.deepin.wrap.gnome.desktop.interface" : ("enable-animations",),
+            })
+
+    def do_modify_gsettings(self, defs, value=False):
+        modified = {}
+        for schema, attributes in defs.items():
+            try:
+                s = Gio.Settings.new(schema)
+                restore = []
+                for attribute in attributes:
+                    v = s.get_boolean(attribute)
+                    if v:
+                        s.set_boolean(attribute, value)
+                        restore.append(attribute)
+                if restore:
+                    modified[schema] = restore
+            except Exception as e:
+                log("error accessing schema '%s' and attributes %s", schema, attributes, exc_info=True)
+                log.error("Error accessing schema '%s' and attributes %s:", schema, csv(attributes))
+                log.error(" %s", e)
+        return modified
 
     def do_cleanup(self):
         self.cancel_resize_timer()
         remove_catchall_receiver("xpra-motion-event", self)
         X11ServerBase.do_cleanup(self)
+        if MODIFY_GSETTINGS:
+            self.restore_gsettings()
 
+    def restore_gsettings(self):
+        self.do_modify_gsettings(self.gsettings_modified, True)
 
     def notify_dpi_warning(self, body):
         pass
