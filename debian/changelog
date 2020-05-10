@@ -1,12 +1,13 @@
 xpra (4.0-1) UNRELEASED; urgency=low
   * Drop support for:
-	Python 2, GTK2
-	legacy versions (pre 1.0)
-	weak authentication
+	- Python 2, GTK2
+	- legacy versions (pre 1.0)
+	- weak authentication
   * Network, per socket options:
-	authentication and encryption
-	ssl
-	ssh
+	- authentication and encryption
+	- ssl
+	- ssh
+	- bind options for client
   * make it easier to send files from the server
   * xpra toolbox subcommand
   * xpra help subcommand
@@ -15,16 +16,21 @@ xpra (4.0-1) UNRELEASED; urgency=low
   * signal handling fixes
   * smoother window resizing
   * refactoring and testing
-	unit tests coverage
-	completely skip loading unused features at runtime
-	get rid of capabilities data after parsing it
-	better module dependency separation
-	don't convert to a string before we need it
+	- unit tests coverage and fixes
+	- completely skip loading unused features at runtime
+	- get rid of capabilities data after parsing it
+	- better module dependency separation
+	- don't convert to a string before we need it
   * more useful window and tray title
-  * make it easier to source environment	
-  * TODO
+  * make it easier to source environment
+  * disable desktop animations in desktop mode
+  * automatic start-or-upgrade, automatic X11 display rescue
+  * support MS Windows OpenSSH server to start shadow
+  * more selective use of OpenGL acceleration in client
+  * expose server OpenGL capabilities
+  * cleaner HTML5 syntax
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 18 Sep 2019 00:26:47 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 10 May 2020 14:13:00 +0700
 
 xpra (3.0-1) UNRELEASED; urgency=low
   * Python 3 port complete, now the default: #1571, #2195

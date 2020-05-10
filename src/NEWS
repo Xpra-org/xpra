@@ -1,4 +1,4 @@
-v4.0 (2020-03-31)
+v4.0 (2020-05-10)
 ======================
 	-- Drop support for:
 		Python 2, GTK2
@@ -8,6 +8,7 @@ v4.0 (2020-03-31)
 		authentication and encryption
 		ssl
 		ssh
+		bind options for client
 	-- make it easier to send files from the server
 	-- xpra toolbox subcommand
 	-- xpra help subcommand
@@ -16,13 +17,19 @@ v4.0 (2020-03-31)
 	-- signal handling fixes
 	-- smoother window resizing
 	-- refactoring and testing
-		unit tests coverage
+		unit tests coverage and fixes
 		completely skip loading unused features at runtime
 		get rid of capabilities data after parsing it
 		better module dependency separation
 		don't convert to a string before we need it
 	-- more useful window and tray title
-	-- make it easier to source environment	
+	-- make it easier to source environment
+	-- disable desktop animations in desktop mode
+	-- automatic start-or-upgrade, automatic X11 display rescue
+	-- support MS Windows OpenSSH server to start shadow
+	-- more selective use of OpenGL acceleration in client
+	-- expose server OpenGL capabilities
+	-- cleaner HTML5 syntax
 
 
 v3.0 (2019-09-21)
