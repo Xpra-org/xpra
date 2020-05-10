@@ -347,6 +347,7 @@ def setup_udp_socket(host, iport, socktype="udp"):
         iport = udp_socket.getsockname()[1]
         log.info("allocated UDP port %i for %s", iport, host)
     log("%s: %s:%s : %s", socktype, host, iport, socket)
+    log.info("created UDP socket %s:%s", host, iport)
     return socktype, udp_socket, (host, iport), cleanup_udp_socket
 
 
