@@ -1,9 +1,9 @@
 [Setup]
 AppName=Xpra
 AppId=Xpra_is1
-AppVersion=4.0
-AppVerName=Xpra 4.0
-UninstallDisplayName=Xpra 4.0
+AppVersion=4.1
+AppVerName=Xpra 4.1
+UninstallDisplayName=Xpra 4.1
 AppPublisher=xpra.org
 AppPublisherURL=http:;xpra.org/
 DefaultDirName={pf}\Xpra
@@ -16,7 +16,7 @@ OutputBaseFilename=Xpra_Setup
 Compression=lzma2/max
 SolidCompression=yes
 AllowUNCPath=false
-VersionInfoVersion=4.0
+VersionInfoVersion=4.1
 VersionInfoCompany=xpra.org
 VersionInfoDescription=multi-platform screen and application forwarding system
 WizardImageFile=win32\xpra-logo.bmp
@@ -43,7 +43,7 @@ Name: "{group}\Xpra"; Filename: {app}\Xpra.exe; WorkingDir: {app}
 Name: "{group}\Xpra Session Browser"; Filename: {app}\Xpra_Browser.exe; WorkingDir: {app}
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
-Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500 --tcp-auth=sys --ssl-cert=""{commonappdata}\Xpra\ssl-cert.pem"""; IconFilename: {app}\icons\server-connected.ico
+Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14.10 --tcp-auth=sys --ssl-cert=""{commonappdata}\Xpra\ssl-cert.pem"""; IconFilename: {app}\icons\server-connected.ico
 
 
 [Run]
