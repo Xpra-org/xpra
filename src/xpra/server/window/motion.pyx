@@ -24,7 +24,7 @@ from libc.stdlib cimport free, malloc
 from libc.string cimport memset
 
 
-DEF MIN_LINE_COUNT = 5
+DEF MIN_LINE_COUNT = 2
 
 def h(v):
     return hex(v)[2:].rstrip("L")
