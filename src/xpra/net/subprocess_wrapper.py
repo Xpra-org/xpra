@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from queue import Queue
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
-from xpra.net.common import ConnectionClosedException
+from xpra.net.common import ConnectionClosedException, PACKET_TYPES
 from xpra.net.protocol import Protocol
 from xpra.os_util import setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32
 from xpra.child_reaper import getChildReaper
@@ -34,6 +34,15 @@ DEBUG_WRAPPER = envbool("XPRA_WRAPPER_DEBUG", False)
 HEXLIFY_PACKETS = envbool("XPRA_HEXLIFY_PACKETS", False)
 #avoids showing a new console window on win32:
 WIN32_SHOWWINDOW = envbool("XPRA_WIN32_SHOWWINDOW", False)
+#assume that the subprocess is running the same version of xpra,
+#so we can set the packet aliases without exchanging and parsing caps:
+#(this can break, ie: if both python2 and python3 builds are installed
+# and the python2 builds are from an older version)
+LOCAL_ALIASES = envbool("XPRA_LOCAL_ALIASES", False)
+
+LOCAL_SEND_ALIASES = dict((v, i) for i,v in enumerate(PACKET_TYPES))
+LOCAL_RECEIVE_ALIASES = dict(enumerate(PACKET_TYPES))
+
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
 def noop(_p):
@@ -168,6 +177,9 @@ class subprocess_callee:
                                  socktype=self.name, close_cb=self.net_stop)
         conn.timeout = 0
         protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
+        if LOCAL_ALIASES:
+            protocol.send_aliases = LOCAL_SEND_ALIASES
+            protocol.receive_aliases = LOCAL_RECEIVE_ALIASES
         setup_fastencoder_nocompression(protocol)
         protocol.large_packets = self.large_packets
         return protocol
@@ -363,6 +375,9 @@ class subprocess_caller:
                                  socktype=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
         protocol = Protocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
+        if LOCAL_ALIASES:
+            protocol.send_aliases = LOCAL_SEND_ALIASES
+            protocol.receive_aliases = LOCAL_RECEIVE_ALIASES
         setup_fastencoder_nocompression(protocol)
         protocol.large_packets = self.large_packets
         return protocol

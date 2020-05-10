@@ -19,7 +19,7 @@ SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "udp")
 PACKET_TYPES = [
     "hello", "info",
     "open-url", "send-file", "send-data-request", "send-data-response", "ack-file-chunk", "send-file-chunk",
-    "sound-data", "new-stream", "state-changed", "new-buffer",
+    "sound-data", "new-stream", "state-changed", "new-buffer", "cleanup", "add_data", "stop",
     "ping", "ping_echo",
     "info-response", "server-event",
     "disconnect", "set_deflate", "connection-lost", "gibberish", "invalid",
