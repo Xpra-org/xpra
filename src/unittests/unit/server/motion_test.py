@@ -43,21 +43,21 @@ class TestMotion(unittest.TestCase):
 			assert line_defs, "distance %i not found in scroll data: %s for a1=%s, a2=%s" % (distance, scrolls, a1, a2)
 			linecount = sum(line_defs.values())
 			assert linecount==matches, "expected %i matches for distance=%i but got %i for a1=%s, a2=%s, result=%s" % (matches, distance, linecount, a1, a2, line_defs)
-		for N in (1, 10, 100):
+		for N in (motion.MIN_LINE_COUNT+1, 10, 100):
 			a = range(1, N+1)
 			t(a, a, 0, N)		#identity: all match
 
 			a = [1]*N
 			t(a, a, 0, N)
 
-		#from a1 to a2: shift by 2, get 2 hits
-		t([3, 4, 5, 6], [1, 2, 3, 4], 2, 2)
-		#from a2 to a1: shift by -2, get 2 hits
-		t([1, 2, 3, 4], [3, 4, 5, 6], -2, 2)
+		#from a1 to a2: shift by 2, get 6 hits
+		t([3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8], 2, 6)
+		#from a2 to a1: shift by -2, get 6 hits
+		t([1, 2, 3, 4, 5, 6, 7, 8], [3, 4, 5, 6, 7, 8, 9, 10], -2, 6)
 		N = 100
 		S = 1
 		a1 = range(S, S+N)
-		for M in (2, 3, 10, 100):
+		for M in (motion.MIN_LINE_COUNT, motion.MIN_LINE_COUNT+1, motion.MIN_LINE_COUNT+10, 90):
 			a2 = range(M, M+N)
 			t(a1, a2, S-M, S+N-M)
 			t(a2, a1, M-S, S+N-M)

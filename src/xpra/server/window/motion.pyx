@@ -24,7 +24,7 @@ from libc.stdlib cimport free, malloc
 from libc.string cimport memset
 
 
-DEF MIN_LINE_COUNT = 2
+MIN_LINE_COUNT = 2
 
 def h(v):
     return hex(v)[2:].rstrip("L")
@@ -236,7 +236,7 @@ cdef class ScrollData:
                 v = scroll_hits[i]
                 for scroll in v:
                     #find matching lines:
-                    line_defs = self.match_distance(line_state, scroll)
+                    line_defs = self.match_distance(line_state, scroll, MIN_LINE_COUNT)
                     if line_defs:
                         scrolls[scroll] = line_defs
             #same for the unmatched lines:
@@ -256,7 +256,7 @@ cdef class ScrollData:
             free(line_state)
         return scrolls, line_defs
 
-    cdef match_distance(self, uint8_t *line_state, int16_t distance):
+    cdef match_distance(self, uint8_t *line_state, int16_t distance, const uint8_t min_line_count):
         """
             find the lines that match the given scroll distance,
             return a dictionary with the starting line as key
@@ -290,10 +290,10 @@ cdef class ScrollData:
                 count += 1
             elif count>0:
                 #we had a match
-                if count>MIN_LINE_COUNT:
+                if count>min_line_count:
                     line_defs[start] = count
                 count = 0
-        if count>MIN_LINE_COUNT:
+        if count>min_line_count:
             #last few lines ended as a match:
             line_defs[start] = count
         #clear the ones we have matched:
