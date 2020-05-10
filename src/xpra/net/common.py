@@ -35,6 +35,8 @@ PACKET_TYPES = [
     "clipboard-contents", "clipboard-contents-none", "clipboard-pending-requests", "clipboard-enable-selections",
     "notify_show", "notify_close",
     "rpc-reply", "startup-complete", "setting-change", "control",
+    "encodings",
+    "udp-control",
     ]
 
 def get_log_packets(exclude=False):
