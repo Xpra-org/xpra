@@ -155,6 +155,8 @@ def _get_X11_root_property(name, req_type):
 def _get_xsettings():
     from xpra.gtk_common.error import xlog
     X11Window = X11WindowBindings()
+    if not X11Window:
+        return None
     with xlog:
         selection = "_XSETTINGS_S0"
         owner = X11Window.XGetSelectionOwner(selection)
@@ -201,7 +203,10 @@ def _get_xsettings_dpi():
 def _get_randr_dpi():
     if RANDR_DPI and not is_Wayland():
         from xpra.gtk_common.error import xlog
-        from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+        try:
+            from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+        except ImportError:
+            return -1, -1
         with xlog:
             randr_bindings = RandRBindings()
             if randr_bindings.has_randr():
