@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -39,10 +39,6 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
-
-    def init_window(self, metadata):
-        super().init_window(metadata)
-        self.connect("draw", self._do_draw)
 
     def get_backing_class(self):
         raise NotImplementedError()
@@ -115,8 +111,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
         self.set_geometry_hints(self.drawing_area, geom, gdk_hints)
 
 
-    def _do_draw(self, widget, context):
-        paintlog("do_draw(%s, %s)", widget, context)
+    def draw_widget(self, widget, context):
+        paintlog("draw_widget(%s, %s)", widget, context)
         if not self.get_mapped():
             return False
         backing = self._backing

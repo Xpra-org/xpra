@@ -35,7 +35,7 @@ class GLClientWindowBase(GTK3ClientWindow):
         log("spinner(%s) backing=%s, paint_screen=%s, paint_spinner=%s", ok, b._backing, b.paint_screen, b.paint_spinner)
         if b._backing and b.paint_screen:
             w, h = self.get_size()
-            self.queue_draw_area(0, 0, w, h)
+            self.repaint(0, 0, w, h)
 
 
     def remove_backing(self):
@@ -59,7 +59,7 @@ class GLClientWindowBase(GTK3ClientWindow):
                 with b.gl_context():
                     b.gl_init()
                     b.present_fbo(0, 0, *b.size)
-                self.queue_draw_area(0, 0, *self._size)
+                self.repaint(0, 0, *self._size)
         log("gl magic_key%s border=%s, backing=%s", args, self.border, b)
 
 
@@ -93,8 +93,8 @@ class GLClientWindowBase(GTK3ClientWindow):
         #maybe redundant?:
         self.apply_geometry_hints(self.geometry_hints)
 
-    def _do_draw(self, widget, context):
-        log("do_draw(%s, %s)", widget, context)
+    def draw_widget(self, widget, context):
+        log("draw_widget(%s, %s)", widget, context)
         if not self.get_mapped():
             return False
         backing = self._backing

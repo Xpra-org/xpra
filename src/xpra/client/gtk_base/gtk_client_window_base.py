@@ -193,7 +193,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         Gtk.Window.__init__(self, type = window_type)
         self.init_drawing_area()
         self.set_decorated(self._is_decorated(metadata))
-        self.set_app_paintable(True)
         self._window_state = {}
         self._resize_counter = 0
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
@@ -217,10 +216,18 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def init_drawing_area(self):
         widget = Gtk.DrawingArea()
+        widget.set_app_paintable(True)
         widget.show()
         self.drawing_area = widget
         self.init_widget_events(widget)
         self.add(widget)
+
+    def repaint(self, x, y, w, h):
+        #self.queue_draw_area(0, 0, *self._size)
+        widget = self.drawing_area
+        if widget:
+            widget.queue_draw_area(x, y, w, h)
+
 
     def init_widget_events(self, widget):
         widget.add_events(WINDOW_EVENT_MASK)
@@ -240,6 +247,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._do_scroll_event(event)
             return True
         widget.connect("scroll-event", scroll)
+        widget.connect("draw", self.draw_widget)
+
+    def draw_widget(self, widget, context):
+        raise NotImplementedError()
 
 
     ######################################################################
@@ -561,7 +572,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     if self.window_offset:
                         x += self.window_offset[0]
                         y += self.window_offset[1]
-            if not self.is_OR() and self.get_decorated():
+            elif self.get_decorated():
                 #try to adjust for window frame size if we can figure it out:
                 #Note: we cannot just call self.get_window_frame_size() here because
                 #the window is not realized yet, and it may take a while for the window manager
@@ -794,7 +805,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.window_offset, (w, h), (ww, wh))
             if self._backing.offsets!=(0, 0, 0, 0):
                 self.center_backing(w, h)
-                self.queue_draw_area(0, 0, ww, wh)
+                self.repaint(0, 0, ww, wh)
         #decide if this is really an update by comparing with our local state vars:
         #(could just be a notification of a state change we already know about)
         actual_updates = {}
@@ -1411,7 +1422,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if value:
             #repaint the scale value (in window coordinates):
             x, y, w, h = abs_coords(*value[2:5])
-            self.queue_draw_area(x, y, w, h)
+            self.repaint(x, y, w, h)
             #clear it shortly after:
             self.cancel_remove_pointer_overlay_timer()
             def remove_pointer_overlay():
@@ -1420,7 +1431,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.remove_pointer_overlay_timer = self.timeout_add(CURSOR_IDLE_TIMEOUT*1000, remove_pointer_overlay)
         if prev:
             x, y, w, h = abs_coords(*prev[2:5])
-            self.queue_draw_area(x, y, w, h)
+            self.repaint(x, y, w, h)
 
 
     def _do_button_press_event(self, event):
@@ -1657,7 +1668,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #with normal windows, we just queue a draw request
         #and let the expose event paint the spinner
         w, h = self.get_size()
-        self.queue_draw_area(0, 0, w, h)
+        self.repaint(0, 0, w, h)
 
 
     def do_map_event(self, event):
@@ -1756,7 +1767,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._set_backing_size(w, h)
         elif self._backing and not self._iconified:
             geomlog("configure event: size unchanged, queueing redraw")
-            self.queue_draw_area(0, 0, w, h)
+            self.repaint(0, 0, w, h)
 
     def send_configure_event(self, skip_geometry=False):
         assert skip_geometry or not self.is_OR()
@@ -1803,7 +1814,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._resize_counter = resize_counter
         if (w, h)==(ww, wh):
             self._backing.offsets = 0, 0, 0, 0
-            self.queue_draw_area(0, 0, w, h)
+            self.repaint(0, 0, w, h)
             return
         if not self._fullscreen and not self._maximized:
             Gtk.Window.resize(self, w, h)
@@ -1813,7 +1824,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.center_backing(w, h)
         geomlog("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
         self._set_backing_size(w, h)
-        self.queue_draw_area(0, 0, ww, wh)
+        self.repaint(0, 0, ww, wh)
 
     def center_backing(self, w, h):
         ww, wh = self.get_size()
