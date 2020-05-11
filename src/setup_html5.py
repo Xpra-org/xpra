@@ -8,7 +8,6 @@ import re
 import sys
 import shutil
 import os.path
-import tempfile
 
 
 def glob_recurse(srcdir):
