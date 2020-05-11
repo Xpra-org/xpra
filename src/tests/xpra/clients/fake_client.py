@@ -62,6 +62,9 @@ class FakeClient(FileTransferHandler):
         self.log_events = True
         self.handshake_callbacks = []
 
+    def server_ok(self):
+        return True
+
     def log(self, *args):
         if self.log_events:
             log.info(*args)
