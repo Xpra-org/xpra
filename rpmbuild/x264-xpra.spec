@@ -1,7 +1,7 @@
 %define _build_id_links none
 
 Name:	     x264-xpra
-Version:     20190929
+Version:     20200510
 %define SNAPSHOTTYPE -stable
 %if 0%{?beta} < 1
 Release:     1%{?dist}
@@ -82,6 +82,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Mon May 11 2017 Antoine Martin <antoine@xpra.org> 20200510-1
+- use a newer snapshot
+
 * Sat Dec 23 2017 Antoine Martin <antoine@xpra.org> 20171222-1
 - use a newer snapshot
 
