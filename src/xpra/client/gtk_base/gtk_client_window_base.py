@@ -1261,7 +1261,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         gdkwin = self.get_window()
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s",
-                     gdkwin.get_xid(), self.is_mapped(), gdkwin.is_visible())
+                     gdkwin.get_xid(), self.get_mapped(), gdkwin.is_visible())
         root = get_default_root_window()
         with xlog:
             send_wm_workspace(root, gdkwin, workspace)
@@ -1584,7 +1584,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 #root is a gdk window, so we need to ensure we have one
                 #backing our gtk window to be able to call set_transient_for on it
                 log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s",
-                    self, wid, self.get_window(), self.is_mapped())
+                    self, wid, self.get_window(), self.get_mapped())
                 self.get_window().set_transient_for(get_default_root_window())
             self.when_realized("transient-for-root", set_root_transient)
         else:

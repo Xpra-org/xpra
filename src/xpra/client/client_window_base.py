@@ -303,7 +303,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_modal(modal)
 
         #apply window-type hint if window has not been mapped yet:
-        if b"window-type" in metadata and not self.is_mapped():
+        if b"window-type" in metadata and not self.get_mapped():
             window_types = metadata.strtupleget("window-type")
             self.set_window_type(window_types)
 
