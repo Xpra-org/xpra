@@ -765,10 +765,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.deiconify()
 
 
-    def show(self):
-        Gtk.Window.show(self)
-
-
     def window_state_updated(self, widget, event):
         statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s",
                  self, widget, repr(event), event.changed_mask, event.new_window_state)
