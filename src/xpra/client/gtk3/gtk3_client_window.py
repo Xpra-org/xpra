@@ -126,7 +126,10 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     def get_drawing_area_geometry(self):
         gdkwindow = self.drawing_area.get_window()
-        x, y = gdkwindow.get_origin()[1:]
+        if gdkwindow:
+            x, y = gdkwindow.get_origin()[1:]
+        else:
+            x, y = self.get_position()
         w, h = self.get_size()
         return (x, y, w, h)
 
