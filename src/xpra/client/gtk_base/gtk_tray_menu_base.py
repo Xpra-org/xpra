@@ -11,14 +11,16 @@ from gi.repository import GLib, Gtk
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict, typedict
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
-    menuitem, get_pixbuf_from_data, scaled_image,
+    get_pixbuf_from_data, scaled_image,
+    )
+from xpra.client.gtk_base.menu_helper import (
+    MenuHelper,
+    ll, set_sensitive, ensure_item_selected,
     )
 from xpra.client.client_base import EXIT_OK
-from xpra.gtk_common.about import about, close_about
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
 from xpra.codecs.loader import get_encoding_help, get_encoding_name
 from xpra.simple_stats import std_unit_dec
-from xpra.platform.gui import get_icon_size
 from xpra.platform.paths import get_icon_dir
 from xpra.client import mixin_features
 from xpra.log import Logger
@@ -103,61 +105,6 @@ CLIPBOARD_DIRECTION_LABEL_TO_NAME = {
                                      }
 CLIPBOARD_DIRECTION_NAME_TO_LABEL = reverse_dict(CLIPBOARD_DIRECTION_LABEL_TO_NAME)
 
-
-def ll(m):
-    try:
-        return "%s:%s" % (type(m), m.get_label())
-    except AttributeError:
-        return str(m)
-
-def set_sensitive(widget, sensitive):
-    if OSX:
-        if sensitive:
-            widget.show()
-        else:
-            widget.hide()
-    widget.set_sensitive(sensitive)
-
-
-#utility method to ensure there is always only one CheckMenuItem
-#selected in a submenu:
-def ensure_item_selected(submenu, item, recurse=True):
-    if not isinstance(item, Gtk.CheckMenuItem):
-        return None
-    if item.get_active():
-        #deactivate all except this one
-        def deactivate(items, skip=None):
-            for x in items:
-                if x==skip:
-                    continue
-                if isinstance(x, Gtk.MenuItem):
-                    submenu = x.get_submenu()
-                    if submenu and recurse:
-                        deactivate(submenu.get_children(), skip)
-                if isinstance(x, Gtk.CheckMenuItem):
-                    if x!=item and x.get_active():
-                        x.set_active(False)
-        deactivate(submenu.get_children(), item)
-        return item
-    #ensure there is at least one other active item
-    def get_active_item(items):
-        for x in items:
-            if isinstance(x, Gtk.MenuItem):
-                submenu = x.get_submenu()
-                if submenu:
-                    a = get_active_item(submenu.get_children())
-                    if a:
-                        return a
-            if isinstance(x, Gtk.CheckMenuItem):
-                if x.get_active():
-                    return x
-        return None
-    active = get_active_item(submenu.get_children())
-    if active:
-        return active
-    #if not then keep this one active:
-    item.set_active(True)
-    return item
 
 
 def make_min_auto_menu(title, min_options, options,
@@ -295,38 +242,13 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
     encodings_submenu.show_all()
 
 
-class GTKTrayMenuBase:
+class GTKTrayMenuBase(MenuHelper):
 
-    def __init__(self, client):
-        self.client = client
-        self.menu = None
-        self.menu_shown = False
-        self.menu_icon_size = 0
+    def setup_menu(self):
+        return self.do_setup_menu(SHOW_CLOSE)
 
-    def build(self):
-        if self.menu is None:
-            try:
-                self.menu = self.setup_menu(SHOW_CLOSE)
-            except Exception as e:
-                log("build()", exc_info=True)
-                log.error("Error: failed to setup menu")
-                log.error(" %s", e)
-        return self.menu
-
-    def show_session_info(self, *args):
-        self.client.show_session_info(*args)
-
-    def show_bug_report(self, *args):
-        self.client.show_bug_report(*args)
-
-
-    def get_image(self, icon_name, size=None):
-        return self.client.get_image(icon_name, size)
-
-    def setup_menu(self, show_close=True):
+    def do_setup_menu(self, show_close):
         log("setup_menu(%s)", show_close)
-        self.menu_shown = False
-        self.menu_icon_size = get_icon_size()
         menu = Gtk.Menu()
         title_item = None
         if SHOW_TITLE_ITEM:
@@ -369,62 +291,6 @@ class GTKTrayMenuBase:
         log("setup_menu(%s) done", show_close)
         return menu
 
-    def cleanup(self):
-        self.close_menu()
-        close_about()
-
-    def close_menu(self, *_args):
-        if self.menu_shown:
-            self.menu.popdown()
-            self.menu_shown = False
-
-    def menu_deactivated(self, *_args):
-        self.menu_shown = False
-
-    def activate(self, button=1, time=0):
-        log("activate(%s, %s)", button, time)
-        self.show_menu(button, time)
-
-    def popup(self, button, time):
-        log("popup(%s, %s)", button, time)
-        self.show_menu(button, time)
-
-    def show_menu(self, _button, _time):
-        raise NotImplementedError("override me!")
-
-
-    def handshake_menuitem(self, *args, **kwargs):
-        """ Same as menuitem() but this one will be disabled until we complete the server handshake """
-        mi = self.menuitem(*args, **kwargs)
-        set_sensitive(mi, False)
-        def enable_menuitem(*_args):
-            set_sensitive(mi, True)
-        self.client.after_handshake(enable_menuitem)
-        return mi
-
-
-    def make_menu(self):
-        return Gtk.Menu()
-
-    def menuitem(self, title, icon_name=None, tooltip=None, cb=None, **kwargs):
-        """ Utility method for easily creating an ImageMenuItem """
-        image = None
-        if MENU_ICONS:
-            image = kwargs.get("image")
-            if icon_name and not image:
-                icon_size = self.menu_icon_size or get_icon_size()
-                image = self.get_image(icon_name, icon_size)
-        return menuitem(title, image, tooltip, cb)
-
-    def checkitem(self, title, cb=None, active=False):
-        """ Utility method for easily creating a CheckMenuItem """
-        check_item = Gtk.CheckMenuItem(label=title)
-        check_item.set_active(active)
-        if cb:
-            check_item.connect("toggled", cb)
-        check_item.show()
-        return check_item
-
 
     def make_infomenuitem(self):
         info_menu_item = self.menuitem("Information", "information.png")
@@ -437,31 +303,6 @@ class GTKTrayMenuBase:
         menu.append(self.make_bugreportmenuitem())
         info_menu_item.show_all()
         return info_menu_item
-
-    def make_aboutmenuitem(self):
-        return self.menuitem("About Xpra", "xpra.png", None, about)
-
-    def make_updatecheckmenuitem(self):
-        def show_update_window(*_args):
-            from xpra.client.gtk_base.update_status import getUpdateStatusWindow
-            w = getUpdateStatusWindow()
-            w.show()
-            w.check()
-        return self.menuitem("Check for updates", "update.png", None, show_update_window)
-
-    def make_sessioninfomenuitem(self):
-        def show_session_info_cb(*_args):
-            #we define a generic callback to remove the arguments
-            #(which contain the menu widget and are of no interest to the 'show_session_info' function)
-            self.show_session_info()
-        sessioninfomenuitem = self.handshake_menuitem("Session Info", "statistics.png", None, show_session_info_cb)
-        return sessioninfomenuitem
-
-    def make_bugreportmenuitem(self):
-        def show_bug_report_cb(*_args):
-            self.show_bug_report()
-        return  self.menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
-
 
     def make_featuresmenuitem(self):
         features_menu_item = self.handshake_menuitem("Features", "features.png")

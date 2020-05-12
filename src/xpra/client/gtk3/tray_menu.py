@@ -8,8 +8,4 @@ from xpra.client.gtk_base.gtk_tray_menu_base import GTKTrayMenuBase
 
 
 class GTK3TrayMenu(GTKTrayMenuBase):
-
-    def show_menu(self, button, time):
-        self.close_menu()
-        self.menu.popup(None, None, None, None, button, time)
-        self.menu_shown = True
+    pass

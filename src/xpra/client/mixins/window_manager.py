@@ -783,7 +783,7 @@ class WindowClient(StubClientMixin):
         log("make_new_window(..) window(%i)=%s", wid, window)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
-        window.show()
+        window.show_all()
         if override_redirect:
             if self.should_force_grab(metadata):
                 grablog.warn("forcing grab for OR window %i, matches %s", wid, OR_FORCE_GRAB)

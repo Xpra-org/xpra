@@ -5,10 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gdk
+from gi.repository import Gdk, Gtk, Gio
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT
+from xpra.util import envbool
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
@@ -32,6 +34,9 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
+WINDOW_MENU = envbool("XPRA_WINDOW_MENU", False)
+
+
 """
 GTK3 version of the ClientWindow class
 """
@@ -39,6 +44,28 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
+
+    def init_window(self, metadata):
+        super().init_window(metadata)
+        if WINDOW_MENU and self.get_decorated():
+            self.add_header_bar()
+
+    def add_header_bar(self):
+        self.menu_helper = WindowMenuHelper(self._client, self)
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = self.get_title()
+        button = Gtk.Button()
+        icon = Gio.ThemedIcon(name="open-menu-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        button.add(image)
+        button.connect("clicked", self.show_window_menu)
+        hb.pack_end(button)
+        self.set_titlebar(hb)
+
+    def show_window_menu(self, *args):
+        self.menu_helper.build()
+        self.menu_helper.popup(0, 0)
 
     def get_backing_class(self):
         raise NotImplementedError()
