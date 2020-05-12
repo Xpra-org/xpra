@@ -93,6 +93,14 @@ class WindowInfo(Gtk.Window):
         tb.new_row("Maximum Size", self.max_size_label)
         self.size_constraints_label = slabel()
         tb.new_row("Size Constraints", self.size_constraints_label)
+        tb.new_row("", slabel())
+        #backing:
+        self.backing_size_label = slabel()
+        tb.new_row("Backing Size", self.backing_size_label)
+        self.backing_render_size_label = slabel()
+        tb.new_row("Backing Render Size", self.backing_render_size_label)
+        self.backing_offsets_label = slabel()
+        tb.new_row("Backing Offsets", self.backing_offsets_label)
         self.add(tb.get_table())
 
     def destroy(self, *_args):
@@ -156,7 +164,7 @@ class WindowInfo(Gtk.Window):
         #geometry:
         self.pixel_depth_label.set_text(str(w.pixel_depth or 24))
         self.bool_icon(self.alpha_image, w._window_alpha)
-        self.bool_icon(self.opengl_image, getattr(w._backing, "gl_setup", False))
+        self.bool_icon(self.opengl_image, w.is_GL())
         #tells us if this window instance can paint with alpha
         self._window_alpha = False
         def geom_str(geom):
@@ -175,6 +183,17 @@ class WindowInfo(Gtk.Window):
             ssc.pop("gravity", None)
             return dict_str(ssc)
         self.size_constraints_label.set_text(hsc(w.size_constraints))
+        #backing:
+        b = w._backing
+        if b:
+            self.backing_size_label.set_text(csv(b.size))
+            self.backing_render_size_label.set_text(csv(b.render_size))
+            self.backing_offsets_label.set_text(csv(b.offsets))
+        else:
+            self.backing_size_label.set_text("n/a")
+            self.backing_render_size_label.set_text("n/a")
+            self.backing_offsets_label.set_text("n/a")
+
 
     def bool_icon(self, image, on_off):
         c = self._client
