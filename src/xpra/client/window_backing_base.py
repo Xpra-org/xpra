@@ -26,7 +26,6 @@ from xpra.common import (
     StaticGravity,
     GRAVITY_STR,
     )
-from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
 from xpra.log import Logger
 
 log = Logger("paint")
@@ -341,6 +340,7 @@ class WindowBackingBase:
                 "delta bucket %s data does not match: expected %s but got %s" % (
                     bucket, (width, height, delta), (lwidth, lheight, seq))
             assert lrgb_format==rgb_format, "delta region uses %s format, was expecting %s" % (rgb_format, lrgb_format)
+            from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
             deltalog("delta: xoring with bucket %i", bucket)
             rgb_data = xor_str(img_data, ldata)
         #store new pixels for next delta:
