@@ -137,7 +137,7 @@ class WindowInfo(Gtk.Window):
         def get_attributes():
             attr = {}
             workspace = w.get_desktop_workspace()
-            if workspace>0 and workspace!=WORKSPACE_UNSET:
+            if workspace not in (None, WORKSPACE_UNSET):
                 attr["workspace"] = workspace
             opacity = w.get_opacity()
             if opacity<1:
@@ -189,59 +189,3 @@ class WindowInfo(Gtk.Window):
         else:
             icon = c.get_pixbuf("unticked-small.png")
         image.set_from_pixbuf(icon)
-
-    def show_opengl_state(self):
-        if self.client.opengl_enabled:
-            glinfo = "%s / %s" % (
-                self.client.opengl_props.get("vendor", ""),
-                self.client.opengl_props.get("renderer", ""),
-                )
-            display_mode = self.client.opengl_props.get("display_mode", [])
-            bit_depth = self.client.opengl_props.get("depth", 0)
-            info = []
-            if bit_depth:
-                info.append("%i-bit" % bit_depth)
-            if "DOUBLE" in display_mode:
-                info.append("double buffering")
-            elif "SINGLE" in display_mode:
-                info.append("single buffering")
-            else:
-                info.append("unknown buffering")
-            if "ALPHA" in display_mode:
-                info.append("with transparency")
-            else:
-                info.append("without transparency")
-        else:
-            #info could be telling us that the gl bindings are missing:
-            glinfo = self.client.opengl_props.get("info", "disabled")
-            info = ["n/a"]
-        self.client_opengl_label.set_text(glinfo)
-        self.opengl_buffering.set_text(" ".join(info))
-
-    def show_window_renderers(self):
-        if not mixin_features.windows:
-            return
-        wr = []
-        renderers = {}
-        for wid, window in tuple(self.client._id_to_window.items()):
-            renderers.setdefault(window.get_backing_class(), []).append(wid)
-        for bclass, windows in renderers.items():
-            wr.append("%s (%i)" % (bclass.__name__.replace("Backing", ""), len(windows)))
-        self.window_rendering.set_text("GTK3: %s" % csv(wr))
-
-        self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
-
-    def get_window_encoder_stats(self):
-        window_encoder_stats = {}
-        #new-style server with namespace (easier):
-        window_dict = self.client.server_last_info.get("window")
-        if window_dict and isinstance(window_dict, dict):
-            for k,v in window_dict.items():
-                try:
-                    wid = int(k)
-                    encoder_stats = v.get("encoder")
-                    if encoder_stats:
-                        window_encoder_stats[wid] = encoder_stats
-                except Exception:
-                    log.error("Error: cannot lookup window dict", exc_info=True)
-        return window_encoder_stats
