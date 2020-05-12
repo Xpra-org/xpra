@@ -19,15 +19,25 @@ class WindowMenuHelper(MenuHelper):
 
     def setup_menu(self):
         menu = Gtk.Menu()
-        menu.append(self.make_closemenuitem())
+        #menu.append(self.make_closemenuitem())
         menu.connect("deactivate", self.menu_deactivated)
-        menu.append(self.make_aboutmenuitem())
-        if self.client.client_supports_opengl:
-            menu.append(self.make_openglmenuitem())
+        #menu.append(self.make_aboutmenuitem())
+        menu.append(self.make_infomenuitem())
+        #if self.client.client_supports_opengl:
+        #    menu.append(self.make_openglmenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_reinitmenuitem())
         menu.show_all()
         return menu
+
+    def make_infomenuitem(self):
+        def show_info(*_args):
+            from xpra.client.gtk_base.window_info import WindowInfo
+            wi = WindowInfo(self.client, self.window)
+            wi.show()
+        gl = self.menuitem("Window Information", "information.png", "Window state and details", show_info)
+        gl.set_tooltip_text()
+        return gl
 
     def make_openglmenuitem(self):
         gl = self.checkitem("OpenGL")
