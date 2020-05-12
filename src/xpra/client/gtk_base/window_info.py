@@ -170,7 +170,7 @@ class WindowInfo(Gtk.Window):
         geom = list(w.get_position()) + list(w.get_size())
         self.outer_geometry_label.set_text(geom_str(geom))
         self.inner_geometry_label.set_text(geom_str(w.get_drawing_area_geometry()))
-        self.offsets_label.set_text(",".join(w.window_offset or []) or "none")
+        self.offsets_label.set_text(",".join(str(x) for x in (w.window_offset or ())) or "none")
         self.frame_extents_label.set_text(csv(w._current_frame_extents or []) or "none")
         self.max_size_label.set_text(csv(w.max_window_size))
         def hsc(sc):

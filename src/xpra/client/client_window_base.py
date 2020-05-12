@@ -756,6 +756,11 @@ class ClientWindowBase(ClientWidgetBase):
     def void(self):
         pass
 
+    def show_window_info(self, *args):
+        from xpra.client.gtk_base.window_info import WindowInfo
+        wi = WindowInfo(self._client, self)
+        wi.show()
+
     def show_session_info(self, *args):
         self._client.show_session_info(*args)
 

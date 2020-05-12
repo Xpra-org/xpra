@@ -47,7 +47,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     def init_window(self, metadata):
         super().init_window(metadata)
-        if WINDOW_MENU and self.get_decorated():
+        if WINDOW_MENU and self.get_decorated() and not self.is_OR():
             self.add_header_bar()
 
     def add_header_bar(self):
