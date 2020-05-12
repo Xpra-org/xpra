@@ -11,10 +11,9 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT
 from xpra.util import envbool
-from xpra.os_util import bytestostr, is_gnome
+from xpra.os_util import bytestostr, is_gnome, OSX
 from xpra.log import Logger
 
-log = Logger("gtk", "window")
 paintlog = Logger("paint")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
@@ -34,9 +33,9 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
-WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
+WINDOW_ICON = envbool("XPRA_WINDOW_ICON", not OSX)
 WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
-WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
+WINDOW_MENU = envbool("XPRA_WINDOW_MENU", not OSX)
 
 
 """
@@ -49,7 +48,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     def init_window(self, metadata):
         super().init_window(metadata)
-        if (WINDOW_MENU or WINDOW_ICON) and self.get_decorated() and not self.is_OR():
+        self.header_bar_image = None
+        if (WINDOW_MENU or WINDOW_XPRA_MENU or WINDOW_ICON) and self.get_decorated() and not self.is_OR():
             self.add_header_bar()
 
     def _resize_pixbuf(self, pixbuf):
@@ -63,8 +63,9 @@ class GTK3ClientWindow(GTKClientWindowBase):
 
     def set_icon(self, pixbuf):
         super().set_icon(pixbuf)
-        if WINDOW_ICON:
-            self.header_bar_image.set_from_pixbuf(self._resize_pixbuf(pixbuf))
+        hbi = self.header_bar_image
+        if hbi:
+            hbi.set_from_pixbuf(self._resize_pixbuf(pixbuf))
 
     def add_header_bar(self):
         self.menu_helper = WindowMenuHelper(self._client, self)
