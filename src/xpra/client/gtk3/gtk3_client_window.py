@@ -34,8 +34,8 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
-WINDOW_MENU = envbool("XPRA_WINDOW_MENU", False)
-WINDOW_ICON = envbool("XPRA_WINDOW_ICON", False)
+WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
+WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
 
 
 """
