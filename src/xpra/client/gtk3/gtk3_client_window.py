@@ -11,7 +11,7 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT
 from xpra.util import envbool
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, is_gnome
 from xpra.log import Logger
 
 log = Logger("gtk", "window")
@@ -34,8 +34,9 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
-WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
+WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
+WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
 """
@@ -51,24 +52,25 @@ class GTK3ClientWindow(GTKClientWindowBase):
         if (WINDOW_MENU or WINDOW_ICON) and self.get_decorated() and not self.is_OR():
             self.add_header_bar()
 
+    def _resize_pixbuf(self, pixbuf):
+        tb = self.get_titlebar()
+        try:
+            h = tb.get_preferred_size()[-1]-8
+        except Exception:
+            h = 32
+        h = min(128, max(h, 24))
+        return pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
+
     def set_icon(self, pixbuf):
         super().set_icon(pixbuf)
         if WINDOW_ICON:
-            tb = self.get_titlebar()
-            try:
-                h = tb.get_preferred_size()[-1]-8
-            except Exception:
-                h = 32
-            h = min(128, max(h, 24))
-            icon = pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
-            self.header_bar_image.set_from_pixbuf(icon)
+            self.header_bar_image.set_from_pixbuf(self._resize_pixbuf(pixbuf))
 
     def add_header_bar(self):
         self.menu_helper = WindowMenuHelper(self._client, self)
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
         hb.props.title = self.get_title()
-        button = Gtk.Button()
         if WINDOW_ICON:
             self.header_bar_image = Gtk.Image()
             pixbuf = self._client.get_pixbuf("transparent.png")
@@ -77,10 +79,26 @@ class GTK3ClientWindow(GTKClientWindowBase):
         if WINDOW_MENU:
             icon = Gio.ThemedIcon(name="open-menu-symbolic")
             image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+            button = Gtk.Button()
             button.add(image)
             button.connect("clicked", self.show_window_menu)
             hb.pack_end(button)
+        if WINDOW_XPRA_MENU:
+            image = Gtk.Image()
+            pixbuf = self._client.get_pixbuf("xpra.png")
+            image.set_from_pixbuf(self._resize_pixbuf(pixbuf))
+            button = Gtk.Button()
+            button.add(image)
+            button.connect("clicked", self.show_xpra_menu)
+            hb.pack_end(button)
         self.set_titlebar(hb)
+
+    def show_xpra_menu(self, *args):
+        mh = getattr(self._client, "menu_helper", None)
+        if not mh:
+            from xpra.client.gtk3.tray_menu import GTK3TrayMenu
+            mh = GTK3TrayMenu(self._client)
+        mh.popup(0, 0)
 
     def show_window_menu(self, *args):
         self.menu_helper.build()
