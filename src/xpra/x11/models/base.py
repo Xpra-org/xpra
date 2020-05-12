@@ -392,12 +392,15 @@ class BaseWindowModel(CoreX11WindowModel):
             #the _XPRA_CONTENT_TYPE property takes precedence
             return
         content_type = guess_content_type(self)
-        metalog("content_type=%s", content_type)
+        metalog("guess_content_type(%s)=%s", self, content_type)
         self._updateprop("content-type", content_type)
 
     def _handle_xpra_content_type_change(self):
         content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""
         metalog("content_type=%s", content_type)
+        if not content_type:
+            content_type = guess_content_type(self)
+            metalog("guess_content_type(%s)=%s", self, content_type)
         self._updateprop("content-type", content_type)
 
     def _handle_xpra_quality_change(self):
