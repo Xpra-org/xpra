@@ -65,7 +65,6 @@ class ClientWindowBase(ClientWidgetBase):
         self._sticky = False
         self._skip_pager = False
         self._skip_taskbar = False
-        self._sticky = False
         self._iconified = False
         self._focused = False
         self.window_gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
