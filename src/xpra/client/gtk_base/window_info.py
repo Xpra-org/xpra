@@ -8,12 +8,8 @@ from gi.repository import Gtk, GLib
 
 from xpra.util import typedict, csv, WORKSPACE_UNSET
 from xpra.os_util import bytestostr
-from xpra.client import mixin_features
 from xpra.common import GRAVITY_STR
-from xpra.gtk_common.gtk_util import (
-    add_close_accel, label,
-    TableBuilder, imagebutton, get_gtk_version_info,
-    )
+from xpra.gtk_common.gtk_util import add_close_accel, label, TableBuilder
 from xpra.log import Logger
 
 log = Logger("info")
