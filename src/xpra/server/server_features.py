@@ -17,6 +17,7 @@ dbus            = True
 encoding        = True
 logging         = True
 network_state   = True
+shell           = False
 display         = True
 windows         = True
 rfb             = True

@@ -313,6 +313,7 @@ def set_server_features(opts):
     server_features.encoding        = impcheck("codecs")
     server_features.logging         = b(opts.remote_logging)
     #server_features.network_state   = ??
+    server_features.shell           = envbool("XPRA_SHELL", False)
     server_features.display         = opts.windows
     server_features.windows         = opts.windows and impcheck("codecs")
     server_features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")

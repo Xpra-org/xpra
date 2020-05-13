@@ -60,6 +60,9 @@ if server_features.logging:
 if server_features.network_state:
     from xpra.server.mixins.networkstate_server import NetworkStateServer
     SERVER_BASES.append(NetworkStateServer)
+if server_features.shell:
+    from xpra.server.mixins.shell_server import ShellServer
+    SERVER_BASES.append(ShellServer)
 if server_features.display:
     from xpra.server.mixins.display_manager import DisplayManager
     SERVER_BASES.append(DisplayManager)

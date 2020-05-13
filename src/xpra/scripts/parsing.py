@@ -235,6 +235,7 @@ def get_usage():
                         "control DISPLAY command [arg1] [arg2]..",
                         "print DISPLAY filename",
                         "showconfig",
+                        "shell",
                         "list",
                         "sessions",
                         "launcher",

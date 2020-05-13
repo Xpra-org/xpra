@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+
 from gi.repository import GLib
 from gi.repository import GObject
 
@@ -368,6 +369,93 @@ class MonitorXpraClient(SendCommandConnectClient):
     def _process_ping(self, packet):
         echotime = packet[1]
         self.send("ping_echo", echotime, 0, 0, 0, -1)
+
+
+class ShellXpraClient(SendCommandConnectClient):
+    """
+        Provides an interactive shell with the socket it connects to
+    """
+
+    def __init__(self, opts):
+        super().__init__(opts)
+        self.stdin_io_watch = None
+        self.stdin_buffer = ""
+        self.hello_extra["shell"] = "True"
+
+    def timeout(self, *args):
+        pass
+
+    def cleanup(self):
+        siw = self.stdin_io_watch
+        if siw:
+            self.stdin_io_watch = None
+            self.source_remove(siw)
+        super().cleanup()
+
+    def do_command(self, caps : typedict):
+        if not caps.boolget("shell"):
+            msg = "this server does not support the 'shell' subcommand"
+            log.error(msg)
+            self.disconnect_and_quit(EXIT_UNSUPPORTED, msg)
+            return
+        #start reading from stdin:
+        self.install_signal_handlers()
+        stdin = sys.stdin
+        fileno = stdin.fileno()
+        import os
+        import fcntl
+        fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
+        fcntl.fcntl(fileno, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+        self.stdin_io_watch = GLib.io_add_watch(sys.stdin,
+                                                GLib.PRIORITY_DEFAULT, GLib.IO_IN,
+                                                self.stdin_ready)
+        self.print_prompt()
+
+    def stdin_ready(self, *_args):
+        data = sys.stdin.read()
+        #log.warn("stdin=%r", data)
+        self.stdin_buffer += data
+        if self.stdin_buffer.endswith("\n"):
+            for line in self.stdin_buffer.splitlines():
+                if line:
+                    if line.rstrip("\n\r") in ("quit", "exit"):
+                        self.disconnect_and_quit(EXIT_OK, "user requested %s" % line)
+                        self.stdin_io_watch = None
+                        return False
+                    self.send("shell-exec", line.encode())
+        self.stdin_buffer = ""
+        return True
+
+    def init_packet_handlers(self):
+        super().init_packet_handlers()
+        self._packet_handlers["shell-reply"] = self._process_shell_reply
+        self._packet_handlers["ping"] = self._process_ping
+
+    def _process_ping(self, packet):
+        echotime = packet[1]
+        self.send("ping_echo", echotime, 0, 0, 0, -1)
+
+    def _process_shell_reply(self, packet):
+        fd = packet[1]
+        message = packet[2]
+        if fd==1:
+            stream = sys.stdout
+        elif fd==2:
+            stream = sys.stderr
+        else:
+            raise Exception("invalid file descriptor %i" % fd)
+        s = message.decode("utf8")
+        if s.endswith("\n"):
+            s = s[:-1]
+        stream.write("%s" % s)
+        stream.flush()
+        if fd==2:
+            stream.write("\n")
+            self.print_prompt()
+
+    def print_prompt(self):
+        sys.stdout.write("> ")
+        sys.stdout.flush()
 
 
 class VersionXpraClient(HelloRequestClient):
