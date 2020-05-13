@@ -96,7 +96,7 @@ def destroy_world_window():
     if ww:
         world_window = None
         ww.destroy()
-    
+
 
 class WorldWindow(Gtk.Window):
     def __init__(self, screen=Gdk.Screen.get_default()):
