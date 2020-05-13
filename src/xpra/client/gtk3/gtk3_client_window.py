@@ -33,9 +33,10 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
-WINDOW_ICON = envbool("XPRA_WINDOW_ICON", not OSX)
-WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
-WINDOW_MENU = envbool("XPRA_WINDOW_MENU", not OSX)
+CUSTOM_TITLE_BAR = envbool("XPRA_CUSTOM_TITLE_BAR", True) 
+WINDOW_ICON = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_ICON", not OSX)
+WINDOW_XPRA_MENU = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
+WINDOW_MENU = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_MENU", not OSX)
 
 
 """
@@ -49,7 +50,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
     def init_window(self, metadata):
         super().init_window(metadata)
         self.header_bar_image = None
-        if (WINDOW_MENU or WINDOW_XPRA_MENU or WINDOW_ICON) and self.get_decorated() and not self.is_OR():
+        if CUSTOM_TITLE_BAR and self.get_decorated() and not self.is_OR():
             self.add_header_bar()
 
     def _resize_pixbuf(self, pixbuf):
