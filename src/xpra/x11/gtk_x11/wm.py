@@ -17,7 +17,7 @@ from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
-from xpra.x11.gtk_x11.world_window import WorldWindow
+from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                              #@UnresolvedImport
     add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
@@ -406,6 +406,8 @@ class Wm(GObject.GObject):
         with xswallow:
             prop_del(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK")
             prop_del(self._ewmh_window, "_NET_WM_NAME")
+        destroy_world_window()
+
 
     def do_child_map_request_event(self, event):
         log("Found a potential client")
