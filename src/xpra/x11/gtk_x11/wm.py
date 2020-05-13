@@ -21,7 +21,7 @@ from xpra.x11.common import Unmanageable, MAX_WINDOW_SIZE
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.gtk_x11.world_window import WorldWindow
 from xpra.x11.models.window import WindowModel, configure_bits
-from xpra.x11.gtk_x11.world_window import WorldWindow
+from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                              #@UnresolvedImport
     add_fallback_receiver, remove_fallback_receiver, #@UnresolvedImport
@@ -415,6 +415,7 @@ class Wm(gobject.GObject):
         remove_fallback_receiver("child-map-request-event", self)
         for win in tuple(self._windows.values()):
             win.unmanage(True)
+        destroy_world_window()
 
     def do_child_map_request_event(self, event):
         log("Found a potential client")

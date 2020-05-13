@@ -94,6 +94,14 @@ def get_world_window():
     global world_window
     return world_window
 
+def destroy_world_window():
+    global world_window
+    ww = world_window
+    if ww:
+        world_window = None
+        ww.destroy()
+
+
 class WorldWindow(gtk.Window):
     def __init__(self, screen=screen_get_default()):
         global world_window
