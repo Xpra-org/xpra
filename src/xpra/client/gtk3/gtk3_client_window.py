@@ -71,6 +71,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
     def add_header_bar(self):
         self.menu_helper = WindowMenuHelper(self._client, self)
         hb = Gtk.HeaderBar()
+        hb.set_has_subtitle(False)
         hb.set_show_close_button(True)
         hb.props.title = self.get_title()
         if WINDOW_ICON:
