@@ -92,12 +92,10 @@ class GTKServerBase(ServerBase):
         # (if gtk has been loaded)
         gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
         #bug 2328: python3 shadow server segfault on Ubuntu 16.04
-        safe_close = self.session_type!="shadow"
-        if WIN32:
-            safe_close = False
-        close = envbool("XPRA_CLOSE_GTK_DISPLAY", safe_close)
-        log("close_gtk_display() safe_close=%s, close=%s, gdk_mod=%s",
-            safe_close, close, gdk_mod)
+        #also crashes on Ubuntu 20.04
+        close = envbool("XPRA_CLOSE_GTK_DISPLAY", False)
+        log("close_gtk_display() close=%s, gdk_mod=%s",
+            close, gdk_mod)
         if close and gdk_mod:
             displays = Gdk.DisplayManager.get().list_displays()
             log("close_gtk_display() displays=%s", displays)
