@@ -33,7 +33,7 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
-CUSTOM_TITLE_BAR = envbool("XPRA_CUSTOM_TITLE_BAR", True) 
+CUSTOM_TITLE_BAR = envbool("XPRA_CUSTOM_TITLE_BAR", True)
 WINDOW_ICON = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_ICON", not OSX)
 WINDOW_XPRA_MENU = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
 WINDOW_MENU = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_MENU", not OSX)
