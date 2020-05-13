@@ -415,6 +415,7 @@ class ShellXpraClient(SendCommandConnectClient):
         data = sys.stdin.read()
         #log.warn("stdin=%r", data)
         self.stdin_buffer += data
+        sent = 0
         if self.stdin_buffer.endswith("\n"):
             for line in self.stdin_buffer.splitlines():
                 if line:
@@ -423,7 +424,10 @@ class ShellXpraClient(SendCommandConnectClient):
                         self.stdin_io_watch = None
                         return False
                     self.send("shell-exec", line.encode())
+                    sent += 1
         self.stdin_buffer = ""
+        if not sent:
+            self.print_prompt()
         return True
 
     def init_packet_handlers(self):
