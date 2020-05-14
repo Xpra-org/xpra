@@ -2475,32 +2475,33 @@ XpraClient.prototype._process_notify_show = function(packet, ctx) {
 		window.closeNotification(nid);
 	}
 
-	if ("Notification" in window && actions.length==0) {
-		function notify() {
-			let icon_url = "";
-			if (icon) {
-				icon_url = "data:image/png;base64," + Utilities.ArrayBufferToBase64(icon);
-			}
-			/*
-			const nactions = [];
-			if (actions) {
-				ctx.log("actions=", actions);
-				for (let i=0; i<actions.length/2;++i) {
-					nactions.push({
-						"action"	: actions[i*2],
-						"title"		: actions[i*2+1],
-					});
-				}
-			}*/
-			const notification = new Notification(summary, { body: body, icon: icon_url });
-			notification.onclose = function() {
-				const reason = 2;	//closed by the user - best guess...
-				ctx.send(["notification-close", nid, reason, ""]);
-			};
-			notification.onclick = function() {
-				ctx.log("user clicked on notification", nid);
-			};
+	function notify() {
+		let icon_url = "";
+		if (icon) {
+			icon_url = "data:image/png;base64," + Utilities.ArrayBufferToBase64(icon);
 		}
+		/*
+		const nactions = [];
+		if (actions) {
+			ctx.log("actions=", actions);
+			for (let i=0; i<actions.length/2;++i) {
+				nactions.push({
+					"action"	: actions[i*2],
+					"title"		: actions[i*2+1],
+				});
+			}
+		}*/
+		const notification = new Notification(summary, { body: body, icon: icon_url });
+		notification.onclose = function() {
+			const reason = 2;	//closed by the user - best guess...
+			ctx.send(["notification-close", nid, reason, ""]);
+		};
+		notification.onclick = function() {
+			ctx.log("user clicked on notification", nid);
+		};
+	}
+
+	if ("Notification" in window && actions.length==0) {
 		//we have notification support in the browser
 		if (Notification.permission === "granted") {
 			notify();
