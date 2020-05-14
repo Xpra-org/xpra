@@ -138,7 +138,6 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
 
                     if minifier=="uglifyjs":
                         minify_cmd = ["uglifyjs",
-                                      "--screw-ie8",
                                       fsrc,
                                       "-o", dst,
                                       "--compress",
