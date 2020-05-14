@@ -2432,7 +2432,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             if WIN32:
                 uri = "named-pipe://%s" % display_name
             else:
-                uri = "socket://%s" % display_name
+                uri = "socket://%s" % socket_path
             display = parse_display_name(error_cb, opts, uri)
             if proc and proc.poll() is None:
                 #start a thread just to reap server startup process (yuk)
