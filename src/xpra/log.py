@@ -141,6 +141,7 @@ def standard_logging(log, level, msg, *args, **kwargs):
 global_logging_handler = standard_logging
 
 def set_global_logging_handler(h):
+    assert callable(h)
     global global_logging_handler
     saved = global_logging_handler
     global_logging_handler = h

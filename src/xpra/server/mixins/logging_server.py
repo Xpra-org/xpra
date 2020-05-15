@@ -85,7 +85,7 @@ class LoggingServer(StubServerMixin):
         ll = self.local_logging
         if ll:
             self.local_logging = None
-            set_global_logging_handler(self.local_logging)
+            set_global_logging_handler(ll)
 
 
     def remote_logging_handler(self, log, level, msg, *args, **kwargs):
