@@ -717,7 +717,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Prevent sessions from being taken over by new clients. "
                       +" Default: %s." % enabled_or_auto(defaults.lock))
     legacy_bool_parse("remote-logging")
-    group.add_option("--remote-logging", action="store", metavar="yes|no|both",
+    group.add_option("--remote-logging", action="store", metavar="no|send|receive|both",
                       dest="remote_logging", default=defaults.remote_logging,
                       help="Forward all the client's log output to the server. "
                       +" Default: %s." % enabled_str(defaults.remote_logging))
