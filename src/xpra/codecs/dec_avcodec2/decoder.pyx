@@ -23,6 +23,9 @@ from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
 
 
+cdef extern from "register_compat.h":
+    void register_all()
+
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
 
@@ -131,6 +134,7 @@ for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
+register_all()
 CODECS = []
 if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
     CODECS.append("h264")
@@ -324,6 +328,8 @@ cdef class Decoder:
             log.error("invalid pixel format: %s", colorspace)
             return  False
         self.actual_pix_fmt = self.pix_fmt
+
+        register_all()
 
         cdef AVCodecID CodecID
         if self.encoding=="h264":
