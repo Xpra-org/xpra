@@ -241,6 +241,14 @@
 				  </li>
 				  <li class="list-group-item">
 				  	<input type="checkbox" id="floating_menu"> <span>Floating Menu</span>, <input type="checkbox" id="autohide"> <span>Auto Hide</span>, <input type="checkbox" id="clock"> <span>Server clock</span>
+				  	<br />
+					<li class="list-group-item">
+					  Menu position:
+					  <select id="toolbar_position">
+						<option value="top-left">Top Left</option>
+						<option value="top">Top</option>
+						<option value="top-right">Top Right</option>
+					  </select>
 				  </li>
 				  <li class="list-group-item">
 				  	<input type="checkbox" id="video"> <span>Video <input type="checkbox" id="mediasource_video"> Native decoding</span>
@@ -295,7 +303,7 @@ function doConnect() {
 		}
 	}
 	add_prop("submit", true);
-	const val_props = ["server", "port", "path", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec"];
+	const val_props = ["server", "port", "path", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
 	for (let i = 0; i < val_props.length; i++) {
 		const prop = val_props[i];
 		const value = document.getElementById(prop).value;
@@ -375,9 +383,13 @@ function fill_form(default_settings) {
 	if (pathname && pathname=="/") {
 		pathname = "";
 	}
+	var path = getparam("path")
+	if (path && path.endsWith("/index.html")) {
+		path = path.substr(0, path.lastIndexOf("/"));
+	}
 	document.getElementById("server").value = getparam("server") || link.hostname;
 	document.getElementById("port").value = getparam("port") || link.port;
-	document.getElementById("path").value = getparam("path") || pathname;
+	document.getElementById("path").value = path || pathname;
 	document.getElementById("username").value = getparam("username") || "";
 	const https = document.location.protocol=="https:";
 	const ssl = getboolparam("ssl", https);
@@ -566,6 +578,10 @@ function fill_form(default_settings) {
 	}
 	floating_menu_checkbox.change(set_menu_attributes_visibility);
 	set_menu_attributes_visibility();
+	let toolbar_position = getparam("toolbar_position") || "top";
+	if (toolbar_position) {
+		document.getElementById('toolbar_position').value = toolbar_position;
+	}
 
 	//this may override default values (ie: terminate flags are off for connect mode):
 	set_exit_actions(action=="connect" || action=="");

@@ -452,6 +452,10 @@
 				const swap_keys = getboolparam("swap_keys", Utilities.isMacOS());
 				const scroll_reverse_x = getboolparam("scroll_reverse_x", false);
 				const scroll_reverse_y = getboolparam("scroll_reverse_y", Utilities.isMacOS());
+				const floating_menu = getboolparam("floating_menu", true);
+				const toolbar_position = getparam("toolbar_position");
+				const autohide = getboolparam("autohide", false);
+				
 				try {
 					sessionStorage.removeItem("password");
 				}
@@ -648,13 +652,24 @@
 									"insecure"			: insecure,
 									"server"			: server,
 									"port"				: port,
+									"ssl"				: ssl,
+									"path"				: path,
+									"encryption"		: encryption,
+									//"key"				: key,
 									"encoding"			: encoding,
 									"bandwidth_limit"	: bandwidth_limit,
 									"keyboard_layout"	: keyboard_layout,
+									"swap_keys"			: swap_keys,
+									"scroll_reverse_x"	: scroll_reverse_x,
+									"scroll_reverse_y"	: scroll_reverse_y,
+									"reconnect"			: reconnect,
 									"action"			: action,
+									"start"				: start,
 									"sound"				: sound,
 									"audio_codec"		: audio_codec,
 									"clipboard"			: clipboard,
+									"printing"			: printing,
+									"file_transfer"		: file_transfer,
 									"exit_with_children": exit_with_children,
 									"exit_with_client"	: exit_with_client,
 									"sharing"			: sharing,
@@ -663,6 +678,9 @@
 									"mediasource_video"	: mediasource_video,
 									"remote_logging"	: remote_logging,
 									"ignore_audio_blacklist" : ignore_audio_blacklist,
+									"floating_menu"		: floating_menu,
+									"toolbar_position"	: toolbar_position,
+									"autohide"			: autohide,
 									};
 							for (let i=0; i<client.debug_categories.length; i++) {
 								const category = client.debug_categories[i];
@@ -992,17 +1010,36 @@
 
 			let client;
 			function init_page() {
+				const floating_menu = getboolparam("floating_menu", true);
+				const autohide = getboolparam("autohide", false);
+				const toolbar_position = getparam("toolbar_position");
 				const float_menu_element = $('#float_menu');
-				if (!getboolparam("floating_menu", true)) {
+				if (!floating_menu) {
 					float_menu_element.hide();
 				}
-
-				if (getboolparam("autohide", false)) {
-					float_menu_element.on('mouseover', expand_float_menu);
-					float_menu_element.on('mouseout', retract_float_menu);
-				}
 				else {
-					expand_float_menu();
+					var toolbar_width = float_menu_element.width();
+					var left = 0;
+					var top = float_menu_element.offset().top || 0;
+					var screen_width = $('#screen').width();
+					if (toolbar_position=="top-left") {
+						//no calculations needed
+					}
+					else if (toolbar_position=="top") {
+						left = screen_width/2-toolbar_width/2;
+					}
+					else if (toolbar_position=="top-right") {
+						left = screen_width-toolbar_width-100;
+					}
+					float_menu_element.offset({ top: top, left: left });
+
+					if (autohide) {
+						float_menu_element.on('mouseover', expand_float_menu);
+						float_menu_element.on('mouseout', retract_float_menu);
+					}
+					else {
+						expand_float_menu();
+					}
 				}
 
 				const touchaction = getparam("touchaction") || "scroll";
@@ -1080,7 +1117,7 @@
 					//so getparam will look there
 					for (const key in tmp_default_settings) {
 						default_settings[key] = tmp_default_settings[key];
-    				}
+					}
 					init_page();
 				};
 				xhr.onerror  = function() {
