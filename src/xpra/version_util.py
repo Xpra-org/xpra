@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ import platform
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
-from xpra.util import updict, envbool, get_util_logger
+from xpra.util import updict, envbool, obsc, get_util_logger
 from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
@@ -68,7 +68,7 @@ def version_compat_check(remote_version : str):
     return None
 
 
-def get_host_info() -> dict:
+def get_host_info(obfuscate) -> dict:
     #this function is for non UI thread info
     info = {
         "pid"                   : os.getpid(),
@@ -80,7 +80,15 @@ def get_host_info() -> dict:
             },
         }
     try:
-        info["hostname"] = socket.gethostname()
+        hostname = socket.gethostname()
+        if obfuscate and hostname.find(".")>0:
+            parts = hostname.split(".")
+            for i, part in enumerate(parts):
+                if i>0:
+                    parts[i] = obsc(part)
+            hostname = ".".join(parts)
+        if hostname:
+            info["hostname"] = hostname
     except OSError:
         pass
     if POSIX:
