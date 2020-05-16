@@ -393,7 +393,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 #record our response, so we will accept the file
                 self.data_send_requests[send_id] = (dtype, url, printit, newopenit)
             cb_answer(accept)
-        self.file_ask_dialog = getOpenRequestsWindow()
+        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload)
         self.file_ask_dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
         self.file_ask_dialog.show()
 
