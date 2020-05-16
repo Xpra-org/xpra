@@ -16,12 +16,13 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.os_util import hexstr
 from xpra.platform.gui import force_focus
-from xpra.util import nonl, envint, repr_ellipsized
+from xpra.util import nonl, envint, envbool, repr_ellipsized
 from xpra.log import Logger
 
 log = Logger("util")
 
 STEP_DELAY = envint("XPRA_BUG_REPORT_STEP_DELAY", 0)
+OBFUSCATE = envbool("XPRA_OBFUSCATE_BUG_REPORT", True)
 
 
 class BugReport:
@@ -113,7 +114,7 @@ class BugReport:
                     "executable"    : sys.executable,
                     "version"       : get_version_info(),
                     "platform"      : get_platform_info(),
-                    "host"          : get_host_info(),
+                    "host"          : get_host_info(OBFUSCATE),
                     "paths"         : get_path_info(),
                     "gtk"           : get_gtk_version_info(),
                     "gui"           : get_gui_info(),
@@ -160,7 +161,7 @@ class BugReport:
             get_screenshot = _get_screenshot
         self.toggles = (
                    ("system",       "txt",  "System",           get_sys_info,
-                    "Xpra version, platform and host information"),
+                    "Xpra version, platform and host information - including hostname and account information"),
                    ("network",      "txt",  "Network",          get_net_info,
                     "Compression, packet encoding and encryption"),
                    ("encoding",     "txt",  "Encodings",        codec_versions,

@@ -68,7 +68,7 @@ def version_compat_check(remote_version : str):
     return None
 
 
-def get_host_info(obfuscate) -> dict:
+def get_host_info(obfuscate=False) -> dict:
     #this function is for non UI thread info
     info = {
         "pid"                   : os.getpid(),
