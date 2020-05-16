@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -12,7 +12,7 @@ import uuid
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import monotonic_time, bytestostr, strtobytes, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, nonl, envint, envbool, engs
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.simple_stats import std_unit
 from xpra.make_thread import start_thread
 from xpra.log import Logger
@@ -105,7 +105,7 @@ class FileTransferAttributes:
         fta = pask(file_transfer)
         self.file_transfer_ask = fta and can_ask
         self.file_transfer = fta or pbool("file-transfer", file_transfer)
-        self.file_size_limit = file_size_limit
+        self.file_size_limit = parse_with_unit("file-size-limit", file_size_limit, "B", min_value=0)
         self.file_chunks = min(self.file_size_limit*1024*1024, FILE_CHUNKS_SIZE)
         pa = pask(printing)
         self.printing_ask = pa and can_ask

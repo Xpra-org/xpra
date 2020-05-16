@@ -543,7 +543,7 @@ OPTION_TYPES = {
                     "min-speed"         : int,
                     "compression_level" : int,
                     "dpi"               : int,
-                    "file-size-limit"   : int,
+                    "file-size-limit"   : str,
                     "idle-timeout"      : int,
                     "server-idle-timeout" : int,
                     "sync-xvfb"         : int,
@@ -1110,6 +1110,8 @@ def print_number(i, auto_value=0):
     return str(i)
 
 def parse_with_unit(numtype, v, subunit="bps", min_value=250000):
+    if isinstance(v, int):
+        return v
     #special case for bandwidth-limit, which can be specified using units:
     try:
         v = str(v).lower().strip()

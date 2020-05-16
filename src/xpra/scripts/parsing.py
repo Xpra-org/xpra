@@ -14,6 +14,7 @@ from xpra.version_util import full_version_str
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import envbool, csv
 from xpra.os_util import getuid, WIN32, OSX, POSIX
+from xpra.simple_stats import std_unit
 from xpra.scripts.config import (
     OPTION_TYPES,
     InitException, InitInfo, InitExit,
@@ -453,6 +454,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--printing", action="store", metavar="yes|no|ask",
                       dest="printing", default=defaults.printing,
                       help="Support printing. Default: %s." % enabled_str(defaults.printing))
+    group.add_option("--file-size-limit", action="store", metavar="SIZE",
+                      dest="file_size_limit", default=defaults.file_size_limit,
+                      help="Maximum size of file transfers. Default: %s." % defaults.file_size_limit)
     if supports_server:
         group.add_option("--lpadmin", action="store",
                           dest="lpadmin", default=defaults.lpadmin,
@@ -471,7 +475,6 @@ def do_parse_cmdline(cmdline, defaults):
     hidden_options["pdf-printer"] = defaults.pdf_printer
     hidden_options["postscript-printer"] = defaults.postscript_printer
     hidden_options["add-printer-options"] = defaults.add_printer_options
-    hidden_options["file-size-limit"] = defaults.file_size_limit
 
     legacy_bool_parse("exit-with-client")
     if (supports_server or supports_shadow):
