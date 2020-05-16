@@ -1412,6 +1412,8 @@ def run_send_file(extra_args):
     errors = 0
     for f in files:
         filelog("run_send_file(%s) sending '%s'", extra_args, f)
+        if not os.path.isabs(f):
+            f = os.path.abspath(f)
         #xpra control :10 send-file /path/to/the-file-to-send open CLIENT_UUID
         cmd = xpra_cmd + ["control", uri, "send-file", f]
         filelog("cmd=%s", cmd)
