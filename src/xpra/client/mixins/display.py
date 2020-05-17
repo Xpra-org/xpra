@@ -286,16 +286,14 @@ class DisplayClient(StubClientMixin):
             raise SystemExit(message)
         if maxw>=16384 or maxh>=16384:
             log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
-        #max packet size to accomodate:
-        # * full screen RGBX (32 bits) uncompressed
-        # * file-size-limit
-        # both with enough headroom for some metadata (4k)
+        #max packet size to accomodate
+        # a full screen RGBX (32 bits) uncompressed image
+        # also with enough headroom for some metadata (4k)
         p = self._protocol
         if p:
             #we can't assume to have a real ClientConnection object:
-            file_size_limit = getattr(self, "file_size_limit", 0)
-            p.max_packet_size = max(maxw*maxh*4, file_size_limit*1024*1024) + 4*1024
-            p.abs_max_packet_size = max(maxw*maxh*4 * 4, file_size_limit*1024*1024) + 4*1024
+            p.max_packet_size = maxw*maxh*4 + 4*1024
+            p.abs_max_packet_size = maxw*maxh*4*4 + 4*1024
             log("maximum packet size set to %i", p.max_packet_size)
 
 

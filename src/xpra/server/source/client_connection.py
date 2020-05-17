@@ -213,11 +213,6 @@ class ClientConnection(StubSourceMixin):
         if getattr(self, "mmap_size", 0)>0:
             log("mmap enabled, ignoring bandwidth-limit")
             self.bandwidth_limit = 0
-        #adjust max packet size if file transfers are enabled:
-        #TODO: belongs in mixin:
-        file_transfer = getattr(self, "file_transfer", None)
-        if file_transfer:
-            self.protocol.max_packet_size = max(self.protocol.max_packet_size, self.file_size_limit*1024*1024)
 
     def get_socket_bandwidth_limit(self) -> int:
         p = self.protocol

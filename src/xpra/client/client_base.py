@@ -825,9 +825,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if not self.parse_network_capabilities(caps):
             netlog("server_connection_established(..) failed network capabilities")
             return False
-        #raise packet size if required:
-        if self.file_transfer:
-            self._protocol.max_packet_size = max(self._protocol.max_packet_size, self.file_size_limit*1024*1024)
         netlog("server_connection_established(..) adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
         return True

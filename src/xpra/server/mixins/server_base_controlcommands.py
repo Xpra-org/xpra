@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 import os.path
 
-from xpra.util import parse_scaling_value, from0to100
-from xpra.server.control_command import ArgsControlCommand, ControlError
+from xpra.util import parse_scaling_value, csv, from0to100
 from xpra.os_util import load_binary_file
-from xpra.util import csv
+from xpra.simple_stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -260,10 +260,9 @@ class ServerBaseControlCommands(StubServerMixin):
         if not sources:
             raise ControlError("no clients found matching: %s" % client_uuids)
         def checksize(file_size):
-            file_size_MB = file_size//1024//1024
-            if file_size_MB>self.file_transfer.file_size_limit:
-                raise ControlError("file '%s' is too large: %iMB (limit is %iMB)" % (
-                    filename, file_size_MB, self.file_transfer.file_size_limit))
+            if file_size>self.file_transfer.file_size_limit:
+                raise ControlError("file '%s' is too large: %sB (limit is %sB)" % (
+                    filename, std_unit(file_size), std_unit(self.file_transfer.file_size_limit)))
 
         #find the file and load it:
         actual_filename = os.path.abspath(os.path.expanduser(filename))
@@ -281,7 +280,6 @@ class ServerBaseControlCommands(StubServerMixin):
             raise ControlError("failed to load '%s'" % actual_filename)
         #verify size:
         file_size = len(data)
-        file_size_MB = file_size//1024//1024
         checksize(file_size)
         #send it to each client:
         for ss in sources:
@@ -289,9 +287,10 @@ class ServerBaseControlCommands(StubServerMixin):
             if not getattr(ss, source_flag_name):
                 log.warn("Warning: cannot %s '%s'", command_type, filename)
                 log.warn(" client %s does not support this feature", ss)
-            elif file_size_MB>ss.file_size_limit:
+            elif file_size>ss.file_size_limit:
                 log.warn("Warning: cannot %s '%s'", command_type, filename)
-                log.warn(" client %s file size limit is %iMB (file is %iMB)", ss, ss.file_size_limit, file_size_MB)
+                log.warn(" client %s file size limit is %sB (file is %sB)",
+                         ss, std_unit(ss.file_size_limit), std_unit(file_size))
             else:
                 ss.send_file(filename, "", data, file_size, *send_file_args)
         return "%s of '%s' to %s initiated" % (command_type, filename, client_uuids)

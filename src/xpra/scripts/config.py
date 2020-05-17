@@ -650,7 +650,6 @@ NON_COMMAND_LINE_OPTIONS = [
     "pdf-printer",
     "postscript-printer",
     "add-printer-options",
-    "file-size-limit",
     ]
 
 START_COMMAND_OPTIONS = [
@@ -945,7 +944,7 @@ def get_defaults():
                     "min-speed"         : 30,
                     "compression_level" : 1,
                     "dpi"               : 0,
-                    "file-size-limit"   : 100,
+                    "file-size-limit"   : "100M",
                     "idle-timeout"      : 0,
                     "server-idle-timeout" : 0,
                     "sync-xvfb"         : 0,

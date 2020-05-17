@@ -461,12 +461,7 @@ class ProxyInstance:
                 auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key, padding_options)
                 caps.update(auth_caps)
             #may need to bump packet size:
-            proto.max_packet_size = maxw*maxh*4*4
-            file_transfer = self.caps.boolget("file-transfer") and c.boolget("file-transfer")
-            file_size_limit = max(self.caps.intget("file-size-limit"), c.intget("file-size-limit"))
-            file_max_packet_size = int(file_transfer) * (1024 + file_size_limit*1024*1024)
-            self.client_protocol.max_packet_size = max(self.client_protocol.max_packet_size, file_max_packet_size)
-            self.server_protocol.max_packet_size = max(self.server_protocol.max_packet_size, file_max_packet_size)
+            proto.max_packet_size = max(4*1024*1024, maxw*maxh*4*4)
             packet = ("hello", caps)
         elif packet_type=="ping_echo" and self.server_ping_timer and len(packet)>=7 and packet[6]==strtobytes(self.uuid):
             #this is one of our ping packets:

@@ -114,7 +114,7 @@ class FileTransferAttributes:
         self.file_transfer_ask = fta and can_ask
         self.file_transfer = fta or pbool("file-transfer", file_transfer)
         self.file_size_limit = parse_with_unit("file-size-limit", file_size_limit, "B", min_value=0)
-        self.file_chunks = min(self.file_size_limit*1024*1024, FILE_CHUNKS_SIZE)
+        self.file_chunks = FILE_CHUNKS_SIZE
         pa = pask(printing)
         self.printing_ask = pa and can_ask
         self.printing = pa or pbool("printing", printing)
@@ -134,7 +134,8 @@ class FileTransferAttributes:
         return {
                 "file-transfer"     : self.file_transfer,
                 "file-transfer-ask" : self.file_transfer_ask,
-                "file-size-limit"   : self.file_size_limit,
+                "file-size-limit"   : self.file_size_limit//1024//1024,     #legacy name (use max-file-size)
+                "max-file-size"     : self.file_size_limit,
                 "file-chunks"       : self.file_chunks,
                 "open-files"        : self.open_files,
                 "open-files-ask"    : self.open_files_ask,
@@ -219,8 +220,8 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_open_url = c.boolget("open-url")
         self.remote_open_url_ask = c.boolget("open-url-ask")
         self.remote_file_ask_timeout = c.intget("file-ask-timeout")
-        self.remote_file_size_limit = c.intget("file-size-limit")
-        self.remote_file_chunks = max(0, min(self.remote_file_size_limit*1024*1024, c.intget("file-chunks")))
+        self.remote_file_size_limit = c.intget("max-file-size") or c.intget("file-size-limit")*1024*1024
+        self.remote_file_chunks = max(0, min(self.remote_file_size_limit, c.intget("file-chunks")))
         self.dump_remote_caps()
 
     def dump_remote_caps(self):
@@ -418,9 +419,10 @@ class FileTransferHandler(FileTransferAttributes):
         l("receiving file: %s",
           [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         assert filesize>0, "invalid file size: %s" % filesize
-        if filesize>self.file_size_limit*1024*1024:
+        if filesize>self.file_size_limit:
             l.error("Error: file '%s' is too large:", basefilename)
-            l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
+            l.error(" %sB, the file size limit is %sB",
+                    std_unit(filesize), std_unit(self.file_size_limit))
             return
         chunk_id = options.strget("file-chunk-id")
         #basefilename should be utf8:
@@ -604,15 +606,15 @@ class FileTransferHandler(FileTransferAttributes):
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         filelog.warn("Warning: cannot %s the file '%s'", action, basefilename)
-        filelog.warn(" this file is too large: %sB", std_unit(filesize, unit=1024))
-        filelog.warn(" the %s file size limit is %iMB", location, limit)
+        filelog.warn(" this file is too large: %sB", std_unit(filesize))
+        filelog.warn(" the %s file size limit is %sB", location, std_unit(limit))
 
     def check_file_size(self, action, filename, filesize):
         basefilename = os.path.basename(filename)
-        if filesize>self.file_size_limit*1024*1024:
+        if filesize>self.file_size_limit:
             self.file_size_warning(action, "local", basefilename, filesize, self.file_size_limit)
             return False
-        if filesize>self.remote_file_size_limit*1024*1024:
+        if filesize>self.remote_file_size_limit:
             self.file_size_warning(action, "remote", basefilename, filesize, self.remote_file_size_limit)
             return False
         return True
