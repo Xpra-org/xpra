@@ -9,7 +9,7 @@ from gi.repository import Gdk, Gtk, Gio, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
-from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT
+from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, scaled_image
 from xpra.util import envbool
 from xpra.os_util import bytestostr, is_gnome, OSX
 from xpra.log import Logger
@@ -53,20 +53,21 @@ class GTK3ClientWindow(GTKClientWindowBase):
         if CUSTOM_TITLE_BAR and self.get_decorated() and not self.is_OR():
             self.add_header_bar()
 
-    def _resize_pixbuf(self, pixbuf):
+    def _icon_size(self):
         tb = self.get_titlebar()
         try:
             h = tb.get_preferred_size()[-1]-8
         except Exception:
-            h = 32
-        h = min(128, max(h, 24))
-        return pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
+            h = 24
+        return min(128, max(h, 24))
 
     def set_icon(self, pixbuf):
         super().set_icon(pixbuf)
         hbi = self.header_bar_image
         if hbi:
-            hbi.set_from_pixbuf(self._resize_pixbuf(pixbuf))
+            h = self._icon_size()
+            pixbuf = pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
+            hbi.set_from_pixbuf(pixbuf)
 
     def add_header_bar(self):
         self.menu_helper = WindowMenuHelper(self._client, self)
@@ -75,9 +76,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
         hb.set_show_close_button(True)
         hb.props.title = self.get_title()
         if WINDOW_ICON:
-            self.header_bar_image = Gtk.Image()
             pixbuf = self._client.get_pixbuf("transparent.png")
-            self.header_bar_image.set_from_pixbuf(pixbuf)
+            self.header_bar_image = scaled_image(pixbuf, self._icon_size())
             hb.pack_start(self.header_bar_image)
         if WINDOW_MENU:
             icon = Gio.ThemedIcon(name="open-menu-symbolic")
@@ -87,9 +87,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
             button.connect("clicked", self.show_window_menu)
             hb.pack_end(button)
         if WINDOW_XPRA_MENU:
-            image = Gtk.Image()
             pixbuf = self._client.get_pixbuf("xpra.png")
-            image.set_from_pixbuf(self._resize_pixbuf(pixbuf))
+            image = scaled_image(pixbuf, self._icon_size())
             button = Gtk.Button()
             button.add(image)
             button.connect("clicked", self.show_xpra_menu)
