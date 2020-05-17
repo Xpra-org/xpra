@@ -24,6 +24,9 @@ def inject_css_overrides():
     _done = True
 
     css_dir = os.path.join(get_resources_dir(), "css")
+    if not os.path.exists(css_dir) or not os.path.isdir(css_dir):
+        log.error("Error: cannot find directory '%s'", css_dir)
+        return
     log("inject_css_overrides() css_dir=%s", css_dir)
     from gi.repository import Gtk, Gdk
     style_provider = Gtk.CssProvider()
