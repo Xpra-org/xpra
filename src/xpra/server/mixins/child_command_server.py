@@ -204,7 +204,7 @@ class ChildCommandServer(StubServerMixin):
             if not source.xdg_menu_update:
                 #we have to send it now:
                 xdg_menu = self._get_xdg_menu_data()
-                log.warn("%i entries sent in hello", len(xdg_menu))
+                log("%i entries sent in hello", len(xdg_menu or ()))
                 if xdg_menu:
                     l = len(str(xdg_menu))
                     #arbitrary: don't use more than half
