@@ -183,12 +183,16 @@ class ChildCommandServer(StubServerMixin):
             return None
         if not self.start_new_commands:
             return None
-        if POSIX or OSX:
+        if OSX:
+            return None
+        if POSIX:
             from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
             return load_xdg_menu_data(force_reload)
-        elif WIN32:
+        if WIN32:
             from xpra.platform.win32.menu_helper import load_menu
             return load_menu()
+        log.error("Error: unsupported platform!")
+        return None
 
     def get_caps(self, source) -> dict:
         caps = {}
