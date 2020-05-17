@@ -40,7 +40,6 @@ from xpra.platform.win32.common import (
 from xpra.util import AdHocStruct, csv, envint, envbool, typedict
 from xpra.os_util import get_util_logger, strtobytes
 from xpra.log import Logger
-from xpra.platform.win32.constants import ENDSESSION_LOGOFF
 
 log = Logger("win32")
 grablog = Logger("win32", "grab")
