@@ -6,6 +6,7 @@ xpra (4.0.1-1) UNRELEASED; urgency=low
   * fix missing avcodec encodings with Ubuntu 18.04
   * fix 'xpra send-file' to use absolute file paths
   * fix MacOS shadow servers failing to accept connections
+  * don't depend on gnome bits if plasma-desktop is installed
 
  -- Antoine Martin <antoine@xpra.org>  Sun, 17 May 2020 17:22:28 +0700
 

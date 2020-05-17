@@ -7,6 +7,7 @@ v4.0 (2020-05-17)
 	-- fix missing avcodec encodings with Ubuntu 18.04
 	-- fix 'xpra send-file' to use absolute file paths
 	-- fix MacOS shadow servers failing to accept connections
+	-- don't depend on gnome bits if plasma-desktop is installed
 
 
 v4.0 (2020-05-10)
