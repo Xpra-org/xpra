@@ -392,6 +392,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %{_datadir}/xpra/content-type
 %{_datadir}/xpra/content-categories
+%{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open
