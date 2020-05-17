@@ -158,11 +158,11 @@ Recommends: python3-dbus
 #for using SSH passwords from the GUI launcher:
         ,sshpass
 # to make the system tray work again with gnome-shell:
-#buster:		,gnome-shell-extension-appindicator
-#bionic:		,gnome-shell-extension-appindicator
-#disco:        ,gnome-shell-extension-appindicator
-#eoan:        ,gnome-shell-extension-appindicator
-#focal:        ,gnome-shell-extension-appindicator
+#buster:		,gnome-shell-extension-appindicator | plasma-desktop
+#bionic:		,gnome-shell-extension-appindicator | plasma-desktop
+#disco:        ,gnome-shell-extension-appindicator | plasma-desktop
+#eoan:        ,gnome-shell-extension-appindicator | plasma-desktop
+#focal:        ,gnome-shell-extension-appindicator | plasma-desktop
 #most of the examples use an xterm:
         ,xterm
 Suggests: openssh-server
