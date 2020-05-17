@@ -35,6 +35,7 @@ from xpra.gtk_common.gobject_util import no_arg_signal
 from xpra.client.ui_client_base import UIXpraClient
 from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
+from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.client.mixins.window_manager import WindowClient
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import (
@@ -65,6 +66,8 @@ CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 OPENGL_MIN_SIZE = envint("XPRA_OPENGL_MIN_SIZE", 32)
 NO_OPENGL_WINDOW_TYPES = os.environ.get("XPRA_NO_OPENGL_WINDOW_TYPES",
                                         "DOCK,TOOLBAR,MENU,UTILITY,SPLASH,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(",")
+
+inject_css_overrides()
 
 
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
@@ -393,7 +396,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 #record our response, so we will accept the file
                 self.data_send_requests[send_id] = (dtype, url, printit, newopenit)
             cb_answer(accept)
-        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload)
+        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
         self.file_ask_dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
         self.file_ask_dialog.show()
 
@@ -405,8 +408,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def show_ask_data_dialog(self, *_args):
         from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
-        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload)
+        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
         self.file_ask_dialog.show()
+
+    def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None):
+        fad = self.file_ask_dialog
+        if fad:
+            self.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
 
 
     def accept_data(self, send_id, dtype, url, printit, openit):
