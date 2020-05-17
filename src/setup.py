@@ -1682,6 +1682,7 @@ if data_ENABLED:
     add_data_files("%s/icons" % share_xpra,          glob.glob("icons/*png"))
     add_data_files("%s/content-type" % share_xpra,   glob.glob("content-type/*"))
     add_data_files("%s/content-categories" % share_xpra, glob.glob("content-categories/*"))
+    add_data_files("%s/css" % share_xpra,            glob.glob("./css/*"))
 
 
 if html5_ENABLED:

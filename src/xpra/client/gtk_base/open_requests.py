@@ -10,42 +10,49 @@ import subprocess
 
 import gi
 gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import GLib, Gtk, GdkPixbuf, Pango
 
-from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import envint
-from xpra.os_util import monotonic_time, bytestostr, get_util_logger, WIN32, OSX
+from xpra.os_util import monotonic_time, bytestostr, WIN32, OSX
+from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
-from xpra.simple_stats import std_unit_dec
+from xpra.simple_stats import std_unit, std_unit_dec
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
     TableBuilder,
     )
 from xpra.platform.paths import get_icon_dir, get_download_dir
+from xpra.log import Logger
 
-log = get_util_logger()
+log = Logger("gtk", "file")
 
 URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 320)
 
+inject_css_overrides()
+
 
 _instance = None
-def getOpenRequestsWindow(show_file_upload_cb=None):
+def getOpenRequestsWindow(show_file_upload_cb=None, cancel_download=None):
     global _instance
     if _instance is None:
-        _instance = OpenRequestsWindow(show_file_upload_cb)
+        _instance = OpenRequestsWindow(show_file_upload_cb, cancel_download)
     return _instance
 
 
 class OpenRequestsWindow:
 
-    def __init__(self, show_file_upload_cb=None):
+    def __init__(self, show_file_upload_cb=None, cancel_download=None):
         self.show_file_upload_cb = show_file_upload_cb
+        self.cancel_download = cancel_download
         self.populate_timer = None
         self.table = None
         self.requests = []
         self.expire_labels = {}
+        self.progress_bars = {}
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
@@ -106,7 +113,7 @@ class OpenRequestsWindow:
 
     def update_expires_label(self):
         expired = 0
-        for label, expiry in self.expire_labels.items():
+        for label, expiry in self.expire_labels.values():
             seconds = max(0, expiry-monotonic_time())
             label.set_text("%i" % seconds)
             if seconds==0:
@@ -141,7 +148,7 @@ class OpenRequestsWindow:
                 if dtype==b"file" and filesize>0:
                     details = "%sB" % std_unit_dec(filesize)
                 expires_label = l()
-                self.expire_labels[expires_label] = expires
+                self.expire_labels[send_id] = (expires_label, expires)
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
                 s = bytestostr(url)
                 main_label = l(s)
@@ -158,37 +165,64 @@ class OpenRequestsWindow:
         self.alignment.add(self.table)
         self.table.show_all()
 
+    def remove_entry(self, send_id, can_close=True):
+        self.expire_labels.pop(send_id, None)
+        self.requests = [x for x in self.requests if x[1]!=send_id]
+        self.progress_bars.pop(send_id, None)
+        if not self.requests and can_close:
+            self.close()
+        else:
+            self.populate_table()
+            self.window.resize(1, 1)
+
     def action_buttons(self, cb_answer, send_id, dtype, printit, openit):
         hbox = Gtk.HBox()
         def remove_entry(can_close=False):
-            self.requests = [x for x in self.requests if x[1]!=send_id]
-            if not self.requests and can_close:
-                self.close()
-            else:
-                self.populate_table()
-                self.window.resize(1, 1)
-        def ok(*_args):
-            remove_entry(False)
-            cb_answer(ACCEPT, False)
-        def okopen(*_args):
-            remove_entry(True)
-            cb_answer(ACCEPT, True)
-        def remote(*_args):
-            remove_entry(True)
-            cb_answer(OPEN)
+            self.remove_entry(send_id, can_close)
+        def show_progressbar():
+            expire = self.expire_labels.pop(send_id, None)
+            if expire:
+                expire_label = expire[0]
+                expire_label.set_text("")
+            for b in hbox.get_children():
+                hbox.remove(b)
+            def stop(*_args):
+                remove_entry(True)
+                self.cancel_download(send_id, "User cancelled")
+            stop_btn = self.btn("Stop", None, stop, "close.png")
+            hbox.pack_start(stop_btn)
+            pb = Gtk.ProgressBar()
+            hbox.set_spacing(20)
+            hbox.pack_start(pb)
+            hbox.show_all()
+            pb.set_size_request(420, 30)
+            self.progress_bars[send_id] = (pb, stop_btn)
         def cancel(*_args):
             remove_entry(True)
             cb_answer(DENY)
-        hbox.pack_start(self.btn("Cancel", None, cancel, "close.png"))
+        def ok(*_args):
+            remove_entry(False)
+            cb_answer(ACCEPT, False)
+        def remote(*_args):
+            remove_entry(True)
+            cb_answer(OPEN)
+        def progress(*_args):
+            cb_answer(ACCEPT)
+            show_progressbar()
+        def progressopen(*_args):
+            cb_answer(OPEN)
+            show_progressbar()
+        cancel_btn = self.btn("Cancel", None, cancel, "close.png")
+        hbox.pack_start(cancel_btn)
         if bytestostr(dtype)=="url":
             hbox.pack_start(self.btn("Open Locally", None, ok, "open.png"))
             hbox.pack_start(self.btn("Open on server", None, remote))
         elif printit:
-            hbox.pack_start(self.btn("Print", None, ok, "printer.png"))
+            hbox.pack_start(self.btn("Print", None, progress, "printer.png"))
         else:
-            hbox.pack_start(self.btn("Download", None, ok, "download.png"))
+            hbox.pack_start(self.btn("Download", None, progress, "download.png"))
             if openit:
-                hbox.pack_start(self.btn("Download and Open", None, okopen, "open.png"))
+                hbox.pack_start(self.btn("Download and Open", None, progressopen, "open.png"))
                 hbox.pack_start(self.btn("Open on server", None, remote))
         return hbox
 
@@ -201,6 +235,29 @@ class OpenRequestsWindow:
         if self.populate_timer:
             GLib.source_remove(self.populate_timer)
             self.populate_timer = 0
+
+
+    def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None):
+        buttons = self.progress_bars.get(transfer_id)
+        if not buttons:
+            #we're not tracking this transfer: no progress bar
+            return
+        pb, stop_btn = buttons
+        log("transfer_progress_update%s pb=%s", (send, transfer_id, elapsed, position, total, error), pb)
+        if error:
+            stop_btn.hide()
+            pb.set_text("Error: %s, file transfer aborted" % error)
+            GLib.timeout_add(5000, self.remove_entry, transfer_id)
+            return
+        if pb:
+            pb.set_fraction(position/total)
+            pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
+            pb.set_show_text(True)
+        if position==total:
+            stop_btn.hide()
+            pb.set_text("Complete: %i bytes" % total)
+            pb.set_show_text(True)
+            GLib.timeout_add(5000, self.remove_entry, transfer_id)
 
 
     def show(self):
@@ -235,8 +292,14 @@ class OpenRequestsWindow:
             cmd = ["open", downloads]
         else:
             cmd = ["xdg-open", downloads]
-        proc = subprocess.Popen(cmd)
-        getChildReaper().add_process(proc, "show-downloads", cmd, ignore=True, forget=True)
+        try:
+            proc = subprocess.Popen(cmd)
+        except Exception as e:
+            log("show_downloads()", exc_info=True)
+            log.error("Error: failed to open 'Downloads' folder:")
+            log.error(" %s", e)
+        else:
+            getChildReaper().add_process(proc, "show-downloads", cmd, ignore=True, forget=True)
 
 
     def run(self):
