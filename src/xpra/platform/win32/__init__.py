@@ -57,6 +57,8 @@ if frozen:
             PATH.append(d)
     os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
     os.environ["PATH"] = os.pathsep.join(PATH)
+    if not os.environ.get("GTK_THEME"):
+        os.environ["GTK_THEME"] = "win32"
 
 if REDIRECT_OUTPUT:
     FIX_UNICODE_OUT = False
