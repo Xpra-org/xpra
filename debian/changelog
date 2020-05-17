@@ -1,13 +1,24 @@
+xpra (4.0.1-1) UNRELEASED; urgency=low
+  * fix missing content-type for some windows
+  * fix GTK server crash on exit
+  * fix compatibility with newer versions of uglifyjs
+  * fix ssh session start and attach on Posix systems
+  * fix missing avcodec encodings with Ubuntu 18.04
+  * fix 'xpra send-file' to use absolute file paths
+  * fix MacOS shadow servers failing to accept connections
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 17 May 2020 17:22:28 +0700
+
 xpra (4.0-1) UNRELEASED; urgency=low
   * Drop support for:
-	- Python 2, GTK2
-	- legacy versions (pre 1.0)
-	- weak authentication
+    - Python 2, GTK2
+    - legacy versions (pre 1.0)
+    - weak authentication
   * Network, per socket options:
-	- authentication and encryption
-	- ssl
-	- ssh
-	- bind options for client
+    - authentication and encryption
+    - ssl
+    - ssh
+    - bind options for client
   * make it easier to send files from the server
   * xpra toolbox subcommand
   * xpra help subcommand
@@ -16,11 +27,11 @@ xpra (4.0-1) UNRELEASED; urgency=low
   * signal handling fixes
   * smoother window resizing
   * refactoring and testing
-	- unit tests coverage and fixes
-	- completely skip loading unused features at runtime
-	- get rid of capabilities data after parsing it
-	- better module dependency separation
-	- don't convert to a string before we need it
+    - unit tests coverage and fixes
+    - completely skip loading unused features at runtime
+    - get rid of capabilities data after parsing it
+    - better module dependency separation
+    - don't convert to a string before we need it
   * more useful window and tray title
   * make it easier to source environment
   * disable desktop animations in desktop mode
