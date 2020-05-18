@@ -7,11 +7,13 @@ import os
 import sys
 import curses
 import signal
+import traceback
+from datetime import datetime
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
 from xpra import __version__
-from xpra.util import typedict, std, envint, csv, engs
+from xpra.util import typedict, std, envint, csv, engs, repr_ellipsized
 from xpra.os_util import platform_name, bytestostr, monotonic_time, POSIX
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.gtk_common.gobject_compat import register_os_signals
@@ -24,14 +26,14 @@ from xpra.log import Logger
 log = Logger("gobject", "client")
 
 REFRESH_RATE = envint("XPRA_REFRESH_RATE", 1)
+CURSES_LOG = os.environ.get("XPRA_CURSES_LOG")
 
 WHITE = 0
 GREEN = 1
 YELLOW = 2
 RED = 3
 
-Escape = 27
-EXIT_KEYS = (Escape, ord("q"), ord("Q"))
+EXIT_KEYS = (ord("q"), ord("Q"))
 
 def get_title():
     title = "Xpra top %s" % __version__
@@ -69,6 +71,11 @@ def curses_clean(stdscr):
 
 def curses_err(stdscr, e):
     import traceback
+    if CURSES_LOG:
+        with open(CURSES_LOG, "ab") as f:
+            f.write(b"%s\n" % e)
+            f.write(traceback.format_exc().encode())
+        return
     stdscr.addstr(0, 0, str(e))
     for i, l in enumerate(traceback.format_exc().split("\n")):
         try:
@@ -274,6 +281,9 @@ class TopSessionClient(MonitorXpraClient):
 
     def __init__(self, *args):
         super().__init__(*args)
+        self.log_file = None
+        if CURSES_LOG:
+            self.log_file = open(CURSES_LOG, "ab")
         self.info_request_pending = False
         self.server_last_info = typedict()
         self.server_last_info_time = 0
@@ -281,11 +291,16 @@ class TopSessionClient(MonitorXpraClient):
         self.stdscr = curses_init()
         self.update_screen()
 
+    def client_type(self):
+        #overriden in subclasses!
+        return "top"
+
     def run(self):
         register_os_signals(self.signal_handler, "Top Client")
         return super().run()
 
-    def signal_handler(self, *_args):
+    def signal_handler(self, *args):
+        self.log("signal_handler%s" % (args,))
         self.cleanup()
         sys.exit(128+signal.SIGINT)
 
@@ -293,18 +308,39 @@ class TopSessionClient(MonitorXpraClient):
         self.cancel_info_timer()
         MonitorXpraClient.cleanup(self)
         curses_clean(self.stdscr)
+        log_file = self.log_file
+        if log_file:
+            self.log_file = None
+            log_file.close()
+
+    def log(self, message):
+        if self.log_file:
+            now = datetime.now()
+            self.log_file.write(("%s %s\n" % (now.strftime("%Y/%m/%d %H:%M:%S.%f"), message)).encode())
+
+    def err(self, e):
+        if self.log_file:
+            self.log_file.write(b"%s\n" % e)
+            self.log_file.write(traceback.format_exc().encode())
+        else:
+            curses_err(self.stdscr, e)
 
     def update_screen(self):
+        self.log("update_screen()")
         self.stdscr.erase()
         try:
             self.do_update_screen()
+        except Exception as e:
+            self.err(e)
         finally:
             self.stdscr.refresh()
         v = self.stdscr.getch()
         if v in EXIT_KEYS:
+            self.log("exit on key '%s'" % v)
             self.quit(0)
 
     def do_update_screen(self):
+        self.log("do_update_screen()")
         #c = self.stdscr.getch()
         #if c==curses.KEY_RESIZE:
         height, width = self.stdscr.getmaxyx()
@@ -457,7 +493,7 @@ class TopSessionClient(MonitorXpraClient):
                     self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
         except Exception as e:
-            curses_err(self.stdscr, e)
+            self.err(e)
 
     def slidictget(self, *parts):
         return self.dictget(self.server_last_info, *parts)
@@ -609,6 +645,7 @@ class TopSessionClient(MonitorXpraClient):
         self.timeout_add(REFRESH_RATE*1000, self.send_info_request)
 
     def send_info_request(self):
+        self.log("send_info_request()")
         categories = ()
         if not self.info_request_pending:
             self.info_request_pending = True
@@ -623,10 +660,12 @@ class TopSessionClient(MonitorXpraClient):
         self.add_packet_handler("info-response", self._process_info_response, False)
 
     def _process_server_event(self, packet):
+        self.log("server event: %s" % (packet,))
         self.last_server_event = packet[1:]
         self.update_screen()
 
     def _process_info_response(self, packet):
+        self.log("info response: %s" % repr_ellipsized(packet))
         self.cancel_info_timer()
         self.info_request_pending = False
         self.server_last_info = typedict(packet[1])
@@ -641,5 +680,6 @@ class TopSessionClient(MonitorXpraClient):
             self.source_remove(it)
 
     def info_timeout(self):
+        self.log("info timeout")
         self.update_screen()
         return True
