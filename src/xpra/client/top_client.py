@@ -623,9 +623,9 @@ class TopSessionClient(MonitorXpraClient):
             if isinstance(v, (tuple, list)):
                 return sep.join(bytestostr(x) for x in v)
             return bytestostr(v)
-        if not gli.boolget("enabled", True):
-            return "OpenGL disabled %s" % gli.strget("message")
-        gl_info = "OpenGL %s enabled: %s" % (strget("opengl"), gli.strget("renderer") or gli.strget("vendor"))
+        if not gli.boolget("enabled", False):
+            return "OpenGL disabled %s" % gli.strget("message", "")
+        gl_info = "OpenGL %s enabled: %s" % (strget("opengl", "."), gli.strget("renderer") or gli.strget("vendor"))
         depth = gli.intget("depth")
         if depth not in (0, 24):
             gl_info += ", %ibits" % depth
