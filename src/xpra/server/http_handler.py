@@ -87,7 +87,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if matches:
                     path = matches[0]
                     break
-            if not os.path.exists(path) or True:
+            if not os.path.exists(path):
                 #better send something than a 404,
                 #use a transparent 1x1 image:
                 path = os.path.join(self.web_root, "icons", "empty.png")
