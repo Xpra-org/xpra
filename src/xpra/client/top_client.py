@@ -517,6 +517,11 @@ class TopSessionClient(MonitorXpraClient):
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
         gl_info = self.get_gl_info(ci.dictget("opengl"))
+        #audio
+        audio_info = []
+        for mode in ("speaker", "microphone"):
+            audio_info.append(self._audio_info(ci, mode))
+        audio_info.append(self._avsync_info(ci))
         #batch delay / latency:
         b_info = typedict(ci.dictget("batch", {}))
         bi_info = typedict(b_info.dictget("delay", {}))
@@ -537,16 +542,33 @@ class TopSessionClient(MonitorXpraClient):
         elif bcur>100 or (lcur>20 and lcur>3*lmin):
             bl_color = RED
         batch_latency = batch_info.ljust(24)+"latency: %i (%i)" % (lcur, lavg)
-        audio_info = []
-        for mode in ("speaker", "microphone"):
-            audio_info.append(self._audio_info(ci, mode))
-        audio_info.append(self._avsync_info(ci))
+        #speed / quality:
+        edict = typedict(ci.dictget("encoding") or {})
+        qs_info = ""
+        qs_color = GREEN
+        if edict:
+            sinfo = typedict(edict.dictget("speed") or {})
+            if sinfo:
+                cur = sinfo.intget("cur")
+                avg = sinfo.intget("avg")
+                qs_info = "speed: %s%% (avg: %s%%)" % (cur, avg)
+            qinfo = typedict(edict.dictget("quality") or {})
+            if qinfo:
+                qs_info = qs_info.ljust(24)
+                cur = qinfo.intget("cur")
+                avg = qinfo.intget("avg")
+                qs_info += "quality: %s%% (avg: %s%%)" % (cur, avg)
+                if avg<70:
+                    qs_color = YELLOW
+                if avg<50:
+                    qs_color = RED
         return tuple((s, c) for s,c in (
             (title, WHITE),
             (conn_info, WHITE),
             (gl_info, WHITE),
             (csv(audio_info), WHITE),
             (batch_latency, bl_color),
+            (qs_info, qs_color),
             ) if s)
 
     def _audio_info(self, ci, mode="speaker"):
