@@ -234,7 +234,7 @@ class WindowPerformanceStatistics:
             sent_before = monotonic_time()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
             dropped_acks_time = monotonic_time()-60      #1 minute
             drop_missing_acks = []
-            for sequence, item in self.damage_ack_pending.items():
+            for sequence, item in tuple(self.damage_ack_pending.items()):
                 start_send_at = item[0]
                 end_send_at = item[3]
                 if end_send_at==0 or start_send_at>sent_before:
