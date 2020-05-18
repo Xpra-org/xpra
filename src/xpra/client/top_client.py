@@ -517,7 +517,7 @@ class TopSessionClient(MonitorXpraClient):
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
         gl_info = self.get_gl_info(ci.dictget("opengl"))
-        #batch delay:
+        #batch delay / latency:
         b_info = typedict(ci.dictget("batch", {}))
         bi_info = typedict(b_info.dictget("delay", {}))
         bcur = bi_info.intget("cur")
@@ -526,23 +526,17 @@ class TopSessionClient(MonitorXpraClient):
             bcur,
             bavg,
             )
-        bcolor = GREEN
-        if bcur>50:
-            bcolor = YELLOW
-        elif bcur>100:
-            bcolor = RED
         #client latency:
         pl = self.slidictget("connection", "client", "ping_latency")
         lcur = pl.intget("cur")
         lavg = pl.intget("avg")
         lmin = pl.intget("min")
-        latency_info = "latency: %i (%i)" % (lcur, lavg)
-        lcolor = GREEN
-        if lcur>20:
-            if lcur>2*lmin:
-                lcolor = YELLOW
-            elif lcur>3*lmin:
-                lcolor = RED
+        bl_color = GREEN
+        if bcur>50 or (lcur>20 and lcur>2*lmin):
+            bl_color = YELLOW
+        elif bcur>100 or (lcur>20 and lcur>3*lmin):
+            bl_color = RED
+        batch_latency = batch_info.ljust(24)+"latency: %i (%i)" % (lcur, lavg)
         audio_info = []
         for mode in ("speaker", "microphone"):
             audio_info.append(self._audio_info(ci, mode))
@@ -552,8 +546,7 @@ class TopSessionClient(MonitorXpraClient):
             (conn_info, WHITE),
             (gl_info, WHITE),
             (csv(audio_info), WHITE),
-            (batch_info, bcolor),
-            (latency_info, lcolor),
+            (batch_latency, bl_color),
             ) if s)
 
     def _audio_info(self, ci, mode="speaker"):
