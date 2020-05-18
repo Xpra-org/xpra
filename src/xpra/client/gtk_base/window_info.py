@@ -39,7 +39,6 @@ class WindowInfo(Gtk.Window):
         self.set_destroy_with_parent(True)
         self.set_resizable(True)
         self.set_decorated(True)
-        self.set_size_request(480, 640)
         self.set_transient_for(window)
         self.set_icon(client.get_pixbuf("information.png"))
         self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
@@ -52,7 +51,9 @@ class WindowInfo(Gtk.Window):
         tb.new_row("Window ID", self.wid_label)
         self.title_label = slabel()
         self.title_label.set_line_wrap(True)
-        self.title_label.set_size_request(400, -1)
+        self.title_label.set_size_request(320, -1)
+        #self.title_label.set_justify(Gtk.Justification.LEFT)
+        self.title_label.set_alignment(0, 0.5)
         tb.new_row("Title", self.title_label)
         self.or_image = Gtk.Image()
         tb.new_row("Override-Redirect", self.or_image)
@@ -101,7 +102,9 @@ class WindowInfo(Gtk.Window):
         tb.new_row("Backing Render Size", self.backing_render_size_label)
         self.backing_offsets_label = slabel()
         tb.new_row("Backing Offsets", self.backing_offsets_label)
-        self.add(tb.get_table())
+        vbox = Gtk.VBox()
+        vbox.pack_start(tb.get_table(), True, True, 20)
+        self.add(vbox)
 
     def destroy(self, *_args):
         self.is_closed = True
@@ -109,6 +112,7 @@ class WindowInfo(Gtk.Window):
 
     def show(self):
         self.populate()
+        self.set_size_request(320, -1)
         super().show_all()
         GLib.timeout_add(1000, self.populate)
 
