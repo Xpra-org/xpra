@@ -56,3 +56,6 @@ pip3 install yuicompressor
 #$PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
 
 echo "for printing support, install libpdfium"
+
+echo "for a more seamless theme, install https://b00merang.weebly.com/windows-10.html"
+echo " (see ticket #2762)"
