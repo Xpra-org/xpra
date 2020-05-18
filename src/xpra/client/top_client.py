@@ -652,7 +652,7 @@ class TopSessionClient(MonitorXpraClient):
             window_ids = ()    #no longer used or supported by servers
             self.send("info-request", [self.uuid], window_ids, categories)
         if not self.info_timer:
-            self.info_timer = self.timeout_add(REFRESH_RATE+2, self.info_timeout)
+            self.info_timer = self.timeout_add((REFRESH_RATE+2)*1000, self.info_timeout)
         return True
 
     def init_packet_handlers(self):
