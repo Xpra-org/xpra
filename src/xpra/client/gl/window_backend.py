@@ -99,7 +99,10 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         #test with alpha, but not on win32
         #because we can't do alpha on win32 with opengl
         metadata = typedict({b"has-alpha" : not WIN32})
-        window = gl_client_window_class(noclient, None, None, 2**32-1, x, y, w, h, w, h,
+        class NoHeaderGLClientWindow(gl_client_window_class):
+            def add_header_bar(self):
+                pass
+        window = NoHeaderGLClientWindow(noclient, None, None, 2**32-1, x, y, w, h, w, h,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
