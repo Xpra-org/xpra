@@ -1166,7 +1166,7 @@ if WIN32:
             add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
                               "p11-kit", "xml",
                               {"locale" : ["en"]},
-                              {"themes" : ["Default"]}
+                              {"themes" : ["Default", "Windows-10"]}
                              ])
             ICONS = ["24x24", "48x48", "scalable", "cursors", "index.theme"]
             for theme in ("Adwaita", ): #"hicolor"

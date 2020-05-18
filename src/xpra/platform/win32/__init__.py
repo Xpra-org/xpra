@@ -58,7 +58,11 @@ if frozen:
     os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
     os.environ["PATH"] = os.pathsep.join(PATH)
     if not os.environ.get("GTK_THEME") and not os.environ.get("GTK_DEBUG"):
-        os.environ["GTK_THEME"] = "win32"
+        for theme in ("Windows-10", "win32"):
+            tdir = os.path.join(edir, "share", "themes", theme)
+            if os.path.exists(tdir):
+                os.environ["GTK_THEME"] = theme
+                break
 
 if REDIRECT_OUTPUT:
     FIX_UNICODE_OUT = False
