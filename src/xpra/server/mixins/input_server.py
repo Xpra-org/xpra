@@ -293,7 +293,8 @@ class InputServer(StubServerMixin):
     def _keys_changed(self, *_args):
         if not self.keymap_changing:
             for ss in self._server_sources.values():
-                ss.keys_changed()
+                if hasattr(ss, "keys_changed"):
+                    ss.keys_changed()
 
     def clear_keys_pressed(self):
         pass
