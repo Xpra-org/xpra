@@ -478,8 +478,8 @@ def get_CUDA_function(device_id, function_name):
     global KERNELS
     data = KERNELS.get(function_name)
     if data is None:
-        from xpra.platform.paths import get_app_dir
-        cubin_file = os.path.join(get_app_dir(), "cuda", "%s.fatbin" % function_name)
+        from xpra.platform.paths import get_resources_dir
+        cubin_file = os.path.join(get_resources_dir(), "cuda", "%s.fatbin" % function_name)
         log("get_CUDA_function(%s, %s) cubin file=%s", device_id, function_name, cubin_file)
         data = load_binary_file(cubin_file)
         if not data:

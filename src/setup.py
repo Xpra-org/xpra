@@ -2092,8 +2092,6 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             print(stderr or "")
             sys.exit(1)
     CUDA_BIN = "%s/cuda" % share_xpra
-    if WIN32:
-        CUDA_BIN = "CUDA"
     add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
 
 if nvenc_ENABLED:
