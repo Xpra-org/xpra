@@ -18,6 +18,7 @@ class HeaderBarWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="Stack Demo")
         self.set_border_width(10)
         self.set_default_size(400, 200)
+        self.set_position(Gtk.WindowPosition.CENTER)
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)

@@ -181,6 +181,7 @@ class ClipboardStateInfoWindow:
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(640, 300)
         self.window.set_border_width(20)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_title("Clipboard Test Tool")
 
         vbox = Gtk.VBox(False, 0)

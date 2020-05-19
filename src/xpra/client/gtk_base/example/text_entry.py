@@ -19,6 +19,7 @@ def make_window():
     window.connect("destroy", Gtk.main_quit)
     window.set_default_size(320, 200)
     window.set_border_width(20)
+    window.set_position(Gtk.WindowPosition.CENTER)
 
     entry = Gtk.Entry()
     entry.set_text("hello")

@@ -26,6 +26,7 @@ class KeyboardStateInfoWindow:
         self.window = Gtk.Window()
         self.window.connect("destroy", self.destroy)
         self.window.set_default_size(540, 800)
+        self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_border_width(20)
         self.window.set_title("Keyboard State Tool")
 

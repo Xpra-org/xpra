@@ -18,6 +18,7 @@ def make_grab_window():
 	window.set_size_request(600, 200)
 	window.connect("delete_event", Gtk.main_quit)
 	window.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
+	window.set_position(Gtk.WindowPosition.CENTER)
 	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 	hbox = Gtk.HBox(homogeneous=False, spacing=0)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=10)

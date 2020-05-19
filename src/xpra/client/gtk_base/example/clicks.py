@@ -21,6 +21,7 @@ class TestForm(object):
 		self.window.connect("destroy", Gtk.main_quit)
 		self.window.set_default_size(320, 200)
 		self.window.set_border_width(20)
+		self.window.set_position(Gtk.WindowPosition.CENTER)
 
 		vbox = Gtk.VBox()
 		self.info = Gtk.Label(label="")

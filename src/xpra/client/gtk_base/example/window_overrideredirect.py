@@ -20,6 +20,7 @@ def make_win():
 	window = Gtk.Window(type=Gtk.WindowType.POPUP)
 	window.set_title("Main")
 	window.set_size_request(width, height)
+	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
 	window.set_events(Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
 	def on_press(*_args):

@@ -24,6 +24,7 @@ height = 200
 def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(width, height)
+	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
 	window.realize()
 	root = window.get_window().get_screen().get_root_window()

@@ -21,13 +21,13 @@ def main():
 		window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 		window.set_size_request(width, height)
 		window.connect("delete_event", Gtk.main_quit)
-	
+		window.set_position(Gtk.WindowPosition.CENTER)
 		cursor_combo = Gtk.ComboBoxText()
 		cursor_combo.append_text("")
 		for name in sorted(cursor_types.keys()):
 			cursor_combo.append_text(name)
 		window.add(cursor_combo)
-	
+
 		def change_cursor(*_args):
 			name = cursor_combo.get_active_text()
 			print("new cursor: %s" % name)
@@ -37,7 +37,7 @@ def main():
 			else:
 				cursor = None
 			window.get_window().set_cursor(cursor)
-	
+
 		cursor_combo.connect("changed", change_cursor)
 		def show_with_focus():
 			force_focus()

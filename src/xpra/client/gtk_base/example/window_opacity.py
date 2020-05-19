@@ -15,7 +15,7 @@ opacity = 50
 
 def make_window():
     win = Gtk.Window()
-
+    win.set_position(Gtk.WindowPosition.CENTER)
     win.set_title('Alpha Demo')
     win.connect('delete-event', Gtk.main_quit)
 

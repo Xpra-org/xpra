@@ -20,6 +20,7 @@ def change_callback(entry, window):
 def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(400, 100)
+	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
 	entry = Gtk.Entry()
 	entry.set_max_length(50)
