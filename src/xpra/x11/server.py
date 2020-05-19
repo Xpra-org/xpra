@@ -624,7 +624,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         x, y, nw, nh = self._desktop_manager.window_geometry(window)
         resize_counter = self._desktop_manager.get_resize_counter(window, 1)
-        for ss in self._server_sources.values():
+        from xpra.server.source.windows_mixin import WindowsMixin
+        wsources = [ss for ss in self._server_sources.values() if isinstance(ss, WindowsMixin)]
+        for ss in wsources:
             ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
             #refresh to ensure the client gets the new window contents:
             #TODO: to save bandwidth, we should compare the dimensions and skip the refresh
@@ -1036,8 +1038,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
                     if resized and SHARING_SYNC_SIZE:
                         #try to ensure this won't trigger a resizing loop:
                         counter = max(0, resize_counter-1)
+                        from xpra.server.source.windows_mixin import WindowsMixin
                         for s in self._server_sources.values():
-                            if s!=ss:
+                            if s!=ss and isinstance(ss, WindowsMixin):
                                 s.resize_window(wid, window, aw, ah, resize_counter=counter)
                     damage |= owx!=ax or owy!=ay or resized
             if not shown and not skip_geometry:
