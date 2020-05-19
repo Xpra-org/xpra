@@ -343,12 +343,7 @@ if "clean" not in sys.argv:
 if install is None and WIN32:
     install = os.environ.get("MINGW_PREFIX", sys.prefix or "dist")
 if share_xpra is None:
-    if "install_exe" in sys.argv:
-        #install_exe already honours the install prefix,
-        #and the win32 bundle places share/xpra/* in the root directory:
-        share_xpra = "."
-    else:
-        share_xpra = os.path.join("share", "xpra")
+    share_xpra = os.path.join("share", "xpra")
 
 #*******************************************************************************
 # default sets:
@@ -1384,9 +1379,9 @@ if WIN32:
                 add_data_files('www'+k, v)
 
     if data_ENABLED:
-        add_data_files(share_xpra,              ["win32/website.url"])
-        add_data_files('%s/icons' % share_xpra,  glob.glob('icons\\*.ico'))
-        add_data_files(share_xpra,              ["win32\\DirectShow.tlb"])
+        add_data_files("",              ["win32/website.url"])
+        add_data_files("icons",         glob.glob('icons\\*.ico'))
+        add_data_files("",              ["win32\\DirectShow.tlb"])
 
     remove_packages(*external_excludes)
     external_includes.append("pyu2f")
