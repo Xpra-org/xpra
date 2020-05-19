@@ -328,6 +328,7 @@ class GTKTrayMenuBase(MenuHelper):
             menu.append(self.make_modalwindowmenuitem())
         if mixin_features.windows and self.client.keyboard_helper:
             menu.append(self.make_keyboardsyncmenuitem())
+            menu.append(self.make_shortcutsmenuitem())
 
     def make_sharingmenuitem(self):
         def sharing_toggled(*args):
@@ -627,6 +628,18 @@ class GTKTrayMenuBase(MenuHelper):
             set_keyboard_sync_tooltip()
         self.client.after_handshake(set_keyboard_sync_menuitem)
         return self.keyboard_sync_menuitem
+
+    def make_shortcutsmenuitem(self):
+        self.keyboard_shortcuts_menuitem = self.checkitem("Keyboard Shortcuts")
+        kh = self.client.keyboard_helper
+        self.keyboard_shortcuts_menuitem.set_active(kh and bool(kh.shortcuts_enabled))
+        def keyboard_shortcuts_toggled(*args):
+            ks = self.keyboard_shortcuts_menuitem.get_active()
+            log("keyboard_shortcuts_toggled%s enabled=%s", args, ks)
+            kh.shortcuts_enabled = ks
+        self.keyboard_shortcuts_menuitem.connect("toggled", keyboard_shortcuts_toggled)
+        return self.keyboard_shortcuts_menuitem
+
 
     def make_openglmenuitem(self):
         gl = self.checkitem("OpenGL")
