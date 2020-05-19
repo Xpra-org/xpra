@@ -1412,8 +1412,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)
         except Exception as e:
-        if not os.path.isabs(f):
-            f = os.path.abspath(f)
             ssllog.debug("do_wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
