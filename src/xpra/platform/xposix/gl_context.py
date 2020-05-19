@@ -43,7 +43,10 @@ GLX_ATTRIBUTES = {
 def c_attrs(props):
     attrs = []
     for k,v in props.items():
-        attrs += [k, v]
+        if v is None:
+            attrs += [k]
+        else:
+            attrs += [k, v]
     attrs += [0, 0]
     return (c_int * len(attrs))(*attrs)
 
@@ -102,14 +105,17 @@ class GLXContext:
             return
         screen = display.get_default_screen()
         bpc = 8
-        attrs = c_attrs({
-            GLX.GLX_RGBA            : True,
+        pyattrs = {
+            GLX.GLX_RGBA            : None,
             GLX.GLX_RED_SIZE        : bpc,
             GLX.GLX_GREEN_SIZE      : bpc,
             GLX.GLX_BLUE_SIZE       : bpc,
-            GLX.GLX_ALPHA_SIZE      : int(alpha)*bpc,
-            GLX.GLX_DOUBLEBUFFER    : int(DOUBLE_BUFFERED),
-            })
+            }
+        if alpha:
+            pyattrs[GLX.GLX_ALPHA_SIZE] = int(alpha)*bpc
+        if DOUBLE_BUFFERED:
+            pyattrs[GLX.GLX_DOUBLEBUFFER] = None
+        attrs = c_attrs(pyattrs)
         self.xdisplay = get_xdisplay()
         xvinfo = GLX.glXChooseVisual(self.xdisplay, screen.get_number(), attrs)
         def getconfig(attrib):
