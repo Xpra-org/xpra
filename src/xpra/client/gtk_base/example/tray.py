@@ -81,6 +81,8 @@ class FakeApplication:
         self.quality = 80
         self.speed = 50
         self.encoding = "png"
+        self.send_download_request = None
+        self._remote_subcommands = ()
         def noop(*_args):
             pass
         self._process_encodings = noop
