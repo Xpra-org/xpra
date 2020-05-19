@@ -10,6 +10,7 @@ from OpenGL.GL import GL_VENDOR, GL_RENDERER, glGetString
 from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
+from xpra.gtk_common.error import xsync
 from xpra.gtk_common.gobject_compat import import_gtk
 from xpra.gtk_common.gtk_util import (
     display_get_default, get_xwindow, enable_alpha,
@@ -70,8 +71,9 @@ class GLXWindowContext(object):
 
     def __enter__(self):
         log("glXMakeCurrent: xid=%#x, context=%s", self.xid, self.context)
-        if not GLX.glXMakeCurrent(self.xdisplay, self.xid, self.context):
-            raise Exception("glXMakeCurrent failed")
+        with xsync:
+            if not GLX.glXMakeCurrent(self.xdisplay, self.xid, self.context):
+                raise Exception("glXMakeCurrent failed")
         self.valid = True
 
     def __exit__(self, *_args):
