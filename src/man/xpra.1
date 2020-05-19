@@ -1155,10 +1155,28 @@ using the value \fIno\fP, or to invert some or all axes:
 \fIinvert-all\fP, \fIinvert-x\fP, \fIinvert-y\fP, \fIinvert-z\fP.
 
 .TP
-\fB--remote-logging\fP=\fIyes\fP|\fIno\fP|\fIboth\fP
-Allow the client to forward its log output to the server.
-The client can specify the value \fIboth\fP to both send
-it to the server and keep it locally.
+\fB--remote-logging\fP=\fIboth\fP|\fIall\fP|\fIsend\fP|\fIreceive\fP|\fIno\fP
+.RS
+Remote logging is always initiated by the client,
+but the server can restrict which direction log messages are allowed to flow.
+.IP \fBboth\fP
+The log output is both forwarded and sent locally
+(to \fIstdout\fP, \fIstderr\fP or a log file).
+.IP \fBallow\fP
+Used by the server to allow both \fIsend\fP and \fIreceive\fP,
+when sending the log output it will no longer be recorded locally.
+.IP \fBsend\fP
+Used by the client to send its log output to the server.
+Used by the server to allow clients to request log forwarding.
+.IP \fBreceive\fP
+Used by the client to request that the server sends its log
+output to the client.
+Used by the server to allow clients to forward their logging.
+.IP \fBno\fP
+Remote logging is disabled.
+.RE
+.PP
+
 .TP
 \fB--av-sync\fP=\fIyes\fP|\fIno\fP
 Enable or disable audio-video synchronization.

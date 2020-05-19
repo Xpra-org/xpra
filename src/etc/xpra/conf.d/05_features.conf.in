@@ -37,6 +37,7 @@ pings = 5
 
 # Allow the client to forward its log output to the server:
 #remote-logging = both
+#remote-logging = allow
 #remote-logging = send
 #remote-logging = receive
 #remote-logging = no

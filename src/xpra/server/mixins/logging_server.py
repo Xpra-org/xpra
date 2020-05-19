@@ -36,9 +36,9 @@ class LoggingServer(StubServerMixin):
     def init(self, opts):
         self.log_both = (opts.remote_logging or "").lower()=="both"
         if opts.remote_logging.lower() not in FALSE_OPTIONS:
-            self.remote_logging_send = opts.remote_logging.lower() in ("all", "send", "both")
+            self.remote_logging_send = opts.remote_logging.lower() in ("allow", "send", "both")
             #"yes" is here for backwards compatibility:
-            self.remote_logging_receive = opts.remote_logging.lower() in ("all", "receive", "yes", "both")
+            self.remote_logging_receive = opts.remote_logging.lower() in ("allow", "receive", "yes", "both")
 
     def cleanup(self):
         self.stop_capturing_logging()
