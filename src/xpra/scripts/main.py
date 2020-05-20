@@ -150,14 +150,14 @@ def main(script_file, cmdline):
         return 1
     finally:
         platform_clean()
-        try:
-            sys.stdout.close()
-        except OSError:
-            pass
-        try:
-            sys.stderr.close()
-        except OSError:
-            pass
+        def closestd(std):
+            if std:
+                try:
+                    std.close()
+                except OSError:
+                    pass
+        closestd(sys.stdout)
+        closestd(sys.stderr)
 
 
 def configure_logging(options, mode):
