@@ -24,13 +24,17 @@ from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
-def parse_resolution(envkey="XPRA_DEFAULT_VFB_RESOLUTION", default_res="8192x4096"):
-    s = os.environ.get(envkey, default_res)
+
+def parse_resolution(s):
     res = tuple(int(x) for x in s.replace(",", "x").split("x", 1))
     assert len(res)==2, "invalid resolution string '%s'" % s
     return res
-DEFAULT_VFB_RESOLUTION = parse_resolution()
-DEFAULT_DESKTOP_VFB_RESOLUTION = parse_resolution("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024")
+def parse_env_resolution(envkey="XPRA_DEFAULT_VFB_RESOLUTION", default_res="8192x4096"):
+    s = os.environ.get(envkey, default_res)
+    return parse_resolution(s)
+
+DEFAULT_VFB_RESOLUTION = parse_env_resolution()
+DEFAULT_DESKTOP_VFB_RESOLUTION = parse_env_resolution("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024")
 PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
@@ -136,7 +140,7 @@ def get_xauthority_path(display_name, username, uid, gid):
         filename = ".Xauthority"
     return os.path.join(pathexpand(d), filename)
 
-def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid=None):
+def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid=None):
     if not POSIX:
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if OSX:
@@ -146,7 +150,7 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
 
     cleanups = []
     log = get_vfb_logger()
-    log("start_Xvfb%s", (xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
+    log("start_Xvfb%s", (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
     xauthority = get_xauthority_path(display_name, username, uid, gid)
     os.environ["XAUTHORITY"] = xauthority
     if not os.path.exists(xauthority):
@@ -180,6 +184,22 @@ def start_Xvfb(xvfb_str, pixel_depth, display_name, cwd, uid, gid, username, xau
     #make sure all path values are expanded:
     xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
 
+    #try to honour initial geometries if specified:
+    if vfb_geom and xvfb_cmd[0].endswith("Xvfb"):
+        #find the '-screen' arguments:
+        #"-screen 0 8192x4096x24+32"
+        try:
+            no_arg = xvfb_cmd.index("0")
+        except ValueError:
+            no_arg = -1
+        geom_str = "%sx%s" % ("x".join(str(x) for x in vfb_geom), pixel_depth)
+        if no_arg>0 and xvfb_cmd[no_arg-1]=="-screen" and len(xvfb_cmd)>(no_arg+1):
+            #found an existing "-screen" argument for this screen number,
+            #replace it:
+            xvfb_cmd[no_arg+1] = geom_str
+        else:
+            #append:
+            xvfb_cmd += ["-screen", "0", geom_str]
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
         if logfile_argindex+1>=len(xvfb_cmd):
@@ -330,7 +350,12 @@ def set_initial_resolution(res=DEFAULT_VFB_RESOLUTION):
         sizes = randr.get_xrr_screen_sizes()
         size = randr.get_screen_size()
         log("RandR available, current size=%s, sizes available=%s", size, sizes)
-        if res in sizes:
+        if res not in sizes:
+            log.warn("Warning: cannot set resolution to %s", res)
+            log.warn(" (this resolution is not available)")
+        elif res==size:
+            log("initial resolution already set: %s", res)
+        else:
             log("RandR setting new screen size to %s", res)
             randr.set_screen_size(*res)
     except Exception as e:

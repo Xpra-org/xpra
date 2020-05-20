@@ -676,13 +676,18 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if start_vfb:
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
-        from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process
+        from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process, parse_resolution
         from xpra.server.server_util import has_uinput
         uinput_uuid = None
         if has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing:
             from xpra.os_util import get_rand_chars
             uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
-        xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, pixel_depth, display_name, cwd,
+        vfb_geom = ""
+        try:
+            vfb_geom = parse_resolution(opts.resize_display)
+        except Exception:
+            pass
+        xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
                                                   uid, gid, username, xauth_data, uinput_uuid)
         for f in cleanups:
             add_cleanup(f)

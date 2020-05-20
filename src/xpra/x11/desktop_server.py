@@ -299,10 +299,11 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def server_init(self):
         X11ServerBase.server_init(self)
+        screenlog("server_init() randr=%s", self.randr)
         if self.randr:
             from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_DESKTOP_VFB_RESOLUTION
             with xlog:
-                set_initial_resolution(DEFAULT_DESKTOP_VFB_RESOLUTION)
+                set_initial_resolution(self.initial_resolution or DEFAULT_DESKTOP_VFB_RESOLUTION)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)

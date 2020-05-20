@@ -522,7 +522,7 @@ def do_parse_cmdline(cmdline, defaults):
             "fake-xinerama" : defaults.fake_xinerama,
             })
     group.add_option("--resize-display", action="store",
-                      dest="resize_display", default=defaults.resize_display, metavar="yes|no",
+                      dest="resize_display", default=defaults.resize_display, metavar="yes|no|widthxheight",
                       help="Whether the server display should be resized to match the client resolution."
                       +" Default: %s." % enabled_str(defaults.resize_display))
     defaults_bind = defaults.bind

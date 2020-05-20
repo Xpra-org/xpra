@@ -44,6 +44,7 @@ metadatalog = Logger("x11", "metadata")
 framelog = Logger("x11", "frame")
 eventlog = Logger("x11", "events")
 mouselog = Logger("x11", "mouse")
+screenlog = Logger("x11", "screen")
 
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
@@ -209,10 +210,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def server_init(self):
         X11ServerBase.server_init(self)
+        screenlog("server_init() clobber=%s, randr=%s", self.clobber, self.randr)
         if not self.clobber and self.randr:
             from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_VFB_RESOLUTION
             with xlog:
-                set_initial_resolution(DEFAULT_VFB_RESOLUTION)
+                set_initial_resolution(self.initial_resolution or DEFAULT_VFB_RESOLUTION)
 
     def server_ready(self):
         if not X11Window.displayHasXComposite():
