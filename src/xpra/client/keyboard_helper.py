@@ -26,6 +26,7 @@ class KeyboardHelper:
         self.send = net_send
         self.locked = False
         self.keyboard_sync = keyboard_sync
+        self.shortcuts_enabled = True
         self.shortcut_modifiers = shortcut_modifiers
         self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
         #command line overrides:
@@ -220,7 +221,11 @@ class KeyboardHelper:
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
         #find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
-        log("key_handled_as_shortcut%s shortcuts=%s", (window, key_name, modifiers, depressed), shortcuts)
+        log("key_handled_as_shortcut%s shortcuts_enabled=%s, shortcuts=%s",
+            (window, key_name, modifiers, depressed),
+            self.shortcuts_enabled, shortcuts)
+        if not self.shortcuts_enabled:
+            return False
         if not shortcuts:
             return False
         if len(shortcuts)>1:
