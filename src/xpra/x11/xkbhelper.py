@@ -8,7 +8,7 @@ import re
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-from xpra.util import std, csv
+from xpra.util import std, csv, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -19,6 +19,7 @@ X11Keyboard = X11KeyboardBindings()
 
 log = Logger("x11", "keyboard")
 
+XKB = envbool("XPRA_XKB", True)
 DEBUG_KEYSYMS = [x for x in os.environ.get("XPRA_DEBUG_KEYSYMS", "").split(",") if len(x)>0]
 
 #keys we choose not to map if the free space in the keymap is too limited
@@ -152,6 +153,11 @@ def apply_xmodmap(instructions):
     return unset
 
 
+def get_keycode_mappings():
+    if XKB and X11Keyboard.hasXkb():
+        return X11Keyboard.get_xkb_keycode_mappings()
+    return X11Keyboard.get_keycode_mappings()
+
 def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
     """
         Translate the given keycodes into the existing keymap
@@ -167,7 +173,7 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
     #keycodes = {
     #     9: set([('', 1), ('Escape', 4), ('', 3), ('Escape', 0), ('Escape', 2)]),
     #     10: set([('onesuperior', 4), ('onesuperior', 8), ('exclam', 1), ('1', 6), ('exclam', 3), ('1', 2), ('exclamdown', 9), ('exclamdown', 5), ('1', 0), ('exclam', 7)]),
-    x11_keycodes = X11Keyboard.get_keycode_mappings()
+    x11_keycodes = get_keycode_mappings()
     log(" x11_keycodes=%s", x11_keycodes)
     #x11_keycodes = {
     #    8: ['Mode_switch', '', 'Mode_switch', '', 'Mode_switch'],

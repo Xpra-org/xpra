@@ -102,6 +102,18 @@ cdef extern from "X11/Xlib.h":
                        int *win_x_return, int *win_y_return, unsigned int *mask_return)
 
 
+
+DEF XkbKeyTypesMask             = 1<<0
+DEF XkbKeySymsMask              = 1<<1
+DEF XkbModifierMapMask          = 1<<2
+DEF XkbExplicitComponentsMask   = 1<<3
+DEF XkbKeyActionsMask           = 1<<4
+DEF XkbKeyBehaviorsMask         = 1<<5
+DEF XkbVirtualModsMask          = 1<<6
+DEF XkbAllComponentsMask        = 1<<7
+
+DEF XkbNumKbdGroups = 4
+
 cdef extern from "X11/extensions/XKB.h":
     unsigned long XkbUseCoreKbd
     unsigned long XkbDfltXIId
@@ -120,8 +132,44 @@ cdef extern from "X11/extensions/XKBstr.h":
         char *                   symbols
         char *                   geometry
     ctypedef XkbComponentNamesRec*  XkbComponentNamesPtr
+    ctypedef void * XkbKeyTypePtr
+    ctypedef struct XkbSymMapRec:
+        unsigned char    kt_index[XkbNumKbdGroups]
+        unsigned char    group_info
+        unsigned char    width
+        unsigned short   offset
+    ctypedef XkbSymMapRec* XkbSymMapPtr
+    ctypedef struct XkbClientMapRec:
+        unsigned char            size_types
+        unsigned char            num_types
+        XkbKeyTypePtr            types
+        unsigned short           size_syms
+        unsigned short           num_syms
+        KeySym                  *syms
+        XkbSymMapPtr             key_sym_map
+        unsigned char           *modmap
+    ctypedef XkbClientMapRec* XkbClientMapPtr
+
+    ctypedef void * XkbControlsPtr
+    ctypedef void * XkbServerMapPtr
+    ctypedef void * XkbIndicatorPtr
+    ctypedef void * XkbNamesPtr
+    ctypedef void * XkbCompatMapPtr
+    ctypedef void * XkbGeometryPtr
     ctypedef struct XkbDescRec:
-        pass
+        Display                 *dpy
+        unsigned short          flags
+        unsigned short          device_spec
+        KeyCode                 min_key_code
+        KeyCode                 max_key_code
+
+        XkbControlsPtr          ctrls
+        XkbServerMapPtr         server
+        XkbClientMapPtr         map
+        XkbIndicatorPtr         indicators
+        XkbNamesPtr             names
+        XkbCompatMapPtr         compat
+        XkbGeometryPtr          geom
     ctypedef XkbDescRec* XkbDescPtr
     ctypedef struct _XkbStateRec:
         unsigned char   group
@@ -170,6 +218,11 @@ cdef extern from "X11/XKBlib.h":
                                     unsigned int want, unsigned int need, Bool load)
     Status XkbGetState(Display *dpy, unsigned int deviceSpec, XkbStatePtr statePtr)
     Bool   XkbLockGroup(Display *dpy, unsigned int deviceSpec, unsigned int group)
+    XkbDescPtr XkbGetKeyboard(Display *display, unsigned int which, unsigned int device_spec)
+
+    int XkbKeyNumSyms(XkbDescPtr xkb, KeyCode keycode)
+    XkbDescPtr XkbGetMap(Display *display, unsigned int which, unsigned int device_spec)
+    void XkbFreeKeyboard(XkbDescPtr xkb, unsigned int which, Bool free_all)
 
 
 cdef extern from "X11/extensions/XTest.h":
@@ -490,6 +543,34 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             XFreeModifiermap(xmodmap)
 
 
+    def get_xkb_keycode_mappings(self):
+        if not self.hasXkb():
+            return {}
+        mask = 255
+        cdef XkbDescPtr xkb = XkbGetMap(self.display, mask, XkbUseCoreKbd)
+        if xkb==NULL:
+            return {}
+        cdef KeySym sym
+        keysyms = {}
+        for keycode in range(xkb.min_key_code, xkb.max_key_code):
+            sym_map = xkb.map.key_sym_map[keycode]
+            width = sym_map.width
+            offset = sym_map.offset
+            num_groups = sym_map.group_info
+            group_width = 0
+            syms = []
+            for i in range(width):
+                sym = xkb.map.syms[offset+i]
+                syms.append(sym)
+            #log("%3i: width=%i, offset=%3i, num_groups=%i, syms=%s / %s",
+            #keycode, width, offset, num_groups, syms, symstrs)
+            keynames = self.keysyms_to_strings(syms)
+            if len(keynames)>0:
+                keysyms[keycode] = keynames
+        XkbFreeKeyboard(xkb, 0, 1)
+        return keysyms
+
+
     def get_minmax_keycodes(self):
         if self.min_keycode==-1 and self.max_keycode==-1:
             self._get_minmax_keycodes()
@@ -678,20 +759,24 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         raw_mappings = self._get_raw_keycode_mappings()
         mappings = {}
         for keycode, keysyms in raw_mappings.items():
-            keynames = []
-            for keysym in keysyms:
-                key = ""
-                if keysym!=NoSymbol:
-                    keyname = XKeysymToString(keysym)
-                    if keyname!=NULL:
-                        key = bytestostr(keyname)
-                keynames.append(key)
-            #now remove trailing empty entries:
-            while len(keynames)>0 and keynames[-1]=="":
-                keynames = keynames[:-1]
+            keynames = self.keysyms_to_strings(keysyms)
             if len(keynames)>0:
                 mappings[keycode] = keynames
         return mappings
+
+    def keysyms_to_strings(self, keysyms):
+        keynames = []
+        for keysym in keysyms:
+            key = ""
+            if keysym!=NoSymbol:
+                keyname = XKeysymToString(keysym)
+                if keyname!=NULL:
+                    key = bytestostr(keyname)
+            keynames.append(key)
+        #now remove trailing empty entries:
+        while len(keynames)>0 and keynames[-1]=="":
+            keynames = keynames[:-1]
+        return keynames
 
 
     def get_keycodes(self, keyname):

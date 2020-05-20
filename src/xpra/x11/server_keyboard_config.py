@@ -8,7 +8,7 @@
 
 from gi.repository import Gdk
 
-from xpra.util import csv, nonl, envbool
+from xpra.util import csv, nonl, envbool, repr_ellipsized
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -20,7 +20,7 @@ from xpra.x11.xkbhelper import (
     do_set_keymap, set_all_keycodes, set_keycode_translation,
     get_modifiers_from_meanings, get_modifiers_from_keycodes,
     clear_modifiers, set_modifiers, map_missing_modifiers,
-    clean_keyboard_state,
+    clean_keyboard_state, get_keycode_mappings,
     DEBUG_KEYSYMS,
     )
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -390,7 +390,7 @@ class KeyboardConfig(KeyboardConfigBase):
         with xsync:
             clean_keyboard_state()
             #keycodes:
-            keycode_to_keynames = X11Keyboard.get_keycode_mappings()
+            keycode_to_keynames = get_keycode_mappings()
             self.keycode_translation = {}
             #prefer keycodes that don't use the lowest level+mode:
             default_for_keyname = {}
@@ -428,7 +428,7 @@ class KeyboardConfig(KeyboardConfigBase):
             self.update_keycode_mappings()
 
     def update_keycode_mappings(self):
-        self.keycode_mappings = X11Keyboard.get_keycode_mappings()
+        self.keycode_mappings = get_keycode_mappings()
 
 
     def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
