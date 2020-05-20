@@ -549,11 +549,13 @@ i.e. 'daemonizes', and redirects its output to a log file.
 This can be used to prevent that behavior (useful mostly for debugging).
 .TP
 
-\fB--resize-display\fP=\fIyes\fP|\fIno\fP
+\fB--resize-display\fP=\fIyes\fP|\fIno|WIDTHxHEIGHT\fP
 Resize the virtual display to match the resolution of
 the client currently connected.
 This only applies to the \fIstart\fP and \fIstart-desktop\fP
 subcommands.
+If a resolution is given, this will be the initial resolution
+of the display and the display will be resizable.
 .TP
 
 \fB--fake-xinerama\fP=\fIPATH\fP|\fIauto\fP|\fIno\fP
