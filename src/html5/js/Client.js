@@ -767,7 +767,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		keyname = keyname.replace("_L", "_R");
 
 	//AltGr: keep track of pressed state
-	if (str=="AltGraph" || (keyname=="Alt_R" && Utilities.isWindows())) {
+	if (str=="AltGraph" || (keyname=="Alt_R" && (Utilities.isWindows() || Utilities.isMacOS()))) {
 		this.altgr_state = pressed;
 		keyname = "ISO_Level3_Shift";
 		str = "AltGraph";
