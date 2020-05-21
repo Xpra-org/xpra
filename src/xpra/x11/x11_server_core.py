@@ -89,6 +89,7 @@ class X11ServerCore(GTKServerBase):
         self.keys_pressed = {}
         self.last_mouse_user = None
         self.libfakeXinerama_so = None
+        self.initial_resolution = None
         self.x11_filter = False
         GTKServerBase.__init__(self)
         log("XShape=%s", X11Window.displayHasXShape())
@@ -106,7 +107,10 @@ class X11ServerCore(GTKServerBase):
         super().server_init()
 
     def do_init(self, opts):
-        self.initial_resolution = parse_resolution(opts.resize_display)
+        try:
+            self.initial_resolution = parse_resolution(opts.resize_display)
+        except ValueError:
+            pass
         self.randr = bool(self.initial_resolution) or not (opts.resize_display in FALSE_OPTIONS)
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
