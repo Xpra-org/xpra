@@ -785,6 +785,7 @@ def build_xpra_conf(install_dir):
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
+        xvfb_cmd_str,
         get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
         )
@@ -820,7 +821,7 @@ def build_xpra_conf(install_dir):
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
-            'xvfb_command'          : pretty_cmd(xvfb_command),
+            'xvfb_command'          : xvfb_cmd_str(xvfb_command),
             'fake_xinerama'         : fake_xinerama,
             'ssh_command'           : "auto",
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),

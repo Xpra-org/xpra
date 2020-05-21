@@ -175,6 +175,28 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
     return Xorg_suid_check()
 
 
+def xvfb_cmd_str(xvfb):
+    xvfb_str = ""
+    while xvfb:
+        s = ""
+        while xvfb:
+            item = xvfb[0]
+            l = len(item)
+            if (item.startswith("-") or item.startswith("+")) and len(xvfb)>1:
+                l += len(xvfb[1])
+            if s and len(s)+l>55:
+                break
+            v = xvfb.pop(0)
+            if not s:
+                s += v
+            else:
+                s += " "+v
+        if xvfb_str:
+            xvfb_str += " \\\n    "
+        xvfb_str += s
+    return xvfb_str
+
+
 def OpenGL_safety_check():
     #try to detect VirtualBox:
     #based on the code found here:
@@ -843,6 +865,7 @@ def get_defaults():
         if conf_dir and os.path.exists(conf_dir):
             break
     xvfb = detect_xvfb_command(conf_dir, bin_dir, warn=None)
+    xvfb_str = xvfb_cmd_str(xvfb)
     if WIN32:
         bind_dirs = ["Main"]
     else:
@@ -888,7 +911,7 @@ def get_defaults():
                     "systemd-run"       : get_default_systemd_run(),
                     "systemd-run-args"  : "",
                     "system-proxy-socket" : SYSTEM_PROXY_SOCKET,
-                    "xvfb"              : " ".join(xvfb),
+                    "xvfb"              : xvfb_str,
                     "chdir"             : "",
                     "socket-dir"        : "",
                     "log-dir"           : "auto",
