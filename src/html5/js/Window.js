@@ -1331,15 +1331,23 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				img_data = inflated.slice(0, uncompressedSize);
 			}
 			// set the imagedata rgb32 method
-			if(img_data.length > img.data.length) {
-				paint_error("data size mismatch: wanted "+img.data.length+", got "+img_data.length+", stride="+rowstride);
+			let target_stride = width*4;
+			this.debug("draw", "got ", img_data.length, "to paint with stride", rowstride, ", target stride", target_stride);
+			if (rowstride>target_stride) {
+				//we have to set line by line to honour the rowstride
+				this.debug("draw", "painting", height, "lines");
+				for (let i = 0; i < height; i++) {
+					//we want to slice one line from the img_data buffer
+					//(but without using slice or subarray because the resulting array is too big!?)
+					let line = new Uint8Array(img_data.buffer, i*rowstride, target_stride);
+					img.data.set(line, i*target_stride);
+				}
 			}
 			else {
-				this.debug("draw", "got ", img_data.length, "to paint with stride", rowstride);
 				img.data.set(img_data);
-				this.offscreen_canvas_ctx.putImageData(img, x, y);
-				painted();
 			}
+			this.offscreen_canvas_ctx.putImageData(img, x, y);
+			painted();
 			this.may_paint_now();
 		}
 		else if (coding=="jpeg" || coding=="png" || coding=="webp") {
