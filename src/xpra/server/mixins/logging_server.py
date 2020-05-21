@@ -12,7 +12,7 @@ from threading import Lock
 
 from xpra.os_util import bytestostr, strtobytes, monotonic_time
 from xpra.util import repr_ellipsized
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger, set_global_logging_handler
 
@@ -38,7 +38,7 @@ class LoggingServer(StubServerMixin):
         if opts.remote_logging.lower() not in FALSE_OPTIONS:
             self.remote_logging_send = opts.remote_logging.lower() in ("allow", "send", "both")
             #"yes" is here for backwards compatibility:
-            self.remote_logging_receive = opts.remote_logging.lower() in ("allow", "receive", "yes", "both")
+            self.remote_logging_receive = opts.remote_logging.lower() in ["allow", "receive", "both"]+list(TRUE_OPTIONS)
 
     def cleanup(self):
         self.stop_capturing_logging()
