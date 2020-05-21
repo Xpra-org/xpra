@@ -51,13 +51,6 @@ class TestVersionUtilModule(unittest.TestCase):
         caps = typedict()
         fth.parse_file_transfer_caps(caps)
         assert fth.get_info()
-        fth.check_digest("foo", "000", "000", "xor")
-        try:
-            fth.check_digest("foo", "000", "001", "sha1")
-        except Exception:
-            pass
-        else:
-            raise Exception("digest mismatch should trigger an exception!")
         fth.cleanup()
 
 
