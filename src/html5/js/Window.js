@@ -1335,7 +1335,6 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 			this.debug("draw", "got ", img_data.length, "to paint with stride", rowstride, ", target stride", target_stride);
 			if (rowstride>target_stride) {
 				//we have to set line by line to honour the rowstride
-				this.debug("draw", "painting", height, "lines");
 				for (let i = 0; i < height; i++) {
 					//we want to slice one line from the img_data buffer
 					//(but without using slice or subarray because the resulting array is too big!?)
