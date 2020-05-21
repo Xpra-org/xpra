@@ -1741,6 +1741,9 @@ CHARCODE_TO_NAME[192] = "dead_circumflex";
 CHARCODE_TO_NAME[219] = "backtick";
 CHARCODE_TO_NAME[221] = "dead_acute";
 CHARCODE_TO_NAME[220] = "dead_circumflex";
+CHARCODE_TO_NAME[187] = "dead_acute";
+CHARCODE_TO_NAME_SHIFTED = {}
+CHARCODE_TO_NAME_SHIFTED[187] = "dead_grave";
 
 
 /**

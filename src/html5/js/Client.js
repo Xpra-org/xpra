@@ -119,6 +119,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.browser_language = Utilities.getFirstBrowserLanguage();
 	this.browser_language_change_embargo_time = 0;
 	this.key_layout = null;
+	this.last_keycode_pressed = 0;
 	// mouse
 	this.mousedown_event = null;
 	this.last_mouse_x = null;
@@ -704,6 +705,21 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		return;
 	}
 	let str = event.key || String.fromCharCode(keycode);
+	let unpress_now = false;
+	this.debug("keyboard", "last keycode pressed=", this.last_keycode_pressed, ", keycode=", keycode, ", pressed=", pressed, ", str=", str);
+	if (this.last_keycode_pressed!=keycode && !pressed && str=="Dead") {
+		//dead key unpress without first getting a key pressed event,
+		//send a pair:
+		pressed = true;
+		unpress_now = true;
+	}
+
+	if (pressed) {
+		this.last_keycode_pressed = keycode;
+	}
+	else {
+		this.last_keycode_pressed = 0;
+	}
 
 	this.debug("keyboard", "processKeyEvent(", pressed, ", ", event, ") key=", keyname, "keycode=", keycode);
 
@@ -734,8 +750,14 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 		}
 	}
 	//fallback to keycode map:
-	else if (keycode in CHARCODE_TO_NAME) {
-		keyname = CHARCODE_TO_NAME[keycode];
+	else {
+		if (keycode in CHARCODE_TO_NAME) {
+			keyname = CHARCODE_TO_NAME[keycode];
+		}
+		//may override with shifted table:
+		if (event.getModifierState("Shift") && keycode in CHARCODE_TO_NAME_SHIFTED) {
+			keyname = CHARCODE_TO_NAME_SHIFTED[keycode];
+		}
 	}
 
 	this._check_browser_language(key_language);
@@ -784,6 +806,12 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 			str = "control";
 		}
 	}
+	
+	//macos will swallow the key release event if the meta modifier is pressed,
+	//so simulate one immediately:
+	if (pressed && Utilities.isMacOS() && raw_modifiers.includes("meta") && ostr!="meta") {
+		unpress_now = true;
+	}
 
 	//if (keyname=="Control_L" || keyname=="Control_R")
 	this._poll_clipboard(event);
@@ -825,9 +853,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	if (this.topwindow != null) {
 		let packet = ["key-action", this.topwindow, keyname, pressed, modifiers, keyval, str, keycode, group];
 		this.key_packets.push(packet);
-		if (pressed && Utilities.isMacOS() && raw_modifiers.includes("meta") && ostr!="meta") {
-			//macos will swallow the key release event if the meta modifier is pressed,
-			//so simulate one immediately:
+		if (unpress_now) {
 			packet = ["key-action", this.topwindow, keyname, false, modifiers, keyval, str, keycode, group];
 			this.key_packets.push(packet);
 		}
