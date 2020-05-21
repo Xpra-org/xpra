@@ -57,22 +57,6 @@ class mdns_sessions(SessionsGUI):
         GLib.idle_add(self.populate_table)
 
 
-def check_mdns(gui):
-    import os
-    from xpra.os_util import WIN32
-    if WIN32:
-        for e in ("programfiles", "programfiles(x86)"):
-            d = os.environ.get(e)
-            if not d:
-                continue
-            dll_file = os.path.join(d, "Bonjour", "mdnsNSP.dll")
-            if os.path.exists(dll_file):
-                log("check_mdns() found bonjour DLL: %s", dll_file)
-                return True
-        #bonjour not found:
-        GLib.timeout_add(1000, win32_bonjour_download_warning, gui)
-    return True
-
 def win32_bonjour_download_warning(gui):
     import gi
     gi.require_version("Pango", "1.0")
@@ -121,7 +105,6 @@ def do_main(opts):
         mdns = opts.mdns
         if mdns:
             gui = mdns_sessions(opts)
-            mdns = check_mdns(gui)
         else:
             gui = SessionsGUI(opts)
         Gtk.main()
