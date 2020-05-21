@@ -61,9 +61,8 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             coding = "rgb24"
         else:
             raise Exception("invalid pixel format %s" % pixel_format)
-    else:
-        #we may still want to re-stride:
-        image.may_restride()
+    #we may still want to re-stride:
+    image.may_restride()
     #always tell client which pixel format we are sending:
     options = {"rgb_format" : pixel_format}
 
