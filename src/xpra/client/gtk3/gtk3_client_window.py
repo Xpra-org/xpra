@@ -78,7 +78,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         if WINDOW_MENU:
             #the icon 'open-menu-symbolic' will be replaced with the window icon
             #when we receive it
-            icon = Gio.ThemedIcon(name="open-menu-symbolic")
+            icon = Gio.ThemedIcon(name="preferences-system-windows")
             self.header_bar_image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
             button = Gtk.Button()
             button.add(self.header_bar_image)
@@ -90,8 +90,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
             self.header_bar_image = scaled_image(pixbuf, self._icon_size())
             hb.pack_start(self.header_bar_image)
         if WINDOW_XPRA_MENU:
-            pixbuf = self._client.get_pixbuf("xpra.png")
-            image = scaled_image(pixbuf, self._icon_size())
+            icon = Gio.ThemedIcon(name="open-menu-symbolic")
+            image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
             button = Gtk.Button()
             button.add(image)
             button.connect("clicked", self.show_xpra_menu)
