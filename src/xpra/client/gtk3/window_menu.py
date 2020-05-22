@@ -29,6 +29,7 @@ class WindowMenuHelper(MenuHelper):
         menu.append(self.make_maximizemenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_reinitmenuitem())
+        menu.append(self.make_closemenuitem())
         menu.show_all()
         return menu
 
@@ -82,10 +83,16 @@ class WindowMenuHelper(MenuHelper):
         return self.handshake_menuitem("Refresh", "retry.png", None, force_refresh)
 
     def make_reinitmenuitem(self):
-        def force_reinit(*_args):
-            log("force reinit")
+        def force_reinit(*args):
+            log("force reinit%s", args)
             self.client.reinit_window(self.window._id, self.window)
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
                 reset_icon()
         return self.handshake_menuitem("Re-initialize", "reinitialize.png", None, force_reinit)
+
+    def make_closemenuitem(self):
+        def close(*args):
+            log("close(%s)", args)
+            self.window.close()
+        return self.handshake_menuitem("Close", "close.png", None, close)
