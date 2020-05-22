@@ -89,6 +89,9 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("sound-output",          "control sound forwarding",         min_args=1, max_args=2),
             #windows:
             ArgsControlCommand("workspace",             "move a window to a different workspace", min_args=2, max_args=2, validation=[int, int]),
+            ArgsControlCommand("move",                  "move a window",                    min_args=3, max_args=3, validation=[int, int, int]),
+            ArgsControlCommand("resize",                "resize a window",                  min_args=3, max_args=3, validation=[int, int, int]),
+            ArgsControlCommand("moveresize",            "move and resize a window",         min_args=5, max_args=5, validation=[int, int, int, int, int]),
             ArgsControlCommand("scaling-control",       "set the scaling-control aggressiveness (from 0 to 100)", min_args=1, validation=[from0to100]),
             ArgsControlCommand("scaling",               "set a specific scaling value",     min_args=1, validation=[parse_scaling_value]),
             ArgsControlCommand("auto-refresh",          "set a specific auto-refresh value", min_args=1, validation=[float]),
@@ -582,6 +585,45 @@ class ServerBaseControlCommands(StubServerMixin):
             raise ControlError("invalid workspace value: %s" % workspace)
         window.set_property("workspace", workspace)
         return "window %s moved to workspace %s" % (wid, workspace)
+
+
+    def control_command_move(self, wid, x, y):
+        window = self._id_to_window.get(wid)
+        if not window:
+            raise ControlError("window %s does not exist" % wid)
+        ww, wh = window.get_dimensions()
+        count = 0
+        for source in tuple(self._server_sources.values()):
+            move_resize_window = getattr(source, "move_resize_window", None)
+            if move_resize_window:
+                move_resize_window(wid, window, x, y, ww, wh)
+                count += 1
+        return "window %s moved to %i,%i for %i clients" % (wid, x, y, count)
+
+    def control_command_resize(self, wid, w, h):
+        window = self._id_to_window.get(wid)
+        if not window:
+            raise ControlError("window %s does not exist" % wid)
+        x, y = window.get_geometry()[:2]
+        count = 0
+        for source in tuple(self._server_sources.values()):
+            resize_window = getattr(source, "resize_window", None)
+            if resize_window:
+                resize_window(wid, window, w, h)
+                count += 1
+        return "window %s resized to %ix%i for %i clients" % (wid, w, h, count)
+
+    def control_command_moveresize(self, wid, x, y, w, h):
+        window = self._id_to_window.get(wid)
+        if not window:
+            raise ControlError("window %s does not exist" % wid)
+        count = 0
+        for source in tuple(self._server_sources.values()):
+            move_resize_window = getattr(source, "move_resize_window", None)
+            if move_resize_window:
+                move_resize_window(wid, window, x, y, w, h)
+                count += 1
+        return "window %s moved to %i,%i and resized to %ix%i for %i clients" % (wid, x, y, w, h, count)
 
 
     def _process_command_request(self, _proto, packet):
