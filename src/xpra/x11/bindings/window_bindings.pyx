@@ -611,6 +611,41 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XUnmapWindow(self.display, xwindow)
         return serial
 
+
+    def getWindowAttributes(self, Window xwindow):
+        self.context_check()
+        cdef XWindowAttributes attrs
+        cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
+        if status==0:
+            return None
+        return {
+            "geometry"  : (attrs.x, attrs.y, attrs.width, attrs.height, attrs.border_width),
+            "depth"     : attrs.depth,
+            "visual"    : {
+                "visual-id"     : attrs.visual.visualid,
+                #"class"         : attrs.visual.c_class,
+                "red-mask"      : attrs.visual.red_mask,
+                "green-mask"    : attrs.visual.green_mask,
+                "blue-mask"     : attrs.visual.blue_mask,
+                "bits-per-rgb"  : attrs.visual.bits_per_rgb,
+                "map_entries"   : attrs.visual.map_entries,
+                },
+            "bit-gravity" : attrs.bit_gravity,
+            "win-gravity" : attrs.win_gravity,
+            "backing-store" : attrs.backing_store,
+            "backing-planes" : attrs.backing_planes,
+            "backing-pixel" : attrs.backing_pixel,
+            "save-under"    : bool(attrs.save_under),
+            #"colormap"  : 0,
+            "map-installed" : attrs.map_installed,
+            "map-state" : attrs.map_state,
+            "all-events-mask" : attrs.all_event_masks,
+            "your_event_mask"   : attrs.your_event_mask,
+            "do-not-propagate-mask" : attrs.do_not_propagate_mask,
+            "override-redirect"     : attrs.override_redirect,
+            }
+
+
     # Mapped status
     def is_mapped(self, Window xwindow):
         self.context_check()
