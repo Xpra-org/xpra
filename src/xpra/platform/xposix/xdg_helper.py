@@ -267,7 +267,7 @@ def do_load_xdg_menu_data():
                 try:
                     menu = parse()
                     break
-                except ParsingError as e:
+                except (ParsingError, AttributeError) as e:
                     log("do_load_xdg_menu_data()", exc_info=True)
                     error = e
                     menu = None
