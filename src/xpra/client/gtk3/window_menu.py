@@ -27,6 +27,7 @@ class WindowMenuHelper(MenuHelper):
         #    menu.append(self.make_openglmenuitem())
         menu.append(self.make_minimizemenuitem())
         menu.append(self.make_maximizemenuitem())
+        menu.append(self.make_fullscreenmenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_reinitmenuitem())
         menu.append(self.make_closemenuitem())
@@ -64,6 +65,8 @@ class WindowMenuHelper(MenuHelper):
             return "Unmaximize" if maximized else "Maximize"
         label = get_label(self.window.is_maximized())
         self.maximize_menuitem = self.handshake_menuitem(label, "maximize.png", None, maximize)
+        def set_sensitive_state():
+            self.maximize_menuitem.set_sensitive(self.window.can_maximize())
         def window_state_updated(widget, event):
             maximized_changed = event.changed_mask & Gdk.WindowState.MAXIMIZED
             log("state_changed%s maximized_changed=%s", (widget, event), maximized_changed)
@@ -72,6 +75,12 @@ class WindowMenuHelper(MenuHelper):
                 self.maximize_menuitem.set_label(label)
         self.window.connect("window-state-event", window_state_updated)
         return self.maximize_menuitem
+
+    def make_fullscreenmenuitem(self):
+        def fullscreen(*args):
+            log("fullscreen%s", args)
+            self.window.fullscreen()
+        return self.handshake_menuitem("Fullscreen", "scaling.png", None, fullscreen)
 
     def make_refreshmenuitem(self):
         def force_refresh(*args):

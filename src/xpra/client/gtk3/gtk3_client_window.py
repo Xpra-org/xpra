@@ -179,6 +179,17 @@ class GTK3ClientWindow(GTKClientWindowBase):
         geomlog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(self.drawing_area, geom, gdk_hints)
 
+    def can_maximize(self):
+        hints = self.geometry_hints
+        if not hints:
+            return True
+        maxw = hints.intget(b"max_width", 32768)
+        maxh = hints.intget(b"max_height", 32768)
+        if maxw>32000 and maxh>32000:
+            return True
+        geom = self.get_drawing_area_geometry()
+        dw, dh = geom[2], geom[3]
+        return dw<maxw and dh<maxh 
 
     def draw_widget(self, widget, context):
         paintlog("draw_widget(%s, %s)", widget, context)
