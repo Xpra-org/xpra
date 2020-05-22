@@ -17,7 +17,6 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 workspacelog = Logger("x11", "window", "workspace")
 metalog = Logger("x11", "window", "metadata")
-geomlog = Logger("x11", "window", "geometry")
 
 
 dbus_helper = None
