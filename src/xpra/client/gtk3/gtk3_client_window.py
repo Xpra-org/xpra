@@ -64,7 +64,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
     def set_icon(self, pixbuf):
         super().set_icon(pixbuf)
         hbi = self.header_bar_image
-        if hbi:
+        if hbi and WINDOW_ICON:
             h = self._icon_size()
             pixbuf = pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
             hbi.set_from_pixbuf(pixbuf)
@@ -75,17 +75,20 @@ class GTK3ClientWindow(GTKClientWindowBase):
         hb.set_has_subtitle(False)
         hb.set_show_close_button(True)
         hb.props.title = self.get_title()
-        if WINDOW_ICON:
+        if WINDOW_MENU:
+            #the icon 'open-menu-symbolic' will be replaced with the window icon
+            #when we receive it
+            icon = Gio.ThemedIcon(name="open-menu-symbolic")
+            self.header_bar_image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+            button = Gtk.Button()
+            button.add(self.header_bar_image)
+            button.connect("clicked", self.show_window_menu)
+            hb.pack_start(button)
+        elif WINDOW_ICON:
+            #just the icon, no menu:
             pixbuf = self._client.get_pixbuf("transparent.png")
             self.header_bar_image = scaled_image(pixbuf, self._icon_size())
             hb.pack_start(self.header_bar_image)
-        if WINDOW_MENU:
-            icon = Gio.ThemedIcon(name="open-menu-symbolic")
-            image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-            button = Gtk.Button()
-            button.add(image)
-            button.connect("clicked", self.show_window_menu)
-            hb.pack_end(button)
         if WINDOW_XPRA_MENU:
             pixbuf = self._client.get_pixbuf("xpra.png")
             image = scaled_image(pixbuf, self._icon_size())

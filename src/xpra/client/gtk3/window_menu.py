@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 from xpra.client.gtk_base.menu_helper import MenuHelper
 from xpra.log import Logger
@@ -25,6 +25,8 @@ class WindowMenuHelper(MenuHelper):
         menu.append(self.make_infomenuitem())
         #if self.client.client_supports_opengl:
         #    menu.append(self.make_openglmenuitem())
+        menu.append(self.make_minimizemenuitem())
+        menu.append(self.make_maximizemenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_reinitmenuitem())
         menu.show_all()
@@ -44,10 +46,35 @@ class WindowMenuHelper(MenuHelper):
         gl.set_tooltip_text("hardware accelerated rendering using OpenGL")
         return gl
 
+    def make_minimizemenuitem(self):
+        def minimize(*args):
+            log("minimize%s", args)
+            self.window.iconify()
+        return self.handshake_menuitem("Minimize", "minimize.png", None, minimize)
+
+    def make_maximizemenuitem(self):
+        def maximize(*args):
+            log("maximize%s", args)
+            if self.window.is_maximized():
+                self.window.unmaximize()
+            else:
+                self.window.maximize()
+        def get_label(maximized):
+            return "Unmaximize" if maximized else "Maximize"
+        label = get_label(self.window.is_maximized())
+        self.maximize_menuitem = self.handshake_menuitem(label, "maximize.png", None, maximize)
+        def window_state_updated(widget, event):
+            maximized_changed = event.changed_mask & Gdk.WindowState.MAXIMIZED
+            log("state_changed%s maximized_changed=%s", (widget, event), maximized_changed)
+            if maximized_changed:
+                label = get_label(event.new_window_state & Gdk.WindowState.MAXIMIZED)
+                self.maximize_menuitem.set_label(label)
+        self.window.connect("window-state-event", window_state_updated)
+        return self.maximize_menuitem
 
     def make_refreshmenuitem(self):
-        def force_refresh(*_args):
-            log("force refresh")
+        def force_refresh(*args):
+            log("force refresh%s", args)
             self.client.send_refresh(self.window._id)
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
