@@ -283,6 +283,8 @@ if [ "$STRIP_NUMPY" == "1" ]; then
 	done
 	popd
 fi
+echo " * move GTK css"
+mv ${RSCDIR}/share/xpra/css ${RSCDIR}/
 #unused py2app scripts:
 rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh ${RSCDIR}/client_launcher.py
 
