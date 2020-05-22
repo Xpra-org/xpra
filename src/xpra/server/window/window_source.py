@@ -1077,6 +1077,8 @@ class WindowSource(WindowIconSource):
         self.may_update_av_sync_delay()
 
     def update_speed(self):
+        if self.is_cancelled():
+            return
         statslog("update_speed() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
                  self.suspended, bool(self._mmap),
                  self._current_speed, self._speed_hint, self._fixed_speed,
@@ -1133,8 +1135,10 @@ class WindowSource(WindowIconSource):
 
 
     def update_quality(self):
+        if self.is_cancelled():
+            return
         statslog("update_quality() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
-                 self.suspended, bool(self._mmap),
+                 self.suspended, self._mmap,
                  self._current_quality, self._quality_hint, self._fixed_quality,
                  self.encoding, self._sequence)
         if self.suspended:
