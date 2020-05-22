@@ -1,12 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
 
 from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
+from xpra.gtk_common.gtk_util import set_visual
 from xpra.log import Logger
 
 log = Logger("opengl", "window")
@@ -87,6 +88,8 @@ class GLClientWindowBase(GTK3ClientWindow):
         widget = super().new_backing(bw, bh)
         if self.drawing_area:
             self.remove(self.drawing_area)
+        set_visual(widget, self._has_alpha)
+        widget.show()
         self.init_widget_events(widget)
         self.add(widget)
         self.drawing_area = widget

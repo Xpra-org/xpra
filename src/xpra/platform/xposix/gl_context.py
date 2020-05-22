@@ -11,7 +11,7 @@ from xpra.util import envbool
 from xpra.client.gl.gl_check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr        #@UnresolvedImport
 from xpra.gtk_common.error import xsync
-from xpra.gtk_common.gtk_util import enable_alpha
+from xpra.gtk_common.gtk_util import set_visual
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -183,7 +183,9 @@ class GLXContext:
         tmp.resize(1, 1)
         tmp.set_decorated(False)
         tmp.realize()
-        enable_alpha(tmp)
+        da = Gtk.DrawingArea()
+        tmp.add(da)
+        set_visual(da, True)
         win = tmp.get_window()
         log("check_support(%s) using temporary window=%s", force_enable, tmp)
         with self.get_paint_context(win):

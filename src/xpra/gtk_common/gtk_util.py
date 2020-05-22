@@ -116,27 +116,31 @@ def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVE
     mask = Gdk.WindowAttributesType(attributes_mask)
     return Gdk.Window(parent, attributes, mask)
 
-def enable_alpha(window) -> bool:
+def set_visual(window, alpha : bool=True) -> bool:
     screen = window.get_screen()
-    visual = screen.get_rgba_visual()
-    alphalog("enable_alpha(%s) screen=%s, visual=%s", window, screen, visual)
+    if alpha:
+        visual = screen.get_rgba_visual()
+    else:
+        visual = screen.get_system_visual()
+    alphalog("set_visual(%s, %s) screen=%s, visual=%s", window, alpha, screen, visual)
     #we can't do alpha on win32 with plain GTK,
     #(though we handle it in the opengl backend)
     if WIN32:
         l = alphalog
     else:
         l = alphalog.warn
-    if visual is None or (not WIN32 and not screen.is_composited()):
+    if alpha and visual is None or (not WIN32 and not screen.is_composited()):
         l("Warning: cannot handle window transparency")
         if visual is None:
             l(" no RGBA visual")
         else:
             assert not screen.is_composited()
             l(" screen is not composited")
-        return False
-    alphalog("enable_alpha(%s) using rgba visual %s", window, visual)
-    window.set_visual(visual)
-    return True
+        return None
+    alphalog("set_visual(%s, %s) using visual %s", window, alpha, visual)
+    if visual:
+        window.set_visual(visual)
+    return visual
 
 
 def get_pixbuf_from_data(rgb_data, has_alpha : bool, w : int, h : int, rowstride : int) -> GdkPixbuf.Pixbuf:

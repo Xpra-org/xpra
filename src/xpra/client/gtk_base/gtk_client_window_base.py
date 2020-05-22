@@ -24,7 +24,7 @@ from xpra.util import (
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_pixbuf_from_data, get_default_root_window,
-    enable_alpha,
+    set_visual,
     BUTTON_MASK,
     GRAB_STATUS_STRING,
     WINDOW_EVENT_MASK,
@@ -737,17 +737,19 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #by default, only RGB (no transparency):
         #rgb_formats = tuple(BACKING_CLASS.RGB_MODES)
         self._client_properties["encodings.rgb_formats"] = ["RGB", "RGBX"]
-        if not self._has_alpha or not bc.HAS_ALPHA:
-            self._client_properties["encoding.transparency"] = False
-            return
-        if self._has_alpha and not self.get_realized():
-            if enable_alpha(self):
-                self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
-                self._window_alpha = True
+        #only set the visual if we need to enable alpha:
+        #(breaks the headerbar otherwise!)
+        if not self.get_realized() and self._has_alpha:
+            if set_visual(self, True):
+                if self._has_alpha:
+                    self._client_properties["encodings.rgb_formats"] = ["RGBA", "RGB", "RGBX"]
+                self._window_alpha = self._has_alpha
             else:
-                alphalog("enable_alpha()=False")
+                alphalog("failed to set RGBA visual")
                 self._has_alpha = False
                 self._client_properties["encoding.transparency"] = False
+        if not self._has_alpha or not bc.HAS_ALPHA:
+            self._client_properties["encoding.transparency"] = False
 
 
     def freeze(self):
