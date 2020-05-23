@@ -112,7 +112,7 @@ class X11ServerCore(GTKServerBase):
 
     def do_init(self, opts):
         self.opengl = opts.opengl
-        self.randr = opts.resize_display
+        self.randr = opts.resize_display is not False
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None
