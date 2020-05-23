@@ -663,6 +663,19 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-pyobjc-framework-coremedia" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/e1/7d/2baee42b171d5dd3885ac639be567f125fecf8c711a1c8bf10ac2492a2c8/pyobjc-framework-CoreMedia-6.2.tar.gz"
+			hash="sha256:9cd8d5a7cc2c5c530032ffb7934bb67fe7c302be7394efd7ad3290fee2ff2b2c"
+			version="6.2"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-pyobjc-framework-SystemConfiguration" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/d8/b5/5e7dcdc1e548815a292bd8c51281983717a5f91fc928a602ae3bd9f3f180/pyobjc-framework-SystemConfiguration-6.2.tar.gz"
@@ -788,6 +801,7 @@
 		  <dep package="python3-pyobjc-framework-cocoa"/>
 		  <dep package="python3-pyobjc-framework-quartz"/>
 		  <dep package="python3-pyobjc-framework-avfoundation"/>
+		  <dep package="python3-pyobjc-framework-coremedia"/>
 		  <dep package="python3-pyobjc-framework-SystemConfiguration"/>
 		</dependencies>
 	</metamodule>
