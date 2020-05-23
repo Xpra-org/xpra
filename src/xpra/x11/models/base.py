@@ -11,6 +11,7 @@ from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gtk_util import atom_intern, PARAM_READABLE, PARAM_READWRITE
 from xpra.gtk_common.gobject_compat import import_gobject
+from xpra.server.window.content_guesser import guess_content_type
 from xpra.log import Logger
 
 gobject = import_gobject()
@@ -382,16 +383,16 @@ class BaseWindowModel(CoreX11WindowModel):
 
 
     def _handle_xpra_content_type_change(self):
-        content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True) or ""
-        metalog("guess_content_type(%s)=%s", self, content_type)
-        self._updateprop("content-type", content_type)
+        content_type = self.prop_get("_XPRA_CONTENT_TYPE", "latin1", True)
+        metalog("_XPRA_CONTENT_TYPE(%s)=%s", self, content_type)
+        if not content_type:
+            content_type = guess_content_type(self)
+            metalog("guess_content_type(%s)=%s", self, content_type)
+        self._updateprop("content-type", content_type or "")
 
     def _handle_xpra_quality_change(self):
         quality = self.prop_get("_XPRA_QUALITY", "u32", True) or -1
         metalog("quality=%s", quality)
-        if not content_type:
-            content_type = guess_content_type(self)
-            metalog("guess_content_type(%s)=%s", self, content_type)
         self._updateprop("quality", max(-1, min(100, quality)))
 
     def _handle_xpra_speed_change(self):
