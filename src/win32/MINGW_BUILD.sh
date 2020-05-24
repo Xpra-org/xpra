@@ -294,6 +294,9 @@ mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 for prefix in lib avcodec avformat avutil swscale swresample zlib1 xvidcore; do
 	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
 done
+#liblz4 ends up in the wrong place and duplicated,
+#keep just one copy in ./lib
+find lib/lz4 -name "liblz4.dll" -exec mv {} ./lib/ \;
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	rm -fr ./lib/numpy
 else
