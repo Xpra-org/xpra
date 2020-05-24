@@ -870,7 +870,9 @@ fi
 
 %changelog
 * Fri May 08 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+- fix X11 server key symbol lookup via Xkb
 - fix window corruption with 'scroll' encoder
+- fix html5 client errors painting rgb32 data with a padded rowstride
 - fix desktop-scaling changes from the system tray
 - fix clipboard synchronization problems caused by clipit
 - fix packaging with newer versions of py2app (MacOS)
@@ -878,9 +880,25 @@ fi
 - fix building from source on archlinux
 - fix swapped red and blue colours channels in win32 systray
 - fix error parsing invalid config files
+- fix missing content-type for some windows
+- fix server crash on exit on some Linux distributions
+- fix 'xpra send-file' to use absolute file paths
+- fix missing desktop background in html5 client
+- fix format of attributes given to glXChooseVisual
+- fix crashes in OpenGL context setup on X11
+- fix race condition in window statistics
+- fix server errors when non-interactive clients are connected
+- fix option parsing errors causing html5 client connection failures
+- fix python-lz4 packaging on MS Windows (Python2 builds)
+- cleaner exit path: destroy all of our windows properly
+- add workaround for wine applications (disabled by default)
+- add 'terminator' to the 'text' application hint
 - validate webp image dimensions for transparency encoding
+- workaround bugs in pyxdg / menu configuration
 - try harder to strip all temporary build prefixes
 - MacOS: update to Python 2.7.18 for python2 builds
+- don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
+- MS Windows build setup update: install python-lzo using pacman
 
 * Wed Apr 15 2020 Antoine Martin <antoine@xpra.org> 3.0.9-10xpra3
 - rebuild with python2 fixup
