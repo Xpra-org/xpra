@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 4.0.1
+%define version 4.0.2
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -586,16 +586,24 @@ fi
 
 
 %changelog
-* Sun May 10 2020 Antoine Martin <antoine@xpra.org> 4.0.1-1
-- fix missing content-type for some windows
-- fix GTK server crash on exit
-- fix compatibility with newer versions of uglifyjs
-- fix ssh session start and attach on Posix systems
-- fix missing avcodec encodings with Ubuntu 18.04
-- fix 'xpra send-file' to use absolute file paths
-- fix MacOS shadow servers failing to accept connections
+* Sun May 24 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
+- fix missing desktop background in html5 client
+- fix xpra top client refresh rate via timer
+- fix opengl client info format shown in 'xpra top'
+- fix format of attributes given to glXChooseVisual
+- fix crashes in OpenGL context setup on X11
+- fix race condition in window statistics
+- fix server errors when non-interactive clients are connected
+- fix tray toolbox app
+- fix X11 server key symbol lookup via Xkb
+- fix 'AltGr' on MacOS using html5 client
+- fix html5 client errors painting rgb32 data with a padded rowstride
+- fix python-lz4 packaging on MS Windows
+- workaround bugs in pyxdg / menu configuration
+- add 'terminator' to the 'text' application hint
+- don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
 
-* Sun May 10 2020 Antoine Martin <antoine@xpra.org> 4.0-1
+* Sun May 10 2020 Antoine Martin <antoine@xpra.org> 4.0.2
 - Drop support for:
    Python 2, GTK2
    legacy versions (pre 1.0)
@@ -996,7 +1004,7 @@ fi
 -more detailed bug report information
 -more minimal MS Windows and OSX builds
 
-* Thu Aug 14 2014 Antoine Martin <antoine@xpra.org> 0.14.0-1
+* Thu Aug 14 2014 Antoine Martin <antoine@xpra.org> 0.14.0.2
 - support for lzo compression
 - support for choosing the compressors enabled (lz4, lzo, zlib)
 - support for choosing the packet encoders enabled (bencode, rencode, yaml)
@@ -1701,7 +1709,7 @@ fi
 - removed old "--no-randr" option
 - drop compatibility with versions older than 0.3: we now assume the "raw_packets" feature is supported
 
-* Mon Jul 23 2012 Antoine Martin <antoine@xpra.org> 0.4.0-1
+* Mon Jul 23 2012 Antoine Martin <antoine@xpra.org> 0.4.0.2
 - fix client application resizing its own window
 - fix window dimensions hints not applied
 - fix memleak in x264 cleanup code

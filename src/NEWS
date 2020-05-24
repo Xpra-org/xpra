@@ -1,3 +1,22 @@
+v4.0.2 (2020-05-24)
+======================
+	-- fix missing desktop background in html5 client
+	-- fix xpra top client refresh rate via timer
+	-- fix opengl client info format shown in 'xpra top'
+	-- fix format of attributes given to glXChooseVisual
+	-- fix crashes in OpenGL context setup on X11
+	-- fix race condition in window statistics
+	-- fix server errors when non-interactive clients are connected
+	-- fix tray toolbox app
+	-- fix X11 server key symbol lookup via Xkb
+	-- fix 'AltGr' on MacOS using html5 client
+	-- fix html5 client errors painting rgb32 data with a padded rowstride
+	-- fix python-lz4 packaging on MS Windows
+	-- workaround bugs in pyxdg / menu configuration
+	-- add 'terminator' to the 'text' application hint
+	-- don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
+
+
 v4.0 (2020-05-17)
 ======================
 	-- fix missing content-type for some windows
