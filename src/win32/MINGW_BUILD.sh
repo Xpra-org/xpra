@@ -294,6 +294,9 @@ for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
 popd > /dev/null
+#liblz4 ends up in the wrong place and duplicated,
+#keep just one copy in ./lib
+find lib/lz4 -name "liblz4.dll" -exec mv {} ./lib/ \;
 popd > /dev/null
 
 pushd ${DIST}/lib > /dev/null
