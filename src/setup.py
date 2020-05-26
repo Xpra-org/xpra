@@ -1381,7 +1381,6 @@ if WIN32:
 
     if data_ENABLED:
         add_data_files("",              ["win32/website.url"])
-        add_data_files("icons",         glob.glob('icons\\*.ico'))
         add_data_files("",              ["win32\\DirectShow.tlb"])
 
     remove_packages(*external_excludes)
@@ -1675,7 +1674,11 @@ if data_ENABLED:
     add_data_files(share_xpra,                      ["README", "COPYING"])
     add_data_files(share_xpra,                      ["bell.wav"])
     add_data_files("%s/http-headers" % share_xpra,   glob.glob("http-headers/*"))
-    add_data_files("%s/icons" % share_xpra,          glob.glob("icons/*png"))
+    ICONS = glob.glob("icons/*")
+    if WIN32:
+        ICONS += glob.glob("icons/*ico")
+    add_data_files("%s/icons" % share_xpra,          ICONS)
+
     add_data_files("%s/content-type" % share_xpra,   glob.glob("content-type/*"))
     add_data_files("%s/content-categories" % share_xpra, glob.glob("content-categories/*"))
     add_data_files("%s/css" % share_xpra,            glob.glob("css/*"))
