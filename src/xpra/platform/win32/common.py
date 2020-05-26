@@ -13,8 +13,6 @@ from ctypes import (
 from ctypes.wintypes import (
     HWND, DWORD, WPARAM, LPARAM, HDC, HMONITOR, HMODULE,
     SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE,
-    )
-from ctypes.wintypes import (
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
     HINSTANCE, HMENU, ULONG,
