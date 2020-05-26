@@ -28,6 +28,7 @@ class WindowMenuHelper(MenuHelper):
         menu.append(self.make_minimizemenuitem())
         menu.append(self.make_maximizemenuitem())
         menu.append(self.make_fullscreenmenuitem())
+        menu.append(self.make_abovenmenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_reinitmenuitem())
         menu.append(self.make_closemenuitem())
@@ -81,6 +82,16 @@ class WindowMenuHelper(MenuHelper):
             log("fullscreen%s", args)
             self.window.fullscreen()
         return self.handshake_menuitem("Fullscreen", "scaling.png", None, fullscreen)
+
+    def make_abovenmenuitem(self):
+        def toggle_above(*args):
+            log("toggle_above%s", args)
+            above = self.above_menuitem.get_active()
+            self.window._above = above
+            self.window.set_keep_above(above)
+        self.above_menuitem = self.checkitem("Always on top", toggle_above, active=self.window._above)
+        return self.above_menuitem
+
 
     def make_refreshmenuitem(self):
         def force_refresh(*args):
