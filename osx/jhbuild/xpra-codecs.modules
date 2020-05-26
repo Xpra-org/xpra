@@ -184,9 +184,9 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-        <branch module="/releases/ffmpeg-4.2.2.tar.bz2"
-            version="4.2.2"
-            hash="sha256:b620d187c26f76ca19e74210a0336c3b8380b97730df5cdf45f3e69e89000e5c"
+        <branch module="/releases/ffmpeg-4.2.3.tar.bz2"
+            version="4.2.3"
+            hash="sha256:217eb211c33303b37c5521a5abe1f0140854d6810c6a6ee399456cc96356795e"
 			repo="ffmpeg.org"/>
 		<dependencies>
 			<dep package="x264"/>

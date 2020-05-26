@@ -2,7 +2,7 @@
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     4.2.2
+Version:     4.2.3
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
@@ -151,6 +151,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue May 26 2020 Antoine Martin <antoine@xpra.org> 4.2.3-1
+- new upstream release
+
 * Mon Jan 20 2020 Antoine Martin <antoine@xpra.org> 4.2.2-1
 - new upstream release
 
