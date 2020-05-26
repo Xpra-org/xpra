@@ -57,38 +57,6 @@ class mdns_sessions(SessionsGUI):
         GLib.idle_add(self.populate_table)
 
 
-def win32_bonjour_download_warning(gui):
-    import gi
-    gi.require_version("Pango", "1.0")
-    from gi.repository import Pango
-    dialog = Gtk.Dialog("Bonjour not found",
-           gui,
-           Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT)
-    RESPONSE_DOWNLOAD = 2
-    dialog.add_button(Gtk.STOCK_CANCEL,     Gtk.ResponseType.CANCEL)
-    dialog.add_button("Download Bonjour",   RESPONSE_DOWNLOAD)
-    def add(widget, padding=0):
-        a = Gtk.Alignment()
-        a.set(0.5, 0.5, 1, 1)
-        a.add(widget)
-        a.set_padding(padding, padding, padding, padding)
-        dialog.vbox.pack_start(a)
-    title = Gtk.Label("Bonjour support not found")
-    title.modify_font(Pango.FontDescription("sans 14"))
-    add(title, 16)
-    info = Gtk.Label("To automatically discover xpra sessions via mDNS,\n"+
-                     "you can install 'Bonjour'.\n\n")
-    add(info, 10)
-    dialog.vbox.show_all()
-    def handle_response(dialog, response):
-        dialog.destroy()
-        if response==RESPONSE_DOWNLOAD:
-            import webbrowser
-            webbrowser.open("https://support.apple.com/kb/DL999")
-    dialog.connect("response", handle_response)
-    dialog.show()
-
-
 def do_main(opts):
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
