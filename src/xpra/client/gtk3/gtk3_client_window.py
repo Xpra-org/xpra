@@ -98,14 +98,14 @@ class GTK3ClientWindow(GTKClientWindowBase):
             hb.pack_end(button)
         self.set_titlebar(hb)
 
-    def show_xpra_menu(self, *args):
+    def show_xpra_menu(self, *_args):
         mh = getattr(self._client, "menu_helper", None)
         if not mh:
             from xpra.client.gtk3.tray_menu import GTK3TrayMenu
             mh = GTK3TrayMenu(self._client)
         mh.popup(0, 0)
 
-    def show_window_menu(self, *args):
+    def show_window_menu(self, *_args):
         self.menu_helper.build()
         self.menu_helper.popup(0, 0)
 
