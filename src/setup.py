@@ -1162,11 +1162,14 @@ if WIN32:
             add_dir('share', ["fontconfig", "fonts", "glib-2.0",        #add "dbus-1"?
                               "p11-kit", "xml",
                               {"locale" : ["en"]},
-                              {"themes" : ["Default", "Windows-10"]}
+                              {"themes" : ["Default"]}
                              ])
             ICONS = ["24x24", "48x48", "scalable", "cursors", "index.theme"]
             for theme in ("Adwaita", ): #"hicolor"
                 add_dir("share/icons/"+theme, ICONS)
+            add_dir("share/themes/Windows-10", [
+                "CREDITS", "LICENSE.md", "README.md",
+                "gtk-3.0", "index.theme"])
         if gtk3_ENABLED or sound_ENABLED:
             #causes warnings:
             #add_dir('lib', ["gio"])
