@@ -11,7 +11,6 @@ from gi.repository import Gdk, Gtk
 from xpra.log import Logger
 
 log = Logger("win32")
-log.enable_debug()
 
 
 COLORREF = DWORD        #0x00bbggrr
