@@ -11,7 +11,7 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, scaled_image
 from xpra.util import envbool
-from xpra.os_util import bytestostr, is_gnome, OSX
+from xpra.os_util import bytestostr, is_gnome, OSX, WIN32
 from xpra.log import Logger
 
 paintlog = Logger("paint")
@@ -97,6 +97,10 @@ class GTK3ClientWindow(GTKClientWindowBase):
             button.connect("clicked", self.show_xpra_menu)
             hb.pack_end(button)
         self.set_titlebar(hb)
+        if WIN32:
+            from xpra.platform.win32.dwm_color import match_window_color
+            match_window_color()
+
 
     def show_xpra_menu(self, *_args):
         mh = getattr(self._client, "menu_helper", None)
