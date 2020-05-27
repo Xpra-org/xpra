@@ -42,6 +42,8 @@ def rgba(c):
     return (r, g, b, a)
 
 def get_frame_color():
+    if not DwmGetColorizationParameters:
+        return None
     params = COLORIZATIONPARAMS()
     r = DwmGetColorizationParameters(byref(params))
     log("DwmGetColorizationParameters(..)=%i", r)
