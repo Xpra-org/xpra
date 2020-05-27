@@ -123,6 +123,9 @@ class ToolboxGUI(Gtk.Window):
             ("Transient", "Show transient windows", epath+"window_transient.py"),
             ("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"),
             ))
+        addhbox("Geometry:", (
+            ("Size constraints", "Specify window geometry size contraints", epath+"window_geometry_hints.py"),
+            ))
         if is_X11():
             addhbox("X11:", (
                 ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py"),
