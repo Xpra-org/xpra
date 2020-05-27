@@ -20,6 +20,15 @@ class HintedWindows(Gtk.Window):
         self.set_title(title or "")
         add_close_accel(self, self.delete_event)
         self.connect("delete_event", self.delete_event)
+
+        if kwargs.pop("headerbar", False):
+            hb = Gtk.HeaderBar()
+            hb.set_show_close_button(True)
+            hb.props.title = "HeaderBar example"
+            self.set_titlebar(hb)
+
+        da = Gtk.DrawingArea()
+        self.add(da)
         geom = Gdk.Geometry()
         for attr in (
             "min_width", "min_height",
@@ -39,11 +48,10 @@ class HintedWindows(Gtk.Window):
         if geom.width_inc>=0 or geom.height_inc>=0:
             value |= Gdk.WindowHints.RESIZE_INC
         hints = Gdk.WindowHints(value)
-        self.set_geometry_hints(self, geom, hints)
         width = kwargs.pop("width", -1)
         height = kwargs.pop("height", -1)
-        if width>=0 or height>=0:
-            self.set_size_request(width, height)
+        self.set_default_size(width, height)
+        self.set_geometry_hints(da, geom, hints)
         self.show_all()
 
     def delete_event(self, *_args):
@@ -59,7 +67,7 @@ class OptionWindow(Gtk.Window):
         self.set_border_width(20)
         self.set_position(Gtk.WindowPosition.CENTER)
 
-        t = Gtk.Table(n_rows=8, n_columns=3, homogeneous=True)
+        t = Gtk.Table(n_rows=9, n_columns=3, homogeneous=True)
         def attach(widget, col, row):
             t.attach(widget, col, col+1, row, row+1, Gtk.AttachOptions.EXPAND, Gtk.AttachOptions.FILL, 0, 0)
         def l(s):
@@ -82,11 +90,13 @@ class OptionWindow(Gtk.Window):
         line(4, l("Base"), self.base_width, self.base_height)
         self.inc_width, self.inc_height = e(), e()
         line(5, l("Increment"), self.inc_width, self.inc_height)
-        line(6, l(""))
+        self.headerbar = Gtk.CheckButton()
+        line(6, l("Header Bar"), self.headerbar)
+        line(7, l(""))
         btn = Gtk.Button()
         btn.set_label("Create")
         btn.connect("clicked", self.create)
-        line(7, l(""), btn)
+        line(8, l(""), btn)
         self.add(t)
         entry = Gtk.Entry()
         entry.set_text("hello")
@@ -112,6 +122,8 @@ class OptionWindow(Gtk.Window):
                 kwargs[prop] = int(v)
             except ValueError:
                 pass
+        if self.headerbar.get_active():
+            kwargs["headerbar"] = True
         w = HintedWindows(**kwargs)
         w.show_all()
 
