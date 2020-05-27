@@ -29,6 +29,11 @@ class HintedWindows(Gtk.Window):
 
         da = Gtk.DrawingArea()
         self.add(da)
+
+        def configure_event(widget, event):
+            self.set_title(title or "%ix%i" % (event.width, event.height))
+        da.connect("configure-event", configure_event)
+
         geom = Gdk.Geometry()
         for attr in (
             "min_width", "min_height",
@@ -60,7 +65,7 @@ class HintedWindows(Gtk.Window):
 
 class OptionWindow(Gtk.Window):
 
-    def __init__(self):
+    def __init__(self, args=()):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("destroy", Gtk.main_quit)
         self.set_default_size(320, 200)
@@ -98,8 +103,16 @@ class OptionWindow(Gtk.Window):
         btn.connect("clicked", self.create)
         line(8, l(""), btn)
         self.add(t)
-        entry = Gtk.Entry()
-        entry.set_text("hello")
+        for i, entry in enumerate((
+            self.requested_width, self.requested_height,
+            self.min_width, self.min_height,
+            self.max_width, self.max_height,
+            self.base_width, self.base_height,
+            self.inc_width, self.inc_height,
+            )):
+            if len(args)<=i:
+                break
+            entry.set_text(args[i])
 
     def create(self, *_args):
         kwargs = {}
@@ -131,7 +144,7 @@ class OptionWindow(Gtk.Window):
 def main():
     from xpra.platform import program_context
     with program_context("window-geometry-hints", "Window Geometry Hints"):
-        w = OptionWindow()
+        w = OptionWindow(sys.argv[1:])
         add_close_accel(w, Gtk.main_quit)
         def show_with_focus():
             from xpra.platform.gui import force_focus
