@@ -72,12 +72,10 @@ class WebcamForwarder(StubClientMixin):
                     assert cv2 and Image
                 except ImportError as e:
                     log("init webcam failure", exc_info=True)
-                    if WIN32 and BITS==32:
-                        log.info("32-bit builds do not support webcam forwarding")
-                    else:
-                        log.warn("Warning: failed to import opencv:")
-                        log.warn(" %s", e)
-                        log.warn(" webcam forwarding is disabled")
+                    if WIN32:
+                        log.info("opencv not found:")
+                        log.info(" %s", e)
+                        log.info(" webcam forwarding is not available")
                     self.webcam_forwarding = False
         log("webcam forwarding: %s", self.webcam_forwarding)
 
