@@ -37,25 +37,28 @@ def get_style_provider():
     global _style_provider
     if _style_provider:
         return _style_provider
+    _style_provider = Gtk.CssProvider()
+    load_css(_style_provider)
+    return _style_provider
+
+def load_css(provider):
     css_dir = os.path.join(get_resources_dir(), "css")
     if not os.path.exists(css_dir) or not os.path.isdir(css_dir):
         log.error("Error: cannot find directory '%s'", css_dir)
         return None
-    _style_provider = Gtk.CssProvider()
     filename = None
     def parsing_error(_css_provider, _section, error):
         log.error("Error: CSS parsing error on")
         log.error(" '%s'", filename)
         log.error(" %s", error)
-    _style_provider.connect("parsing-error", parsing_error)
+    provider.connect("parsing-error", parsing_error)
     for f in sorted(os.listdir(css_dir)):
         filename = os.path.join(css_dir, f)
         try:
-            _style_provider.load_from_path(filename)
+            provider.load_from_path(filename)
             log(" - loaded '%s'", filename)
         except Exception as e:
             log("load_from_path(%s)", filename, exc_info=True)
             log.error("Error: CSS loading error on")
             log.error(" '%s'", filename)
             log.error(" %s", e)
-    return _style_provider
