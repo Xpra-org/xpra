@@ -9,9 +9,11 @@ from ctypes.wintypes import DWORD, PDWORD, PBOOL, BOOL, UINT
 from gi.repository import Gdk, Gtk
 
 from xpra.log import Logger
+from xpra.util import envbool
 
 log = Logger("win32")
 
+TITLEBAR_TRANSPARENCY = envbool("XPRA_TITLEBAR_TRANSPARENCY", False)
 
 COLORREF = DWORD        #0x00bbggrr
 
@@ -70,9 +72,10 @@ def match_window_color():
         return
     r, g, b, a = rgba(color)
     log("rgba(%#x)=%s", color, (r, g, b, a))
-    #color_str = "#"+hex(c)[-6:]
-    #color should be: 10893e
-    color_str = "rgba(%i, %i, %i, %.2f)" % (r, g, b, a/255)
+    if TITLEBAR_TRANSPARENCY:
+        color_str = "rgba(%i, %i, %i, %.2f)" % (r, g, b, a/255)
+    else:
+        color_str = "rgb(%i, %i, %i)" % (r, g, b)
     if min(r, g, b)<128:
         title_color_str = "white"
     else:
