@@ -55,14 +55,17 @@ class mdns_sessions(SessionsGUI):
         text = text or {}
         #strip service from hostname:
         #(win32 servers add it? why!?)
-        if host.endswith(stype):
-            host = host[:-len(stype)]
-        elif host.endswith(stype+"."+domain):
-            host = host[:-len(stype+"."+domain)]
-        if text:
-            mode = text.get("mode")
-            if host.endswith(mode+"."):
-                host = host[:-len("mode")+1]
+        if host:
+            if stype and host.endswith(stype):
+                host = host[:-len(stype)]
+            elif stype and domain and host.endswith(stype+"."+domain):
+                host = host[:-len(stype+"."+domain)]
+            if text:
+                mode = text.get("mode")
+                if mode and host.endswith(mode+"."):
+                    host = host[:-len(mode+".")]
+            if host.endswith(".local."):
+                host = host[:-len(".local.")]
         self.records.append((interface, protocol, name, stype, domain, host, address, port, text))
         GLib.idle_add(self.populate_table)
 
