@@ -431,7 +431,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycode_mappings = get_keycode_mappings()
 
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, group):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
             return -1, group
@@ -446,7 +446,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 l = log
             l(msg, *args)
         def klog(msg, *args):
-            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
+            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, keyval, group), *args)
         keycode = None
         rgroup = group
         if self.xkbmap_query:
@@ -496,8 +496,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 if keycode:
                     keysyms = self.keycode_mappings.get(keycode)
                     klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
-                    if self.xkbmap_raw:
-                        break
                     level0 = levels[0]
                     if len(keysyms)>level0 and keysyms[level0]=="":
                         #if the keysym we would match for this keycode is 'NoSymbol',
@@ -539,6 +537,15 @@ class KeyboardConfig(KeyboardConfigBase):
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
                 klog("=%i, %i (keyname translation)", keycode, rgroup)
+            if keycode is None:
+                #last resort, find using the keyval:
+                display = Gdk.Display.get_default()
+                keymap = Gdk.Keymap.get_for_display(display)
+                b, entries = keymap.get_entries_for_keyval(keyval)
+                if b and entries:
+                    for entry in entries:
+                        if entry.group==group:
+                            return entry.keycode, entry.group
         return keycode, rgroup
 
 

@@ -43,7 +43,7 @@ class KeyboardConfigBase:
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
         pass
 
-    def get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
+    def get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, group):
         if not keyname and client_keycode<0:
             return -1, group
         if not pressed:
@@ -51,13 +51,13 @@ class KeyboardConfigBase:
             if r:
                 #del self.pressed_translation[client_keycode]
                 return r
-        keycode, group = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, group)
+        keycode, group = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, keyval, group)
         if pressed not in (None, -1):
             #keep track of it so we can unpress the same key:
             self.pressed_translation[client_keycode] = keycode, group
         return keycode, group
 
-    def do_get_keycode(self, _client_keycode, _keyname, _pressed, _modifiers, _group):
+    def do_get_keycode(self, _client_keycode, _keyname, _pressed, _modifiers, _keyval, _group):
         from xpra.log import Logger
         log = Logger("keyboard")
         log.warn("Warning: %s does not implement get_keycode!", type(self))
