@@ -54,9 +54,9 @@ if frozen:
         v = jedir(*paths)
         if os.path.exists(v):
             if v not in sys.path:
-                sys.path.append(v)
+                sys.path.insert(0, v)
             if os.path.isdir(v) and v not in PATH:
-                PATH.append(v)
+                PATH.insert(0, v)
     addsyspath('')
     addsyspath('lib')
     os.environ['GI_TYPELIB_PATH'] = jedir('lib', 'girepository-1.0')
