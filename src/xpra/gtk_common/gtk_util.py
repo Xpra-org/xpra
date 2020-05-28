@@ -709,7 +709,7 @@ class TableBuilder:
     def inc(self):
         self.row += 1
 
-    def new_row(self, row_label_str, value1, value2=None, label_tooltip=None, **kwargs):
+    def new_row(self, row_label_str="", value1=None, value2=None, label_tooltip=None, **kwargs):
         row_label = label(row_label_str, label_tooltip)
         self.add_row(row_label, value1, value2, **kwargs)
 
