@@ -61,8 +61,6 @@ if frozen:
         except:
             pass
         PATH.insert(0, d)
-    print("sys.path=%s" % (sys.path,))
-    print("%%PATH%%=%s" % (PATH,))
     os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
     os.environ["PATH"] = os.pathsep.join(PATH)
     if not os.environ.get("GTK_THEME") and not os.environ.get("GTK_DEBUG"):
