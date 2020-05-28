@@ -48,13 +48,13 @@ if frozen:
     PATH = os.environ.get("PATH", "").split(os.pathsep)
     edir = os.path.abspath(os.path.dirname(sys.executable))
     libdir = os.path.join(edir, "lib")
-    for d in (edir, libdir):
+    for d in (libdir, edir):
         if not os.path.exists(d) or not os.path.isdir(d):
             continue
         if d not in sys.path:
-            sys.path.append(d)
+            sys.path.insert(0, d)
         if d not in PATH:
-            PATH.append(d)
+            PATH.insert(0, d)
     os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
     os.environ["PATH"] = os.pathsep.join(PATH)
     if not os.environ.get("GTK_THEME") and not os.environ.get("GTK_DEBUG"):
