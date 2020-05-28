@@ -84,12 +84,20 @@ class WindowMenuHelper(MenuHelper):
         return self.menuitem("Fullscreen", "scaling.png", None, fullscreen)
 
     def make_abovenmenuitem(self):
+        def icon_name():
+            if self.window._above:
+                return "ticked.png"
+            return "empty.png"
         def toggle_above(*args):
-            log("toggle_above%s", args)
-            above = self.above_menuitem.get_active()
+            above = not self.window._above
+            log("toggle_above%s above=%s", args, above)
             self.window._above = above
             self.window.set_keep_above(above)
-        self.above_menuitem = self.checkitem("Always on top", toggle_above, active=self.window._above)
+            from xpra.platform.gui import get_icon_size
+            icon_size = self.menu_icon_size or get_icon_size()
+            image = self.get_image(icon_name(), icon_size)
+            self.above_menuitem.set_image(image)
+        self.above_menuitem = self.menuitem("Always on top", icon_name(), None, toggle_above)
         return self.above_menuitem
 
 
