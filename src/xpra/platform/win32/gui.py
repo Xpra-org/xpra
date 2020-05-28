@@ -108,6 +108,11 @@ def do_init():
     init_dpi()
     if APP_ID:
         init_appid()
+    try:
+        from xpra.platform.win32.dwm_color import match_window_color
+        match_window_color()
+    except Exception:
+        log.error("Error: failed to setup dwm window color matching", exc_info=True)
 
 def init_dpi():
     #tell win32 we handle dpi

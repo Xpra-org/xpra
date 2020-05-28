@@ -97,12 +97,6 @@ class GTK3ClientWindow(GTKClientWindowBase):
             button.connect("clicked", self.show_xpra_menu)
             hb.pack_end(button)
         self.set_titlebar(hb)
-        if WIN32:
-            try:
-                from xpra.platform.win32.dwm_color import match_window_color
-                match_window_color()
-            except Exception:
-                paintlog.error("Error: failed to match window color", exc_info=True)
 
 
     def show_xpra_menu(self, *_args):
