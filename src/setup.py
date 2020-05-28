@@ -1169,7 +1169,7 @@ if WIN32:
                 add_dir("share/icons/"+theme, ICONS)
             add_dir("share/themes/Windows-10", [
                 "CREDITS", "LICENSE.md", "README.md",
-                "gtk-3.0", "index.theme"])
+                "gtk-3.20", "index.theme"])
         if gtk3_ENABLED or sound_ENABLED:
             #causes warnings:
             #add_dir('lib', ["gio"])
