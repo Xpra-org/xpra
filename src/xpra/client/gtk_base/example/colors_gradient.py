@@ -23,13 +23,14 @@ class ColorGradientWindow(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(1024, 768)
         self.set_app_paintable(True)
-        self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
+        self.set_events(Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
         self.bpc = 16
         self.connect("draw", self.area_draw)
         self.connect("configure_event", self.configure_event)
         #self.connect('resize', changed)
         self.connect("destroy", Gtk.main_quit)
         self.connect("key_press_event", self.on_key_press)
+        self.connect("button-press-event", self.on_button_press)
 
     def show_with_focus(self):
         force_focus()
@@ -38,6 +39,18 @@ class ColorGradientWindow(Gtk.Window):
 
     def configure_event(self, *_args):
         self.queue_draw()
+
+    def on_button_press(self, _widget, event):
+        print("event=%s" % event.button)
+        if event.type!=Gdk.EventType.BUTTON_PRESS:
+            return
+        if event.button==1:
+            self.bpc += 1
+        else:
+            self.bpc -= 1
+        self.bpc = (self.bpc+16) % 16
+        self.queue_draw()
+        return True
 
     def on_key_press(self, _widget, key_event):
         if key_event.string == "-":
@@ -100,7 +113,11 @@ class ColorGradientWindow(Gtk.Window):
         cr.set_font_size(32)
         cr.set_source_rgb(0, 0, 0)
         txt = "Clipped to %i bits per channel" % self.bpc
-        cr.move_to(w//2-8*len(txt), bh//2+8)
+        cr.move_to(w//2-8*len(txt), bh//2+4)
+        cr.show_text(txt)
+        txt = "(click or press a key to increase)"
+        cr.move_to(w//2-3*len(txt), bh//2+20)
+        cr.set_font_size(12)
         cr.show_text(txt)
 
         self.index = 1
