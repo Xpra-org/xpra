@@ -87,7 +87,7 @@ class WindowMenuHelper(MenuHelper):
         def icon_name():
             if self.window._above:
                 return "ticked.png"
-            return "empty.png"
+            return "unticked.png"
         def toggle_above(*args):
             above = not self.window._above
             log("toggle_above%s above=%s", args, above)
