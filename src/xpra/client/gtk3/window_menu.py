@@ -53,7 +53,7 @@ class WindowMenuHelper(MenuHelper):
         def minimize(*args):
             log("minimize%s", args)
             self.window.iconify()
-        return self.handshake_menuitem("Minimize", "minimize.png", None, minimize)
+        return self.menuitem("Minimize", "minimize.png", None, minimize)
 
     def make_maximizemenuitem(self):
         def maximize(*args):
@@ -65,7 +65,7 @@ class WindowMenuHelper(MenuHelper):
         def get_label(maximized):
             return "Unmaximize" if maximized else "Maximize"
         label = get_label(self.window.is_maximized())
-        self.maximize_menuitem = self.handshake_menuitem(label, "maximize.png", None, maximize)
+        self.maximize_menuitem = self.menuitem(label, "maximize.png", None, maximize)
         def set_sensitive_state():
             self.maximize_menuitem.set_sensitive(self.window.can_maximize())
         def window_state_updated(widget, event):
@@ -81,7 +81,7 @@ class WindowMenuHelper(MenuHelper):
         def fullscreen(*args):
             log("fullscreen%s", args)
             self.window.fullscreen()
-        return self.handshake_menuitem("Fullscreen", "scaling.png", None, fullscreen)
+        return self.menuitem("Fullscreen", "scaling.png", None, fullscreen)
 
     def make_abovenmenuitem(self):
         def toggle_above(*args):
@@ -100,7 +100,7 @@ class WindowMenuHelper(MenuHelper):
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
                 reset_icon()
-        return self.handshake_menuitem("Refresh", "retry.png", None, force_refresh)
+        return self.menuitem("Refresh", "retry.png", None, force_refresh)
 
     def make_reinitmenuitem(self):
         def force_reinit(*args):
@@ -109,10 +109,10 @@ class WindowMenuHelper(MenuHelper):
             reset_icon = getattr(self.window, "reset_icon", None)
             if reset_icon:
                 reset_icon()
-        return self.handshake_menuitem("Re-initialize", "reinitialize.png", None, force_reinit)
+        return self.menuitem("Re-initialize", "reinitialize.png", None, force_reinit)
 
     def make_closemenuitem(self):
         def close(*args):
             log("close(%s)", args)
             self.window.close()
-        return self.handshake_menuitem("Close", "close.png", None, close)
+        return self.menuitem("Close", "close.png", None, close)
