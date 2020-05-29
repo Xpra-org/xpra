@@ -48,11 +48,11 @@ XpraProtocolWorkerHost.prototype.open = function(uri) {
 				}
 				break;
 			case 'l':
-				console.log(data.t);
+				this.log(data.t);
 				break;
 		default:
-			console.error("got unknown command from worker");
-			console.error(e.data);
+			this.error("got unknown command from worker");
+			this.error(e.data);
 		}
 	}, false);
 };
@@ -153,7 +153,7 @@ XpraProtocol.prototype.close = function() {
 };
 
 XpraProtocol.prototype.protocol_error = function(msg) {
-	console.error("protocol error:", msg);
+	this.error("protocol error:", msg);
 	//make sure we stop processing packets and events:
 	this.websocket.onopen = null;
 	this.websocket.onclose = null;
@@ -169,6 +169,18 @@ XpraProtocol.prototype.process_receive_queue = function() {
 	while (this.websocket && this.do_process_receive_queue()) {
 	}
 };
+
+
+XpraProtocol.prototype.error = function() {
+	if (window.console) {
+		console.log.apply(console, arguments);
+	}
+}
+XpraProtocol.prototype.log  = function() {
+	if (window.console) {
+		console.log.apply(console, arguments);
+	}
+}
 
 XpraProtocol.prototype.do_process_receive_queue = function() {
 	let i = 0, j = 0;
@@ -344,8 +356,8 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		}
 		catch (e) {
 			//FIXME: maybe we should error out and disconnect here?
-			console.error("error decoding packet " + e);
-			//console.error("packet_data="+packet_data);
+			this.error("error decoding packet " + e);
+			//this.error("packet_data="+packet_data);
 			return this.rQ.length>0;
 		}
 		try {
@@ -372,8 +384,8 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		}
 		catch (e) {
 			//FIXME: maybe we should error out and disconnect here?
-			console.error("error processing packet " + packet[0]+": " + e);
-			//console.error("packet_data="+packet_data);
+			this.error("error processing packet " + packet[0]+": " + e);
+			//this.error("packet_data="+packet_data);
 		}
 	}
 	return this.rQ.length>0;
@@ -398,7 +410,7 @@ XpraProtocol.prototype.process_send_queue = function() {
 				bdata = bencode(packet);
 			}
 		} catch(e) {
-			console.error("Error: failed to encode packet:", packet);
+			this.error("Error: failed to encode packet:", packet);
 			continue;
 		}
 		const payload_size = bdata.length;
