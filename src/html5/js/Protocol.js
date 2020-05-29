@@ -213,12 +213,13 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 
 	const proto_flags = this.header[1];
 	const proto_crypto = proto_flags & 0x2;
-	if (proto_flags!=0) {
-		// check for crypto protocol flag
-		if (!(proto_crypto)) {
-			this.protocol_error("we can't handle this protocol flag yet: "+proto_flags);
-			return false;
-		}
+	if (proto_crypto) {
+		proto_flags = proto_flags & ~0x2;
+	}
+
+	if (proto_flags > 1) {
+		this.protocol_error("we can't handle this protocol flag yet: "+proto_flags);
+		return;
 	}
 
 	const level = this.header[2];
@@ -331,7 +332,11 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		//decode raw packet string into objects:
 		let packet = null;
 		try {
-			packet = bdecode(packet_data);
+			if (proto_flags==1) {
+				packet = PyRencoder.decode(Buffer.from(packet_data), false);
+			} else {
+				packet = bdecode(packet_data);
+			}
 			for (let index in this.raw_packets) {
 				packet[index] = this.raw_packets[index];
 			}
@@ -382,15 +387,20 @@ XpraProtocol.prototype.process_send_queue = function() {
 		}
 
 		//debug("send worker:"+packet);
+		let proto_flags = 0;
 		let bdata = null;
 		try {
-			bdata = bencode(packet);
-		}
-		catch (e) {
-			console.error("Error: failed to bencode packet:", packet);
+			if (PyRencoder) {
+				bdata = PyRencoder.encode(packet);
+				proto_flags = 1;
+			}
+			else {
+				bdata = bencode(packet);
+			}
+		} catch(e) {
+			console.error("Error: failed to encode packet:", packet);
 			continue;
 		}
-		let proto_flags = 0;
 		const payload_size = bdata.length;
 		// encryption
 		if(this.cipher_out) {
@@ -405,8 +415,13 @@ XpraProtocol.prototype.process_send_queue = function() {
 		const actual_size = bdata.length;
 		//convert string to a byte array:
 		const cdata = [];
-		for (let i=0; i<actual_size; i++)
-			cdata.push(ord(bdata[i]));
+		if (proto_flags == 1) {
+			for (let i=0; i<actual_size; i++)
+				cdata.push(bdata[i]);
+		} else {
+			for (let i=0; i<actual_size; i++)
+				cdata.push(ord(bdata[i]));
+		}
 		const level = 0;
 		/*
 		const use_zlib = false;		//does not work...
@@ -486,7 +501,8 @@ if (!(typeof window == "object" && typeof document == "object" && window.documen
 		'lib/lz4.js',
 		'lib/es6-shim.js',
 		'lib/brotli_decode.js',
-		'lib/forge.js');
+		'lib/forge.js',
+		'lib/pyrencoder.js');
 	// make protocol instance
 	const protocol = new XpraProtocol();
 	protocol.is_worker = true;

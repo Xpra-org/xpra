@@ -1098,7 +1098,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"compression_level"	 		: 1,
 		"mouse.show"				: true,
 		// packet encoders
-		"rencode" 					: false,
+		"rencode" 					: (PyRencoder!==null && PyRencoder!==undefined),
 		"bencode"					: true,
 		"yaml"						: false,
 		"open-url"					: this.open_url,
