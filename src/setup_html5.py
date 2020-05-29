@@ -106,10 +106,11 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
             bname = os.path.basename(src)
 
             fsrc = src
-            if ftype=="js":
+            if ftype=="js" or fname.endswith("index.html"):
                 #save to a temporary file after replacing strings:
                 with open(src, mode='br') as f:
-                    data = f.read().decode("latin1")
+                    odata = f.read().decode("latin1")
+                data = odata
                 if bname=="Utilities.js":
                     print("adding revision info to %s" % (bname,))
                     if REVISION:
@@ -130,45 +131,44 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
                         newdata.append(p.sub(replacewith, line))
                     data = "\n".join(newdata)
 
-                if minifier:
+                if data!=odata:
                     fsrc = src+".tmp"
                     with open(fsrc, "wb") as f:
                         f.write(data.encode("latin1"))
                     os.chmod(fsrc, 0o644)
 
-                    if minifier=="uglifyjs":
-                        minify_cmd = ["uglifyjs",
-                                      fsrc,
-                                      "-o", dst,
-                                      "--compress",
-                                      ]
-                    else:
-                        assert minifier=="yuicompressor"
-                        import yuicompressor        #@UnresolvedImport
-                        jar = yuicompressor.get_jar_filename()
-                        java_cmd = os.environ.get("JAVA", "java")
-                        minify_cmd = [java_cmd, "-jar", jar,
-                                      fsrc,
-                                      "--nomunge",
-                                      "--line-break", "400",
-                                      "--type", ftype,
-                                      "-o", dst,
-                                      ]
-                    try:
-                        r = get_status_output(minify_cmd)[0]
-                        if r!=0:
-                            raise Exception("Error: failed to minify '%s', command %s returned error %i" % (
-                                bname, minify_cmd, r))
-                    finally:
-                        os.unlink(fsrc)
-                    os.chmod(dst, 0o644)
-                    print("minified %s" % (fname, ))
+            if minifier and ftype=="js":
+                if minifier=="uglifyjs":
+                    minify_cmd = ["uglifyjs",
+                                  fsrc,
+                                  "-o", dst,
+                                  "--compress",
+                                  ]
                 else:
-                    with open(dst, mode="bw") as f:
-                        f.write(data.encode("latin1"))
-            else:
-                shutil.copyfile(src, dst)
+                    assert minifier=="yuicompressor"
+                    import yuicompressor        #@UnresolvedImport
+                    jar = yuicompressor.get_jar_filename()
+                    java_cmd = os.environ.get("JAVA", "java")
+                    minify_cmd = [java_cmd, "-jar", jar,
+                                  fsrc,
+                                  "--nomunge",
+                                  "--line-break", "400",
+                                  "--type", ftype,
+                                  "-o", dst,
+                                  ]
+                r = get_status_output(minify_cmd)[0]
+                if r!=0:
+                    raise Exception("Error: failed to minify '%s', command %s returned error %i" % (
+                        bname, minify_cmd, r))
                 os.chmod(dst, 0o644)
+                print("minified %s" % (fname, ))
+            else:
+                print("copied %s" % (fname,))
+                shutil.copyfile(fsrc, dst)
+                os.chmod(dst, 0o644)
+
+            if fsrc!=src:
+                os.unlink(fsrc)
 
             if ftype not in ("png", ):
                 if gzip:
