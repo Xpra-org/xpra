@@ -1476,6 +1476,10 @@ XpraClient.prototype.do_window_mouse_scroll = function(e, window) {
 
 XpraClient.prototype._poll_clipboard = function(e) {
 	//see if the clipboard contents have changed:
+	if (this.clipboard_pending) {
+		//we're still waiting to set the clipboard..
+		return;
+	}
 	if (navigator.clipboard && navigator.clipboard.readText) {
 		this.debug("clipboard", "polling using", navigator.clipboard.readText);
 		const client = this;
