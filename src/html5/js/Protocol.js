@@ -173,7 +173,7 @@ XpraProtocol.prototype.process_receive_queue = function() {
 
 XpraProtocol.prototype.error = function() {
 	if (window.console) {
-		console.log.apply(console, arguments);
+		console.error.apply(console, arguments);
 	}
 }
 XpraProtocol.prototype.log  = function() {
