@@ -121,6 +121,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.key_layout = null;
 	this.last_keycode_pressed = 0;
 	// mouse
+	this.last_button_event = [-1, false, -1, -1];
 	this.mousedown_event = null;
 	this.last_mouse_x = null;
 	this.last_mouse_y = null;
@@ -1372,7 +1373,14 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 		this._window_set_focus(window);
 	}
 	let button = mouse.button;
-	this.debug("mouse", "click:", button, pressed, x, y);
+	let lbe = this.last_button_event;
+	if (lbe[0]==button && lbe[1]==pressed && lbe[2]==x && lbe[3]==y) {
+		//duplicate!
+		this.debug("mouse", "skipping duplicate click event");
+		return;
+	}
+	this.last_button_event = [button, pressed, x, y];
+	this.debug("mouse", "Xclick:", button, pressed, x, y);
 	if (button==4) {
 		button = 8;
 	}
