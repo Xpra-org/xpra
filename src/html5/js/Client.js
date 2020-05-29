@@ -1500,7 +1500,11 @@ XpraClient.prototype._poll_clipboard = function(e) {
 	if (Utilities.isIE()) {
 		datatype = "Text";
 	}
-	const clipboard_buffer = unescape(encodeURIComponent(clipboardData.getData(datatype)));
+	const raw_clipboard_buffer = clipboardData.getData(datatype);
+	if (raw_clipboard_buffer===null) {
+		return false;
+	}
+	const clipboard_buffer = unescape(encodeURIComponent(raw_clipboard_buffer));
 	this.debug("clipboard", "paste event, data=", clipboard_buffer);
 	if (clipboard_buffer==this.clipboard_buffer) {
 		return false;
