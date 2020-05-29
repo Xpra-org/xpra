@@ -1446,7 +1446,11 @@ XpraClient.prototype._poll_clipboard = function(e) {
 		if (Utilities.isIE()) {
 			datatype = "Text";
 		}
-		var clipboard_buffer = unescape(encodeURIComponent(clipboardData.getData(datatype)));
+		var raw_clipboard_buffer = clipboardData.getData(datatype);
+		if (raw_clipboard_buffer===null) {
+			return;
+		}
+		var clipboard_buffer = unescape(encodeURIComponent(raw_clipboard_buffer));
 		this.debug("clipboard", "paste event, data=", clipboard_buffer);
 		if (clipboard_buffer!=this.clipboard_buffer) {
 			this.debug("clipboard", "clipboard contents have changed");
