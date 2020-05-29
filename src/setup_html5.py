@@ -85,6 +85,8 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
         if k!="":
             k = os.sep+k
         for fname in files:
+            if fname.endswith(".tmp"):
+                continue
             src = os.path.join(os.getcwd(), fname)
             parts = fname.split(os.path.sep)
             if parts[0]=="html5":
