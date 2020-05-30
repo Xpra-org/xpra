@@ -111,7 +111,7 @@ def get_owner_info(owner, our_window):
         CloseHandle(proc_handle)
 
 def with_clipboard_lock(window, success_callback, failure_callback, retries=RETRY, delay=DELAY):
-    log("with_clipboard_lock%s", (success_callback, failure_callback, retries, delay))
+    log("with_clipboard_lock%s", (window, success_callback, failure_callback, retries, delay))
     r = OpenClipboard(window)
     if r:
         log("OpenClipboard(%#x)=%s", window, r)
@@ -131,7 +131,7 @@ def with_clipboard_lock(window, success_callback, failure_callback, retries=RETR
         return
     #try again later:
     GLib.timeout_add(delay, with_clipboard_lock,
-                     success_callback, failure_callback, retries-1, delay+5)
+                     window, success_callback, failure_callback, retries-1, delay+5)
 
 def format_name(fmt):
     name = CLIPBOARD_FORMATS.get(fmt)
@@ -143,6 +143,9 @@ def format_name(fmt):
     if r==0:
         return str(fmt)
     return (buf.value[:r]).decode("latin1")
+
+def format_names(fmts):
+    return tuple(format_name(x) for x in fmts)
 
 def get_clipboard_formats():
     formats = []
@@ -291,15 +294,28 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
 
     def do_emit_token(self):
-        #TODO: if contents are not text,
-        #send just the token
-        if self._greedy_client:
-            target = "UTF8_STRING"
-            def got_contents(dtype, dformat, data):
-                packet_data = ([target], (target, dtype, dformat, data))
-                self.send_clipboard_token_handler(self, packet_data)
-            self.get_contents(target, got_contents)
-        self.send_clipboard_token_handler(self)
+        def send_token(formats=()):
+            #send just the token
+            if self._greedy_client:
+                #default target:
+                target = "UTF8_STRING"
+                if formats:
+                    if win32con.CF_UNICODETEXT in formats:
+                        target = "UTF8_STRING"
+                    elif win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
+                        target = "STRING"
+                def got_contents(dtype, dformat, data):
+                    packet_data = ([target], (target, dtype, dformat, data))
+                    self.send_clipboard_token_handler(self, packet_data)
+                self.get_contents(target, got_contents)
+            self.send_clipboard_token_handler(self)
+        def got_clipboard_lock():
+            fmts = get_clipboard_formats()
+            log("do_emit_token() formats=%s", format_names(fmts))
+            send_token(fmts)
+        def errback(_errmsg=None):
+            send_token()
+        self.with_clipboard_lock(got_clipboard_lock, errback)
 
     def get_contents(self, target, got_contents):
         log("get_contents%s", (target, got_contents))
@@ -376,9 +392,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 else:
                     fmts = [win32con.CF_TEXT, win32con.CF_OEMTEXT]
                 matching += [fmt for fmt in formats if fmt in fmts]
-            log("supported formats: %s (prefer utf8: %s)", csv(format_name(x) for x in matching), utf8)
+            log("supported formats: %s (prefer utf8: %s)", csv(format_names(matching)), utf8)
             if not matching:
-                log("no supported formats, only: %s", csv(format_name(x) for x in formats))
+                log("no supported formats, only: %s", csv(format_names(formats)))
                 errback()
                 return True
             data_handle = None
@@ -388,7 +404,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 if data_handle:
                     break
             if not data_handle:
-                log("no valid data handle using %s (may try again)", csv(format_name(x) for x in matching))
+                log("no valid data handle using %s (may try again)", csv(format_names(matching)))
                 return False
             data = GlobalLock(data_handle)
             if not data:
