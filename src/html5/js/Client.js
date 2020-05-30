@@ -1380,7 +1380,7 @@ XpraClient.prototype.do_window_mouse_click = function(e, window, pressed) {
 		return;
 	}
 	this.last_button_event = [button, pressed, x, y];
-	this.debug("mouse", "Xclick:", button, pressed, x, y);
+	this.debug("mouse", "click:", button, pressed, x, y);
 	if (button==4) {
 		button = 8;
 	}
