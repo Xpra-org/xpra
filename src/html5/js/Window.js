@@ -1305,7 +1305,6 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	try {
 		if (coding=="rgb32") {
 			this._non_video_paint(coding);
-			const img = this.offscreen_canvas_ctx.createImageData(width, height);
 			//show("options="+(options).toSource());
 			if (options!=null && options["zlib"]>0) {
 				//show("decompressing "+img_data.length+" bytes of "+coding+"/zlib");
@@ -1330,22 +1329,17 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				}
 				img_data = inflated.slice(0, uncompressedSize);
 			}
-			// set the imagedata rgb32 method
 			let target_stride = width*4;
 			this.debug("draw", "got ", img_data.length, "to paint with stride", rowstride, ", target stride", target_stride);
+			let img = null;
 			if (rowstride>target_stride) {
-				//we have to set line by line to honour the rowstride
-				for (let i = 0; i < height; i++) {
-					//we want to slice one line from the img_data buffer
-					//(but without using slice or subarray because the resulting array is too big!?)
-					let line = new Uint8Array(img_data.buffer, i*rowstride, target_stride);
-					img.data.set(line, i*target_stride);
-				}
+				img = this.offscreen_canvas_ctx.createImageData(Math.round(rowstride/4), height);
 			}
 			else {
-				img.data.set(img_data);
+				img = this.offscreen_canvas_ctx.createImageData(width, height);
 			}
-			this.offscreen_canvas_ctx.putImageData(img, x, y);
+			img.data.set(img_data);
+			this.offscreen_canvas_ctx.putImageData(img, x, y, 0, 0, width, height);
 			painted();
 			this.may_paint_now();
 		}
