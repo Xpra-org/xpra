@@ -294,22 +294,24 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
 
     def do_emit_token(self):
-        def send_token(formats=()):
+        if not self._greedy_client:
             #send just the token
-            if self._greedy_client:
-                #default target:
-                target = "UTF8_STRING"
-                if formats:
-                    if win32con.CF_UNICODETEXT in formats:
-                        target = "UTF8_STRING"
-                    elif win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
-                        target = "STRING"
-                def got_contents(dtype, dformat, data):
-                    packet_data = ([target], (target, dtype, dformat, data))
-                    self.send_clipboard_token_handler(self, packet_data)
-                self.get_contents(target, got_contents)
-            else:
-                self.send_clipboard_token_handler(self)
+            self.send_clipboard_token_handler(self)
+            return
+        #greedy clients want data with the token,
+        #so we have to get the clipboard lock
+        def send_token(formats):
+            #default target:
+            target = "UTF8_STRING"
+            if formats:
+                if win32con.CF_UNICODETEXT in formats:
+                    target = "UTF8_STRING"
+                elif win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
+                    target = "STRING"
+            def got_contents(dtype, dformat, data):
+                packet_data = ([target], (target, dtype, dformat, data))
+                self.send_clipboard_token_handler(self, packet_data)
+            self.get_contents(target, got_contents)
         def got_clipboard_lock():
             fmts = get_clipboard_formats()
             log("do_emit_token() formats=%s", format_names(fmts))
