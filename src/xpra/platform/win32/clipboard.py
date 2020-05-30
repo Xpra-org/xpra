@@ -110,6 +110,40 @@ def get_owner_info(owner, our_window):
     finally:
         CloseHandle(proc_handle)
 
+def with_clipboard_lock(window, success_callback, failure_callback, retries=RETRY, delay=DELAY):
+    log("with_clipboard_lock%s", (success_callback, failure_callback, retries, delay))
+    r = OpenClipboard(window)
+    if r:
+        log("OpenClipboard(%#x)=%s", window, r)
+        try:
+            r = success_callback()
+            log("%s()=%s", success_callback, r)
+            if r:
+                return
+        finally:
+            r = CloseClipboard()
+            log("CloseClipboard()=%s", r)
+    e = WinError(GetLastError())
+    owner = GetClipboardOwner()
+    log("OpenClipboard(%#x)=%s, current owner: %s", window, e, get_owner_info(owner, window))
+    if retries<=0:
+        failure_callback("OpenClipboard: too many failed attempts, giving up")
+        return
+    #try again later:
+    GLib.timeout_add(delay, with_clipboard_lock,
+                     success_callback, failure_callback, retries-1, delay+5)
+
+def format_name(fmt):
+    name = CLIPBOARD_FORMATS.get(fmt)
+    if name:
+        return name
+    ulen = 128
+    buf = LPCSTR(b" "*ulen)
+    r = GetClipboardFormatNameA(fmt, buf, ulen-1)
+    if r==0:
+        return str(fmt)
+    return (buf.value[:r]).decode("latin1")
+
 def get_clipboard_formats():
     formats = []
     fmt = 0
@@ -240,27 +274,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         super().__init__(selection)
 
     def with_clipboard_lock(self, success_callback, failure_callback, retries=RETRY, delay=DELAY):
-        log("with_clipboard_lock%s", (success_callback, failure_callback, retries, delay))
-        r = OpenClipboard(self.window)
-        if r:
-            log("OpenClipboard(%#x)=%s", self.window, r)
-            try:
-                r = success_callback()
-                log("%s()=%s", success_callback, r)
-                if r:
-                    return
-            finally:
-                r = CloseClipboard()
-                log("CloseClipboard()=%s", r)
-        e = WinError(GetLastError())
-        owner = GetClipboardOwner()
-        log("OpenClipboard(%#x)=%s, current owner: %s", self.window, e, get_owner_info(owner, self.window))
-        if retries<=0:
-            failure_callback("OpenClipboard: too many failed attempts, giving up")
-            return
-        #try again later:
-        GLib.timeout_add(delay, self.with_clipboard_lock,
-                         success_callback, failure_callback, retries-1, delay+5)
+        with_clipboard_lock(self.window, success_callback, failure_callback, retries=RETRY, delay=DELAY)
 
     def clear(self):
         self.with_clipboard_lock(self.empty_clipboard, self.clear_error)
@@ -353,16 +367,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
 
     def get_clipboard_text(self, utf8, callback, errback):
-        def format_name(fmt):
-            name = CLIPBOARD_FORMATS.get(fmt)
-            if name:
-                return name
-            ulen = 128
-            buf = LPCSTR(b" "*ulen)
-            r = GetClipboardFormatNameA(fmt, buf, ulen-1)
-            if r==0:
-                return str(fmt)
-            return (buf.value[:r]).decode("latin1")
         def get_text():
             formats = get_clipboard_formats()
             matching = []
