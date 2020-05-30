@@ -110,6 +110,38 @@ def get_owner_info(owner, our_window):
     finally:
         CloseHandle(proc_handle)
 
+def get_clipboard_formats():
+    formats = []
+    fmt = 0
+    while True:
+        fmt = EnumClipboardFormats(fmt)
+        if fmt:
+            formats.append(fmt)
+        else:
+            break
+    log("get_clipboard formats()=%s", csv(format_name(x) for x in formats))
+    return formats
+
+def w_to_utf8(data):
+    wstr = cast(data, LPCWSTR)
+    ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
+    if ulen>MAX_CLIPBOARD_PACKET_SIZE:
+        raise Exception("unicode data is too large: %i bytes" % ulen)
+    buf = create_string_buffer(ulen)
+    l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
+    if l==0:
+        raise Exception("failed to convert to UTF8: %s" % FormatError(get_last_error()))
+    if buf.raw[l-1:l]==b"\0":
+        s = buf.raw[:l-1]
+    else:
+        s = buf.raw[:l]
+    log("got %i bytes of UNICODE data: %s", len(s), ellipsizer(s))
+    if CONVERT_LINE_ENDINGS:
+        return s.decode("utf8").replace("\r\n", "\n").encode("utf8")
+    return strtobytes(s)
+        
+
+
 class Win32Clipboard(ClipboardTimeoutHelper):
     """
         Use Native win32 API to access the clipboard
@@ -332,15 +364,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 return str(fmt)
             return (buf.value[:r]).decode("latin1")
         def get_text():
-            formats = []
-            fmt = 0
-            while True:
-                fmt = EnumClipboardFormats(fmt)
-                if fmt:
-                    formats.append(fmt)
-                else:
-                    break
-            log("clipboard formats: %s", csv(format_name(x) for x in formats))
+            formats = get_clipboard_formats()
             matching = []
             for u in (utf8, not utf8):
                 if u:
@@ -369,25 +393,12 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("got data handle lock %#x for format '%s'", data, format_name(fmt))
             try:
                 if fmt==win32con.CF_UNICODETEXT:
-                    wstr = cast(data, LPCWSTR)
-                    ulen = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, None, 0, None, None)
-                    if ulen>MAX_CLIPBOARD_PACKET_SIZE:
-                        errback("unicode data is too large: %i bytes" % ulen)
+                    try:
+                        v = w_to_utf8(data)
+                    except Exception as e:
+                        log("w_to_utf8(..)", exc_info=True)
+                        errback(str(e))
                         return True
-                    buf = create_string_buffer(ulen)
-                    l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
-                    if l==0:
-                        errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
-                        return True
-                    if buf.raw[l-1:l]==b"\0":
-                        s = buf.raw[:l-1]
-                    else:
-                        s = buf.raw[:l]
-                    log("got %i bytes of UNICODE data: %s", len(s), ellipsizer(s))
-                    if CONVERT_LINE_ENDINGS:
-                        v = s.decode("utf8").replace("\r\n", "\n").encode("utf8")
-                    else:
-                        v = strtobytes(s)
                     callback(v)
                     return True
                 #CF_TEXT or CF_OEMTEXT:
