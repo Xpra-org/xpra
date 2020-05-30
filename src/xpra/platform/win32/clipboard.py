@@ -308,7 +308,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     packet_data = ([target], (target, dtype, dformat, data))
                     self.send_clipboard_token_handler(self, packet_data)
                 self.get_contents(target, got_contents)
-            self.send_clipboard_token_handler(self)
+            else:
+                self.send_clipboard_token_handler(self)
         def got_clipboard_lock():
             fmts = get_clipboard_formats()
             log("do_emit_token() formats=%s", format_names(fmts))
