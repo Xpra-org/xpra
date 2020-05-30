@@ -1303,7 +1303,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	}
 
 	try {
-		if (coding=="rgb32") {
+		if (coding=="rgb32" || coding=="rgb24") {
 			this._non_video_paint(coding);
 			//show("options="+(options).toSource());
 			if (options!=null && options["zlib"]>0) {
@@ -1337,7 +1337,21 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				}
 			}
 			let target_stride = width*4;
-			this.debug("draw", "got ", img_data.length, "to paint with stride", rowstride, ", target stride", target_stride);
+			this.debug("draw", "got ", img_data.length, "bytes of", coding, "to paint with stride", rowstride, ", target stride", target_stride);
+			if (coding=="rgb24") {
+				const uint = new Uint8Array(target_stride*height);
+				let i = 0,
+					j = 0,
+					l = img_data.length;
+				while (i<l) {
+					for (let k=0; k<3; k++) {
+						uint[j++] = img_data[i++];
+					}
+					uint[j++] = 255;
+				}
+				rowstride = target_stride;
+				img_data = uint;
+			}
 			let img = null;
 			if (rowstride>target_stride) {
 				img = this.offscreen_canvas_ctx.createImageData(Math.round(rowstride/4), height);

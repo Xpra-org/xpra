@@ -56,7 +56,7 @@ XpraClient.prototype.init_settings = function(container) {
 	this.steal = true;
 	this.remote_logging = true;
 	this.enabled_encodings = [];
-	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32"];	//"h264", "vp8+webm", "h264+mp4", "mpeg4+mp4"];
+	this.supported_encodings = ["jpeg", "png", "rgb", "rgb32", "rgb24"];	//"h264", "vp8+webm", "h264+mp4", "mpeg4+mp4"];
 	if (Utilities.canUseWebP()) {
 		this.supported_encodings.push("webp");
 	}
@@ -94,7 +94,7 @@ XpraClient.prototype.init_state = function(container) {
 	this.client_start_time = new Date();
 	// some client stuff
 	this.capabilities = {};
-	this.RGB_FORMATS = ["RGBX", "RGBA"];
+	this.RGB_FORMATS = ["RGBX", "RGBA", "RGB"];
 	this.disconnect_reason = null;
 	// audio
 	this.audio = null;
