@@ -730,16 +730,19 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	}
 
 	let key_language = null;
+	//some special keys are better mapped by name:
+	if (keyname in KEY_TO_NAME){
+		keyname = KEY_TO_NAME[keyname];
+	}
+	else if (keyname=="" && str in KEY_TO_NAME){
+		keyname = KEY_TO_NAME[str];
+	}
 	//special case for numpad,
 	//try to distinguish arrowpad and numpad:
 	//(for arrowpad, keyname==str)
-	if (keyname!=str && str in NUMPAD_TO_NAME) {
+	else if (keyname!=str && str in NUMPAD_TO_NAME) {
 		keyname = NUMPAD_TO_NAME[str];
 		this.num_lock = ("0123456789.".includes(keyname));
-	}
-	//some special keys are better mapped by name:
-	else if (keyname in KEY_TO_NAME){
-		keyname = KEY_TO_NAME[keyname];
 	}
 	//next try mapping the actual character
 	else if (str in CHAR_TO_NAME) {
