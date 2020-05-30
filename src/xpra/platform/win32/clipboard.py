@@ -316,6 +316,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             fmts = get_clipboard_formats()
             log("do_emit_token() formats=%s", format_names(fmts))
             send_token(fmts)
+            return True
         def errback(_errmsg=None):
             send_token()
         self.with_clipboard_lock(got_clipboard_lock, errback)
@@ -323,8 +324,25 @@ class Win32ClipboardProxy(ClipboardProxyCore):
     def get_contents(self, target, got_contents):
         log("get_contents%s", (target, got_contents))
         if target=="TARGETS":
-            #we only support text at the moment:
-            got_contents("ATOM", 32, ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
+            def got_clipboard_lock():
+                formats = get_clipboard_formats()
+                fnames = format_names(formats)
+                targets = []
+                if win32con.CF_UNICODETEXT in formats:
+                    targets += ["text/plain;charset=utf-8", "UTF8_STRING", "CF_UNICODETEXT"]
+                if win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
+                    targets += ["TEXT", "STRING", "text/plain"]
+                #if "PNG" in fnames:
+                #    targets += ["image/png", "PNG"]
+                #if "CF_DIB" in fnames or "CF_BITMAP" in fnames or "CF_DIBV5" in fnames:
+                #    targets += ["image/png", "PNG"]
+                log("targets(%s)=%s", csv(fnames), csv(targets))
+                got_contents("ATOM", 32, targets)
+                return True
+            def lockerror(_message):
+                #assume text:
+                got_contents("ATOM", 32, ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
+            self.with_clipboard_lock(got_clipboard_lock, lockerror)
             return
         if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
             #we don't know how to handle this target,
