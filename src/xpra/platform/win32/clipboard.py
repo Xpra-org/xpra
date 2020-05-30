@@ -253,7 +253,8 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 packet_data = ([target], (target, dtype, dformat, data))
                 self.send_clipboard_token_handler(self, packet_data)
             self.get_contents(target, got_contents)
-        self.send_clipboard_token_handler(self)
+        else:
+            self.send_clipboard_token_handler(self)
 
     def get_contents(self, target, got_contents):
         log("get_contents%s", (target, got_contents))
