@@ -8,12 +8,14 @@ from ctypes import (
     sizeof, byref, cast,
     get_last_error, create_string_buffer,
     WinError, FormatError,
+    POINTER, c_char,
     )
 from gi.repository import GLib
 
 from xpra.platform.win32.common import (
     WNDCLASSEX, GetLastError,
     WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD,
+    BITMAPV5HEADER,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
@@ -30,7 +32,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import csv, ellipsizer, envint, envbool
+from xpra.util import csv, ellipsizer, envint, envbool, roundup
 from xpra.os_util import bytestostr, strtobytes
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
@@ -67,6 +69,40 @@ CLIPBOARD_FORMATS = {
     win32con.CF_OEMTEXT     : "CF_OEMTEXT",
     win32con.CF_TEXT        : "CF_TEXT",
     win32con.CF_UNICODETEXT : "CF_UNICODETEXT",
+    }
+
+BI_RGB = 0x0000
+BI_RLE8 = 0x0001
+BI_RLE4 = 0x0002
+BI_BITFIELDS = 0x0003
+BI_JPEG = 0x0004
+BI_PNG = 0x0005
+BI_CMYK = 0x000B
+BI_CMYKRLE8 = 0x000C
+BI_CMYKRLE4 = 0x000D
+BI_FORMATS = {
+    BI_RGB : "RGB",
+    BI_RLE8 : "RLE8",
+    BI_RLE4 : "RLE4",
+    BI_BITFIELDS : "BITFIELDS",
+    BI_JPEG : "JPEG",
+    BI_PNG : "PNG",
+    BI_CMYK : "CMYK",
+    BI_CMYKRLE8 : "CMYKRLE8",
+    BI_CMYKRLE4 : "CMYKRLE4",
+    }
+
+LCS_CALIBRATED_RGB = 0x00000000
+LCS_sRGB = 0x73524742
+LCS_WINDOWS_COLOR_SPACE = 0x57696E20
+PROFILE_LINKED = 3
+PROFILE_EMBEDDED = 4
+COLOR_PROFILES = {
+    LCS_CALIBRATED_RGB  : "CALIBRATED_RGB",
+    LCS_sRGB            : "sRGB",
+    LCS_WINDOWS_COLOR_SPACE : "WINDOWS",
+    PROFILE_LINKED      : "PROFILE_LINKED",
+    PROFILE_EMBEDDED    : "PROFILE_EMBEDDED",
     }
 
 RETRY = envint("XPRA_CLIPBOARD_RETRY", 5)
@@ -304,10 +340,13 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             #default target:
             target = "UTF8_STRING"
             if formats:
+                tnames = format_names(formats)
                 if win32con.CF_UNICODETEXT in formats:
                     target = "UTF8_STRING"
                 elif win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
                     target = "STRING"
+                elif "PNG" in tnames:
+                    target = "image/png"
             def got_contents(dtype, dformat, data):
                 packet_data = ([target], (target, dtype, dformat, data))
                 self.send_clipboard_token_handler(self, packet_data)
@@ -332,10 +371,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     targets += ["text/plain;charset=utf-8", "UTF8_STRING", "CF_UNICODETEXT"]
                 if win32con.CF_TEXT in formats or win32con.CF_OEMTEXT in formats:
                     targets += ["TEXT", "STRING", "text/plain"]
-                #if "PNG" in fnames:
-                #    targets += ["image/png", "PNG"]
-                #if "CF_DIB" in fnames or "CF_BITMAP" in fnames or "CF_DIBV5" in fnames:
-                #    targets += ["image/png", "PNG"]
+                #if any(x in fnames for x in ("CF_DIB", "CF_BITMAP", "CF_DIBV5")):
+                if "CF_DIBV5" in fnames:
+                    targets += ["image/png", "image/jpeg"]
                 log("targets(%s)=%s", csv(fnames), csv(targets))
                 got_contents("ATOM", 32, targets)
                 return True
@@ -344,10 +382,24 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 got_contents("ATOM", 32, ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
             self.with_clipboard_lock(got_clipboard_lock, lockerror)
             return
+        def nodata(*args):
+            log("nodata%s", args)
+            got_contents(target, 8, b"")
+        if target in ("image/png", "image/jpeg"):
+            def got_image(image):
+                img_format = target.split("/")[-1].upper()  #ie: "PNG" or "JPEG"
+                from io import BytesIO
+                buf = BytesIO()
+                image.save(buf, format=img_format)
+                png_data = buf.getvalue()
+                buf.close()
+                got_contents(target, 8, png_data)
+            self.get_clipboard_image(got_image, nodata)
+            return
         if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
             #we don't know how to handle this target,
             #return an empty response:
-            got_contents(target, 8, b"")
+            nodata()
             return
         def got_text(text):
             log("got_text(%s)", ellipsizer(text))
@@ -360,6 +412,53 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             got_contents(target, 8, b"")
         utf8 = target.lower().find("utf")>=0
         self.get_clipboard_text(utf8, got_text, errback)
+
+    def get_clipboard_image(self, got_image, errback):
+        def got_clipboard_lock():
+            data_handle = GetClipboardData(win32con.CF_DIBV5)
+            log("CF_BITMAP=%s", data_handle)
+            data = GlobalLock(data_handle)
+            if not data:
+                log("failed to lock data handle %#x (may try again)", data_handle)
+                return False
+            try:
+                PBITMAPV5HEADER = POINTER(BITMAPV5HEADER)
+                header = cast(data, PBITMAPV5HEADER).contents
+                offset = header.bV5Size + header.bV5ClrUsed * 4
+                w, h = header.bV5Width, abs(header.bV5Height)
+                bits = header.bV5BitCount
+                log("offset=%s, width=%i, height=%i, compression=%s",
+                    offset, w, h, BI_FORMATS.get(header.bV5Compression, header.bV5Compression))
+                log("planes=%i, bitcount=%i", header.bV5Planes, bits)
+                log("colorspace=%s", COLOR_PROFILES.get(header.bV5CSType, header.bV5CSType))
+                #if header.bV5Compression in (BI_JPEG, BI_PNG):
+                #    pass
+                if header.bV5Compression!=BI_RGB:
+                    errback("cannot handle %s compression yet" % BI_FORMATS.get(header.bV5Compression, header.bV5Compression))
+                    return True
+                if bits==24:
+                    img_format = "RGB"
+                    rgb_format = "BGR"
+                    stride = roundup(w*3, 4)
+                elif bits==32:
+                    img_format = "RGBA"
+                    rgb_format = "BGRA"
+                    stride = w*4
+                else:
+                    errback("cannot handle image data with %i bits per pixel yet" % bits)
+                    return True
+                img_size = stride*h
+                rgb_data = (c_char*img_size).from_address(data+offset)
+                from PIL import Image, ImageOps
+                img = Image.frombytes(img_format, (w, h), rgb_data, "raw", rgb_format, stride, 1)
+                if header.bV5Height<0:
+                    got_image(img)
+                else:
+                    got_image(ImageOps.flip(img))
+                return True
+            finally:
+                GlobalUnlock(data)
+        self.with_clipboard_lock(got_clipboard_lock, errback)
 
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False):
