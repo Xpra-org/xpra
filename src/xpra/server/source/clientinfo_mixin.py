@@ -138,13 +138,13 @@ class ClientInfoMixin(StubSourceMixin):
                 "version"           : self.client_version or "unknown",
                 "revision"          : self.client_revision or "unknown",
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
-                "session-type"      : self.client_session_type,
-                "session-type.full" : self.client_session_type_full,
-                "session-id"        : self.session_id,
-                "uuid"              : self.uuid,
+                "session-type"      : self.client_session_type or "",
+                "session-type.full" : self.client_session_type_full or "",
+                "session-id"        : self.session_id or "",
+                "uuid"              : self.uuid or "",
                 "hostname"          : self.hostname or "",
-                "argv"              : self.argv,
-                "sharing"           : self.sharing,
+                "argv"              : self.argv or (),
+                "sharing"           : bool(self.sharing),
                 }
 
         def addattr(k, name):
