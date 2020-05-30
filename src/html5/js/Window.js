@@ -1328,6 +1328,13 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 					uncompressedSize = LZ4.decodeBlock(img_data.slice(4), inflated);
 				}
 				img_data = inflated.slice(0, uncompressedSize);
+				if (uncompressedSize==length) {
+					img_data = inflated;
+				}
+				else {
+					//this should not happen?
+					img_data = inflated.slice(0, uncompressedSize);
+				}
 			}
 			let target_stride = width*4;
 			this.debug("draw", "got ", img_data.length, "to paint with stride", rowstride, ", target stride", target_stride);
