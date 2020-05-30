@@ -367,6 +367,8 @@ class EncodingsMixin(StubSourceMixin):
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
 
     def print_encoding_info(self):
+        log("print_encoding_info() core-encodings=%s, server-core-encodings=%s",
+            self.core_encodings, self.server_core_encodings)
         others = tuple(x for x in self.core_encodings
                        if x in self.server_core_encodings and x!=self.encoding)
         if self.encoding=="auto":
