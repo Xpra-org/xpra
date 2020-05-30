@@ -106,9 +106,10 @@ class EncodingServer(StubServerMixin):
             log("add_encodings(%s)", encodings)
             for ce in encodings:
                 e = {"rgb32" : "rgb", "rgb24" : "rgb"}.get(ce, ce)
-                if self.allowed_encodings is not None and e not in self.allowed_encodings:
-                    #not in whitelist (if it exists)
-                    continue
+                if self.allowed_encodings is not None:
+                    if e not in self.allowed_encodings and ce not in self.allowed_encodings:
+                        #not in whitelist (if it exists)
+                        continue
                 if e not in encs:
                     encs.append(e)
                 if ce not in core_encs:
