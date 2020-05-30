@@ -172,12 +172,12 @@ XpraProtocol.prototype.process_receive_queue = function() {
 
 
 XpraProtocol.prototype.error = function() {
-	if (window.console) {
+	if (console) {
 		console.error.apply(console, arguments);
 	}
 }
 XpraProtocol.prototype.log  = function() {
-	if (window.console) {
+	if (console) {
 		console.log.apply(console, arguments);
 	}
 }
