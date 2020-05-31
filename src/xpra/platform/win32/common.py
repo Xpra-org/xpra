@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -100,6 +100,29 @@ class CIEXYZTRIPLE(Structure):
         ('ciexyzGreen', CIEXYZ),
     ]
 
+class BITMAPINFOHEADER(Structure):
+    _fields_ = [
+        ("biSize",          DWORD),
+        ("biWidth",         LONG),
+        ("biHeight",        LONG),
+        ("biPlanes",        WORD),
+        ("biBitCount",      WORD),
+        ("biCompression",   DWORD),
+        ("biSizeImage",     DWORD),
+        ("biXPelsPerMeter", LONG),
+        ("biYPelsPerMeter", LONG),
+        ("biClrUsed",       DWORD),
+        ("biClrImportant",  DWORD),
+        ]
+PBITMAPINFOHEADER = POINTER(BITMAPINFOHEADER)
+
+class BITMAPINFO(Structure):
+    _fields_ = [
+        ("bmiHeader",       BITMAPINFOHEADER),
+        ("bmiColors",       DWORD),
+        ]
+PBITMAPINFO = POINTER(BITMAPINFO)
+
 class BITMAPV5HEADER(Structure):
     _fields_ = [
         ('bV5Size',             DWORD),
@@ -127,6 +150,7 @@ class BITMAPV5HEADER(Structure):
         ('bV5ProfileSize',      DWORD),
         ('bV5Reserved',         DWORD),
     ]
+PBITMAPV5HEADER = POINTER(BITMAPV5HEADER)
 
 CCHDEVICENAME = 32
 class MONITORINFOEX(Structure):
@@ -566,6 +590,9 @@ DeleteDC = gdi32.DeleteDC
 CreateDIBSection = gdi32.CreateDIBSection
 CreateDIBSection.restype = HBITMAP
 CreateDIBSection.argtypes = [HANDLE, POINTER(BITMAPV5HEADER), UINT, POINTER(c_void_p), HANDLE, DWORD]
+CreateDIBitmap = gdi32.CreateDIBitmap
+CreateDIBitmap.restype = HBITMAP
+CreateDIBitmap.argtypes = [HDC, PBITMAPINFOHEADER, DWORD, c_void_p, PBITMAPINFO, UINT]
 DeleteObject = gdi32.DeleteObject
 DeleteObject.argtypes = [HGDIOBJ]
 DeleteObject.restype = BOOL

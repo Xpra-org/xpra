@@ -4,18 +4,20 @@
 # later version. See the file COPYING for details.
 
 import os
+from io import BytesIO
 from ctypes import (
-    sizeof, byref, cast,
+    sizeof, byref, cast, memset, memmove,
     get_last_error, create_string_buffer,
     WinError, FormatError,
-    POINTER, c_char,
+    c_char, c_void_p,
     )
 from gi.repository import GLib
 
 from xpra.platform.win32.common import (
+    GetDC, ReleaseDC,
     WNDCLASSEX, GetLastError,
     WNDPROC, LPCWSTR, LPWSTR, LPCSTR, DWORD,
-    BITMAPV5HEADER,
+    BITMAPINFOHEADER, PBITMAPV5HEADER, BITMAPINFO,
     DefWindowProcW,
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
@@ -25,6 +27,7 @@ from xpra.platform.win32.common import (
     AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
     GetWindowThreadProcessId, QueryFullProcessImageNameA, OpenProcess, CloseHandle,
+    CreateDIBitmap,
     )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
@@ -388,7 +391,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if target in ("image/png", "image/jpeg"):
             def got_image(image):
                 img_format = target.split("/")[-1].upper()  #ie: "PNG" or "JPEG"
-                from io import BytesIO
                 buf = BytesIO()
                 image.save(buf, format=img_format)
                 png_data = buf.getvalue()
@@ -407,7 +409,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         def errback(error_text=""):
             log("errback(%s)", error_text)
             if error_text:
-                log.warn("Warning: failed to get clipboard data")
+                log.warn("Warning: failed to get clipboard data as text")
                 log.warn(" %s", error_text)
             got_contents(target, 8, b"")
         utf8 = target.lower().find("utf")>=0
@@ -422,7 +424,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 log("failed to lock data handle %#x (may try again)", data_handle)
                 return False
             try:
-                PBITMAPV5HEADER = POINTER(BITMAPV5HEADER)
                 header = cast(data, PBITMAPV5HEADER).contents
                 offset = header.bV5Size + header.bV5ClrUsed * 4
                 w, h = header.bV5Width, abs(header.bV5Height)
@@ -497,9 +498,62 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             self.targets = _filter_targets(data)
             #TODO: tell system what targets we have
             log("got_contents: tell OS we have %s", csv(self.targets))
-        if dformat==8 and dtype in TEXT_TARGETS:
+            image_formats = tuple(x for x in ("image/png", "image/jpeg") if x in self.targets)
+            if image_formats:
+                #request it:
+                self.send_clipboard_request_handler(self, self._selection, image_formats[0])
+        elif dformat==8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", data)
             self.set_clipboard_text(data)
+        elif dformat==8 and dtype.startswith("image/"):
+            img_format = dtype.split("/")[-1]   #ie: 'png'
+            self.set_clipboard_image(img_format, data)
+        else:
+            log("no handling: target=%s, dtype=%s, dformat=%s, data=%s",
+                target, dtype, dformat, ellipsizer(data))
+
+    def set_clipboard_image(self, img_format, data):
+        from PIL import Image
+        buf = BytesIO(data)
+        img = Image.open(buf)
+        if img.mode!="RGBA":
+            img = img.convert("RGBA")
+        rgb_data = img.tobytes("raw", "BGRA")
+        w, h = img.size
+        log("set_clipboard_image(%s, %s) image size=%s, BGR buffer=%i bytes",
+            img_format, ellipsizer(data), img.size, len(rgb_data))
+        header = BITMAPINFOHEADER()
+        memset(byref(header), 0, sizeof(BITMAPINFOHEADER ))
+        header.biSize       = sizeof(BITMAPINFOHEADER)
+        header.biWidth      = w
+        header.biHeight     = -h
+        header.biPlanes     = 1
+        header.biBitCount   = 32
+        header.biCompression    = BI_RGB
+        header.biSizeImage      = 0
+        header.biXPelsPerMeter  = 10
+        header.biYPelsPerMeter  = 10
+
+        bitmapinfo = BITMAPINFO()
+        bitmapinfo.bmiColors = 0
+        memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
+
+        rgb_buf = create_string_buffer(rgb_data)
+        pbuf = cast(byref(rgb_buf), c_void_p)
+        hdc = GetDC(None)
+        CBM_INIT = 4
+        bitmap = CreateDIBitmap(hdc, byref(header), CBM_INIT, pbuf, byref(bitmapinfo), win32con.DIB_RGB_COLORS)
+        def got_clipboard_lock():
+            r = SetClipboardData(win32con.CF_BITMAP, bitmap)
+            if not r:
+                e = WinError(GetLastError())
+                log("SetClipboardData(CF_BITMAP, %#x)=%s (%s)", bitmap, r, e)
+            ReleaseDC(None, hdc)
+            return bool(r)
+        def nolock(*_args):
+            log.warn("Warning: failed to copy image to clipboard")
+            ReleaseDC(None, hdc)
+        self.with_clipboard_lock(got_clipboard_lock, nolock)
 
 
     def get_clipboard_text(self, utf8, callback, errback):
