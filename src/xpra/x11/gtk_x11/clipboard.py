@@ -443,9 +443,12 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, event.time)
             return
 
-        if req_target not in self.remote_requests:
+        waiting = self.remote_requests.setdefault(req_target, [])
+        if waiting:
+            log("already waiting for '%s' remote request: %s", req_target, waiting)
+        else:
             self.emit("send-clipboard-request", self._selection, req_target)
-        self.remote_requests.setdefault(req_target, []).append((requestor, target, prop, event.time))
+        waiting.append((requestor, target, prop, event.time))
 
     def set_selection_response(self, requestor, target, prop, dtype, dformat, data, time=0):
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
