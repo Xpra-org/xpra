@@ -550,8 +550,12 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def choose_targets(self, targets):
         if self.preferred_targets:
             #prefer PNG, but only if supported by the client:
-            if "image/png" in targets and "image/png" in self.preferred_targets:
-                return ("image/png",)
+            fmts = []
+            for img_fmt in ("image/png", "image/jpeg"):
+                if img_fmt in targets and img_fmt in self.preferred_targets:
+                    fmts.append(img_fmt)
+            if fmts:
+                return fmts
             #if we can't choose a text target, at least choose a supported one:
             if not any(x for x in targets if x in TEXT_TARGETS and x in self.preferred_targets):
                 return tuple(x for x in targets if x in self.preferred_targets)
@@ -690,9 +694,10 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if IMAGE_OVERLAY and not os.path.exists(IMAGE_OVERLAY):
             IMAGE_OVERLAY = None
         IMAGE_STAMP = envbool("XPRA_CLIPBOARD_IMAGE_STAMP", True)
-        if dtype in ("image/png", ) and (IMAGE_STAMP or IMAGE_OVERLAY):
+        if dtype in ("image/png", "image/jpeg") and (IMAGE_STAMP or IMAGE_OVERLAY):
             from xpra.codecs.pillow.decoder import open_only
-            img = open_only(data, ("png", ))
+            img_type = dtype.split("/")[-1]
+            img = open_only(data, (img_type, ))
             has_alpha = img.mode=="RGBA"
             if not has_alpha and IMAGE_OVERLAY:
                 img = img.convert("RGBA")
@@ -718,7 +723,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 w, h = img.size
                 img_draw.text((10, max(0, h//2-16)), 'via Xpra, %s' % datetime.now().isoformat(), fill='black')
             buf = BytesIO()
-            img.save(buf, "PNG")
+            img.save(buf, img_type.upper()) #ie: "PNG"
             data = buf.getvalue()
             buf.close()
         return data
