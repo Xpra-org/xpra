@@ -586,7 +586,7 @@ fi
 
 
 %changelog
-* Sun May 24 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
+* Sun May 31 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
 - fix missing desktop background in html5 client
 - fix xpra top client refresh rate via timer
 - fix opengl client info format shown in 'xpra top'
@@ -599,6 +599,13 @@ fi
 - fix 'AltGr' on MacOS using html5 client
 - fix html5 client errors painting rgb32 data with a padded rowstride
 - fix python-lz4 packaging on MS Windows
+- fix html5 clipboard clearing data on failures
+- fix html5 compatibility issues with Internet Explorer
+- fix html5 missing transparency for windows in focus
+- fix connection errors with 'None' values in bencoder (ie: html5)
+- fix duplicate clipboard token sent from MS Windows servers
+- remove invalid extra strings from mdns service name
+- change DLL search order to prevent conflict (MS Windows)
 - workaround bugs in pyxdg / menu configuration
 - add 'terminator' to the 'text' application hint
 - don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
