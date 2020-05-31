@@ -147,7 +147,6 @@ canvas {
 }
 div.windowinfocus {
 	z-index: 5000;
-	background-color: white;
 }
 .modal {
 	z-index: 20000;
