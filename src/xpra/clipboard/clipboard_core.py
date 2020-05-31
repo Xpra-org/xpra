@@ -7,6 +7,7 @@
 import os
 import struct
 import re
+from io import BytesIO
 from gi.repository import GLib
 
 from xpra.net.compression import Compressible
@@ -692,3 +693,45 @@ class ClipboardProxyCore:
     # contents of this clipboard:
     def get_contents(self, target, cb):
         pass
+
+
+    def filter_data(self, dtype=None, dformat=None, data=None):
+        log("filter_data(%s, %s, ..)", dtype, dformat)
+        IMAGE_OVERLAY = os.environ.get("XPRA_CLIPBOARD_IMAGE_OVERLAY", None)
+        if IMAGE_OVERLAY and not os.path.exists(IMAGE_OVERLAY):
+            IMAGE_OVERLAY = None
+        IMAGE_STAMP = envbool("XPRA_CLIPBOARD_IMAGE_STAMP", False)
+        SANITIZE_IMAGES = envbool("XPRA_SANITIZE_IMAGES", True)
+        if dtype in ("image/png", "image/jpeg") and (IMAGE_STAMP or IMAGE_OVERLAY or SANITIZE_IMAGES):
+            from xpra.codecs.pillow.decoder import open_only
+            img_type = dtype.split("/")[-1]
+            img = open_only(data, (img_type, ))
+            has_alpha = img.mode=="RGBA"
+            if not has_alpha and IMAGE_OVERLAY:
+                img = img.convert("RGBA")
+            w, h = img.size
+            if IMAGE_OVERLAY:
+                from PIL import Image   #@UnresolvedImport
+                overlay = Image.open(IMAGE_OVERLAY)
+                if overlay.mode!="RGBA":
+                    log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)
+                    log.warn(" invalid mode '%s'", overlay.mode)
+                else:
+                    log("adding clipboard image overlay to %s", dtype)
+                    overlay_resized = overlay.resize((w, h), Image.ANTIALIAS)
+                    composite = Image.alpha_composite(img, overlay_resized)
+                    if not has_alpha and img.mode=="RGBA":
+                        composite = composite.convert("RGB")
+                    img = composite
+            if IMAGE_STAMP:
+                log("adding clipboard image stamp to %s", dtype)
+                from datetime import datetime
+                from PIL import ImageDraw
+                img_draw = ImageDraw.Draw(img)
+                w, h = img.size
+                img_draw.text((10, max(0, h//2-16)), 'via Xpra, %s' % datetime.now().isoformat(), fill='black')
+            buf = BytesIO()
+            img.save(buf, img_type.upper()) #ie: "PNG"
+            data = buf.getvalue()
+            buf.close()
+        return data

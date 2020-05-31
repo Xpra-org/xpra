@@ -5,7 +5,6 @@
 
 import os
 import struct
-from io import BytesIO
 from gi.repository import GLib, GObject, Gdk
 
 from xpra.gtk_common.error import xsync, xswallow
@@ -28,7 +27,7 @@ from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport
     )
 from xpra.os_util import bytestostr
-from xpra.util import csv, repr_ellipsized, ellipsizer, first_time, envbool
+from xpra.util import csv, repr_ellipsized, ellipsizer, first_time
 from xpra.log import Logger
 
 X11Window = X11WindowBindings()
@@ -679,7 +678,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.got_local_contents(target, dtype, dformat, data)
 
     def got_local_contents(self, target, dtype=None, dformat=None, data=None):
-        data = self.filter_data(target, dtype, dformat, data)
+        data = self.filter_data(dtype, dformat, data)
         target_requests = self.local_requests.pop(target, {})
         for timer, got_contents in target_requests.values():
             if log.is_debug_enabled():
@@ -687,46 +686,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     got_contents, (dtype, dformat, ellipsizer(data)))
             GLib.source_remove(timer)
             got_contents(dtype, dformat, data)
-
-    def filter_data(self, target, dtype=None, dformat=None, data=None):
-        log("filter_data(%s, %s, %s, ..)", target, dtype, dformat)
-        IMAGE_OVERLAY = os.environ.get("XPRA_CLIPBOARD_IMAGE_OVERLAY", None)
-        if IMAGE_OVERLAY and not os.path.exists(IMAGE_OVERLAY):
-            IMAGE_OVERLAY = None
-        IMAGE_STAMP = envbool("XPRA_CLIPBOARD_IMAGE_STAMP", True)
-        if dtype in ("image/png", "image/jpeg") and (IMAGE_STAMP or IMAGE_OVERLAY):
-            from xpra.codecs.pillow.decoder import open_only
-            img_type = dtype.split("/")[-1]
-            img = open_only(data, (img_type, ))
-            has_alpha = img.mode=="RGBA"
-            if not has_alpha and IMAGE_OVERLAY:
-                img = img.convert("RGBA")
-            w, h = img.size
-            if IMAGE_OVERLAY:
-                from PIL import Image   #@UnresolvedImport
-                overlay = Image.open(IMAGE_OVERLAY)
-                if overlay.mode!="RGBA":
-                    log.warn("Warning: cannot use overlay image '%s'", IMAGE_OVERLAY)
-                    log.warn(" invalid mode '%s'", overlay.mode)
-                else:
-                    log("adding clipboard image overlay to %s", dtype)
-                    overlay_resized = overlay.resize((w, h), Image.ANTIALIAS)
-                    composite = Image.alpha_composite(img, overlay_resized)
-                    if not has_alpha and img.mode=="RGBA":
-                        composite = composite.convert("RGB")
-                    img = composite
-            if IMAGE_STAMP:
-                log("adding clipboard image stamp to %s", dtype)
-                from datetime import datetime
-                from PIL import ImageDraw
-                img_draw = ImageDraw.Draw(img)
-                w, h = img.size
-                img_draw.text((10, max(0, h//2-16)), 'via Xpra, %s' % datetime.now().isoformat(), fill='black')
-            buf = BytesIO()
-            img.save(buf, img_type.upper()) #ie: "PNG"
-            data = buf.getvalue()
-            buf.close()
-        return data
 
 
     def reschedule_incr_data_timer(self):

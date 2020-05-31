@@ -393,6 +393,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if target in ("image/png", "image/jpeg"):
             def got_image(img_data):
                 log("got_image(%i bytes)", len(img_data))
+                img_data = self.filter_data(dtype=target, dformat=8, data=img_data)
                 got_contents(target, 8, img_data)
             img_format = target.split("/")[-1].upper()  #ie: "PNG" or "JPEG"
             self.get_clipboard_image(img_format, got_image, nodata)
