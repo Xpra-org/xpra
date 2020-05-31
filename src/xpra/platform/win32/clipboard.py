@@ -22,7 +22,7 @@ from xpra.platform.win32.common import (
     GetModuleHandleA, RegisterClassExW, UnregisterClassA,
     CreateWindowExW, DestroyWindow,
     OpenClipboard, EmptyClipboard, CloseClipboard, GetClipboardData,
-    GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree,
+    GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree, GlobalSize,
     WideCharToMultiByte, MultiByteToWideChar,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
@@ -120,6 +120,7 @@ BLACKLISTED_CLIPBOARD_CLIENTS = [x for x in
                                  os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "").split(",")
                                  if x]
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
+COMPRESSED_IMAGES = envbool("XPRA_CLIPBOARD_COMPRESSED_IMAGES", True)
 
 
 def is_blacklisted(owner_info):
@@ -390,14 +391,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("nodata%s", args)
             got_contents(target, 8, b"")
         if target in ("image/png", "image/jpeg"):
-            def got_image(image):
-                img_format = target.split("/")[-1].upper()  #ie: "PNG" or "JPEG"
-                buf = BytesIO()
-                image.save(buf, format=img_format)
-                png_data = buf.getvalue()
-                buf.close()
-                got_contents(target, 8, png_data)
-            self.get_clipboard_image(got_image, nodata)
+            def got_image(img_data):
+                log("got_image(%i bytes)", len(img_data))
+                got_contents(target, 8, img_data)
+            img_format = target.split("/")[-1].upper()  #ie: "PNG" or "JPEG"
+            self.get_clipboard_image(img_format, got_image, nodata)
             return
         if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
             #we don't know how to handle this target,
@@ -416,8 +414,26 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         utf8 = target.lower().find("utf")>=0
         self.get_clipboard_text(utf8, got_text, errback)
 
-    def get_clipboard_image(self, got_image, errback):
+    def get_clipboard_image(self, img_format, got_image, errback):
         def got_clipboard_lock():
+            if COMPRESSED_IMAGES:
+                fmt_name = LPCSTR(img_format.upper().encode("latin1")+b"\0")   #ie: "PNG"
+                fmt = RegisterClipboardFormatA(fmt_name)
+                if fmt:
+                    data_handle = GetClipboardData(fmt)
+                    if data_handle:
+                        size = GlobalSize(data_handle)
+                        data = GlobalLock(data_handle)
+                        log("GetClipboardData(%s)=%#x size=%s, data=%#x",
+                            img_format.upper(), data_handle, size, data)                        
+                        if data and size:
+                            try:
+                                cdata = (c_char*size).from_address(data)
+                            finally:
+                                GlobalUnlock(data)
+                            got_image(bytes(cdata))
+                            return True
+                
             data_handle = GetClipboardData(win32con.CF_DIBV5)
             log("CF_BITMAP=%s", data_handle)
             data = GlobalLock(data_handle)
@@ -439,11 +455,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     errback("cannot handle %s compression yet" % BI_FORMATS.get(header.bV5Compression, header.bV5Compression))
                     return True
                 if bits==24:
-                    img_format = "RGB"
+                    save_format = "RGB"
                     rgb_format = "BGR"
                     stride = roundup(w*3, 4)
                 elif bits==32:
-                    img_format = "RGBA"
+                    save_format = "RGBA"
                     rgb_format = "BGRA"
                     stride = w*4
                 else:
@@ -452,11 +468,14 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 img_size = stride*h
                 rgb_data = (c_char*img_size).from_address(data+offset)
                 from PIL import Image, ImageOps
-                img = Image.frombytes(img_format, (w, h), rgb_data, "raw", rgb_format, stride, 1)
-                if header.bV5Height<0:
-                    got_image(img)
-                else:
-                    got_image(ImageOps.flip(img))
+                img = Image.frombytes(save_format, (w, h), rgb_data, "raw", rgb_format, stride, 1)
+                if header.bV5Height>0:
+                    img = ImageOps.flip(img)
+                buf = BytesIO()
+                img.save(buf, format=save_format)
+                data = buf.getvalue()
+                buf.close()
+                got_image(data)
                 return True
             finally:
                 GlobalUnlock(data)
@@ -515,27 +534,28 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
     def set_clipboard_image(self, img_format, img_data):
         image_formats = {}
-        #first save it as binary compressed data:
-        fmt_name = LPCSTR(img_format.upper().encode("latin1")+b"\0")   #ie: "PNG"
-        fmt = RegisterClipboardFormatA(fmt_name)
-        if fmt:
-            buf = create_string_buffer(img_data)
-            pbuf = cast(byref(buf), c_void_p)
-            l = len(img_data)
-            data_handle = GlobalAlloc(GMEM_MOVEABLE, l)
-            if not data_handle:
-                log.error("Error: failed to allocate %i bytes of global memory", l)
-                return True
-            data = GlobalLock(data_handle)
-            if not data:
-                log("failed to lock data handle %#x (may try again)", data_handle)
-                return False
-            log("got data handle lock %#x for %i bytes of '%s' data", data, l, img_format)
-            try:
-                memmove(data, pbuf, l)
-            finally:
-                GlobalUnlock(data)
-            image_formats[fmt] = data_handle
+        if COMPRESSED_IMAGES:
+            #first save it as binary compressed data:
+            fmt_name = LPCSTR(img_format.upper().encode("latin1")+b"\0")   #ie: "PNG"
+            fmt = RegisterClipboardFormatA(fmt_name)
+            if fmt:
+                buf = create_string_buffer(img_data)
+                pbuf = cast(byref(buf), c_void_p)
+                l = len(img_data)
+                data_handle = GlobalAlloc(GMEM_MOVEABLE, l)
+                if not data_handle:
+                    log.error("Error: failed to allocate %i bytes of global memory", l)
+                    return True
+                data = GlobalLock(data_handle)
+                if not data:
+                    log("failed to lock data handle %#x (may try again)", data_handle)
+                    return False
+                log("got data handle lock %#x for %i bytes of '%s' data", data, l, img_format)
+                try:
+                    memmove(data, pbuf, l)
+                finally:
+                    GlobalUnlock(data)
+                image_formats[fmt] = data_handle
 
         #also convert it to a bitmap:
         from PIL import Image
