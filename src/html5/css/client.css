@@ -148,6 +148,10 @@ canvas {
 div.windowinfocus {
 	z-index: 5000;
 }
+div.windowinfocus div.windowhead {
+	background-color: #A0A0A0;
+}
+
 .modal {
 	z-index: 20000;
 }
