@@ -391,9 +391,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("nodata%s", args)
             got_contents(target, 8, b"")
         if target in ("image/png", "image/jpeg"):
-            def got_image(img_data):
+            def got_image(img_data, trusted=False):
                 log("got_image(%i bytes)", len(img_data))
-                img_data = self.filter_data(dtype=target, dformat=8, data=img_data)
+                img_data = self.filter_data(dtype=target, dformat=8, data=img_data, trusted=trusted)
                 got_contents(target, 8, img_data)
             img_format = target.split("/")[-1].upper()  #ie: "PNG" or "JPEG"
             self.get_clipboard_image(img_format, got_image, nodata)
@@ -432,9 +432,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                                 cdata = (c_char*size).from_address(data)
                             finally:
                                 GlobalUnlock(data)
-                            got_image(bytes(cdata))
+                            got_image(bytes(cdata), False)
                             return True
-                
+
             data_handle = GetClipboardData(win32con.CF_DIBV5)
             log("CF_BITMAP=%s", data_handle)
             data = GlobalLock(data_handle)
@@ -476,7 +476,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 img.save(buf, format=save_format)
                 data = buf.getvalue()
                 buf.close()
-                got_image(data)
+                got_image(data, True)
                 return True
             finally:
                 GlobalUnlock(data)
