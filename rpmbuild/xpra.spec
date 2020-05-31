@@ -869,7 +869,7 @@ fi
 
 
 %changelog
-* Fri May 08 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+* Sun May 31 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
 - fix X11 server key symbol lookup via Xkb
 - fix window corruption with 'scroll' encoder
 - fix html5 client errors painting rgb32 data with a padded rowstride
@@ -890,12 +890,19 @@ fi
 - fix server errors when non-interactive clients are connected
 - fix option parsing errors causing html5 client connection failures
 - fix python-lz4 packaging on MS Windows (Python2 builds)
+- fix html5 clipboard clearing data on failures
+- fix html5 compatibility issues with Internet Explorer
+- fix html5 missing transparency for windows in focus
+- fix connection errors with 'None' values in bencoder (ie: html5)
+- fix duplicate clipboard token sent from MS Windows servers
 - cleaner exit path: destroy all of our windows properly
 - add workaround for wine applications (disabled by default)
 - add 'terminator' to the 'text' application hint
 - validate webp image dimensions for transparency encoding
 - workaround bugs in pyxdg / menu configuration
 - try harder to strip all temporary build prefixes
+- remove invalid extra strings from mdns service name
+- change DLL search order to prevent conflict (MS Windows)
 - MacOS: update to Python 2.7.18 for python2 builds
 - don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
 - MS Windows build setup update: install python-lzo using pacman
