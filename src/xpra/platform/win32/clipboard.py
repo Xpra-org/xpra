@@ -26,6 +26,7 @@ from xpra.platform.win32.common import (
     WideCharToMultiByte, MultiByteToWideChar,
     AddClipboardFormatListener, RemoveClipboardFormatListener,
     SetClipboardData, EnumClipboardFormats, GetClipboardFormatNameA, GetClipboardOwner,
+    RegisterClipboardFormatA,
     GetWindowThreadProcessId, QueryFullProcessImageNameA, OpenProcess, CloseHandle,
     CreateDIBitmap,
     )
@@ -512,9 +513,33 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("no handling: target=%s, dtype=%s, dformat=%s, data=%s",
                 target, dtype, dformat, ellipsizer(data))
 
-    def set_clipboard_image(self, img_format, data):
+    def set_clipboard_image(self, img_format, img_data):
+        image_formats = {}
+        #first save it as binary compressed data:
+        fmt_name = LPCSTR(img_format.upper().encode("latin1")+b"\0")   #ie: "PNG"
+        fmt = RegisterClipboardFormatA(fmt_name)
+        if fmt:
+            buf = create_string_buffer(img_data)
+            pbuf = cast(byref(buf), c_void_p)
+            l = len(img_data)
+            data_handle = GlobalAlloc(GMEM_MOVEABLE, l)
+            if not data_handle:
+                log.error("Error: failed to allocate %i bytes of global memory", l)
+                return True
+            data = GlobalLock(data_handle)
+            if not data:
+                log("failed to lock data handle %#x (may try again)", data_handle)
+                return False
+            log("got data handle lock %#x for %i bytes of '%s' data", data, l, img_format)
+            try:
+                memmove(data, pbuf, l)
+            finally:
+                GlobalUnlock(data)
+            image_formats[fmt] = data_handle
+
+        #also convert it to a bitmap:
         from PIL import Image
-        buf = BytesIO(data)
+        buf = BytesIO(img_data)
         img = Image.open(buf)
         if img.mode!="RGBA":
             img = img.convert("RGBA")
@@ -533,27 +558,36 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         header.biSizeImage      = 0
         header.biXPelsPerMeter  = 10
         header.biYPelsPerMeter  = 10
-
         bitmapinfo = BITMAPINFO()
         bitmapinfo.bmiColors = 0
         memmove(byref(bitmapinfo.bmiHeader), byref(header), sizeof(BITMAPINFOHEADER))
-
         rgb_buf = create_string_buffer(rgb_data)
         pbuf = cast(byref(rgb_buf), c_void_p)
         hdc = GetDC(None)
         CBM_INIT = 4
         bitmap = CreateDIBitmap(hdc, byref(header), CBM_INIT, pbuf, byref(bitmapinfo), win32con.DIB_RGB_COLORS)
+        ReleaseDC(None, hdc)
+        image_formats[win32con.CF_BITMAP] = bitmap
+
+        self.do_set_clipboard_image(image_formats)
+
+    def do_set_clipboard_image(self, image_formats):
         def got_clipboard_lock():
-            r = SetClipboardData(win32con.CF_BITMAP, bitmap)
-            if not r:
-                e = WinError(GetLastError())
-                log("SetClipboardData(CF_BITMAP, %#x)=%s (%s)", bitmap, r, e)
-            ReleaseDC(None, hdc)
-            return bool(r)
+            EmptyClipboard()
+            c = 0
+            for fmt, handle in image_formats.items():
+                log("do_set_clipboard_image: %s", format_name(fmt))
+                r = SetClipboardData(fmt, handle)
+                if not r:
+                    e = WinError(GetLastError())
+                    log("SetClipboardData(%s, %#x)=%s (%s)", format_name(fmt), handle, r, e)
+                else:
+                    c += 1
+            return bool(c)
         def nolock(*_args):
-            log.warn("Warning: failed to copy image to clipboard")
-            ReleaseDC(None, hdc)
+            log.warn("Warning: failed to copy image data to the clipboard")
         self.with_clipboard_lock(got_clipboard_lock, nolock)
+        
 
 
     def get_clipboard_text(self, utf8, callback, errback):
