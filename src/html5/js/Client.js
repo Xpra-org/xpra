@@ -2432,7 +2432,7 @@ XpraClient.prototype._process_lost_window = function(packet, ctx) {
 		let highest_stacking = -1;
 		for (const i in client.id_to_window) {
 			let iwin = client.id_to_window[i];
-			if (iwin.stacking_layer>highest_stacking) {
+			if (iwin.stacking_layer>highest_stacking && !iwin.tray) {
 				highest_window = iwin;
 				highest_stacking = iwin.stacking_layer;
 			}
