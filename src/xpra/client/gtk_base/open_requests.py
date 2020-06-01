@@ -17,7 +17,6 @@ from gi.repository import GLib, Gtk, GdkPixbuf, Pango
 from xpra.util import envint
 from xpra.os_util import monotonic_time, bytestostr, WIN32, OSX
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.simple_stats import std_unit, std_unit_dec
@@ -31,8 +30,6 @@ from xpra.log import Logger
 log = Logger("gtk", "file")
 
 URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 320)
-
-inject_css_overrides()
 
 
 _instance = None
