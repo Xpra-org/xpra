@@ -345,7 +345,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		let packet = null;
 		try {
 			if (proto_flags==1) {
-				packet = PyRencoder.decode(Buffer.from(packet_data), false);
+				packet = PyRencoder.decode(Buffer.from(packet_data), 'binary');
 			} else {
 				packet = bdecode(packet_data);
 			}
