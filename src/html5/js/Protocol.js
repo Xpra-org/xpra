@@ -304,7 +304,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		packet_data = [];
 		for (i=0; i<decrypted.length; i++)
 			packet_data.push(decrypted[i].charCodeAt(0));
-		packet_data = packet_data.slice(0, -1 * padding);
+		packet_data = new Uint8Array(packet_data.slice(0, -1 * padding));
 	}
 
 	//decompress it if needed:
