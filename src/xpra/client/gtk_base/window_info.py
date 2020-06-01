@@ -139,12 +139,8 @@ class WindowInfo(Gtk.Window):
         tb.new_row("Size Constraints", self.size_constraints_label)
         tb.new_row("")
         #backing:
-        self.backing_size_label = slabel()
-        tb.new_row("Backing Size", self.backing_size_label)
-        self.backing_render_size_label = slabel()
-        tb.new_row("Backing Render Size", self.backing_render_size_label)
-        self.backing_offsets_label = slabel()
-        tb.new_row("Backing Offsets", self.backing_offsets_label)
+        self.backing_properties = slabel()
+        tb.new_row("Backing Properties", self.backing_properties)
         tb.new_row("")
         btn = Gtk.Button(label="Copy to clipboard")
         btn.connect("clicked", self.copy_to_clipboard)
@@ -237,13 +233,20 @@ class WindowInfo(Gtk.Window):
         #backing:
         b = w._backing
         if b:
-            self.backing_size_label.set_text(csv(b.size))
-            self.backing_render_size_label.set_text(csv(b.render_size))
-            self.backing_offsets_label.set_text(csv(b.offsets))
+            self.backing_properties.show()
+            def pv(value):
+                if isinstance(value, (tuple, list)):
+                    return csv(value)
+                if isinstance(value, dict):
+                    return dict_to_str(dict((k,v) for k,v in value.items() if k in ("type", "encoding", )), ", ", ":")
+                return str(value)
+            def dict_to_str(d, sep="\n", eq="="):
+                strdict = dict((k,pv(v)) for k,v in d.items())
+                return sep.join("%s%s%s" % (k, eq, v) for k,v in strdict.items() if v)
+            self.backing_properties.set_text(dict_to_str(b.get_info()))
         else:
-            self.backing_size_label.set_text("n/a")
-            self.backing_render_size_label.set_text("n/a")
-            self.backing_offsets_label.set_text("n/a")
+            self.backing_properties.hide()
+            self.backing_properties.set_text("")
 
 
     def bool_icon(self, image, on_off):

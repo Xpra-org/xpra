@@ -259,6 +259,17 @@ class GLWindowBackingBase(WindowBackingBase):
         self.repaint_all = True
         self._backing.show()
 
+    def get_info(self):
+        info = super().get_info()
+        info.update({
+            "type"                  : "OpenGL",
+            "bit-depth"             : self.bit_depth,
+            "pixel-format"          : self.pixel_format,
+            "texture-pixel-format"  : self.texture_pixel_format,
+            })
+        return info
+
+
     def init_gl_config(self):
         raise NotImplementedError()
 

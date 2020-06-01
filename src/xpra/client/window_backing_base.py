@@ -120,6 +120,24 @@ class WindowBackingBase:
     def idle_add(self, *_args, **_kwargs):
         raise NotImplementedError()
 
+    def get_info(self):
+        info = {
+            "rgb-formats"   : self.RGB_MODES,
+            "transparency"  : self._alpha_enabled,
+            "mmap"          : bool(self.mmap_enabled),
+            "size"          : self.size,
+            "render-size"   : self.render_size,
+            "offsets"       : self.offsets,
+            }
+        vd = self._video_decoder
+        if vd:
+            info["video-decoder"] = self._video_decoder.get_info()
+        csc = self._csc_decoder
+        if csc:
+            info["csc"] = self._csc_decoder
+        return info
+
+
     def enable_mmap(self, mmap_area):
         self.mmap = mmap_area
         self.mmap_enabled = True

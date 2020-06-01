@@ -35,6 +35,13 @@ class CairoBackingBase(WindowBackingBase):
         self.render_size = ww, wh
         self.create_surface()
 
+    def get_info(self):
+        return {
+            "type"  : "Cairo",
+            "rgb-formats" : self.RGB_MODES,
+            }
+
+
     def create_surface(self):
         bw, bh = self.size
         old_backing = self._backing
