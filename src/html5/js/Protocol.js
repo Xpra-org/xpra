@@ -223,7 +223,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		return false;
 	}
 
-	const proto_flags = this.header[1];
+	var proto_flags = this.header[1];
 	const proto_crypto = proto_flags & 0x2;
 	if (proto_crypto) {
 		proto_flags = proto_flags & ~0x2;
