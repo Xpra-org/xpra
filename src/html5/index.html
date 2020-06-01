@@ -434,7 +434,7 @@
 				const port = getparam("port") || window.location.port;
 				const ssl = getboolparam("ssl", https);
 				const path = getparam("path") || window.location.pathname;
-				const encryption = getboolparam("encryption", false);
+				const encryption = getparam("encryption") || null;
 				const key = getparam("key") || null;
 				const keyboard_layout = getparam("keyboard_layout") || null;
 				const start = getparam("start");
