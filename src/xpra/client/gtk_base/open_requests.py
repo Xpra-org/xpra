@@ -255,7 +255,7 @@ class OpenRequestsWindow:
             pb.set_show_text(True)
         if position==total:
             stop_btn.hide()
-            pb.set_text("Complete: %i bytes" % total)
+            pb.set_text("Complete: %sB" % std_unit(total))
             pb.set_show_text(True)
             GLib.timeout_add(5000, self.remove_entry, transfer_id)
 
