@@ -14,7 +14,6 @@ from xpra.version_util import full_version_str
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
 from xpra.util import envbool, csv
 from xpra.os_util import getuid, WIN32, OSX, POSIX
-from xpra.simple_stats import std_unit
 from xpra.scripts.config import (
     OPTION_TYPES,
     InitException, InitInfo, InitExit,
