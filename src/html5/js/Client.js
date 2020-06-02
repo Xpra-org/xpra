@@ -217,6 +217,7 @@ XpraClient.prototype.init_state = function(container) {
 };
 
 XpraClient.prototype.send = function() {
+	this.debug("network", "sending a", arguments[0], "packet");
 	if (this.protocol) {
 		this.protocol.send.apply(this.protocol, arguments);
 	}
