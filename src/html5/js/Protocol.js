@@ -448,7 +448,7 @@ XpraProtocol.prototype.process_message_queue = function() {
 			return;
 		}
 
-		var raw_draw_buffer = (packet[0] === 'draw') && (packet[6] !== 'scroll');
+		var raw_draw_buffer = (packet[0] === 'draw') && (packet[6] !== 'scroll') && (packet[7].buffer);
 		postMessage({'c': 'p', 'p': packet}, raw_draw_buffer ? [packet[7].buffer] : []);
 	}
 }
