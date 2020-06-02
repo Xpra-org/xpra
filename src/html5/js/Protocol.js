@@ -418,7 +418,7 @@ XpraProtocol.prototype.process_send_queue = function() {
 		if(this.cipher_out) {
 			proto_flags = 0x2;
 			const padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
-			for (let i = padding_size - 1; i >= 0; i--) {
+			for (let i = 0; i<padding_size; i++) {
 				bdata += String.fromCharCode(padding_size);
 			}
 			this.cipher_out.update(forge.util.createBuffer(bdata));
