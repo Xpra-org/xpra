@@ -869,7 +869,7 @@ fi
 
 
 %changelog
-* Sun May 31 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+* Tue Jun 02 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
 - fix X11 server key symbol lookup via Xkb
 - fix window corruption with 'scroll' encoder
 - fix html5 client errors painting rgb32 data with a padded rowstride
@@ -893,6 +893,9 @@ fi
 - fix html5 clipboard clearing data on failures
 - fix html5 compatibility issues with Internet Explorer
 - fix html5 missing transparency for windows in focus
+- fix html5 no windows focused after close
+- fix html5 connection errors caused by spurious packets
+- fix html5 error in invalid packet handler
 - fix connection errors with 'None' values in bencoder (ie: html5)
 - fix duplicate clipboard token sent from MS Windows servers
 - cleaner exit path: destroy all of our windows properly

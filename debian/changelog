@@ -22,6 +22,9 @@ xpra (3.0.10-1) UNRELEASED; urgency=low
   * fix html5 clipboard clearing data on failures
   * fix html5 compatibility issues with Internet Explorer
   * fix html5 missing transparency for windows in focus
+  * fix html5 no windows focused after close
+  * fix html5 connection errors caused by spurious packets
+  * fix html5 error in invalid packet handler
   * fix connection errors with 'None' values in bencoder (ie: html5)
   * fix duplicate clipboard token sent from MS Windows servers
   * cleaner exit path: destroy all of our windows properly
@@ -36,7 +39,7 @@ xpra (3.0.10-1) UNRELEASED; urgency=low
   * don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
   * MS Windows build setup update: install python-lzo using pacman
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 31 May 2020 22:58:09 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 02 Jun 2020 16:03:27 +0700
 
 xpra (3.0.9-2) UNRELEASED; urgency=low
   * rebuild with fixup for python2 servers
