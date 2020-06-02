@@ -42,7 +42,7 @@ def strtobytes(x) -> bytes:
         return x
     return str(x).encode("latin1")
 def bytestostr(x) -> str:
-    if isinstance(x, bytes):
+    if isinstance(x, (bytes, bytearray)):
         return x.decode("latin1")
     return str(x)
 def hexstr(v) -> str:
