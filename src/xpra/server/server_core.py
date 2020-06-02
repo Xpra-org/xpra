@@ -75,6 +75,7 @@ SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
+ENCRYPTED_SOCKET_TYPES = os.environ.get("XPRA_ENCRYPTED_SOCKET_TYPES", "tcp,ws")
 
 HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
 
@@ -1212,7 +1213,7 @@ class ServerCore(object):
         protocol.authenticators = ()
         protocol.encryption = None
         protocol.keyfile = None
-        if socktype=="tcp":
+        if socktype in ENCRYPTED_SOCKET_TYPES:
             #special case for legacy encryption code:
             protocol.encryption = self.tcp_encryption
             protocol.keyfile = self.tcp_encryption_keyfile
