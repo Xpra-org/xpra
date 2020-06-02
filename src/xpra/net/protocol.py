@@ -940,6 +940,7 @@ class Protocol:
                         else:
                             actual_padding = data[-padding_size:]
                             cryptolog.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
+                            cryptolog(" cipher block size=%i, data size=%i", self.cipher_in_block_size, data_size)
                             cryptolog(" data does not end with %i %s padding bytes %s (%s)",
                                       padding_size, self.cipher_in_padding, debug_str(padtext), type(padtext))
                             cryptolog(" but with %i bytes: %s (%s)",
