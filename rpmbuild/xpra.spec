@@ -605,6 +605,8 @@ fi
 - fix html5 no windows focused after close
 - fix html5 connection errors caused by spurious packets
 - fix html5 error in invalid packet handler
+- fix html5 AES encryption connections
+- fix html5 packet error with very small paint packets
 - fix connection errors with 'None' values in bencoder (ie: html5)
 - fix duplicate clipboard token sent from MS Windows servers
 - remove invalid extra strings from mdns service name

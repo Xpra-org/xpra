@@ -1,6 +1,7 @@
 v4.0.2 (2020-06-02)
 ======================
 	-- fix missing desktop background in html5 client
+	-- fix encryption not honoured with TCP sockets upgraded to WebSocket
 	-- fix xpra top client refresh rate via timer
 	-- fix opengl client info format shown in 'xpra top'
 	-- fix format of attributes given to glXChooseVisual
@@ -18,6 +19,8 @@ v4.0.2 (2020-06-02)
 	-- fix html5 no windows focused after close
 	-- fix html5 connection errors caused by spurious packets
 	-- fix html5 error in invalid packet handler
+	-- fix html5 AES encryption connections
+	-- fix html5 packet error with very small paint packets
 	-- fix connection errors with 'None' values in bencoder (ie: html5)
 	-- fix duplicate clipboard token sent with MS Windows servers
 	-- remove invalid extra strings from mdns service name
