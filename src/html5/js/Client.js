@@ -504,8 +504,8 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 	ctx.debug("network", "received a", packet_type, "packet");
 	fn = ctx.packet_handlers[packet_type];
 	if (fn==undefined) {
-		this.cerror("no packet handler for ", packet_type);
-		this.clog(packet);
+		ctx.cerror("no packet handler for ", packet_type);
+		ctx.clog(packet);
 	} else {
 		fn(packet, ctx);
 	}
