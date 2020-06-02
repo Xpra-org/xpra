@@ -1,5 +1,6 @@
 xpra (3.0.10-1) UNRELEASED; urgency=low
   * fix X11 server key symbol lookup via Xkb
+  * fix encryption not honoured with TCP sockets upgraded to WebSocket
   * fix window corruption with 'scroll' encoder
   * fix html5 client errors painting rgb32 data with a padded rowstride
   * fix desktop-scaling changes from the system tray
@@ -25,6 +26,8 @@ xpra (3.0.10-1) UNRELEASED; urgency=low
   * fix html5 no windows focused after close
   * fix html5 connection errors caused by spurious packets
   * fix html5 error in invalid packet handler
+  * fix html5 AES encryption connections
+  * fix html5 packet error with very small paint packets
   * fix connection errors with 'None' values in bencoder (ie: html5)
   * fix duplicate clipboard token sent from MS Windows servers
   * cleaner exit path: destroy all of our windows properly
@@ -39,7 +42,7 @@ xpra (3.0.10-1) UNRELEASED; urgency=low
   * don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
   * MS Windows build setup update: install python-lzo using pacman
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 02 Jun 2020 16:03:27 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 02 Jun 2020 22:23:57 +0700
 
 xpra (3.0.9-2) UNRELEASED; urgency=low
   * rebuild with fixup for python2 servers

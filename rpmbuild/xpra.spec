@@ -871,6 +871,7 @@ fi
 %changelog
 * Tue Jun 02 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
 - fix X11 server key symbol lookup via Xkb
+- fix encryption not honoured with TCP sockets upgraded to WebSocket
 - fix window corruption with 'scroll' encoder
 - fix html5 client errors painting rgb32 data with a padded rowstride
 - fix desktop-scaling changes from the system tray
@@ -896,6 +897,8 @@ fi
 - fix html5 no windows focused after close
 - fix html5 connection errors caused by spurious packets
 - fix html5 error in invalid packet handler
+- fix html5 AES encryption connections
+- fix html5 packet error with very small paint packets
 - fix connection errors with 'None' values in bencoder (ie: html5)
 - fix duplicate clipboard token sent from MS Windows servers
 - cleaner exit path: destroy all of our windows properly
