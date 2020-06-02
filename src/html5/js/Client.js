@@ -525,6 +525,9 @@ XpraClient.prototype._route_packet = function(packet, ctx) {
 
 XpraClient.prototype._screen_resized = function(event, ctx) {
 	// send the desktop_size packet so server knows we changed size
+	if (!this.connected) {
+		return;
+	}
 	if (this.container.clientWidth==this.desktop_width && this.container.clientHeight==this.desktop_height) {
 		return;
 	}
@@ -2069,7 +2072,7 @@ XpraClient.prototype._gendigest = function(digest, password, salt) {
 
 
 XpraClient.prototype._send_ping = function() {
-	if (this.reconnect_in_progress) {
+	if (this.reconnect_in_progress || !this.connected) {
 		return;
 	}
 	const me = this;
@@ -3254,7 +3257,7 @@ XpraClient.prototype.get_clipboard_datatype = function() {
 };
 
 XpraClient.prototype.send_clipboard_token = function(data) {
-	if (!this.clipboard_enabled) {
+	if (!this.clipboard_enabled || !this.connected) {
 		return;
 	}
 	this.debug("clipboard", "sending clipboard token with data:", data);
