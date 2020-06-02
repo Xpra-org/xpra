@@ -930,7 +930,7 @@ class Protocol:
                     if padding_size > 0:
                         def debug_str(s):
                             try:
-                                return hexstr(bytearray(s))
+                                return hexstr(s)
                             except Exception:
                                 return csv(tuple(s))
                         # pad byte value is number of padding bytes added
