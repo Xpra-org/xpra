@@ -56,3 +56,14 @@ def register_SIGUSR_signals(commandtype="Server"):
         return True
     register_os_signals(sigusr1, commandtype, (signal.SIGUSR1, ))
     register_os_signals(sigusr2, commandtype, (signal.SIGUSR2, ))
+
+
+def install_signal_handlers(sstr, signal_handler):
+    #only register the glib signal handler
+    #once the main loop is running,
+    #before that we just trigger a KeyboardInterrupt
+    def do_install_signal_handlers():
+        register_os_signals(signal_handler, sstr)
+        register_SIGUSR_signals(sstr)
+    from gi.repository import GLib
+    GLib.idle_add(do_install_signal_handlers)
