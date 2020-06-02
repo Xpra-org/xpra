@@ -11,6 +11,9 @@
 
 import ssl
 import sys
+if sys.version_info<(3, 6):
+    raise Exception("xpra no longer supports Python versions older than 3.6")
+
 import glob
 import shutil
 import os.path
@@ -27,8 +30,6 @@ from xpra.os_util import (
     is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat,
     )
 
-if sys.version_info<(3, 6):
-    raise Exception("xpra no longer supports Python versions older than 3.6")
 #we don't support versions of Python without the new ssl code:
 if not hasattr(ssl, "SSLContext"):
     print("Warning: xpra requires a Python version with ssl.SSLContext support")
