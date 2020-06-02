@@ -195,9 +195,8 @@ def sanity_checks():
         from xpra.log import Logger
         logger = Logger("network", "protocol")
         if not use_zlib:
-            logger.warn("Warning: all the compressors are disabled,")
-            logger.warn(" unless you use mmap or have a gigabit connection or better")
-            logger.warn(" performance will suffer")
+            logger.warn("Warning: all the compressors are unavailable or disabled,")
+            logger.warn(" performance may suffer in some cases")
         else:
             logger.warn("Warning: zlib is the only compressor enabled")
             logger.warn(" install and enable lz4 support for better performance")
