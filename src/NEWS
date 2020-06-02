@@ -1,4 +1,4 @@
-v4.0.2 (2020-05-31)
+v4.0.2 (2020-06-02)
 ======================
 	-- fix missing desktop background in html5 client
 	-- fix xpra top client refresh rate via timer
@@ -15,6 +15,9 @@ v4.0.2 (2020-05-31)
 	-- fix html5 clipboard clearing data on failures
 	-- fix html5 compatibility issues with Internet Explorer
 	-- fix html5 missing transparency for windows in focus
+	-- fix html5 no windows focused after close
+	-- fix html5 connection errors caused by spurious packets
+	-- fix html5 error in invalid packet handler
 	-- fix connection errors with 'None' values in bencoder (ie: html5)
 	-- fix duplicate clipboard token sent with MS Windows servers
 	-- remove invalid extra strings from mdns service name
@@ -22,6 +25,7 @@ v4.0.2 (2020-05-31)
 	-- workaround bugs in pyxdg / menu configuration
 	-- add 'terminator' to the 'text' application hint
 	-- don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
+	-- more explicit error message when trying to use python2
 
 
 v4.0 (2020-05-17)

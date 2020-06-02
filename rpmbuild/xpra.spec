@@ -586,7 +586,7 @@ fi
 
 
 %changelog
-* Sun May 31 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
+* Tue Jun 02 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
 - fix missing desktop background in html5 client
 - fix xpra top client refresh rate via timer
 - fix opengl client info format shown in 'xpra top'
@@ -602,6 +602,9 @@ fi
 - fix html5 clipboard clearing data on failures
 - fix html5 compatibility issues with Internet Explorer
 - fix html5 missing transparency for windows in focus
+- fix html5 no windows focused after close
+- fix html5 connection errors caused by spurious packets
+- fix html5 error in invalid packet handler
 - fix connection errors with 'None' values in bencoder (ie: html5)
 - fix duplicate clipboard token sent from MS Windows servers
 - remove invalid extra strings from mdns service name
