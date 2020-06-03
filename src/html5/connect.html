@@ -59,6 +59,9 @@
 			<div class="security-box">
 			  	<span id="ssl-span"><input type="checkbox" id="ssl"> Secure Sockets</span>
 			  	<span id="insecure-span"><input type="checkbox" id="insecure"> Insecure plain-text passwords</span>
+			  	<br />
+			  	<span id="encryption-span"><input type="checkbox" id="encryption"> AES</span>
+			  	<span id="encryption-key-span"><input type="password" class="form-control" id="key" placeholder="AES-KEY" size="32" maxlength="256"></span>
 			</div>
 
 			<div class="panel-group">
@@ -303,7 +306,8 @@ function doConnect() {
 		}
 	}
 	add_prop("submit", true);
-	const val_props = ["server", "port", "path", "username", "password", "bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
+	const val_props = ["server", "port", "path", "username", "password", "key",
+					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
 	for (let i = 0; i < val_props.length; i++) {
 		const prop = val_props[i];
 		const value = document.getElementById(prop).value;
@@ -337,7 +341,8 @@ function doConnect() {
 		"sharing", "steal", "reconnect", "swap_keys",
 		"scroll_reverse_x", "scroll_reverse_y",
 		"video", "mediasource_video",
-		"ssl", "insecure", "floating_menu", "autohide", "clock",
+		"ssl", "insecure", "encryption",
+		"floating_menu", "autohide", "clock",
 		"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
 	];
 	for (let i = 0; i < bool_props.length; i++) {
@@ -398,7 +403,19 @@ function fill_form(default_settings) {
 	$('input#insecure').prop("checked", insecure);
 	const ssl_input = document.getElementById("ssl");
 	const insecure_input = document.getElementById("insecure");
+	const encryption_input = document.getElementById("encryption");
+	const key_input = document.getElementById("key");
 	const has_session_storage = Utilities.hasSessionStorage();
+	$('span#encryption-key-span').hide();
+	encryption_input.onchange = function() {
+		if (encryption_input.checked) {
+			ssl_input.checked = false;
+			$('span#encryption-key-span').show();
+		}
+		else {
+			$('span#encryption-key-span').hide();
+		}
+	};
 	if (!has_session_storage) {
 		//passwords would be sent on URL,
 		//so show insecure checkbox whenever ssl is off:
@@ -406,6 +423,7 @@ function fill_form(default_settings) {
 			$('input#password').prop("disabled", !has_session_storage && !ssl_input.checked && !insecure_input.checked);
 			if (ssl_input.checked) {
 			   	$('span#insecure-span').hide();
+			   	encryption_input.checked = false;
 			}
 			else {
 			   	$('span#insecure-span').show();
@@ -415,6 +433,12 @@ function fill_form(default_settings) {
 	else {
 		//local storage makes this secure
 	   	$('span#insecure-span').hide();
+		ssl_input.onchange = function() {
+			if (ssl_input.checked) {
+			   	encryption_input.checked = false;
+				$('span#encryption-key-span').hide();
+			}
+		}
 	}
 	$('input#password').prop("disabled", !has_session_storage && !ssl_input.checked && !insecure_input.checked);
 	insecure_input.onchange = function() {
@@ -540,6 +564,7 @@ function fill_form(default_settings) {
 	$('input#sound').prop("checked", sound && Object.keys(codecs_supported).length>0);
 
 	const bool_props = ["clipboard", "printing", "file_transfer",
+		"encryption",
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
 		"video", "mediasource_video", "floating_menu", "autohide", "clock",

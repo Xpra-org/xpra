@@ -615,8 +615,8 @@
 				}
 
 				// check for encryption parameters
-				if(encryption) {
-					client.encryption = encryption;
+				if(encryption && encryption.toLowerCase()!="no" && encryption.toLowerCase()!="false") {
+					client.encryption = "AES";
 					if(key) {
 						client.encryption_key = key;
 					}

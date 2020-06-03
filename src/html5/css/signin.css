@@ -58,6 +58,11 @@ div.container {
 .form-signin .security-box {
 	padding-left:10em;
 }
+.form-signin .security-box #key {
+	font-size: 12px;
+	padding: 0px 10px;
+	height: 20px;
+}
 
 .form-signin .list-group-item {
 	padding: 6px 10px;
