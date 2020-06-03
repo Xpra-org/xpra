@@ -1181,7 +1181,7 @@ XpraClient.prototype._make_hello = function() {
 		"server-window-resize"		: true,
 		"screen-resize-bigger"		: false,
 		"metadata.supported"		: [
-										"fullscreen", "maximized", "above", "below",
+										"fullscreen", "maximized", "iconic", "above", "below",
 										//"set-initial-position", "group-leader",
 										"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
 										"decorations", "override-redirect", "tray", "modal", "opacity",

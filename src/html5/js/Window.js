@@ -66,6 +66,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.windowtype = null;
 	this.fullscreen = false;
 	this.saved_geometry = null;
+	this.minimized = false;
 	this.maximized = false;
 	this.focused = false;
 	this.decorations = true;
@@ -499,6 +500,10 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		}
 		jQuery(this.div).css('opacity', ''+opacity);
 	}
+	if ("iconic" in metadata) {
+		this.set_minimized(metadata["iconic"]==1);
+	}
+	
 	//if the attribute is set, add the corresponding css class:
 	const attrs = ["modal", "above", "below"];
 	for (let i = 0; i < attrs.length; i++) {
@@ -669,7 +674,16 @@ XpraWindow.prototype.toggle_maximized = function() {
  * Minimizes / unminimizes the window.
  */
 XpraWindow.prototype.set_minimized = function(minimized) {
-	jQuery(this.div).toggle(200);
+	if (this.minimized==minimized) {
+		return;
+	}
+	this.minimized = minimized;
+	if (minimized) {
+		jQuery(this.div).hide(200);
+	}
+	else {
+		jQuery(this.div).show(200);
+	}
 };
 
 
