@@ -411,6 +411,9 @@ function fill_form(default_settings) {
 		if (encryption_input.checked) {
 			ssl_input.checked = false;
 			$('span#encryption-key-span').show();
+			if (!key_input.value) {
+				key_input.focus();
+			}
 		}
 		else {
 			$('span#encryption-key-span').hide();
