@@ -1127,7 +1127,7 @@ XpraClient.prototype._make_hello = function() {
 		"window.initiate-moveresize": true,
 		"screen-resize-bigger"		: false,
 		"metadata.supported"		: [
-										"fullscreen", "maximized", "above", "below",
+										"fullscreen", "maximized", "iconic", "above", "below",
 										//"set-initial-position", "group-leader",
 										"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
 										"decorations", "override-redirect", "tray", "modal", "opacity",
@@ -1547,6 +1547,10 @@ XpraClient.prototype.do_reconnect = function() {
 	this.reconnect_in_progress = true;
 	var me = this;
 	var protocol = this.protocol;
+	if (win.minimized) {
+		//tell server to map it:
+		win.toggle_minimized();
+	}
 	setTimeout(function(){
 		try {
 			me.close_windows();

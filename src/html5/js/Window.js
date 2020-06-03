@@ -66,6 +66,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.windowtype = null;
 	this.fullscreen = false;
 	this.saved_geometry = null;
+	this.minimized = false;
 	this.maximized = false;
 	this.focused = false;
 	this.decorations = true;
@@ -498,6 +499,10 @@ XpraWindow.prototype.set_metadata_safe = function(metadata) {
 		}
 		jQuery(this.div).css('opacity', ''+opacity);
 	}
+	if ("iconic" in metadata) {
+		this.set_minimized(metadata["iconic"]==1);
+	}
+	
 	//if the attribute is set, add the corresponding css class:
 	var attrs = ["modal", "above", "below"];
 	for (var i = 0; i < attrs.length; i++) {
@@ -667,7 +672,16 @@ XpraWindow.prototype.toggle_maximized = function() {
  * Minimizes / unminimizes the window.
  */
 XpraWindow.prototype.set_minimized = function(minimized) {
-	jQuery(this.div).toggle(200);
+	if (this.minimized==minimized) {
+		return;
+	}
+	this.minimized = minimized;
+	if (minimized) {
+		jQuery(this.div).hide(200);
+	}
+	else {
+		jQuery(this.div).show(200);
+	}
 };
 
 
@@ -675,6 +689,13 @@ XpraWindow.prototype.set_minimized = function(minimized) {
  * Toggle minimized state
  */
 XpraWindow.prototype.toggle_minimized = function() {
+	if (!this.minimized) {
+		this.client.send(["unmap-window", this.wid, True]);
+	}
+	else {
+		const geom = this.get_internal_geometry();
+		this.client.send(["map-window", this.wid, geom.x, geom.y, geom.w, geom.h, this.client._get_client_properties(this)]);
+	}
 	this.set_minimized(!this.minimized);
 };
 
