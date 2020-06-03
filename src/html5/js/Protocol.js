@@ -340,6 +340,10 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 	if (index>0) {
 		//debug("added raw packet for index "+index);
 		this.raw_packets[index] = packet_data;
+		if (this.raw_packets.length>=4) {
+			this.protocol_error("too many raw packets: "+this.raw_packets.length);
+			return false;
+		}
 	} else {
 		//decode raw packet string into objects:
 		let packet = null;
