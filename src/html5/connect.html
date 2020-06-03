@@ -367,7 +367,7 @@ $(document).ready(function() {
 	var ssl_input = document.getElementById("ssl");
 	var insecure_input = document.getElementById("insecure");
 	var has_session_storage = Utilities.hasSessionStorage();
-	if (has_session_storage) {
+	if (!has_session_storage) {
 		//passwords would be sent on URL,
 		//so show insecure checkbox whenever ssl is off:
 		ssl_input.onchange = function() {
