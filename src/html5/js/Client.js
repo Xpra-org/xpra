@@ -2430,7 +2430,7 @@ XpraClient.prototype._process_lost_window = function(packet, ctx) {
 	if (Object.keys(ctx.id_to_window).length==0) {
 		ctx.on_last_window();
 	}
-	else if (win.focused) {
+	else if (win && win.focused) {
 		//it had focus, find the next highest:
 		let highest_window = null;
 		let highest_stacking = -1;
