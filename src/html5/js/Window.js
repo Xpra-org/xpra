@@ -1377,6 +1377,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				img = this.offscreen_canvas_ctx.createImageData(width, height);
 			}
 			img.data.set(img_data);
+			this.offscreen_canvas_ctx.clearRect(x, y, width, height);
 			this.offscreen_canvas_ctx.putImageData(img, x, y, 0, 0, width, height);
 			painted();
 			this.may_paint_now();
@@ -1389,6 +1390,7 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 					paint_error("invalid image size: "+j.width+"x"+j.height);
 				}
 				else {
+					me.offscreen_canvas_ctx.clearRect(x, y, j.width, j.height);
 					me.offscreen_canvas_ctx.drawImage(j, x, y);
 					painted();
 				}
