@@ -1547,6 +1547,10 @@ XpraClient.prototype._window_set_focus = function(win) {
 	if (win.override_redirect || win.tray) {
 		return;
 	}
+	if (win.minimized) {
+		//tell server to map it:
+		win.toggle_minimized();
+	}
 	const client = win.client;
 	const wid = win.wid;
 	if (client.focus == wid) {

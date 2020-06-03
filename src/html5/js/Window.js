@@ -691,6 +691,13 @@ XpraWindow.prototype.set_minimized = function(minimized) {
  * Toggle minimized state
  */
 XpraWindow.prototype.toggle_minimized = function() {
+	if (!this.minimized) {
+		this.client.send(["unmap-window", this.wid, True]);
+	}
+	else {
+		const geom = this.get_internal_geometry();
+		this.client.send(["map-window", this.wid, geom.x, geom.y, geom.w, geom.h, this.client._get_client_properties(this)]);
+	}
 	this.set_minimized(!this.minimized);
 };
 
