@@ -52,16 +52,16 @@
 			<input title="Port" type="text" class="form-control" id="port" placeholder="Port" size="5" maxlength="5">
 			<br>
 			<label class="sr-only" for="username">Username</label>
-			<input title="Username" type="text" class="form-control" id="username" placeholder="Username" size="16" maxlength="256">
+			<input title="Username" type="text" class="form-control" id="username" autocomplete="username" placeholder="Username" size="16" maxlength="256">
 			<label class="sr-only" for="password">Password</label>
-			<input title="Password" type="password" class="form-control" id="password" placeholder="Password" size="16" maxlength="256">
+			<input title="Password" type="password" class="form-control" id="password"  autocomplete="password" placeholder="Password" size="16" maxlength="256">
 			<br>
 			<div class="security-box">
 			  	<span id="ssl-span"><input type="checkbox" id="ssl"> Secure Sockets</span>
 			  	<span id="insecure-span"><input type="checkbox" id="insecure"> Insecure plain-text passwords</span>
 			  	<br />
 			  	<span id="encryption-span"><input type="checkbox" id="encryption"> AES</span>
-			  	<span id="encryption-key-span"><input type="password" class="form-control" id="key" placeholder="AES-KEY" size="32" maxlength="256"></span>
+			  	<span id="encryption-key-span"><input type="password" class="form-control" id="key" autocomplete="encryption-key" placeholder="AES-KEY" size="32" maxlength="256"></span>
 			</div>
 
 			<div class="panel-group">
@@ -607,6 +607,8 @@ function fill_form(default_settings) {
 	if (toolbar_position) {
 		document.getElementById('toolbar_position').value = toolbar_position;
 	}
+
+	encryption_input.onchange();
 
 	//this may override default values (ie: terminate flags are off for connect mode):
 	set_exit_actions(action=="connect" || action=="");
