@@ -399,7 +399,7 @@ function fill_form(default_settings) {
 	const ssl_input = document.getElementById("ssl");
 	const insecure_input = document.getElementById("insecure");
 	const has_session_storage = Utilities.hasSessionStorage();
-	if (has_session_storage) {
+	if (!has_session_storage) {
 		//passwords would be sent on URL,
 		//so show insecure checkbox whenever ssl is off:
 		ssl_input.onchange = function() {
