@@ -1342,12 +1342,29 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 				const uint = new Uint8Array(target_stride*height);
 				let i = 0,
 					j = 0,
+					k = 0,
 					l = img_data.length;
-				while (i<l) {
-					for (let k=0; k<3; k++) {
-						uint[j++] = img_data[i++];
+				if (rowstride==width*3) {
+					//fast path
+					while (i<l) {
+						for (k=0; k<3; k++) {
+							uint[j++] = img_data[i++];
+						}
+						uint[j++] = 255;
 					}
-					uint[j++] = 255;
+				}
+				else {
+					let psrc = 0,
+						pdst = 0;
+					for (i=0; i<height; i++) {
+						psrc = i*rowstride;
+						for (j=0; j<width; j++) {
+							uint[pdst++] = img_data[psrc++];
+							uint[pdst++] = img_data[psrc++];
+							uint[pdst++] = img_data[psrc++];
+							uint[pdst++] = 255;
+						}
+					}
 				}
 				rowstride = target_stride;
 				img_data = uint;
