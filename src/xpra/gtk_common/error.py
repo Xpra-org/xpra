@@ -40,6 +40,7 @@ __all__ = ["XError", "trap", "xsync", "xswallow"]
 XPRA_SYNCHRONIZE = envbool("XPRA_SYNCHRONIZE", False)
 XPRA_LOG_SYNC = envbool("XPRA_LOG_SYNC", False)
 VERIFY_MAIN_THREAD = envbool("XPRA_VERIFY_MAIN_THREAD", True)
+LOG_NESTED_XTRAP = envbool("XPRA_LOG_NESTED_XTRAP", False)
 
 log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
@@ -105,6 +106,9 @@ class _ErrorManager:
         Gdk.error_trap_push()
         if XPRA_LOG_SYNC:
             log("X11trap.enter at level %i", self.depth)
+        if LOG_NESTED_XTRAP and self.depth>0:
+            for x in traceback.extract_stack():
+                log("%s", x)
         self.depth += 1
 
     def Xexit(self, need_sync=True):
