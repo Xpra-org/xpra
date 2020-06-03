@@ -1150,7 +1150,7 @@ XpraClient.prototype._make_hello = function() {
 		"server-window-resize"		: true,
 		"screen-resize-bigger"		: false,
 		"metadata.supported"		: [
-										"fullscreen", "maximized", "above", "below",
+										"fullscreen", "maximized", "iconic", "above", "below",
 										//"set-initial-position", "group-leader",
 										"title", "size-hints", "class-instance", "transient-for", "window-type", "has-alpha",
 										"decorations", "override-redirect", "tray", "modal", "opacity",
@@ -1504,6 +1504,10 @@ XpraClient.prototype._window_set_focus = function(win) {
 	// don't send focus packet for override_redirect windows!
 	if (win.override_redirect || win.tray) {
 		return;
+	}
+	if (win.minimized) {
+		//tell server to map it:
+		win.toggle_minimized();
 	}
 	const client = win.client;
 	const wid = win.wid;
