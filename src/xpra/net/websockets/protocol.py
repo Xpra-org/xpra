@@ -93,7 +93,8 @@ class WebSocketProtocol(Protocol):
 
     def make_wsframe_header(self, packet_type, items):
         payload_len = sum(len(item) for item in items)
-        log("make_wsframe_header(%s, %i items) %i bytes", packet_type, len(items), payload_len)
+        log("make_wsframe_header(%s, %i items) %i bytes, ms_mask=%s",
+            packet_type, len(items), payload_len, self.ws_mask)
         header = encode_hybi_header(OPCODE_BINARY, payload_len, self.ws_mask)
         if self.ws_mask:
             from xpra.codecs.xor.cyxor import hybi_mask     #@UnresolvedImport
