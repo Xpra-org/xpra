@@ -314,9 +314,8 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 			// lz4
 			// python-lz4 inserts the length of the uncompressed data as an int
 			// at the start of the stream
-			const d = packet_data.subarray(0, 4);
 			// output buffer length is stored as little endian
-			const length = d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
+			const length = packet_data[0] | (packet_data[1] << 8) | (packet_data[2] << 16) | (packet_data[3] << 24);
 			// decode the LZ4 block
 			// console.log("lz4 decompress packet size", packet_size, ", lz4 length=", length);
 			inflated = new Uint8Array(length);
