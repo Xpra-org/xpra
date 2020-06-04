@@ -430,7 +430,7 @@ class Protocol(object):
             else:
                 #the xpra packet header:
                 #(WebSocketProtocol may also add a websocket header too)
-                header = self.make_chunk_header(packet_type, proto_flags, level, index, payload_size)
+                header = self.make_chunk_header(packet_type, proto_flags, level, index, payload_size, actual_size)
                 if actual_size<PACKET_JOIN_SIZE:
                     if not isinstance(data, JOIN_TYPES):
                         data = memoryview_to_bytes(data)
@@ -450,7 +450,7 @@ class Protocol(object):
                 items.insert(0, frame_header)
         self.raw_write(packet_type, items, start_send_cb, end_send_cb, fail_cb, synchronous, more)
 
-    def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size):
+    def make_xpra_header(self, _packet_type, proto_flags, level, index, payload_size, total_size):
         return pack_header(proto_flags, level, index, payload_size)
 
     def noframe_header(self, _packet_type, _items):
