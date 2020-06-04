@@ -31,7 +31,7 @@ OPCODES = {
 
 #default to legacy mode until we parse the remote caps:
 #(this can be removed in the future once all html5 clients have been updated)
-LEGACY_FRAME_PER_CHUNK = envbool("XPRA_WEBSOCKET_LEGACY", None)
+LEGACY_FRAME_PER_CHUNK = envbool("XPRA_WEBSOCKET_LEGACY", False)
 MASK = envbool("XPRA_WEBSOCKET_MASK", False)
 
 
@@ -49,7 +49,11 @@ class WebSocketProtocol(Protocol):
         self.ws_mask = MASK
         self._process_read = self.parse_ws_frame
         self.legacy_frame_per_chunk = LEGACY_FRAME_PER_CHUNK in (None, True)
-        self.make_chunk_header = self.make_wschunk_header
+        if self.legacy_frame_per_chunk:
+            self.make_chunk_header = self.make_wschunk_header
+        else:
+            self.make_chunk_header = self.make_xpra_header
+            self.make_frame_header = self.make_wsframe_header
 
     def __repr__(self):
         return "WebSocket(%s)" % self._conn
