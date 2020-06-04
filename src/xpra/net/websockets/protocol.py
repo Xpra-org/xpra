@@ -49,7 +49,11 @@ class WebSocketProtocol(Protocol):
         self.ws_mask = MASK
         self._process_read = self.parse_ws_frame
         self.legacy_frame_per_chunk = LEGACY_FRAME_PER_CHUNK in (None, True)
-        self.make_chunk_header = self.make_wschunk_header
+        if self.legacy_frame_per_chunk:
+            self.make_chunk_header = self.make_wschunk_header
+        else:
+            self.make_chunk_header = self.make_xpra_header
+            self.make_frame_header = self.make_wsframe_header
 
     def __repr__(self):
         return "WebSocket(%s)" % self._conn
@@ -86,10 +90,10 @@ class WebSocketProtocol(Protocol):
             #and one websocket header for all the chunks:
             self.make_frame_header = self.make_wsframe_header
 
-    def make_wschunk_header(self, packet_type, proto_flags, level, index, payload_size):
-        header = super().make_xpra_header(packet_type, proto_flags, level, index, payload_size)
+    def make_wschunk_header(self, packet_type, proto_flags, level, index, payload_size, total_size):
+        header = super().make_xpra_header(packet_type, proto_flags, level, index, payload_size, total_size)
         log("make_wschunk_header(%s)", (packet_type, proto_flags, level, index, payload_size))
-        return encode_hybi_header(OPCODE_BINARY, payload_size+len(header))+header
+        return encode_hybi_header(OPCODE_BINARY, total_size+len(header))+header
 
     def make_wsframe_header(self, packet_type, items):
         payload_len = sum(len(item) for item in items)
