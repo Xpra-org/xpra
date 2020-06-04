@@ -1,6 +1,5 @@
-v4.0.2 (2020-06-02)
+v4.0.2 (2020-06-04)
 ======================
-	-- fix missing desktop background in html5 client
 	-- fix encryption not honoured with TCP sockets upgraded to WebSocket
 	-- fix xpra top client refresh rate via timer
 	-- fix opengl client info format shown in 'xpra top'
@@ -10,19 +9,27 @@ v4.0.2 (2020-06-02)
 	-- fix server errors when non-interactive clients are connected
 	-- fix tray toolbox app
 	-- fix X11 server key symbol lookup via Xkb
-	-- fix 'AltGr' on MacOS using html5 client
-	-- fix html5 client errors painting rgb32 data with a padded rowstride
 	-- fix python-lz4 packaging on MS Windows
-	-- fix html5 clipboard clearing data on failures
-	-- fix html5 compatibility issues with Internet Explorer
-	-- fix html5 missing transparency for windows in focus
-	-- fix html5 no windows focused after close
-	-- fix html5 connection errors caused by spurious packets
-	-- fix html5 error in invalid packet handler
-	-- fix html5 AES encryption connections
-	-- fix html5 packet error with very small paint packets
+	-- html5 fixes:
+		missing 'AltGr' on MacOS
+		fix missing desktop background
+		client errors painting rgb32 data with a padded rowstride
+		clipboard wrongly clearing data on failures
+		compatibility issues with Internet Explorer
+		missing transparency for windows in focus
+		no windows focused after close
+		connection errors caused by spurious packets
+		error in invalid packet handler
+		AES encrypted connections
+		connection errors with AES and lz4 (disable lz4 for now)
+		packet error with very small paint packets
+		'insecure passwords' option shown in the wrong cases
+		handle window iconification messages
+		update version in about page
 	-- fix connection errors with 'None' values in bencoder (ie: html5)
+	-- fix connection errors with websocket connections and AES encryption
 	-- fix duplicate clipboard token sent with MS Windows servers
+	-- fix window initialization errors causing server startup failures
 	-- remove invalid extra strings from mdns service name
 	-- change DLL search order to prevent conflict (MS Windows)
 	-- workaround bugs in pyxdg / menu configuration
