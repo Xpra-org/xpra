@@ -549,11 +549,9 @@ class Protocol:
             except TypeError as e:
                 raise TypeError("invalid type %s in %s packet at index %s: %s" % (ti, packet[0], i, e))
             if ti==LargeStructure:
-                item = item.data
-                packet[i] = item
-                ti = type(item)
+                packet[i] = item.data
                 continue
-            elif ti==Compressible:
+            if ti==Compressible:
                 #this is a marker used to tell us we should compress it now
                 #(used by the client for clipboard data)
                 item = item.compress()
