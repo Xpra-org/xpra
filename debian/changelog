@@ -1,3 +1,8 @@
+xpra (3.0.10-2) UNRELEASED; urgency=low
+  * fix python2 / GTK2 compatibility
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 05 Jun 2020 19:00:29 +0700
+
 xpra (3.0.10-1) UNRELEASED; urgency=low
   * fix X11 server key symbol lookup via Xkb
   * fix encryption not honoured with TCP sockets upgraded to WebSocket

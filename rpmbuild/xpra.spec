@@ -65,7 +65,7 @@ Name:				xpra
 Version:			%{version}
 #Fedora-is-screwing-our-repo "solution",
 #use a revision number which will be higher:
-Release:			10%{?revision_no}xpra3%{?dist}
+Release:			11%{?revision_no}xpra1%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
@@ -869,6 +869,9 @@ fi
 
 
 %changelog
+* Fri Jun 05 2020 Antoine Martin <antoine@xpra.org> 3.0.10-11xpra1
+- fix python2 / GTK2 compatibility
+
 * Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
 - fix X11 server key symbol lookup via Xkb
 - fix encryption not honoured with TCP sockets upgraded to WebSocket
