@@ -1697,9 +1697,9 @@ class ServerCore:
         if not username:
             import getpass
             username = getpass.getuser()
+        conn = proto._conn
         #authenticator:
         if not proto.authenticators:
-            conn = proto._conn
             socktype = conn.socktype_wrapped
             try:
                 proto.authenticators = self.make_authenticators(socktype, username, conn)
@@ -1741,7 +1741,7 @@ class ServerCore:
             auth_caps = new_cipher_caps(proto, cipher, encryption_key, padding_options)
             authlog("server cipher=%s", auth_caps)
         else:
-            if proto.encryption:
+            if proto.encryption and conn.socktype in ENCRYPTED_SOCKET_TYPES:
                 authlog("client does not provide encryption tokens")
                 auth_failed("missing encryption tokens")
                 return
