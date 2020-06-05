@@ -1,10 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.log import Logger
 
 log = Logger("network", "crypto")
@@ -88,7 +88,25 @@ def get_encryptor(key, iv):
 
 def get_decryptor(key, iv):
     decryptor = _get_cipher(key, iv).decryptor()
-    decryptor.decrypt = decryptor.update
+    def i(s):
+        try:
+            return int(s)
+        except ValueError:
+            return 0
+    import cryptography
+    version = cryptography.__version__
+    supports_memoryviews = tuple(i(s) for s in version.split("."))>=(2, 5)
+    log("get_decryptor(..) python-cryptography supports_memoryviews(%s)=%s",
+        version, supports_memoryviews)
+    if supports_memoryviews:
+        decryptor.decrypt = decryptor.update
+    else:
+        del key, iv
+        #with older versions of python-cryptography,
+        #we have to copy the memoryview to a bytearray:
+        def decrypt(v):
+            return decryptor.update(memoryview_to_bytes(v))
+        decryptor.decrypt = decrypt
     return decryptor
 
 
