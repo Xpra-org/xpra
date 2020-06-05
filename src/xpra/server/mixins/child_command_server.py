@@ -237,6 +237,7 @@ class ChildCommandServer(StubServerMixin):
         for source in tuple(self._server_sources.values()):
             if source.xdg_menu_update:
                 source.send_setting_change("xdg-menu", xdg_menu or {})
+        return False
 
     def get_info(self, _proto) -> dict:
         info = {
