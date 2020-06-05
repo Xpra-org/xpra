@@ -464,7 +464,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         with xsync:
             children = get_children(root)
         for window in children:
-            xid = window.get_xid()
+            xid = get_xwindow(window)
             can_add = False
             with xlog:
                 can_add = X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid)
