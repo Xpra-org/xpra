@@ -1266,6 +1266,7 @@ class ServerCore:
             #special case for legacy encryption code:
             protocol.encryption = socket_options.get("encryption", self.tcp_encryption)
             protocol.keyfile = socket_options.get("encryption-keyfile", self.tcp_encryption_keyfile)
+            netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
             if protocol.encryption:
                 from xpra.net.crypto import crypto_backend_init
                 crypto_backend_init()
@@ -1282,6 +1283,8 @@ class ServerCore:
                     protocol.set_cipher_in(protocol.encryption,
                                            DEFAULT_IV, password,
                                            DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
+        else:
+            netlog("no encryption for %s", socktype)
         protocol.invalid_header = self.invalid_header
         authlog("socktype=%s, encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         protocol.start()
