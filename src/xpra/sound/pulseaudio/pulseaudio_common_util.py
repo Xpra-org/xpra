@@ -46,10 +46,10 @@ def get_x11_property(atom_name):
                     log("get_x11_property(%s)=%s", atom_name, v)
                     return strtobytes(v)
                 return b""
-    except Exception:
-        log.error("Error: cannot get X11 property '%s'", atom_name, exc_info=True)
-        log.error(" for python 3")
-        log.error(" xpra command=%s", sys.argv)
+    except Exception as e:
+        log("get_x11_property(%s)", atom_name, exc_info=True)
+        log.error("Error: cannot get X11 property '%s'", atom_name)
+        log.error(" %s", e)
     return b""
 
 def get_pulse_server_x11_property():
