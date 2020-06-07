@@ -18,7 +18,7 @@ class ColorGradientWindow(gtk.Window):
 
     def __init__(self):
         super(ColorGradientWindow, self).__init__()
-        self.set_title("Color Gradient")
+        self.set_title("Color Bit Depth")
         self.set_position(WIN_POS_CENTER)
         self.set_default_size(1024, 768)
         self.set_app_paintable(True)

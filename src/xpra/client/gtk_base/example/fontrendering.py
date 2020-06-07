@@ -34,6 +34,7 @@ class FontWindow(gtk.Window):
 
     def __init__(self):
         super(FontWindow, self).__init__()
+        self.set_title("Font Rendering")
         self.set_position(WIN_POS_CENTER)
         self.set_default_size(1600, 1200)
         self.set_app_paintable(True)

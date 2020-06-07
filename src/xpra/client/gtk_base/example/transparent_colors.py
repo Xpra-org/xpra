@@ -18,6 +18,7 @@ class TransparentColorWindow(gtk.Window):
         self.set_position(WIN_POS_CENTER)
         self.set_default_size(320, 320)
         screen = self.get_screen()
+        self.set_title("Transparent Colors")
         visual = screen.get_rgba_visual()
         if is_gtk3():
             if visual and screen.is_composited():
