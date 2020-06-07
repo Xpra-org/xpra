@@ -67,6 +67,7 @@ class OptionWindow(Gtk.Window):
 
     def __init__(self, args=()):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.set_title("Window Size Constraints")
         self.connect("destroy", Gtk.main_quit)
         self.set_default_size(320, 200)
         self.set_border_width(20)
@@ -112,7 +113,12 @@ class OptionWindow(Gtk.Window):
             )):
             if len(args)<=i:
                 break
-            entry.set_text(args[i])
+            try:
+                int(args[i])
+            except ValueError:
+                pass
+            else:
+                entry.set_text(args[i])
 
     def create(self, *_args):
         kwargs = {}

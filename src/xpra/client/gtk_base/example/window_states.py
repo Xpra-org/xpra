@@ -15,6 +15,7 @@ from gi.repository import Gtk, Gdk, GLib	#pylint: disable=wrong-import-position
 
 def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+	window.set_title("Window States")
 	window.set_size_request(320, 500)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)

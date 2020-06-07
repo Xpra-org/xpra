@@ -16,6 +16,7 @@ from gi.repository import Gtk, Gdk, GLib  #pylint: disable=wrong-import-position
 def make_grab_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_size_request(600, 200)
+	window.set_title("Grabs")
 	window.connect("delete_event", Gtk.main_quit)
 	window.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
 	window.set_position(Gtk.WindowPosition.CENTER)

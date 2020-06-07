@@ -19,6 +19,7 @@ height = 200
 def main():
 	with program_context("cursors", "Cursors"):
 		window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+		window.set_title("Cursors")
 		window.set_size_request(width, height)
 		window.connect("delete_event", Gtk.main_quit)
 		window.set_position(Gtk.WindowPosition.CENTER)

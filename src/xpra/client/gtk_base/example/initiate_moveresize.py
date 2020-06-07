@@ -23,6 +23,7 @@ width = 400
 height = 200
 def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+	window.set_title("Window Move Resize")
 	window.set_size_request(width, height)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)

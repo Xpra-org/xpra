@@ -19,6 +19,7 @@ class TestForm(object):
 	def	__init__(self):
 		self.window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 		self.window.connect("destroy", Gtk.main_quit)
+		self.window.set_title("Test Button Events")
 		self.window.set_default_size(320, 200)
 		self.window.set_border_width(20)
 		self.window.set_position(Gtk.WindowPosition.CENTER)
