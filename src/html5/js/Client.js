@@ -1560,10 +1560,11 @@ XpraClient.prototype._window_set_focus = function(win) {
 	}
 	const top_stacking_layer = Object.keys(client.id_to_window).length;
 	const old_stacking_layer = win.stacking_layer;
+	const had_focus = client.focus;
 	client.focus = wid;
 	client.topwindow = wid;
 	client.send(["focus", wid, []]);
-	//set the focused flag on all windows,
+	//set the focused flag on the window specified,
 	//adjust stacking order:
 	let iwin = null;
 	for (const i in client.id_to_window) {
@@ -1571,11 +1572,15 @@ XpraClient.prototype._window_set_focus = function(win) {
 		iwin.focused = (i==wid);
 		if (iwin.focused) {
 			iwin.stacking_layer = top_stacking_layer;
+			client.send_configure_window(iwin, {"focused" : true}, true);
 		}
 		else {
 			//move it down to fill the gap:
 			if (iwin.stacking_layer>old_stacking_layer) {
 				iwin.stacking_layer--;
+			}
+			if (had_focus==i) {
+				client.send_configure_window(iwin, {"focused" : false}, true);
 			}
 		}
 		iwin.updateFocus();
@@ -2336,9 +2341,14 @@ XpraClient.prototype._get_client_properties = function(win) {
 XpraClient.prototype._window_geometry_changed = function(win) {
 	// window callbacks are called from the XpraWindow function context
 	// so use win.client instead of `this` to refer to the client
+	win.client.send_configure_window(win, {}, false);
+};
+
+XpraClient.prototype.send_configure_window = function(win, state, skip_geometry) {
 	const geom = win.get_internal_geometry();
 	const wid = win.wid;
-	win.client.send(["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client._get_client_properties(win)]);
+	let packet = ["configure-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win), 0, state, skip_geometry];
+	this.send(packet);
 };
 
 XpraClient.prototype._process_new_window = function(packet, ctx) {
