@@ -2286,7 +2286,7 @@ XpraClient.prototype._new_window = function(wid, x, y, w, h, metadata, override_
 	this.id_to_window[wid] = win;
 	if (!override_redirect) {
 		const geom = win.get_internal_geometry();
-		this.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win)]);
+		this.send(["map-window", wid, geom.x, geom.y, geom.w, geom.h, win.client_properties]);
 		this._window_set_focus(win);
 	}
 };
@@ -2332,12 +2332,6 @@ XpraClient.prototype._window_closed = function(win) {
 	win.client.send(["close-window", win.wid]);
 };
 
-XpraClient.prototype._get_client_properties = function(win) {
-	const cp = win.client_properties;
-	cp["encodings.rgb_formats"] = this.RGB_FORMATS;
-	return cp;
-};
-
 XpraClient.prototype._window_geometry_changed = function(win) {
 	// window callbacks are called from the XpraWindow function context
 	// so use win.client instead of `this` to refer to the client
@@ -2347,7 +2341,7 @@ XpraClient.prototype._window_geometry_changed = function(win) {
 XpraClient.prototype.send_configure_window = function(win, state, skip_geometry) {
 	const geom = win.get_internal_geometry();
 	const wid = win.wid;
-	let packet = ["configure-window", wid, geom.x, geom.y, geom.w, geom.h, this._get_client_properties(win), 0, state, skip_geometry];
+	let packet = ["configure-window", wid, geom.x, geom.y, geom.w, geom.h, win.client_properties, 0, state, skip_geometry];
 	this.send(packet);
 };
 
