@@ -25,6 +25,7 @@ class AnimatedColorWindow(Gtk.Window):
         self.counter = 0
         self.increase = True
         self.last_event = None
+        self.set_title("Animated Colors")
         self.connect("draw", self.area_draw)
         self.connect("destroy", Gtk.main_quit)
         self.connect("key_press_event", self.on_press)

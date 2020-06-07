@@ -18,6 +18,7 @@ class TransparentColorWindow(Gtk.Window):
 
     def __init__(self):
         super().__init__()
+        self.set_title("Transparent Colors")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
         screen = self.get_screen()

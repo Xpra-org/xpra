@@ -21,6 +21,7 @@ from gi.repository import Gtk, Pango, GLib	#pylint: disable=wrong-import-positio
 
 def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+	window.set_title("Window Focus")
 	window.set_size_request(640, 200)
 	window.connect("delete_event", Gtk.main_quit)
 	vbox = Gtk.VBox()

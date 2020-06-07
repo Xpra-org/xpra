@@ -14,6 +14,7 @@ from gi.repository import Gtk, GLib	#pylint: disable=wrong-import-position
 
 def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+	window.set_title("Window Transient Test")
 	window.set_size_request(400, 300)
 	window.connect("delete_event", Gtk.main_quit)
 	vbox = Gtk.VBox(homogeneous=False, spacing=0)

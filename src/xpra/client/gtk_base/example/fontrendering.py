@@ -34,6 +34,7 @@ class FontWindow(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(800, 600)
         self.set_app_paintable(True)
+        self.set_title("Font Rendering")
         self.connect("draw", self.area_draw)
         self.connect("destroy", Gtk.main_quit)
 

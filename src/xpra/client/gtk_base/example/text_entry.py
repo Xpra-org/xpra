@@ -16,6 +16,7 @@ from gi.repository import Gtk, GLib   #pylint: disable=wrong-import-position
 
 def make_window():
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
+    window.set_title("Text Entry")
     window.connect("destroy", Gtk.main_quit)
     window.set_default_size(320, 200)
     window.set_border_width(20)

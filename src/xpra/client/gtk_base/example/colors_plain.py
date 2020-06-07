@@ -22,6 +22,7 @@ class ColorPlainWindow(Gtk.Window):
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
+        self.set_title("Colors")
         self.connect("draw", self.area_draw)
         self.connect("destroy", Gtk.main_quit)
 
