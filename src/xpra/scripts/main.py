@@ -946,10 +946,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         qpos = s.find("?")
         cpos = s.find(",")
         display = None
-        if qpos<0 and cpos<0:
-            return
         if qpos>0 and (qpos<cpos or cpos<0):
-            #query string format, ie: "DISPLAY?key1=value1&key2=value2
+            #query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
             attr_sep = "&"
             parts = s.split("?", 1)
             s = parts[0].split("#")[0]
@@ -964,6 +962,14 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 #assume it is part of the parameters
                 parts = ["", s]
                 display = ""
+        elif s.find("=")>0:
+            #ie: just one key=value
+            #(so this is not a display)
+            display = ""
+            attr_sep = ","
+            parts = ["", s]
+        else:
+            return
         if display is None:
             try:
                 assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
