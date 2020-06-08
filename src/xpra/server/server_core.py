@@ -1265,7 +1265,7 @@ class ServerCore:
         if socktype in ENCRYPTED_SOCKET_TYPES:
             #special case for legacy encryption code:
             protocol.encryption = socket_options.get("encryption", self.tcp_encryption)
-            protocol.keyfile = socket_options.get("encryption-keyfile", self.tcp_encryption_keyfile)
+            protocol.keyfile = socket_options.get("encryption-keyfile") or socket_options.get("keyfile") or self.tcp_encryption_keyfile
             netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
             if protocol.encryption:
                 from xpra.net.crypto import crypto_backend_init
