@@ -99,7 +99,7 @@ def pretty_socket(s):
 
 class Connection:
     def __init__(self, endpoint, socktype, info=None, options=None):
-        log("Connection%s", (endpoint, socktype, info))
+        log("Connection%s", (endpoint, socktype, info, options))
         self.endpoint = endpoint
         try:
             assert isinstance(endpoint, (tuple, list))
