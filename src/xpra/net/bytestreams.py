@@ -242,7 +242,7 @@ TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss")
 
 class SocketConnection(Connection):
     def __init__(self, sock, local, remote, target, socktype, info=None, socket_options=None):
-        log("SocketConnection%s", (sock, local, remote, target, socktype, info))
+        log("SocketConnection%s", (sock, local, remote, target, socktype, info, socket_options))
         super().__init__(target, socktype, info, socket_options)
         self._socket = sock
         self.local = local
