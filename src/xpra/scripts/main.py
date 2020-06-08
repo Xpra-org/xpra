@@ -943,19 +943,39 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     def parse_remote_display(s):
         if not s:
             return
-        parts = s.split("?", 1)
-        s = parts[0].split("#")[0]
-        try:
-            assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
-            display = ":" + s       #ie: ":10.0"
-        except ValueError:
-            display = s             #ie: "tcp://somehost:10000/"
+        qpos = s.find("?")
+        cpos = s.find(",")
+        display = None
+        if qpos<0 and cpos<0:
+            return
+        if qpos>0 and (qpos<cpos or cpos<0):
+            #query string format, ie: "DISPLAY?key1=value1&key2=value2
+            attr_sep = "&"
+            parts = s.split("?", 1)
+            s = parts[0].split("#")[0]
+        elif cpos>0 and (cpos<qpos or qpos<0):
+            #csv string format,
+            # ie: DISPLAY,key1=value1,key2=value2
+            # or: key1=value1,key2=value2
+            attr_sep = ","
+            parts = s.split(",", 1)
+            if parts[0].find("=")>0:
+                #if the first part is a key=value,
+                #assume it is part of the parameters
+                parts = ["", s]
+                display = ""
+        if display is None:
+            try:
+                assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
+                display = ":" + s       #ie: ":10.0"
+            except ValueError:
+                display = s             #ie: "tcp://somehost:10000/"
         desc["display"] = display
         opts.display = display
         desc["display_as_args"] = [display]
         if len(parts)==2:
             #parse extra attributes
-            d = parse_simple_dict(parts[1], "&")
+            d = parse_simple_dict(parts[1], attr_sep)
             for k,v in d.items():
                 if k in desc:
                     warn("Warning: cannot override '%s' with URI" % k)
@@ -1346,7 +1366,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         port = display_desc["port"]
         sock = socket_connect(dtype, host, port)
         sock.settimeout(None)
-        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
+        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, socket_options=display_desc)
 
         if dtype=="udp":
             #mmap mode requires all packets to be received,
