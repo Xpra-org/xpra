@@ -794,7 +794,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         cryptolog("get_encryption_key() connection options keydata=%s", key)
         if key:
             #may be specified as hex:
-            if key.lower.startswith("0x"):
+            if key.lower().startswith("0x"):
                 import binascii
                 return binascii.unhexlify(key[2:])
             return strtobytes(key)
