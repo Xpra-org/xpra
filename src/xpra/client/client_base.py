@@ -29,7 +29,7 @@ from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
 from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
-    load_binary_file, force_quit,
+    filedata_nocrlf, force_quit,
     SIGNAMES, BITS,
     strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
     )
@@ -146,8 +146,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.password = opts.password
         self.password_file = opts.password_file
         self.encryption = opts.encryption or opts.tcp_encryption
-        if self.encryption:
-            crypto_backend_init()
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.init_challenge_handlers(opts.challenge_handlers)
         self.init_aliases()
@@ -305,10 +303,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         protocol.receive_aliases.update(self._aliases)
         protocol.enable_default_encoder()
         protocol.enable_default_compressor()
-        if self.encryption and ENCRYPT_FIRST_PACKET:
+        encryption = self.get_encryption()
+        if encryption and ENCRYPT_FIRST_PACKET:
             key = self.get_encryption_key()
-            protocol.set_cipher_out(self.encryption,
-                                          DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
+            protocol.set_cipher_out(encryption,
+                                    DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
@@ -402,14 +401,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
-        if self.encryption:
-            assert self.encryption in ENCRYPTION_CIPHERS
+        encryption = self.get_encryption()
+        if encryption:
+            crypto_backend_init()
+            assert encryption in ENCRYPTION_CIPHERS, "invalid encryption '%s', options: %s" % (encryption, csv(ENCRYPTION_CIPHERS))
             iv = get_iv()
             key_salt = get_salt()
             iterations = get_iterations()
             padding = choose_padding(self.server_padding_options)
             up("cipher", {
-                    ""                      : self.encryption,
+                    ""                      : encryption,
                     "iv"                    : iv,
                     "key_salt"              : key_salt,
                     "key_stretch_iterations": iterations,
@@ -417,10 +418,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                     "padding.options"       : PADDING_OPTIONS,
                     })
             key = self.get_encryption_key()
-            if key is None:
-                self.warn_and_quit(EXIT_ENCRYPTION, "encryption key is missing")
-                return None
-            self._protocol.set_cipher_in(self.encryption, iv, key, key_salt, iterations, padding)
+            self._protocol.set_cipher_in(encryption, iv, key, key_salt, iterations, padding)
             netlog("encryption capabilities: %s", dict((k,v) for k,v in capabilities.items() if k.startswith("cipher")))
         capabilities.update(self.hello_extra)
         return capabilities
@@ -709,13 +707,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 self.auth_error(EXIT_PASSWORD_REQUIRED,
                                 "this server requires authentication and no password is available")
             return
-        if self.encryption:
+        encryption = self.get_encryption()
+        if encryption:
             assert len(packet)>=3, "challenge does not contain encryption details to use for the response"
             server_cipher = typedict(packet[2])
             key = self.get_encryption_key()
-            if key is None:
-                self.auth_error(EXIT_ENCRYPTION, "the server does not use any encryption", "client requires encryption")
-                return
             if not self.set_server_encryption(server_cipher, key):
                 return
         #all server versions support a client salt,
@@ -764,7 +760,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.server_padding_options = caps.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
         if not cipher or not cipher_iv:
             self.warn_and_quit(EXIT_ENCRYPTION,
-                               "the server does not use or support encryption/password, cannot continue with %s cipher" % self.encryption)
+                               "the server does not use or support encryption/password, cannot continue")
             return False
         if cipher not in ENCRYPTION_CIPHERS:
             self.warn_and_quit(EXIT_ENCRYPTION,
@@ -781,21 +777,42 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return True
 
 
+    def get_encryption(self):
+        conn = self._protocol._conn
+        #prefer the socket option, fallback to "--encryption=" option:
+        encryption = conn.options.get("encryption", self.encryption)
+        cryptolog("get_encryption() connection options encryption=%s", encryption)
+        #specifying keyfile or keydata is enough:
+        if not encryption and (conn.options.get("keyfile") or conn.options.get("keydata")):
+            cryptolog("found keyfile or keydata attribute, enabling 'AES' encryption")
+            encryption = "AES"
+        return encryption
+
     def get_encryption_key(self):
-        key = None
-        if self.encryption_keyfile and os.path.exists(self.encryption_keyfile):
-            key = load_binary_file(self.encryption_keyfile)
-            cryptolog("get_encryption_key() loaded %i bytes from '%s'", len(key or ""), self.encryption_keyfile)
-        else:
-            cryptolog("get_encryption_key() file '%s' does not exist", self.encryption_keyfile)
-        if not key:
-            XPRA_ENCRYPTION_KEY = "XPRA_ENCRYPTION_KEY"
-            key = strtobytes(os.environ.get(XPRA_ENCRYPTION_KEY, ''))
-            cryptolog("get_encryption_key() got %i bytes from '%s' environment variable",
-                      len(key or ""), XPRA_ENCRYPTION_KEY)
-        if not key:
-            raise InitExit(1, "no encryption key")
-        return key.strip(b"\n\r")
+        conn = self._protocol._conn
+        key = conn.options.get("keydata", None)
+        cryptolog("get_encryption_key() connection options keydata=%s", key)
+        if key:
+            #may be specified as hex:
+            if key.lower.startswith("0x"):
+                import binascii
+                return binascii.unhexlify(key[2:])
+            return strtobytes(key)
+        keyfile = conn.options.get("keyfile", self.encryption_keyfile)
+        if keyfile:
+            if os.path.exists(keyfile):
+                key = filedata_nocrlf(keyfile)
+                cryptolog("get_encryption_key() loaded %i bytes from '%s'",
+                          len(key or ""), keyfile)
+                return key
+            cryptolog("get_encryption_key() file '%s' does not exist", keyfile)
+        XPRA_ENCRYPTION_KEY = "XPRA_ENCRYPTION_KEY"
+        key = strtobytes(os.environ.get(XPRA_ENCRYPTION_KEY, ''))
+        cryptolog("get_encryption_key() got %i bytes from '%s' environment variable",
+                  len(key or ""), XPRA_ENCRYPTION_KEY)
+        if key:
+            return key.strip(b"\n\r")
+        raise InitExit(1, "no encryption key")
 
     def _process_hello(self, packet):
         self.remove_packet_handlers("challenge")
@@ -851,7 +868,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p = self._protocol
         if not p:
             return False
-        if self.encryption:
+        encryption = self.get_encryption()
+        if encryption:
             #server uses a new cipher after second hello:
             key = self.get_encryption_key()
             assert key, "encryption key is missing"
