@@ -12,7 +12,6 @@ from xpra.util import envbool, envint, csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.gl_drivers import WHITELIST, GREYLIST, VERSION_REQ, BLACKLIST, OpenGLFatalError
-from xpra.sound.gstreamer_util import force_enabled
 
 log = Logger("opengl")
 
@@ -130,7 +129,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
         from OpenGL.GL import GL_VERSION, GL_EXTENSIONS
         from OpenGL.GL import glGetString, glGetIntegerv
         gl_version_str = glGetString(GL_VERSION)
-        if gl_version_str is None and not force_enabled:
+        if gl_version_str is None and not force_enable:
             raise_fatal_error("OpenGL version is missing - cannot continue")
             return props
         #b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
@@ -147,7 +146,7 @@ def check_PyOpenGL_support(force_enable) -> dict:
             props["opengl"] = gl_major, gl_minor
             MIN_VERSION = (1,1)
             if (gl_major, gl_minor) < MIN_VERSION:
-                if not force_enabled:
+                if not force_enable:
                     raise_fatal_error("OpenGL output requires version %s or greater, not %s.%s" %
                                   (".".join([str(x) for x in MIN_VERSION]), gl_major, gl_minor))
                     return props
