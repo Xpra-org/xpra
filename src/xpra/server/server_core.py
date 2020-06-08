@@ -1850,20 +1850,22 @@ class ServerCore:
     def get_encryption_key(self, authenticators=None, keyfile=None):
         #if we have a keyfile specified, use that:
         authlog("get_encryption_key(%s, %s)", authenticators, keyfile)
-        v = None
         if keyfile:
             authlog("loading encryption key from keyfile: %s", keyfile)
             v = filedata_nocrlf(keyfile)
-        if not v:
-            v = os.environ.get('XPRA_ENCRYPTION_KEY')
             if v:
-                authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
-        if not v and authenticators:
+                return v
+        v = os.environ.get('XPRA_ENCRYPTION_KEY')
+        if v:
+            authlog("using encryption key from %s environment variable", 'XPRA_ENCRYPTION_KEY')
+            return v
+        if authenticators:
             for authenticator in authenticators:
                 v = authenticator.get_password()
                 if v:
-                    break
-        return v
+                    authlog("using password from authenticator %s", authenticator)
+                    return v
+        return None
 
     def call_hello_oked(self, proto, packet, c, auth_caps):
         try:
