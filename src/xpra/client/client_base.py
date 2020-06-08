@@ -783,7 +783,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         encryption = conn.options.get("encryption", self.encryption)
         cryptolog("get_encryption() connection options encryption=%s", encryption)
         #specifying keyfile or keydata is enough:
-        if not encryption and (conn.options.get("keyfile") or conn.options.get("keydata")):
+        if not encryption and any(conn.options.get(x) for x in ("encryption-keyfile", "keyfile", "keydata")):
             cryptolog("found keyfile or keydata attribute, enabling 'AES' encryption")
             encryption = "AES"
         return encryption
@@ -798,7 +798,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 import binascii
                 return binascii.unhexlify(key[2:])
             return strtobytes(key)
-        keyfile = conn.options.get("keyfile", self.encryption_keyfile)
+        keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
         if keyfile:
             if os.path.exists(keyfile):
                 key = filedata_nocrlf(keyfile)
