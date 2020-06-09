@@ -1,3 +1,8 @@
+xpra (3.0.11-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 09 Jun 2020 23:31:24 +0700
+
 xpra (3.0.10-2) UNRELEASED; urgency=low
   * fix python2 / GTK2 compatibility
 

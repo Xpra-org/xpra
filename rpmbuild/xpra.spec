@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.10
+%define version 3.0.11
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -869,10 +869,10 @@ fi
 
 
 %changelog
-* Fri Jun 05 2020 Antoine Martin <antoine@xpra.org> 3.0.10-11xpra1
+* Fri Jun 05 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
 - fix python2 / GTK2 compatibility
 
-* Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
+* Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 3.0.11-10xpra3
 - fix X11 server key symbol lookup via Xkb
 - fix encryption not honoured with TCP sockets upgraded to WebSocket
 - fix window corruption with 'scroll' encoder
