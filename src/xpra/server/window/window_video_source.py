@@ -1357,17 +1357,19 @@ class WindowVideoSource(WindowSource):
         q = self._current_quality
         s = self._current_speed
         now = monotonic_time()
+        crs = self.client_render_size
         def get_min_required_scaling(default_value=(1, 1)):
-            crs = self.client_render_size
+            mw = max_w
+            mh = max_h
             if crs:
                 #if the client is going to downscale things anyway,
                 #then there is no need to send at a higher resolution than that:
                 crsw, crsh = crs
                 if crsw<max_w:
-                    max_w = crsw
+                    mw = crsw
                 if crsh<max_h:
-                    max_h = crsh
-            if width<=max_w and height<=max_h:
+                    mh = crsh
+            if width<=mw and height<=mh:
                 return default_value    #no problem
             #most encoders can't deal with that!
             #sort them from smallest scaling to highest:
@@ -1378,7 +1380,7 @@ class WindowVideoSource(WindowSource):
                 num, den = sopts[ratio]
                 if num==1 and den==1:
                     continue
-                if width*num/den<=max_w and height*num/den<=max_h:
+                if width*num/den<=mw and height*num/den<=mh:
                     return (num, den)
             raise Exception("BUG: failed to find a scaling value for window size %sx%s" % (width, height))
         if not SCALING:
