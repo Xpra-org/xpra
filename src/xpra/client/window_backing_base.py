@@ -85,7 +85,7 @@ see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
 class WindowBackingBase:
     RGB_MODES = ()
 
-    def __init__(self, wid, window_alpha):
+    def __init__(self, wid : int, window_alpha : bool):
         load_csc_options()
         load_video_decoders()
         self.wid = wid

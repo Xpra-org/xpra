@@ -227,7 +227,7 @@ class GLWindowBackingBase(WindowBackingBase):
     RGB_MODES = ["YUV420P", "YUV422P", "YUV444P", "GBRP", "BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"]
     HAS_ALPHA = GL_ALPHA_SUPPORTED
 
-    def __init__(self, wid : int, window_alpha, pixel_depth=0):
+    def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
         self.wid = wid
         self.texture_pixel_format = None
         #this is the pixel format we are currently updating the fbo with
