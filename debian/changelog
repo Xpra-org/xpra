@@ -1,5 +1,11 @@
 xpra (3.0.11-1) UNRELEASED; urgency=low
-  * TODO
+  * fix encryption option overzealously enforced on all socket types
+  * fix Python2 / GTK2 compatibility regression from 3.0.10
+  * fix tray geometry errors
+  * fix minimum video scaling not being honoured via heuristics
+  * workaround for older versions of python-cryptography
+  * use 'text' mode for 'geany' (fixes lossy screen updates)
+  * ensure all toolbox windows set a correct and readable window title
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 09 Jun 2020 23:31:24 +0700
 

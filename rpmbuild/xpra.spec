@@ -869,10 +869,16 @@ fi
 
 
 %changelog
-* Fri Jun 05 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
-- fix python2 / GTK2 compatibility
+* Tue Jun 09 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
+- fix encryption option overzealously enforced on all socket types
+- fix Python2 / GTK2 compatibility regression from 3.0.10
+- fix tray geometry errors
+- fix minimum video scaling not being honoured via heuristics
+- workaround for older versions of python-cryptography
+- use 'text' mode for 'geany' (fixes lossy screen updates)
+- ensure all toolbox windows set a correct and readable window title
 
-* Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 3.0.11-10xpra3
+* Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
 - fix X11 server key symbol lookup via Xkb
 - fix encryption not honoured with TCP sockets upgraded to WebSocket
 - fix window corruption with 'scroll' encoder
