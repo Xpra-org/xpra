@@ -1,3 +1,14 @@
+v4.0.3 (2020-06-09)
+======================
+	-- fix encryption option overzealously enforced on all socket types
+	-- fix OpenGL force-enable option not honoured
+	-- fix tray geometry errors
+	-- fix minimum video scaling not being honoured via heuristics
+	-- workaround for older versions of python-cryptography
+	-- use 'text' mode for 'geany' (fixes lossy screen updates)
+	-- ensure all toolbox windows set a correct and readable window title
+
+
 v4.0.2 (2020-06-04)
 ======================
 	-- fix encryption not honoured with TCP sockets upgraded to WebSocket

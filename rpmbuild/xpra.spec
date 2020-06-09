@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 4.0.2
+%define version 4.0.3
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -586,6 +586,15 @@ fi
 
 
 %changelog
+* Tue Jun 09 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+- fix encryption option overzealously enforced on all socket types
+- fix OpenGL force-enable option not honoured
+- fix tray geometry errors
+- fix minimum video scaling not being honoured via heuristics
+- workaround for older versions of python-cryptography
+- use 'text' mode for 'geany' (fixes lossy screen updates)
+- ensure all toolbox windows set a correct and readable window title
+
 * Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
 - fix encryption not honoured with TCP sockets upgraded to WebSocket
 - fix xpra top client refresh rate via timer
@@ -624,7 +633,7 @@ fi
 - don't recommend installing Apple's 'bonjour' on MS Windows (not needed)
 - more explicit error message when trying to use python2
 
-* Sun May 10 2020 Antoine Martin <antoine@xpra.org> 4.0.2
+* Sun May 10 2020 Antoine Martin <antoine@xpra.org> 4.0-10
 - Drop support for:
    Python 2, GTK2
    legacy versions (pre 1.0)

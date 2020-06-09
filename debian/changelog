@@ -1,3 +1,14 @@
+xpra (4.0.3-1) UNRELEASED; urgency=low
+  * fix encryption option overzealously enforced on all socket types
+  * fix OpenGL force-enable option not honoured
+  * fix tray geometry errors
+  * fix minimum video scaling not being honoured via heuristics
+  * workaround for older versions of python-cryptography
+  * use 'text' mode for 'geany' (fixes lossy screen updates)
+  * ensure all toolbox windows set a correct and readable window title
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 09 Jun 2020 23:26:42 +0700
+
 xpra (4.0.2-1) UNRELEASED; urgency=low
   * fix encryption not honoured with TCP sockets upgraded to WebSocket
   * fix xpra top client refresh rate via timer
