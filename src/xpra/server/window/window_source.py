@@ -307,26 +307,32 @@ class WindowSource(WindowIconSource):
         return "WindowSource(%s : %s)" % (self.wid, self.window_dimensions)
 
 
+    def add_encoder(self, encoding, encoder):
+        log("add_encoder(%s, %s)", encoding, encoder)
+        self._all_encoders.setdefault(encoding, []).insert(0, encoder)
+        self._encoders[encoding] = encoder
+
     def init_encoders(self):
-        self._encoders = {
-            "rgb24" : self.rgb_encode,
-            "rgb32" : self.rgb_encode,
-            }
+        self._all_encoders = {}
+        self._encoders = {}
+        self.add_encoder("rgb24", self.rgb_encode)
+        self.add_encoder("rgb32", self.rgb_encode)
         self.enc_pillow = get_codec("enc_pillow")
         if self.enc_pillow:
             for x in self.enc_pillow.get_encodings():
                 if x in self.server_core_encodings:
-                    self._encoders[x] = self.pillow_encode
+                    self.add_encoder(x, self.pillow_encode)
         #prefer these native encoders over the Pillow version:
         if "webp" in self.server_core_encodings:
-            self._encoders["webp"] = self.webp_encode
+            self.add_encoder("webp", self.webp_encode)
         self.enc_jpeg = get_codec("enc_jpeg")
         if "jpeg" in self.server_core_encodings and self.enc_jpeg:
-            self._encoders["jpeg"] = self.jpeg_encode
+            self.add_encoder("jpeg", self.jpeg_encode)
         if self._mmap and self._mmap_size>0:
-            self._encoders["mmap"] = self.mmap_encode
+            self.add_encoder("mmap", self.mmap_encode)
         self.full_csc_modes = typedict()
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
+
 
     def init_vars(self):
         self.server_core_encodings = ()
@@ -690,6 +696,19 @@ class WindowSource(WindowIconSource):
         self.rgb_formats = rgb_formats
         self.send_window_size = properties.boolget("encoding.send-window-size", self.send_window_size)
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
+        #select the defaults encoders:
+        #(in case pillow was selected previously and the client side scaling changed)
+        for encoding, encoders in self._all_encoders.items():
+            self._encoders[encoding] = encoders[0]
+        #we may now want to downscale server-side,
+        #for that we need to use the pillow encoder:
+        if self.enc_pillow and self.client_render_size:
+            crsw, crsh = self.client_render_size
+            ww, wh = self.window_dimensions
+            if crsw<ww and crsh<wh:
+                for x in self.enc_pillow.get_encodings():
+                    if x in self.server_core_encodings:
+                        self.add_encoder(x, self.pillow_encode)
         self.update_encoding_selection(self.encoding, [])
 
 
@@ -817,6 +836,13 @@ class WindowSource(WindowIconSource):
         if bwl:
             max_rgb_threshold = min(max_rgb_threshold, max(bwl//1000, 1024))
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
+        crs = self.client_render_size
+        if crs:
+            ww, wh = self.window_dimensions
+            if crs[0]<ww or crs[1]<wh:
+                #client will downscale, best to avoid sending rgb,
+                #so we can more easily downscale at this end:
+                max_rgb_threshold = 1024
         self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
         self.assign_encoding_getter()
         log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i, bandwidth-limit=%i, lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i), get_best_encoding=%s",
@@ -2314,7 +2340,7 @@ class WindowSource(WindowIconSource):
         #* the pixel format is supported by the client
         # (if we have to rgb_reformat the buffer, it really complicates things)
         if self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size and \
-            pixel_format in self.rgb_formats:
+            pixel_format in self.rgb_formats and not options.get("unscaled-size"):
             #this may save space (and lower the cost of xoring):
             image.may_restride()
             #we need to copy the pixels because some encodings
@@ -2485,7 +2511,17 @@ class WindowSource(WindowIconSource):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         transparency = self.supports_transparency and options.get("transparency", True)
-        return self.enc_pillow.encode(coding, image, q, s, transparency)
+        resize = None
+        w, h = image.get_width(), image.get_height()
+        ww, wh = self.window_dimensions
+        crs = self.client_render_size
+        if crs:
+            crsw, crsh = crs
+            #resize if the render size is smaller
+            if ww>crsw and wh>crsh:
+                #keep the same proportions:
+                resize = w*crsw//ww, h*crsh//wh
+        return self.enc_pillow.encode(coding, image, q, s, transparency, resize)
 
     def mmap_encode(self, coding, image, _options):
         assert coding=="mmap"

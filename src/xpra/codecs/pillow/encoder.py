@@ -49,8 +49,8 @@ def get_info() -> dict:
             }
 
 
-def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool):
-    log("pillow.encode%s", (coding, image, quality, speed, supports_transparency))
+def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool, resize=None):
+    log("pillow.encode%s", (coding, image, quality, speed, supports_transparency, resize))
     pixel_format = bytestostr(image.get_pixel_format())
     palette = None
     w = image.get_width()
@@ -126,6 +126,19 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
                   (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), type(pixels), pixel_format, rgb, exc_info=True)
         raise
     client_options = {}
+    if resize:
+        if speed>=95:
+            resample = "NEAREST"
+        elif speed>80:
+            resample = "BILINEAR"
+        elif speed>=30:
+            resample = "BICUBIC"
+        else:
+            resample = "LANCZOS"
+        resample_value = getattr(Image, resample, 0)
+        im = im.resize(resize, resample=resample_value)
+        client_options["unscaled-size"] = w, h
+        client_options["resample"] = resample
     if coding in ("jpeg", "webp"):
         #newer versions of pillow require explicit conversion to non-alpha:
         if pixel_format.find("A")>=0:

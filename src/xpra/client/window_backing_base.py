@@ -341,6 +341,9 @@ class WindowBackingBase:
             if comp:
                 assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
                 img_data = compression.decompress_by_name(raw_data, algo=comp[0])
+        scaled_size = options.intpair("scaled-size")
+        if scaled_size:
+            return img_data
         if len(img_data)!=rowstride * height:
             deltalog.error("Error: invalid img data length: expected %s but got %s (%s: %s)",
                            rowstride * height, len(img_data), type(img_data), repr_ellipsized(img_data))
@@ -694,6 +697,7 @@ class WindowBackingBase:
                     hd = h.hexdigest()
                     assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
                 deltalog("passed compressed data integrity checks: len=%s, chksum=%s (type=%s)", l, chksum, type(img_data))
+            unscaled_size = options.intpair("unscaled-size")
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
@@ -711,9 +715,9 @@ class WindowBackingBase:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding),
                                               coding,
                                               img_data, x, y, width, height, options, callbacks)
-            elif self.jpeg_decoder and coding=="jpeg":
+            elif self.jpeg_decoder and coding=="jpeg" and not unscaled_size:
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
-            elif coding == "webp":
+            elif coding == "webp" and not unscaled_size:
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)

@@ -123,8 +123,8 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = self.video_helper.get_encodings()
         for x in self.video_encodings:
             if x in self.server_core_encodings:
-                self._encoders[x] = self.video_encode
-        self._encoders["auto"] = self.video_encode
+                self.add_encoder(x, self.video_encode)
+        self.add_encoder("auto", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)

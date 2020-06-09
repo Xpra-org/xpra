@@ -127,6 +127,12 @@ def decompress(coding, img_data, options):
         else:
             img = img.convert("RGB")
 
+    unscaled_size = options.intpair("unscaled-size")
+    if unscaled_size:
+        resample = options.strget("resample", "NEAREST")
+        resample_value = getattr(Image, resample, 0)
+        img = img.resize(unscaled_size, resample=resample_value)
+
     width = img.size[0]
     if img.mode=="RGB":
         #PIL flattens the data to a continuous straightforward RGB format:
