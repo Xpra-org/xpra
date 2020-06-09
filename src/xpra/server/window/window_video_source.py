@@ -1441,6 +1441,8 @@ class WindowVideoSource(WindowSource):
                     #high speed means more scaling:
                     target = target * 60**2 // (q+20)**2
                     sscaling = {}
+                    mrs = get_min_required_scaling()
+                    min_ratio = mrs[0]/mrs[1]
                     for num, denom in SCALING_OPTIONS:
                         #scaled pixels per second value:
                         spps = pps*(num**2)/(denom**2)
@@ -1452,6 +1454,9 @@ class WindowVideoSource(WindowSource):
                             #try to stick to the same value longer:
                             #give it a score boost (lowest score wins):
                             score = int(score/1.5)
+                        if num/denom>min_ratio:
+                            #higher than minimum, should not be used unless we have no choice:
+                            score = int(score*100)
                         sscaling[score] = (num, denom)
                     scalinglog("calculate_scaling%s wid=%i, pps=%s, target=%s, scores=%s",
                                (width, height, max_w, max_h), self.wid, pps, target, sscaling)
