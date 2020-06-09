@@ -1358,6 +1358,15 @@ class WindowVideoSource(WindowSource):
         s = self._current_speed
         now = monotonic_time()
         def get_min_required_scaling(default_value=(1, 1)):
+            crs = self.client_render_size
+            if crs:
+                #if the client is going to downscale things anyway,
+                #then there is no need to send at a higher resolution than that:
+                crsw, crsh = crs
+                if crsw<max_w:
+                    max_w = crsw
+                if crsh<max_h:
+                    max_h = crsh
             if width<=max_w and height<=max_h:
                 return default_value    #no problem
             #most encoders can't deal with that!

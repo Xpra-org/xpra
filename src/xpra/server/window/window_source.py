@@ -174,6 +174,7 @@ class WindowSource(WindowIconSource):
         self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression
         self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
         self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
+        self.client_render_size = encoding_options.get("render-size")
         self.client_bit_depth = encoding_options.intget("bit-depth", 24)
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
         self.full_frames_only = self.is_tray or encoding_options.boolget("full_frames_only")
@@ -517,6 +518,9 @@ class WindowSource(WindowIconSource):
         ma = self.mapped_at
         if ma:
             info["mapped-at"] = ma
+        crs = self.client_render_size
+        if crs:
+            info["render-size"] = crs
         info["damage.fps"] = int(self.get_damage_fps())
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
@@ -672,6 +676,7 @@ class WindowSource(WindowIconSource):
 
     def do_set_client_properties(self, properties):
         self.maximized = properties.boolget("maximized", False)
+        self.client_render_size = properties.intpair("encoding.render-size")
         self.client_bit_depth = properties.intget("bit-depth", self.client_bit_depth)
         self.client_refresh_encodings = properties.strtupleget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
         self.full_frames_only = self.is_tray or properties.boolget("encoding.full_frames_only", self.full_frames_only)
