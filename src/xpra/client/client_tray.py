@@ -93,7 +93,7 @@ class ClientTray(ClientWidgetBase):
         log("%s.reconfigure(%s) geometry=%s", self, force_send_configure, geometry)
         if geometry is None:
             if self._geometry or not tw:
-                geometry = self._geometry
+                geometry = self.get_geometry()
             else:
                 #make one up as best we can - maybe we have the size at least?
                 size = tw.get_size()
