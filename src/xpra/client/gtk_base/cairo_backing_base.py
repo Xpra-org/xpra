@@ -78,7 +78,7 @@ class CairoBackingBase(WindowBackingBase):
         """ must be called from UI thread """
         log("source pixbuf: %s", pixbuf)
         w, h = pixbuf.get_width(), pixbuf.get_height()
-        self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, options)
+        self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, w, h, options)
 
     def cairo_paint_surface(self, img_surface, x : int, y : int, width : int, height : int, options):
         iw, ih = img_surface.get_width(), img_surface.get_height()
