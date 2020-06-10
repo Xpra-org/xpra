@@ -996,7 +996,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if JPEG_YUV and width>=2 and height>=2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, options, callbacks)
         else:
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
@@ -1007,13 +1007,14 @@ class GLWindowBackingBase(WindowBackingBase):
         if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width>=2 and height>=2:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, options, callbacks)
             return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
     def do_paint_rgb(self, rgb_format, img_data, x : int, y : int, width : int, height : int, rowstride, options, callbacks):
         log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
             self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
+        x, y = self.gravity_adjust(x, y, options)
         context = self.gl_context()
         if not context:
             log("%s._do_paint_rgb(..) no context!", self)
@@ -1092,12 +1093,14 @@ class GLWindowBackingBase(WindowBackingBase):
         else:
             shader = YUV2RGB_SHADER
         self.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
-                      x, y, enc_width, enc_height, width, height, callbacks)
+                      x, y, enc_width, enc_height, width, height, options, callbacks)
 
     def gl_paint_planar(self, shader, flush, encoding, img,
-                        x : int, y : int, enc_width : int, enc_height : int, width : int, height : int, callbacks):
+                        x : int, y : int, enc_width : int, enc_height : int, width : int, height : int,
+                        options, callbacks):
         #this function runs in the UI thread, no video_decoder lock held
-        log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, callbacks))
+        log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, options, callbacks))
+        x, y = self.gravity_adjust(x, y, options)
         try:
             pixel_format = img.get_pixel_format()
             assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), \
