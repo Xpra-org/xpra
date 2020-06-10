@@ -52,11 +52,6 @@ class ClientWidgetBase:
             backing = bc(self._id, self._window_alpha, self.pixel_depth)
             if self._client.mmap_enabled:
                 backing.enable_mmap(self._client.mmap)
-        obs = backing.render_size
-        if obs!=(ww, wh):
-            #tell the server about the window rendering geometry:
-            #(so it can downscale to the desired coordinates)
-            self._client_properties["encoding.render-size"] = (ww, wh)
         backing.init(ww, wh, bw, bh)
         return backing
 
