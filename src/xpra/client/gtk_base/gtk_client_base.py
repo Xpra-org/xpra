@@ -765,14 +765,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     "icons.max_size"    : (128, 128),   #limit
                     })
         capabilities["opengl"] = self.opengl_props
-        from xpra.client import window_backing_base
-        if self._protocol._conn.socktype=="udp":
-            #lossy protocol means we can't use delta regions:
-            log("no delta buckets with udp, since we can drop paint packets")
-            window_backing_base.DELTA_BUCKETS = 0
-        updict(capabilities, "encoding", {
-                    "delta_buckets"     : window_backing_base.DELTA_BUCKETS,
-                    })
         return capabilities
 
 
