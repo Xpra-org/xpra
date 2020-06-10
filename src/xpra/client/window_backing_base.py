@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ from threading import Lock
 
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
-from xpra.util import typedict, csv, envint, envbool, repr_ellipsized, first_time
+from xpra.util import typedict, csv, envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.os_util import bytestostr
@@ -29,9 +29,7 @@ from xpra.common import (
 from xpra.log import Logger
 
 log = Logger("paint")
-deltalog = Logger("delta")
 
-DELTA_BUCKETS = envint("XPRA_DELTA_BUCKETS", 5)
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
@@ -95,7 +93,6 @@ class WindowBackingBase:
         self.gravity = 0
         self._alpha_enabled = window_alpha
         self._backing = None
-        self._delta_pixel_data = [None for _ in range(DELTA_BUCKETS)]
         self._video_decoder = None
         self._csc_decoder = None
         self._decoder_lock = Lock()
@@ -329,50 +326,6 @@ class WindowBackingBase:
         self.cursor_data = cursor_data
 
 
-    def process_delta(self, raw_data, width, height, rowstride, options):
-        """
-            Can be called from any thread, decompresses and xors the rgb raw_data,
-            then stores it for later xoring if needed.
-        """
-        img_data = raw_data
-        if options:
-            #check for one of the compressors:
-            comp = [x for x in compression.ALL_COMPRESSORS if options.intget(x, 0)]
-            if comp:
-                assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
-                img_data = compression.decompress_by_name(raw_data, algo=comp[0])
-        scaled_size = options.intpair("scaled-size")
-        if scaled_size:
-            return img_data
-        if len(img_data)!=rowstride * height:
-            deltalog.error("Error: invalid img data length: expected %s but got %s (%s: %s)",
-                           rowstride * height, len(img_data), type(img_data), repr_ellipsized(img_data))
-            raise Exception("expected %s bytes for %sx%s with rowstride=%s but received %s (%s compressed)" %
-                                (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
-        delta = options.intget(b"delta", -1)
-        bucket = options.intget(b"bucket", 0)
-        rgb_format = options.strget(b"rgb_format")
-        rgb_data = img_data
-        if delta>=0:
-            assert 0<=bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
-            if self._delta_pixel_data[bucket] is None:
-                raise Exception("delta region bucket %s references pixmap data we do not have!" % bucket)
-            lwidth, lheight, lrgb_format, seq, ldata = self._delta_pixel_data[bucket]
-            assert width==lwidth and height==lheight and delta==seq, \
-                "delta bucket %s data does not match: expected %s but got %s" % (
-                    bucket, (width, height, delta), (lwidth, lheight, seq))
-            assert lrgb_format==rgb_format, "delta region uses %s format, was expecting %s" % (rgb_format, lrgb_format)
-            from xpra.codecs.xor.cyxor import xor_str   #@UnresolvedImport
-            deltalog("delta: xoring with bucket %i", bucket)
-            rgb_data = xor_str(img_data, ldata)
-        #store new pixels for next delta:
-        store = options.intget("store", -1)
-        if store>=0:
-            deltalog("delta: storing sequence %i in bucket %i", store, bucket)
-            self._delta_pixel_data[bucket] =  width, height, rgb_format, store, rgb_data
-        return rgb_data
-
-
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
         img = self.jpeg_decoder.decompress_to_rgb("RGBX", img_data, width, height, options)
         rgb_format = img.get_pixel_format()
@@ -380,13 +333,12 @@ class WindowBackingBase:
         rowstride = img.get_rowstride()
         w = img.get_width()
         h = img.get_height()
-        self.idle_add(self.paint_rgb, rgb_format, img_data, x, y, w, h, rowstride, options, callbacks)
+        self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, w, h, rowstride, options, callbacks)
 
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         # can be called from any thread
-        rgb_format, raw_data, rowstride = self.pil_decoder.decompress(coding, img_data, options)
-        img_data = self.process_delta(raw_data, width, height, rowstride, options)
+        rgb_format, img_data, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
@@ -418,15 +370,17 @@ class WindowBackingBase:
             stride = img.get_rowstride()
         #replace with the actual rgb format we get from the decoder:
         options[b"rgb_format"] = rgb_format
-        return self.paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
+        return self.do_paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format, raw_data, x, y, width, height, rowstride, options, callbacks):
-        """ can be called from a non-UI thread
-            this method calls process_delta
-            before calling _do_paint_rgb from the UI thread via idle_add
-        """
-        rgb_data = self.process_delta(raw_data, width, height, rowstride, options)
-        x, y = self.gravity_adjust(x, y, options)
+        """ can be called from a non-UI thread """
+        rgb_data = raw_data
+        if options:
+            #check for one of the compressors:
+            comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
+            if comp:
+                assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
+                rgb_data = compression.decompress_by_name(raw_data, algo=comp[0])
         self.idle_add(self.do_paint_rgb, rgb_format, rgb_data, x, y, width, height, rowstride, options, callbacks)
 
     def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
@@ -434,6 +388,7 @@ class WindowBackingBase:
             this method is only here to ensure that we always fire the callbacks,
             the actual paint code is in _do_paint_rgb[24|32]
         """
+        x, y = self.gravity_adjust(x, y, options)
         try:
             if not options.boolget("paint", True):
                 fire_paint_callbacks(callbacks)
@@ -696,7 +651,6 @@ class WindowBackingBase:
                 if h:
                     hd = h.hexdigest()
                     assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
-                deltalog("passed compressed data integrity checks: len=%s, chksum=%s (type=%s)", l, chksum, type(img_data))
             unscaled_size = options.intpair("unscaled-size")
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)

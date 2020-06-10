@@ -12,7 +12,7 @@ import threading
 from math import sqrt
 from collections import deque
 
-from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
+from xpra.os_util import strtobytes, bytestostr, monotonic_time
 from xpra.util import envint, envbool, csv, typedict, first_time
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
@@ -23,7 +23,6 @@ from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
 from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send
 from xpra.simple_stats import get_list_stats
-from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
@@ -37,7 +36,6 @@ compresslog = Logger("window", "compress")
 damagelog = Logger("window", "damage")
 scalinglog = Logger("scaling")
 iconlog = Logger("icon")
-deltalog = Logger("delta")
 avsynclog = Logger("av-sync")
 statslog = Logger("stats")
 bandwidthlog = Logger("bandwidth")
@@ -55,10 +53,6 @@ LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
 MAX_RGB = envint("XPRA_MAX_RGB", 512*1024)
 
-DELTA = envbool("XPRA_DELTA", True)
-MIN_DELTA_SIZE = envint("XPRA_MIN_DELTA_SIZE", 1024)
-MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
-MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 ACK_JITTER = envint("XPRA_ACK_JITTER", 20)
@@ -182,20 +176,12 @@ class WindowSource(WindowIconSource):
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
         self.send_window_size = encoding_options.boolget("send-window-size", False)
-        self.supports_delta = ()
-        if not window.is_tray() and DELTA:
-            self.supports_delta = [x for x in encoding_options.strtupleget("supports_delta") if x in ("png", "rgb24", "rgb32")]
-            if self.supports_delta:
-                self.delta_buckets = min(25, encoding_options.intget("delta_buckets", 1))
-                self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
         self.base_auto_refresh_delay = auto_refresh_delay
         self.last_auto_refresh_message = None
         self.video_helper = video_helper
-        if window.is_shadow():
-            self.max_delta_size = -1
 
         self.is_idle = False
         self.is_OR = window.is_OR()
@@ -351,9 +337,6 @@ class WindowSource(WindowIconSource):
         self.rgb_lzo = False
         self.supports_transparency = False
         self.full_frames_only = False
-        self.supports_delta = ()
-        self.delta_buckets = 0
-        self.delta_pixel_data = ()
         self.suspended = False
         self.strict = STRICT_MODE
         #
@@ -374,8 +357,6 @@ class WindowSource(WindowIconSource):
         self.soft_timer = None
         self.soft_expired = 0
         self.max_soft_expired = MAX_SOFT_EXPIRED
-        self.min_delta_size = MIN_DELTA_SIZE
-        self.max_delta_size = MAX_DELTA_SIZE
         self.is_OR = False
         self.is_tray = False
         self.is_shadow = False
@@ -479,12 +460,6 @@ class WindowSource(WindowIconSource):
                 }
             }
 
-        now = monotonic_time()
-        buckets_info = {}
-        for i,x in enumerate(self.delta_pixel_data):
-            if x:
-                w, h, pixel_format, coding, store, buflen, _, hits, last_used = x
-                buckets_info[i] = w, h, pixel_format, coding, store, buflen, hits, int((now-last_used)*1000)
         #remove large default dict:
         info.update({
                 "idle"                  : self.is_idle,
@@ -502,10 +477,6 @@ class WindowSource(WindowIconSource):
                 "last_used"             : self.encoding_last_used or "",
                 "full-frames-only"      : self.full_frames_only,
                 "supports-transparency" : self.supports_transparency,
-                "delta"                 : {""               : self.supports_delta,
-                                           "buckets"        : self.delta_buckets,
-                                           "bucket"         : buckets_info,
-                                           },
                 "property"              : self.get_property_info(),
                 "content-type"          : self.content_type or "",
                 "batch"                 : self.batch_config.get_info(),
@@ -767,7 +738,6 @@ class WindowSource(WindowIconSource):
         if self.encoding==encoding:
             return
         self.statistics.reset()
-        self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         self.update_encoding_selection(encoding)
 
 
@@ -1000,7 +970,6 @@ class WindowSource(WindowIconSource):
         #if a region was delayed, we can just drop it now:
         self.refresh_regions = []
         self._damage_delayed = None
-        self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         #make sure we don't account for those as they will get dropped
         #(generally before encoding - only one may still get encoded):
         for sequence in tuple(self.statistics.encoding_pending.keys()):
@@ -2278,8 +2247,6 @@ class WindowSource(WindowIconSource):
         else:
             log.warn(" unknown cause")
         self.global_statistics.decode_errors += 1
-        #something failed client-side, so we can't rely on the delta being available
-        self.delta_pixel_data = [None for _ in range(self.delta_buckets)]
         if self.window:
             delay = min(1000, 250+self.global_statistics.decode_errors*100)
             self.decode_error_refresh_timer = self.timeout_add(delay, self.decode_error_refresh)
@@ -2331,48 +2298,7 @@ class WindowSource(WindowIconSource):
         psize = isize*4
         log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
         start = monotonic_time()
-        delta, store, bucket, hits = -1, -1, -1, 0
         pixel_format = image.get_pixel_format()
-        #use delta pre-compression for this encoding if:
-        #* client must support delta (at least one bucket)
-        #* encoding must be one that supports delta (usually rgb24/rgb32 or png)
-        #* size is worth xoring (too small is pointless, too big is too expensive)
-        #* the pixel format is supported by the client
-        # (if we have to rgb_reformat the buffer, it really complicates things)
-        if self.delta_buckets>0 and (coding in self.supports_delta) and self.min_delta_size<isize<self.max_delta_size and \
-            pixel_format in self.rgb_formats and not options.get("unscaled-size"):
-            #this may save space (and lower the cost of xoring):
-            image.may_restride()
-            #we need to copy the pixels because some encodings
-            #may modify the pixel array in-place!
-            dpixels = image.get_pixels()
-            assert dpixels, "failed to get pixels from %s" % image
-            dpixels = memoryview_to_bytes(dpixels)
-            dlen = len(dpixels)
-            store = sequence
-            deltalog("delta available for %s and %i %s pixels on wid=%i", coding, isize, pixel_format, self.wid)
-            for i, dr in enumerate(tuple(self.delta_pixel_data)):
-                if dr is None:
-                    continue
-                lw, lh, lpixel_format, lcoding, lsequence, buflen, ldata, hits, _ = dr
-                if lw==w and lh==h and lpixel_format==pixel_format and lcoding==coding and buflen==dlen:
-                    bucket = i
-                    if MAX_DELTA_HITS>0 and hits<MAX_DELTA_HITS:
-                        deltalog("delta: using matching bucket %s: %sx%s (%s, %i bytes, sequence=%i, hit count=%s)",
-                                 i, lw, lh, lpixel_format, dlen, lsequence, hits)
-                        #xor with this matching delta bucket:
-                        delta = lsequence
-                        xored = xor_str(dpixels, ldata)
-                        image.set_pixels(xored)
-                        dr[-1] = monotonic_time()            #update last used time
-                        hits += 1
-                        dr[-2] = hits               #update hit count
-                    else:
-                        deltalog("delta: too many hits for bucket %s: %s, clearing it", bucket, hits)
-                        hits = 0
-                        self.delta_pixel_data[i] = None
-                        delta = -1
-                    break
 
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
@@ -2393,44 +2319,7 @@ class WindowSource(WindowIconSource):
         if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
             return  None
-        #tell client about delta/store for this pixmap:
-        if delta>=0:
-            client_options["delta"] = delta
-            client_options["bucket"] = bucket
         csize = len(data)
-        if store>0:
-            if delta>0 and csize>=psize*40//100:
-                #compressed size is more than 40% of the original
-                #maybe delta is not helping us, so clear it:
-                self.delta_pixel_data[bucket] = None
-                deltalog("delta: clearing bucket %i (compressed size=%s, original size=%s)", bucket, csize, psize)
-                #we could tell the clients they can clear it too - meh
-                #(add a new client capability and send it a zero store value)
-            else:
-                #find the bucket to use:
-                if bucket<0:
-                    lpd = self.delta_pixel_data
-                    try:
-                        bucket = lpd.index(None)
-                        deltalog("delta: found empty bucket %i", bucket)
-                    except ValueError:
-                        #find a bucket which has not been used recently
-                        t = 0
-                        bucket = 0
-                        for i,dr in enumerate(lpd):
-                            if dr and (t==0 or dr[-1]<t):
-                                t = dr[-1]
-                                bucket = i
-                        deltalog("delta: using oldest bucket %i", bucket)
-                self.delta_pixel_data[bucket] = [w, h, pixel_format, coding, store,
-                                                 len(dpixels), dpixels, hits, monotonic_time()]
-                client_options["store"] = store
-                client_options["bucket"] = bucket
-                #record number of frames and pixels:
-                totals = self.statistics.encoding_totals.setdefault("delta", [0, 0])
-                totals[0] = totals[0] + 1
-                totals[1] = totals[1] + w*h
-                deltalog("delta: client options=%s (for region %s)", client_options, (x, y, w, h))
         if INTEGRITY_HASH and coding!="mmap":
             #could be a compressed wrapper or just raw bytes:
             try:

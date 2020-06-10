@@ -172,7 +172,6 @@ class Encodings(StubClientMixin):
             "video_max_size"            : self.video_max_size,
             "max-soft-expired"          : MAX_SOFT_EXPIRED,
             "send-timestamps"           : SEND_TIMESTAMPS,
-            "supports_delta"            : tuple(x for x in ("png", "rgb24", "rgb32") if x in self.get_core_encodings()),
             }
         if self.video_scaling is not None:
             caps["scaling.control"] = self.video_scaling

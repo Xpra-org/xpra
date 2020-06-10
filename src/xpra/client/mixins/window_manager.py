@@ -958,7 +958,6 @@ class WindowClient(StubClientMixin):
         delta_pixel_data, video_decoder, csc_decoder, decoder_lock = None, None, None, None
         try:
             if backing:
-                delta_pixel_data = backing._delta_pixel_data
                 video_decoder = backing._video_decoder
                 csc_decoder = backing._csc_decoder
                 decoder_lock = backing._decoder_lock
@@ -993,7 +992,6 @@ class WindowClient(StubClientMixin):
             #restore the attributes we had saved from it
             if backing:
                 backing = window._backing
-                backing._delta_pixel_data = delta_pixel_data
                 backing._video_decoder = video_decoder
                 backing._csc_decoder = csc_decoder
                 backing._decoder_lock = decoder_lock
