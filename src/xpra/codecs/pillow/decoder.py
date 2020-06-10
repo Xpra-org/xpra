@@ -37,6 +37,13 @@ XPM_HEADER = b"/* XPM */"
 def is_xpm(data):
     return data[:9]==XPM_HEADER
 
+def is_tiff(data):
+    if data[:2]==b"II":
+        return data[3]==42 and data[4]==0
+    if data[:2]==b"MM":
+        return data[3]==0 and data[4]==42
+    return False
+
 
 HEADERS = {
     is_png  : "png",
@@ -44,6 +51,7 @@ HEADERS = {
     is_jpeg : "jpeg",
     is_svg  : "svg",
     is_xpm  : "xpm",
+    is_tiff : "tiff",
     }
 
 def get_image_type(data):

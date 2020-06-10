@@ -1,9 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from AppKit import NSStringPboardType, NSPasteboard     #@UnresolvedImport
+from AppKit import (
+    NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG,  #@UnresolvedImport
+    NSPasteboard,       #@UnresolvedImport
+    )
 from gi.repository import GLib
 
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
@@ -101,10 +104,10 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.pasteboard.clearContents()
 
     def do_emit_token(self):
-        targets = filter_targets(self.pasteboard.types())
+        targets = self.get_targets()
         log("do_emit_token() targets=%s", targets)
         packet_data = [targets, ]
-        if self._greedy_client:
+        if self._greedy_client and "TEXT" in targets:
             text = self.get_clipboard_text()
             if text:
                 packet_data += ["STRING", "bytes", 8, text]
@@ -116,19 +119,51 @@ class OSXClipboardProxy(ClipboardProxyCore):
         log("get_clipboard_text() NSStringPboardType='%s' (%s)", text, type(text))
         return str(text)
 
+    def get_targets(self):
+        types = filter_targets(self.pasteboard.types())
+        targets = []
+        if NSStringPboardType in types:
+            targets += ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"]
+        if NSTIFFPboardType in types or NSPasteboardTypePNG in types:
+            targets += ["image/png", "image/jpeg", "image/tiff"]
+        return targets
+
     def get_contents(self, target, got_contents):
         log("get_contents%s", (target, got_contents))
         if target=="TARGETS":
-            #we only support text at the moment:
-            got_contents("ATOM", 32, ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
+            got_contents("ATOM", 32, self.get_targets())
             return
-        if target not in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
-            #we don't know how to handle this target,
-            #return an empty response:
-            got_contents(target, 8, b"")
+        if target in ("image/png", "image/jpeg", "image/tiff"):
+            data = self.get_image_contents(target)
+            if data:
+                got_contents(target, 8, data)
+                return
+        if target in ("TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"):
+            text = self.get_clipboard_text()
+            got_contents(target, 8, text)
             return
-        text = self.get_clipboard_text()
-        got_contents(target, 8, text)
+        #we don't know how to handle this target,
+        #return an empty response:
+        got_contents(target, 8, b"")
+
+    def get_image_contents(self, target):
+        types = filter_targets(self.pasteboard.types())
+        if target=="image/png" and NSPasteboardTypePNG in types:
+            src_dtype = "image/png"
+            img_data = self.pasteboard.dataForType_(NSPasteboardTypePNG)
+        elif target=="image/tiff" and NSTIFFPboardType in types:
+            src_dtype = "image/tiff"
+            img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
+        elif NSPasteboardTypePNG in types:
+            src_dtype = "image/png"
+            img_data = self.pasteboard.dataForType_(NSPasteboardTypePNG)
+        elif NSTIFFPboardType in types:
+            src_dtype = "image/tiff"
+            img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
+        else:
+            return None
+        return self.filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
+
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False):
         # the remote end now owns the clipboard
@@ -168,6 +203,28 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if dformat==8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", data)
             self.set_clipboard_text(data)
+        if dformat==8 and dtype in ("image/png", "image/jpeg", "image/tiff"):
+            log("we got a %s image", dtype)
+            self.set_image_data(dtype, data)
+
+    def set_image_data(self, dtype, data):
+        if dtype=="image/png":
+            macos_dtype = NSPasteboardTypePNG
+        elif dtype=="image/tiff":
+            macos_dtype = NSTIFFPboardType
+        elif dtype=="image/jpeg":
+            #convert to png:
+            from xpra.codecs.pillow.decoder import open_only
+            img = open_only(data, ("jpeg", ))
+            from io import BytesIO
+            buf = BytesIO()
+            img.save(buf, "png")
+            data = buf.getvalue()
+            buf.close()
+            macos_dtype = NSPasteboardTypePNG
+        else:
+            raise Exception("invalid image datatype '%s'" % dtype)
+        self.pasteboard.setDataForType_(data, macos_dtype)
 
     def set_clipboard_text(self, text):
         self.pasteboard.clearContents()
