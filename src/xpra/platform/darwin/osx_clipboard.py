@@ -126,6 +126,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             targets += ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"]
         if NSTIFFPboardType in types or NSPasteboardTypePNG in types:
             targets += ["image/png", "image/jpeg", "image/tiff"]
+        log("get_targets() targets(%s)=%s", types, targets)
         return targets
 
     def get_contents(self, target, got_contents):
