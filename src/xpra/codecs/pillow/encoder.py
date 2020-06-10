@@ -137,7 +137,6 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
             resample = "LANCZOS"
         resample_value = getattr(Image, resample, 0)
         im = im.resize(resize, resample=resample_value)
-        client_options["unscaled-size"] = w, h
         client_options["resample"] = resample
     if coding in ("jpeg", "webp"):
         #newer versions of pillow require explicit conversion to non-alpha:

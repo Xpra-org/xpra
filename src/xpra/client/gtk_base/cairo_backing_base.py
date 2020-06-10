@@ -80,39 +80,43 @@ class CairoBackingBase(WindowBackingBase):
         w, h = pixbuf.get_width(), pixbuf.get_height()
         self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, options)
 
-    def cairo_paint_surface(self, img_surface, x : int, y : int, options):
-        w, h = img_surface.get_width(), img_surface.get_height()
+    def cairo_paint_surface(self, img_surface, x : int, y : int, width : int, height : int, options):
+        iw, ih = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s",
-            (img_surface.get_format(), w, h, img_surface.get_stride(), img_surface.get_content(), ))
+            (img_surface.get_format(), iw, ih, img_surface.get_stride(), img_surface.get_content(), ))
         def set_source_surface(gc, surface, sx, sy):
             gc.set_source_surface(surface, sx, sy)
-        self.cairo_paint_from_source(set_source_surface, img_surface, x, y, w, h, options)
+        self.cairo_paint_from_source(set_source_surface, img_surface, x, y, iw, ih, width, height, options)
 
-    def cairo_paint_from_source(self, set_source_fn, source, x : int, y : int, w : int, h : int, options):
+    def cairo_paint_from_source(self, set_source_fn, source,
+                                x : int, y : int, iw : int, ih : int, width : int, height : int, options):
         """ must be called from UI thread """
-        log("cairo_paint_surface(%s, %s, %s, %s, %s, %s, %s) backing=%s, paint box line width=%i",
-            set_source_fn, source, x, y, w, h, options, self._backing, self.paint_box_line_width)
+        log("cairo_paint_surface%s backing=%s, paint box line width=%i",
+            (set_source_fn, source, x, y, iw, ih, width, height, options),
+            self._backing, self.paint_box_line_width)
         gc = cairo.Context(self._backing)
         if self.paint_box_line_width:
             gc.save()
 
-        gc.rectangle(x, y, w, h)
+        gc.rectangle(x, y, width, height)
         gc.clip()
 
         gc.set_operator(cairo.OPERATOR_CLEAR)
-        gc.rectangle(x, y, w, h)
+        gc.rectangle(x, y, width, height)
         gc.fill()
 
         gc.set_operator(cairo.OPERATOR_SOURCE)
         gc.translate(x, y)
-        gc.rectangle(0, 0, w, h)
+        if iw!=width or ih!=height:
+            gc.scale(width/iw, height/ih)
+        gc.rectangle(0, 0, width, height)
         set_source_fn(gc, source, 0, 0)
         gc.paint()
 
         if self.paint_box_line_width:
             gc.restore()
             encoding = options.get("encoding")
-            self.cairo_paint_box(gc, encoding, x, y, w, h)
+            self.cairo_paint_box(gc, encoding, x, y, width, height)
 
     def cairo_paint_box(self, gc, encoding, x, y, w, h):
         color = get_paint_box_color(encoding)
@@ -122,15 +126,19 @@ class CairoBackingBase(WindowBackingBase):
         gc.stroke()
 
 
-    def _do_paint_rgb24(self, img_data, x : int, y : int, width : int, height : int, rowstride : int, options):
-        return self._do_paint_rgb(cairo.FORMAT_RGB24, False, img_data, x, y, width, height, rowstride, options)
+    def _do_paint_rgb24(self, img_data, x : int, y : int, width : int, height : int,
+                        render_width : int, render_height : int, rowstride : int, options):
+        return self._do_paint_rgb(cairo.FORMAT_RGB24, False, img_data,
+                                  x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb32(self, img_data, x : int, y : int, width : int, height : int, rowstride : int, options):
+    def _do_paint_rgb32(self, img_data, x : int, y : int, width : int, height : int,
+                        render_width : int, render_height : int, rowstride : int, options):
         if self._alpha_enabled:
             cformat = cairo.FORMAT_ARGB32
         else:
             cformat = cairo.FORMAT_RGB24
-        return self._do_paint_rgb(cformat, True, img_data, x, y, width, height, rowstride, options)
+        return self._do_paint_rgb(cformat, True, img_data,
+                                  x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb(self, *args):
         raise NotImplementedError()

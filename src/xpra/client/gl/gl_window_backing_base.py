@@ -996,7 +996,10 @@ class GLWindowBackingBase(WindowBackingBase):
         if JPEG_YUV and width>=2 and height>=2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, options, callbacks)
+            w = img.get_width()
+            h = img.get_height()
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img,
+                          x, y, w, h, width, height, options, callbacks)
         else:
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
@@ -1007,11 +1010,16 @@ class GLWindowBackingBase(WindowBackingBase):
         if subsampling=="YUV420P" and WEBP_YUV and self.webp_decoder and not WEBP_PILLOW and not has_alpha and width>=2 and height>=2:
             img = self.webp_decoder.decompress_yuv(img_data)
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img, x, y, width, height, width, height, options, callbacks)
+            w = img.get_width()
+            h = img.get_height()
+            self.idle_add(self.gl_paint_planar, YUV2RGB_SHADER, flush, "webp", img,
+                          x, y, w, h, width, height, options, callbacks)
             return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
-    def do_paint_rgb(self, rgb_format, img_data, x : int, y : int, width : int, height : int, rowstride, options, callbacks):
+    def do_paint_rgb(self, rgb_format, img_data,
+                     x : int, y : int, width : int, height : int, render_width : int, render_height : int,
+                     rowstride, options, callbacks):
         log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
             self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         x, y = self.gravity_adjust(x, y, options)
@@ -1032,6 +1040,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
             with context:
                 self.gl_init()
+                scaling = width!=render_width or height!=render_height
 
                 #convert it to a GL constant:
                 pformat = PIXEL_FORMAT_TO_CONSTANT.get(rgb_format)
@@ -1039,15 +1048,19 @@ class GLWindowBackingBase(WindowBackingBase):
                 ptype = PIXEL_FORMAT_TO_DATATYPE.get(rgb_format)
                 assert pformat is not None, "could not find pixel type for %s" % rgb_format
 
-                self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes), using GL %s format=%s / %s to internal format=%s",
-                               rgb_format, x, y, width, height, len(img_data), upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype), INTERNAL_FORMAT_TO_STR.get(self.internal_format))
+                self.gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal format=%s",
+                               rgb_format, x, y, width, height, len(img_data), render_width, render_height,
+                               upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype), INTERNAL_FORMAT_TO_STR.get(self.internal_format))
 
                 # Upload data as temporary RGB texture
                 target = GL_TEXTURE_RECTANGLE_ARB
                 glEnable(target)
                 glBindTexture(target, self.textures[TEX_RGB])
                 self.set_alignment(width, rowstride, rgb_format)
-                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                mag_filter = GL_NEAREST
+                if scaling:
+                    mag_filter = GL_LINEAR
+                glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
                 glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
                 glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
@@ -1058,19 +1071,19 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexCoord2i(0, 0)
                 glVertex2i(x, y)
                 glTexCoord2i(0, height)
-                glVertex2i(x, y+height)
+                glVertex2i(x, y+render_height)
                 glTexCoord2i(width, height)
-                glVertex2i(x+width, y+height)
+                glVertex2i(x+render_width, y+render_height)
                 glTexCoord2i(width, 0)
-                glVertex2i(x+width, y)
+                glVertex2i(x+render_width, y)
                 glEnd()
 
                 glBindTexture(target, 0)
                 glDisable(target)
-                self.paint_box(options.strget("encoding"), options.intget("delta", -1)>=0, x, y, width, height)
+                self.paint_box(options.strget("encoding"), options.intget("delta", -1)>=0, x, y, render_width, render_height)
                 # Present update to screen
                 if not self.draw_needs_refresh:
-                    self.present_fbo(x, y, width, height, options.intget("flush", 0))
+                    self.present_fbo(x, y, render_width, render_height, options.intget("flush", 0))
                 # present_fbo has reset state already
             fire_paint_callbacks(callbacks)
             return
@@ -1118,7 +1131,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
                 # Update FBO texture
                 x_scale, y_scale = 1, 1
-                if width!=enc_width or height!=enc_height:
+                if scaling:
                     x_scale = width/enc_width
                     y_scale = height/enc_height
 

@@ -43,11 +43,13 @@ class CairoBacking(CairoBackingBase):
     def __repr__(self):
         return "gtk3.CairoBacking(%s)" % self._backing
 
-    def _do_paint_rgb(self, cairo_format, has_alpha, img_data, x, y, width, height, rowstride, options):
+    def _do_paint_rgb(self, cairo_format, has_alpha, img_data,
+                      x : int, y : int, width : int, height : int, render_width : int, render_height : int,
+                      rowstride : int, options):
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb(%s, %s, %s %s, %s, %s, %s, %s, %s, %s) set_image_surface_data=%s, use pixbuf=%s",
+        log("cairo._do_paint_rgb(%s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s, %s) set_image_surface_data=%s, use pixbuf=%s",
             FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
-            type(img_data), x, y, width, height,
+            type(img_data), x, y, width, height, render_width, render_height,
             rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
         rgb_format = options.strget(b"rgb_format", "RGB")
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
@@ -55,13 +57,22 @@ class CairoBacking(CairoBackingBase):
                 (cairo_format==cairo.FORMAT_ARGB32 and rgb_format in ("BGRX", "BGRA")):
                 img_surface = cairo.ImageSurface(cairo_format, width, height)
                 set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
-                self.cairo_paint_surface(img_surface, x, y, options)
+                self.cairo_paint_surface(img_surface, x, y, render_width, render_height, options)
                 return True
 
         if rgb_format in ("RGB", "RGBA", "RGBX"):
             data = GLib.Bytes(img_data)
             pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                                      has_alpha, 8, width, height, rowstride)
+            if render_width!=width or render_height!=height:
+                resample = options.strget("resample")
+                if resample=="NEAREST":
+                    interp_type = GdkPixbuf.InterpType.NEAREST
+                elif resample in ("BICUBIC", "LANCZOS"):
+                    interp_type = GdkPixbuf.InterpTyp.HYPER
+                else:
+                    interp_type = GdkPixbuf.InterpType.BILINEAR
+                pixbuf = pixbuf.scale_simple(render_width, render_height, interp_type)
             self.cairo_paint_pixbuf(pixbuf, x, y, options)
             return True
 

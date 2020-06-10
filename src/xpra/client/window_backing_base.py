@@ -333,13 +333,15 @@ class WindowBackingBase:
         rowstride = img.get_rowstride()
         w = img.get_width()
         h = img.get_height()
-        self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, w, h, rowstride, options, callbacks)
+        self.idle_add(self.do_paint_rgb, rgb_format, img_data,
+                      x, y, w, h, width, height, rowstride, options, callbacks)
 
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         # can be called from any thread
-        rgb_format, img_data, rowstride = self.pil_decoder.decompress(coding, img_data, options)
-        self.idle_add(self.do_paint_rgb, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
+        rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
+        self.idle_add(self.do_paint_rgb, rgb_format, img_data,
+                      x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         if not self.webp_decoder or WEBP_PILLOW:
@@ -350,7 +352,7 @@ class WindowBackingBase:
         has_alpha = options.boolget("has_alpha", False)
         (
             buffer_wrapper,
-            width, height, stride, has_alpha,
+            iwidth, iheight, stride, has_alpha,
             rgb_format,
             ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.RGB_MODES)
         def free_buffer(*_args):
@@ -362,7 +364,7 @@ class WindowBackingBase:
         if rgb_format not in self.RGB_MODES:
             from xpra.codecs.rgb_transform import rgb_reformat
             from xpra.codecs.image_wrapper import ImageWrapper
-            img = ImageWrapper(x, y, width, height, data, rgb_format,
+            img = ImageWrapper(x, y, iwidth, iheight, data, rgb_format,
                                len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
             rgb_reformat(img, self.RGB_MODES, has_alpha and self._alpha_enabled)
             rgb_format = img.get_pixel_format()
@@ -370,20 +372,24 @@ class WindowBackingBase:
             stride = img.get_rowstride()
         #replace with the actual rgb format we get from the decoder:
         options[b"rgb_format"] = rgb_format
-        return self.do_paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
+        self.idle_add(self.do_paint_rgb, rgb_format, data,
+                                 x, y, iwidth, iheight, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format, raw_data, x, y, width, height, rowstride, options, callbacks):
         """ can be called from a non-UI thread """
-        rgb_data = raw_data
-        if options:
-            #check for one of the compressors:
-            comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
-            if comp:
-                assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
-                rgb_data = compression.decompress_by_name(raw_data, algo=comp[0])
-        self.idle_add(self.do_paint_rgb, rgb_format, rgb_data, x, y, width, height, rowstride, options, callbacks)
+        iwidth, iheight = options.intpair("scaled-size", (width, height))
+        #was a compressor used?
+        comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
+        if comp:
+            assert len(comp)==1, "more than one compressor specified: %s" % str(comp)
+            rgb_data = compression.decompress_by_name(raw_data, algo=comp[0])
+        else:
+            rgb_data = raw_data
+        self.idle_add(self.do_paint_rgb, rgb_format, rgb_data,
+                      x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-    def do_paint_rgb(self, rgb_format, img_data, x, y, width, height, rowstride, options, callbacks):
+    def do_paint_rgb(self, rgb_format, img_data,
+                     x, y, width, height, render_width, render_height, rowstride, options, callbacks):
         """ must be called from the UI thread
             this method is only here to ensure that we always fire the callbacks,
             the actual paint code is in _do_paint_rgb[24|32]
@@ -404,7 +410,7 @@ class WindowBackingBase:
             else:
                 raise Exception("invalid rgb format '%s'" % rgb_format)
             options[b"rgb_format"] = rgb_format
-            success = paint_fn(img_data, x, y, width, height, rowstride, options)
+            success = paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except Exception as e:
             if not self._backing:
@@ -414,10 +420,10 @@ class WindowBackingBase:
                 message = "paint rgb%s error: %s" % (bpp, e)
                 fire_paint_callbacks(callbacks, False, message)
 
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
+    def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
         raise Exception("override me!")
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
+    def _do_paint_rgb32(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
         raise Exception("override me!")
 
 
@@ -609,7 +615,8 @@ class WindowBackingBase:
             data = rgb.get_pixels()
             rowstride = rgb.get_rowstride()
             try:
-                self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, paint_options, callbacks)
+                self.do_paint_rgb(rgb_format, data,
+                                  x, y, width, height, width, height, rowstride, paint_options, callbacks)
             finally:
                 rgb.free()
         self.idle_add(paint)
@@ -622,7 +629,7 @@ class WindowBackingBase:
         rgb_format = options.strget(b"rgb_format", b"RGB")
         #Note: BGR(A) is only handled by gl_window_backing
         x, y = self.gravity_adjust(x, y, options)
-        self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, options, callbacks)
+        self.do_paint_rgb(rgb_format, data, x, y, width, height, width, height, rowstride, options, callbacks)
 
     def paint_scroll(self, _img_data, _options, callbacks):
         raise NotImplementedError("no paint scroll on %s" % type(self))
@@ -651,7 +658,6 @@ class WindowBackingBase:
                 if h:
                     hd = h.hexdigest()
                     assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
-            unscaled_size = options.intpair("unscaled-size")
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
@@ -669,9 +675,9 @@ class WindowBackingBase:
                 self.paint_with_video_decoder(VIDEO_DECODERS.get(coding),
                                               coding,
                                               img_data, x, y, width, height, options, callbacks)
-            elif self.jpeg_decoder and coding=="jpeg" and not unscaled_size:
+            elif self.jpeg_decoder and coding=="jpeg":
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
-            elif coding == "webp" and not unscaled_size:
+            elif coding == "webp":
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)

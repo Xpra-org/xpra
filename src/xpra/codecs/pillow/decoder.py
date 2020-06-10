@@ -127,13 +127,7 @@ def decompress(coding, img_data, options):
         else:
             img = img.convert("RGB")
 
-    unscaled_size = options.intpair("unscaled-size")
-    if unscaled_size:
-        resample = options.strget("resample", "NEAREST")
-        resample_value = getattr(Image, resample, 0)
-        img = img.resize(unscaled_size, resample=resample_value)
-
-    width = img.size[0]
+    width, height = img.size
     if img.mode=="RGB":
         #PIL flattens the data to a continuous straightforward RGB format:
         rowstride = width*3
@@ -165,7 +159,7 @@ def decompress(coding, img_data, options):
         raise Exception("invalid image mode: %s" % img.mode)
     raw_data = img.tobytes("raw", img.mode)
     log("pillow decoded %i bytes of %s data to %i bytes of %s", len(img_data), coding, len(raw_data), rgb_format)
-    return rgb_format, raw_data, rowstride
+    return rgb_format, raw_data, width, height, rowstride
 
 
 def selftest(_full=False):

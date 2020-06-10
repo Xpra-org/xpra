@@ -123,7 +123,7 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return str(err)
 
-def decompress_to_yuv(data, int width, int height, options={}):
+def decompress_to_yuv(data, options={}):
     cdef const uint8_t *buf
     cdef Py_ssize_t buf_len
     assert object_as_buffer(data, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(data)
@@ -145,7 +145,6 @@ def decompress_to_yuv(data, int width, int height, options={}):
     if r:
         close()
         raise Exception("failed to decompress JPEG header: %s" % get_error_str())
-    assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
     log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s",
@@ -179,7 +178,7 @@ def decompress_to_yuv(data, int width, int height, options={}):
         with nogil:
             r = tjDecompressToYUVPlanes(decompressor,
                                         buf, buf_len,
-                                        planes, width, strides, height, flags)
+                                        planes, w, strides, h, flags)
         if r:
             raise Exception("failed to decompress %s JPEG data to YUV: %s" % (subsamp_str, get_error_str()))
     finally:
