@@ -828,17 +828,19 @@ class WindowSource(WindowIconSource):
             return self.hardcoded_encoding
         if self._encoding_hint and self._encoding_hint in self._encoders:
             return self.encoding_is_hint
-        if self.encoding=="grayscale" and "png/L" in self.common_encodings:
-            return self.encoding_is_grayscale
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
-        if self._mmap and self._mmap_size>0:
+        if self._mmap and self._mmap_size>0 and self.encoding!="grayscale":
             return self.encoding_is_mmap
         elif self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
             return self.encoding_is_pngL
         elif self.image_depth==8:
-            #no other option:
+            #limited options:
+            if self.encoding=="grayscale":
+                assert "png/L" in self.common_encodings
+                return self.encoding_is_pngL
+            assert "png/P" in self.common_encodings
             return self.encoding_is_pngP
         elif self.strict and self.encoding!="auto":
             #honour strict flag
@@ -858,6 +860,8 @@ class WindowSource(WindowIconSource):
                 #(prevents alpha bleeding artifacts,
                 # as different encoders may encode alpha differently)
                 return self.get_strict_encoding
+            if self.encoding=="grayscale":
+                return self.encoding_is_grayscale
             #choose an alpha encoding and keep it?
             return self.get_transparent_encoding
         elif self.encoding=="rgb":
@@ -872,6 +876,8 @@ class WindowSource(WindowIconSource):
         #stick to what is specified or use rgb for small regions:
         if self.encoding=="auto":
             return self.get_auto_encoding
+        if self.encoding=="grayscale":
+            return self.encoding_is_grayscale
         return self.get_current_or_rgb
 
     def hardcoded_encoding(self, *_args):

@@ -22,6 +22,7 @@ from xpra.server.window.motion import ScrollData                    #@Unresolved
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
+from xpra.codecs.loader import has_codec
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time
 from xpra.os_util import monotonic_time, bytestostr
 from xpra.log import Logger
@@ -125,6 +126,10 @@ class WindowVideoSource(WindowSource):
             if x in self.server_core_encodings:
                 self.add_encoder(x, self.video_encode)
         self.add_encoder("auto", self.video_encode)
+        if has_codec("csc_libyuv"):
+            #need libyuv to be able to handle 'grayscale' video:
+            #(to convert ARGB to grayscale)
+            self.add_encoder("grayscale", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
@@ -397,11 +402,10 @@ class WindowVideoSource(WindowSource):
             properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
-        if self.encoding=="grayscale" and "png/L" in self.common_encodings:
-            return self.encoding_is_grayscale
-        if self.common_video_encodings or self.supports_scrolling:
-            return self.get_best_encoding_video
-        return WindowSource.get_best_encoding_impl_default(self)
+        if self.encoding!="grayscale" or has_codec("csc_libyuv"):
+            if self.common_video_encodings or self.supports_scrolling:
+                return self.get_best_encoding_video
+        return super().get_best_encoding_impl_default()
 
 
     def get_best_encoding_video(self, ww, wh, speed, quality, current_encoding):
@@ -452,7 +456,7 @@ class WindowVideoSource(WindowSource):
         if pixel_count<=rgbmax or cww<8 or cwh<8:
             return lossless("low pixel count")
 
-        if current_encoding!="auto" and current_encoding not in self.common_video_encodings:
+        if current_encoding not in ("auto", "grayscale") and current_encoding not in self.common_video_encodings:
             return nonvideo(info="%s not a supported video encoding" % current_encoding)
 
         if cww*cwh<=MAX_NONVIDEO_PIXELS or cww<16 or cwh<16:
@@ -499,6 +503,8 @@ class WindowVideoSource(WindowSource):
         return current_encoding
 
     def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, options=()):
+        if self.encoding=="grayscale":
+            return self.encoding_is_grayscale(ww, wh, speed, quality, current_encoding)
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         options = options or self.non_video_encodings
@@ -722,7 +728,7 @@ class WindowVideoSource(WindowSource):
             send_nonvideo(encoding=None)
             return
 
-        if coding!="auto" and coding not in self.video_encodings:
+        if coding not in ("auto", "grayscale") and coding not in self.video_encodings:
             sublog("not a video encoding: %s" % coding)
             #keep current encoding selection function
             send_nonvideo(get_best_encoding=self.get_best_encoding)
@@ -1041,7 +1047,7 @@ class WindowVideoSource(WindowSource):
         super().update_encoding_options(force_reload)
         vs = self.video_subregion
         if vs:
-            if (self.encoding!="auto" and self.encoding not in self.common_video_encodings) or \
+            if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
                 self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
                 self.content_type=="text" or \
                 (self._mmap and self._mmap_size>0):
@@ -1133,7 +1139,7 @@ class WindowVideoSource(WindowSource):
             #too early, or too late!
             return checknovideo("sequence=%s (cancelled=%s)", self._sequence, self._damage_cancelled)
         #which video encodings to evaluate:
-        if self.encoding=="auto":
+        if self.encoding in ("auto", "grayscale"):
             eval_encodings = self.common_video_encodings
         else:
             if self.encoding not in self.common_video_encodings:
@@ -1527,7 +1533,7 @@ class WindowVideoSource(WindowSource):
 
             Runs in the 'encode' thread.
         """
-        if encoding=="auto":
+        if encoding in ("auto", "grayscale"):
             encodings = self.common_video_encodings
         else:
             encodings = [encoding]
@@ -2078,6 +2084,10 @@ class WindowVideoSource(WindowSource):
         if not self.common_video_encodings or self.image_depth not in (24, 32):
             #we have to send using a non-video encoding as that's all we have!
             return self.video_fallback(image, options)
+
+        if self.encoding=="grayscale":
+            from xpra.codecs.csc_libyuv.colorspace_converter import argb_to_gray    #@UnresolvedImport
+            image = argb_to_gray(image)
 
         vh = self.video_helper
         if vh is None:

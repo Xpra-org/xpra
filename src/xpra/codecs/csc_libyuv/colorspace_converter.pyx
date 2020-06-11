@@ -15,7 +15,7 @@ log = Logger("csc", "libyuv")
 from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
 
 from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport uint8_t, uintptr_t
@@ -45,6 +45,14 @@ cdef extern from "libyuv/scale.h" namespace "libyuv":
                 uint8_t* dst, int dst_stride,
                 int dst_width, int dst_height,
                 FilterMode filtering) nogil
+
+cdef extern from "libyuv/planar_functions.h" namespace "libyuv":
+    int ARGBGrayTo(const uint8_t* src_argb,
+                   int src_stride_argb,
+                   uint8_t* dst_argb,
+                   int dst_stride_argb,
+                   int width,
+                   int height) nogil
 
 cdef get_fiter_mode_str(FilterMode fm):
     if fm==kFilterNone:
@@ -130,6 +138,34 @@ class YUVImageWrapper(ImageWrapper):
         ImageWrapper.free(self)
         if buf!=0:
             free(<void *> buf)
+
+def argb_to_gray(image):
+    cdef Py_ssize_t pic_buf_len = 0
+    cdef const uint8_t *input_image
+    cdef int i, result
+    cdef int width, height, stride
+    cdef double start = monotonic_time()
+    cdef iplanes = image.get_planes()
+    pixels = image.get_pixels()
+    stride = image.get_rowstride()
+    width = image.get_width()
+    height = image.get_height()
+    assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
+    assert pixels, "failed to get pixels from %s" % image
+    assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
+    #allocate output buffer:
+    cdef int dst_stride = width*4
+    cdef MemBuf output_buffer = getbuf(dst_stride*height)    
+    if not output_buffer:
+        raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
+    cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
+    with nogil:
+        result = ARGBGrayTo(input_image, stride,
+                            buf, dst_stride,
+                            width, height)
+    assert result==0, "libyuv BGRAToI420 failed and returned %i" % result
+    out = memoryview(output_buffer)
+    return ImageWrapper(0, 0, width, height, out, image.get_pixel_format(), 24, dst_stride, image.get_bytesperpixel(), ImageWrapper.PACKED)
 
 
 cdef class ColorspaceConverter:
