@@ -614,7 +614,7 @@ class ServerCore:
     ######################################################################
     # authentication:
     def init_auth(self, opts):
-        auth = self.get_auth_modules("local-auth", opts.auth or "none")
+        auth = self.get_auth_modules("local-auth", opts.auth or [])
         if WIN32:
             self.auth_classes["named-pipe"] = auth
         else:
