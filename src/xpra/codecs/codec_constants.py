@@ -30,7 +30,7 @@ HELP_ORDER = (
     )
 
 #those are currently so useless that we don't want the user to select them by mistake
-PROBLEMATIC_ENCODINGS = ("h265", )
+PROBLEMATIC_ENCODINGS = ()
 
 
 #value: how much smaller the output is
