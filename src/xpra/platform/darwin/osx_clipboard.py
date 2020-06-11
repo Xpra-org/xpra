@@ -7,6 +7,7 @@ from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,  #@UnresolvedImport
     NSPasteboard,       #@UnresolvedImport
     )
+from CoreFoundation import CFDataGetBytes, CFDataGetLength, CFDataCreate        #@UnresolvedImport
 from gi.repository import GLib
 
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
@@ -124,9 +125,9 @@ class OSXClipboardProxy(ClipboardProxyCore):
     def get_targets(self):
         types = self.pasteboard.types()
         targets = []
-        if any(t in (NSStringPboardType, NSPasteboardTypeURL) for t in types):
+        if any(t in (NSStringPboardType, NSPasteboardTypeURL, "public.utf8-plain-text", "public.html", "TEXT") for t in types):
             targets += ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"]
-        if any(t in (NSTIFFPboardType, NSPasteboardTypePNG, "public.png", "public.tiff") for t in types):
+        if any(t in (NSTIFFPboardType, NSPasteboardTypePNG) for t in types):
             targets += ["image/png", "image/jpeg", "image/tiff"]
         log("get_targets() targets(%s)=%s", types, targets)
         return targets
@@ -137,7 +138,10 @@ class OSXClipboardProxy(ClipboardProxyCore):
             got_contents("ATOM", 32, self.get_targets())
             return
         if target in ("image/png", "image/jpeg", "image/tiff"):
-            data = self.get_image_contents(target)
+            try:
+                data = self.get_image_contents(target)
+            except Exception:
+                log.error("Error: failed to copy image from clipboard", exc_info=True)
             if data:
                 got_contents(target, 8, data)
                 return
@@ -157,15 +161,19 @@ class OSXClipboardProxy(ClipboardProxyCore):
         elif target=="image/tiff" and NSTIFFPboardType in types:
             src_dtype = "image/tiff"
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
-        elif NSPasteboardTypePNG in types or "public.png" in types:
+        elif NSPasteboardTypePNG in types:
             src_dtype = "image/png"
             img_data = self.pasteboard.dataForType_(NSPasteboardTypePNG)
-        elif NSTIFFPboardType in types or "public.tiff" in types:
+        elif NSTIFFPboardType in types:
             src_dtype = "image/tiff"
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
         else:
             log("image target '%s' not found in %s", target, types)
             return None
+        if not img_data:
+            return None
+        l = CFDataGetLength(img_data)
+        img_data = CFDataGetBytes(img_data, (0, l), None)
         img_data = self.filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
         log("get_image_contents(%s)=%i %s", target, len(img_data or ()), type(img_data))
         return img_data
@@ -204,8 +212,14 @@ class OSXClipboardProxy(ClipboardProxyCore):
         #if this is the special target 'TARGETS', cache the result:
         if target=="TARGETS" and dtype=="ATOM" and dformat==32:
             self.targets = _filter_targets(data)
-            #TODO: tell system what targets we have
             log("got_contents: tell OS we have %s", csv(self.targets))
+            image_types = tuple(t for t in ("image/png", "image/jpeg", "image/tiff") if t in self.targets)
+            log("image_types=%s, dtype=%s (is text=%s)",
+                     image_types, dtype, dtype in TEXT_TARGETS)
+            if image_types and dtype not in TEXT_TARGETS:
+                #request image:
+                self.send_clipboard_request_handler(self, self._selection, image_types[0])
+            return
         if dformat==8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", data)
             self.set_clipboard_text(data)
@@ -214,23 +228,31 @@ class OSXClipboardProxy(ClipboardProxyCore):
             self.set_image_data(dtype, data)
 
     def set_image_data(self, dtype, data):
-        if dtype=="image/png":
-            macos_dtype = NSPasteboardTypePNG
-        elif dtype=="image/tiff":
-            macos_dtype = NSTIFFPboardType
-        elif dtype=="image/jpeg":
-            #convert to png:
-            from xpra.codecs.pillow.decoder import open_only
-            img = open_only(data, ("jpeg", ))
-            from io import BytesIO
-            buf = BytesIO()
-            img.save(buf, "png")
-            data = buf.getvalue()
-            buf.close()
-            macos_dtype = NSPasteboardTypePNG
-        else:
-            raise Exception("invalid image datatype '%s'" % dtype)
-        self.pasteboard.setDataForType_(data, macos_dtype)
+        img_type = dtype.split("/")[1]      #ie: "png"
+        from io import BytesIO
+        from xpra.codecs.pillow.decoder import open_only
+        img = open_only(data, (img_type, ))
+        for img_type, macos_types in {
+            "png"   : [NSPasteboardTypePNG, "image/png"],
+            "tiff"  : [NSTIFFPboardType, "image/tiff"],
+            "jpeg"  : ["public.jpeg", "image/jpeg"],
+            }.items():
+            try:
+                save_img = img
+                if img_type=="jpeg" and img.mode=="RGBA":
+                    save_img = img.convert("RGB")
+                buf = BytesIO()
+                save_img.save(buf, img_type)
+                data = buf.getvalue()
+                buf.close()
+                for t in macos_types:
+                    cfdata = CFDataCreate(None, data, len(data))
+                    self.pasteboard.setData_forType_(cfdata, t)
+                    log("set '%s' data type", t)
+            except Exception as e:
+                log("set_image_data(%s, ..)", dtype, exc_info=True)
+                log.error("Error: failed to copy %s image to clipboard", img_type)
+                log.error(" %s", e)
 
     def set_clipboard_text(self, text):
         self.pasteboard.clearContents()
