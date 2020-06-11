@@ -623,14 +623,7 @@ class ClipboardProxyCore:
         if not self._enabled or self._block_owner_change:
             return
         if self._have_token or (self._greedy_client and self._can_send):
-            if self._have_token or DELAY_SEND_TOKEN<0:
-                #token ownership will change or told not to wait
-                GLib.idle_add(self.emit_token)
-            elif not self._emit_token_timer:
-                #we had it already, this can wait:
-                #TODO: don't throttle clients without "want-targets" attribute
-                # (sending the token is only expensive for those)
-                self.schedule_emit_token()
+            self.schedule_emit_token()
 
     def schedule_emit_token(self):
         if self._have_token or DELAY_SEND_TOKEN<0:
