@@ -2294,8 +2294,7 @@ class WindowSource(WindowIconSource):
 
         #more useful is the actual number of bytes (assuming 32bpp)
         #since we generally don't send the padding with it:
-        isize = w*h
-        psize = isize*4
+        psize = w*h*4
         log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
         start = monotonic_time()
 
