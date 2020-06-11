@@ -2298,7 +2298,6 @@ class WindowSource(WindowIconSource):
         psize = isize*4
         log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
         start = monotonic_time()
-        pixel_format = image.get_pixel_format()
 
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
