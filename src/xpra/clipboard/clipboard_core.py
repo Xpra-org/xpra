@@ -84,8 +84,9 @@ def must_discard_extra(target):
 
 
 def _filter_targets(targets):
-    f = tuple(target for target in (bytestostr(x) for x in targets) if not must_discard(target))
-    log("_filter_targets(%s)=%s", targets, f)
+    targets_strs = tuple(bytestostr(x) for x in targets)
+    f = tuple(target for target in targets_strs if not must_discard(target))
+    log("_filter_targets(%s)=%s", targets_str, f)
     return f
 
 #CARD32 can actually be 64-bits...
