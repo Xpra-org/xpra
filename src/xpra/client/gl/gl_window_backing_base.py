@@ -989,7 +989,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def paint_jpeg(self, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         if JPEG_YUV and width>=2 and height>=2:
-            img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
+            img = self.jpeg_decoder.decompress_to_yuv(img_data, options)
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
