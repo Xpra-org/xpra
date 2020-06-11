@@ -3,11 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from io import BytesIO
 from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,  #@UnresolvedImport
     NSPasteboard,       #@UnresolvedImport
     )
-from CoreFoundation import CFDataGetBytes, CFDataGetLength, CFDataCreate        #@UnresolvedImport
+from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
 from gi.repository import GLib
 
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
@@ -229,7 +230,6 @@ class OSXClipboardProxy(ClipboardProxyCore):
 
     def set_image_data(self, dtype, data):
         img_type = dtype.split("/")[1]      #ie: "png"
-        from io import BytesIO
         from xpra.codecs.pillow.decoder import open_only
         img = open_only(data, (img_type, ))
         for img_type, macos_types in {
@@ -245,10 +245,11 @@ class OSXClipboardProxy(ClipboardProxyCore):
                 save_img.save(buf, img_type)
                 data = buf.getvalue()
                 buf.close()
+                self.pasteboard.clearContents()
+                nsdata = NSData.dataWithData_(data)
                 for t in macos_types:
-                    cfdata = CFDataCreate(None, data, len(data))
-                    self.pasteboard.setData_forType_(cfdata, t)
-                    log("set '%s' data type", t)
+                    r = self.pasteboard.setData_forType_(nsdata, t)
+                    log("set '%s' data type: %s", t, r)
             except Exception as e:
                 log("set_image_data(%s, ..)", dtype, exc_info=True)
                 log.error("Error: failed to copy %s image to clipboard", img_type)
