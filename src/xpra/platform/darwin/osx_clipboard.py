@@ -166,7 +166,9 @@ class OSXClipboardProxy(ClipboardProxyCore):
         else:
             log("image target '%s' not found in %s", target, types)
             return None
-        return self.filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
+        img_data = self.filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
+        log("get_image_contents(%s)=%i %s", target, len(img_data or ()), type(img_data))
+        return img_data
 
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False):
