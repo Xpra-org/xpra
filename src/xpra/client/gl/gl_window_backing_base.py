@@ -632,7 +632,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 glBlitFramebuffer(x, bh-y, x+w, bh-(y+h),
                                   x+xdelta, bh-(y+ydelta), x+w+xdelta, bh-(y+h+ydelta),
                                   GL_COLOR_BUFFER_BIT, GL_NEAREST)
-                self.paint_box("scroll", True, x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
+                self.paint_box("scroll", x+xdelta, y+ydelta, x+w+xdelta, y+h+ydelta)
                 glFlush()
 
             self.swap_fbos()
@@ -936,14 +936,11 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, 0)
         glDisable(target)
 
-    def paint_box(self, encoding : str, is_delta : bool, x : int, y : int, w : int, h : int):
+    def paint_box(self, encoding : str, x : int, y : int, w : int, h : int):
         #show region being painted if debug paint box is enabled only:
         if self.paint_box_line_width<=0:
             return
         glLineWidth(self.paint_box_line_width+0.5+int(encoding=="scroll")*2)
-        if is_delta:
-            glLineStipple(1, 0xaaaa)
-            glEnable(GL_LINE_STIPPLE)
         glBegin(GL_LINE_LOOP)
         color = get_paint_box_color(encoding)
         log("Painting colored box around %s screen update using: %s (delta=%s)", encoding, color, is_delta)
@@ -951,8 +948,6 @@ class GLWindowBackingBase(WindowBackingBase):
         for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
             glVertex2i(px, py)
         glEnd()
-        if is_delta:
-            glDisable(GL_LINE_STIPPLE)
 
 
     def pixels_for_upload(self, img_data):
@@ -1080,7 +1075,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
                 glBindTexture(target, 0)
                 glDisable(target)
-                self.paint_box(options.strget("encoding"), options.intget("delta", -1)>=0, x, y, render_width, render_height)
+                self.paint_box(options.strget("encoding"), x, y, render_width, render_height)
                 # Present update to screen
                 if not self.draw_needs_refresh:
                     self.present_fbo(x, y, render_width, render_height, options.intget("flush", 0))
@@ -1136,7 +1131,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     y_scale = height/enc_height
 
                 self.render_planar_update(x, y, enc_width, enc_height, x_scale, y_scale, shader)
-                self.paint_box(encoding, False, x, y, width, height)
+                self.paint_box(encoding, x, y, width, height)
                 fire_paint_callbacks(callbacks, True)
                 # Present it on screen
                 if not self.draw_needs_refresh:
