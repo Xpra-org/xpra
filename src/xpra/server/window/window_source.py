@@ -672,11 +672,13 @@ class WindowSource(WindowIconSource):
         for encoding, encoders in self._all_encoders.items():
             self._encoders[encoding] = encoders[0]
         #we may now want to downscale server-side,
-        #for that we need to use the pillow encoder:
-        if self.enc_pillow and self.client_render_size:
+        #or convert to grayscale,
+        #and for that we need to use the pillow encoder:
+        grayscale = self.encoding=="grayscale"
+        if self.enc_pillow and (self.client_render_size or grayscale):
             crsw, crsh = self.client_render_size
             ww, wh = self.window_dimensions
-            if crsw<ww and crsh<wh:
+            if grayscale or (crsw<ww and crsh<wh):
                 for x in self.enc_pillow.get_encodings():
                     if x in self.server_core_encodings:
                         self.add_encoder(x, self.pillow_encode)
@@ -827,7 +829,7 @@ class WindowSource(WindowIconSource):
         if self._encoding_hint and self._encoding_hint in self._encoders:
             return self.encoding_is_hint
         if self.encoding=="grayscale" and "png/L" in self.common_encodings:
-            return self.encoding_is_pngL
+            return self.encoding_is_grayscale
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
         if self._mmap and self._mmap_size>0:
@@ -895,6 +897,14 @@ class WindowSource(WindowIconSource):
 
     def get_strict_encoding(self, *_args):
         return self.encoding
+
+    def encoding_is_grayscale(self, *args):
+        e = self.get_auto_encoding(*args)
+        if e.startswith("rgb"):
+            return "png"
+        if e.startswith("png"):
+            return "png/L"
+        return e
 
     def get_transparent_encoding(self, w, h, speed, quality, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
@@ -2400,6 +2410,7 @@ class WindowSource(WindowIconSource):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         transparency = self.supports_transparency and options.get("transparency", True)
+        grayscale = self.encoding=="grayscale"
         resize = None
         w, h = image.get_width(), image.get_height()
         ww, wh = self.window_dimensions
@@ -2410,7 +2421,7 @@ class WindowSource(WindowIconSource):
             if ww>crsw and wh>crsh:
                 #keep the same proportions:
                 resize = w*crsw//ww, h*crsh//wh
-        return self.enc_pillow.encode(coding, image, q, s, transparency, resize)
+        return self.enc_pillow.encode(coding, image, q, s, transparency, grayscale, resize)
 
     def mmap_encode(self, coding, image, _options):
         assert coding=="mmap"

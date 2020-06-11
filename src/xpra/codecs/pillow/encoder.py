@@ -49,8 +49,8 @@ def get_info() -> dict:
             }
 
 
-def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool, resize=None):
-    log("pillow.encode%s", (coding, image, quality, speed, supports_transparency, resize))
+def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool, grayscale : bool, resize=None):
+    log("pillow.encode%s", (coding, image, quality, speed, supports_transparency, grayscale, resize))
     pixel_format = bytestostr(image.get_pixel_format())
     palette = None
     w = image.get_width()
@@ -117,7 +117,14 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
         if palette:
             im.putpalette(palette)
             im.palette = ImagePalette.ImagePalette("RGB", palette = palette, size = len(palette))
-        if coding.startswith("png") and not supports_transparency and rgb=="RGBA":
+        if coding!="png/L" and grayscale:
+            if rgb.find("A")>=0 and supports_transparency and coding!="jpeg":
+                im = im.convert("LA")
+            else:
+                im = im.convert("L")
+            rgb = "L"
+            bpp = 8
+        elif coding.startswith("png") and not supports_transparency and rgb=="RGBA":
             im = im.convert("RGB")
             rgb = "RGB"
             bpp = 24
@@ -230,7 +237,7 @@ def selftest(full=False):
             for q in vrange:
                 for s in vrange:
                     for alpha in (True, False):
-                        v = encode(encoding, img, q, s, alpha)
+                        v = encode(encoding, img, q, s, False, alpha)
                         assert v, "encode output was empty!"
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))

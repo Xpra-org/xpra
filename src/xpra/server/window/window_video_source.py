@@ -398,7 +398,7 @@ class WindowVideoSource(WindowSource):
 
     def get_best_encoding_impl_default(self):
         if self.encoding=="grayscale" and "png/L" in self.common_encodings:
-            return self.encoding_is_pngL
+            return self.encoding_is_grayscale
         if self.common_video_encodings or self.supports_scrolling:
             return self.get_best_encoding_video
         return WindowSource.get_best_encoding_impl_default(self)
