@@ -620,7 +620,7 @@ class ClipboardProxyCore:
             self._have_token, self._greedy_client, self._block_owner_change)
         if not self._enabled or self._block_owner_change:
             return
-        if self._have_token or (self._greedy_client and self._can_send):
+        if self._have_token or ((self._greedy_client or self._want_targets) and self._can_send):
             if self._have_token or DELAY_SEND_TOKEN<0:
                 #token ownership will change or told not to wait
                 GLib.idle_add(self.emit_token)
