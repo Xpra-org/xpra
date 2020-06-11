@@ -689,7 +689,8 @@ class ClipboardProxyCore:
 
 
     def filter_data(self, dtype=None, dformat=None, data=None, trusted=False, output_dtype=None):
-        log("filter_data(%s, %s, ..)", dtype, dformat)
+        log("filter_data(%s, %s, %i %s, %s, %s)",
+            dtype, dformat, len(data), type(data), trusted, output_dtype)
         if not data:
             return data
         IMAGE_OVERLAY = os.environ.get("XPRA_CLIPBOARD_IMAGE_OVERLAY", None)
@@ -697,7 +698,12 @@ class ClipboardProxyCore:
             IMAGE_OVERLAY = None
         IMAGE_STAMP = envbool("XPRA_CLIPBOARD_IMAGE_STAMP", False)
         SANITIZE_IMAGES = envbool("XPRA_SANITIZE_IMAGES", True)
-        if dtype in ("image/png", "image/jpeg", "image/tiff") and (IMAGE_STAMP or IMAGE_OVERLAY or (SANITIZE_IMAGES and not trusted)):
+        if dtype in ("image/png", "image/jpeg", "image/tiff") and (
+            (output_dtype is not None and dtype!=output_dtype) or
+            IMAGE_STAMP or
+            IMAGE_OVERLAY or
+            (SANITIZE_IMAGES and not trusted)
+            ):
             from xpra.codecs.pillow.decoder import open_only
             img_type = dtype.split("/")[-1]
             img = open_only(data, (img_type, ))
