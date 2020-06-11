@@ -734,7 +734,10 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
             while i>=0 and len(dirs)>i+1:
                 if dirs[i+1] == "xpra":
                     dirs = dirs[i+2:]
-                i = dirs.index("pkg")
+                try:
+                    i = dirs.index("pkg")
+                except ValueError:
+                    break
         elif pkgdir and install_dir.startswith(pkgdir):
             #arch build dir:
             dirs = install_dir.lstrip(pkgdir).split(os.path.sep)
