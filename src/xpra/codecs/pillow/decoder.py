@@ -40,9 +40,9 @@ def is_xpm(data):
 
 def is_tiff(data):
     if data[:2]==b"II":
-        return data[3]==42 and data[4]==0
+        return data[2]==42 and data[3]==0
     if data[:2]==b"MM":
-        return data[3]==0 and data[4]==42
+        return data[2]==0 and data[3]==42
     return False
 
 
