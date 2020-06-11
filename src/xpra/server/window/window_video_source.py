@@ -397,6 +397,8 @@ class WindowVideoSource(WindowSource):
             properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
+        if self.encoding=="grayscale" and "png/L" in self.common_encodings:
+            return self.encoding_is_pngL
         if self.common_video_encodings or self.supports_scrolling:
             return self.get_best_encoding_video
         return WindowSource.get_best_encoding_impl_default(self)

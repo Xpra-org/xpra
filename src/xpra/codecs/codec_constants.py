@@ -15,6 +15,7 @@ PREFERED_ENCODING_ORDER = (
     "png", "png/P", "png/L", "webp",
     "rgb", "rgb24", "rgb32", "jpeg",
     "h265", "mpeg1", "mpeg2",
+    "grayscale",
     )
 #encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER = (

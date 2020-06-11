@@ -142,6 +142,7 @@ class EncodingServer(StubServerMixin):
                             self.lossless_mode_encodings.append(e)
                             break
         #now update the variables:
+        encs.append("grayscale")
         self.encodings = encs
         self.core_encodings = core_encs
         self.lossless_encodings = [x for x in self.core_encodings

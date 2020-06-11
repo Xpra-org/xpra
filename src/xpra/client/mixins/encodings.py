@@ -238,6 +238,7 @@ class Encodings(StubClientMixin):
         cenc = self.get_core_encodings()
         if ("rgb24" in cenc or "rgb32" in cenc) and "rgb" not in cenc:
             cenc.append("rgb")
+        cenc.append("grayscale")
         return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
 
     def get_core_encodings(self):
@@ -296,7 +297,7 @@ class Encodings(StubClientMixin):
                 log.error(" the only encodings allowed are:")
                 log.error(" %s", csv(self.server_encodings))
                 return
-        self.encoding = encoding
+            self.encoding = encoding
         self.send("encoding", self.encoding)
 
     def send_quality(self):
