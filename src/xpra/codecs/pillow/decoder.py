@@ -10,6 +10,7 @@ import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 
 from xpra.util import csv
+from xpra.os_util import hexstr
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
@@ -68,7 +69,8 @@ def get_image_type(data):
 def open_only(data, types=("png", "jpeg", "webp")):
     itype = get_image_type(data)
     if itype not in types:
-        raise Exception("invalid data: %s, not recognized as %s" % ((itype or "unknown"), csv(types)))
+        raise Exception("invalid data: %s, not recognized as %s, header: %s" % (
+            (itype or "unknown"), csv(types), hexstr(data[:64])))
     buf = BytesIO(data)
     return Image.open(buf)
 
