@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from AppKit import (
-    NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG,  #@UnresolvedImport
+    NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,  #@UnresolvedImport
     NSPasteboard,       #@UnresolvedImport
     )
 from gi.repository import GLib
@@ -104,13 +104,15 @@ class OSXClipboardProxy(ClipboardProxyCore):
         self.pasteboard.clearContents()
 
     def do_emit_token(self):
-        targets = self.get_targets()
-        log("do_emit_token() targets=%s", targets)
-        packet_data = [targets, ]
-        if self._greedy_client and "TEXT" in targets:
-            text = self.get_clipboard_text()
-            if text:
-                packet_data += ["STRING", "bytes", 8, text]
+        packet_data = []
+        if self._want_targets:
+            targets = self.get_targets()
+            log("do_emit_token() targets=%s", targets)
+            packet_data.append(targets)
+            if self._greedy_client and "TEXT" in targets:
+                text = self.get_clipboard_text()
+                if text:
+                    packet_data += ["STRING", "bytes", 8, text]
         self.send_clipboard_token_handler(self, packet_data)
 
 
@@ -120,11 +122,11 @@ class OSXClipboardProxy(ClipboardProxyCore):
         return str(text)
 
     def get_targets(self):
-        types = filter_targets(self.pasteboard.types())
+        types = self.pasteboard.types()
         targets = []
-        if NSStringPboardType in types:
+        if any(t in (NSStringPboardType, NSPasteboardTypeURL) for t in types):
             targets += ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"]
-        if NSTIFFPboardType in types or NSPasteboardTypePNG in types:
+        if any(t in (NSTIFFPboardType, NSPasteboardTypePNG, "public.png", "public.tiff") for t in types):
             targets += ["image/png", "image/jpeg", "image/tiff"]
         log("get_targets() targets(%s)=%s", types, targets)
         return targets
@@ -155,13 +157,14 @@ class OSXClipboardProxy(ClipboardProxyCore):
         elif target=="image/tiff" and NSTIFFPboardType in types:
             src_dtype = "image/tiff"
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
-        elif NSPasteboardTypePNG in types:
+        elif NSPasteboardTypePNG in types or "public.png" in types:
             src_dtype = "image/png"
             img_data = self.pasteboard.dataForType_(NSPasteboardTypePNG)
-        elif NSTIFFPboardType in types:
+        elif NSTIFFPboardType in types or "public.tiff" in types:
             src_dtype = "image/tiff"
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
         else:
+            log("image target '%s' not found in %s", target, types)
             return None
         return self.filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
 
