@@ -732,9 +732,9 @@
 
 	<distutils id="python3-pycups" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/00/ce/836a0deb8b24bcd5f850f8fb97f99fb4abd7374e078b9e6df5a0838f8eb5/pycups-1.9.74.tar.bz2"
-			hash="sha256:86090f259a7c5d0d5caa3407a0e57c9e134027620cbc8f90bf4e37c8b53ed7b9"
-			version="1.9.74"/>
+			module="/packages/0c/bb/82546806a86dc16f5eeb76f62ffdc42cce3d43aacd4e25a8b5300eec0263/pycups-2.0.1.tar.gz"
+			hash="sha256:57434ce5f62548eb12949ca8217f066f4eeb21a5d6ab8b13471dce350e380c90"
+			version="2.0.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
