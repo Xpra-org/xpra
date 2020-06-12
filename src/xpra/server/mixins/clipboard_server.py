@@ -208,7 +208,8 @@ class ClipboardServer(StubServerMixin):
             return
         clipboard_enabled = packet[1]
         ss = self.get_server_source(proto)
-        self.set_clipboard_enabled_status(ss, clipboard_enabled)
+        if ss:
+            self.set_clipboard_enabled_status(ss, clipboard_enabled)
 
     def set_clipboard_enabled_status(self, ss, clipboard_enabled):
         ch = self._clipboard_helper
