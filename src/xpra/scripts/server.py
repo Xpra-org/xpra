@@ -274,9 +274,9 @@ def show_encoding_help(opts):
     from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, HELP_ORDER
     if "help" in opts.encodings:
         sb.allowed_encodings = PREFERED_ENCODING_ORDER
-    from xpra.codecs.video_helper import getVideoHelper
-    getVideoHelper().init()
-    sb.init_encodings()
+    from xpra.server.mixins.encoding_server import EncodingServer
+    assert isinstance(sb, EncodingServer)
+    EncodingServer.threaded_setup(sb)
     from xpra.codecs.loader import encoding_help
     for e in (x for x in HELP_ORDER if x in sb.encodings):
         print(" * %s" % encoding_help(e))
