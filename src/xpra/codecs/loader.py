@@ -270,7 +270,7 @@ def get_encoding_help(encoding):
     return {
           "auto"    : "automatic mode (recommended)",
           "h264"    : "H.264 video codec",
-          "h265"    : "H.265 (HEVC) video codec (slow and buggy - do not use!)",
+          "h265"    : "H.265 (HEVC) video codec (not recommended)",
           "vp8"     : "VP8 video codec",
           "vp9"     : "VP9 video codec",
           "mpeg4"   : "MPEG-4 video codec",
