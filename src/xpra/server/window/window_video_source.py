@@ -66,10 +66,16 @@ def parse_scaling_options_str(scaling_options_str):
     #or even: 1:10, 1:5, ...
     vs_options = []
     for option in scaling_options_str.split(","):
-        parts = option.strip().split("/")
         try:
-            num, den = parts
-            vs_options.append((int(num), int(den)))
+            if option.find("%")>0:
+                v = float(option[:option.find("%")])*100
+                vs_options.append(float.as_integer_ratio(v))
+            elif option.find("/")<0:
+                v = float(option)
+                vs_options.append(float.as_integer_ratio(v))
+            else:
+                num, den = option.strip().split("/")
+                vs_options.append((int(num), int(den)))
         except ValueError:
             scalinglog.warn("Warning: invalid scaling string '%s'", option.strip())
     if vs_options:
