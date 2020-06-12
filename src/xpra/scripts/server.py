@@ -267,7 +267,8 @@ def show_encoding_help(opts):
     set_default_level(logging.WARN)
     logging.root.setLevel(logging.WARN)
     for x in get_all_loggers():
-        x.logger.setLevel(logging.WARN)
+        if x.logger.getEffectiveLevel()==logging.INFO:
+            x.logger.setLevel(logging.WARN)
     from xpra.server.server_base import ServerBase
     sb = ServerBase()
     sb.init(opts)
