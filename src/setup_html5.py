@@ -62,9 +62,11 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
         try:
             from add_build_info import get_svn_props
             svn_props = get_svn_props(False)
-            REVISION = svn_props.get("REVISION", 0)
-            LOCAL_MODIFICATIONS = svn_props.get("LOCAL_MODIFICATIONS", 0)
-        except ImportError:
+            REVISION = int(svn_props.get("REVISION", 0))
+            LOCAL_MODIFICATIONS = int(svn_props.get("LOCAL_MODIFICATIONS", 0))
+        except (ImportError, ValueError):
+            print("WARNING: source information is missing")
+            print(" this build should not be used")
             REVISION  = 0
             LOCAL_MODIFICATIONS = 0
     #those are used to replace the file we ship in source form
