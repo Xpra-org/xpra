@@ -15,6 +15,7 @@ PREFERED_ENCODING_ORDER = (
     "png", "png/P", "png/L", "webp",
     "rgb", "rgb24", "rgb32", "jpeg",
     "h265", "mpeg1", "mpeg2",
+    "scroll",
     "grayscale",
     )
 #encoding order for edges (usually one pixel high or wide):
@@ -25,9 +26,12 @@ EDGE_ENCODING_ORDER = (
     )
 
 HELP_ORDER = (
-    "auto", "h264", "h265", "vp8", "vp9", "mpeg4",
+    "auto",
+    "grayscale",
+    "h264", "h265", "vp8", "vp9", "mpeg4",
     "png", "png/P", "png/L", "webp",
     "rgb", "jpeg",
+    "scroll",
     )
 
 #those are currently so useless that we don't want the user to select them by mistake

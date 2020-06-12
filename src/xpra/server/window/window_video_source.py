@@ -90,7 +90,6 @@ DEBUG_VIDEO_CLEAN = envbool("XPRA_DEBUG_VIDEO_CLEAN", False)
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
-SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 50)))
 MIN_SCROLL_IMAGE_SIZE = envint("XPRA_MIN_SCROLL_IMAGE_SIZE", 384)
 
@@ -115,8 +114,9 @@ class WindowVideoSource(WindowSource):
         self.video_subregion = None
         super().__init__(*args)
         self.supports_eos = self.encoding_options.boolget("eos")
-        self.scroll_encoding = SCROLL_ENCODING
-        self.supports_scrolling = self.scroll_encoding and self.encoding_options.boolget("scrolling") and not STRICT_MODE
+        self.supports_scrolling = "scroll" in self.common_encodings or (
+            #for older clients, we check an encoding option:
+            "scroll" in self.server_core_encodings and self.encoding_options.boolget("scrolling") and not STRICT_MODE)
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.supports_video_b_frames = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
@@ -391,7 +391,9 @@ class WindowVideoSource(WindowSource):
 
     def do_set_client_properties(self, properties):
         #client may restrict csc modes for specific windows
-        self.supports_scrolling = self.scroll_encoding and properties.boolget("encoding.scrolling", self.supports_scrolling) and not STRICT_MODE
+        self.supports_scrolling = "scroll" in self.common_encodings or (
+            #for older clients, we check an encoding option:
+            "scroll" in self.server_core_encodings and properties.boolget("scrolling", self.supports_scrolling) and not STRICT_MODE)
         self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)
         self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION
         if properties.get("scaling.control") is not None:

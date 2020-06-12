@@ -94,8 +94,9 @@ class EncodingServer(StubServerMixin):
                                                     "h264", "vp8", "vp9",
                                                     "rgb24", "rgb32",
                                                     "png", "png/P", "png/L", "webp",
+                                                    "scroll",
                                                     ))),
-             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9")],
+             "with_quality"         : [x for x in self.core_encodings if x in ("jpeg", "webp", "h264", "vp8", "vp9", "scroll")],
              "with_lossless_mode"   : self.lossless_mode_encodings,
              }
 
@@ -115,7 +116,11 @@ class EncodingServer(StubServerMixin):
                 if ce not in core_encs:
                     core_encs.append(ce)
 
-        add_encodings(["rgb24", "rgb32"])
+        add_encodings(["rgb24", "rgb32", "scroll"])
+        if "scroll" in self.allowed_encodings and "scroll" not in self.lossless_mode_encodings:
+            #scroll is lossless, but it also uses other picture codecs
+            #and those allow changes in quality
+            self.lossless_mode_encodings.append("scroll")
 
         #video encoders (empty when first called - see threaded_init)
         ve = getVideoHelper().get_encodings()

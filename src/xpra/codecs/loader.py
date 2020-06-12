@@ -269,6 +269,7 @@ def get_encoding_help(encoding):
     compressors = [x for x in compressors if x!="brotli"]
     return {
           "auto"    : "automatic mode (recommended)",
+          "grayscale" : "same as 'auto' but in grayscale mode",
           "h264"    : "H.264 video codec",
           "h265"    : "H.265 (HEVC) video codec (not recommended)",
           "vp8"     : "VP8 video codec",
@@ -281,6 +282,7 @@ def get_encoding_help(encoding):
           "jpeg"    : "JPEG lossy compression",
           "rgb"     : "Raw RGB pixels, lossless,"
                       +" compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
+          "scroll"  : "motion vectors, supplemented with picture codecs",
           }.get(encoding)
 
 

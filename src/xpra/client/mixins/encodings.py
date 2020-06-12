@@ -22,6 +22,7 @@ PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 VIDEO_MAX_SIZE = tuple(int(x) for x in os.environ.get("XPRA_VIDEO_MAX_SIZE", "4096,4096").replace("x", ",").split(","))
+SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 
 #we assume that any server will support at least those:
 DEFAULT_ENCODINGS = os.environ.get("XPRA_DEFAULT_ENCODINGS", "rgb32,rgb24,jpeg,png").split(",")
@@ -274,6 +275,8 @@ class Encodings(StubClientMixin):
                 for e in c.get_encodings():
                     if e not in core_encodings:
                         core_encodings.append(e)
+        if SCROLL_ENCODING:
+            core_encodings.append("scroll")
         #we enable all the video decoders we know about,
         #what will actually get used by the server will still depend on the csc modes supported
         video_decodings = getVideoHelper().get_decodings()
