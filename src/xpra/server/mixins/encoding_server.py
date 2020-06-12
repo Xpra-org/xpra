@@ -123,8 +123,10 @@ class EncodingServer(StubServerMixin):
         add_encodings(ve)  #ie: ["vp8", "h264"]
         #Pithon Imaging Libary:
         enc_pillow = get_codec("enc_pillow")
+        log("enc_pillow=%s", enc_pillow)
         if enc_pillow:
             pil_encs = enc_pillow.get_encodings()
+            log("pillow encodings: %s", pil_encs)
             add_encodings(x for x in pil_encs if x!="webp")
             #Note: webp will only be enabled if we have a Python-PIL fallback
             #(either "webp" or "png")
