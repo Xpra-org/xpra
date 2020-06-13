@@ -252,7 +252,7 @@ def selftest(full=False):
         def test_rgbx(*args):
             return decompress_to_rgb("RGBX", *args)
         for fn in (decompress_to_yuv, test_rgbx):
-            img = fn(data, 16, 16)
+            img = fn(data)
             log("%s(%i bytes)=%s", fn, len(data), img)
             if full:
                 try:
