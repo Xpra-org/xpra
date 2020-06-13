@@ -257,7 +257,7 @@ def selftest(full=False):
             log("%s(%i bytes)=%s", fn, len(data), img)
             if full:
                 try:
-                    v = decompress_to_yuv(data[:len(data)//2], 16, 16)
+                    v = decompress_to_yuv(data[:len(data)//2])
                     assert v is not None
                 except:
                     pass
