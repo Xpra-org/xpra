@@ -234,9 +234,10 @@ def get_usage():
                         "screenshot filename [DISPLAY]",
                         "control DISPLAY command [arg1] [arg2]..",
                         "print DISPLAY filename",
+                        "shell [DISPLAY]",
                         "showconfig",
-                        "shell",
                         "list",
+                        "list-windows",
                         "sessions",
                         "launcher",
                       ]

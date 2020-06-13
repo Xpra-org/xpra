@@ -163,7 +163,7 @@ def main(script_file, cmdline):
 def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
-        "control", "list", "list-mdns", "sessions", "mdns-gui", "bug-report",
+        "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "opengl", "opengl-probe", "opengl-test",
         "test-connect",
         "encoding", "webcam", "clipboard-test",
@@ -511,6 +511,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
             return app.run()
         elif mode == "list":
             return run_list(error_cb, options, args)
+        elif mode == "list-windows":
+            return run_list_windows(error_cb, options, args)
         elif mode == "list-mdns" and supports_mdns:
             return run_list_mdns(error_cb, args)
         elif mode == "mdns-gui" and supports_mdns:
@@ -2742,6 +2744,79 @@ def run_list(error_cb, opts, extra_args):
             state = dotxpra.get_server_state(sockpath)
             may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
     return 0
+
+
+def run_list_windows(error_cb, opts, extra_args):
+    no_gtk()
+    if extra_args:
+        error_cb("too many arguments for mode")
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    displays = dotxpra.displays()
+    if not displays:
+        sys.stdout.write("No xpra sessions found\n")
+        return 0
+    import re
+    def sort_human(l):
+        convert = lambda text: float(text) if text.isdigit() else text
+        alphanum = lambda key: [convert(c) for c in re.split('([-+]?[0-9]*\.?[0-9]*)', key)]
+        l.sort(key=alphanum)
+        return l
+    def exec_and_parse(subcommand="id", display=""):
+        from xpra.platform.paths import get_nodock_command
+        cmd = get_nodock_command()+[subcommand, display]
+        d = {}
+        try:
+            env = os.environ.copy()
+            env["XPRA_SKIP_UI"] = "1"
+            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
+            out, err = proc.communicate()
+            for line in bytestostr(out or err).splitlines():
+                try:
+                    k,v = line.split("=", 1)
+                    d[k] = v
+                except ValueError:
+                    continue
+        except Exception:
+            pass
+        return d
+
+    sys.stdout.write("Display   Status    Name           Windows\n")
+    for display in sort_human(displays):
+        state = dotxpra.get_display_state(display)
+        sys.stdout.write("%-10s%-10s" % (display, state))
+        sys.stdout.flush()
+        name = "?"
+        if state==DotXpra.LIVE:
+            name = exec_and_parse("id", display).get("session-name", "?")
+            if len(name)>=15:
+                name = name[:12]+".. "
+        sys.stdout.write("%-15s" % (name, ))
+        sys.stdout.flush()
+        windows = "?"
+        if state==DotXpra.LIVE:
+            dinfo = exec_and_parse("info", display)
+            if dinfo:
+                #first, find all the window properties:
+                winfo = {}
+                for k,v in dinfo.items():
+                    #ie: "windows.1.size-constraints.base-size" -> ["windows", "1", "size-constraints.base-size"]
+                    parts = k.split(".", 2)
+                    if parts[0]=="windows" and len(parts)==3:
+                        winfo.setdefault(parts[1], {})[parts[2]] = v
+                #print("winfo=%s" % (winfo,))
+                #then find a property we can show for each:
+                wstrs = []
+                for props in winfo.values():
+                    for prop in ("command", "class-instance", "title"):
+                        wstr = props.get(prop, "?")
+                        if wstr and prop=="class-instance":
+                            wstr = wstr.split("',")[0][2:]
+                        if wstr and wstr!="?":
+                            break
+                    wstrs.append(wstr)
+                windows = csv(wstrs)
+        sys.stdout.write("%s\n" % (windows, ))
+        sys.stdout.flush()
 
 def run_showconfig(options, args):
     log = get_util_logger()
