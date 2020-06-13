@@ -143,6 +143,8 @@ class WindowVideoSource(WindowSource):
                                          if x in nv_common)
         self.common_video_encodings = tuple(x for x in PREFERED_ENCODING_ORDER
                                             if x in self.video_encodings and x in self.core_encodings)
+        if "scroll" in self.server_core_encodings:
+            self.add_encoder("scroll", self.scroll_encode)
         #those two instances should only ever be modified or accessed from the encode thread:
         self._csc_encoder = None
         self._video_encoder = None
@@ -1796,10 +1798,6 @@ class WindowVideoSource(WindowSource):
         if not self.supports_scrolling:
             scrolllog("no scrolling: not supported")
             return False
-        if options.get("scroll") is True:
-            scrolllog("no scrolling: detection has already been used on this image")
-            #we've already checked
-            return False
         #don't download the pixels if we have a GPU buffer,
         #since that means we're likely to be able to compress on the GPU too with NVENC:
         if not image.has_pixels():
@@ -1807,8 +1805,6 @@ class WindowVideoSource(WindowSource):
         if self.content_type=="video" or not self.non_video_encodings:
             scrolllog("no scrolling: content is video")
             return False
-        x = image.get_target_x()
-        y = image.get_target_y()
         w = image.get_width()
         h = image.get_height()
         if w<MIN_SCROLL_IMAGE_SIZE or h<MIN_SCROLL_IMAGE_SIZE:
@@ -1819,6 +1815,23 @@ class WindowVideoSource(WindowSource):
         if self.b_frame_flush_timer and scroll_data:
             scrolllog("no scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
             self.free_scroll_data()
+            return False
+        return self.do_scroll_encode("scroll", image, options, self.scroll_min_percent)
+
+    def scroll_encode(self, coding, image, options):
+        self.do_scroll_encode(coding, image, options, 0)
+        #do_scroll_encode() sends the packets
+        #so there is nothing to return:
+        return None
+
+    def do_scroll_encode(self, coding, image, options, min_percent=0):
+        x = image.get_target_x()
+        y = image.get_target_y()
+        w = image.get_width()
+        h = image.get_height()
+        scroll_data = self.scroll_data
+        if options.get("scroll") is True:
+            scrolllog("no scrolling: detection has already been used on this image")
             return False
         try:
             start = monotonic_time()
@@ -1842,29 +1855,36 @@ class WindowVideoSource(WindowSource):
                 return False
             stride = image.get_rowstride()
             scroll_data.update(pixels, x, y, w, h, stride, bpp)
-            max_distance = min(1000, (100-self.scroll_min_percent)*h//100)
+            max_distance = min(1000, (100-min_percent)*h//100)
             scroll_data.calculate(max_distance)
             #marker telling us not to invalidate the scroll data from here on:
             options["scroll"] = True
-            scroll, count = scroll_data.get_best_match()
-            end = monotonic_time()
-            match_pct = int(100*count/h)
-            scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s",
-                      (end-start)*1000, match_pct, h, scroll)
+            if min_percent>0:
+                max_zones = 20
+                scroll, count = scroll_data.get_best_match()
+                end = monotonic_time()
+                match_pct = int(100*count/h)
+                scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s",
+                          (end-start)*1000, match_pct, h, scroll)
+            else:
+                max_zones = 50
+                match_pct = min_percent
             #if enough scrolling is detected, use scroll encoding for this frame:
-            if match_pct>=self.scroll_min_percent:
-                self.encode_scrolling(scroll_data, image, options, match_pct)
+            if match_pct>=min_percent:
+                self.encode_scrolling(scroll_data, image, options, match_pct, max_zones)
                 return True
         except Exception:
-            scrolllog("may_use_scrolling(%s, %s) detection", image, options, exc_info=True)
+            scrolllog("do_scroll_encode(%s, %s)", image, options, exc_info=True)
             if not self.is_cancelled():
                 scrolllog.error("Error during scrolling detection")
                 scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
             #make sure we start again from scratch next time:
             self.free_scroll_data()
-            return False
+        return False
 
-    def encode_scrolling(self, scroll_data, image, options, match_pct):
+    def encode_scrolling(self, scroll_data, image, options, match_pct, max_zones=20):
+        #generate all the packets for this screen update
+        #using 'scroll' encoding and picture encodings for the other regions
         start = monotonic_time()
         try:
             del options["av-sync"]
@@ -1872,7 +1892,8 @@ class WindowVideoSource(WindowSource):
             pass
         #tells make_data_packet not to invalidate the scroll data:
         ww, wh = self.window_dimensions
-        scrolllog("encode_scrolling([], %s, %s, %i) window-dimensions=%s", image, options, match_pct, (ww, wh))
+        scrolllog("encode_scrolling([], %s, %s, %i, %i) window-dimensions=%s",
+                  image, options, match_pct, max_zones, (ww, wh))
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
@@ -1885,7 +1906,7 @@ class WindowVideoSource(WindowSource):
             v = scroll_data.get_scroll_values()
             if v:
                 raw_scroll, non_scroll = v
-                if len(raw_scroll)>=20 or len(non_scroll)>=20:
+                if len(raw_scroll)>=max_zones or len(non_scroll)>=max_zones:
                     #avoid fragmentation, which is too costly
                     #(too many packets, too many loops through the encoder code)
                     scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead",
@@ -1916,7 +1937,8 @@ class WindowVideoSource(WindowSource):
                 client_options["flush"] = flush
             coding = "scroll"
             end = monotonic_time()
-            packet = self.make_draw_packet(x, y, w, h, coding, LargeStructure(coding, scrolls), 0, client_options, options)
+            packet = self.make_draw_packet(x, y, w, h,
+                                           coding, LargeStructure(coding, scrolls), 0, client_options, options)
             self.queue_damage_packet(packet, 0, 0, options)
             compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s as %3i rectangles  (%5iKB)           , sequence %5i, client_options=%s",
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
@@ -1952,7 +1974,8 @@ class WindowVideoSource(WindowSource):
                 #    filename = "./scroll-%i-%i.png" % (self._sequence, len(non_scroll)-flush)
                 #    im.save(filename, "png")
                 #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
-                packet = self.make_draw_packet(sub.get_target_x(), sub.get_target_y(), outw, outh, coding, data, outstride, client_options, options)
+                packet = self.make_draw_packet(sub.get_target_x(), sub.get_target_y(), outw, outh,
+                                               coding, data, outstride, client_options, options)
                 self.queue_damage_packet(packet, 0, 0, options)
                 psize = w*sh*4
                 csize = len(data)
@@ -1966,6 +1989,7 @@ class WindowVideoSource(WindowSource):
         assert flush==0
         self.last_scroll_time = monotonic_time()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
+
 
     def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
         #for scroll encoding, data is a LargeStructure wrapper:

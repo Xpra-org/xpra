@@ -746,10 +746,7 @@ class WindowSource(WindowIconSource):
     def update_encoding_selection(self, encoding=None, exclude=(), init=False):
         #now we have the real list of encodings we can use:
         #"rgb32" and "rgb24" encodings are both aliased to "rgb"
-        server_encodings = list(self._encoders.keys())
-        if "scroll" in self.server_core_encodings:
-            server_encodings.append("scroll")
-        common_encodings = [x for x in server_encodings if x in self.core_encodings and x not in exclude]
+        common_encodings = [x for x in self._encoders if x in self.core_encodings and x not in exclude]
         #"rgb" is a pseudo encoding and needs special code:
         if "rgb24" in  common_encodings or "rgb32" in common_encodings:
             common_encodings.append("rgb")
