@@ -190,7 +190,7 @@ def decompress_to_yuv(data):
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper.PLANAR_3)
 
 
-def decompress_to_rgb(rgb_format, data, int width, int height):
+def decompress_to_rgb(rgb_format, data):
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
     cdef const uint8_t *buf
@@ -214,7 +214,6 @@ def decompress_to_rgb(rgb_format, data, int width, int height):
     if r:
         close()
         raise Exception("failed to decompress JPEG header: %s" % get_error_str())
-    assert w==width and h==height, "invalid picture dimensions: %ix%i, expected %ix%i" % (w, h, width, height)
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
@@ -227,13 +226,13 @@ def decompress_to_rgb(rgb_format, data, int width, int height):
         #TODO: add padding and rounding?
         start = monotonic_time()
         stride = w*4
-        size = stride*height
+        size = stride*h
         membuf = getbuf(size)
         dst_buf = <unsigned char*> membuf.get_mem()
         with nogil:
             r = tjDecompress2(decompressor,
                               buf, buf_len, dst_buf,
-                              width, stride, height, pixel_format, flags)
+                              w, stride, h, pixel_format, flags)
         if r:
             raise Exception("failed to decompress %s JPEG data to %s: %s" % (subsamp_str, rgb_format, get_error_str()))
     finally:
