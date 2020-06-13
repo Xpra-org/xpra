@@ -123,7 +123,7 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return str(err)
 
-def decompress_to_yuv(data, options={}):
+def decompress_to_yuv(data):
     cdef const uint8_t *buf
     cdef Py_ssize_t buf_len
     assert object_as_buffer(data, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(data)
@@ -190,7 +190,7 @@ def decompress_to_yuv(data, options={}):
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper.PLANAR_3)
 
 
-def decompress_to_rgb(rgb_format, data, int width, int height, options={}):
+def decompress_to_rgb(rgb_format, data, int width, int height):
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
     cdef const uint8_t *buf

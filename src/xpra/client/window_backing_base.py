@@ -327,7 +327,7 @@ class WindowBackingBase:
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        img = self.jpeg_decoder.decompress_to_rgb("RGBX", img_data, width, height, options)
+        img = self.jpeg_decoder.decompress_to_rgb("RGBX", img_data, width, height)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
         rowstride = img.get_rowstride()
