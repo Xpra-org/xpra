@@ -11,7 +11,7 @@ import binascii
 
 from xpra.util import csv
 from xpra.log import Logger
-log = Logger("util")
+log = Logger("encoding")
 
 #Warning: many systems will fail above 8k because of memory constraints
 # encoders can allocate many times more memory to hold the frames..
@@ -49,15 +49,21 @@ def make_test_image(pixel_format, w, h):
     from xpra.codecs.codec_constants import get_subsampling_divs
     #import time
     #start = monotonic_time()
-    if pixel_format.startswith("YUV") or pixel_format=="GBRP":
+    if pixel_format.startswith("YUV") or pixel_format=="GBRP" or pixel_format=="NV12":
         divs = get_subsampling_divs(pixel_format)
+        nplanes = len(divs)
         ydiv = divs[0]  #always (1, 1)
         y = makebuf(w//ydiv[0]*h//ydiv[1])
         udiv = divs[1]
         u = makebuf(w//udiv[0]*h//udiv[1])
-        vdiv = divs[2]
-        v = makebuf(w//vdiv[0]*h//vdiv[1])
-        image = ImageWrapper(0, 0, w, h, (y, u, v), pixel_format, 32, (w//ydiv[0], w//udiv[0], w//vdiv[0]), planes=ImageWrapper.PLANAR_3, thread_safe=True)
+        planes = [y, u]
+        strides = [w//ydiv[0], w//udiv[0]]
+        if nplanes==3:
+            vdiv = divs[2]
+            v = makebuf(w//vdiv[0]*h//vdiv[1])
+            planes.append(v)
+            strides.append(w//vdiv[0])
+        image = ImageWrapper(0, 0, w, h, planes, pixel_format, 32, strides, planes=nplanes, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210"):
         stride = w*len(pixel_format)

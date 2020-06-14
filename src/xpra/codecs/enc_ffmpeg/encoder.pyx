@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,10 +17,10 @@ from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
-from xpra.os_util import bytestostr, strtobytes
+from xpra.os_util import bytestostr, strtobytes, hexstr
 from xpra.buffers.membuf cimport memalign, object_as_buffer
 
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int64_t, uint64_t
 from libc.stdlib cimport free
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
@@ -28,9 +28,8 @@ SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", 2)
 THREAD_COUNT= envint("XPRA_FFMPEG_THREAD_COUNT")
 AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
+VAAPI = envbool("XPRA_VAAPI", True)
 
-
-from libc.stdint cimport uint8_t, int64_t, uint32_t
 
 
 cdef extern from "libavutil/mem.h":
@@ -75,11 +74,27 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_ARGB
     AVPixelFormat AV_PIX_FMT_BGRA
     AVPixelFormat AV_PIX_FMT_GBRP
+    AVPixelFormat AV_PIX_FMT_VAAPI
+    AVPixelFormat AV_PIX_FMT_NV12
 
 cdef extern from "libavutil/samplefmt.h":
     AVSampleFormat AV_SAMPLE_FMT_S16
     AVSampleFormat AV_SAMPLE_FMT_FLTP
 
+
+cdef extern from "libavutil/frame.h":
+    int av_frame_get_buffer(AVFrame *frame, int align)
+
+cdef extern from "libavutil/buffer.h":
+    ctypedef struct AVBuffer:
+        pass
+    ctypedef struct AVBufferRef:
+        AVBuffer* buffer
+        uint8_t *data
+        int      size
+        
+    AVBufferRef *av_buffer_ref(AVBufferRef *buf)
+    void av_buffer_unref(AVBufferRef **buf)
 
 cdef extern from "libavformat/avio.h":
     ctypedef int AVIODataMarkerType
@@ -175,6 +190,8 @@ cdef extern from "libavcodec/avcodec.h":
         int         quality
         void        *opaque
         AVPictureType pict_type
+        AVDictionary *metadata
+        AVBufferRef *hw_frames_ctx
     ctypedef struct AVCodec:
         int         capabilities
         const char  *name
@@ -197,30 +214,111 @@ cdef extern from "libavcodec/avcodec.h":
         int num
         int den
 
+    ctypedef int AVMediaType
     ctypedef struct AVCodecContext:
         const AVClass *av_class
-        int width
-        int height
-        AVPixelFormat pix_fmt
-        int thread_safe_callbacks
-        int thread_count
-        int thread_type
+        int log_level_offset
+        AVMediaType codec_type
+        AVCodec *codec
+        AVCodecID codec_id
+        unsigned int codec_tag
+        void *priv_data
+        void *internal
+        void *opaque
+        int64_t bit_rate
+        int bit_rate_tolerance
+        int global_quality
+        int compression_level
         int flags
         int flags2
-        #int refcounted_frames
-        int max_b_frames
-        int has_b_frames
-        int gop_size
-        int delay
-        AVRational framerate
+        uint8_t *extradata
+        int extradata_size
         AVRational time_base
-        unsigned int codec_tag
-        int64_t bit_rate
-        AVSampleFormat sample_fmt
+        int ticks_per_frame
+        int delay
+        int width
+        int height
+        int coded_width
+        int coded_height
+        int gop_size
+        AVPixelFormat pix_fmt
+        #some functions omitted here
+        int max_b_frames
+        float b_quant_factor
+        float b_quant_offset
+        int has_b_frames
+        int i_quant_factor
+        float i_quant_offset
+        float lumi_masking
+        float temporal_cplx_masking
+        float spatial_cplx_masking
+        float p_masking
+        float dark_masking
+        int slice_count
+        int slice_offset
+        AVRational sample_aspect_ratio
+        int me_cmp
+        int me_sub_cmp
+        int mb_cmp
+        int ildct_cmp
+        int dia_size
+        int last_predictor_count
+        int me_pre_cmp
+        int pre_dia_size
+        int me_subpel_quality
+        int me_range
+        int slice_flags
+        int mb_decision
+        uint16_t *intra_matrix
+        uint16_t *inter_matrix
+        int intra_dc_precision
+        int skip_top
+        int skip_bottom
+        int mb_lmin
+        int mb_lmax
+        int bidir_refine
+        int keyint_mint
+        int refs
+        int mv0_threshold
+        #skipped: AVColor*
+        int slices
         int sample_rate
         int channels
+        AVSampleFormat sample_fmt
+        int frame_size
+        int frame_number
+        int block_align
+        int cutoff
+        uint64_t channel_layout
+        uint64_t request_channel_layout
+        #skippped: AVAudioServiceType
+        #        AVSampleFormat
+        int refcounted_frames
+        float qcompress
+        float qblur
+        int qmin
+        int qmax
+        int max_qdiff
+        int rc_buffer_size
+        int rc_override_count
+        int64_t rc_max_rate
+        int64_t rc_min_rate
+        float rc_max_available_vbv_use
+        float rc_min_vbv_overflow_use
+        int rc_initial_buffer_occupancy
+        int strict_std_compliance
+        int error_concealment
+        int debug
+        int debug_mv
+        int err_recognition
+        int thread_count
+        int thread_type
+        int active_thread_type
+        int thread_safe_callbacks
         int profile
         int level
+        AVRational framerate
+        AVBufferRef *hw_frames_ctx
 
     ctypedef struct AVFormatContext:
         const AVClass   *av_class
@@ -298,6 +396,9 @@ cdef extern from "libavcodec/avcodec.h":
     void av_frame_unref(AVFrame *frame) nogil
     void av_init_packet(AVPacket *pkt) nogil
     void av_packet_unref(AVPacket *pkt) nogil
+
+    void avcodec_free_context(AVCodecContext **avctx)
+    AVCodec *avcodec_find_encoder_by_name(const char *name)
 
 ctypedef int AVOptionType
 cdef extern from "libavutil/opt.h":
@@ -423,6 +524,44 @@ cdef extern from "libavformat/avformat.h":
     int av_write_trailer(AVFormatContext *s)
     int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     int av_frame_make_writable(AVFrame *frame)
+
+
+cdef extern from "libavutil/hwcontext.h":
+    ctypedef int AVHWDeviceType
+    int AV_HWDEVICE_TYPE_NONE
+    int AV_HWDEVICE_TYPE_VDPAU
+    int AV_HWDEVICE_TYPE_CUDA
+    int AV_HWDEVICE_TYPE_VAAPI
+    int AV_HWDEVICE_TYPE_DXVA2
+    int AV_HWDEVICE_TYPE_QSV
+    int AV_HWDEVICE_TYPE_VIDEOTOOLBOX
+    int AV_HWDEVICE_TYPE_D3D11VA
+    int AV_HWDEVICE_TYPE_DRM
+    int AV_HWDEVICE_TYPE_OPENCL
+    int AV_HWDEVICE_TYPE_MEDIACODEC
+
+    ctypedef struct AVHWDeviceContext:
+        const AVClass av_class
+        #AVHWDeviceType type
+
+    ctypedef struct AVHWFramesContext:
+        const AVClass av_class
+        AVBufferRef device_ref
+        AVHWDeviceContext *device_ctx
+        void *hwctx
+        void *user_opaque
+        int initial_pool_size
+        AVPixelFormat format
+        AVPixelFormat sw_format
+        int width
+        int height
+
+    AVBufferRef *av_hwframe_ctx_alloc(AVBufferRef *device_ctx)
+    int av_hwframe_ctx_init(AVBufferRef *ref)
+    int av_hwdevice_ctx_create(AVBufferRef **device_ctx, AVHWDeviceType type,
+                               const char *device, AVDictionary *opts, int flags)
+    int av_hwframe_get_buffer(AVBufferRef *hwframe_ctx, AVFrame *frame, int flags)
+    int av_hwframe_transfer_data(AVFrame *dst, const AVFrame *src, int flags)
 
 
 H264_PROFILE_NAMES = {
@@ -579,6 +718,8 @@ FORMAT_TO_ENUM = {
     "ARGB"      : AV_PIX_FMT_ARGB,
     "BGRA"      : AV_PIX_FMT_BGRA,
     "GBRP"      : AV_PIX_FMT_GBRP,
+    "VAAPI"     : AV_PIX_FMT_VAAPI,
+    "NV12"      : AV_PIX_FMT_NV12,
     }
 
 CODEC_ID = {
@@ -633,28 +774,201 @@ def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 CODECS = []
-if avcodec_find_encoder(AV_CODEC_ID_H264)!=NULL:
-    CODECS.append("h264+mp4")
-if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
-    CODECS.append("vp8+webm")
-#if avcodec_find_encoder(AV_CODEC_ID_VP9)!=NULL:
-#    CODECS.append("vp9+webm")
-#if avcodec_find_encoder(AV_CODEC_ID_H265)!=NULL:
-#    CODECS.append("h265")
-if avcodec_find_encoder(AV_CODEC_ID_MPEG4)!=NULL:
-    CODECS.append("mpeg4+mp4")
-if avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO)!=NULL:
-    CODECS.append("mpeg1")
-if avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
-    CODECS.append("mpeg2")
-log("enc_ffmpeg CODECS=%s", csv(CODECS))
 
 DEF DEFAULT_BUF_LEN = 64*1024
 
 
+VAAPI_CODECS = []
+
 def init_module():
     log("enc_ffmpeg.init_module()")
     override_logger()
+    if avcodec_find_encoder(AV_CODEC_ID_H264)!=NULL:
+        CODECS.append("h264+mp4")
+    if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
+        CODECS.append("vp8+webm")
+    #if avcodec_find_encoder(AV_CODEC_ID_VP9)!=NULL:
+    #    CODECS.append("vp9+webm")
+    #if avcodec_find_encoder(AV_CODEC_ID_H265)!=NULL:
+    #    CODECS.append("h265")
+    if avcodec_find_encoder(AV_CODEC_ID_MPEG4)!=NULL:
+        CODECS.append("mpeg4+mp4")
+    if avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO)!=NULL:
+        CODECS.append("mpeg1")
+    if avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
+        CODECS.append("mpeg2")
+    log("enc_ffmpeg non vaapi CODECS=%s", csv(CODECS))
+    if VAAPI:
+        try:
+            init_vaapi()
+        except Exception:
+            log("no vappi support", exc_info=True)
+
+def init_vaapi():
+    global CODECS, VAAPI_CODECS
+    #can we find a device:
+    cdef AVBufferRef *hw_device_ctx = init_vaapi_device()
+    cdef AVCodecContext *avctx = NULL 
+    cdef AVCodec *codec = NULL
+    cdef AVFrame *sw_frame = NULL
+    cdef AVFrame *hw_frame = NULL
+    cdef int WIDTH = 640
+    cdef int HEIGHT = 480
+    for c in ("h264", "hevc", "mpeg2", "vp8", "vp9"):
+        if c in VAAPI_CODECS:
+            continue
+        name = ("%s_vaapi" % c).encode("latin1")
+        codec = avcodec_find_encoder_by_name(name)
+        log("testing %s_vaapi=%#x", c, <uintptr_t> codec)
+        if not codec:
+            continue
+        #now verify we can use this codec with the device selected:
+        avctx = avcodec_alloc_context3(codec)
+        if avctx==NULL:
+            log.error("Error: failed to allocate codec context")
+            break
+        avctx.width     = WIDTH
+        avctx.height    = HEIGHT
+        avctx.global_quality = 20
+        avctx.framerate.num = 25
+        avctx.framerate.den = 1
+        avctx.time_base.num = 1
+        avctx.time_base.den = 25
+        avctx.sample_aspect_ratio.num = 1
+        avctx.sample_aspect_ratio.den = 1
+        avctx.pix_fmt = AV_PIX_FMT_VAAPI
+        #test encode a frame:
+        try:
+            err = set_hwframe_ctx(avctx, hw_device_ctx, WIDTH, HEIGHT)
+            log("set_hwframe_ctx(%#x, %#x, %i, %i)=%i", <uintptr_t> avctx, <uintptr_t> hw_device_ctx, WIDTH, HEIGHT, err)
+            if err<0:
+                log.warn("Warning: failed to set hwframe context")
+                log.warn(" %s", av_error_str(err))
+                continue
+            err = avcodec_open2(avctx, codec, NULL)
+            log("avcodec_open2(%#x, %i, NULL)=%i", <uintptr_t> avctx, <uintptr_t> codec, err)
+            if err<0:
+                log.warn("Warning: failed to open video encoder codec")
+                log.warn(" %i: %s", err, av_error_str(err))
+                continue
+            sw_frame = av_frame_alloc()
+            log("av_frame_alloc()=%#x", <uintptr_t> sw_frame)
+            if sw_frame==NULL:
+                log.error("Error: failed to allocate a sw frame")
+                break
+            sw_frame.width  = WIDTH
+            sw_frame.height = HEIGHT
+            sw_frame.format = AV_PIX_FMT_NV12
+            err = av_frame_get_buffer(sw_frame, 32)
+            log("av_frame_get_buffer(%#x, 32)=%i", <uintptr_t> sw_frame, err)
+            if err<0:
+                log.error("Error: failed to allocate sw buffer for a frame")
+                break
+            #TODO: put some real data in the frame:
+            for i in range(min(WIDTH, HEIGHT)//2):
+                (<uint8_t*> sw_frame.data[0])[i**2] = 255
+                (<uint8_t*> sw_frame.data[1])[i**2] = 255
+            #hardware side:
+            hw_frame = av_frame_alloc()
+            log("av_frame_alloc()=%#x", <uintptr_t> hw_frame)
+            if hw_frame==NULL:
+                log.error("Error: failed to allocate a hw frame")
+                break
+            err = av_hwframe_get_buffer(avctx.hw_frames_ctx, hw_frame, 0)
+            log("av_frame_get_buffer(%#x, %#x, 0)=%i", <uintptr_t> avctx.hw_frames_ctx, <uintptr_t> hw_frame, err)
+            if err<0 or hw_frame.hw_frames_ctx==NULL:
+                log.error("Error: failed to allocate a hw buffer")
+                log.error(" %s", av_error_str(err))
+                continue
+            err = av_hwframe_transfer_data(hw_frame, sw_frame, 0)
+            log("av_hwframe_transfer_data(%#x, %#x, 0)=%i", <uintptr_t> hw_frame, <uintptr_t> sw_frame, err)
+            if err<0:
+                log.error("Error: failed to transfer frame data to surface")
+                log.error(" %s", av_error_str(err))
+                continue
+            data = encode_frame(avctx, hw_frame)
+            log("encode_frame(%#x, %#x)=%i buffers", <uintptr_t> avctx, <uintptr_t> hw_frame, len(data))
+            flushed = encode_frame(avctx, NULL)
+            log("encode_frame(%#x, NULL)=%i buffers", <uintptr_t> avctx, len(flushed))
+            if not data and not flushed:
+                log("no data")
+                continue
+            if flushed:
+                data += flushed
+            log("compressed data: %i bytes", sum(len(x) for x in data))
+        finally:
+            av_frame_free(&hw_frame)
+            av_frame_free(&sw_frame)
+            avcodec_free_context(&avctx)
+        VAAPI_CODECS.append(c)
+        if c not in CODECS:
+            CODECS.append(c)
+    av_buffer_unref(&hw_device_ctx)
+    log("found %i vaapi codecs: %s", len(VAAPI_CODECS), csv(VAAPI_CODECS))
+
+cdef AVBufferRef *init_vaapi_device() except NULL:
+    cdef char* device = NULL
+    dev_str = os.environ.get("XPRA_VAAPI_DEVICE")
+    if dev_str:
+        device = dev_str
+    cdef AVDictionary *opts = NULL
+    cdef AVBufferRef *hw_device_ctx = NULL
+    cdef int err = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
+                                          device, opts, 0)
+    if err<0:
+        raise Exception("vaapi device found")
+    log("init_vaapi_device()=%#x", <uintptr_t> hw_device_ctx)
+    return hw_device_ctx
+
+
+cdef int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *hw_device_ctx, int width, int height):
+    cdef AVBufferRef *hw_frames_ref;
+    cdef AVHWFramesContext *frames_ctx = NULL
+    cdef int err = 0
+
+    hw_frames_ref = av_hwframe_ctx_alloc(hw_device_ctx)
+    if not hw_frames_ref:
+        log.error("Error: faicreate VAAPI frame context")
+        return -1
+    frames_ctx = <AVHWFramesContext *> hw_frames_ref.data
+    frames_ctx.format    = AV_PIX_FMT_VAAPI
+    frames_ctx.sw_format = AV_PIX_FMT_NV12
+    frames_ctx.width     = width
+    frames_ctx.height    = height
+    frames_ctx.initial_pool_size = 20
+    err = av_hwframe_ctx_init(hw_frames_ref)
+    if err<0:
+        log.error("Error: failed to initialize VAAPI frame context")
+        log.error(" %s", av_error_str(err))
+        av_buffer_unref(&hw_frames_ref)
+        return -1
+    ctx.hw_frames_ctx = av_buffer_ref(hw_frames_ref)
+    if ctx.hw_frames_ctx == NULL:
+        log.error("Error: failed to allocate hw frame buffer")
+        av_buffer_unref(&hw_frames_ref)
+        return -1
+    av_buffer_unref(&hw_frames_ref)
+    return 0
+
+cdef encode_frame(AVCodecContext *avctx, AVFrame *frame):
+    cdef AVPacket pkt
+    av_init_packet(&pkt)
+    pkt.data = NULL
+    pkt.size = 0
+    err = avcodec_send_frame(avctx, frame)
+    if err<0:
+        log.error("Error: failed to send frame to encoder")
+        log.error(" %s", av_error_str(err))
+        return None
+    data = []
+    while True:
+        ret = avcodec_receive_packet(avctx, &pkt)
+        if ret:
+            break
+        pkt.stream_index = 0
+        data.append(pkt.data[:pkt.size])
+    return data
+
 
 def cleanup_module():
     log("enc_ffmpeg.cleanup_module()")
@@ -682,11 +996,13 @@ def get_encodings():
     return CODECS
 
 def get_input_colorspaces(encoding):
+    if encoding in VAAPI_CODECS:
+        return ["NV12"]
     return ["YUV420P"]
 
 def get_output_colorspaces(encoding, csc):
     if encoding not in CODECS:
-        return ""
+        return []
     return ["YUV420P"]
 
 
@@ -726,11 +1042,20 @@ MAX_WIDTH, MAX_HEIGHT = 4096, 4096
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
+    speed = 40
+    setup_cost = 50
+    cpu_cost = 100
+    gpu_cost = 0
+    if encoding in VAAPI_CODECS and colorspace=="NV12":
+        speed = 100
+        cpu_cost = 0
+        gpu_cost = 50
     return video_spec(encoding=encoding, input_colorspace=colorspace,
                       output_colorspaces=get_output_colorspaces(encoding, colorspace), has_lossless_mode=False,
                       codec_class=Encoder, codec_type=get_type(),
-                      quality=40, speed=40,
-                      setup_cost=90, width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+                      quality=40, speed=speed,
+                      setup_cost=setup_cost, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
+                      width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
 cdef class Encoder:
@@ -755,6 +1080,7 @@ cdef class Encoder:
     cdef unsigned long frames
     cdef unsigned int width
     cdef unsigned int height
+    cdef uint8_t nplanes
     cdef object encoding
     cdef object profile
     #audio:
@@ -762,6 +1088,8 @@ cdef class Encoder:
     cdef AVStream *audio_stream
     cdef AVCodecContext *audio_ctx
     cdef uint8_t ready
+    cdef uint8_t vaapi
+    cdef AVBufferRef *hw_device_ctx
 
     cdef object __weakref__
 
@@ -769,7 +1097,14 @@ cdef class Encoder:
         cdef int r
         global CODECS, generation
         assert encoding in CODECS
+        self.vaapi = encoding in VAAPI_CODECS and src_format=="NV12"
         assert src_format in get_input_colorspaces(encoding), "invalid colorspace: %s" % src_format
+        if src_format=="YUV420P":
+            self.nplanes = 3
+        elif src_format=="NV12":
+            self.nplanes = 2
+        else:
+            raise Exception("unknown source format '%s'" % src_format)
         self.encoding = encoding
         self.muxer_format = None
         if encoding.find("+")>0:
@@ -784,14 +1119,22 @@ cdef class Encoder:
         self.buffers = []
 
         codec = self.encoding.split("+")[0]
-        log("init_context codec(%s)=%s", encoding, codec)
+        log("init_context codec(%s)=%s, src_format=%s, vaapi=%s", encoding, codec, src_format, self.vaapi)
         cdef AVCodecID video_codec_id
-        video_codec_id = CODEC_ID.get(codec, 0) #ie: AV_CODEC_ID_H264
-        assert video_codec_id!=0, "invalid codec; %s" % self.encoding
-        self.video_codec = avcodec_find_encoder(video_codec_id)
+        if self.vaapi:
+            name = ("%s_vaapi" % encoding).encode("latin1")
+            self.video_codec = avcodec_find_encoder_by_name(name)
+            self.hw_device_ctx = init_vaapi_device()
+        else:
+            name = self.encoding
+            video_codec_id = CODEC_ID.get(codec, 0) #ie: AV_CODEC_ID_H264
+            assert video_codec_id!=0, "invalid codec; %s" % self.encoding
+            self.video_codec = avcodec_find_encoder(video_codec_id)
         if self.video_codec==NULL:
-            raise Exception("codec %s not found!" % self.encoding)
-        log("%s: \"%s\", codec flags: %s", bytestostr(self.video_codec.name), bytestostr(self.video_codec.long_name), flagscsv(CAPS, self.video_codec.capabilities))
+            raise Exception("codec '%s' not found!" % name)
+        log("%s: \"%s\", codec flags: %s",
+            bytestostr(self.video_codec.name), bytestostr(self.video_codec.long_name),
+            flagscsv(CAPS, self.video_codec.capabilities))
 
         #ie: client side as: "encoding.h264+mpeg4.YUV420P.profile" : "main"
         profile = options.get("%s.%s.profile" % (self.encoding, src_format), "main")
@@ -799,8 +1142,11 @@ cdef class Encoder:
         GEN_TO_ENCODER[gen] = self
         try:
             if self.muxer_format:
+                assert not self.vaapi
                 self.init_muxer(gen)
             self.init_encoder(profile)
+            if AUDIO:
+                self.init_audio()
             if self.muxer_format:
                 self.write_muxer_header()
             if SAVE_TO_FILE is not None:
@@ -821,7 +1167,6 @@ cdef class Encoder:
 
     def is_ready(self):
         return bool(self.ready)
-
 
     def init_muxer(self, uintptr_t gen):
         global GEN_TO_ENCODER
@@ -885,13 +1230,15 @@ cdef class Encoder:
         if self.video_ctx==NULL:
             raise Exception("failed to allocate video codec context!")
         list_options(self.video_ctx, self.video_ctx.av_class)
-
         cdef int b_frames = 0
         #we need a framerate.. make one up:
-        self.video_ctx.framerate.num = 1
-        self.video_ctx.framerate.den = 25
+        self.video_ctx.global_quality = 20
+        self.video_ctx.framerate.num = 25
+        self.video_ctx.framerate.den = 1
         self.video_ctx.time_base.num = 1
         self.video_ctx.time_base.den = 25
+        self.video_ctx.sample_aspect_ratio.num = 1
+        self.video_ctx.sample_aspect_ratio.den = 1
         #self.video_ctx.refcounted_frames = 1
         self.video_ctx.max_b_frames = b_frames*1
         self.video_ctx.has_b_frames = b_frames
@@ -900,16 +1247,24 @@ cdef class Encoder:
         self.video_ctx.width = self.width
         self.video_ctx.height = self.height
         self.video_ctx.bit_rate = max(200000, self.width*self.height*4) #4 bits per pixel
-        self.video_ctx.pix_fmt = self.pix_fmt
+        if self.vaapi:
+            self.video_ctx.pix_fmt = AV_PIX_FMT_VAAPI
+        else:
+            self.video_ctx.pix_fmt = self.pix_fmt
         self.video_ctx.thread_safe_callbacks = 1
         #if oformat.flags & AVFMT_GLOBALHEADER:
-        if self.encoding not in ("mpeg1", "mpeg2"):
+        if self.encoding not in ("mpeg1", "mpeg2") and not self.vaapi:
             self.video_ctx.thread_type = THREAD_TYPE
             self.video_ctx.thread_count = THREAD_COUNT     #0=auto
             self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
             self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
         cdef AVDictionary *opts = NULL
-        if self.encoding.startswith("h264") and profile:
+        cdef int r
+        if self.vaapi:
+            r = set_hwframe_ctx(self.video_ctx, self.hw_device_ctx, self.width, self.height)
+            if r<0:
+                raise Exception("failed to set hwframe context")
+        elif self.encoding.startswith("h264") and profile:
             r = av_dict_set(&opts, b"vprofile", strtobytes(profile), 0)
             log("av_dict_set vprofile=%s returned %i", profile, r)
             if r==0:
@@ -940,45 +1295,46 @@ cdef class Encoder:
         log("avcodec_open2 success")
 
         if self.video_stream:
+            assert not self.vaapi
             r = avcodec_parameters_from_context(self.video_stream.codecpar, self.video_ctx)
             if r<0:
                 raise Exception("could not copy video context parameters %#x: %s" % (<uintptr_t> self.video_stream.codecpar, av_error_str(r)))
-
-        if AUDIO:
-            self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
-            if self.audio_codec==NULL:
-                raise Exception("cannot find audio codec!")
-            log("init_encoder() audio_codec=%#x", <uintptr_t> self.audio_codec)
-            self.audio_stream = avformat_new_stream(self.muxer_ctx, NULL)
-            self.audio_stream.id = 1
-            log("init_encoder() audio: avformat_new_stream=%#x, nb streams=%i", <uintptr_t> self.audio_stream, self.muxer_ctx.nb_streams)
-            self.audio_ctx = avcodec_alloc_context3(self.audio_codec)
-            log("init_encoder() audio_context=%#x", <uintptr_t> self.audio_ctx)
-            self.audio_ctx.sample_fmt = AV_SAMPLE_FMT_FLTP
-            self.audio_ctx.time_base.den = 25
-            self.audio_ctx.time_base.num = 1
-            self.audio_ctx.bit_rate = 64000
-            self.audio_ctx.sample_rate = 44100
-            self.audio_ctx.channels = 2
-            #if audio_codec.capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE:
-            #    pass
-            #cdef AVDictionary *opts = NULL
-            #av_dict_set(&opts, "strict", "experimental", 0)
-            #r = avcodec_open2(audio_ctx, audio_codec, &opts)
-            #av_dict_free(&opts)
-            r = avcodec_open2(self.audio_ctx, self.audio_codec, NULL)
-            if r!=0:
-                raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
-            if r!=0:
-                raise Exception("could not open %s encoder context: %s" % ("aac", av_error_str(r)))
-            r = avcodec_parameters_from_context(self.audio_stream.codecpar, self.audio_ctx)
-            if r<0:
-                raise Exception("could not copy audio context parameters %#x: %s" % (<uintptr_t> self.audio_stream.codecpar, av_error_str(r)))
 
         self.av_frame = av_frame_alloc()
         if self.av_frame==NULL:
             raise Exception("could not allocate an AVFrame for encoding")
         self.frames = 0
+
+    def init_audio(self):
+        self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
+        if self.audio_codec==NULL:
+            raise Exception("cannot find audio codec!")
+        log("init_audio() audio_codec=%#x", <uintptr_t> self.audio_codec)
+        self.audio_stream = avformat_new_stream(self.muxer_ctx, NULL)
+        self.audio_stream.id = 1
+        log("init_audio() audio: avformat_new_stream=%#x, nb streams=%i", <uintptr_t> self.audio_stream, self.muxer_ctx.nb_streams)
+        self.audio_ctx = avcodec_alloc_context3(self.audio_codec)
+        log("init_audio() audio_context=%#x", <uintptr_t> self.audio_ctx)
+        self.audio_ctx.sample_fmt = AV_SAMPLE_FMT_FLTP
+        self.audio_ctx.time_base.den = 25
+        self.audio_ctx.time_base.num = 1
+        self.audio_ctx.bit_rate = 64000
+        self.audio_ctx.sample_rate = 44100
+        self.audio_ctx.channels = 2
+        #if audio_codec.capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE:
+        #    pass
+        #cdef AVDictionary *opts = NULL
+        #av_dict_set(&opts, "strict", "experimental", 0)
+        #r = avcodec_open2(audio_ctx, audio_codec, &opts)
+        #av_dict_free(&opts)
+        r = avcodec_open2(self.audio_ctx, self.audio_codec, NULL)
+        if r!=0:
+            raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
+        if r!=0:
+            raise Exception("could not open %s encoder context: %s" % ("aac", av_error_str(r)))
+        r = avcodec_parameters_from_context(self.audio_stream.codecpar, self.audio_ctx)
+        if r<0:
+            raise Exception("could not copy audio context parameters %#x: %s" % (<uintptr_t> self.audio_stream.codecpar, av_error_str(r)))
 
 
     def clean(self):
@@ -1036,6 +1392,8 @@ cdef class Encoder:
                 log.error(" %s", av_error_str(r))
             av_free(self.audio_ctx)
             self.audio_ctx = NULL
+        if self.hw_device_ctx:
+            av_buffer_unref(&self.hw_device_ctx)
         log("clean_encoder() done")
 
     def __repr__(self):                      #@DuplicatedSignature
@@ -1115,7 +1473,8 @@ cdef class Encoder:
         cdef Py_ssize_t buf_len = 0
         cdef int ret
         cdef AVPacket avpkt
-        cdef AVFrame *frame
+        cdef AVFrame *frame = NULL
+        cdef AVFrame *hw_frame = NULL
         assert self.video_ctx!=NULL, "no codec context! (not initialized or already closed)"
         assert self.video_codec!=NULL, "no video codec!"
 
@@ -1125,14 +1484,16 @@ cdef class Encoder:
 
             pixels = image.get_pixels()
             istrides = image.get_rowstride()
-            assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
-            assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
+            if self.src_format=="NV12":
+                nplanes = 2
+            assert len(pixels)==self.nplanes, "image pixels does not have %i planes! (found %s)" % (self.nplanes, len(pixels))
+            assert len(istrides)==self.nplanes, "image strides does not have %i values! (found %s)" % (self.nplanes, len(istrides))
             #populate the avframe:
             ret = av_frame_make_writable(self.av_frame)
             if not ret!=0:
                 raise Exception(av_error_str(ret))
             for i in range(4):
-                if i<3:
+                if i<self.nplanes:
                     assert object_as_buffer(pixels[i], <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer (plane=%s)" % (type(pixels[i]), i)
                     #log("plane %s: %i bytes (%ix%i stride=%i)", ["Y", "U", "V"][i], buf_len, self.width, self.height, istrides[i])
                     self.av_frame.data[i] = <uint8_t *> buf
@@ -1157,6 +1518,26 @@ cdef class Encoder:
             assert options.get("flush")
             frame = NULL
 
+        if self.vaapi and frame:
+            #copy to hardware:
+            hw_frame = av_frame_alloc()
+            log("av_frame_alloc()=%#x", <uintptr_t> hw_frame)
+            if hw_frame==NULL:
+                log.error("Error: failed to allocate a hw frame")
+                return None
+            ret = av_hwframe_get_buffer(self.video_ctx.hw_frames_ctx, hw_frame, 0)
+            log("av_frame_get_buffer(%#x, %#x, 0)=%i", <uintptr_t> self.video_ctx.hw_frames_ctx, <uintptr_t> hw_frame, ret)
+            if ret<0 or hw_frame.hw_frames_ctx==NULL:
+                log.error("Error: failed to allocate a hw buffer")
+                log.error(" %s", av_error_str(ret))
+                return None
+            ret = av_hwframe_transfer_data(hw_frame, frame, 0)
+            log("av_hwframe_transfer_data(%#x, %#x, 0)=%i", <uintptr_t> hw_frame, <uintptr_t> frame, ret)
+            if ret<0:
+                log.error("Error: failed to transfer frame data to surface")
+                log.error(" %s", av_error_str(ret))
+                return None
+            frame = hw_frame
         log("compress_image%s avcodec_send_frame frame=%#x", (image, quality, speed, options), <uintptr_t> frame)
         with nogil:
             ret = avcodec_send_frame(self.video_ctx, frame)
@@ -1222,6 +1603,8 @@ cdef class Encoder:
                 self.buffers.append(avpkt.data[:avpkt.size])
         av_packet_unref(&avpkt)
         free(avpkt.data)
+        if hw_frame:
+            av_frame_free(&hw_frame)
 
         client_options = {}
         if self.frames==0 and self.profile:
