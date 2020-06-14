@@ -26,7 +26,7 @@ cdef extern from "../../buffers/memalign.h":
     unsigned int MEMALIGN_ALIGNMENT
 
 
-cdef extern from "libyuv/convert.h" namespace "libyuv":
+cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
     #int BGRAToI420(const uint8_t* src_frame, ...
     #this is actually BGRX for little endian systems:
     int ARGBToI420(const uint8_t* src_frame, int src_stride_frame,
@@ -34,6 +34,12 @@ cdef extern from "libyuv/convert.h" namespace "libyuv":
                uint8_t* dst_u, int dst_stride_u,
                uint8_t* dst_v, int dst_stride_v,
                int width, int height) nogil
+
+    int ARGBToNV12(const uint8_t* src_argb, int src_stride_argb,
+                   uint8_t* dst_y, int dst_stride_y,
+                   uint8_t* dst_uv, int dst_stride_uv,
+                   int width, int height) nogil
+
 
 cdef extern from "libyuv/scale.h" namespace "libyuv":
     ctypedef unsigned int FilterMode
@@ -98,7 +104,7 @@ def get_version():
 MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
 IN_COLORSPACES = ("BGRX", )
-OUT_COLORSPACES = ("YUV420P", )
+OUT_COLORSPACES = ("YUV420P", "NV12")
 def get_info():
     global IN_COLORSPACES, OUT_COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
@@ -174,6 +180,7 @@ cdef class ColorspaceConverter:
     cdef int dst_width
     cdef int dst_height
     cdef int scaling
+    cdef int planes
 
     cdef unsigned long frames
     cdef double time
@@ -202,12 +209,18 @@ cdef class ColorspaceConverter:
                            int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
         log("libyuv.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
         assert src_format=="BGRX", "invalid source format: %s" % src_format
-        assert dst_format=="YUV420P", "invalid destination format: %s" % dst_format
         self.scaling = int(src_width!=dst_width or src_height!=dst_height)
         if self.scaling:
             self.filtermode = get_filtermode(speed)
         self.src_format = "BGRX"
-        self.dst_format = "YUV420P"
+        if dst_format=="YUV420P":
+            self.dst_format = "YUV420P"
+            self.planes = 3
+        elif dst_format=="NV12":
+            self.dst_format = "NV12"
+            self.planes = 2
+        else:
+            raise Exception("invalid destination format: %s" % dst_format)
         self.src_width = src_width
         self.src_height = src_height
         self.dst_width = dst_width
@@ -216,7 +229,7 @@ cdef class ColorspaceConverter:
         self.out_buffer_size = 0
         self.scaled_buffer_size = 0
         divs = get_subsampling_divs(self.dst_format)
-        for i in range(3):
+        for i in range(self.planes):
             xdiv, ydiv = divs[i]
             self.out_width[i]   = src_width // xdiv
             self.out_height[i]  = src_height // ydiv
@@ -252,7 +265,9 @@ cdef class ColorspaceConverter:
                 "src_width" : self.src_width,
                 "src_height": self.src_height,
                 "dst_width" : self.dst_width,
-                "dst_height": self.dst_height})
+                "dst_height": self.dst_height,
+                "planes"    : self.planes,
+                })
         if self.src_format:
             info["src_format"] = self.src_format
         if self.dst_format:
@@ -347,18 +362,24 @@ cdef class ColorspaceConverter:
             output_buffer = <unsigned char*> memalign(self.out_buffer_size)
             if output_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
-        for i in range(3):
+        for i in range(self.planes):
             #offsets are aligned, so this is safe and gives us aligned pointers:
             out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
         with nogil:
-            result = ARGBToI420(input_image, stride,
-                           out_planes[0], self.out_stride[0],
-                           out_planes[1], self.out_stride[1],
-                           out_planes[2], self.out_stride[2],
-                           width, height)
-        assert result==0, "libyuv BGRAToI420 failed and returned %i" % result
+            if self.planes==2:
+                result = ARGBToNV12(input_image, stride,
+                                    out_planes[0], self.out_stride[0],
+                                    out_planes[1], self.out_stride[1],
+                                    width, height)
+            else:
+                result = ARGBToI420(input_image, stride,
+                                    out_planes[0], self.out_stride[0],
+                                    out_planes[1], self.out_stride[1],
+                                    out_planes[2], self.out_stride[2],
+                                    width, height)
+        assert result==0, "libyuv BGRAToI420/NV12 failed and returned %i" % result
         cdef double elapsed = monotonic_time()-start
-        log("libyuv.ARGBToI420 took %.1fms", 1000.0*elapsed)
+        log("libyuv.ARGBToI420/NV12 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
         planes = []
         strides = []
@@ -368,7 +389,7 @@ cdef class ColorspaceConverter:
             if scaled_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
             with nogil:
-                for i in range(3):
+                for i in range(self.planes):
                     scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
                     ScalePlane(out_planes[i], self.out_stride[i],
                                self.out_width[i], self.out_height[i],
@@ -376,20 +397,20 @@ cdef class ColorspaceConverter:
                                self.scaled_width[i], self.scaled_height[i],
                                self.filtermode)
             elapsed = monotonic_time()-start
-            log("libyuv.ScalePlane took %.1fms", 1000.0*elapsed)
-            for i in range(3):
+            log("libyuv.ScalePlane %i times, took %.1fms", self.planes, 1000.0*elapsed)
+            for i in range(self.planes):
                 strides.append(self.scaled_stride[i])
                 planes.append(memory_as_pybuffer(<void *> scaled_planes[i], self.scaled_size[i], True))
             self.frames += 1
-            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, ImageWrapper.PLANAR_3)
+            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> scaled_buffer
         else:
             #use output buffer directly:
-            for i in range(3):
+            for i in range(self.planes):
                 strides.append(self.out_stride[i])
                 planes.append(memory_as_pybuffer(<void *> out_planes[i], self.out_size[i], True))
             self.frames += 1
-            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, ImageWrapper.PLANAR_3)
+            out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> output_buffer
         return out_image
 

@@ -16,6 +16,7 @@ def clone_plane(plane):
 class ImageWrapper:
 
     PACKED = 0
+    PLANAR_2 = 3
     PLANAR_3 = 3
     PLANAR_4 = 4
     PLANE_OPTIONS = (PACKED, PLANAR_3, PLANAR_4)

@@ -40,11 +40,13 @@ PROBLEMATIC_ENCODINGS = ()
 
 #value: how much smaller the output is
 LOSSY_PIXEL_FORMATS = {
+    "NV12"    : 2,
     "YUV420P" : 2,
     "YUV422P" : 1.5,
     }
 
 PIXEL_SUBSAMPLING = {
+    "NV12"      : ((1, 1), (1, 2)),
     "YUV420P"   : ((1, 1), (2, 2), (2, 2)),
     "YUV422P"   : ((1, 1), (2, 1), (2, 1)),
     "YUV444P"   : ((1, 1), (1, 1), (1, 1)),
