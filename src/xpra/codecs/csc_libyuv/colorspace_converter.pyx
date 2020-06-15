@@ -94,10 +94,10 @@ def init_module():
 def cleanup_module():
     log("csc_libyuv.cleanup_module()")
 
-def get_type():
+def get_type() -> str:
     return "libyuv"
 
-def get_version():
+def get_version() -> int:
     return 0
 
 #hardcoded for now:
@@ -286,25 +286,25 @@ cdef class ColorspaceConverter:
     def __dealloc__(self):                  #@DuplicatedSignature
         self.clean()
 
-    def get_src_width(self):
+    def get_src_width(self) -> int:
         return self.src_width
 
-    def get_src_height(self):
+    def get_src_height(self) -> int:
         return self.src_height
 
     def get_src_format(self):
         return self.src_format
 
-    def get_dst_width(self):
+    def get_dst_width(self) -> int:
         return self.dst_width
 
-    def get_dst_height(self):
+    def get_dst_height(self) -> int:
         return self.dst_height
 
     def get_dst_format(self):
         return self.dst_format
 
-    def get_type(self):                     #@DuplicatedSignature
+    def get_type(self) -> str:              #@DuplicatedSignature
         return  "libyuv"
 
 
@@ -327,7 +327,7 @@ cdef class ColorspaceConverter:
             free(output_buffer)
         self.out_buffer_size = 0
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.out_buffer_size==0
 
 

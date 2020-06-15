@@ -364,26 +364,26 @@ cdef class ColorspaceConverter:
     def __dealloc__(self):                  #@DuplicatedSignature
         self.clean()
 
-    def get_src_width(self):
+    def get_src_width(self) -> int:
         return self.src_width
 
-    def get_src_height(self):
+    def get_src_height(self) -> int:
         return self.src_height
 
     def get_src_format(self):
         return self.src_format
 
-    def get_dst_width(self):
+    def get_dst_width(self) -> int:
         return self.dst_width
 
-    def get_dst_height(self):
+    def get_dst_height(self) -> int:
         return self.dst_height
 
     def get_dst_format(self):
         return self.dst_format
 
-    def get_type(self):                     #@DuplicatedSignature
-        return  "swscale"
+    def get_type(self) -> str:              #@DuplicatedSignature
+        return "swscale"
 
 
     def clean(self):                        #@DuplicatedSignature
@@ -409,7 +409,7 @@ cdef class ColorspaceConverter:
             self.out_stride[i] = 0
             self.out_size[i] = 0
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.context!=NULL
 
 
