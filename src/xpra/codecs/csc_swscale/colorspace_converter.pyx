@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -70,11 +70,11 @@ cdef extern from "libswscale/swscale.h":
 
 cdef class CSCPixelFormat:
     cdef AVPixelFormat av_enum
-    cdef char* av_enum_name
+    cdef object av_enum_name
     cdef float width_mult[4]
     cdef float height_mult[4]
-    cdef char *pix_fmt
-    def __init__(self, AVPixelFormat av_enum, char *av_enum_name, width_mult, height_mult, char *pix_fmt):
+    cdef object pix_fmt
+    def __init__(self, AVPixelFormat av_enum, av_enum_name, width_mult, height_mult, pix_fmt):
         self.av_enum = av_enum
         self.av_enum_name = av_enum_name
         for i in range(4):
@@ -86,7 +86,7 @@ cdef class CSCPixelFormat:
         self.pix_fmt = pix_fmt
 
     def __repr__(self):
-        return "CSCPixelFormat(%s)" % av_enum_name
+        return "CSCPixelFormat(%s)" % self.av_enum_name
 
 #we could use a class to represent these options:
 COLORSPACES = []
@@ -107,7 +107,7 @@ FORMAT_OPTIONS = [
      ]
 FORMATS = {}
 for av_enum_name, av_enum, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
-    FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name.encode("latin1"), width_mult, height_mult, pix_fmt.encode("latin1"))
+    FORMATS[pix_fmt] = CSCPixelFormat(av_enum, av_enum_name, width_mult, height_mult, pix_fmt)
     if pix_fmt not in COLORSPACES:
         COLORSPACES.append(pix_fmt)
 log("swscale pixel formats: %s", FORMATS)
