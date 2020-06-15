@@ -1009,16 +1009,17 @@ def get_output_colorspaces(encoding, csc):
 GEN_TO_ENCODER = weakref.WeakValueDictionary()
 
 
-cdef list_options(void *obj, const AVClass *av_class):
+cdef list_options(void *obj, const AVClass *av_class, int skip=1):
     if av_class==NULL:
         return
     cdef const AVOption *option = <const AVOption*> av_class.option
-    options = []
-    while option!=NULL:
-        oname = bytestostr(option.name)
-        options.append(oname)
-        option = av_opt_next(obj, option)
-    log("%s options: %s", bytestostr(av_class.class_name), csv(options))
+    if skip<=0:
+        options = []
+        while option!=NULL:
+            oname = bytestostr(option.name)
+            options.append(oname)
+            option = av_opt_next(obj, option)
+        log("%s options: %s", bytestostr(av_class.class_name), csv(options))
     cdef void *child = NULL
     cdef const AVClass *child_class = NULL
     while True:
@@ -1026,7 +1027,7 @@ cdef list_options(void *obj, const AVClass *av_class):
         if child==NULL:
             return
         child_class = (<AVClass**> child)[0]
-        list_options(child, child_class)
+        list_options(child, child_class, skip-1)
 
 
 cdef int write_packet(void *opaque, uint8_t *buf, int buf_size):
@@ -1183,7 +1184,7 @@ cdef class Encoder:
             raise Exception("libavformat cannot allocate context: %s" % msg)
         log("init_encoder() avformat_alloc_output_context2 returned %i for %s, format context=%#x, flags=%s, ctx_flags=%s", r, self.muxer_format, <uintptr_t> self.muxer_ctx,
             flagscsv(FMT_FLAGS, self.muxer_ctx.flags), flagscsv(AVFMTCTX, self.muxer_ctx.ctx_flags))
-        list_options(self.muxer_ctx, self.muxer_ctx.av_class)
+        list_options(self.muxer_ctx, self.muxer_ctx.av_class, 0)
 
         cdef int64_t v = 0
         movflags = b""
