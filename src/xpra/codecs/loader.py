@@ -224,7 +224,7 @@ def get_codec(name):
 def get_codec_version(name):
     return codec_versions.get(name)
 
-def has_codec(name):
+def has_codec(name) -> bool:
     return name in codecs
 
 

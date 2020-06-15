@@ -16,7 +16,7 @@ log = Logger("encoder", "util")
 MIN_VERSION = 375
 
 nvml_init_warned = False
-def wrap_nvml_init(nvmlInit):
+def wrap_nvml_init(nvmlInit) -> bool:
     try:
         nvmlInit()
         return True

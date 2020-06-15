@@ -23,7 +23,7 @@ ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,j
 def get_version():
     return PIL.__version__
 
-def get_type():
+def get_type() -> str:
     return "pillow"
 
 def do_get_encodings():

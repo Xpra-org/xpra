@@ -136,16 +136,16 @@ class _codec_spec:
         return v
 
 
-    def get_instance_count(self):
+    def get_instance_count(self) -> int:
         return len(self.instances)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         d = {}
         for k in self._exported_fields:
             d[k] = getattr(self, k)
         return d
 
-    def get_runtime_factor(self):
+    def get_runtime_factor(self) -> float:
         #a cost multiplier that some encoder may want to override
         #1.0 means no change:
         mi = self.max_instances

@@ -55,7 +55,7 @@ HEADERS = {
     is_tiff : "tiff",
     }
 
-def get_image_type(data):
+def get_image_type(data) -> str:
     if not data:
         return None
     if len(data)<32:
@@ -78,7 +78,7 @@ def open_only(data, types=("png", "jpeg", "webp")):
 def get_version():
     return PIL.__version__
 
-def get_type():
+def get_type() -> str:
     return "pillow"
 
 def do_get_encodings():
