@@ -255,17 +255,7 @@ def get_spec(in_colorspace, out_colorspace):
                     setup_cost=20, min_w=8, min_h=2, can_scale=True,
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
-
-MIN_SWSCALE_VERSION = (2, 1, 1)
-if (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)<MIN_SWSCALE_VERSION and is_Ubuntu():
-    log.warn("buggy Ubuntu swscale version detected: %s", get_version())
-    if envbool("XPRA_FORCE_SWSCALE", False):
-        log.warn("XPRA_FORCE_SWSCALE enabled at your own risk!")
-    else:
-        log.warn("cowardly refusing to use it to avoid problems, set the environment variable:")
-        log.warn("XPRA_FORCE_SWSCALE=1")
-        log.warn("to use it anyway, at your own risk")
-        COLORSPACES = []
+assert (LIBSWSCALE_VERSION_MAJOR, LIBSWSCALE_VERSION_MINOR, LIBSWSCALE_VERSION_MICRO)>(2, 1, 1)
 
 
 cdef class ColorspaceConverter:
