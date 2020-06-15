@@ -44,6 +44,7 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_RGBA
     AVPixelFormat AV_PIX_FMT_GBRP
     AVPixelFormat AV_PIX_FMT_BGR24
+    AVPixelFormat AV_PIX_FMT_NV12
     AVPixelFormat AV_PIX_FMT_NONE
 
 ctypedef void SwsContext
@@ -103,7 +104,8 @@ FORMAT_OPTIONS = [
     ("YUV420P", AV_PIX_FMT_YUV420P,    (1, 0.5, 0.5, 0),   (1, 0.5, 0.5, 0),   "YUV420P"),
     ("YUV422P", AV_PIX_FMT_YUV422P,    (1, 0.5, 0.5, 0),   (1, 1, 1, 0),       "YUV422P"),
     ("YUV444P", AV_PIX_FMT_YUV444P,    (1, 1, 1, 0),       (1, 1, 1, 0),       "YUV444P"),
-    ("GBRP",    AV_PIX_FMT_GBRP,       (1, 1, 1, 0),       (1, 1, 1, 0),       "GBRP"   )
+    ("GBRP",    AV_PIX_FMT_GBRP,       (1, 1, 1, 0),       (1, 1, 1, 0),       "GBRP"   ),
+    ("NV12",    AV_PIX_FMT_NV12,       (1, 1, 0, 0),       (1, 0.5, 0, 0),     "NV12"   ),
      ]
 FORMATS = {}
 for av_enum_name, av_enum, width_mult, height_mult, pix_fmt in FORMAT_OPTIONS:
@@ -114,7 +116,9 @@ log("swscale pixel formats: %s", FORMATS)
 COLORSPACES = tuple(COLORSPACES)
 log("colorspaces: %s", COLORSPACES)
 
+#(per plane)
 BYTES_PER_PIXEL = {
+    AV_PIX_FMT_NV12     : 1,
     AV_PIX_FMT_YUV420P  : 1,
     AV_PIX_FMT_YUV422P  : 1,
     AV_PIX_FMT_YUV444P  : 1,
@@ -433,7 +437,7 @@ cdef class ColorspaceConverter:
             iplanes = 1
         else:
             planes = pixels
-        if self.dst_format.endswith("P"):
+        if self.dst_format.endswith("P") or self.dst_format=="NV12":
             pad = self.dst_width
         else:
             pad = self.dst_width * 4
@@ -457,7 +461,7 @@ cdef class ColorspaceConverter:
         #allocate the output buffer(s):
         output_buf = []
         cdef MemBuf mb
-        for i in range(3):
+        for i in range(4):
             if self.out_size[i]>0:
                 mb = padbuf(self.out_size[i], pad)
                 output_buf.append(mb)
@@ -475,6 +479,10 @@ cdef class ColorspaceConverter:
             oplanes = ImageWrapper.PLANAR_3
             out = [memoryview(output_buf[i]) for i in range(3)]
             strides = [self.out_stride[i] for i in range(3)]
+        elif self.dst_format=="NV12":
+            oplanes = ImageWrapper.PLANAR_2
+            out = [memoryview(output_buf[i]) for i in range(2)]
+            strides = [self.out_stride[i] for i in range(2)]
         else:
             #assume no planes, plain RGB packed pixels:
             oplanes = ImageWrapper.PACKED
@@ -499,7 +507,7 @@ def selftest(full=False):
             planar_tests = [x for x in get_input_colorspaces() if x.endswith("P")]
             packed_tests = [x for x in get_input_colorspaces() if ((x.find("BGR")>=0 or x.find("RGB")>=0) and not x not in planar_tests)]
         else:
-            planar_tests = [x for x in ("YUV420P", "YUV422P", "YUV444P", "GBRP") if x in get_input_colorspaces()]
+            planar_tests = [x for x in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12") if x in get_input_colorspaces()]
             packed_tests = ["BGRX"]   #only test BGRX
         maxw, maxh = 2**24, 2**24
         for planar in planar_tests:
