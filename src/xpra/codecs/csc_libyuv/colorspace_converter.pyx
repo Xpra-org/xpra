@@ -128,7 +128,7 @@ def get_spec(in_colorspace, out_colorspace):
     return csc_spec(in_colorspace, out_colorspace,
                     ColorspaceConverter, codec_type=get_type(),
                     quality=100, speed=100,
-                    setup_cost=0, min_w=8, min_h=2, can_scale=True,
+                    setup_cost=0, min_w=8, min_h=2, can_scale=(out_colorspace=="YUV420P"),
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
@@ -219,6 +219,7 @@ cdef class ColorspaceConverter:
         elif dst_format=="NV12":
             self.dst_format = "NV12"
             self.planes = 2
+            assert src_width==dst_width and src_height==dst_height, "cannot scale NV12"
         else:
             raise Exception("invalid destination format: %s" % dst_format)
         self.src_width = src_width
