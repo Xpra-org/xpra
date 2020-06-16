@@ -792,7 +792,9 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if not window:
             log("cannot map window %s: already removed!", wid)
             return
-        assert not window.is_OR()
+        if window.is_OR():
+            windowlog.warn("Warning: received map event on OR window %s", wid)
+            return
         ss = self._server_sources.get(proto)
         if ss is None:
             return
