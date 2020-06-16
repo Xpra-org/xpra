@@ -401,10 +401,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
 
         root = gdk.get_default_root_window()
         with xsync:
-            for window in get_children(root):
-                xid = get_xwindow(window)
-                if X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid):
-                    self._add_new_or_window(window)
+            children = get_children(root)
+        for window in children:
+            xid = window.get_xid()
+            can_add = False
+            with xlog:
+                can_add = X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid)
+            if can_add:
+                self._add_new_or_window(window)
 
 
     def parse_hello_ui_window_settings(self, ss, c):
