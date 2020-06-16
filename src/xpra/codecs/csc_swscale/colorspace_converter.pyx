@@ -407,7 +407,7 @@ cdef class ColorspaceConverter:
             self.out_size[i] = 0
 
     def is_closed(self):
-        return self.context!=NULL
+        return self.context==NULL
 
 
     def convert_image(self, image):
