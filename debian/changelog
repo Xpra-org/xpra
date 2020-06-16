@@ -1,5 +1,10 @@
 xpra (1.0.15-1) UNRELEASED; urgency=low
   * fix avcodec2 race condition crash
+  * fix csc_swscale converter getting recycled every time
+  * fix memory contents of the swscale pixel format object
+  * fix tray geometry errors
+  * fix window initialization errors causing server startup failures
+  * fix race condition in window statistics
   * fix crashes on X11 displays lacking RandR support
   * fix clients not exposing webcam capability flag
   * fix DPI value from the command line with desktop-scaling
@@ -47,8 +52,9 @@ xpra (1.0.15-1) UNRELEASED; urgency=low
   * support parallel installations of a newer python3 package
   * disable CSD on MS Windows (GTK3 CSD bug workaround)
   * don't try to read /proc if not on Posix
+  * convert invalid map events to warnings (no scary crash reports)
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 01 May 2020 13:29:59 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 16 Jun 2020 23:18:02 +0700
 
 xpra (1.0.14-1) UNRELEASED; urgency=low
   * fix html5 clipboard wrongly disabled

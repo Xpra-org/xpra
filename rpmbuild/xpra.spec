@@ -458,8 +458,13 @@ fi
 
 
 %changelog
-* Fri May 01 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
+* Tue Jun 16 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
 - fix avcodec2 race condition crash
+- fix csc_swscale converter getting recycled every time
+- fix memory contents of the swscale pixel format object
+- fix tray geometry errors
+- fix window initialization errors causing server startup failures
+- fix race condition in window statistics
 - fix crashes on X11 displays lacking RandR support
 - fix clients not exposing webcam capability flag
 - fix DPI value from the command line with desktop-scaling
@@ -507,6 +512,7 @@ fi
 - support parallel installations of a newer python3 package
 - disable CSD on MS Windows (GTK3 CSD bug workaround)
 - don't try to read /proc if not on Posix
+- convert invalid map events to warnings (no scary crash reports)
 
 * Sun Oct 06 2019 Antoine Martin <antoine@devloop.org.uk> 1.0.14-1
 - fix html5 clipboard wrongly disabled
