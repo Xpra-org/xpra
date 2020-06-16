@@ -586,14 +586,22 @@ fi
 
 
 %changelog
-* Tue Jun 09 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Tue Jun 16 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix encryption option overzealously enforced on all socket types
 - fix OpenGL force-enable option not honoured
 - fix tray geometry errors
 - fix minimum video scaling not being honoured via heuristics
+- fix error in main thread verifier (fortunately, never fired)
+- fix archlinux build root stripping
+- fix MacOS clipboard unnecessarily sending data
+- fix clipboard data sometimes going missing when ownership changes
+- fix memory contents of the swscale pixel format object
+- fix csc_swscale converter getting recycled every time
+- also update mdns records when the session name changes
 - workaround for older versions of python-cryptography
 - use 'text' mode for 'geany' (fixes lossy screen updates)
 - ensure all toolbox windows set a correct and readable window title
+- remove workaround for unsupported versions of Ubuntu
 
 * Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
 - fix encryption not honoured with TCP sockets upgraded to WebSocket

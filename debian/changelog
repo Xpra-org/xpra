@@ -3,11 +3,19 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix OpenGL force-enable option not honoured
   * fix tray geometry errors
   * fix minimum video scaling not being honoured via heuristics
+  * fix error in main thread verifier (fortunately, never fired)
+  * fix archlinux build root stripping
+  * fix MacOS clipboard unnecessarily sending data
+  * fix clipboard data sometimes going missing when ownership changes
+  * fix memory contents of the swscale pixel format object
+  * fix csc_swscale converter getting recycled every time
+  * also update mdns records when the session name changes
   * workaround for older versions of python-cryptography
   * use 'text' mode for 'geany' (fixes lossy screen updates)
   * ensure all toolbox windows set a correct and readable window title
+  * remove workaround for unsupported versions of Ubuntu
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 09 Jun 2020 23:26:42 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 16 Jun 2020 22:32:32 +0700
 
 xpra (4.0.2-1) UNRELEASED; urgency=low
   * fix encryption not honoured with TCP sockets upgraded to WebSocket
