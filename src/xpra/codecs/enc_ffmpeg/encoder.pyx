@@ -1047,14 +1047,16 @@ def get_spec(encoding, colorspace):
     setup_cost = 50
     cpu_cost = 100
     gpu_cost = 0
+    size_efficiency = 50
     if encoding in VAAPI_CODECS and colorspace=="NV12":
         speed = 100
-        cpu_cost = 0
-        gpu_cost = 50
+        cpu_cost = 10
+        gpu_cost = 100
+        size_efficiency = 100
     return video_spec(encoding=encoding, input_colorspace=colorspace,
                       output_colorspaces=get_output_colorspaces(encoding, colorspace), has_lossless_mode=False,
                       codec_class=Encoder, codec_type=get_type(),
-                      quality=40, speed=speed,
+                      quality=40, speed=speed, size_efficiency=size_efficiency,
                       setup_cost=setup_cost, cpu_cost=cpu_cost, gpu_cost=gpu_cost,
                       width_mask=0xFFFE, height_mask=0xFFFE, max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
