@@ -49,7 +49,7 @@ def ensure_item_selected(submenu, item, recurse=True):
                     if submenu and recurse:
                         deactivate(submenu.get_children(), skip)
                 if isinstance(x, Gtk.CheckMenuItem):
-                    if x!=item and x.get_active():
+                    if x!=item and x.get_active() and x.get_draw_as_radio():
                         x.set_active(False)
         deactivate(submenu.get_children(), item)
         return item
@@ -63,7 +63,7 @@ def ensure_item_selected(submenu, item, recurse=True):
                     if a:
                         return a
             if isinstance(x, Gtk.CheckMenuItem):
-                if x.get_active():
+                if x.get_draw_as_radio() and x.get_active():
                     return x
         return None
     active = get_active_item(submenu.get_children())

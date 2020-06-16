@@ -405,7 +405,7 @@ XpraProtocol.prototype.process_send_queue = function() {
 		let proto_flags = 0;
 		let bdata = null;
 		try {
-			if (PyRencoder) {
+			if (PyRencoder && false) {
 				bdata = PyRencoder.encode(packet);
 				proto_flags = 1;
 			}

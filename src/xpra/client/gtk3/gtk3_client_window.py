@@ -11,7 +11,7 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, scaled_image
 from xpra.util import envbool
-from xpra.os_util import bytestostr, is_gnome, OSX, WIN32
+from xpra.os_util import bytestostr, is_gnome, OSX
 from xpra.log import Logger
 
 paintlog = Logger("paint")
@@ -177,7 +177,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
                 setattr(geom, field, float(v))
                 mask |= int(name_to_hint.get(k, 0))
         gdk_hints = Gdk.WindowHints(mask)
-        geomlog("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
+        geomlog.warn("apply_geometry_hints(%s) geometry=%s, hints=%s", hints, geom, gdk_hints)
         self.set_geometry_hints(self.drawing_area, geom, gdk_hints)
 
     def can_maximize(self):
