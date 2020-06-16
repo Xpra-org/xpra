@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,10 @@ scorelog = Logger("score")
 GPU_BIAS = envint("XPRA_GPU_BIAS", 100)
 MIN_FPS_COST = envint("XPRA_MIN_FPS_COST", 4)
 
+#any colourspace convertion will lose at least some quality (due to rounding)
+#(so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
 SUBSAMPLING_QUALITY_LOSS = {
+    "NV12"      : 186,
     "YUV420P"   : 186,      #1.66 + 0.2
     "YUV422P"   : 153,      #1.33 + 0.2
     "YUV444P"   : 120,      #1.00 + 0.2
@@ -23,8 +26,6 @@ SUBSAMPLING_QUALITY_LOSS = {
 def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
                       target_quality : int=100, min_quality : int=0) -> int:
     quality = encoder_spec.quality
-    #any colourspace convertion will lose at least some quality (due to rounding)
-    #(so add 0.2 to the value we get from calculating the degradation using get_subsampling_divs)
     div = SUBSAMPLING_QUALITY_LOSS.get(csc_format, 100)
     quality = quality*100//div
 
@@ -33,7 +34,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
         quality += csc_spec.quality
         quality /= 2.0
 
-    if scaling==(1, 1) and csc_format not in ("YUV420P", "YUV422P") and target_quality==100 and encoder_spec.has_lossless_mode:
+    if scaling==(1, 1) and csc_format not in ("NV12", "YUV420P", "YUV422P") and target_quality==100 and encoder_spec.has_lossless_mode:
         #we want lossless!
         qscore = quality + 80
     else:
@@ -45,7 +46,7 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
             mqs = (min_quality - quality) // 2
             qscore = max(0, qscore - mqs)
         #when downscaling, YUV420P should always win:
-        if csc_format=="YUV420P" and scaling!=(1, 1):
+        if csc_format in ("YUV420P", "NV12") and scaling!=(1, 1):
             qscore *= 2.0
     return int(qscore)
 
@@ -54,6 +55,7 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
     #when subsampling, add the speed gains to the video encoder
     #which now has less work to do:
     mult = {
+        "NV12"      : 100,
         "YUV420P"   : 100,
         "YUV422P"   : 80,
         }.get(csc_format, 60)
@@ -69,7 +71,7 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
         #but less if the csc is fast
         sscore = sscore - 20 - (100-csc_spec.speed)//2
     #when already downscaling, favour YUV420P subsampling:
-    if csc_format=="YUV420P" and scaling!=(1, 1):
+    if csc_format in ("YUV420P", "NV12") and scaling!=(1, 1):
         sscore += 25
     if min_speed>=speed:
         #if this encoder's speed is lower than the min_speed

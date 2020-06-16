@@ -1303,7 +1303,7 @@ class WindowVideoSource(WindowSource):
                     max_h = min(encoder_spec.max_h, vmh)
                     scaling = self.calculate_scaling(width, height, max_w, max_h)
                     score_delta = encoding_score_delta
-                    if self.is_shadow and enc_in_format in ("YUV420P", "YUV422P") and scaling==(1, 1):
+                    if self.is_shadow and enc_in_format in ("NV12", "YUV420P", "YUV422P") and scaling==(1, 1):
                         #avoid subsampling with shadow servers:
                         score_delta -= 40
                     vs = self.video_subregion
@@ -1343,6 +1343,7 @@ class WindowVideoSource(WindowSource):
         #in some places, we want to check against the subsampling used
         #and not the colorspace itself.
         #and NV12 uses the same subsampling as YUV420P...
+        #(the colorspace should be separated from the encoding format)
         return {"NV12" : "YUV420P",
                 "BGRX" : "YUV444P"}.get(csc_mode, csc_mode)
 
