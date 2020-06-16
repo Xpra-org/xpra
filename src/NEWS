@@ -1,12 +1,18 @@
-v3.0.11 (2020-06-09)
+v3.0.11 (2020-06-16)
 ======================
 	-- fix encryption option overzealously enforced on all socket types
 	-- fix Python2 / GTK2 compatibility regression from 3.0.10
 	-- fix tray geometry errors
 	-- fix minimum video scaling not being honoured via heuristics
+	-- fix clipboard data sometimes going missing when ownership changes
+	-- fix error in main thread verifier (fortunately, never fired)
+	-- fix memory contents of the swscale pixel format object
+	-- fix csc_swscale converter getting recycled every time
 	-- workaround for older versions of python-cryptography
 	-- use 'text' mode for 'geany' (fixes lossy screen updates)
 	-- ensure all toolbox windows set a correct and readable window title
+	-- convert invalid map events to warnings (no scary crash reports)
+	-- also update mdns records when the session name changes
 
 
 v3.0.10 (2020-06-04)
