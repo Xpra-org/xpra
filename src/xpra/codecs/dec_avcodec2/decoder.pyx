@@ -134,6 +134,10 @@ for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
+v = get_version()
+if v<(3,):
+    raise ImportError("ffmpeg version %s is too old" % v)
+
 register_all()
 CODECS = []
 if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
@@ -148,23 +152,7 @@ if avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO)!=NULL:
     CODECS.append("mpeg1")
 if avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
     CODECS.append("mpeg2")
-#crashes with ffmpeg 3.4.2 on win32, not sure when this started
-if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL and not WIN32:
-    VP9_CS = []
-    #there used to be problems with YUV444P with older versions of ffmpeg:
-    # "[vp9 @ ...] Invalid compressed header size"
-    #this version definitely works (older versions may work too - untested):
-    v = get_version()
-    if v<(56, 26, 100):         #2.6.3
-        log.warn("Warning: libavcodec version %s is too old:", ".".join((str(x) for x in v)))
-        log.warn(" disabling VP9")
-    else:
-        VP9_CS = ["YUV420P"]
-        if v<(56, 41, 100):     #2.7.1
-            log.warn("Warning: libavcodec version %s is too old:", ".".join((str(x) for x in v)))
-            log.warn(" disabling YUV444P support with VP9")
-        else:
-            VP9_CS.append("YUV444P")
+if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
     CODECS.append("vp9")
 log("avcodec2.init_module: CODECS=%s", CODECS)
 
@@ -200,9 +188,9 @@ def get_input_colorspaces(encoding):
     if encoding in ("h264", "h265"):
         return COLORSPACES
     elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
-        return ["YUV420P"]
+        return ("YUV420P",)
     assert encoding=="vp9"
-    return VP9_CS
+    return ("YUV420P", "YUV444P")
 
 def get_output_colorspace(encoding, csc):
     if encoding not in CODECS:
