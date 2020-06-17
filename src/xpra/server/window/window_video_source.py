@@ -23,7 +23,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.codecs.loader import has_codec
-from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time
+from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
 from xpra.os_util import monotonic_time, bytestostr
 from xpra.log import Logger
 
@@ -1722,7 +1722,7 @@ class WindowVideoSource(WindowSource):
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
         dst_formats = tuple(bytestostr(x) for x in self.full_csc_modes.strtupleget(encoder_spec.encoding))
         ve = encoder_spec.make_instance()
-        options = self.encoding_options.copy()
+        options = typedict(self.encoding_options)
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
         ve.init_context(enc_width, enc_height, enc_in_format,
                         dst_formats, encoder_spec.encoding,

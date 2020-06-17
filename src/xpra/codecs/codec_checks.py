@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@
 import sys
 import binascii
 
-from xpra.util import csv
+from xpra.util import csv, typedict
 from xpra.log import Logger
 log = Logger("encoding")
 
@@ -213,7 +213,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
             try:
-                options = {"b-frames" : True}
+                options = typedict({"b-frames" : True})
                 e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1, 1), options)
                 for i in range(2):
                     image = make_test_image(cs_in, W, H)

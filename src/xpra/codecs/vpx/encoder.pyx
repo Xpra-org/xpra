@@ -367,7 +367,6 @@ cdef class Encoder:
                 raise Exception("invalid dimensions %ix%i - maximum is %ix%i" % (width, height, dmaxw, dmaxh))
 
         self.src_format = bytestostr(src_format)
-        #log("vpx_encoder.init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
 
         cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
         self.encoding = encoding
@@ -375,14 +374,14 @@ cdef class Encoder:
         self.height = height
         self.speed = speed
         self.quality = quality
-        self.bandwidth_limit = options.get("bandwidth-limit", 0)
+        self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         self.lossless = 0
         self.frames = 0
         self.last_frame_times = deque(maxlen=200)
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:
             #no point having too many threads if the height is small, also avoids a warning:
-            self.max_threads = max(0, min(int(options.get("threads", VPX_THREADS)), roundup(height, 64)//64, 32))
+            self.max_threads = max(0, min(int(options.intget("threads", VPX_THREADS)), roundup(height, 64)//64, 32))
         except Exception as e:
             log.error("Error parsing number of threads: %s", e)
             self.max_threads = 2
@@ -583,7 +582,7 @@ cdef class Encoder:
             assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
-        cdef unsigned long bandwidth_limit = options.get("bandwidth-limit", self.bandwidth_limit)
+        cdef unsigned long bandwidth_limit = options.intget("bandwidth-limit", self.bandwidth_limit)
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()

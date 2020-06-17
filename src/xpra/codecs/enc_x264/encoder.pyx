@@ -487,7 +487,6 @@ cdef class Encoder:
     cdef object __weakref__
 
     def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
-        options = typedict(options)
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
