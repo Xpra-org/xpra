@@ -184,7 +184,7 @@
 					--disable-filter=atrim --disable-filter=null
 					--disable-programs --disable-avfilter --disable-doc"
 		autogen-sh="configure">
-        <branch module="/releases/ffmpeg-4.3.tar.bz2"
+        <branch module="/releases/ffmpeg-4.3.tar.xz"
             version="4.3"
             hash="sha256:1d0ad06484f44bcb97eba5e93c40bcb893890f9f64aeb43e46cd9bb4cbd6795d"
 			repo="ffmpeg.org"/>
