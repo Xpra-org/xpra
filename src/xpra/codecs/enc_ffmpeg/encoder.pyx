@@ -17,7 +17,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
-from xpra.os_util import bytestostr, strtobytes, hexstr
+from xpra.os_util import bytestostr, strtobytes, hexstr, LINUX
 from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int64_t, uint64_t
@@ -798,7 +798,7 @@ def init_module():
     if avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
         CODECS.append("mpeg2")
     log("enc_ffmpeg non vaapi CODECS=%s", csv(CODECS))
-    if VAAPI:
+    if VAAPI and LINUX:
         try:
             suspend_nonfatal_logging()
             init_vaapi()
@@ -906,7 +906,10 @@ def init_vaapi():
         if c not in CODECS:
             CODECS.append(c)
     av_buffer_unref(&hw_device_ctx)
-    log("found %i vaapi codecs: %s", len(VAAPI_CODECS), csv(VAAPI_CODECS))
+    if VAAPI_CODECS:
+        log.info("found %i vaapi codecs: %s", len(VAAPI_CODECS), csv(VAAPI_CODECS))
+    else:
+        log.info("no vaapi codecs found")
 
 cdef AVBufferRef *init_vaapi_device() except NULL:
     cdef char* device = NULL
