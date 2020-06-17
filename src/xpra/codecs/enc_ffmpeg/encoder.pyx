@@ -825,25 +825,20 @@ DEF DEFAULT_BUF_LEN = 64*1024
 VAAPI_CODECS = []
 
 def init_module():
+    global CODECS
     log("enc_ffmpeg.init_module()")
     override_logger()
-    if avcodec_find_encoder(AV_CODEC_ID_H264)!=NULL:
-        #CODECS.append("h264")
-        CODECS.append("h264+mp4")
-    if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
-        CODECS.append("vp8")
-        CODECS.append("vp8+webm")
-    #if avcodec_find_encoder(AV_CODEC_ID_VP9)!=NULL:
-    #    CODECS.append("vp9")
-    #    CODECS.append("vp9+webm")
-    #if avcodec_find_encoder(AV_CODEC_ID_H265)!=NULL:
-    #    CODECS.append("h265")
-    if avcodec_find_encoder(AV_CODEC_ID_MPEG4)!=NULL:
-        CODECS.append("mpeg4+mp4")
-    if avcodec_find_encoder(AV_CODEC_ID_MPEG1VIDEO)!=NULL:
-        CODECS.append("mpeg1")
-    if avcodec_find_encoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
-        CODECS.append("mpeg2")
+    for codec_id, codecs in {
+        AV_CODEC_ID_H264    : ("h264+mp4", ), #"h264"
+        AV_CODEC_ID_VP8     : ("vp8", "vp8+webm"),
+        #AV_CODEC_ID_VP9     : ("vp9", "vp9+webm"),
+        #AV_CODEC_ID_H265    : ("h265"),
+        AV_CODEC_ID_MPEG4   : ("mpeg4+mp4", ),
+        AV_CODEC_ID_MPEG1VIDEO : ("mpeg1", ),
+        AV_CODEC_ID_MPEG2VIDEO : ("mpeg2", )
+        }.items():
+        if avcodec_find_encoder(codec_id)!=NULL:
+            CODECS += codecs
     log("enc_ffmpeg non vaapi CODECS=%s", csv(CODECS))
     if VAAPI and LINUX:
         try:
