@@ -1,23 +1,23 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
 from xpra.os_util import bytestostr
-from xpra.util import nonl
+from xpra.util import nonl, envbool
 from xpra.log import Logger, is_debug_enabled
 log = Logger("libav")
 
-LIBAV_DEBUG = is_debug_enabled("libav")
+cdef int LIBAV_TRACE = envbool("XPRA_LIBAV_TRACE", False)
 
 
 cdef extern from "libavutil/error.h":
     int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 
 cdef extern from "string.h":
-    int vsnprintf(char * s, size_t n, const char * format, va_list arg)
+    int vsnprintf(char * s, size_t n, const char * format, va_list arg) nogil
 
 cdef extern from "libavutil/log.h":
     ctypedef struct va_list:
@@ -66,41 +66,47 @@ cdef av_error_str(int errnum):
 
 DEF MAX_LOG_SIZE = 4096
 
-cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) with gil:
-    if level<=ERROR_LEVEL:
-        l = log.error
-    elif level<=WARNING_LEVEL:
-        l = log.warn
-    elif level<=INFO_LEVEL:
-        l = log.info
-    elif level<=DEBUG_LEVEL:
-        l = log.debug
-    else:
-        if LIBAV_DEBUG:
-            l = log.debug
-        #don't bother
+cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list vl) nogil:
+    if level>DEBUG_LEVEL and not LIBAV_TRACE:
         return
+
     #turn it into a string:
     cdef char buffer[MAX_LOG_SIZE]
-    cdef int r
-    try:
-        r = vsnprintf(buffer, MAX_LOG_SIZE, fmt, vl)
+    cdef int r = vsnprintf(buffer, MAX_LOG_SIZE, fmt, vl)
+
+    with gil:
         if r<0:
             log.error("av_log: vsnprintf returned %i on format string '%s'", r, fmt)
             return
-        if r>MAX_LOG_SIZE:
-            log.error("av_log: vsnprintf returned more than %i characters!", MAX_LOG_SIZE)
-            r = MAX_LOG_SIZE
-        s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
-        if s.startswith("Warning: data is not aligned!"):
-            #silence this crap, since there is nothing we can do about it
-            l = log.debug
-        #l("log_callback_override(%#x, %i, %s, ..)", <uintptr_t> avcl, level, fmt)
-        l("libav: %s", s)
-    except Exception as e:
-        log.error("Error in log callback at level %i", level)
-        log.error(" on format string '%s':", nonl(fmt))
-        log.error(" %s: %s", type(e), e)
+        logger = log.debug
+        if level<=ERROR_LEVEL:
+            logger = log.error
+        elif level<=WARNING_LEVEL:
+            logger = log.warn
+        elif level<=INFO_LEVEL:
+            logger = log.info
+        elif level<=DEBUG_LEVEL:
+            if not log.is_debug_enabled():
+                #don't bother getting the string
+                return
+            logger = log.debug
+        elif not LIBAV_TRACE:
+            #don't bother:
+            return
+        try:
+            if r>MAX_LOG_SIZE:
+                log.error("av_log: vsnprintf returned more than %i characters!", MAX_LOG_SIZE)
+                r = MAX_LOG_SIZE
+            s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
+            if s.startswith("Warning: data is not aligned!"):
+                #silence this crap, since there is nothing we can do about it
+                logger = log.debug
+            #l("log_callback_override(%#x, %i, %s, ..)", <uintptr_t> avcl, level, fmt)
+            logger("libav: %s", s)
+        except Exception as e:
+            log.error("Error in log callback at level %i", level)
+            log.error(" on format string '%s':", nonl(fmt))
+            log.error(" %s: %s", type(e), e)
 
 cdef int nesting_level = 0
 
