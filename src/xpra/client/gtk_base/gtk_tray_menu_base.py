@@ -18,7 +18,7 @@ from xpra.client.gtk_base.menu_helper import (
     ll, set_sensitive, ensure_item_selected,
     )
 from xpra.client.client_base import EXIT_OK
-from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
+from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.codecs.loader import get_encoding_help, get_encoding_name
 from xpra.simple_stats import std_unit_dec
 from xpra.platform.paths import get_icon_dir
@@ -786,7 +786,7 @@ class GTKTrayMenuBase(MenuHelper):
 
     def make_encodingssubmenu(self):
         server_encodings = list(self.client.server_encodings)
-        all_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+        all_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
         encodings = [x for x in all_encodings if x not in self.client.server_encodings_problematic]
         if not encodings:
             #all we have, show the "bad" hidden ones then!

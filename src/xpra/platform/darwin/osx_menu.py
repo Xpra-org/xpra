@@ -218,9 +218,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
         if mixin_features.windows and SHOW_ENCODINGS_MENU:
             encodings_menu = self.make_menu()
             def set_encodings_menu(*_args):
-                from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
+                from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
                 server_encodings = list(self.client.server_encodings)
-                encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.client.get_encodings()]
+                encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
                 encodings.insert(0, "auto")
                 server_encodings.insert(0, "auto")
                 populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, server_encodings)

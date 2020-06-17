@@ -24,7 +24,7 @@ from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
-from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
+from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse,
@@ -402,7 +402,7 @@ class ApplicationWindow:
         hbox.set_spacing(20)
         hbox.pack_start(Gtk.Label("Encoding: "))
         self.encoding_combo = Gtk.MenuButton()
-        encodings = ["auto"]+[x for x in PREFERED_ENCODING_ORDER]
+        encodings = ["auto"]+[x for x in PREFERRED_ENCODING_ORDER]
         server_encodings = encodings
         es = make_encodingsmenu(self.get_current_encoding, self.set_new_encoding, encodings, server_encodings)
         self.encoding_combo.set_popup(es)

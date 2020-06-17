@@ -21,7 +21,7 @@ from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
-from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, EDGE_ENCODING_ORDER
+from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.codecs.loader import has_codec
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
 from xpra.os_util import monotonic_time, bytestostr
@@ -100,7 +100,7 @@ if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
     log.warn(" only 'png' or 'jpeg' are allowed")
     SAVE_VIDEO_FRAMES = None
 
-FAST_ORDER = tuple(["jpeg", "rgb32", "rgb24", "webp", "png"] + list(PREFERED_ENCODING_ORDER))
+FAST_ORDER = tuple(["jpeg", "rgb32", "rgb24", "webp", "png"] + list(PREFERRED_ENCODING_ORDER))
 
 
 class WindowVideoSource(WindowSource):
@@ -139,9 +139,9 @@ class WindowVideoSource(WindowSource):
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
-        self.non_video_encodings = tuple(x for x in PREFERED_ENCODING_ORDER
+        self.non_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
                                          if x in nv_common)
-        self.common_video_encodings = tuple(x for x in PREFERED_ENCODING_ORDER
+        self.common_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
                                             if x in self.video_encodings and x in self.core_encodings)
         if "scroll" in self.server_core_encodings:
             self.add_encoder("scroll", self.scroll_encode)
@@ -386,7 +386,7 @@ class WindowVideoSource(WindowSource):
                 else:
                     l = log
                 l("client does not support any csc modes with %s", x)
-        self.common_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
+        self.common_video_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
         log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         super().update_encoding_selection(encoding, exclude, init)
@@ -403,7 +403,7 @@ class WindowVideoSource(WindowSource):
         super().do_set_client_properties(properties)
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
-        self.non_video_encodings = [x for x in PREFERED_ENCODING_ORDER if x in nv_common]
+        self.non_video_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in nv_common]
         try:
             self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
         except IndexError:
@@ -1288,7 +1288,7 @@ class WindowVideoSource(WindowSource):
             #discount encodings further down the list of preferred encodings:
             #(ie: prefer h264 to vp9)
             try:
-                encoding_score_delta = len(PREFERED_ENCODING_ORDER)//2-PREFERED_ENCODING_ORDER.index(encoding)
+                encoding_score_delta = len(PREFERRED_ENCODING_ORDER)//2-PREFERRED_ENCODING_ORDER.index(encoding)
             except ValueError:
                 encoding_score_delta = 0
             encoding_score_delta = self.encoding_options.get("%s.score-delta" % encoding, encoding_score_delta)
@@ -2036,7 +2036,7 @@ class WindowVideoSource(WindowSource):
             if self._current_speed>=50:
                 order = FAST_ORDER
             else:
-                order = PREFERED_ENCODING_ORDER
+                order = PREFERRED_ENCODING_ORDER
         #don't choose mmap!
         fallback_encodings = tuple(x for x in order if
                                    (x in encodings and x in self._encoders and x!="mmap"))

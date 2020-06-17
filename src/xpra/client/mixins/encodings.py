@@ -6,7 +6,7 @@
 
 import os
 
-from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
+from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
 from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
 from xpra.scripts.config import parse_bool_or_int
@@ -241,7 +241,7 @@ class Encodings(StubClientMixin):
             cenc.append("rgb")
         if "grayscale" not in cenc:
             cenc.append("grayscale")
-        return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
+        return [x for x in PREFERRED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
 
     def get_core_encodings(self):
         if self.core_encodings is None:
@@ -286,7 +286,7 @@ class Encodings(StubClientMixin):
             if encoding not in core_encodings:
                 core_encodings.append(encoding)
         #remove duplicates and use prefered encoding order:
-        core_encodings = [x for x in PREFERED_ENCODING_ORDER
+        core_encodings = [x for x in PREFERRED_ENCODING_ORDER
                           if x in set(core_encodings) and x in self.allowed_encodings]
         return core_encodings
 

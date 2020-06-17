@@ -1335,7 +1335,7 @@ def fixup_pings(options):
 
 def fixup_encodings(options):
     try:
-        from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER
+        from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
     except ImportError:
         return
     RENAME = {"jpg" : "jpeg"}
@@ -1344,7 +1344,7 @@ def fixup_encodings(options):
     estr = _csvstr(options.encodings)
     if estr=="all":
         #replace with an actual list
-        options.encodings = list(PREFERED_ENCODING_ORDER)
+        options.encodings = list(PREFERRED_ENCODING_ORDER)
         return
     encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
     if "rgb" in encodings:

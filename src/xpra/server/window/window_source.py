@@ -26,7 +26,7 @@ from xpra.simple_stats import get_list_stats
 from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
-from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
+from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
 from xpra.net import compression
 from xpra.log import Logger
 
@@ -750,7 +750,7 @@ class WindowSource(WindowIconSource):
         #"rgb" is a pseudo encoding and needs special code:
         if "rgb24" in  common_encodings or "rgb32" in common_encodings:
             common_encodings.append("rgb")
-        self.common_encodings = [x for x in PREFERED_ENCODING_ORDER if x in common_encodings]
+        self.common_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in common_encodings]
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
         #ensure the encoding chosen is supported by this source:
@@ -775,7 +775,7 @@ class WindowSource(WindowIconSource):
             are = tuple(x for x in self.common_encodings if x in ropts and x in TRANSPARENCY_ENCODINGS)
         if not are:
             are = tuple(x for x in self.common_encodings if x in ropts) or self.common_encodings
-        self.auto_refresh_encodings = tuple(x for x in PREFERED_ENCODING_ORDER if x in are)
+        self.auto_refresh_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in are)
         log("update_encoding_selection: client refresh encodings=%s, auto_refresh_encodings=%s",
             self.client_refresh_encodings, self.auto_refresh_encodings)
         self.update_quality()
