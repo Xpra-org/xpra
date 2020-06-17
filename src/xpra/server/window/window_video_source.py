@@ -1284,7 +1284,14 @@ class WindowVideoSource(WindowSource):
             if not encoder_specs:
                 scorelog(" no encoder specs for %s", encoding)
                 continue
-            encoding_score_delta = self.encoding_options.get("%s.score-delta" % encoding, 0)
+            #if not specified as an encoding option,
+            #discount encodings further down the list of preferred encodings:
+            #(ie: prefer h264 to vp9)
+            try:
+                encoding_score_delta = len(PREFERED_ENCODING_ORDER)//2-PREFERED_ENCODING_ORDER.index(encoding)
+            except ValueError:
+                encoding_score_delta = 0
+            encoding_score_delta = self.encoding_options.get("%s.score-delta" % encoding, encoding_score_delta)
             def add_scores(info, csc_spec, enc_in_format):
                 #find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
