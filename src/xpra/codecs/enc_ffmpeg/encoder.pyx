@@ -829,6 +829,8 @@ def init_vaapi():
         if avctx==NULL:
             log.error("Error: failed to allocate codec context")
             break
+        log("%s_vaapi options:", c)
+        list_options(avctx, avctx.av_class)
         avctx.width     = WIDTH
         avctx.height    = HEIGHT
         avctx.global_quality = 20
@@ -1144,15 +1146,13 @@ cdef class Encoder:
             bytestostr(self.video_codec.name), bytestostr(self.video_codec.long_name),
             flagscsv(CAPS, self.video_codec.capabilities))
 
-        #ie: client side as: "encoding.h264+mpeg4.YUV420P.profile" : "main"
-        profile = options.get("%s.%s.profile" % (self.encoding, src_format), "main")
         cdef uintptr_t gen = generation.increase()
         GEN_TO_ENCODER[gen] = self
         try:
             if self.muxer_format:
                 assert not self.vaapi
                 self.init_muxer(gen)
-            self.init_encoder(profile)
+            self.init_encoder(quality, speed, options)
             if AUDIO:
                 self.init_audio()
             if self.muxer_format:
@@ -1165,7 +1165,7 @@ cdef class Encoder:
                 self.file = open(filename, 'wb')
                 log.info("saving %s stream to %s", self.encoding, filename)
         except Exception as e:
-            log("init_encoder(%s) failed", profile, exc_info=True)
+            log("init_encoder(%i, %i, %s) failed", quality, speed, options, exc_info=True)
             self.clean()
             del GEN_TO_ENCODER[gen]
             raise
@@ -1233,7 +1233,7 @@ cdef class Encoder:
             msg = av_error_str(r)
             raise Exception("libavformat failed to write header: %s" % msg)
 
-    def init_encoder(self, profile):
+    def init_encoder(self, int quality, int speed, options):
         self.video_ctx = avcodec_alloc_context3(self.video_codec)
         if self.video_ctx==NULL:
             raise Exception("failed to allocate video codec context!")
@@ -1255,52 +1255,71 @@ cdef class Encoder:
         self.video_ctx.width = self.width
         self.video_ctx.height = self.height
         self.video_ctx.bit_rate = max(200000, self.width*self.height*4) #4 bits per pixel
-        if self.vaapi:
-            self.video_ctx.pix_fmt = AV_PIX_FMT_VAAPI
-        else:
-            self.video_ctx.pix_fmt = self.pix_fmt
         self.video_ctx.thread_safe_callbacks = 1
-        #if oformat.flags & AVFMT_GLOBALHEADER:
-        if self.encoding not in ("mpeg1", "mpeg2") and not self.vaapi:
-            self.video_ctx.thread_type = THREAD_TYPE
-            self.video_ctx.thread_count = THREAD_COUNT     #0=auto
-            self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
-            self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
+
         cdef AVDictionary *opts = NULL
         cdef int r
+        if self.encoding.startswith("h") or self.encoding=="mpeg2":
+            #these formats all have 'profile' and 'level' attributes: hevc, h264, mpeg2
+            #ie: the client can specify the encoding option:
+            # "encoding.h264+mpeg4.YUV420P.profile" : "main"
+            # (the html5 client does)
+            profile = options.strget("%s.%s.profile" % (self.encoding, self.src_format), "main")
+            log("init_encoder() profile=%s", profile)
+            if profile:
+                #"constrained_baseline"?
+                r = av_dict_set(&opts, b"vprofile", strtobytes(profile), 0)
+                if r==0:
+                    self.profile = profile
+            level = options.intget("%s.%s.level" % (self.encoding, self.src_format), 0)
+            if profile.find("baseline")>=0:
+                level = min(30, level)
+            log("init_encoder() level=%s", level)
+            if level>0:
+                r = av_dict_set_int(&opts, b"level", level, 0)
+
         if self.vaapi:
+            self.video_ctx.pix_fmt = AV_PIX_FMT_VAAPI
             r = set_hwframe_ctx(self.video_ctx, self.hw_device_ctx, self.width, self.height)
             if r<0:
                 raise Exception("failed to set hwframe context")
-        elif self.encoding.startswith("h264") and profile:
-            r = av_dict_set(&opts, b"vprofile", strtobytes(profile), 0)
-            log("av_dict_set vprofile=%s returned %i", profile, r)
-            if r==0:
-                self.profile = profile
-            r = av_dict_set(&opts, "tune", "zerolatency", 0)
-            log("av_dict_set tune=zerolatency returned %i", r)
-            r = av_dict_set(&opts, "preset","ultrafast", 0)
-            log("av_dict_set preset=ultrafast returned %i", r)
-        elif self.encoding.startswith("vp"):
-            for k,v in {
+            if self.encoding=="h264":
+                #reach highest quality (compression_level=0) for quality>=91:
+                self.video_ctx.compression_level = max(0, min(7, 7-quality/13))
+                log("init_encoder() compression_level=%s", self.video_ctx.compression_level)
+        else:
+            self.video_ctx.pix_fmt = self.pix_fmt
+            if self.encoding not in ("mpeg1", "mpeg2"):
+                self.video_ctx.thread_type = THREAD_TYPE
+                self.video_ctx.thread_count = THREAD_COUNT     #0=auto
+                self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
+                self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
+                log("init_encoder() thread-type=%i, thread-count=%i", THREAD_TYPE, THREAD_COUNT)
+                log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.video_ctx.flags))
+                log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.video_ctx.flags2))
+            if self.encoding.startswith("h264"):
+                #x264 options:
+                r = av_dict_set(&opts, "tune", "zerolatency", 0)
+                log("av_dict_set tune=zerolatency returned %i", r)
+                r = av_dict_set(&opts, "preset","ultrafast", 0)
+                log("av_dict_set preset=ultrafast returned %i", r)
+            if self.encoding.startswith("vp"):
+                for k,v in {
                         "lag-in-frames"     : 0,
                         "realtime"          : 1,
                         "rc_lookahead"      : 0,
                         "error_resilient"   : 0,
                         }.items():
-                r = av_dict_set_int(&opts, strtobytes(k), v, 0)
-                if r!=0:
-                    log.error("Error: failed to set video context option '%s' to %i:", k, v)
-                    log.error(" %s", av_error_str(r))
-        log("init_encoder() thread-type=%i, thread-count=%i", THREAD_TYPE, THREAD_COUNT)
-        log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.video_ctx.flags))
-        log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.video_ctx.flags2))
+                    r = av_dict_set_int(&opts, strtobytes(k), v, 0)
+                    if r!=0:
+                        log.error("Error: failed to set video context option '%s' to %i:", k, v)
+                        log.error(" %s", av_error_str(r))
 
         r = avcodec_open2(self.video_ctx, self.video_codec, &opts)
         av_dict_free(&opts)
         if r!=0:
             raise Exception("could not open %s encoder context: %s" % (self.encoding, av_error_str(r)))
-        log("avcodec_open2 success")
+        log("init_encoder() avcodec_open2 success")
 
         if self.video_stream:
             assert not self.vaapi
