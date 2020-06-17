@@ -7,8 +7,10 @@
 
 from xpra.os_util import bytestostr
 from xpra.util import nonl
-from xpra.log import Logger
+from xpra.log import Logger, is_debug_enabled
 log = Logger("libav")
+
+LIBAV_DEBUG = is_debug_enabled("libav")
 
 
 cdef extern from "libavutil/error.h":
@@ -74,6 +76,8 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
     elif level<=DEBUG_LEVEL:
         l = log.debug
     else:
+        if LIBAV_DEBUG:
+            l = log.debug
         #don't bother
         return
     #turn it into a string:
