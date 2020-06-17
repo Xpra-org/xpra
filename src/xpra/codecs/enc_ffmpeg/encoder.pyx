@@ -800,8 +800,10 @@ def init_module():
     log("enc_ffmpeg non vaapi CODECS=%s", csv(CODECS))
     if VAAPI:
         try:
+            suspend_nonfatal_logging()
             init_vaapi()
         except Exception:
+            resume_nonfatal_logging()
             log("no vappi support", exc_info=True)
 
 def init_vaapi():
@@ -842,14 +844,14 @@ def init_vaapi():
             err = set_hwframe_ctx(avctx, hw_device_ctx, WIDTH, HEIGHT)
             log("set_hwframe_ctx(%#x, %#x, %i, %i)=%i", <uintptr_t> avctx, <uintptr_t> hw_device_ctx, WIDTH, HEIGHT, err)
             if err<0:
-                log.warn("Warning: failed to set hwframe context")
+                log("failed to set hwframe context")
                 log.warn(" %s", av_error_str(err))
                 continue
             err = avcodec_open2(avctx, codec, NULL)
             log("avcodec_open2(%#x, %i, NULL)=%i", <uintptr_t> avctx, <uintptr_t> codec, err)
             if err<0:
-                log.warn("Warning: failed to open video encoder codec")
-                log.warn(" %i: %s", err, av_error_str(err))
+                log("failed to open video encoder codec")
+                log(" %i: %s", err, av_error_str(err))
                 continue
             sw_frame = av_frame_alloc()
             log("av_frame_alloc()=%#x", <uintptr_t> sw_frame)
