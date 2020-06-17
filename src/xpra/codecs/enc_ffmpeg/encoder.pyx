@@ -146,6 +146,18 @@ cdef extern from "libavcodec/avcodec.h":
     int FF_PROFILE_H264_HIGH_444_INTRA
     int FF_PROFILE_H264_CAVLC_444
 
+    int FF_PROFILE_HEVC_MAIN
+    int FF_PROFILE_HEVC_MAIN_10
+    int FF_PROFILE_HEVC_MAIN_STILL_PICTURE
+    int FF_PROFILE_HEVC_REXT
+
+    int FF_PROFILE_MPEG2_422
+    int FF_PROFILE_MPEG2_HIGH
+    int FF_PROFILE_MPEG2_SS
+    int FF_PROFILE_MPEG2_SNR_SCALABLE
+    int FF_PROFILE_MPEG2_MAIN
+    int FF_PROFILE_MPEG2_SIMPLE
+
     int AV_CODEC_FLAG_UNALIGNED
     int AV_CODEC_FLAG_QSCALE
     int AV_CODEC_FLAG_4MV
@@ -434,6 +446,7 @@ cdef extern from "libavutil/opt.h":
 
     const AVOption* av_opt_next(void *obj, const AVOption *prev)
     void *av_opt_child_next(void *obj, void *prev)
+    int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     int av_opt_set_int(void *obj, const char *name, int64_t val, int search_flags)
     int av_opt_get_int(void *obj, const char *name, int search_flags, int64_t *out_val)
     int av_opt_set_dict(void *obj, AVDictionary **options)
@@ -584,6 +597,37 @@ H264_PROFILE_NAMES = {
     FF_PROFILE_H264_CAVLC_444               : "cavlc 444",
     }
 H264_PROFILES = reverse_dict(H264_PROFILE_NAMES)
+
+HEVC_PROFILE_NAMES = {
+    FF_PROFILE_HEVC_MAIN                : "main",
+    FF_PROFILE_HEVC_MAIN_10             : "main10",
+    FF_PROFILE_HEVC_MAIN_STILL_PICTURE  : "picture",
+    FF_PROFILE_HEVC_REXT                : "rext",
+    }
+HEVC_PROFILES = reverse_dict(HEVC_PROFILE_NAMES)
+
+MPEG2_PROFILE_NAMES = {
+    FF_PROFILE_MPEG2_422            : "422",
+    FF_PROFILE_MPEG2_HIGH           : "high",
+    FF_PROFILE_MPEG2_SS             : "ss",
+    FF_PROFILE_MPEG2_SNR_SCALABLE   : "snr-scalable",
+    FF_PROFILE_MPEG2_MAIN           : "main",
+    FF_PROFILE_MPEG2_SIMPLE         : "simple",
+    }
+MPEG2_PROFILES = reverse_dict(MPEG2_PROFILE_NAMES)
+
+PROFILES = {
+    "h264"  : H264_PROFILES,
+    "hevc"  : HEVC_PROFILES,
+    "mpeg2" : MPEG2_PROFILES,
+    }
+
+DEFAULT_PROFILE = {
+    "h264"  : "main",
+    "hevc"  : "main",
+    "mpeg"  : "main",
+    }
+
 
 AV_OPT_TYPES = {
     AV_OPT_TYPE_FLAGS       : "FLAGS",
@@ -784,10 +828,13 @@ def init_module():
     log("enc_ffmpeg.init_module()")
     override_logger()
     if avcodec_find_encoder(AV_CODEC_ID_H264)!=NULL:
+        #CODECS.append("h264")
         CODECS.append("h264+mp4")
     if avcodec_find_encoder(AV_CODEC_ID_VP8)!=NULL:
+        CODECS.append("vp8")
         CODECS.append("vp8+webm")
     #if avcodec_find_encoder(AV_CODEC_ID_VP9)!=NULL:
+    #    CODECS.append("vp9")
     #    CODECS.append("vp9+webm")
     #if avcodec_find_encoder(AV_CODEC_ID_H265)!=NULL:
     #    CODECS.append("h265")
@@ -923,7 +970,7 @@ cdef AVBufferRef *init_vaapi_device() except NULL:
     cdef int err = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
                                           device, opts, 0)
     if err<0:
-        raise Exception("vaapi device found")
+        raise Exception("vaapi device context not found")
     log("init_vaapi_device()=%#x", <uintptr_t> hw_device_ctx)
     return hw_device_ctx
 
@@ -1264,16 +1311,36 @@ cdef class Encoder:
             #ie: the client can specify the encoding option:
             # "encoding.h264+mpeg4.YUV420P.profile" : "main"
             # (the html5 client does)
-            profile = options.strget("%s.%s.profile" % (self.encoding, self.src_format), "main")
+            # lookup YUV420P because the client doesn't need to know about NV12,
+            # which will be decoded into YUV420P..
+            default_profile = DEFAULT_PROFILE.get(self.encoding)
+            profile = options.strget("%s.YUV420P.profile" % self.encoding, default_profile)
+            profile = options.strget("%s.%s.profile" % (self.encoding, self.src_format), profile)
             log("init_encoder() profile=%s", profile)
             if profile:
-                #"constrained_baseline"?
-                r = av_dict_set(&opts, b"vprofile", strtobytes(profile), 0)
-                if r==0:
+                if self.vaapi:
+                    global PROFILES
+                    profiles = PROFILES.get(self.encoding, {})
+                    v = profiles.get(profile, None)
+                    if v is not None:
+                        r = av_dict_set_int(&opts, b"profile", v, 0)
+                        if r==0:
+                            self.profile = profile
+                    else:
+                        log.warn("unknown profile '%s', options for %s: %s", profile, self.encoding, csv(profiles.keys()) or "none")
+                else:
+                    av_dict_set(&opts, b"profile", strtobytes(profile), 0)
                     self.profile = profile
-            level = options.intget("%s.%s.level" % (self.encoding, self.src_format), 0)
-            if profile.find("baseline")>=0:
-                level = min(30, level)
+
+            level = 0
+            level_str = options.strget("%s.%s.level" % (self.encoding, self.src_format), "")
+            if level_str:
+                try:
+                    level = int(float(level_str)*10)    #ie: "2.1" -> 21
+                except ValueError:
+                    pass
+            if profile and profile.find("baseline")>=0:
+                level = min(21, level)
             log("init_encoder() level=%s", level)
             if level>0:
                 r = av_dict_set_int(&opts, b"level", level, 0)
