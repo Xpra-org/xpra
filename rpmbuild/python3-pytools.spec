@@ -55,7 +55,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Thy Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
+* Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
 - drop support for python2
 
 * Mon May 20 2018 Antoine Martin <antoine@xpra.org> - 2019.1.1-1
