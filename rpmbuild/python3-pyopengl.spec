@@ -81,7 +81,6 @@ popd
 %exclude %{python3_sitelib}/OpenGL/Tk
 %{python3_sitearch}/OpenGL_accelerate/
 %{python3_sitearch}/%{srcname}_accelerate-%{version}-py%{python3_version}.egg-info/
-%endif
 
 
 %files -n python3-pyopengl-tk
