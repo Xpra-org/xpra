@@ -425,7 +425,8 @@ XpraClient.prototype.open_protocol = function() {
 	if (this.ssl)
 		uri = "wss://";
 	uri += this.host;
-	uri += ":" + this.port;
+	if (this.port)
+		uri += ":" + this.port;
 	uri += this.path;
 	// do open
 	this.uri = uri;
