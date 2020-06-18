@@ -56,7 +56,6 @@ else:
     def verify_main_thread():
         ct = threading.current_thread()
         if main_thread != ct:
-            import threading
             log.error("Error: invalid access from thread %s", threading.current_thread())
             traceback.print_stack()
     verify_main_thread()
