@@ -586,7 +586,7 @@ fi
 
 
 %changelog
-* Tue Jun 16 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Thu Jun 18 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix encryption option overzealously enforced on all socket types
 - fix OpenGL force-enable option not honoured
 - fix tray geometry errors
@@ -597,6 +597,7 @@ fi
 - fix clipboard data sometimes going missing when ownership changes
 - fix memory contents of the swscale pixel format object
 - fix csc_swscale converter getting recycled every time
+- fix rfb connections missing all screen updates
 - also update mdns records when the session name changes
 - workaround for older versions of python-cryptography
 - use 'text' mode for 'geany' (fixes lossy screen updates)
