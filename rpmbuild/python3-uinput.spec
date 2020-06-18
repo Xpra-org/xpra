@@ -29,7 +29,7 @@ which allows attaching userspace device drivers into kernel.
 # Use unversioned .so
 sed -i "s/libudev.so.0/libudev.so/" setup.py
 
-find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
+find . -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
 
 
 %build

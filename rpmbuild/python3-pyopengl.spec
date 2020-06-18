@@ -1,5 +1,5 @@
 # Remove private provides from .so files in the python_sitearch directory
-%global __provides_exclude_from ^%{python_sitearch}/.*\\.so$
+%global __provides_exclude_from ^%{python3_sitearch}/.*\\.so$
 
 #this spec file is for both Fedora and CentOS
 %global srcname PyOpenGL
