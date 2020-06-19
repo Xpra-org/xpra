@@ -278,7 +278,7 @@ def get_screen_sizes(xscale=1, yscale=1):
     def dpi(size_pixels, size_mm):
         if size_mm==0:
             return 0
-        return int(size_pixels * 254 / size_mm / 10)
+        return iround(size_pixels * 254 / size_mm / 10)
     n_screens = display.get_n_screens()
     get_n_monitors = getattr(display, "get_n_monitors", None)
     if get_n_monitors:
