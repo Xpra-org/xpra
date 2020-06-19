@@ -5,9 +5,9 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import strtobytes
-from xpra.util import engs, csv, iround
-from xpra.util import log_screen_sizes
-from xpra.os_util import bytestostr, get_loaded_kernel_modules
+from xpra.util import engs, iround, log_screen_sizes
+from xpra.os_util import bytestostr
+from xpra.scripts.config import parse_bool
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -56,63 +56,55 @@ class DisplayManager(StubServerMixin):
 
     def query_opengl(self):
         props = {}
-        if self.opengl.lower()=="noprobe":
+        if self.opengl.lower()=="noprobe" or parse_bool("opengl", self.opengl) is False:
             gllog("query_opengl() skipped: %s", self.opengl)
-            return
-        blacklisted_kernel_modules = get_loaded_kernel_modules("vboxguest", "vboxvideo")
-        if blacklisted_kernel_modules:
-            gllog.warn("Warning: skipped OpenGL probing,")
-            gllog.warn(" found %i blacklisted kernel module%s:",
-                       len(blacklisted_kernel_modules), engs(blacklisted_kernel_modules))
-            gllog.warn(" %s", csv(blacklisted_kernel_modules))
-            props["error"] = "VirtualBox guest detected: %s" % csv(blacklisted_kernel_modules)
-        else:
-            try:
-                from subprocess import Popen, PIPE
-                from xpra.platform.paths import get_xpra_command
-                cmd = self.get_full_child_command(get_xpra_command()+["opengl", "--opengl=yes"])
-                env = self.get_child_env()
-                #we want the output so we can parse it:
-                env["XPRA_REDIRECT_OUTPUT"] = "0"
-                proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
-                out,err = proc.communicate()
-                gllog("out(%s)=%s", cmd, out)
-                gllog("err(%s)=%s", cmd, err)
-                if proc.returncode==0:
-                    #parse output:
-                    for line in out.splitlines():
-                        parts = line.split(b"=")
-                        if len(parts)!=2:
-                            continue
-                        k = bytestostr(parts[0].strip())
-                        v = bytestostr(parts[1].strip())
-                        props[k] = v
-                    gllog("opengl props=%s", props)
-                    if props:
-                        gllog.info("OpenGL is supported on display '%s'", self.display_name)
-                        renderer = props.get("renderer")
-                        if renderer:
-                            gllog.info(" using '%s' renderer", renderer)
-                    else:
-                        gllog.info("No OpenGL information available")
+            return props
+        try:
+            from subprocess import Popen, PIPE
+            from xpra.platform.paths import get_xpra_command
+            cmd = self.get_full_child_command(get_xpra_command()+["opengl", "--opengl=yes"])
+            env = self.get_child_env()
+            #we want the output so we can parse it:
+            env["XPRA_REDIRECT_OUTPUT"] = "0"
+            proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
+            out,err = proc.communicate()
+            gllog("out(%s)=%s", cmd, out)
+            gllog("err(%s)=%s", cmd, err)
+            if proc.returncode==0:
+                #parse output:
+                for line in out.splitlines():
+                    parts = line.split(b"=")
+                    if len(parts)!=2:
+                        continue
+                    k = bytestostr(parts[0].strip())
+                    v = bytestostr(parts[1].strip())
+                    props[k] = v
+                gllog("opengl props=%s", props)
+                if props:
+                    gllog.info("OpenGL is supported on display '%s'", self.display_name)
+                    renderer = props.get("renderer")
+                    if renderer:
+                        gllog.info(" using '%s' renderer", renderer)
                 else:
-                    props["error-details"] = str(err).strip("\n\r")
-                    error = "unknown error"
-                    for x in str(err).splitlines():
-                        if x.startswith("RuntimeError: "):
-                            error = x[len("RuntimeError: "):]
-                            break
-                        if x.startswith("ImportError: "):
-                            error = x[len("ImportError: "):]
-                            break
-                    props["error"] = error
-                    log.warn("Warning: OpenGL support check failed:")
-                    log.warn(" %s", error)
-            except Exception as e:
-                gllog("query_opengl()", exc_info=True)
-                gllog.error("Error: OpenGL support check failed")
-                gllog.error(" '%s'", e)
-                props["error"] = str(e)
+                    gllog.info("No OpenGL information available")
+            else:
+                props["error-details"] = str(err).strip("\n\r")
+                error = "unknown error"
+                for x in str(err).splitlines():
+                    if x.startswith("RuntimeError: "):
+                        error = x[len("RuntimeError: "):]
+                        break
+                    if x.startswith("ImportError: "):
+                        error = x[len("ImportError: "):]
+                        break
+                props["error"] = error
+                log.warn("Warning: OpenGL support check failed:")
+                log.warn(" %s", error)
+        except Exception as e:
+            gllog("query_opengl()", exc_info=True)
+            gllog.error("Error: OpenGL support check failed")
+            gllog.error(" '%s'", e)
+            props["error"] = str(e)
         gllog("OpenGL: %s", props)
         return props
 
