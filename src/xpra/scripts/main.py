@@ -98,6 +98,7 @@ def main(script_file, cmdline):
 
     #turn off gdk scaling to make sure we get the actual window geometry:
     os.environ["GDK_SCALE"]="1"
+    os.environ["GDK_DPI_SCALE"] = "1"
     #client side decorations break window geometry,
     #disable this "feature" unless explicitly enabled:
     if os.environ.get("GTK_CSD") is None:
