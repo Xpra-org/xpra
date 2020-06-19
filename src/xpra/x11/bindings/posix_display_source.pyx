@@ -54,7 +54,7 @@ class X11DisplayContext:
         a temporary posix display source will be used.
     """
 
-    def __init__(self, display_name):
+    def __init__(self, display_name=os.environ.get("DISPLAY")):
         self.close = False
         self.display_name = display_name
         self.display = 0
