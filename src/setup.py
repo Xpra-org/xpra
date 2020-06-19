@@ -1674,7 +1674,7 @@ else:
 
 
 if scripts_ENABLED:
-    scripts += ["scripts/xpra", "scripts/xpra_launcher"]
+    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/run_scaled"]
 toggle_modules(WIN32, "xpra/scripts/win32_service")
 
 if data_ENABLED:

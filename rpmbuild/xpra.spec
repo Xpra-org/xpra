@@ -352,6 +352,7 @@ rm -rf $RPM_BUILD_ROOT
 %files common
 %defattr(-,root,root)
 %{_bindir}/xpra*
+%{_bindir}/run_scaled*
 %{_datadir}/xpra/README
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons

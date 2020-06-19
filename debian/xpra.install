@@ -4,6 +4,7 @@ usr/bin/xpra
 usr/bin/xpra_launcher
 usr/bin/xpra_signal_listener
 usr/bin/xpra_udev_product_version
+usr/bin/run_scaled
 usr/lib/cups/backend/xpraforwarder
 usr/lib/xpra/xdg-open
 usr/lib/xpra/gnome-open

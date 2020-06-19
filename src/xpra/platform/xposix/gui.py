@@ -36,6 +36,17 @@ def X11WindowBindings():
                 log.error(" %s", e)
     return _X11Window
 
+def X11RandRBindings():
+    if is_X11():
+        try:
+            from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
+            return RandRBindings()
+        except Exception as e:
+            log("RandRBindings()", exc_info=True)
+            log.error("Error: no X11 RandR bindings")
+            log.error(" %s", e)
+    return None
+
 X11XI2 = False
 def X11XI2Bindings():
     global X11XI2
@@ -203,13 +214,9 @@ def _get_xsettings_dpi():
 def _get_randr_dpi():
     if RANDR_DPI and not is_Wayland():
         from xpra.gtk_common.error import xlog
-        try:
-            from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
-        except ImportError:
-            return -1, -1
         with xlog:
-            randr_bindings = RandRBindings()
-            if randr_bindings.has_randr():
+            randr_bindings = X11RandRBindings()
+            if randr_bindings and randr_bindings.has_randr():
                 wmm, hmm = randr_bindings.get_screen_size_mm()
                 if wmm>0 and hmm>0:
                     w, h =  randr_bindings.get_screen_size()
