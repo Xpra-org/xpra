@@ -36,7 +36,15 @@ for i, x in enumerate(sys.argv[1:]):
     else:
         command_argv.append(x)
 try:
-    scale = float(scale)
+    try:
+        if scale.endswith("%"):
+            scale = float(scale[:-1])/100
+        else:
+            scale = float(scale)
+    except ValueError:
+        #try parsing as a fraction:
+        from fractions import Fraction
+        scale = float(Fraction(scale))
 except ValueError:
     usage("invalid scale value '%s'" % (scale,))
 if scale<0.1 or scale>10:
@@ -111,5 +119,5 @@ set_default_name("Xpra")
 init()
 
 from xpra.scripts.main import main
-#print("sys.exit(main(%s, %s))" % (sys.argv[0], xpra_argv))
-sys.exit(main("xpra", xpra_argv))
+print("sys.exit(main(%s, %s))" % (sys.argv[0], xpra_argv))
+#sys.exit(main("xpra", xpra_argv))

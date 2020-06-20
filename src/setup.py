@@ -1476,7 +1476,10 @@ else:
         man_path = "share/man"
         if OPENBSD or FREEBSD:
             man_path = "man"
-        add_data_files("%s/man1" % man_path,  ["man/xpra.1", "man/xpra_launcher.1"])
+        man_pages = ["man/xpra.1", "man/xpra_launcher.1"]
+        if not OSX:
+            man_pages.append("man/run_scaled.1")
+        add_data_files("%s/man1" % man_path,  man_pages)
         add_data_files("share/applications",  glob.glob("xdg/*.desktop"))
         add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
         add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png", "xdg/xpra-shadow.png"])
@@ -1674,7 +1677,9 @@ else:
 
 
 if scripts_ENABLED:
-    scripts += ["scripts/xpra", "scripts/xpra_launcher", "scripts/run_scaled"]
+    scripts += ["scripts/xpra", "scripts/xpra_launcher"]
+    if not OSX and not WIN32:
+        scripts.append("scripts/run_scaled")
 toggle_modules(WIN32, "xpra/scripts/win32_service")
 
 if data_ENABLED:
