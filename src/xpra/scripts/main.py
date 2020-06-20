@@ -1832,7 +1832,10 @@ def make_client(error_cb, opts):
     if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
         os.environ["GDK_BACKEND"] = "x11"
     if opts.opengl=="probe":
-        opts.opengl = run_opengl_probe()
+        if os.environ.get("XDG_SESSION_TYPE")=="wayland":
+            opts.opengl = "no"
+        else:
+            opts.opengl = run_opengl_probe()
     from xpra.platform.gui import init as gui_init
     gui_init()
 
