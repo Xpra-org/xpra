@@ -25,31 +25,70 @@ def usage(msg, exit_code=1):
     sys.stderr.write("   ie: run_scaled --scale=2     xterm +ls -fg blue\n")
     sys.exit(exit_code)
 
+def parse_scale(scale):
+	try:
+	    try:
+	        if scale.endswith("%"):
+	            return float(scale[:-1])/100
+	        else:
+	            return float(scale)
+	    except ValueError:
+	        #try parsing as a fraction:
+	        from fractions import Fraction
+	        return float(Fraction(scale))
+	except ValueError:
+	    usage("invalid scale value '%s'" % (scale,))
+	if scale<0.1 or scale>10:
+	    usage("scale value %f is out of range" % (scale,))
+
+def get_screen_spec():
+	width = height = 0
+	stype = os.environ.get("XDG_SESSION_TYPE", "x11")
+	if stype=="x11" and os.environ.get("DISPLAY"):
+	    #figure out the dpi and vfb size to use,
+	    #so the client connection won't cause any changes
+	    from xpra.x11.bindings.posix_display_source import X11DisplayContext
+	    with X11DisplayContext():
+	        from xpra.platform.xposix.gui import get_xdpi, get_ydpi, X11RandRBindings
+	        xdpi = get_xdpi()
+	        ydpi = get_ydpi()
+	        if xdpi>10 and ydpi>10:
+	            dpi = (xdpi+ydpi)//2
+	        randr_bindings = X11RandRBindings()
+	        if randr_bindings and randr_bindings.has_randr():
+	            width, height = randr_bindings.get_screen_size()
+	if width<=0 or height<=0:
+	    #try via GTK:
+	    from xpra.os_util import OSEnvContext
+	    with OSEnvContext():
+	        os.environ["GDK_SCALE"] = "1"
+	        os.environ["GDK_DPI_SCALE"] = "1"
+	        import gi
+	        gi.require_version('Gdk', '3.0')
+	        from gi.repository import Gdk
+	        screen = Gdk.Screen.get_default()
+	        if screen:
+	            import warnings
+	            with warnings.catch_warnings():
+	                warnings.simplefilter("ignore")
+	                width = screen.get_width()
+	                height = screen.get_height()
+	                if 0<width<2**16 and 0<height<2**16:
+	                    def dpiv(size, size_mm):
+	                        return int(0.5 + size * 25.4 / size_mm)
+	                    dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm()))//2
+	return dpi, width, height
+
 #default value:
-scale = "2"
+scale = 2
 command_argv = []
 for i, x in enumerate(sys.argv[1:]):
     if x in ("--help", "-h"):
         usage(None, 0)
     if x.startswith("--scale="):
-        scale = x[len("--scale="):]
+        scale = parse_scale(x[len("--scale="):])
     else:
         command_argv.append(x)
-try:
-    try:
-        if scale.endswith("%"):
-            scale = float(scale[:-1])/100
-        else:
-            scale = float(scale)
-    except ValueError:
-        #try parsing as a fraction:
-        from fractions import Fraction
-        scale = float(Fraction(scale))
-except ValueError:
-    usage("invalid scale value '%s'" % (scale,))
-if scale<0.1 or scale>10:
-    usage("scale value %f is out of range" % (scale,))
-
 if not command_argv:
     usage("missing command argument")
 
@@ -68,45 +107,10 @@ xpra_argv = [
     "--desktop-scaling=%s" % scale,
     "--encodings=rgb",
     "--compress=0",
-    #"--systemd-run=no",
+    "--systemd-run=no",
     ]
 
-dpi = 0
-width, height = 0, 0
-stype = os.environ.get("XDG_SESSION_TYPE", "x11")
-if stype=="x11" and os.environ.get("DISPLAY"):
-    #figure out the dpi and vfb size to use,
-    #so the client connection won't cause any changes
-    from xpra.x11.bindings.posix_display_source import X11DisplayContext
-    with X11DisplayContext():
-        from xpra.platform.xposix.gui import get_xdpi, get_ydpi, X11RandRBindings
-        xdpi = get_xdpi()
-        ydpi = get_ydpi()
-        if xdpi>10 and ydpi>10:
-            dpi = (xdpi+ydpi)//2
-        randr_bindings = X11RandRBindings()
-        if randr_bindings and randr_bindings.has_randr():
-            width, height = randr_bindings.get_screen_size()
-if width<=0 or height<=0:
-    #try via GTK:
-    from xpra.os_util import OSEnvContext
-    with OSEnvContext():
-        os.environ["GDK_SCALE"] = "1"
-        os.environ["GDK_DPI_SCALE"] = "1"
-        import gi
-        gi.require_version('Gdk', '3.0')
-        from gi.repository import Gdk
-        screen = Gdk.Screen.get_default()
-        if screen:
-            import warnings
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                width = screen.get_width()
-                height = screen.get_height()
-                if 0<width<2**16 and 0<height<2**16:
-                    def dpiv(size, size_mm):
-                        return int(0.5 + size * 25.4 / size_mm)
-                    dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm()))//2
+dpi, width, height = get_screen_spec()
 if width>0 and height>0:
     xpra_argv.append("--resize-display=%ix%i" % (width//scale, height//scale))
 if 10<dpi<500:
