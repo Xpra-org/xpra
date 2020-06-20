@@ -26,58 +26,43 @@ def usage(msg, exit_code=1):
     sys.exit(exit_code)
 
 def parse_scale(scale):
-	try:
-	    try:
-	        if scale.endswith("%"):
-	            return float(scale[:-1])/100
-	        else:
-	            return float(scale)
-	    except ValueError:
-	        #try parsing as a fraction:
-	        from fractions import Fraction
-	        return float(Fraction(scale))
-	except ValueError:
-	    usage("invalid scale value '%s'" % (scale,))
-	if scale<0.1 or scale>10:
-	    usage("scale value %f is out of range" % (scale,))
+    try:
+        try:
+            if scale.endswith("%"):
+                return float(scale[:-1])/100
+            else:
+                return float(scale)
+        except ValueError:
+            #try parsing as a fraction:
+            from fractions import Fraction
+            return float(Fraction(scale))
+    except ValueError:
+        usage("invalid scale value '%s'" % (scale,))
+    if scale<0.1 or scale>10:
+        usage("scale value %f is out of range" % (scale,))
 
 def get_screen_spec():
-	width = height = 0
-	stype = os.environ.get("XDG_SESSION_TYPE", "x11")
-	if stype=="x11" and os.environ.get("DISPLAY"):
-	    #figure out the dpi and vfb size to use,
-	    #so the client connection won't cause any changes
-	    from xpra.x11.bindings.posix_display_source import X11DisplayContext
-	    with X11DisplayContext():
-	        from xpra.platform.xposix.gui import get_xdpi, get_ydpi, X11RandRBindings
-	        xdpi = get_xdpi()
-	        ydpi = get_ydpi()
-	        if xdpi>10 and ydpi>10:
-	            dpi = (xdpi+ydpi)//2
-	        randr_bindings = X11RandRBindings()
-	        if randr_bindings and randr_bindings.has_randr():
-	            width, height = randr_bindings.get_screen_size()
-	if width<=0 or height<=0:
-	    #try via GTK:
-	    from xpra.os_util import OSEnvContext
-	    with OSEnvContext():
-	        os.environ["GDK_SCALE"] = "1"
-	        os.environ["GDK_DPI_SCALE"] = "1"
-	        import gi
-	        gi.require_version('Gdk', '3.0')
-	        from gi.repository import Gdk
-	        screen = Gdk.Screen.get_default()
-	        if screen:
-	            import warnings
-	            with warnings.catch_warnings():
-	                warnings.simplefilter("ignore")
-	                width = screen.get_width()
-	                height = screen.get_height()
-	                if 0<width<2**16 and 0<height<2**16:
-	                    def dpiv(size, size_mm):
-	                        return int(0.5 + size * 25.4 / size_mm)
-	                    dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm()))//2
-	return dpi, width, height
+    #figure out the dpi and vfb size to use,
+    dpi = width = height = 0
+    from xpra.os_util import OSEnvContext
+    with OSEnvContext():
+        os.environ["GDK_SCALE"] = "1"
+        os.environ["GDK_DPI_SCALE"] = "1"
+        import gi
+        gi.require_version('Gdk', '3.0')
+        from gi.repository import Gdk
+        screen = Gdk.Screen.get_default()
+        if screen:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                width = screen.get_width()
+                height = screen.get_height()
+                if 0<width<2**16 and 0<height<2**16:
+                    def dpiv(size, size_mm):
+                        return int(0.5 + size * 25.4 / size_mm)
+                    dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm()))//2
+    return width, height, dpi
 
 #default value:
 scale = 2
@@ -110,18 +95,15 @@ xpra_argv = [
     "--systemd-run=no",
     ]
 
-dpi, width, height = get_screen_spec()
+width, height, dpi = get_screen_spec()
+#if found, prefer Xvfb, as it is faster to startup:
+xvfb = which("Xvfb")
+if xvfb:
+    from xpra.scripts.config import get_Xvfb_command
+    xpra_argv.append("--xvfb=%s" % join(get_Xvfb_command(width, height, dpi*scale)))
 if width>0 and height>0:
     xpra_argv.append("--resize-display=%ix%i" % (width//scale, height//scale))
-if 10<dpi<500:
+if 10<dpi<1000:
     xpra_argv.append("--dpi=%i" % (dpi*scale))
 
-sys.argv = xpra_argv
-
-from xpra.platform import init, set_default_name
-set_default_name("Xpra")
-init()
-
-from xpra.scripts.main import main
-#print("sys.exit(main(%s, %s))" % (sys.argv[0], xpra_argv))
-sys.exit(main("xpra", xpra_argv))
+os.execv(xpra_cmd, xpra_argv)

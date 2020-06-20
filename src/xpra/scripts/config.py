@@ -106,17 +106,18 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/e
           ]
     return cmd
 
-def get_Xvfb_command():
+def get_Xvfb_command(width=5760, height=2560, dpi=96):
     cmd = ["Xvfb",
            "+extension", "GLX",
            "+extension", "Composite",
-           "-screen", "0", "5760x2560x24+32",
+           "-screen", "0", "%ix%ix24+32" % (width, height),
            #better than leaving to vfb after a resize?
-           "-dpi", "96",
            "-nolisten", "tcp",
            "-noreset",
            "-auth", "$XAUTHORITY"
            ]
+    if dpi>0:
+        cmd += ["-dpi", str(dpi)]
     return cmd
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
