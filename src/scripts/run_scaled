@@ -26,7 +26,7 @@ def usage(msg, exit_code=1):
     sys.exit(exit_code)
 
 #default value:
-scale = 2
+scale = "2"
 command_argv = []
 for i, x in enumerate(sys.argv[1:]):
     if x in ("--help", "-h"):
@@ -119,5 +119,5 @@ set_default_name("Xpra")
 init()
 
 from xpra.scripts.main import main
-print("sys.exit(main(%s, %s))" % (sys.argv[0], xpra_argv))
-#sys.exit(main("xpra", xpra_argv))
+#print("sys.exit(main(%s, %s))" % (sys.argv[0], xpra_argv))
+sys.exit(main("xpra", xpra_argv))
