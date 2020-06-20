@@ -247,12 +247,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         def scroll(_w, event):
             self._do_scroll_event(event)
             return True
-        def configure(_w, event):
-            geomlog("widget configure: %ix%i", event.width, event.height)
-            return True
         widget.connect("scroll-event", scroll)
         widget.connect("draw", self.draw_widget)
-        widget.connect("configure-event", configure)
 
     def draw_widget(self, widget, context):
         raise NotImplementedError()
@@ -1766,7 +1762,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         geomlog("configure event: current size=%s, new size=%s, backing=%s, iconified=%s",
                 self._size, (w, h), self._backing, self._iconified)
         if (w, h) != self._size or (self._backing is None and not self._iconified):
-            log.warn("w,h=%s, size=%s", (w, h), self._size)
             self._size = (w, h)
             self._set_backing_size(w, h)
         elif self._backing and not self._iconified:
@@ -1774,8 +1769,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.repaint(0, 0, w, h)
 
     def send_configure_event(self, skip_geometry=False):
-        #import traceback
-        #traceback.print_stack()
         assert skip_geometry or not self.is_OR()
         x, y, w, h = self.get_drawing_area_geometry()
         w = max(1, w)
@@ -1807,14 +1800,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.send(*packet)
 
     def _set_backing_size(self, ww, wh):
-        import traceback
-        traceback.print_stack()
         b = self._backing
         if b:
             b.init(ww, wh, self._client.cx(ww), self._client.cy(wh))
         else:
             self.new_backing(self._client.cx(ww), self._client.cy(wh))
-        self._client_properties["encoding.render-size"] = (ww, wh)
 
     def resize(self, w, h, resize_counter=0):
         ww, wh = self.get_size()

@@ -158,8 +158,6 @@ class ClientWindowBase(ClientWidgetBase):
             if dv is not None and dv==v:
                 del backing_props[k]
         self._client_properties.update(backing_props)
-        log("setup_window(%i, %i) client-properties=%s",
-                  bw, bh, self._client_properties)
 
 
     def send(self, *args):

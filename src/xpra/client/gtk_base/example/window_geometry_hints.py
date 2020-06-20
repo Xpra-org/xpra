@@ -32,8 +32,6 @@ class HintedWindows(Gtk.Window):
 
         def configure_event(widget, event):
             self.set_title(title or "%ix%i" % (event.width, event.height))
-            da.set_size_request(-1, -1)
-            return True
         da.connect("configure-event", configure_event)
 
         geom = Gdk.Geometry()
@@ -57,9 +55,8 @@ class HintedWindows(Gtk.Window):
         hints = Gdk.WindowHints(value)
         width = kwargs.pop("width", -1)
         height = kwargs.pop("height", -1)
-        da.set_size_request(width, height)
-        #self.set_default_size(width, height)
-        self.set_geometry_hints(None, geom, hints)
+        self.set_default_size(width, height)
+        self.set_geometry_hints(da, geom, hints)
         self.show_all()
 
     def delete_event(self, *_args):
