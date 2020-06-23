@@ -360,6 +360,14 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         wininfo = self.get_wininfo(get_xwindow(requestor))
         prop = event.property
         target = str(event.target)
+        if not target:
+            log.warn("Warning: ignoring clipboard request without a TARGET")
+            log.warn(" coming from %s", wininfo)
+            return
+        if not prop:
+            log.warn("Warning: ignoring clipboard request without a property")
+            log.warn(" coming from %s", wininfo)
+            return
         log("clipboard request for %s from window %#x: %s, target=%s, prop=%s",
             self._selection, get_xwindow(requestor), wininfo, target, prop)
         def nodata():
