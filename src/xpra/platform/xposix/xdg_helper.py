@@ -13,6 +13,7 @@ import sys
 import glob
 from io import BytesIO
 from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
+from threading import Lock
 
 from xpra.util import envbool, envint, print_nested_dict, first_time
 from xpra.os_util import load_binary_file, OSEnvContext
@@ -226,11 +227,16 @@ def remove_icons(menu_data):
     return filt
 
 
+load_lock = Lock()
 xdg_menu_data = None
 def load_xdg_menu_data(force_reload=False):
     global xdg_menu_data
-    if not xdg_menu_data or force_reload:
-        xdg_menu_data = do_load_xdg_menu_data()
+    with load_lock:
+        if not xdg_menu_data or force_reload:
+            xdg_menu_data = do_load_xdg_menu_data()
+            if xdg_menu_data:
+                l = sum(len(x) for x in xdg_menu_data.values())
+                log.info("loaded %i start menu entries from %i sub-menus", l, len(xdg_menu_data))
     return xdg_menu_data
 
 def do_load_xdg_menu_data():

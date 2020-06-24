@@ -11,6 +11,7 @@ from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import monotonic_time, bytestostr, OSX, WIN32, POSIX
 from xpra.util import envint, csv
+from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
 from xpra.server import EXITING_CODE
@@ -104,7 +105,9 @@ class ChildCommandServer(StubServerMixin):
                 log.error("Error setting up menu watcher:")
                 log.error(" %s", e)
             from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-            load_xdg_menu_data()
+            #start loading in a thread,
+            #so server startup can complete:
+            start_thread(load_xdg_menu_data, "load-xdg-menu-data", True)
 
 
     def setup_menu_watcher(self):
@@ -220,9 +223,16 @@ class ChildCommandServer(StubServerMixin):
 
     def send_initial_data(self, ss, caps, send_ui, share_count):
         if ss.xdg_menu_update:
-            xdg_menu = self._get_xdg_menu_data() or {}
-            log("%i entries sent in initial data", len(xdg_menu))
-            ss.send_setting_change("xdg-menu", xdg_menu)
+            #this method may block if the menus are still being loaded,
+            #so do it in a throw-away thread:
+            start_thread(self.send_xdg_menu_data, "send-xdg-menu-data", True, (ss,))
+
+    def send_xdg_menu_data(self, ss):
+        if ss.is_closed():
+            return
+        xdg_menu = self._get_xdg_menu_data() or {}
+        log("%i entries sent in initial data", len(xdg_menu))
+        ss.send_setting_change("xdg-menu", xdg_menu)
 
     def schedule_xdg_menu_reload(self):
         xmrt = self.xdg_menu_reload_timer
