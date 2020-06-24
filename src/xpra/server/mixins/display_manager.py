@@ -7,7 +7,7 @@
 from xpra.os_util import strtobytes
 from xpra.util import engs, iround, log_screen_sizes
 from xpra.os_util import bytestostr
-from xpra.scripts.config import parse_bool
+from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -56,7 +56,7 @@ class DisplayManager(StubServerMixin):
 
     def query_opengl(self):
         props = {}
-        if self.opengl.lower()=="noprobe" or parse_bool("opengl", self.opengl) is False:
+        if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped: %s", self.opengl)
             return props
         try:
