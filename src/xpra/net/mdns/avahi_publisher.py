@@ -73,7 +73,7 @@ class AvahiPublishers:
                 for k,v in text_dict.items():
                     txt.append("%s=%s" % (k,v))
             fqdn = host
-            if host=="0.0.0.0":
+            if host in ("0.0.0.0", "::"):
                 fqdn = ""
             elif host:
                 try:
