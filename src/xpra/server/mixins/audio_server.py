@@ -6,9 +6,11 @@
 # later version. See the file COPYING for details.
 
 import os.path
+from threading import Event
 
 from xpra.os_util import pollwait, monotonic_time, bytestostr, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
+from xpra.make_thread import start_thread
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
@@ -27,6 +29,7 @@ Mixin for servers that handle audio forwarding.
 class AudioServer(StubServerMixin):
 
     def __init__(self):
+        self.audio_init_done = Event()
         self.pulseaudio = False
         self.pulseaudio_command = None
         self.pulseaudio_configure_commands = []
@@ -58,14 +61,24 @@ class AudioServer(StubServerMixin):
         log("AudioServer.init(..) av-sync=%s", self.av_sync)
 
     def setup(self):
+        #the setup code will mostly be waiting for subprocesses to run,
+        #so do it in a separate thread
+        #and just wait for the results where needed:
+        start_thread(self.do_audio_setup, "audio-setup", True)
+        #we don't use threaded_setup() here because it would delay
+        #all the other mixins that use it, for no good reason.
+
+    def do_audio_setup(self):
         self.init_pulseaudio()
         self.init_sound_options()
 
     def cleanup(self):
+        self.audio_init_done.wait(5)
         self.cleanup_pulseaudio()
 
 
     def get_info(self, _proto) -> dict:
+        self.audio_init_done.wait(5)
         info = {}
         if self.pulseaudio is not False:
             info["pulseaudio"] = self.get_pulseaudio_info()
@@ -199,6 +212,7 @@ class AudioServer(StubServerMixin):
             self.timeout_add(2*1000, configure_pulse)
 
     def cleanup_pulseaudio(self):
+        self.audio_init_done.wait(5)
         proc = self.pulseaudio_proc
         if not proc:
             return
@@ -305,22 +319,33 @@ class AudioServer(StubServerMixin):
             self.supports_speaker = False
         if not self.microphone_codecs:
             self.supports_microphone = False
+        #query_pulseaudio_properties may access X11,
+        #do this from the main thread:
+        from gi.repository import GLib
         if bool(self.sound_properties):
-            try:
-                from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path, get_info as get_pa_info
-                pa_info = get_pa_info()
-                soundlog("pulseaudio info=%s", pa_info)
-                self.sound_properties.update(pa_info)
-                set_icon_path(get_icon_filename("xpra.png"))
-            except ImportError as e:
-                if POSIX and not OSX:
-                    log.warn("Warning: failed to set pulseaudio tagging icon:")
-                    log.warn(" %s", e)
+            GLib.idle_add(self.query_pulseaudio_properties)
+        GLib.idle_add(self.log_sound_properties)
+
+    def query_pulseaudio_properties(self):
+        try:
+            from xpra.sound.pulseaudio.pulseaudio_util import set_icon_path, get_info as get_pa_info
+            pa_info = get_pa_info()
+            soundlog("pulseaudio info=%s", pa_info)
+            self.sound_properties.update(pa_info)
+            set_icon_path(get_icon_filename("xpra.png"))
+        except ImportError as e:
+            if POSIX and not OSX:
+                log.warn("Warning: failed to set pulseaudio tagging icon:")
+                log.warn(" %s", e)
+
+    def log_sound_properties(self):
         soundlog("init_sound_options speaker: supported=%s, encoders=%s",
                  self.supports_speaker, csv(self.speaker_codecs))
         soundlog("init_sound_options microphone: supported=%s, decoders=%s",
                  self.supports_microphone, csv(self.microphone_codecs))
         soundlog("init_sound_options sound properties=%s", self.sound_properties)
+        self.audio_init_done.set()
+
 
     def get_pulseaudio_info(self) -> dict:
         info = {
