@@ -2475,7 +2475,12 @@ cdef class Encoder:
             picParams.codecPicParams.hevcPicParams.displayPOCSyntax = 2*self.frames
             picParams.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
         picParams.frameIdx = self.frames
-        picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
+        if timestamp>0:
+            if timestamp>self.first_frame_timestamp:
+                picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
+            else:
+                log.warn("Warning: image timestamp is older than the first frame")
+                log.warn(" %s vs %s", timestamp, self.first_frame_timestamp)
         #inputDuration = 0      #FIXME: use frame delay?
         #picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
         #picParams.rcParams.enableMinQP = 1
