@@ -39,20 +39,22 @@ class ClipboardInstance:
         self.value_entry = Gtk.Entry()
         self.value_entry.set_max_length(100)
         self.value_entry.set_width_chars(32)
-        self.clear_label_btn = Gtk.Button("X")
+        def b(l):
+            return Gtk.Button(label=l)
+        self.clear_label_btn = b("X")
         self.clear_label_btn.connect("clicked", self.clear_label)
-        self.clear_entry_btn = Gtk.Button("X")
+        self.clear_entry_btn = b("X")
         self.clear_entry_btn.connect("clicked", self.clear_entry)
-        self.get_get_targets_btn = Gtk.Button("Get Targets")
+        self.get_get_targets_btn = b("Get Targets")
         self.get_get_targets_btn.connect("clicked", self.do_get_targets)
-        self.get_target_btn = Gtk.Button("Get Target")
+        self.get_target_btn = b("Get Target")
         self.get_target_btn.connect("clicked", self.do_get_target)
         self.get_target_btn.set_sensitive(False)
-        self.set_target_btn = Gtk.Button("Set Target")
+        self.set_target_btn = b("Set Target")
         self.set_target_btn.connect("clicked", self.do_set_target)
-        self.get_string_btn = Gtk.Button("Get String")
+        self.get_string_btn = b("Get String")
         self.get_string_btn.connect("clicked", self.do_get_string)
-        self.set_string_btn = Gtk.Button("Set String")
+        self.set_string_btn = b("Set String")
         self.set_string_btn.connect("clicked", self.do_set_string)
         self.clipboard.connect("owner-change", self.owner_changed)
         self.log("ready")
@@ -168,7 +170,7 @@ class ClipboardInstance:
         if weownit:
             owner_info="(us)"
         else:
-            owner_info = hex(event.owner)
+            owner_info = hex(event.owner or 0)
         self.log("Owner changed, reason: %s, new owner=%s" % (
                         event.reason, owner_info))
 
