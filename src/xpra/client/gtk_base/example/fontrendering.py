@@ -35,7 +35,9 @@ class FontWindow(Gtk.Window):
         self.set_default_size(800, 600)
         self.set_app_paintable(True)
         self.set_title("Font Rendering")
-        self.connect("draw", self.area_draw)
+        drawing_area = Gtk.DrawingArea()
+        drawing_area.connect("draw", self.area_draw)
+        self.add(drawing_area)
         self.connect("destroy", Gtk.main_quit)
 
     def show_with_focus(self):
@@ -67,7 +69,8 @@ class FontWindow(Gtk.Window):
                 self.paint_pattern(cr, x, y+2,   antialias, label, WHITE, BLACK)
                 cr.restore()
 
-        w, h = widget.get_size()
+        alloc = widget.get_allocated_size()[0]
+        w, h = alloc.width, alloc.height
         bw = w//4
         bh = h//4
         #copy ANTIALIAS_NONE to right hand side,

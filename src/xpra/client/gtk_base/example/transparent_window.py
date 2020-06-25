@@ -29,7 +29,9 @@ class TransparentWindow(Gtk.Window):
             print("transparency not available!")
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
-        self.connect("draw", self.area_draw)
+        drawing_area = Gtk.DrawingArea()
+        drawing_area.connect("draw", self.area_draw)
+        self.add(drawing_area)
         self.connect("destroy", Gtk.main_quit)
 
     def show_with_focus(self):
@@ -49,7 +51,8 @@ class TransparentWindow(Gtk.Window):
         cr.paint()
 
         # Draw a circle
-        (width, height) = widget.get_size()
+        alloc = widget.get_allocated_size()[0]
+        width, height = alloc.width, alloc.height
         cr.set_source_rgba(1.0, 0.2, 0.2, 0.6)
         # Python <2.4 doesn't have conditional expressions
         if width < height:
