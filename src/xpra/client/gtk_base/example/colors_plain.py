@@ -23,7 +23,9 @@ class ColorPlainWindow(Gtk.Window):
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         self.set_title("Colors")
-        self.connect("draw", self.area_draw)
+        drawing_area = Gtk.DrawingArea()
+        drawing_area.connect("draw", self.area_draw)
+        self.add(drawing_area)
         self.connect("destroy", Gtk.main_quit)
 
     def show_with_focus(self):
@@ -39,7 +41,8 @@ class ColorPlainWindow(Gtk.Window):
         cr.set_font_size(32)
         #Clear everything:
         cr.set_operator(cairo.OPERATOR_CLEAR)
-        w, h = widget.get_size()
+        alloc = widget.get_allocated_size()[0]
+        w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
         cr.fill()
 

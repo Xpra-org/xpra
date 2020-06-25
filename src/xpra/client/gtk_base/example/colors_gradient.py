@@ -25,7 +25,9 @@ class ColorGradientWindow(Gtk.Window):
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         self.bpc = 16
-        self.connect("draw", self.area_draw)
+        drawing_area = Gtk.DrawingArea()
+        drawing_area.connect("draw", self.area_draw)
+        self.add(drawing_area)
         self.connect("configure_event", self.configure_event)
         #self.connect('resize', changed)
         self.connect("destroy", Gtk.main_quit)
@@ -54,7 +56,8 @@ class ColorGradientWindow(Gtk.Window):
     def area_draw(self, widget, cr):
         cr.save()
         cr.set_operator(cairo.OPERATOR_CLEAR)
-        w, h = widget.get_size()
+        alloc = widget.get_allocated_size()[0]
+        w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
         cr.fill()
         cr.restore()
