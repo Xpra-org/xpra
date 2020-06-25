@@ -46,7 +46,6 @@ class SplashScreen(Gtk.Window):
         vbox.add(self.progress_bar)
         self.add(vbox)
         self.stdin_io_watch = 0
-        self.stdin_buffer = ""
         install_signal_handlers(None, self.handle_signal)
         self.opacity = 100
 
@@ -60,45 +59,24 @@ class SplashScreen(Gtk.Window):
         return self.exit_code or 0
 
     def start_stdin_io(self):
-        stdin = sys.stdin
-        fileno = stdin.fileno()
-        if POSIX:
-            import fcntl
-            fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
-            fcntl.fcntl(fileno, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-        self.stdin_io_watch = GLib.io_add_watch(sys.stdin,
-                                                GLib.PRIORITY_DEFAULT, GLib.IO_IN,
-                                                self.stdin_ready)
+        from xpra.make_thread import start_thread
+        start_thread(self.read_stdin, "read-stdin", True)
 
-    def stdin_ready(self, *_args):
-        data = sys.stdin.read()
-        #print("data=%s" % (data,))
-        self.stdin_buffer += data
-        #print("stdin_buffer=%s" % (self.stdin_buffer,))
-        self.process_stdin_buffer()
-        return True
-
-    def process_stdin_buffer(self):
-        buf = self.stdin_buffer
-        while True:
-            pos = buf.find("\n")
-            if pos<0:
-                break
-            line = buf[:pos].strip("\n\r")
-            buf = buf[pos+1:]
-            if line:
-                self.handle_stdin_line(line)
-        self.stdin_buffer = buf
+    def read_stdin(self):
+        log("read_stdin()")
+        while self.exit_code is None:
+            line = sys.stdin.readline()
+            self.handle_stdin_line(line)
 
     def handle_stdin_line(self, line):
-        parts = line.split(":")
+        parts = line.rstrip("\n\r").split(":")
         if parts[0]:
             try:
                 pct = int(parts[0])
             except ValueError:
                 pass
             else:
-                self.progress_bar.set_fraction(pct/100.0)
+                GLib.idle_add(self.progress_bar.set_fraction, pct/100.0)
                 if pct==100:
                     GLib.timeout_add(20, self.fade_out)
                     GLib.timeout_add(1500, self.exit)
