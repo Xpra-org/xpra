@@ -615,6 +615,7 @@ OPTION_TYPES = {
                     "modal-windows"     : bool,
                     "bandwidth-detection" : bool,
                     "ssh-upgrade"       : bool,
+                    "splash"            : bool,
                     #arrays of strings:
                     "pulseaudio-configure-commands" : list,
                     "socket-dirs"       : list,
@@ -753,6 +754,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "av-sync", "global-menus",
     "forward-xdg-open", "modal-windows", "bandwidth-detection",
     "ssh-upgrade",
+    "splash",
     "printing", "file-transfer", "open-command", "open-files", "open-url", "start-new-commands",
     "mmap", "mmap-group", "mdns",
     "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth",
@@ -1022,6 +1024,7 @@ def get_defaults():
                     "modal-windows"     : False,
                     "bandwidth-detection" : True,
                     "ssh-upgrade"       : True,
+                    "splash"            : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
                     "socket-dirs"       : get_socket_dirs(),
                     "remote-xpra"       : get_remote_run_xpra_scripts(),

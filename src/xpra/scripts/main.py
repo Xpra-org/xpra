@@ -165,6 +165,7 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
+        "splash",
         "opengl", "opengl-probe", "opengl-test",
         "test-connect",
         "encoding", "webcam", "clipboard-test",
@@ -556,6 +557,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode=="send-file":
             check_display()
             return run_send_file(args)
+        elif mode=="splash":
+            return run_splash(args)
         elif mode=="opengl":
             check_display()
             return run_glcheck(options)
@@ -1530,7 +1533,7 @@ def run_client(error_cb, opts, extra_args, mode):
             raise InitException("'all' command line argument could not be located")
         cmd = sys.argv[:index]+sys.argv[index+1:]
         for display in displays:
-            dcmd = cmd + [display]
+            dcmd = cmd + [display] + ["--splash=no"]
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return 0
     app = get_client_app(error_cb, opts, extra_args, mode)
@@ -1655,15 +1658,30 @@ def get_client_app(error_cb, opts, extra_args, mode):
         app.hello_extra = {"connect" : False}
         app.start_new_session = sns
     else:
-        try:
-            app = make_client(error_cb, opts)
-        except RuntimeError as e:
-            #exceptions at this point are still initialization exceptions
-            raise InitException(e.args[0]) from None
-        ehelp = "help" in opts.encodings
-        if ehelp:
-            from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
-            opts.encodings = PREFERRED_ENCODING_ORDER
+        app = get_client_gui_app(error_cb, opts, request_mode, extra_args, mode)
+    try:
+        if mode!="listen":
+            app.show_progress(60, "connecting to server")
+        display_desc = pick_display(error_cb, opts, extra_args)
+        connect_to_server(app, display_desc, opts)
+    except Exception:
+        app.cleanup()
+        raise
+    return app
+
+
+def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
+    try:
+        app = make_client(error_cb, opts)
+    except RuntimeError as e:
+        #exceptions at this point are still initialization exceptions
+        raise InitException(e.args[0]) from None
+    ehelp = "help" in opts.encodings
+    if ehelp:
+        from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
+        opts.encodings = PREFERRED_ENCODING_ORDER
+    app.show_progress(30, "client configuration")
+    try:
         app.init(opts)
         if opts.encoding=="auto":
             opts.encoding = ""
@@ -1678,6 +1696,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 raise InitInfo(einfo+"%s xpra client supports the following encodings:\n * %s" %
                                (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*_args):
+            app.show_progress(100)
             log = get_util_logger()
             try:
                 conn = app._protocol._conn
@@ -1688,6 +1707,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
                 return
         if hasattr(app, "after_handshake"):
             app.after_handshake(handshake_complete)
+        app.show_progress(40, "loading user interface")
         app.init_ui(opts)
         if request_mode:
             sns = get_start_new_session_dict(opts, request_mode, extra_args)
@@ -1700,96 +1720,109 @@ def get_client_app(error_cb, opts, extra_args, mode):
             app.start_child_new_commands = []
             app.start_new_commands = []
 
-        try:
-            if mode=="listen":
-                if extra_args:
-                    raise InitException("cannot specify extra arguments with 'listen' mode")
-                from xpra.platform import get_username
-                from xpra.net.socket_util import (
-                    get_network_logger, setup_local_sockets, peek_connection,
-                    create_sockets, add_listen_socket, accept_connection,
-                    )
-                sockets = create_sockets(opts, error_cb)
-                #we don't have a display,
-                #so we can't automatically create sockets:
-                if "auto" in opts.bind:
-                    opts.bind.remove("auto")
-                local_sockets = setup_local_sockets(opts.bind,
-                                                    opts.socket_dir, opts.socket_dirs,
-                                                    None, False,
-                                                    opts.mmap_group, opts.socket_permissions,
-                                                    get_username(), getuid, getgid)
-                sockets.update(local_sockets)
-                listen_cleanup = []
-                socket_cleanup = []
-                def new_connection(socktype, sock, handle=0):
-                    from xpra.make_thread import start_thread
-                    netlog = get_network_logger()
-                    netlog("new_connection%s", (socktype, sock, handle))
-                    conn = accept_connection(socktype, sock)
-                    #start a thread so we can sleep in peek_connection:
-                    start_thread(handle_new_connection, "handle new connection: %s" % conn, daemon=True, args=(conn, ))
-                    return True
-                def handle_new_connection(conn):
-                    #see if this is a redirection:
-                    netlog = get_network_logger()
-                    line1 = peek_connection(conn)[1]
-                    netlog("handle_new_connection(%s) line1=%s", conn, line1)
-                    if line1:
-                        from xpra.net.common import SOCKET_TYPES
-                        uri = bytestostr(line1)
-                        for socktype in SOCKET_TYPES:
-                            if uri.startswith("%s://" % socktype):
-                                run_socket_cleanups()
-                                netlog.info("connecting to %s", uri)
-                                extra_args[:] = [uri, ]
-                                display_desc = pick_display(error_cb, opts, [uri, ])
-                                connect_to_server(app, display_desc, opts)
-                                #app._protocol.start()
-                                return
-                    app.idle_add(do_handle_connection, conn)
-                def do_handle_connection(conn):
-                    protocol = app.setup_connection(conn)
-                    protocol.start()
-                    #stop listening for new connections:
-                    run_socket_cleanups()
-                def run_socket_cleanups():
-                    for cleanup in listen_cleanup:
-                        cleanup()
-                    listen_cleanup[:] = []
-                    #close the sockets:
-                    for cleanup in socket_cleanup:
-                        cleanup()
-                    socket_cleanup[:] = []
-                for socktype, sock, sinfo, cleanup_socket in sockets:
-                    socket_cleanup.append(cleanup_socket)
-                    cleanup = add_listen_socket(socktype, sock, sinfo, new_connection)
-                    if cleanup:
-                        listen_cleanup.append(cleanup)
-                #listen mode is special,
-                #don't fall through to connect_to_server!
-                return app
-        except Exception as e:
-            may_notify = getattr(app, "may_notify", None)
-            if may_notify:
-                from xpra.util import XPRA_FAILURE_NOTIFICATION_ID
-                body = str(e)
-                if body.startswith("failed to connect to"):
-                    lines = body.split("\n")
-                    summary = "Xpra client %s" % lines[0]
-                    body = "\n".join(lines[1:])
-                else:
-                    summary = "Xpra client failed to connect"
-                may_notify(XPRA_FAILURE_NOTIFICATION_ID, summary, body, icon_name="disconnected")  #pylint: disable=not-callable
-            app.cleanup()
-            raise
-    try:
-        display_desc = pick_display(error_cb, opts, extra_args)
-        connect_to_server(app, display_desc, opts)
-    except Exception:
+        if mode=="listen":
+            if extra_args:
+                raise InitException("cannot specify extra arguments with 'listen' mode")
+            progress(80, "listening for incoming connections")
+            from xpra.platform import get_username
+            from xpra.net.socket_util import (
+                get_network_logger, setup_local_sockets, peek_connection,
+                create_sockets, add_listen_socket, accept_connection,
+                )
+            sockets = create_sockets(opts, error_cb)
+            #we don't have a display,
+            #so we can't automatically create sockets:
+            if "auto" in opts.bind:
+                opts.bind.remove("auto")
+            local_sockets = setup_local_sockets(opts.bind,
+                                                opts.socket_dir, opts.socket_dirs,
+                                                None, False,
+                                                opts.mmap_group, opts.socket_permissions,
+                                                get_username(), getuid, getgid)
+            sockets.update(local_sockets)
+            listen_cleanup = []
+            socket_cleanup = []
+            def new_connection(socktype, sock, handle=0):
+                from xpra.make_thread import start_thread
+                netlog = get_network_logger()
+                netlog("new_connection%s", (socktype, sock, handle))
+                conn = accept_connection(socktype, sock)
+                #start a thread so we can sleep in peek_connection:
+                start_thread(handle_new_connection, "handle new connection: %s" % conn, daemon=True, args=(conn, ))
+                return True
+            def handle_new_connection(conn):
+                #see if this is a redirection:
+                netlog = get_network_logger()
+                line1 = peek_connection(conn)[1]
+                netlog("handle_new_connection(%s) line1=%s", conn, line1)
+                if line1:
+                    from xpra.net.common import SOCKET_TYPES
+                    uri = bytestostr(line1)
+                    for socktype in SOCKET_TYPES:
+                        if uri.startswith("%s://" % socktype):
+                            run_socket_cleanups()
+                            netlog.info("connecting to %s", uri)
+                            extra_args[:] = [uri, ]
+                            display_desc = pick_display(error_cb, opts, [uri, ])
+                            connect_to_server(app, display_desc, opts)
+                            #app._protocol.start()
+                            return
+                app.idle_add(do_handle_connection, conn)
+            def do_handle_connection(conn):
+                protocol = app.setup_connection(conn)
+                protocol.start()
+                #stop listening for new connections:
+                run_socket_cleanups()
+            def run_socket_cleanups():
+                for cleanup in listen_cleanup:
+                    cleanup()
+                listen_cleanup[:] = []
+                #close the sockets:
+                for cleanup in socket_cleanup:
+                    cleanup()
+                socket_cleanup[:] = []
+            for socktype, sock, sinfo, cleanup_socket in sockets:
+                socket_cleanup.append(cleanup_socket)
+                cleanup = add_listen_socket(socktype, sock, sinfo, new_connection)
+                if cleanup:
+                    listen_cleanup.append(cleanup)
+            #listen mode is special,
+            #don't fall through to connect_to_server!
+            app.show_progress(90, "ready")
+            return app
+    except Exception as e:
+        app.show_progress(100, "failure: %s" % e)
+        may_notify = getattr(app, "may_notify", None)
+        if may_notify:
+            from xpra.util import XPRA_FAILURE_NOTIFICATION_ID
+            body = str(e)
+            if body.startswith("failed to connect to"):
+                lines = body.split("\n")
+                summary = "Xpra client %s" % lines[0]
+                body = "\n".join(lines[1:])
+            else:
+                summary = "Xpra client failed to connect"
+            may_notify(XPRA_FAILURE_NOTIFICATION_ID, summary, body, icon_name="disconnected")  #pylint: disable=not-callable
         app.cleanup()
         raise
     return app
+
+
+def make_progress_process(): 
+    #start the splash subprocess
+    from xpra.platform.paths import get_nodock_command
+    cmd = get_nodock_command()+["splash"]
+    progress_process = Popen(cmd, stdin=PIPE)
+    def progress(pct, text):
+        if progress_process.poll():
+            return
+        progress_process.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
+        progress_process.stdin.flush()
+        if pct==100:
+            progress_process.terminate()
+    progress(10, "initializing")
+    return progress_process
+
 
 def run_opengl_probe():
     from xpra.platform.paths import get_nodock_command
@@ -1829,50 +1862,66 @@ def run_opengl_probe():
     return "probe-failed:%s" % msg
 
 def make_client(error_cb, opts):
-    if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
-        os.environ["GDK_BACKEND"] = "x11"
-    if opts.opengl=="probe":
-        if os.environ.get("XDG_SESSION_TYPE")=="wayland":
-            opts.opengl = "no"
-        else:
-            opts.opengl = run_opengl_probe()
-    from xpra.platform.gui import init as gui_init
-    gui_init()
+    progress_process = None
+    if opts.splash:
+        progress_process = make_progress_process()
 
-    from xpra.scripts.config import FALSE_OPTIONS, OFF_OPTIONS
-    def b(v):
-        return str(v).lower() not in FALSE_OPTIONS
-    def bo(v):
-        return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
-    impwarned = []
-    def impcheck(*modules):
-        for mod in modules:
+    try:
+        if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
+            os.environ["GDK_BACKEND"] = "x11"
+        from xpra.platform.gui import init as gui_init
+        gui_init()
+
+        from xpra.scripts.config import FALSE_OPTIONS, OFF_OPTIONS
+        def b(v):
+            return str(v).lower() not in FALSE_OPTIONS
+        def bo(v):
+            return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
+        impwarned = []
+        def impcheck(*modules):
+            for mod in modules:
+                try:
+                    __import__("xpra.%s" % mod, {}, {}, [])
+                except ImportError:
+                    if mod not in impwarned:
+                        impwarned.append(mod)
+                        log = get_util_logger()
+                        log("impcheck%s", modules, exc_info=True)
+                        log.warn("Warning: missing %s module", mod)
+                    return False
+            return True
+        from xpra.client import mixin_features
+        mixin_features.display          = opts.windows
+        mixin_features.windows          = opts.windows
+        mixin_features.audio            = (bo(opts.speaker) or bo(opts.microphone)) and impcheck("sound")
+        mixin_features.webcam           = bo(opts.webcam) and impcheck("codecs")
+        mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
+        mixin_features.notifications    = opts.notifications and impcheck("notifications")
+        mixin_features.dbus             = opts.dbus_proxy and impcheck("dbus")
+        mixin_features.mmap             = b(opts.mmap)
+        mixin_features.logging          = b(opts.remote_logging)
+        mixin_features.tray             = b(opts.tray)
+        mixin_features.network_state    = True
+        mixin_features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True)
+        mixin_features.encoding         = opts.windows
+        from xpra.client.gtk3.client import XpraClient
+        app = XpraClient()
+        app.progress_process = progress_process
+
+        if opts.opengl=="probe":
+            if os.environ.get("XDG_SESSION_TYPE")=="wayland":
+                opts.opengl = "no"
+            else:
+                app.show_progress(20, "validing OpenGL renderer")
+                opts.opengl = run_opengl_probe()
+    except Exception:
+        if progress_process:
             try:
-                __import__("xpra.%s" % mod, {}, {}, [])
-            except ImportError:
-                if mod not in impwarned:
-                    impwarned.append(mod)
-                    log = get_util_logger()
-                    log("impcheck%s", modules, exc_info=True)
-                    log.warn("Warning: missing %s module", mod)
-                return False
-        return True
-    from xpra.client import mixin_features
-    mixin_features.display          = opts.windows
-    mixin_features.windows          = opts.windows
-    mixin_features.audio            = (bo(opts.speaker) or bo(opts.microphone)) and impcheck("sound")
-    mixin_features.webcam           = bo(opts.webcam) and impcheck("codecs")
-    mixin_features.clipboard        = b(opts.clipboard) and impcheck("clipboard")
-    mixin_features.notifications    = opts.notifications and impcheck("notifications")
-    mixin_features.dbus             = opts.dbus_proxy and impcheck("dbus")
-    mixin_features.mmap             = b(opts.mmap)
-    mixin_features.logging          = b(opts.remote_logging)
-    mixin_features.tray             = b(opts.tray)
-    mixin_features.network_state    = True
-    mixin_features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True)
-    mixin_features.encoding         = opts.windows
-    from xpra.client.gtk3.client import XpraClient
-    return XpraClient()
+                progress_process.terminate()
+            except Exception:
+                pass
+    return app
+
 
 def do_run_client(app):
     try:
@@ -1957,23 +2006,32 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
                 sns[x] = v
         hello_extra = {"start-new-session" : sns}
 
-    if opts.attach is False:
-        from xpra.client.gobject_client_base import WaitForDisconnectXpraClient, RequestStartClient
-        if isdisplaytype(args, "ssh"):
-            #ssh will start the instance we requested,
-            #then we just detach and we're done
-            app = WaitForDisconnectXpraClient(opts)
+    try:
+        if opts.attach is False:
+            from xpra.client.gobject_client_base import WaitForDisconnectXpraClient, RequestStartClient
+            if isdisplaytype(args, "ssh"):
+                #ssh will start the instance we requested,
+                #then we just detach and we're done
+                app = WaitForDisconnectXpraClient(opts)
+            else:
+                app = RequestStartClient(opts)
+                app.start_new_session = sns
+            app.hello_extra = {"connect" : False}
         else:
-            app = RequestStartClient(opts)
-            app.start_new_session = sns
-        app.hello_extra = {"connect" : False}
-    else:
-        app = make_client(error_cb, opts)
-        app.init(opts)
-        app.init_ui(opts)
-        app.hello_extra = hello_extra
-    conn = connect_or_fail(params, opts)
-    app.setup_connection(conn)
+            app = make_client(error_cb, opts)
+            app.show_progress(30, "client configuration")
+            app.init(opts)
+            app.show_progress(40, "loading user interface")
+            app.init_ui(opts)
+            app.hello_extra = hello_extra
+        app.show_progress(60, "connecting to server")
+        conn = connect_or_fail(params, opts)
+        app.setup_connection(conn)
+    except Exception as e:
+        app.show_progress(100, "failure: %s" % e)
+        raise
+    finally:
+        app.show_progress(100, "running")
     return do_run_client(app)
 
 
@@ -2060,6 +2118,10 @@ def no_gtk():
         return
     raise Exception("the Gtk module is already loaded: %s" % Gtk)
 
+
+def run_splash(args) -> int:
+    from xpra.client.gtk3.splash_screen import main
+    return main(args)
 
 def run_glprobe(opts, show=False) -> int:
     if show:

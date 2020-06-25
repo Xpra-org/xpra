@@ -16,15 +16,16 @@ _glib_unix_signals = {}
 def register_os_signals(callback, commandtype="", signals=(signal.SIGINT, signal.SIGTERM)):
     from gi.repository import GLib
     def handle_signal(signum):
-        try:
-            sys.stderr.write("\n")
-            sys.stderr.flush()
-            cstr = ""
-            if commandtype:
-                cstr = commandtype+" "
-            get_util_logger().info("%sgot signal %s", cstr, SIGNAMES.get(signum, signum))
-        except OSError:
-            pass
+        if commandtype is not None:
+            try:
+                sys.stderr.write("\n")
+                sys.stderr.flush()
+                cstr = ""
+                if commandtype:
+                    cstr = commandtype+" "
+                get_util_logger().info("%sgot signal %s", cstr, SIGNAMES.get(signum, signum))
+            except OSError:
+                pass
         callback(signum)
         return True
     def os_signal(signum, _frame):

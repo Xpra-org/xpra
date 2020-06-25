@@ -98,6 +98,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.exit_code = None
         self.exit_on_signal = False
         self.display_desc = {}
+        self.progress_process = None
         #connection attributes:
         self.hello_extra = {}
         self.compression_level = 0
@@ -151,6 +152,22 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.init_aliases()
         if self.INSTALL_SIGNAL_HANDLERS:
             self.install_signal_handlers()
+
+
+    def show_progress(self, pct, text=""):
+        log("progress(%s, %s)", pct, text)
+        pp = self.progress_process
+        if not pp:
+            return
+        if pp.poll():
+            self.progress_process = None
+            return
+        pp.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
+        pp.stdin.flush()
+        if pct==100:
+            #it should exit on its own, but just in case:
+            #kill it if it's still running after 2 seconds
+            self.timeout_add(2000, self.stop_progress_process)
 
 
     def init_challenge_handlers(self, challenge_handlers):
@@ -522,7 +539,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return packet, None, None, None, synchronous, has_more
 
 
+    def stop_progress_process(self):
+        pp = self.progress_process
+        if not pp:
+            return
+        self.progress_process = None
+        if pp.poll():
+            return
+        try:
+            pp.terminate()
+        except Exception:
+            pass
+
     def cleanup(self):
+        self.stop_progress_process()
         reaper_cleanup()
         try:
             FilePrintMixin.cleanup(self)

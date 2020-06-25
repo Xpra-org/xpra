@@ -849,6 +849,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--opengl", action="store", metavar="(yes|no|auto)[:backends]",
                       dest="opengl", default=defaults.opengl,
                       help="Use OpenGL accelerated rendering. Default: %s." % defaults.opengl)
+    legacy_bool_parse("splash")
+    group.add_option("--splash", action="store", metavar="yes|no",
+                      dest="splash", default=defaults.splash,
+                      help="Show a splash screen whilst loading the client. Default: %s." % defaults.splash)
     legacy_bool_parse("windows")
     group.add_option("--windows", action="store", metavar="yes|no",
                       dest="windows", default=defaults.windows,
