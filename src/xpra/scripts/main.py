@@ -1818,8 +1818,6 @@ def make_progress_process():
             return
         progress_process.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
         progress_process.stdin.flush()
-        if pct==100:
-            progress_process.terminate()
     progress(10, "initializing")
     return progress_process
 
