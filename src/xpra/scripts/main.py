@@ -2022,14 +2022,16 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
             app.show_progress(40, "loading user interface")
             app.init_ui(opts)
             app.hello_extra = hello_extra
-        app.show_progress(60, "connecting to server")
+            def handshake_complete(*_args):
+                app.show_progress(100, "connection established")
+            app.after_handshake(handshake_complete)
+        app.show_progress(60, "starting server")
         conn = connect_or_fail(params, opts)
         app.setup_connection(conn)
+        app.show_progress(80, "connecting to server")
     except Exception as e:
         app.show_progress(100, "failure: %s" % e)
         raise
-    finally:
-        app.show_progress(100, "running")
     return do_run_client(app)
 
 
