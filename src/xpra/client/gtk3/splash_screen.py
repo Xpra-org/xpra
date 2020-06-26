@@ -43,22 +43,18 @@ class SplashScreen(Gtk.Window):
         self.progress_bar.set_size_request(320, 30)
         vbox.add(self.progress_bar)
         self.add(vbox)
-        self.stdin_io_watch = 0
         install_signal_handlers(None, self.handle_signal)
         self.opacity = 100
 
 
     def run(self):
-        self.start_stdin_io()
+        from xpra.make_thread import start_thread
+        start_thread(self.read_stdin, "read-stdin", True)
         self.show_all()
         self.present()
         gtk_main_quit_on_fatal_exceptions_enable()
         Gtk.main()
         return self.exit_code or 0
-
-    def start_stdin_io(self):
-        from xpra.make_thread import start_thread
-        start_thread(self.read_stdin, "read-stdin", True)
 
     def read_stdin(self):
         log("read_stdin()")
@@ -89,11 +85,9 @@ class SplashScreen(Gtk.Window):
 
     def exit(self, *args):
         log("exit%s calling %s", args, gtk_main_quit_really)
+        if self.exit_code is None:
+            self.exit_code = 0
         gtk_main_quit_really()
-        siw = self.stdin_io_watch
-        if siw:
-            self.stdin_io_watch = 0
-            GLib.source_remove(siw)
 
 
     def handle_signal(self, signum, _frame=None):
