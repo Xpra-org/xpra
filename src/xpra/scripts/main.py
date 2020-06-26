@@ -1696,7 +1696,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
                 raise InitInfo(einfo+"%s xpra client supports the following encodings:\n * %s" %
                                (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
         def handshake_complete(*_args):
-            app.show_progress(100)
+            app.show_progress(100, "connection established")
             log = get_util_logger()
             try:
                 conn = app._protocol._conn

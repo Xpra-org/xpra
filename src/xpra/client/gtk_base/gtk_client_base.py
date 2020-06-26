@@ -239,6 +239,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def do_process_challenge_prompt(self, packet, prompt="password"):
+        self.show_progress(100, "authentication")
         dialog = Gtk.Dialog("Server Authentication",
                None,
                Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT)
