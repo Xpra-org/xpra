@@ -41,6 +41,7 @@ class SplashScreen(Gtk.Window):
         vbox.add(hbox)
         self.progress_bar = Gtk.ProgressBar()
         self.progress_bar.set_size_request(320, 30)
+        self.progress_timer = 0
         vbox.add(self.progress_bar)
         self.add(vbox)
         install_signal_handlers(None, self.handle_signal)
@@ -70,13 +71,31 @@ class SplashScreen(Gtk.Window):
             except ValueError:
                 pass
             else:
+                self.cancel_progress_timer()
                 GLib.idle_add(self.progress_bar.set_fraction, pct/100.0)
                 if pct==100:
                     GLib.timeout_add(20, self.fade_out)
                     GLib.timeout_add(1500, self.exit)
+                else:
+                    self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
         if len(parts)>=2:
             self.progress_bar.set_text(parts[1])
             self.progress_bar.set_show_text(True)
+
+    def cancel_progress_timer(self):
+        pt = self.progress_timer
+        if pt:
+            self.progress_timer = 0
+            GLib.source_remove(pt)
+
+    def increase_fraction(self, pct, inc=1, max_increase=10):
+        log("increase_fraction%s", (pct, inc, max_increase))
+        self.cancel_progress_timer()
+        GLib.idle_add(self.progress_bar.set_fraction, (pct+inc)/100.0)
+        if inc<max_increase:
+            self.progress_timer = GLib.timeout_add(40+inc*10, self.increase_fraction, pct, inc+1, max_increase)
+        return False
+
 
     def fade_out(self):
         self.opacity = max(0, self.opacity-2)
@@ -87,6 +106,7 @@ class SplashScreen(Gtk.Window):
         log("exit%s calling %s", args, gtk_main_quit_really)
         if self.exit_code is None:
             self.exit_code = 0
+        self.cancel_progress_timer()
         gtk_main_quit_really()
 
 
