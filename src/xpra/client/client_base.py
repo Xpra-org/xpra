@@ -34,7 +34,7 @@ from xpra.os_util import (
     strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
     )
 from xpra.util import (
-    flatten_dict, typedict, updict, parse_simple_dict,
+    flatten_dict, typedict, updict, parse_simple_dict, noerr,
     repr_ellipsized, ellipsizer, nonl,
     envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc,
     )
@@ -162,8 +162,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if pp.poll():
             self.progress_process = None
             return
-        pp.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
-        pp.stdin.flush()
+        noerr(pp.stdin.write, ("%i:%s\n" % (pct, text)).encode("latin1"))
+        noerr(pp.stdin.flush)
         if pct==100:
             #it should exit on its own, but just in case:
             #kill it if it's still running after 2 seconds
