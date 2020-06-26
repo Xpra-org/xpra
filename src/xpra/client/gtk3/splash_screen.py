@@ -104,7 +104,7 @@ class SplashScreen(Gtk.Window):
             if icon_filename:
                 return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         except Exception:
-            log.error("get_pixbuf(%s)", icon_name, exc_info=True)
+            log.error("Error: failed to load '%s'", icon_name, exc_info=True)
         return None
 
 
