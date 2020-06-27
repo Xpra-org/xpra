@@ -2120,8 +2120,8 @@ def no_gtk():
 
 
 def run_splash(args) -> int:
-    from xpra.client.gtk3.splash_screen import main
-    return main(args)
+    from xpra.client.gtk3 import splash_screen
+    return splash_screen.main(args)
 
 def run_glprobe(opts, show=False) -> int:
     if show:
