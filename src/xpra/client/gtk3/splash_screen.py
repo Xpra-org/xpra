@@ -42,6 +42,9 @@ class SplashScreen(Gtk.Window):
         vbox.add(hbox)
         self.progress_bar = Gtk.ProgressBar()
         self.progress_bar.set_size_request(320, 30)
+        self.progress_bar.set_text(" ")
+        self.progress_bar.set_show_text(True)
+        self.progress_bar.set_fraction(0)
         self.progress_timer = 0
         vbox.add(self.progress_bar)
         self.add(vbox)
