@@ -99,8 +99,8 @@
   </autotools>
 
   <autotools id="yelp-xsl">
-    <branch version="3.20.1" module="yelp-xsl/3.20/yelp-xsl-3.20.1.tar.xz"
-            hash="sha256:dc61849e5dca473573d32e28c6c4e3cf9c1b6afe241f8c26e29539c415f97ba0"/>
+    <branch version="3.36.0" module="yelp-xsl/3.36/yelp-xsl-3.36.0.tar.xz"
+            hash="sha256:4fe51c0233b79a4c204c68498d45f09b342c30ed02c4e418506c0e35f0904ec3"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -109,8 +109,8 @@
   </autotools>
 
   <autotools id="yelp-tools">
-    <branch version="3.18.0" module="yelp-tools/3.18/yelp-tools-3.18.0.tar.xz"
-            hash="sha256:c6c1d65f802397267cdc47aafd5398c4b60766e0a7ad2190426af6c0d0716932"/>
+    <branch version="3.32.2" module="yelp-tools/3.32/yelp-tools-3.32.2.tar.xz"
+            hash="sha256:183856b5ed0b0bb2c05dd1204af023946ed436943e35e789afb0295e5e71e8f9"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -120,8 +120,8 @@
   </autotools>
 
   <autotools id="gtk-doc" autogen-sh="configure">
-    <branch version="1.30" module="gtk-doc/1.30/gtk-doc-1.30.tar.xz"
-            hash="sha256:a4f6448eb838ccd30d76a33b1fd095f81aea361f03b12c7b23df181d21b7069e"/>
+    <branch version="1.32" module="gtk-doc/1.32/gtk-doc-1.32.tar.xz"
+            hash="sha256:de0ef034fb17cb21ab0c635ec730d19746bce52984a6706e7bbec6fb5e0b907c"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -134,8 +134,9 @@
 
   <autotools id="icu" autogen-sh="source/configure" autogenargs="--enable-rpath"
              makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
-    <branch repo="icu" version="58.2" checkoutdir="icu"
-            module="icu4c/58.2/icu4c-58_2-src.tgz"/>
+    <branch repo="github-tarball" version="66.1" checkoutdir="icu"
+            module="unicode-org/icu/releases/download/release-66-1/icu4c-66_1-src.tgz"
+            hash="sha256:52a3f2209ab95559c1cf0a14f24338001f389615bf00e2585ef3dbc43ecf0a2e"/>
   </autotools>
 
 
@@ -147,7 +148,8 @@
 
   <autotools id="harfbuzz" autogen-sh="configure"
              autogenargs="--with-coretext --with-icu">
-    <branch repo="harfbuzz" module="harfbuzz-2.5.3.tar.xz" version="2.5.3">
+    <branch repo="harfbuzz" module="harfbuzz-2.6.4.tar.xz" version="2.6.4"
+            hash="sha256:9413b8d96132d699687ef914ebb8c50440efc87b3f775d25856d7ec347c03c12">
     </branch>
     <dependencies>
       <dep package="ragel"/>
@@ -162,7 +164,7 @@
   <autotools id="freetype" autogen-sh="configure"
              skip-autogen="never"
              autogenargs="--without-bzip2 --without-harfbuzz">
-    <branch module="freetype/freetype-2.10.1.tar.gz" version="2.10.1"
+    <branch module="freetype/freetype-2.10.2.tar.gz" version="2.10.2"
             repo="sourceforge">
     </branch>
     <dependencies>
