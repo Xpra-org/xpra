@@ -530,7 +530,8 @@ class PrintClient(SendCommandConnectClient):
             #replace with filename proposed
             self.filename = command[2]
             #read file from stdin
-            self.file_data = sys.stdin.read()
+            with open(sys.stdin.fileno(), mode='rb', closefd=False) as stdin_binary:
+                self.file_data = stdin_binary.read()
             log("read %i bytes from stdin", len(self.file_data))
         else:
             import os.path
