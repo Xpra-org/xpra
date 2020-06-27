@@ -1831,6 +1831,7 @@ def run_opengl_probe():
         cmd += ["-d", "opengl"]
     else:
         env["NOTTY"] = "1"
+    env["XPRA_HIDE_DOCK"] = "1"
     start = monotonic_time()
     try:
         proc = Popen(cmd, stderr=DEVNULL, env=env)
