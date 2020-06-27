@@ -695,6 +695,7 @@ class ClientExtras:
         self.event_loop_started = False
         self.check_display_timer = 0
         self.display_is_asleep = False
+        self.shared_app = None
         if opts and client:
             log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
             if client.keyboard_helper and client.keyboard_helper.keyboard:
@@ -723,15 +724,11 @@ class ClientExtras:
     def ready(self):
         try:
             self.setup_event_listener()
-        except:
+        except Exception:
             log.error("Error setting up OSX event listener", exc_info=True)
 
     def setup_event_listener(self):
         log("setup_event_listener()")
-        if NSObject is object:
-            log.warn("NSObject is missing, not setting up OSX event listener")
-            return
-        self.shared_app = None
         self.delegate = None
         self.shared_app = NSApplication.sharedApplication()
 
