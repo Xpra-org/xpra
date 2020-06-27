@@ -12,6 +12,7 @@ from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.platform.paths import get_icon_filename
+from xpra.platform.gui import force_focus
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -56,6 +57,7 @@ class SplashScreen(Gtk.Window):
         from xpra.make_thread import start_thread
         start_thread(self.read_stdin, "read-stdin", True)
         self.show_all()
+        force_focus()
         self.present()
         gtk_main_quit_on_fatal_exceptions_enable()
         Gtk.main()
