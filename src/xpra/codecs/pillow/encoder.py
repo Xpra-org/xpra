@@ -49,7 +49,7 @@ def get_info() -> dict:
             }
 
 
-def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool, grayscale : bool, resize=None):
+def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool, grayscale : bool=False, resize=None):
     log("pillow.encode%s", (coding, image, quality, speed, supports_transparency, grayscale, resize))
     pixel_format = bytestostr(image.get_pixel_format())
     palette = None
