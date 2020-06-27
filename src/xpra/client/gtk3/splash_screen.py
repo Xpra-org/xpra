@@ -23,9 +23,10 @@ class SplashScreen(Gtk.Window):
 
     def __init__(self):
         self.exit_code = None
-        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        super().__init__(type=Gtk.WindowType.POPUP)
         self.connect("delete_event", self.exit)
-        self.set_title("Splash")
+        title = "Xpra %s" % __version__
+        self.set_title("Xpra")
         self.set_size_request(320, 160)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
@@ -35,9 +36,9 @@ class SplashScreen(Gtk.Window):
         if icon:
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
-        self.label = Gtk.Label(label="Xpra %s" % __version__)
-        self.label.modify_font(Pango.FontDescription("sans 18"))
-        hbox.pack_start(self.label, True, True, 20)
+        label = Gtk.Label(label=title)
+        label.modify_font(Pango.FontDescription("sans 18"))
+        hbox.pack_start(label, True, True, 20)
         vbox.add(hbox)
         self.progress_bar = Gtk.ProgressBar()
         self.progress_bar.set_size_request(320, 30)
@@ -131,6 +132,7 @@ class SplashScreen(Gtk.Window):
 def main(args):
     from xpra.platform import program_context
     with program_context("splash", "Splash"):
+        Gtk.Window.set_auto_startup_notification(False)
         w = SplashScreen()
         add_close_accel(w, Gtk.main_quit)
         return w.run()
