@@ -135,6 +135,9 @@ class SplashScreen(Gtk.Window):
 
 
 def main(args):
+    import os
+    if os.environ.get("XPRA_HIDE_DOCK") is None:
+        os.environ["XPRA_HIDE_DOCK"] = "1"
     from xpra.platform import program_context
     with program_context("splash", "Splash"):
         Gtk.Window.set_auto_startup_notification(False)
