@@ -10,7 +10,12 @@ from xpra.client.gl.gtk3.gl_client_window import GLClientWindowBase
 from xpra.client.gl.gtk_base.gl_drawing_area import GLDrawingArea, GLContext
 
 def check_support(force_enable=False, check_colormap=False):
-    return GLContext().check_support(force_enable)  #pylint: disable=not-callable
+    import warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*g_object_get_qdata:")
+        warnings.filterwarnings("ignore", message=".*g_object_set_qdata_full:")
+        warnings.filterwarnings("ignore", message=".*g_object_unref:")
+        return GLContext().check_support(force_enable)  #pylint: disable=not-callable
 
 assert gi_init
 
