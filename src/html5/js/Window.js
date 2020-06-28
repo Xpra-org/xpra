@@ -37,8 +37,8 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 	this.canvas_ctx.imageSmoothingEnabled = false;
 	this.offscreen_canvas = null;
 	this.offscreen_canvas_ctx = null;
-	this.draw_canvas = null;
 	this._init_2d_canvas();
+	this.draw_canvas = this.offscreen_canvas;
 	this.paint_queue = [];
 	this.paint_pending = 0;
 
