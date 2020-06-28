@@ -840,7 +840,7 @@ class FileTransferHandler(FileTransferAttributes):
         #convert str to utf8 bytes:
         try:
             base = basefilename.encode("utf8")
-        except UnicodeEncodeError:
+        except (AttributeError, UnicodeEncodeError):
             base = strtobytes(basefilename)
         self.send("send-file", base, mimetype, printit, openit, filesize, cdata, options, send_id)
         return True
