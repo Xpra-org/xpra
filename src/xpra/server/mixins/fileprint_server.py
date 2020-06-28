@@ -141,16 +141,22 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: invalid print packet, only %i arguments", len(packet))
             printlog.error(" %s", [repr_ellipsized(x) for x in packet])
             return
-        filename, file_data = packet[1:3]
+        def s(b):
+            try:
+                return b.decode("utf-8")
+            except Exception:
+                return bytestostr(b)
+        filename = s(packet[1])
+        file_data = packet[2]
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
         if len(packet)>=4:
-            mimetype = packet[3]
+            mimetype = bytestostr(packet[3])
         if len(packet)>=5:
             source_uuid = bytestostr(packet[4])
         if len(packet)>=6:
-            title = packet[5]
+            title = s(packet[5])
         if len(packet)>=7:
-            printer = packet[6]
+            printer = bytestostr(packet[6])
         if len(packet)>=8:
             no_copies = int(packet[7])
         if len(packet)>=9:
