@@ -227,7 +227,7 @@ class FileTransferHandler(FileTransferAttributes):
     def dump_remote_caps(self):
         filelog("file transfer remote caps: file-transfer=%-5s   (ask=%s)",
                 self.remote_file_transfer, self.remote_file_transfer_ask)
-        filelog("file transfer remote caps: printing=%-5s        (ask=%AttributeError,s)",
+        filelog("file transfer remote caps: printing=%-5s        (ask=%s)",
                 self.remote_printing, self.remote_printing_ask)
         filelog("file transfer remote caps: open-files=%-5s      (ask=%s)",
                 self.remote_open_files, self.remote_open_files_ask)
