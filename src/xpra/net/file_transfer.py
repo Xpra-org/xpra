@@ -225,13 +225,13 @@ class FileTransferHandler(FileTransferAttributes):
         self.dump_remote_caps()
 
     def dump_remote_caps(self):
-        filelog("file transfer remote caps: file-transfer=%5s   (ask=%s)",
+        filelog("file transfer remote caps: file-transfer=%-5s   (ask=%s)",
                 self.remote_file_transfer, self.remote_file_transfer_ask)
-        filelog("file transfer remote caps: printing=%5s        (ask=%s)",
+        filelog("file transfer remote caps: printing=%-5s        (ask=%AttributeError,s)",
                 self.remote_printing, self.remote_printing_ask)
-        filelog("file transfer remote caps: open-files=%5s      (ask=%s)",
+        filelog("file transfer remote caps: open-files=%-5s      (ask=%s)",
                 self.remote_open_files, self.remote_open_files_ask)
-        filelog("file transfer remote caps: open-url=%5s        (ask=%s)",
+        filelog("file transfer remote caps: open-url=%-5s        (ask=%s)",
                 self.remote_open_url, self.remote_open_url_ask)
 
     def get_info(self) -> dict:
