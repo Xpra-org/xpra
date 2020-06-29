@@ -11,7 +11,7 @@ from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, scaled_image
 from xpra.util import envbool
-from xpra.os_util import bytestostr, is_gnome, OSX, WIN32
+from xpra.os_util import bytestostr, is_gnome, OSX
 from xpra.log import Logger
 
 paintlog = Logger("paint")
