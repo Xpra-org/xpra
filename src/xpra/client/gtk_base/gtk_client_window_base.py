@@ -1454,6 +1454,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh = self.moveresize_event
         dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
         buttons = self._event_buttons(event)
+        geomlog("motion_moveresize(%s) direction=%s, buttons=%s", event, dirstr, buttons)
         if start_buttons is None:
             #first time around, store the buttons
             start_buttons = buttons
@@ -1462,6 +1463,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             geomlog("%s for window button %i is no longer pressed (buttons=%s) cancelling moveresize",
                     dirstr, button, buttons)
             self.moveresize_event = None
+            self.cancel_moveresize_timer()
         else:
             x = event.x_root
             y = event.y_root
@@ -1522,6 +1524,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if self.moveresize_timer is None:
                     self.moveresize_timer = self.timeout_add(20, self.do_moveresize)
 
+    def cancel_moveresize_timer(self):
+        mrt = self.moveresize_timer
+        if mrt:
+            self.moveresize_timer = None
+            self.source_remove(mrt)
+
     def do_moveresize(self):
         self.moveresize_timer = None
         mrd = self.moveresize_data
@@ -1557,6 +1565,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if direction==MOVERESIZE_CANCEL:
             self.moveresize_event = None
             self.moveresize_data = None
+            self.cancel_moveresize_timer()
         else:
             #use window coordinates (which include decorations)
             wx, wy = self.get_window().get_root_origin()
@@ -1934,10 +1943,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_show_pointer_overlay_timer()
         self.cancel_remove_pointer_overlay_timer()
         self.cancel_focus_timer()
-        mrt = self.moveresize_timer
-        if mrt:
-            self.moveresize_timer = None
-            self.source_remove(mrt)
+        self.cancel_moveresize_timer()
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
@@ -2016,6 +2022,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self.moveresize_event and key_event.keyname in BREAK_MOVERESIZE:
             #cancel move resize if there is one:
             self.moveresize_event = None
+            self.cancel_moveresize_timer()
         self._client.handle_key_action(self, key_event)
 
     def do_key_release_event(self, event):
