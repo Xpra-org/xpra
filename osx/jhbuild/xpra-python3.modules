@@ -317,6 +317,19 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-dns" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/ec/c5/14bcd63cb6d06092a004793399ec395405edf97c2301dfdc146dfbd5beed/dnspython-1.16.0.zip"
+			hash="sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01"
+			version="1.16.0"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 
 	<distutils id="python3-nose" python3="1">
 		<branch repo="pypi.python.org"
@@ -787,6 +800,7 @@
 		  <dep package="python3-pycups"/>
 		  <dep package="python3-bcrypt"/>
 		  <dep package="python3-paramiko"/>
+		  <dep package="python3-dns"/>
 		  <dep package="python3-nose"/>
 		  <dep package="python3-setuptools-scm"/>
 		  <dep package="python3-test-runner"/>
