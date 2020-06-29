@@ -87,7 +87,10 @@ class OSXTray(TrayBase):
             return
         #redundant: the menu bar has already been set during gui init
         #using the basic the simple menu from build_menu_bar()
-        self.macapp.set_menu_bar(self.menu)
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
+            self.macapp.set_menu_bar(self.menu)
         mh.add_full_menu()
         log("OSXTray.set_global_menu() done")
 

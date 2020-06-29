@@ -87,7 +87,10 @@ def do_init():
     mh = getOSXMenuHelper(None)
     log("do_init() menu helper=%s", mh)
     osxapp.set_dock_menu(mh.build_dock_menu())
-    osxapp.set_menu_bar(mh.rebuild())
+    import warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*invalid cast from 'GtkMenuBar'")
+        osxapp.set_menu_bar(mh.rebuild())
 
 
 def do_ready():
