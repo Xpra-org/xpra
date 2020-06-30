@@ -478,9 +478,9 @@
 
 	<distutils id="python3-ldap" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/ea/93/596f875e003c770447f4b99267820a0c769dd2dc3ae3ed19afe460fcbad0/python-ldap-3.2.0.tar.gz"
-			hash="sha256:7d1c4b15375a533564aad3d3deade789221e450052b21ebb9720fb822eccdb8e"
-			version="3.2.0">
+			module="/packages/9d/e2/deb47064d443344b708ffb5899ea269b201d7c22dcc653ebadcbb44c57d5/python-ldap-3.3.1.tar.gz"
+			hash="sha256:4711cacf013e298754abd70058ccc995758177fb425f1c2d30e71adfc1d00aa5"
+			version="3.3.1">
 		</branch>
 		<dependencies>
 			<dep package="python3-pyasn1"/>
