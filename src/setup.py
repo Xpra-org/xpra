@@ -821,7 +821,7 @@ def build_xpra_conf(install_dir):
     def pretty_cmd(cmd):
         return " ".join(cmd)
     #OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
-    webcam = webcam_ENABLED and not OSX
+    webcam = webcam_ENABLED and not (OSX or WIN32)
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {

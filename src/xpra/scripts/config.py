@@ -943,7 +943,7 @@ def get_defaults():
                     "socket-permissions": "600",
                     "exec-wrapper"      : "",
                     "dbus-launch"       : "dbus-launch --sh-syntax --close-stderr",
-                    "webcam"            : ["auto", "no"][OSX],
+                    "webcam"            : ["auto", "no"][OSX or WIN32],
                     "mousewheel"        : "on",
                     "input-devices"     : "auto",
                     "shortcut-modifiers": "auto",
