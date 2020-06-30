@@ -52,7 +52,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
         self.header_bar_image = None
         hbl = (self.headerbar or "").lower().strip()
         if not self.is_OR() and self.get_decorated() and (
-            ((hbl in TRUE_OPTIONS) and not metadata.capsget("size-constraints"))
+            ((hbl in TRUE_OPTIONS) and not metadata.rawget("size-constraints"))
             or hbl=="force"
             ):
             self.add_header_bar()
