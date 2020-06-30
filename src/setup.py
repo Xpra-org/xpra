@@ -852,6 +852,7 @@ def build_xpra_conf(install_dir):
             'dbus_control'          : bstr(dbus_ENABLED),
             'mmap'                  : bstr(True),
             'opengl'                : "probe",
+            'headerbar'             : ["yes", "no"][OSX],
             }
     def convert_templates(subdirs):
         dirname = os.path.join(*(["etc", "xpra"] + subdirs))

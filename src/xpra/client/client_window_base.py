@@ -41,12 +41,14 @@ class ClientWindowBase(ClientWidgetBase):
     def __init__(self, client, group_leader, watcher_pid, wid,
                  wx, wy, ww, wh, bw, bh,
                  metadata, override_redirect, client_properties,
-                 border, max_window_size, default_cursor_data, pixel_depth):
+                 border, max_window_size, default_cursor_data, pixel_depth,
+                 headerbar="no"):
         log("%s%s", type(self),
             (client, group_leader, watcher_pid, wid,
              wx, wy, ww, wh, bw, bh,
              metadata, override_redirect, client_properties,
-             border, max_window_size, default_cursor_data, pixel_depth))
+             border, max_window_size, default_cursor_data, pixel_depth,
+             headerbar))
         super().__init__(client, watcher_pid, wid, metadata.boolget("has-alpha"))
         self._override_redirect = override_redirect
         self.group_leader = group_leader
@@ -76,6 +78,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.pixel_depth = pixel_depth      #0 for default
         self.window_offset = None           #actual vs reported coordinates
         self.pending_refresh = []
+        self.headerbar = headerbar
 
         self.init_window(metadata)
         self.setup_window(bw, bh)

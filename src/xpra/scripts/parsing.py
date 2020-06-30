@@ -853,6 +853,10 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--splash", action="store", metavar="yes|no",
                       dest="splash", default=defaults.splash,
                       help="Show a splash screen whilst loading the client. Default: %s." % defaults.splash)
+    legacy_bool_parse("headerbar")
+    group.add_option("--headerbar", action="store", metavar="yes|no",
+                      dest="headerbar", default=defaults.headerbar,
+                      help="Add a headerbar with menu to decorated windows. Default: %s." % defaults.headerbar)
     legacy_bool_parse("windows")
     group.add_option("--windows", action="store", metavar="yes|no",
                       dest="windows", default=defaults.windows,

@@ -10,6 +10,7 @@ from gi.repository import Gdk, Gtk, Gio, GdkPixbuf
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, scaled_image
+from xpra.scripts.config import TRUE_OPTIONS
 from xpra.util import envbool
 from xpra.os_util import bytestostr, is_gnome, OSX
 from xpra.log import Logger
@@ -33,10 +34,9 @@ GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
                       Gdk.WindowTypeHint.DND)
 
 
-CUSTOM_TITLE_BAR = envbool("XPRA_CUSTOM_TITLE_BAR", not OSX)
-WINDOW_ICON = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_ICON", True)
-WINDOW_XPRA_MENU = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
-WINDOW_MENU = CUSTOM_TITLE_BAR and envbool("XPRA_WINDOW_MENU", True)
+WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
+WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
+WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
 """
@@ -50,7 +50,11 @@ class GTK3ClientWindow(GTKClientWindowBase):
     def init_window(self, metadata):
         super().init_window(metadata)
         self.header_bar_image = None
-        if CUSTOM_TITLE_BAR and self.get_decorated() and not self.is_OR():
+        hbl = (self.headerbar or "").lower().strip()
+        if not self.is_OR() and self.get_decorated() and (
+            ((hbl in TRUE_OPTIONS) and not metadata.capsget("size-constraints"))
+            or hbl=="force"
+            ):
             self.add_header_bar()
 
     def _icon_size(self):

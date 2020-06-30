@@ -128,6 +128,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_xdg_menu = None
         self.start_new_commands  = []
         self.start_child_new_commands  = []
+        self.headerbar = None
 
         #in WindowClient - should it be?
         #self.server_is_desktop = False
@@ -169,6 +170,7 @@ class UIXpraClient(ClientBaseClass):
         self.readonly = opts.readonly
         self.client_supports_sharing = opts.sharing is True
         self.client_lock = opts.lock is True
+        self.headerbar = opts.headerbar
 
 
     def init_ui(self, opts):

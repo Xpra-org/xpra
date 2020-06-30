@@ -542,6 +542,7 @@ OPTION_TYPES = {
                     "open-url"          : str,
                     "file-transfer"     : str,
                     "printing"          : str,
+                    "headerbar"         : str,
                     "challenge-handlers": list,
                     #ssl options:
                     "ssl"               : str,
@@ -703,6 +704,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "border", "window-close", "min-size", "max-size", "desktop-scaling",
                   "file-transfer", "file-size-limit", "download-path",
                   "open-command", "open-files", "printing", "open-url",
+                  "headerbar",
                   "challenge-handlers",
                   "dbus-proxy",
                   "remote-logging",
@@ -949,6 +951,7 @@ def get_defaults():
                     "open-url"          : "auto",
                     "file-transfer"     : "auto",
                     "printing"          : "yes",
+                    "headerbar"         : ["auto", "no"][OSX],
                     "challenge-handlers": ["all"],
                     #ssl options:
                     "ssl"               : "auto",

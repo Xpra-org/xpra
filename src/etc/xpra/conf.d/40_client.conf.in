@@ -17,6 +17,10 @@ challenge-handlers=all
 # Client window title:
 title = @title@ on @hostname@
 
+# Use a header bar with controls:
+#headerbar = no
+headerbar = %(headerbar)s
+
 # Icon used by the system tray:
 #tray-icon = /path/to/icon.png
 
