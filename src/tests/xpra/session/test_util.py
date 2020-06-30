@@ -7,7 +7,6 @@
 
 from tests.xpra.session.test import assert_emits, assert_raises
 from xpra.gtk_common.gobject_util import AutoPropGObjectMixin, non_none_list_accumulator
-from xpra.gtk_common.quit import gtk_main_quit_really
 import gobject
 import gtk
 
@@ -89,38 +88,3 @@ class TestAutoPropMixin(object):
         assert c.get_property("readwrite") == 12
         c.custom = 15
         assert c.get_property("readwrite") == 15
-
-
-class Test_gtk_main_quit_really(object):
-    def _run_gtk_main(self):
-        print("_run_gtk_main")
-        print(gtk.main_level())
-        if gtk.main_level() < 3:
-            gobject.timeout_add(0, self._run_gtk_main)
-        else:
-            gobject.timeout_add(0, gtk_main_quit_really)
-        gtk.main()
-        return False
-
-    def _count_iters(self):
-        self._iters += 1
-        print("iter!")
-        if self._iters > 5:
-            gtk.main_quit()
-            return False
-        return True
-
-    def test(self):
-        gobject.timeout_add(0, self._run_gtk_main)
-        gtk.main()
-        # If we get here, then gtk_main_quit_really managed to extricate us
-        # from multiple recursive main loops. Next question: did it clean up
-        # after itself? (I.e., can we enter a new main loop without it being
-        # immediately exited?)
-        self._iters = 0
-        gobject.timeout_add(0, self._count_iters)
-        gtk.main()
-        # If we get here, then the second main loop exited -- but did it do so
-        # immediately, or did it run for a while?
-        assert self._iters > 5
-
