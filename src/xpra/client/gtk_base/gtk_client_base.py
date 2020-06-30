@@ -10,7 +10,6 @@ import weakref
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
-from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.util import (
     updict, pver, iround, flatten_dict,
     envbool, envint, repr_ellipsized, csv, first_time, typedict,
@@ -140,7 +139,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if HAS_X11_BINDINGS:
             self.setup_frame_request_windows()
         UIXpraClient.run(self)
-        gtk_main_quit_on_fatal_exceptions_enable()
         self.gtk_main()
         log("GTKXpraClient.run_main_loop() main loop ended, returning exit_code=%s", self.exit_code)
         return  self.exit_code
@@ -174,8 +172,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         force_quit()
 
     def exit(self):
-        log("GTKXpraClient.exit() calling %s", gtk_main_quit_really)
-        gtk_main_quit_really()
+        log("GTKXpraClient.exit() calling %s", Gtk.main_quit)
+        Gtk.main_quit()
 
     def cleanup(self):
         log("GTKXpraClient.cleanup()")

@@ -181,8 +181,6 @@ def main():
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready, set_default_icon
-    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-    gtk_main_quit_on_fatal_exceptions_enable()
     with program_context("Xpra-Toolbox", "Xpra Toolbox"):
         enable_color()
 

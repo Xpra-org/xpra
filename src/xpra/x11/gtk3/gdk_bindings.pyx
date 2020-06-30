@@ -14,6 +14,7 @@ gi.require_version('GdkX11', '3.0')
 from gi.repository import GObject           #@UnresolvedImport
 from gi.repository import GdkX11            #@UnresolvedImport @UnusedImport
 from gi.repository import Gdk               #@UnresolvedImport
+from gi.repository import Gtk               #@UnresolvedImport
 
 
 from xpra.os_util import strtobytes, bytestostr
@@ -1073,7 +1074,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         log("x_event_filter event=%s/%s took %.1fms", event_args, x_event_type_names.get(etype, etype), 1000.0*(monotonic_time()-start))
     except (KeyboardInterrupt, SystemExit):
         verbose("exiting on KeyboardInterrupt/SystemExit")
-        gtk_main_quit_really()
+        Gtk.main_quit()
     except:
         log.warn("Unhandled exception in x_event_filter:", exc_info=True)
     return GDK_FILTER_CONTINUE

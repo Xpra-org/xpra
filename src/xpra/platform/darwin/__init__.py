@@ -27,8 +27,8 @@ def quit_handler(*_args):
     if exit_cb:
         exit_cb()
     else:
-        from xpra.gtk_common.quit import gtk_main_quit_really
-        gtk_main_quit_really()
+        from gi.repository import Gtk
+        Gtk.main_quit()
     return True
 
 def set_exit_cb(ecb):

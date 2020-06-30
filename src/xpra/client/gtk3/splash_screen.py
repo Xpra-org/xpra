@@ -7,7 +7,6 @@ import sys
 from gi.repository import Gtk, GdkPixbuf, GLib, Pango
 
 from xpra import __version__
-from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.gtk_common.gtk_util import add_close_accel
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
@@ -59,7 +58,6 @@ class SplashScreen(Gtk.Window):
         self.show_all()
         force_focus()
         self.present()
-        gtk_main_quit_on_fatal_exceptions_enable()
         Gtk.main()
         return self.exit_code or 0
 
@@ -109,11 +107,11 @@ class SplashScreen(Gtk.Window):
         return self.opacity>0
 
     def exit(self, *args):
-        log("exit%s calling %s", args, gtk_main_quit_really)
+        log("exit%s calling %s", args, Gtk.main_quit)
         if self.exit_code is None:
             self.exit_code = 0
         self.cancel_progress_timer()
-        gtk_main_quit_really()
+        Gtk.main_quit()
 
 
     def handle_signal(self, signum, _frame=None):

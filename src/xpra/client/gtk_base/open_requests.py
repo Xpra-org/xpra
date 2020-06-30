@@ -327,9 +327,6 @@ def main():     # pragma: no cover
             from xpra.log import enable_debug_for
             enable_debug_for("util")
 
-        from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-        gtk_main_quit_on_fatal_exceptions_enable()
-
         app = OpenRequestsWindow()
         def cb(accept):
             print("callback: %s" % (accept,))

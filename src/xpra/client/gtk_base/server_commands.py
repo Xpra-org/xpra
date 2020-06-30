@@ -215,9 +215,6 @@ def main(): # pragma: no cover
         if "-v" in sys.argv:
             enable_debug_for("util")
 
-        from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-        gtk_main_quit_on_fatal_exceptions_enable()
-
         client = AdHocStruct()
         client.server_last_info_time = monotonic_time()
         commands_info = {

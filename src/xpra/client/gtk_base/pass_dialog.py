@@ -98,14 +98,10 @@ class PasswordInputDialogWindow(Gtk.Dialog):
 
 
 def show_pass_dialog(argv):
-    from xpra.platform.gui import ready as gui_ready
-    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
-    from xpra.platform.gui import init as gui_init, set_default_icon
+    from xpra.platform.gui import ready as gui_ready, init as gui_init, set_default_icon
 
     set_default_icon("authentication.png")
     gui_init()
-
-    gtk_main_quit_on_fatal_exceptions_enable()
 
     log("show_pass_dialog(%s)", argv)
     def arg(n):

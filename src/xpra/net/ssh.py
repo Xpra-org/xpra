@@ -794,9 +794,9 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
 def ssh_connect_failed(_message):
     #by the time ssh fails, we may have entered the gtk main loop
     #(and more than once thanks to the clipboard code..)
-    if "gtk" in sys.modules or "gi.repository.Gtk" in sys.modules:
-        from xpra.gtk_common.quit import gtk_main_quit_really
-        gtk_main_quit_really()
+    if "gi.repository.Gtk" in sys.modules:
+        from gi.repository import Gtk
+        Gtk.main_quit()
 
 
 def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_connect_failed):

@@ -25,7 +25,6 @@ from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
-from xpra.gtk_common.quit import gtk_main_quit_really
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse,
     choose_file, imagebutton,
@@ -470,7 +469,7 @@ class ApplicationWindow:
 
     def accel_close(self, *args):
         log("accel_close%s", args)
-        gtk_main_quit_really()
+        Gtk.main_quit()
 
     def validate(self, *args):
         mode = self.mode_combo.get_active_text().lower()
@@ -873,7 +872,7 @@ class ApplicationWindow:
             log("do_quit%s", args)
             self.clean_client()
             self.destroy()
-            gtk_main_quit_really()
+            Gtk.main_quit()
 
         def handle_client_quit(exit_launcher=False):
             w = self.window
@@ -1039,7 +1038,7 @@ class ApplicationWindow:
         self.exit_launcher = True
         self.clean_client()
         self.close_window()
-        gtk_main_quit_really()
+        Gtk.main_quit()
         return False
 
     def update_options_from_URL(self, url):
@@ -1106,7 +1105,7 @@ def exception_dialog(title):
     md.show_all()
     def close_dialog(*_args):
         md.destroy()
-        gtk_main_quit_really()
+        Gtk.main_quit()
     md.connect("response", close_dialog)
     md.connect("close", close_dialog)
     Gtk.main()
@@ -1122,7 +1121,6 @@ def main(argv):
 def do_main(argv):
     from xpra.os_util import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
-    from xpra.gtk_common.quit import gtk_main_quit_on_fatal_exceptions_enable
     from xpra.platform.gui import init as gui_init, ready as gui_ready
 
     if POSIX and not OSX:
@@ -1130,7 +1128,6 @@ def do_main(argv):
         init_gdk_display_source()
 
     gui_init()
-    gtk_main_quit_on_fatal_exceptions_enable()
     try:
         from xpra.scripts.parsing import parse_cmdline, fixup_debug_option
         options, args = parse_cmdline(argv)

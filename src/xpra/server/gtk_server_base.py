@@ -19,11 +19,6 @@ from gi.repository import GLib, Gdk, Gtk
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time, WIN32
 from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals
-from xpra.gtk_common.quit import (
-    gtk_main_quit_really,
-    gtk_main_quit_on_fatal_exceptions_enable,
-    gtk_main_quit_on_fatal_exceptions_disable,
-    )
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import (
@@ -67,15 +62,10 @@ class GTKServerBase(ServerBase):
         register_os_signals(callback, sstr)
         register_SIGUSR_signals(sstr)
 
-    def signal_quit(self, signum, frame=None):
-        gtk_main_quit_on_fatal_exceptions_disable()
-        super().signal_quit(signum, frame)
-
     def do_quit(self):
-        log("do_quit: calling gtk_main_quit_really")
-        gtk_main_quit_on_fatal_exceptions_disable()
-        gtk_main_quit_really()
-        log("do_quit: gtk_main_quit_really done")
+        log("do_quit: calling Gtk.main_quit")
+        Gtk.main_quit()
+        log("do_quit: Gtk.main_quit done")
         #from now on, we can't rely on the main loop:
         from xpra.os_util import register_SIGUSR_signals
         register_SIGUSR_signals()
@@ -117,7 +107,6 @@ class GTKServerBase(ServerBase):
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
                 i += 1
-        gtk_main_quit_on_fatal_exceptions_enable()
         log("do_run() calling %s", Gtk.main)
         Gtk.main()
         log("do_run() end of gtk.main()")
