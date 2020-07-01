@@ -204,7 +204,7 @@ function XpraWindow(client, canvas_state, wid, x, y, w, h, metadata, override_re
 		//});
 		// assign some interesting callbacks
 		jQuery(this.d_header).click(function() {
-			me.set_focus_cb(me);
+			me.client._window_set_focus(me);
 		});
 	}
 
