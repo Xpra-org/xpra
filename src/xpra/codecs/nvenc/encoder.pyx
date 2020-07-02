@@ -2476,7 +2476,7 @@ cdef class Encoder:
             picParams.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
         picParams.frameIdx = self.frames
         if timestamp>0:
-            if timestamp>self.first_frame_timestamp:
+            if timestamp>=self.first_frame_timestamp:
                 picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
             else:
                 log.warn("Warning: image timestamp is older than the first frame")
