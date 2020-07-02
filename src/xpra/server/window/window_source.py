@@ -1086,7 +1086,7 @@ class WindowSource(WindowIconSource):
                               self.global_statistics, self.statistics, self.bandwidth_limit)
         #update the normalized value:
         ww, wh = self.window_dimensions
-        self.batch_config.delay_per_megapixel = int(self.batch_config.delay*1000000//(ww*wh))
+        self.batch_config.delay_per_megapixel = int(self.batch_config.delay*1000000//max(1, (ww*wh)))
         self.statistics.last_recalculate = now
         self.update_av_sync_frame_delay()
 
