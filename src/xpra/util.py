@@ -862,9 +862,13 @@ def envint(name : str, d=0):
 
 def envbool(name : str, d=False):
     try:
-        v = os.environ.get(name)
+        v = os.environ.get(name).lower()
         if v is None:
             return d
+        if v in ("yes", "true", "on"):
+            return True
+        if v in ("no", "false", "off"):
+            return False
         return bool(int(v))
     except ValueError:
         return d
