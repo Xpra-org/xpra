@@ -260,11 +260,7 @@ def get_workareas():
         frame = screen.frame()
         visibleFrame = screen.visibleFrame()
         log(" frame=%s, visibleFrame=%s", frame, visibleFrame)
-        try:
-            #10.7 onwards:
-            log(" backingScaleFactor=%s", screen.backingScaleFactor())
-        except:
-            pass
+        log(" backingScaleFactor=%s", screen.backingScaleFactor())
         x = int(visibleFrame.origin.x - frame.origin.x)
         y = int((frame.size.height - visibleFrame.size.height) - (visibleFrame.origin.y - frame.origin.y))
         w = int(visibleFrame.size.width)
