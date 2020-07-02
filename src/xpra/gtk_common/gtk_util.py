@@ -14,7 +14,7 @@ gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
-from xpra.util import iround, first_time, envint
+from xpra.util import iround, first_time, envint, envbool
 from xpra.os_util import strtobytes, WIN32, OSX, POSIX
 from xpra.log import Logger
 
@@ -23,6 +23,8 @@ screenlog = Logger("gtk", "screen")
 alphalog = Logger("gtk", "alpha")
 
 SHOW_ALL_VISUALS = False
+#try to get workarea from GTK:
+GTK_WORKAREA = envbool("XPRA_GTK_WORKAREA", True)
 
 GTK_VERSION_INFO = {}
 def get_gtk_version_info() -> dict:
@@ -303,12 +305,15 @@ def get_screen_sizes(xscale=1, yscale=1):
             else:
                 plug_name = "%i" % j
             wmm, hmm = monitor.get_width_mm(), monitor.get_height_mm()
-            monitor = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
+            monitor_info = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
             screenlog(" monitor %s: %s", j, monitor)
-            if workareas:
+            if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
+                rect = monitor.get_workarea()
+                monitor_info += list(swork(rect.x, rect.y, rect.width, rect.height))
+            elif workareas:
                 w = workareas[j]
-                monitor += list(swork(*w))
-            monitors.append(tuple(monitor))
+                monitor_info += list(swork(*w))
+            monitors.append(tuple(monitor_info))
         screen = display.get_default_screen()
         sw, sh = screen.get_width(), screen.get_height()
         work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
@@ -744,6 +749,7 @@ def main():
     with program_context("GTK-Version-Info", "GTK Version Info"):
         enable_color()
         print("%s" % get_gtk_version_info())
+        get_screen_sizes()
 
 
 if __name__ == "__main__":
