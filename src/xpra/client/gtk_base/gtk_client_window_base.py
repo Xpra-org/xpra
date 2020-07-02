@@ -218,6 +218,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def init_drawing_area(self):
         widget = Gtk.DrawingArea()
         widget.set_app_paintable(True)
+        widget.set_size_request(*self._size)
         widget.show()
         self.drawing_area = widget
         self.init_widget_events(widget)
@@ -1687,6 +1688,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if self._iconified:
                 self.deiconify()
             self.process_map_event()
+        #use the drawing area to enforce the minimum size:
+        #(as this also honoured correctly with CSD,
+        # whereas set_geometry_hints is not..)
+        minw, minh = self.size_constraints.intpair("minimum-size", (0, 0))
+        self.drawing_area.set_size_request(minw, minh)
 
     def process_map_event(self):
         x, y, w, h = self.get_drawing_area_geometry()

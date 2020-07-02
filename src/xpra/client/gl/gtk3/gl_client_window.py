@@ -8,6 +8,7 @@ from collections import namedtuple
 
 from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
 from xpra.gtk_common.gtk_util import set_visual
+from xpra.util import typedict
 from xpra.log import Logger
 
 log = Logger("opengl", "window")
@@ -91,6 +92,11 @@ class GLClientWindowBase(GTK3ClientWindow):
         set_visual(widget, self._has_alpha)
         widget.show()
         self.init_widget_events(widget)
+        if self.drawing_area and self.size_constraints:
+            #apply min size to the drawing_area:
+            thints = typedict(self.size_constraints)
+            minsize = thints.intpair("minimum-size", (0, 0))
+            self.drawing_area.set_size_request(*minsize)
         self.add(widget)
         self.drawing_area = widget
         #maybe redundant?:

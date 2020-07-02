@@ -77,7 +77,16 @@ class GTK3ClientWindow(GTKClientWindowBase):
             return False
         if hbl in TRUE_OPTIONS:
             sc = metadata.dictget("size-constraints")
-            return sc is None
+            if sc is None:
+                return True
+            tsc = typedict(sc)
+            mins = tsc.intpair("minimum-size")
+            maxs = tsc.intpair("maximum-size")
+            if maxs and maxs!=(0, 0) and maxs!=mins:
+                return False
+            if tsc.intpair("increment", (0, 0))!=(0, 0):
+                return False
+            return True
         if hbl=="force":
             return True
         return False
@@ -175,6 +184,14 @@ class GTK3ClientWindow(GTKClientWindowBase):
                         "min_aspect_ratio"  : "min_aspect",
                         "max_aspect_ratio"  : "max_aspect",
                          }
+        thints = typedict(hints)
+        if self.drawing_area:
+            #apply min size to the drawing_area:
+            #(for CSD mode, ie: headerbar)
+            minw = thints.intget("min_width", 0)
+            minh = thints.intget("min_width", 0)
+            self.drawing_area.set_size_request(minw, minh)
+
         geom = Gdk.Geometry()
         mask = 0
         for k,v in hints.items():
