@@ -79,6 +79,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         "xid", "client-machine", "window-type",
         "shadow", "size-hints", "class-instance",
         "focused", "title", "depth", "icons",
+        "content-type",
         ]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
@@ -179,6 +180,8 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return True
         if prop=="class-instance":
             return ("xpra-desktop", "Xpra-Desktop")
+        if prop=="content-type":
+            return "desktop"
         return GObject.GObject.get_property(self, prop)
 
     def _screen_size_changed(self, screen):
