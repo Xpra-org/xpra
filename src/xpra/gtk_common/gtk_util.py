@@ -523,16 +523,13 @@ def get_monitor_info(_display, screen, i) -> dict:
     if hasattr(screen, "get_monitor_plug_name"):
         info["plug_name"] = screen.get_monitor_plug_name(i) or ""
     for x in ("scale_factor", "width_mm", "height_mm"):
-        try:
-            fn = getattr(screen, "get_monitor_"+x)
+        fn = getattr(screen, "get_monitor_"+x, None)
+        if fn:
             info[x] = int(fn(i))
-        except:
-            pass
-    if hasattr(screen, "get_monitor_workarea"): #GTK3.4:
-        rectangle = screen.get_monitor_workarea(i)
-        workarea_info = info.setdefault("workarea", {})
-        for x in ("x", "y", "width", "height"):
-            workarea_info[x] = getattr(rectangle, x)
+    rectangle = screen.get_monitor_workarea(i)
+    workarea_info = info.setdefault("workarea", {})
+    for x in ("x", "y", "width", "height"):
+        workarea_info[x] = getattr(rectangle, x)
     return info
 
 
