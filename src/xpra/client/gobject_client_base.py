@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 
 from gi.repository import GLib
@@ -231,8 +232,13 @@ class ScreenshotXpraClient(CommandConnectClient):
             self.warn_and_quit(EXIT_OK,
                                "screenshot is empty and has not been saved (maybe there are no windows or they are not currently shown)")
             return
-        with open(self.screenshot_filename, 'wb') as f:
-            f.write(img_data)
+        if self.screenshot_filename=="-":
+            output = os.fdopen(sys.stdout.fileno(), "wb", closefd=False)
+        else:
+            output = open(self.screenshot_filename, "wb")
+        with output:
+            output.write(img_data)
+            output.flush()
         self.warn_and_quit(EXIT_OK, "screenshot %sx%s saved to: %s" % (w, h, self.screenshot_filename))
 
     def init_packet_handlers(self):
