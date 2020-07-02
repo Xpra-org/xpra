@@ -10,8 +10,8 @@ from gi.repository import Gdk, Gtk, Gio, GdkPixbuf
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, scaled_image
-from xpra.scripts.config import TRUE_OPTIONS
-from xpra.util import envbool
+from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.util import envbool, typedict
 from xpra.os_util import bytestostr, is_gnome, OSX
 from xpra.log import Logger
 
@@ -50,11 +50,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
     def init_window(self, metadata):
         super().init_window(metadata)
         self.header_bar_image = None
-        hbl = (self.headerbar or "").lower().strip()
-        if not self.is_OR() and self.get_decorated() and (
-            ((hbl in TRUE_OPTIONS) and not metadata.rawget("size-constraints"))
-            or hbl=="force"
-            ):
+        if self.can_use_header_bar(metadata):
             self.add_header_bar()
 
     def _icon_size(self):
@@ -72,6 +68,19 @@ class GTK3ClientWindow(GTKClientWindowBase):
             h = self._icon_size()
             pixbuf = pixbuf.scale_simple(h, h, GdkPixbuf.InterpType.HYPER)
             hbi.set_from_pixbuf(pixbuf)
+
+    def can_use_header_bar(self, metadata):
+        if self.is_OR() or not self.get_decorated():
+            return False
+        hbl = (self.headerbar or "").lower().strip()
+        if hbl in FALSE_OPTIONS:
+            return False
+        if hbl in TRUE_OPTIONS:
+            sc = metadata.dictget("size-constraints")
+            return sc is None
+        if hbl=="force":
+            return True
+        return False
 
     def add_header_bar(self):
         self.menu_helper = WindowMenuHelper(self._client, self)
