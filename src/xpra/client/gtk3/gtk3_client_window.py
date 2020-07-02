@@ -145,16 +145,13 @@ class GTK3ClientWindow(GTKClientWindowBase):
     def apply_geometry_hints(self, hints):
         """ we convert the hints as a dict into a gdk.Geometry + gdk.WindowHints """
         wh = Gdk.WindowHints
-        name_to_hint = {"maximum-size"  : wh.MAX_SIZE,
+        name_to_hint = {
                         "max_width"     : wh.MAX_SIZE,
                         "max_height"    : wh.MAX_SIZE,
-                        "minimum-size"  : wh.MIN_SIZE,
                         "min_width"     : wh.MIN_SIZE,
                         "min_height"    : wh.MIN_SIZE,
-                        "base-size"     : wh.BASE_SIZE,
                         "base_width"    : wh.BASE_SIZE,
                         "base_height"   : wh.BASE_SIZE,
-                        "increment"     : wh.RESIZE_INC,
                         "width_inc"     : wh.RESIZE_INC,
                         "height_inc"    : wh.RESIZE_INC,
                         "min_aspect_ratio"  : wh.ASPECT,
