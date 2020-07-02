@@ -490,7 +490,6 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
             ):
             return run_client(error_cb, options, args, mode)
         elif mode in ("stop", "exit"):
-            nox()
             return run_stopexit(mode, error_cb, options, args)
         elif mode == "top":
             from xpra.client.top_client import TopClient, TopSessionClient

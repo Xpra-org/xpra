@@ -684,6 +684,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             authlog("password read from tty via getpass: %s", obsc(password))
             self.send_challenge_reply(packet, password)
             return True
+        else:
+            from xpra.platform.paths import get_nodock_command
+            cmd = get_nodock_command()+["_pass", prompt]
+            try:
+                from subprocess import Popen, PIPE
+                proc = Popen(cmd, stdout=PIPE)
+                getChildReaper().add_process(proc, "password-prompt", cmd, True, True)
+                out, err = proc.communicate(None, 60)
+                authlog("err(%s)=%s", cmd, err)
+                password = out.decode()
+                self.send_challenge_reply(packet, password)
+                return True
+            except Exception:
+                log("Error: failed to show GUi for password prompt", exc_info=True)
         return False
 
     def auth_error(self, code, message, server_message="authentication failed"):
