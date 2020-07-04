@@ -187,7 +187,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
             info_menu = self.make_menu()
             info_menu.append(self.make_sessioninfomenuitem())
             if SHOW_QR:
-                menu.append(self.make_qrmenuitem())
+                info_menu.append(self.make_qrmenuitem())
             if SHOW_VERSION_CHECK:
                 info_menu.append(self.make_updatecheckmenuitem())
             info_menu.append(self.make_bugreportmenuitem())
