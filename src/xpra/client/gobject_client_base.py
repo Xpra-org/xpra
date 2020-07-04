@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
+import os.path
 import sys
 
 from gi.repository import GLib
@@ -540,7 +540,6 @@ class PrintClient(SendCommandConnectClient):
                 self.file_data = stdin_binary.read()
             log("read %i bytes from stdin", len(self.file_data))
         else:
-            import os.path
             size = os.path.getsize(self.filename)
             if size>self.file_size_limit:
                 sizeerr(size)
