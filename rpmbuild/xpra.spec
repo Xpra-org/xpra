@@ -195,10 +195,11 @@ Requires:			python2
 Requires:			xpra-common >= %{version}-%{release}
 Requires:			python2-lz4
 Requires:			python2-rencode
-Requires:			python2-pillow
 %if 0%{?el7}
+Requires:			python-pillow
 Requires:			libvpx-xpra
 %else
+Requires:			python2-pillow
 Requires:			libvpx
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra < 1.8
