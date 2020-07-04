@@ -52,13 +52,6 @@ WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 
-if SHOW_QR:
-    try:
-        import qrencode
-        assert qrencode
-    except ImportError:
-        SHOW_QR = False
-
 
 def get_bandwidth_menu_options():
     options = []

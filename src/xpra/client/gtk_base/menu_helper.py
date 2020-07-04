@@ -177,6 +177,49 @@ class MenuHelper:
 
 
     def make_qrmenuitem(self):
+        qrencode_fn = None
+        try:
+            from PIL import Image
+            from qrencode import encode
+            def _qrencode_fn(s):
+                return encode(s)[2]
+            qrencode_fn = _qrencode_fn
+        except ImportError:
+            try:
+                from PIL import Image
+                from ctypes import (
+                    Structure, POINTER,
+                    cdll, create_string_buffer, c_int, c_char_p,
+                    )
+                class QRCode(Structure):
+                    _fields_ = (
+                        ("version", c_int),
+                        ("width", c_int),
+                        ("data", c_char_p),
+                        )
+                PQRCode = POINTER(QRCode)
+                libqrencode = cdll.LoadLibrary("libqrencode.so")
+                encodeString8bit = libqrencode.QRcode_encodeString8bit
+                encodeString8bit.argtypes = (c_char_p, c_int, c_int)
+                encodeString8bit.restype = PQRCode
+                QRcode_free = libqrencode.QRcode_free
+                QRcode_free.argtypes = (PQRCode,)
+                def qrencode_ctypes_fn(s):
+                    data = create_string_buffer(s.encode("latin1"))
+                    qrcode = encodeString8bit(data, 0, 0).contents
+                    try:
+                        size = qrcode.width
+                        pixels = bytearray(size*size)
+                        pdata = qrcode.data
+                        for i in range(size*size):
+                            pixels[i] = 0 if (pdata[i] & 0x1) else 255
+                        return Image.frombytes('L', (size, size), bytes(pixels))
+                    finally:
+                        QRcode_free(qrcode)
+                qrencode_fn = qrencode_ctypes_fn
+            except Exception:
+                log("failed to load qrencode via ctypes", exc_info=True)
+
         def show_qr(*_args):
             uri = self.client.display_desc.get("display_name")
             #support old-style URIs, ie: tcp:host:port
@@ -187,11 +230,9 @@ class MenuHelper:
                 uri = "http:"+parts[1]
             else:
                 uri = "https:"+parts[1]
-            from qrencode import encode     #@UnresolvedImport
-            img = encode(uri)[2]
+            img = qrencode_fn(uri)
             W = H = 640
             img = img.convert("RGB")
-            from PIL import Image
             img = img.resize((W, H), Image.NEAREST)
             data = img.tobytes()
             w, h = img.size
@@ -206,12 +247,17 @@ class MenuHelper:
             window.set_resizable(False)
             window.show_all()
         self.qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show_qr)
-        def with_connection(*_args):
-            uri = self.client.display_desc.get("display_name")
-            if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
-                set_sensitive(self.qr_menuitem, False)
-                self.qr_menuitem.set_tooltip_text("server uri is not shareable")
-        self.client.after_handshake(with_connection)
+        log("make_qrmenuitem() qrencode_fn=%s", qrencode_fn)
+        if qrencode_fn:
+            def with_connection(*_args):
+                uri = self.client.display_desc.get("display_name")
+                if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
+                    set_sensitive(self.qr_menuitem, False)
+                    self.qr_menuitem.set_tooltip_text("server uri is not shareable")
+            self.client.after_handshake(with_connection)
+        else:
+            set_sensitive(self.qr_menuitem, False)
+            self.qr_menuitem.set_tooltip_text("qrencode library is missing")
         return self.qr_menuitem
 
     def make_sessioninfomenuitem(self):
