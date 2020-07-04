@@ -215,7 +215,7 @@
 		</branch>
 	</cmake>
 
-	<autotools id="libqrencode">
+	<autotools id="libqrencode" autogen-sh="autoreconf" supports-non-srcdir-builds="no">
 		<branch module="https://github.com/fukuchi/libqrencode/archive/v4.0.0.tar.gz"
 			version="4.0.0" checkoutdir="libqrencode-4.0.0"
 			hash="sha256:c2c8a8110354463a3332cb48abf8581c8d94136af4dc1418f891cc9c7719e3c1"
