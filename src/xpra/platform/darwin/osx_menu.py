@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,6 +13,7 @@ from xpra.client.gtk_base.gtk_tray_menu_base import (
     CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS,
     CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL,
     SHOW_UPLOAD, SHOW_VERSION_CHECK, RUNCOMMAND_MENU, SHOW_SERVER_COMMANDS, SHOW_SHUTDOWN,
+    SHOW_QR,
     )
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin.gui import get_OSXApplication
@@ -185,6 +186,8 @@ class OSXMenuHelper(GTKTrayMenuBase):
         if SHOW_INFO_MENU:
             info_menu = self.make_menu()
             info_menu.append(self.make_sessioninfomenuitem())
+            if SHOW_QR:
+                menu.append(self.make_qrmenuitem())
             if SHOW_VERSION_CHECK:
                 info_menu.append(self.make_updatecheckmenuitem())
             info_menu.append(self.make_bugreportmenuitem())

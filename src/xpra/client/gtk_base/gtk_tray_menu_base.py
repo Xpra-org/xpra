@@ -36,6 +36,7 @@ HIDE_DISABLED_MENU_ENTRIES = OSX
 
 SHOW_TITLE_ITEM = envbool("XPRA_SHOW_TITLE_ITEM", True)
 SHOW_VERSION_CHECK = envbool("XPRA_SHOW_VERSION_CHECK", True)
+SHOW_QR = envbool("XPRA_SHOW_QR", True)
 SHOW_UPLOAD = envbool("XPRA_SHOW_UPLOAD_MENU", True)
 SHOW_SERVER_LOG = envbool("XPRA_SHOW_SERVER_LOG", True)
 SHOW_DOWNLOAD = envbool("XPRA_SHOW_DOWNLOAD", True)
@@ -50,6 +51,13 @@ SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
+
+if SHOW_QR:
+    try:
+        import qrencode
+        assert qrencode
+    except ImportError:
+        SHOW_QR = False
 
 
 def get_bandwidth_menu_options():
@@ -298,6 +306,8 @@ class GTKTrayMenuBase(MenuHelper):
         info_menu_item.set_submenu(menu)
         menu.append(self.make_aboutmenuitem())
         menu.append(self.make_sessioninfomenuitem())
+        if SHOW_QR:
+            menu.append(self.make_qrmenuitem())
         if SHOW_VERSION_CHECK:
             menu.append(self.make_updatecheckmenuitem())
         menu.append(self.make_bugreportmenuitem())

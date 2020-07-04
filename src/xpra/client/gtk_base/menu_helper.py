@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib, GdkPixbuf
 
 from xpra.util import envbool
 from xpra.os_util import OSX
@@ -174,6 +174,45 @@ class MenuHelper:
             w.show()
             w.check()
         return self.menuitem("Check for updates", "update.png", None, show_update_window)
+
+
+    def make_qrmenuitem(self):
+        def show_qr(*_args):
+            uri = self.client.display_desc.get("display_name")
+            #support old-style URIs, ie: tcp:host:port
+            if uri.find(":")!=uri.find("://"):
+                uri = uri.replace(":", "://", 1)
+            parts = uri.split(":", 1)
+            if parts[0] in ("tcp", "ws"):
+                uri = "http:"+parts[1]
+            else:
+                uri = "https:"+parts[1]
+            from qrencode import encode     #@UnresolvedImport
+            img = encode(uri)[2]
+            W = H = 640
+            img = img.convert("RGB")
+            from PIL import Image
+            img = img.resize((W, H), Image.NEAREST)
+            data = img.tobytes()
+            w, h = img.size
+            data = GLib.Bytes.new(data)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
+                                                     False, 8, w, h, w * 3)
+            image = Gtk.Image().new_from_pixbuf(pixbuf)
+            window = Gtk.Window(modal=True, title="QR Code")
+            window.set_position(Gtk.WindowPosition.CENTER)
+            window.add(image)
+            window.set_size_request(W, H)
+            window.set_resizable(False)
+            window.show_all()
+        self.qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show_qr)
+        def with_connection(*_args):
+            uri = self.client.display_desc.get("display_name")
+            if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
+                set_sensitive(self.qr_menuitem, False)
+                self.qr_menuitem.set_tooltip_text("server uri is not shareable")
+        self.client.after_handshake(with_connection)
+        return self.qr_menuitem
 
     def make_sessioninfomenuitem(self):
         def show_session_info_cb(*_args):
