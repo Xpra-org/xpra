@@ -1,5 +1,7 @@
 xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix encryption option overzealously enforced on all socket types
+  * fix printing errors with some shell character encodings
+  * fix windows not getting focused when clicking on title bar (HTML5)
   * fix OpenGL force-enable option not honoured
   * fix tray geometry errors
   * fix minimum video scaling not being honoured via heuristics
@@ -9,14 +11,22 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix clipboard data sometimes going missing when ownership changes
   * fix memory contents of the swscale pixel format object
   * fix csc_swscale converter getting recycled every time
+  * fix division by zero errors during window cleanup
   * fix rfb connections missing all screen updates
+  * fix RPM spec file for CentOS 8
+  * fix toolbox examples when running under wayland
+  * fix MacOS outdated system version requirements in hidden sub application
+  * fix sshfp support on MacOS (was missing dns python module)
+  * silence unhelpful gtk warnings on MacOS
+  * avoid opengl warning with wayland
+  * add extra environment variables to try to disable any server side scaling
   * also update mdns records when the session name changes
   * workaround for older versions of python-cryptography
   * use 'text' mode for 'geany' (fixes lossy screen updates)
   * ensure all toolbox windows set a correct and readable window title
   * remove workaround for unsupported versions of Ubuntu
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 18 Jun 2020 16:06:36 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 04 Jul 2020 16:03:04 +0700
 
 xpra (4.0.2-1) UNRELEASED; urgency=low
   * fix encryption not honoured with TCP sockets upgraded to WebSocket

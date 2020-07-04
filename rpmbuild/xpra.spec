@@ -586,8 +586,10 @@ fi
 
 
 %changelog
-* Thu Jun 18 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Sun Jul 04 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix encryption option overzealously enforced on all socket types
+- fix printing errors with some shell character encodings
+- fix windows not getting focused when clicking on title bar (HTML5)
 - fix OpenGL force-enable option not honoured
 - fix tray geometry errors
 - fix minimum video scaling not being honoured via heuristics
@@ -597,7 +599,15 @@ fi
 - fix clipboard data sometimes going missing when ownership changes
 - fix memory contents of the swscale pixel format object
 - fix csc_swscale converter getting recycled every time
+- fix division by zero errors during window cleanup
 - fix rfb connections missing all screen updates
+- fix RPM spec file for CentOS 8
+- fix toolbox examples when running under wayland
+- fix MacOS outdated system version requirements in hidden sub application
+- fix sshfp support on MacOS (was missing dns python module)
+- silence unhelpful gtk warnings on MacOS
+- avoid opengl warning with wayland
+- add extra environment variables to try to disable any server side scaling
 - also update mdns records when the session name changes
 - workaround for older versions of python-cryptography
 - use 'text' mode for 'geany' (fixes lossy screen updates)
