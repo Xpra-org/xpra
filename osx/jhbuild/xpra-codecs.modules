@@ -215,6 +215,14 @@
 		</branch>
 	</cmake>
 
+	<autotools id="libqrencode">
+		<branch module="https://github.com/fukuchi/libqrencode/archive/v4.0.0.tar.gz"
+			version="4.0.0" checkoutdir="libqrencode-4.0.0"
+			hash="sha256:c2c8a8110354463a3332cb48abf8581c8d94136af4dc1418f891cc9c7719e3c1"
+			repo="github.com">
+		</branch>
+	</autotools>
+
 	<metamodule id="meta-osx-xpra-codec-deps">
 		<dependencies>
 			<dep package="yasm"/>
@@ -235,6 +243,7 @@
 			<dep package="x264"/>
 			<dep package="libwebp"/>
 			<dep package="ffmpeg"/>
+			<dep package="libqrencode"/>
 			<dep package="meta-gstreamer"/>
 			<!--
 			sdl doesn't build with newer versions of osx because of missing X header files
