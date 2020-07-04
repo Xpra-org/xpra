@@ -44,6 +44,7 @@ Source:         https://files.pythonhosted.org/packages/b3/d0/a20d8440b71adfbf13
 %if 0%{?el7}
 Name:           python-pillow
 Provides:       python2-pillow = %{version}-%{release}
+Conflicts:      python2-pillow < %{version}-%{release}
 %else
 Name:           python2-pillow
 Provides:       python-pillow = %{version}-%{release}

@@ -1,19 +1,28 @@
 xpra (3.0.11-1) UNRELEASED; urgency=low
   * fix encryption option overzealously enforced on all socket types
+  * fix printing errors with some shell character encodings
+  * fix windows not getting focused when clicking on title bar (HTML5)
   * fix Python2 / GTK2 compatibility regression from 3.0.10
   * fix tray geometry errors
   * fix minimum video scaling not being honoured via heuristics
   * fix clipboard data sometimes going missing when ownership changes
   * fix error in main thread verifier (fortunately, never fired)
+  * fix python-pillow packaging conflicts on CentOS / RHEL 7
   * fix memory contents of the swscale pixel format object
   * fix csc_swscale converter getting recycled every time
+  * fix division by zero errors during window cleanup
+  * fix sshfp support on MacOS (was missing dns python module)
+  * silence unhelpful gtk warnings on MacOS
+  * avoid opengl warning with wayland
+  * discard invalid clipboard requests early
   * workaround for older versions of python-cryptography
   * use 'text' mode for 'geany' (fixes lossy screen updates)
   * ensure all toolbox windows set a correct and readable window title
   * convert invalid map events to warnings (no scary crash reports)
   * also update mdns records when the session name changes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 09 Jun 2020 23:32:32 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 04 Jul 2020 16:03:04 +0700
+
 
 xpra (3.0.10-2) UNRELEASED; urgency=low
   * fix python2 / GTK2 compatibility
