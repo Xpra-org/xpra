@@ -7,7 +7,7 @@
 from gi.repository import Gtk, GLib, GdkPixbuf
 
 from xpra.util import envbool
-from xpra.os_util import OSX
+from xpra.os_util import OSX, WIN32
 from xpra.gtk_common.gtk_util import menuitem
 from xpra.gtk_common.about import about, close_about
 from xpra.platform.gui import get_icon_size
@@ -198,7 +198,10 @@ class MenuHelper:
                         ("data", c_char_p),
                         )
                 PQRCode = POINTER(QRCode)
-                libqrencode = cdll.LoadLibrary("libqrencode.so")
+                if WIN32:
+                    libqrencode = cdll.LoadLibrary("libqrencode.dll")
+                else:
+                    libqrencode = cdll.LoadLibrary("libqrencode.so")
                 encodeString8bit = libqrencode.QRcode_encodeString8bit
                 encodeString8bit.argtypes = (c_char_p, c_int, c_int)
                 encodeString8bit.restype = PQRCode
