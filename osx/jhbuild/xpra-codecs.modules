@@ -59,7 +59,7 @@
 	<autotools id="libvorbis" autogenargs="" autogen-sh="configure">
 		<branch module="/releases/vorbis/libvorbis-1.3.7.tar.xz"
 			version="1.3.7"
-			hash="sha256:270c76933d0934e42c5ee0a54a36280e2d87af1de3cc3e584806357e237afd13"
+			hash="sha256:b33cc4934322bcbf6efcbacf49e3ca01aadbea4114ec9589d1b1e9d20f72954b"
 			repo="downloads.xiph.org"/>
 	</autotools>
 
