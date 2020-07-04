@@ -110,6 +110,9 @@
 	<binary>
 		${prefix}/lib/libcrypto*.dylib
 	</binary>
+	<binary>
+		${prefix}/lib/libqrencode*.dylib
+	</binary>
 
 	<binary>
 		${prefix}/lib/gstreamer-1.0/*.so
