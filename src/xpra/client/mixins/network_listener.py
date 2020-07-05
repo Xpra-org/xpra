@@ -5,7 +5,8 @@
 #pylint: disable-msg=E1101
 
 from xpra import __version__ as VERSION
-from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR
+from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR, DONE
+from xpra.os_util import bytestostr
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection
 from xpra.net.net_util import get_network_caps
@@ -133,7 +134,15 @@ class NetworkListener(StubClientMixin):
 
     def process_network_packet(self, proto, packet):
         log("process_network_packet: %s", packet)
-        if packet[0]==b"hello":
+        packet_type = bytestostr(packet[0])
+        def close():
+            try:
+                self._close_timers.pop(proto)
+            except KeyError:
+                pass
+            else:
+                proto.close()
+        if packet_type=="hello":
             caps = typedict(packet[1])
             proto.parse_remote_caps(caps)
             proto.enable_compressor_from_caps(caps)
@@ -153,17 +162,20 @@ class NetworkListener(StubClientMixin):
                 return
             elif request=="version":
                 proto.send_now(["hello", {"version" : VERSION}])
+            elif request=="command":
+                command = caps.strtupleget("command_request")
+                log("command request: %s", command)
+                self.idle_add(self._process_control, ["control"]+list(command))
+                proto.send_disconnect([DONE])
             else:
+                log.info("request '%s' is not handled by this client", request)
                 proto.send_disconnect([PROTOCOL_ERROR])
+        elif packet_type=="connection-lost":
+            close()
+            return
         else:
+            log.info("packet '%s' is not handled by this client", packet_type)
             proto.send_disconnect([PROTOCOL_ERROR])
         #make sure the connection is closed:
-        def close():
-            try:
-                self._close_timers.pop(proto)
-            except KeyError:
-                pass
-            else:
-                proto.close()
         tid = self.timeout_add(REQUEST_TIMEOUT*1000, close)
         self._close_timers[proto] = tid

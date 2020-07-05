@@ -568,7 +568,7 @@ class UIXpraClient(ClientBaseClass):
         command = bytestostr(packet[1])
         if command=="show_session_info":
             args = packet[2:]
-            log("calling show_session_info%s on server request", args)
+            log("calling %s%s on server request", self.show_session_info, args)
             self.show_session_info(*args)
         elif command=="show_bug_report":
             self.show_bug_report()
