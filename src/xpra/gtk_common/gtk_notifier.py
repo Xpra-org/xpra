@@ -173,6 +173,8 @@ class Popup(gtk.Window):
         self.nid = nid
         gtk.Window.__init__(self)
 
+        self.set_accept_focus(False)
+        self.set_focus_on_map(False)
         self.set_size_request(stack.size_x, -1)
         self.set_decorated(False)
         self.set_deletable(False)
