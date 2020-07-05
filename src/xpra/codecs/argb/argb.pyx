@@ -10,7 +10,7 @@ from xpra.util import first_time
 from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
 
-from libc.stdint cimport uint32_t, uint16_t, uint8_t
+from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 
 import struct
 from xpra.log import Logger
@@ -83,90 +83,112 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     return memoryview(output_buf)
 
 
-def r210_to_rgba(buf):
-    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+def r210_to_rgba(buf,
+                 const unsigned int w, const unsigned int h,
+                 const unsigned int src_stride, const unsigned int dst_stride):
+    assert buf, "no buffer"
+    assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
+    assert w*4<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
     # buf is a Python buffer object
-    cdef const unsigned int* cbuf = <const unsigned int *> 0
+    cdef unsigned int* cbuf = <unsigned int *> 0
     cdef Py_ssize_t cbuf_len = 0
     assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return r210data_to_rgba(cbuf, cbuf_len)
+    assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
+    assert cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
+    return r210data_to_rgba(cbuf, w, h, src_stride, dst_stride)
 
-cdef r210data_to_rgba(const unsigned int* r210, const int r210_len):
-    if r210_len <= 0:
-        return None
-    assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
-    cdef MemBuf output_buf = getbuf(r210_len)
+cdef r210data_to_rgba(unsigned int* r210,
+                      const unsigned int w, const unsigned int h,
+                      const unsigned int src_stride, const unsigned int dst_stride):
+    cdef MemBuf output_buf = getbuf(h*dst_stride)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    #number of pixels:
-    cdef int i = 0
+    cdef unsigned int y = 0
+    cdef unsigned int i = 0
     cdef unsigned int v
-    while i < r210_len:
-        v = r210[i//4]
-        rgba[i+2] = (v&0x000003ff) >> 2
-        rgba[i+1] = (v&0x000ffc00) >> 12
-        rgba[i]   = (v&0x3ff00000) >> 22
-        rgba[i+3] = ((v&(<unsigned int>0xc0000000)) >> 30)*85
-        i = i + 4
+    for y in range(h):
+        i = y*dst_stride
+        for x in range(w):
+            v = r210[x]
+            rgba[i+2] = (v&0x000003ff) >> 2
+            rgba[i+1] = (v&0x000ffc00) >> 12
+            rgba[i]   = (v&0x3ff00000) >> 22
+            rgba[i+3] = ((v&(<unsigned int>0xc0000000)) >> 30)*85
+            i = i + 4
+        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
 
 
-def r210_to_rgbx(buf):
-    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+def r210_to_rgbx(buf,
+                 const unsigned int w, const unsigned int h,
+                 const unsigned int src_stride, const unsigned int dst_stride):
+    assert buf, "no buffer"
+    assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
+    assert w*4<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
     # buf is a Python buffer object
-    cdef const unsigned int* cbuf = <const unsigned int *> 0
+    cdef unsigned int* cbuf = <unsigned int *> 0
     cdef Py_ssize_t cbuf_len = 0
     assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return r210data_to_rgbx(cbuf, cbuf_len)
+    assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
+    assert cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
+    return r210data_to_rgbx(cbuf, w, h, src_stride, dst_stride)
 
-cdef r210data_to_rgbx(const unsigned int* r210, const int r210_len):
-    if r210_len <= 0:
-        return None
-    assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
-    cdef MemBuf output_buf = getbuf(r210_len)
-    cdef unsigned char* rgbx = <unsigned char*> output_buf.get_mem()
-    #number of pixels:
-    cdef int i = 0
+cdef r210data_to_rgbx(unsigned int* r210,
+                      const unsigned int w, const unsigned int h,
+                      const unsigned int src_stride, const unsigned int dst_stride):
+    cdef MemBuf output_buf = getbuf(h*dst_stride)
+    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
+    cdef unsigned int y = 0
+    cdef unsigned int i = 0
     cdef unsigned int v
-    while i < r210_len:
-        v = r210[i//4]
-        rgbx[i+2] = (v&0x000003ff) >> 2
-        rgbx[i+1] = (v&0x000ffc00) >> 12
-        rgbx[i]   = (v&0x3ff00000) >> 22
-        rgbx[i+3] = 0xFF
-        i = i + 4
+    for y in range(h):
+        i = y*dst_stride
+        for x in range(w):
+            v = r210[x]
+            rgba[i+2] = (v&0x000003ff) >> 2
+            rgba[i+1] = (v&0x000ffc00) >> 12
+            rgba[i]   = (v&0x3ff00000) >> 22
+            rgba[i+3] = 0xff
+            i = i + 4
+        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
 
 
-def r210_to_rgb(buf):
-    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+def r210_to_rgb(buf,
+                const unsigned int w, const unsigned int h,
+                const unsigned int src_stride, const unsigned int dst_stride):
+    assert buf, "no buffer"
+    assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
+    assert w*3<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
     # buf is a Python buffer object
-    cdef const unsigned int* cbuf = <const unsigned int *> 0
+    cdef unsigned int* cbuf = <unsigned int *> 0
     cdef Py_ssize_t cbuf_len = 0
     assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return r210data_to_rgb(cbuf, cbuf_len)
+    assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
+    assert cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
+    return r210data_to_rgb(cbuf, w, h, src_stride, dst_stride)
 
 #white:  3fffffff
 #red:    3ff00000
 #green:     ffc00
 #blue:        3ff
 #black:         0
-cdef r210data_to_rgb(const unsigned int* r210, const int r210_len):
-    if r210_len <= 0:
-        return None
-    assert r210_len>0 and r210_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % r210_len
-    cdef MemBuf output_buf = padbuf(r210_len//4*3, 3)
-    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
-    #number of pixels:
-    cdef int s = 0
-    cdef int d = 0
+cdef r210data_to_rgb(unsigned int* r210,
+                     const unsigned int w, const unsigned int h,
+                     const unsigned int src_stride, const unsigned int dst_stride):
+    cdef MemBuf output_buf = getbuf(h*dst_stride)
+    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
+    cdef unsigned int y = 0
+    cdef unsigned int i = 0
     cdef unsigned int v
-    while s < r210_len//4:
-        v = r210[s]
-        rgb[d+2] = (v&0x000003ff) >> 2
-        rgb[d+1] = (v&0x000ffc00) >> 12
-        rgb[d]   = (v&0x3ff00000) >> 22
-        s += 1
-        d += 3
+    for y in range(h):
+        i = y*dst_stride
+        for x in range(w):
+            v = r210[x]
+            rgba[i+2] = (v&0x000003ff) >> 2
+            rgba[i+1] = (v&0x000ffc00) >> 12
+            rgba[i]   = (v&0x3ff00000) >> 22
+            i = i + 3
+        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
 
 
@@ -416,7 +438,9 @@ def argb_swap(image, rgb_formats, supports_transparency):
     #if we have one of the target pixel formats:
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
-    rs = image.get_rowstride()
+    cdef unsigned int rs = image.get_rowstride()
+    cdef unsigned int w
+    cdef unsigned int h
     if pixel_format=="r210":
         #r210 never contains any transparency at present
         #if supports_transparency and "RGBA" in rgb_formats:
@@ -424,15 +448,18 @@ def argb_swap(image, rgb_formats, supports_transparency):
         #    image.set_pixels(r210_to_rgba(pixels))
         #    image.set_pixel_format("RGBA")
         #    return True
+        w = image.get_width()
+        h = image.get_height()
         if "RGB" in rgb_formats:
             log("argb_swap: r210_to_rgb for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(r210_to_rgb(pixels))
+            image.set_pixels(r210_to_rgb(pixels, w, h, rs, w*3))
             image.set_pixel_format("RGB")
-            image.set_rowstride(rs*3//4)
+            image.set_rowstride(w*3)
             return True
         if "RGBX" in rgb_formats:
             log("argb_swap: r210_to_rgbx for %s on %s", pixel_format, type(pixels))
-            image.set_pixels(r210_to_rgbx(pixels))
+            image.set_pixels(r210_to_rgbx(pixels, w, h, rs, w*4))
+            image.set_rowstride(w*4)
             image.set_pixel_format("RGBX")
             return True
     elif pixel_format=="BGR565":

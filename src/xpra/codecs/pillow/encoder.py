@@ -71,14 +71,15 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         if pixel_format=="r210":
+            stride = image.get_rowstride()
             from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport
             if supports_transparency:
-                pixels = r210_to_rgba(pixels)
+                pixels = r210_to_rgba(pixels, w, h, stride, w*4)
                 pixel_format = "RGBA"
                 rgb = "RGBA"
             else:
                 image.set_rowstride(image.get_rowstride()*3//4)
-                pixels = r210_to_rgb(pixels)
+                pixels = r210_to_rgb(pixels, w, h, stride, w*3)
                 pixel_format = "RGB"
                 rgb = "RGB"
                 bpp = 24
