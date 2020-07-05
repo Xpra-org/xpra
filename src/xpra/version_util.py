@@ -23,7 +23,7 @@ if WIN32:
         import certifi
         SSL_CAFILE = certifi.where()
     except (ImportError, AttributeError):
-        log("failed to locate SSL ca file", exc_info=True)
+        get_util_logger().error("failed to locate SSL ca file", exc_info=True)
 SSL_CAFILE = os.environ.get("XPRA_SSL_CAFILE", SSL_CAFILE)
 
 
