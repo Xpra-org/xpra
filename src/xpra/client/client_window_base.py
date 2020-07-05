@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,6 +10,7 @@ import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
+from xpra.common import GRAVITY_STR
 from xpra.util import typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
@@ -112,6 +113,48 @@ class ClientWindowBase(ClientWidgetBase):
         self.window_gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
         self.set_decorated(metadata.boolget("decorations", True))
 
+
+    def get_info(self):
+        attributes = []
+        if self._fullscreen:
+            attributes.append("fullscreen")
+        if self._maximized:
+            attributes.append("maximized")
+        if self._above:
+            attributes.append("above")
+        if self._below:
+            attributes.append("below")
+        if self._shaded:
+            attributes.append("shaded")
+        if self._sticky:
+            attributes.append("sticky")
+        if self._skip_pager:
+            attributes.append("skip-pager")
+        if self._skip_taskbar:
+            attributes.append("skip-taskbar")
+        if self._iconified:
+            attributes.append("iconified")
+        if self._focused:
+            attributes.append("focused")
+        return {
+            "override-redirect"     : self._override_redirect,
+            #"group-leader"          : self.group_leader,
+            "position"              : self._pos,
+            "size"                  : self._size,
+            "client-properties"     : self._client_properties,
+            "set-initial-position"  : self._set_initial_position,
+            "size-constraints"      : dict(self.size_constraints),
+            "geometry-hints"        : dict(self.geometry_hints),
+            "content-type"          : self.content_type,
+            "attributes"            : attributes,
+            "gravity"               : GRAVITY_STR.get(self.window_gravity),
+            #"border"                : self.border or "",
+            #cursor_data
+            "max-size"              : self.max_window_size,
+            "button-state"          : self.button_state,
+            "pixel-depth"           : self.pixel_depth,
+            "offset"                : self.window_offset,
+            }
 
     def get_desktop_workspace(self):
         return None

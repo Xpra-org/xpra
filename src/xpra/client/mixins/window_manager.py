@@ -275,22 +275,23 @@ class WindowClient(StubClientMixin):
 
 
     def get_info(self):
-        return {
-            "windows" : {
-                "count"         : len(self._window_to_id),
-                "min-size"      : self.min_window_size,
-                "max-size"      : self.max_window_size,
-                "draw-counter"  : self._draw_counter,
-                "read-only"     : self.readonly,
-                "wheel" : {
-                    "delta-x"   : self.wheel_deltax,
-                    "delta-y"   : self.wheel_deltay,
-                },
-                "focused"       : self._focused or 0,
-                "grabbed"       : self._window_with_grab or 0,
-                "buttons"       : self._button_state,
-            }
+        info = {
+            "count"         : len(self._window_to_id),
+            "min-size"      : self.min_window_size,
+            "max-size"      : self.max_window_size,
+            "draw-counter"  : self._draw_counter,
+            "read-only"     : self.readonly,
+            "wheel" : {
+                "delta-x"   : self.wheel_deltax,
+                "delta-y"   : self.wheel_deltay,
+            },
+            "focused"       : self._focused or 0,
+            "grabbed"       : self._window_with_grab or 0,
+            "buttons"       : self._button_state,
         }
+        for wid, window in tuple(self._id_to_window.items()):
+            info[wid] = window.get_info()
+        return {"windows" : info}
 
 
     ######################################################################
