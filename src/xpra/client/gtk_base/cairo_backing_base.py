@@ -36,10 +36,12 @@ class CairoBackingBase(WindowBackingBase):
         self.create_surface()
 
     def get_info(self):
-        return {
+        info = super().get_info()
+        info.update({
             "type"  : "Cairo",
             "rgb-formats" : self.RGB_MODES,
-            }
+            })
+        return info
 
 
     def create_surface(self):

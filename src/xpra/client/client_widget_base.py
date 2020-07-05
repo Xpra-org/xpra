@@ -32,6 +32,17 @@ class ClientWidgetBase:
         self._backing = None
         self.pixel_depth = 24
 
+    def get_info(self):
+        info = {
+            "has-alpha"     : self._has_alpha,
+            "window-alpha"  : self._window_alpha,
+            "pixel-depth"   : self.pixel_depth,
+            }
+        b = self._backing
+        if b:
+            info["backing"] = b.get_info()
+        return info
+
     def make_new_backing(self, backing_class, ww, wh, bw, bh):
         #size of the backing (same as server window source):
         bw = max(1, bw)

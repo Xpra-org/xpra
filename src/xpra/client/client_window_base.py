@@ -136,7 +136,8 @@ class ClientWindowBase(ClientWidgetBase):
             attributes.append("iconified")
         if self._focused:
             attributes.append("focused")
-        return {
+        info = super().get_info()
+        info.update({
             "override-redirect"     : self._override_redirect,
             #"group-leader"          : self.group_leader,
             "position"              : self._pos,
@@ -152,9 +153,9 @@ class ClientWindowBase(ClientWidgetBase):
             #cursor_data
             "max-size"              : self.max_window_size,
             "button-state"          : self.button_state,
-            "pixel-depth"           : self.pixel_depth,
             "offset"                : self.window_offset,
-            }
+            })
+        return info
 
     def get_desktop_workspace(self):
         return None
