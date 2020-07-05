@@ -6,7 +6,7 @@
 
 
 from threading import Thread, Lock
-from queue import Queue
+from collections import deque
 
 from xpra.log import Logger
 log = Logger("util")
@@ -21,7 +21,7 @@ class Worker_Thread(Thread):
 
     def __init__(self):
         super().__init__(name="Worker_Thread")
-        self.items = Queue()
+        self.items = deque()
         self.exit = False
         self.setDaemon(True)
 
@@ -31,28 +31,31 @@ class Worker_Thread(Thread):
     def stop(self, force=False):
         if self.exit:
             return
-        items = tuple(x for x in tuple(self.items.queue) if x is not None)
+        items = tuple(x for x in self.items if x is not None)
         log("Worker_Thread.stop(%s) %i items still in work queue: %s", force, len(items), items)
         if force:
             if items:
                 log.warn("Worker stop: %s items in the queue will not be run!", len(items))
-                self.items.put(None)
-                self.items = Queue()
+                self.items.append(None)
+                self.items = deque()
             self.exit = True
         else:
             if items:
                 log.info("waiting for %s items in work queue to complete", len(items))
-        self.items.put(None)
+        self.items.append(None)
 
-    def add(self, item):
-        if self.items.qsize()>10:
-            log.warn("Worker_Thread.items queue size is %s", self.items.qsize())
-        self.items.put(item)
+    def add(self, item, allow_duplicates=True):
+        if len(self.items)>10:
+            log.warn("Worker_Thread.items queue size is %s", len(self.items))
+        if not allow_duplicates:
+            if item in self.items:
+                return
+        self.items.append(item)
 
     def run(self):
         log("Worker_Thread.run() starting")
         while not self.exit:
-            item = self.items.get()
+            item = self.items.popleft()
             if item is None:
                 log("Worker_Thread.run() found end of queue marker")
                 self.exit = True
@@ -80,10 +83,10 @@ def get_worker(create=True):
             singleton.start()
     return singleton
 
-def add_work_item(item):
+def add_work_item(item, allow_duplicates=True):
     w = get_worker(True)
-    log("add_work_item(%s) worker=%s", item, w)
-    w.add(item)
+    log("add_work_item(%s, %s) worker=%s", item, allow_duplicates, w)
+    w.add(item, allow_duplicates)
 
 def stop_worker(force=False):
     w = get_worker(False)
