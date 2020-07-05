@@ -11,6 +11,7 @@ from threading import Thread, Lock
 
 from xpra.server.server_core import ServerCore, get_thread_info
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
+from xpra.server.background_worker import add_work_item
 from xpra.net.common import may_log_packet
 from xpra.os_util import monotonic_time, bytestostr, strtobytes, WIN32
 from xpra.util import (
@@ -391,7 +392,7 @@ class ServerBase(ServerBaseClass):
             ss.close()
             raise
         self._server_sources[proto] = ss
-        self.mdns_update()
+        add_work_item(self.mdns_update)
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
@@ -882,7 +883,7 @@ class ServerBase(ServerBaseClass):
         source = self._server_sources.pop(protocol, None)
         if source:
             self.cleanup_source(source)
-            self.mdns_update()
+            add_work_item(self.mdns_update)
         for c in SERVER_BASES:
             c.cleanup_protocol(self, protocol)
         return source
