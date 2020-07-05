@@ -76,8 +76,8 @@ def init_yaml():
         yaml_encode = yaml_encode_py3
         yaml_decode = yaml.load
         yaml_version = yaml.__version__
-    except ImportError:
-        log("yaml not found")
+    except (ImportError, AttributeError):
+        log("yaml not found", exc_info=True)
     has_yaml = yaml_encode is not None and yaml_decode is not None
     use_yaml = has_yaml and use_yaml
     log("packet encoding: has_yaml=%s, use_yaml=%s, version=%s", has_yaml, use_yaml, yaml_version)
