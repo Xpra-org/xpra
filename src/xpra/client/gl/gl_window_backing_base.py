@@ -264,7 +264,8 @@ class GLWindowBackingBase(WindowBackingBase):
             "type"                  : "OpenGL",
             "bit-depth"             : self.bit_depth,
             "pixel-format"          : self.pixel_format,
-            "texture-pixel-format"  : self.texture_pixel_format,
+            "texture-pixel-format"  : CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, str(self.texture_pixel_format)),
+            "internal-format"       : INTERNAL_FORMAT_TO_STR.get(self.internal_format, str(self.internal_format)),
             })
         return info
 
