@@ -112,7 +112,7 @@ cdef r210data_to_rgba(unsigned int* r210,
             rgba[i+2] = (v&0x000003ff) >> 2
             rgba[i+1] = (v&0x000ffc00) >> 12
             rgba[i]   = (v&0x3ff00000) >> 22
-            rgba[i+3] = ((v&(<unsigned int>0xc0000000)) >> 30)*85
+            rgba[i+3] = (v>>30)*85
             i = i + 4
         r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
