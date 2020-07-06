@@ -3,7 +3,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.3
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -11,10 +11,14 @@ License:     GPL
 URL:	     http://www.ffmpeg.org
 Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
+AutoProv:    0
+AutoReq:     0
 
 BuildRequires:	x264-xpra-devel
 BuildRequires:	libva-devel
 BuildRequires:	yasm
+
+#%global __requires_exclude ^libx264.so.*$
 
 
 %description
@@ -26,6 +30,8 @@ Summary:   Development package for %{real_name}
 Group:     Development/libraries
 Requires:  %{name} = %{version}-%{release}
 Requires:  pkgconfig
+Requires:  ffmpeg-xpra = %{version}
+AutoReq:   0
 
 %description devel
 This package contains the development files for %{name}.
@@ -164,6 +170,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jul 06 2020 Antoine Martin <antoine@xpra.org> 4.3-2
+- rebuild against 10-bit x264
+- remove autoreq / autoprov
+
 * Wed Jun 17 2020 Antoine Martin <antoine@xpra.org> 4.3-1
 - new upstream release
 
