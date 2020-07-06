@@ -459,8 +459,8 @@ def argb_swap(image, rgb_formats, supports_transparency):
         if "RGBX" in rgb_formats:
             log("argb_swap: r210_to_rgbx for %s on %s", pixel_format, type(pixels))
             image.set_pixels(r210_to_rgbx(pixels, w, h, rs, w*4))
-            image.set_rowstride(w*4)
             image.set_pixel_format("RGBX")
+            image.set_rowstride(w*4)
             return True
     elif pixel_format=="BGR565":
         if "RGB" in rgb_formats:
