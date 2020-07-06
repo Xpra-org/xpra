@@ -1123,7 +1123,7 @@ class WindowVideoSource(WindowSource):
         if self._mmap and self._mmap_size>0:
             scorelog("cannot score: mmap enabled")
             return
-        if self.content_type=="text":
+        if self.content_type=="text" and self.non_video_encodings:
             scorelog("no pipelines for 'text' content-type")
             return
         elapsed = monotonic_time()-self._last_pipeline_check
@@ -2064,7 +2064,10 @@ class WindowVideoSource(WindowSource):
         if warn:
             videolog.warn("using non-video fallback encoding")
         if self.image_depth==8:
-            encoding = "png/P"
+            if self.encoding_is_grayscale():
+                encoding = "png/L"
+            else:
+                encoding = "png/P"
         else:
             encoding = self.get_video_fallback_encoding(order)
             if not encoding:
@@ -2124,8 +2127,11 @@ class WindowVideoSource(WindowSource):
             #scroll encoding has dealt with this image
             return None
 
-        if not self.common_video_encodings or self.image_depth not in (24, 32):
+        if not self.common_video_encodings:
             #we have to send using a non-video encoding as that's all we have!
+            return self.video_fallback(image, options)
+        if self.image_depth not in (24, 32):
+            #this image depth is not supported for video
             return self.video_fallback(image, options)
 
         if self.encoding=="grayscale":
