@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -23,7 +23,6 @@ from OpenGL.GL import (
     GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST,
-    glLineStipple, GL_LINE_STIPPLE,
     glTexEnvi, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE,
     glHint,
     glBlendFunc,
