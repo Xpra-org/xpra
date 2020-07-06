@@ -521,7 +521,8 @@ class WindowBackingBase:
                 return
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
-            assert input_colorspace in decoder_colorspaces, "decoder does not support %s for %s" % (input_colorspace, coding)
+            assert input_colorspace in decoder_colorspaces, "decoder %s does not support %s for %s" % (
+                decoder_module.get_type(), input_colorspace, coding)
 
             vd = self._video_decoder
             if vd:
