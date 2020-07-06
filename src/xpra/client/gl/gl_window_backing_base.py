@@ -14,7 +14,8 @@ from OpenGL.GL import (
     GL_PROJECTION, GL_MODELVIEW,
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
-    GL_UNSIGNED_BYTE, GL_LUMINANCE, GL_LINEAR,
+    GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
+    GL_LUMINANCE, GL_LINEAR,
     GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_QUADS, GL_LINE_LOOP, GL_LINES, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
@@ -118,6 +119,9 @@ PIXEL_FORMAT_TO_DATATYPE = {
     "BGRX"  : GL_UNSIGNED_BYTE,
     "RGBA"  : GL_UNSIGNED_BYTE,
     "RGBX"  : GL_UNSIGNED_BYTE,
+    "YUV420P" : GL_UNSIGNED_BYTE,
+    "YUV422P" : GL_UNSIGNED_BYTE,
+    "YUV444P" : GL_UNSIGNED_BYTE,
     }
 CONSTANT_TO_PIXEL_FORMAT = {
     GL_BGR   : "BGR",
@@ -1115,7 +1119,7 @@ class GLWindowBackingBase(WindowBackingBase):
         x, y = self.gravity_adjust(x, y, options)
         try:
             pixel_format = img.get_pixel_format()
-            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP"), \
+            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", ), \
                 "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
 
             context = self.gl_context()
@@ -1156,6 +1160,7 @@ class GLWindowBackingBase(WindowBackingBase):
         assert self.textures is not None, "no OpenGL textures!"
         log("%s.update_planar_textures%s", self, (width, height, img, pixel_format))
 
+        upload_format = PIXEL_FORMAT_TO_DATATYPE[pixel_format]
         divs = get_subsampling_divs(pixel_format)
         if self.pixel_format is None or self.pixel_format!=pixel_format or self.texture_size!=(width, height):
             self.gl_marker("Creating new planar textures, pixel format %s (was %s), texture size %s (was %s)",
@@ -1173,17 +1178,18 @@ class GLWindowBackingBase(WindowBackingBase):
                     mag_filter = GL_LINEAR
                 glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
                 glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, None)
+                glTexImage2D(target, 0, GL_LUMINANCE, width//div_w, height//div_h, 0, GL_LUMINANCE, upload_format, None)
                 #glBindTexture(target, 0)        #redundant: we rebind below:
 
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
+        BPP = 1
         assert len(rowstrides)==3 and len(img_data)==3
         for texture, index, tex_name in (
-            (GL_TEXTURE0, TEX_Y, "Y"),
-            (GL_TEXTURE1, TEX_U, "U"),
-            (GL_TEXTURE2, TEX_V, "V"),
+            (GL_TEXTURE0, TEX_Y, "Y"*BPP),
+            (GL_TEXTURE1, TEX_U, "U"*BPP),
+            (GL_TEXTURE2, TEX_V, "V"*BPP),
             ):
             div_w, div_h = divs[index]
             w = width//div_w
@@ -1205,7 +1211,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, 0)
             except Exception:
                 pass
-            glTexSubImage2D(target, 0, 0, 0, w, h, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixel_data)
+            glTexSubImage2D(target, 0, 0, 0, w, h, GL_LUMINANCE, upload_format, pixel_data)
             glBindTexture(target, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
 
