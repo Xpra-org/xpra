@@ -43,7 +43,7 @@ class GLDrawingArea(GLWindowBackingBase):
         self._backing = da
 
     def get_bit_depth(self, pixel_depth=0):
-        return self.context.get_bit_depth() or pixel_depth or 24
+        return pixel_depth or self.context.get_bit_depth() or 24
 
     def gl_context(self):
         b = self._backing
