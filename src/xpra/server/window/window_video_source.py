@@ -1124,7 +1124,7 @@ class WindowVideoSource(WindowSource):
             scorelog("cannot score: mmap enabled")
             return
         if self.content_type=="text":
-            scorelog("no pipelines for text content-type")
+            scorelog("no pipelines for 'text' content-type")
             return
         elapsed = monotonic_time()-self._last_pipeline_check
         max_elapsed = 0.75
@@ -1321,6 +1321,9 @@ class WindowVideoSource(WindowSource):
                                                     score_delta, ffps, detection)
                     if score_data:
                         scores.append(score_data)
+                    #else:
+                    #    scorelog(" no score data for %s",
+                    #             (enc_in_format, csc_spec, encoder_spec, width, height, scaling, ".."))
             if not FORCE_CSC or src_format==FORCE_CSC_MODE:
                 add_scores("direct (no csc)", None, src_format)
 
@@ -1649,8 +1652,8 @@ class WindowVideoSource(WindowSource):
         start = monotonic_time()
         if not scores:
             if not self.is_cancelled():
-                videolog.error("Error: no video pipeline options found for %s at %ix%i",
-                               src_format, width, height)
+                videolog.error("Error: no video pipeline options found for %s %i-bit at %ix%i",
+                               src_format, self.image_depth, width, height)
             return False
         videolog("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
