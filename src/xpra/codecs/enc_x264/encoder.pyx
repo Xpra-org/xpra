@@ -48,6 +48,11 @@ cdef extern from "stdarg.h":
     void va_end(va_list)
     fake_type int_type "int"
 
+#ugly hack to generate an ifdef:
+cdef extern from *:
+    cdef void emit_ifdef_bitdepth "#if defined(X264_CSP_HIGH_DEPTH) //" ()
+    cdef void emit_endif_bitdepth "#endif //" ()
+
 cdef extern from "x264.h":
     int X264_KEYINT_MAX_INFINITE
 
@@ -172,7 +177,9 @@ cdef extern from "x264.h":
         int i_width
         int i_height
         int i_csp               #CSP of encoded bitstream
+        emit_ifdef_bitdepth()
         int i_bitdepth
+        emit_endif_bitdepth()
         int i_level_idc
         int i_frame_total       #number of frames to encode if known, else 0
 
@@ -349,7 +356,6 @@ COLORSPACE_FORMATS = {
     "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444_PREDICTIVE,    I444_PROFILES),
     "BGRA"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
     "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
-    "r210"      : (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
     }
 if SUPPORT_24BPP:
     COLORSPACE_FORMATS.update({
@@ -364,8 +370,11 @@ COLORSPACES = {
     "BGRA"      : ("BGRA",),
     "BGRX"      : ("BGRX",),
     }
+emit_ifdef_bitdepth()
 if SUPPORT_30BPP:
+    COLORSPACE_FORMATS["r210"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES)
     COLORSPACES["r210"] = ("r210", )
+emit_endif_bitdepth()
 if SUPPORT_24BPP:
     COLORSPACES.update({
         "BGR"       : ("BGR",),
@@ -618,10 +627,12 @@ cdef class Encoder:
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
+        emit_ifdef_bitdepth()
         if (self.colorspace & X264_CSP_HIGH_DEPTH)>0:
             param.i_bitdepth = 10
         else:
             param.i_bitdepth = 8
+        emit_endif_bitdepth()
         #logging hook:
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
@@ -833,11 +844,13 @@ cdef class Encoder:
         if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0 or self.src_format=="r210":
             assert len(pixels)>0
             assert istrides>0
+            emit_ifdef_bitdepth()
             if self.src_format=="r210":
                 #CSC should be moved elsewhere!
                 from xpra.codecs.argb.argb import r210_to_bgr48
                 pixels = r210_to_bgr48(pixels, self.width, self.height, istrides, self.width*6)
                 istrides = self.width*6
+            emit_endif_bitdepth()
             assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
             for i in range(3):
                 pic_in.img.plane[i] = pic_buf
