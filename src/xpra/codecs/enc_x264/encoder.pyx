@@ -26,6 +26,7 @@ MIN_SLICED_THREADS_SPEED = envint("XPRA_X264_SLICED_THREADS", 60)
 LOGGING = os.environ.get("XPRA_X264_LOGGING", "WARNING")
 PROFILE = os.environ.get("XPRA_X264_PROFILE")
 SUPPORT_24BPP = envbool("XPRA_X264_SUPPORT_24BPP")
+SUPPORT_30BPP = envbool("XPRA_X264_SUPPORT_30BPP", True)
 TUNE = os.environ.get("XPRA_X264_TUNE")
 LOG_NALS = envbool("XPRA_X264_LOG_NALS")
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
@@ -63,6 +64,9 @@ cdef extern from "x264.h":
     int X264_CSP_BGR
     int X264_CSP_BGRA
     int X264_CSP_RGB
+    int X264_CSP_NV12
+    int X264_CSP_V210
+    int X264_CSP_HIGH_DEPTH
 
     int X264_RC_CQP
     int X264_RC_CRF
@@ -168,6 +172,7 @@ cdef extern from "x264.h":
         int i_width
         int i_height
         int i_csp               #CSP of encoded bitstream
+        int i_bitdepth
         int i_level_idc
         int i_frame_total       #number of frames to encode if known, else 0
 
@@ -344,6 +349,7 @@ COLORSPACE_FORMATS = {
     "YUV444P"   : (X264_CSP_I444,    PROFILE_HIGH444_PREDICTIVE,    I444_PROFILES),
     "BGRA"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
     "BGRX"      : (X264_CSP_BGRA,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
+    "r210"      : (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES),
     }
 if SUPPORT_24BPP:
     COLORSPACE_FORMATS.update({
@@ -358,6 +364,8 @@ COLORSPACES = {
     "BGRA"      : ("BGRA",),
     "BGRX"      : ("BGRX",),
     }
+if SUPPORT_30BPP:
+    COLORSPACES["r210"] = ("r210", )
 if SUPPORT_24BPP:
     COLORSPACES.update({
         "BGR"       : ("BGR",),
@@ -610,6 +618,10 @@ cdef class Encoder:
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
+        if (self.colorspace & X264_CSP_HIGH_DEPTH)>0:
+            param.i_bitdepth = 10
+        else:
+            param.i_bitdepth = 8
         #logging hook:
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
@@ -818,14 +830,20 @@ cdef class Encoder:
 
         x264_picture_init(&pic_in)
 
-        if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
+        if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0 or self.src_format=="r210":
             assert len(pixels)>0
             assert istrides>0
+            if self.src_format=="r210":
+                #CSC should be moved elsewhere!
+                from xpra.codecs.argb.argb import r210_to_bgr48
+                pixels = r210_to_bgr48(pixels, self.width, self.height, istrides, self.width*6)
+                istrides = self.width*6
             assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
             for i in range(3):
                 pic_in.img.plane[i] = pic_buf
                 pic_in.img.i_stride[i] = istrides
             self.bytes_in += pic_buf_len
+            pic_in.img.i_plane = 1
         else:
             assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
             assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
@@ -833,9 +851,9 @@ cdef class Encoder:
                 assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer (plane=%s)" % (type(pixels[i]), i)
                 pic_in.img.plane[i] = pic_buf
                 pic_in.img.i_stride[i] = istrides[i]
+            pic_in.img.i_plane = 3
 
         pic_in.img.i_csp = self.colorspace
-        pic_in.img.i_plane = 3
         pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
         return self.do_compress_image(&pic_in, quality, speed)
 
@@ -990,6 +1008,7 @@ cdef class Encoder:
 
 
 def selftest(full=False):
+    log("enc_x264 selftest: %s", get_info())
     global SAVE_TO_FILE
     from xpra.codecs.codec_checks import testencoder, get_encoder_max_sizes
     from xpra.codecs.enc_x264 import encoder

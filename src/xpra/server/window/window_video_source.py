@@ -2130,7 +2130,7 @@ class WindowVideoSource(WindowSource):
         if not self.common_video_encodings:
             #we have to send using a non-video encoding as that's all we have!
             return self.video_fallback(image, options)
-        if self.image_depth not in (24, 32):
+        if self.image_depth not in (24, 30, 32):
             #this image depth is not supported for video
             return self.video_fallback(image, options)
 

@@ -51,6 +51,7 @@ This package contains the development files for %{name}.
     --prefix="%{_prefix}" \
     --libdir="%{_libdir}/xpra" \
     --includedir="%{_includedir}/xpra" \
+    --bit-depth=all \
     --enable-shared \
     --enable-static
 

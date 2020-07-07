@@ -192,6 +192,40 @@ cdef r210data_to_rgb(unsigned int* r210,
     return memoryview(output_buf)
 
 
+def r210_to_bgr48(buf,
+                  const unsigned int w, const unsigned int h,
+                  const unsigned int src_stride, const unsigned int dst_stride):
+    assert buf, "no buffer"
+    assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
+    assert w*6<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
+    assert (dst_stride%2)==0, "invalid destination stride %i (odd number)" % (dst_stride)
+    cdef unsigned int* cbuf = <unsigned int *> 0
+    cdef Py_ssize_t cbuf_len = 0
+    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
+    assert cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
+    return r210data_to_bgr48(cbuf, w, h, src_stride, dst_stride)
+
+cdef r210data_to_bgr48(unsigned int* r210,
+                       const unsigned int w, const unsigned int h,
+                       const unsigned int src_stride, const unsigned int dst_stride):
+    cdef MemBuf output_buf = getbuf(h*dst_stride*10)
+    cdef unsigned short* rgba = <unsigned short*> output_buf.get_mem()
+    cdef unsigned int y = 0
+    cdef unsigned int i = 0
+    cdef unsigned int v
+    for y in range(h):
+        i = y*dst_stride//2
+        for x in range(w):
+            v = r210[x]
+            rgba[i] = v&0x000003ff
+            rgba[i+1] = (v&0x000ffc00) >> 10
+            rgba[i+2]   = (v&0x3ff00000) >> 20
+            i = i + 3
+        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+    return memoryview(output_buf)
+
+
 def argb_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # buf is a Python buffer object
