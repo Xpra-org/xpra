@@ -89,7 +89,6 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_VAAPI_IDCT
     AVPixelFormat AV_PIX_FMT_VAAPI_VLD
     AVPixelFormat AV_PIX_FMT_VAAPI
-    AVPixelFormat AV_PIX_FMT_VAAPI
     AVPixelFormat AV_PIX_FMT_YUV420P16LE
     AVPixelFormat AV_PIX_FMT_YUV420P16BE
     AVPixelFormat AV_PIX_FMT_YUV422P16LE
