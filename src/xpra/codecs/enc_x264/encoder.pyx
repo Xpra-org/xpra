@@ -50,7 +50,7 @@ cdef extern from "stdarg.h":
 
 #ugly hack to generate an ifdef:
 cdef extern from *:
-    cdef void emit_ifdef_bitdepth "#if defined(X264_CSP_HIGH_DEPTH) //" ()
+    cdef void emit_ifdef_bitdepth "#if X264_BUILD>152 //" ()
     cdef void emit_endif_bitdepth "#endif //" ()
 
 cdef extern from "x264.h":
