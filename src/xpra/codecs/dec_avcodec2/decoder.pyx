@@ -232,16 +232,16 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_GRAY14LE
     AVPixelFormat AV_PIX_FMT_GRAYF32BE
     AVPixelFormat AV_PIX_FMT_GRAYF32LE
-    AVPixelFormat AV_PIX_FMT_YUVA422P12BE
-    AVPixelFormat AV_PIX_FMT_YUVA422P12LE
-    AVPixelFormat AV_PIX_FMT_YUVA444P12BE
-    AVPixelFormat AV_PIX_FMT_YUVA444P12LE
-    AVPixelFormat AV_PIX_FMT_NV24
-    AVPixelFormat AV_PIX_FMT_NV42
-    AVPixelFormat AV_PIX_FMT_VULKAN
-    AVPixelFormat AV_PIX_FMT_Y210BE
-    AVPixelFormat AV_PIX_FMT_Y210LE
-    AVPixelFormat AV_PIX_FMT_NB
+    #AVPixelFormat AV_PIX_FMT_YUVA422P12BE
+    #AVPixelFormat AV_PIX_FMT_YUVA422P12LE
+    #AVPixelFormat AV_PIX_FMT_YUVA444P12BE
+    #AVPixelFormat AV_PIX_FMT_YUVA444P12LE
+    #AVPixelFormat AV_PIX_FMT_NV24
+    #AVPixelFormat AV_PIX_FMT_NV42
+    #AVPixelFormat AV_PIX_FMT_VULKAN
+    #AVPixelFormat AV_PIX_FMT_Y210BE
+    #AVPixelFormat AV_PIX_FMT_Y210LE
+    #AVPixelFormat AV_PIX_FMT_NB
 
 
 cdef extern from "libavcodec/avcodec.h":
