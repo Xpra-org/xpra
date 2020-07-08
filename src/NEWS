@@ -1,4 +1,4 @@
-v3.0.11 (2020-07-04)
+v3.0.11 (2020-07-08)
 ======================
 	-- fix encryption option overzealously enforced on all socket types
 	-- fix printing errors with some shell character encodings
@@ -12,7 +12,11 @@ v3.0.11 (2020-07-04)
 	-- fix memory contents of the swscale pixel format object
 	-- fix csc_swscale converter getting recycled every time
 	-- fix division by zero errors during window cleanup
+	-- fix MS Windows servers slow to handle connections with mDNS enabled
 	-- fix sshfp support on MacOS (was missing dns python module)
+	-- fix notification widget wrongly stealing input focus
+	-- fix support for building with CUDA 11.0
+	-- fix unshrinkable session-info window
 	-- silence unhelpful gtk warnings on MacOS
 	-- avoid opengl warning with wayland
 	-- discard invalid clipboard requests early

@@ -11,7 +11,11 @@ xpra (3.0.11-1) UNRELEASED; urgency=low
   * fix memory contents of the swscale pixel format object
   * fix csc_swscale converter getting recycled every time
   * fix division by zero errors during window cleanup
+  * fix MS Windows servers slow to handle connections with mDNS enabled
   * fix sshfp support on MacOS (was missing dns python module)
+  * fix notification widget wrongly stealing input focus
+  * fix support for building with CUDA 11.0
+  * fix unshrinkable session-info window
   * silence unhelpful gtk warnings on MacOS
   * avoid opengl warning with wayland
   * discard invalid clipboard requests early
@@ -21,7 +25,7 @@ xpra (3.0.11-1) UNRELEASED; urgency=low
   * convert invalid map events to warnings (no scary crash reports)
   * also update mdns records when the session name changes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 04 Jul 2020 16:03:04 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 08 Jul 2020 16:25:46 +0700
 
 
 xpra (3.0.10-2) UNRELEASED; urgency=low

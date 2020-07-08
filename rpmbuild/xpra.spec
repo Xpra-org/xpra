@@ -870,7 +870,7 @@ fi
 
 
 %changelog
-* Sun Jul 04 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
+* Wed Jul 08 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
 - fix encryption option overzealously enforced on all socket types
 - fix printing errors with some shell character encodings
 - fix windows not getting focused when clicking on title bar (HTML5)
@@ -883,7 +883,11 @@ fi
 - fix memory contents of the swscale pixel format object
 - fix csc_swscale converter getting recycled every time
 - fix division by zero errors during window cleanup
+- fix MS Windows servers slow to handle connections with mDNS enabled
 - fix sshfp support on MacOS (was missing dns python module)
+- fix notification widget wrongly stealing input focus
+- fix support for building with CUDA 11.0
+- fix unshrinkable session-info window
 - silence unhelpful gtk warnings on MacOS
 - avoid opengl warning with wayland
 - discard invalid clipboard requests early
