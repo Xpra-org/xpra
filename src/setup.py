@@ -2079,7 +2079,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
         comp_code_options = [(35, 35)]
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
         if version!=(0,) and version<(7, 5):
-            print("CUDA version %s is very unlikely to work")
+            print("CUDA version %s is very unlikely to work" % (version,))
             print("try upgrading to version 7.5 or later")
         if version>=(7, 5):
             comp_code_options.append((50, 50))
