@@ -586,7 +586,7 @@ fi
 
 
 %changelog
-* Sun Jul 04 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Wed Jul 08 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix encryption option overzealously enforced on all socket types
 - fix printing errors with some shell character encodings
 - fix windows not getting focused when clicking on title bar (HTML5)
@@ -595,6 +595,8 @@ fi
 - fix minimum video scaling not being honoured via heuristics
 - fix error in main thread verifier (fortunately, never fired)
 - fix archlinux build root stripping
+- fix MS Windows Keymap_info.exe tool
+- fix MS Windows servers slow to handle connections with mDNS enabled
 - fix MacOS clipboard unnecessarily sending data
 - fix clipboard data sometimes going missing when ownership changes
 - fix memory contents of the swscale pixel format object
@@ -605,6 +607,9 @@ fi
 - fix toolbox examples when running under wayland
 - fix MacOS outdated system version requirements in hidden sub application
 - fix sshfp support on MacOS (was missing dns python module)
+- fix notification widget wrongly stealing input focus
+- fix support for building with CUDA 11.0
+- fix unshrinkable session-info window
 - silence unhelpful gtk warnings on MacOS
 - avoid opengl warning with wayland
 - add extra environment variables to try to disable any server side scaling

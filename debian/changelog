@@ -7,6 +7,8 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix minimum video scaling not being honoured via heuristics
   * fix error in main thread verifier (fortunately, never fired)
   * fix archlinux build root stripping
+  * fix MS Windows Keymap_info.exe tool
+  * fix MS Windows servers slow to handle connections with mDNS enabled
   * fix MacOS clipboard unnecessarily sending data
   * fix clipboard data sometimes going missing when ownership changes
   * fix memory contents of the swscale pixel format object
@@ -17,6 +19,9 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix toolbox examples when running under wayland
   * fix MacOS outdated system version requirements in hidden sub application
   * fix sshfp support on MacOS (was missing dns python module)
+  * fix notification widget wrongly stealing input focus
+  * fix support for building with CUDA 11.0
+  * fix unshrinkable session-info window
   * silence unhelpful gtk warnings on MacOS
   * avoid opengl warning with wayland
   * add extra environment variables to try to disable any server side scaling
@@ -26,7 +31,7 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * ensure all toolbox windows set a correct and readable window title
   * remove workaround for unsupported versions of Ubuntu
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 04 Jul 2020 16:03:04 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 08 Jul 2020 16:25:46 +0700
 
 xpra (4.0.2-1) UNRELEASED; urgency=low
   * fix encryption not honoured with TCP sockets upgraded to WebSocket

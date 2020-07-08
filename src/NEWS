@@ -1,4 +1,4 @@
-v4.0.3 (2020-07-04)
+v4.0.3 (2020-07-08)
 ======================
 	-- fix encryption option overzealously enforced on all socket types
 	-- fix printing errors with some shell character encodings
@@ -8,6 +8,8 @@ v4.0.3 (2020-07-04)
 	-- fix minimum video scaling not being honoured via heuristics
 	-- fix error in main thread verifier (fortunately, never fired)
 	-- fix archlinux build root stripping
+	-- fix MS Windows Keymap_info.exe tool
+	-- fix MS Windows servers slow to handle connections with mDNS enabled
 	-- fix MacOS clipboard unnecessarily sending data
 	-- fix clipboard data sometimes going missing when ownership changes
 	-- fix memory contents of the swscale pixel format object
@@ -18,6 +20,9 @@ v4.0.3 (2020-07-04)
 	-- fix toolbox examples when running under wayland
 	-- fix MacOS outdated system version requirements in hidden sub application
 	-- fix sshfp support on MacOS (was missing dns python module)
+	-- fix notification widget wrongly stealing input focus
+	-- fix support for building with CUDA 11.0
+	-- fix unshrinkable session-info window
 	-- silence unhelpful gtk warnings on MacOS
 	-- avoid opengl warning with wayland
 	-- add extra environment variables to try to disable any server side scaling
