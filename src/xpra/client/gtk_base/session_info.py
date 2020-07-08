@@ -1110,7 +1110,9 @@ class SessionInfo(Gtk.Window):
         W = 360
         H = 160*3//ngraphs
         w = min(maxw, max(W, rect.width-20))
-        h = min(maxh//ngraphs, max(H, (h-bh-20)//ngraphs, (rect.height-bh-20)//ngraphs))
+        #need some padding to be able to shrink the window again:
+        pad = 50
+        h = min(maxh-pad//ngraphs, max(H, (h-bh-pad)//ngraphs, (rect.height-bh-pad)//ngraphs))
         #bandwidth graph:
         labels, datasets = [], []
         if self.net_in_bitcount and self.net_out_bitcount:
