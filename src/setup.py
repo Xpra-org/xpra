@@ -2184,10 +2184,13 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             #cmd += ["--input-drive-prefix", "/"]
             #cmd += ["--dependency-drive-prefix", "/"]
             cmd += ["-I%s" % os.path.abspath("win32")]
-        comp_code_options = [(30, 30), (35, 35)]
+        comp_code_options = []
+        if version<(11,):
+            comp_code_options.append((30, 30))
+        comp_code_options.append((35, 35))
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
         if version!=(0,) and version<(7, 5):
-            print("CUDA version %s is very unlikely to work")
+            print("CUDA version %s is very unlikely to work" % (version,))
             print("try upgrading to version 7.5 or later")
         if version>=(7, 5):
             comp_code_options.append((50, 50))
