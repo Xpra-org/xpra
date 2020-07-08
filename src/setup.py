@@ -2016,7 +2016,7 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             return None
         vpos = out.rfind(", V")
         if vpos>0:
-            version = out[vpos+3:].strip("\n")
+            version = out[vpos+3:].split("\n")[0]
             version_str = " version %s" % version
         else:
             version = "0"
