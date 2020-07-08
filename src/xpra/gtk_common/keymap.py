@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gdk
 
 from xpra.log import Logger
 
@@ -23,6 +22,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
         by adding the keyval_name.
         We can also ignore some keys
     """
+    from gi.repository import Gdk
     display = Gdk.Display.get_default()
     if not display:
         return ()
