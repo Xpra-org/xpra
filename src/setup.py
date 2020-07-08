@@ -2093,6 +2093,8 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             comp_code_options.append((70, 70))
         if version>=(10, 0):
             comp_code_options.append((75, 75))
+        if version>=(11, 0):
+            comp_code_options.append((80, 80))
         for arch, code in comp_code_options:
             cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
         print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
