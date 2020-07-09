@@ -62,6 +62,8 @@ def curses_init():
     return stdscr
 
 def curses_clean(stdscr):
+    if not stdscr:
+        return
     stdscr.keypad(False)
     curses.nocbreak()
     curses.echo()
@@ -90,7 +92,7 @@ def box(stdscr, x, y, w, h, ul, ur, ll, lr):
 class TopClient:
 
     def __init__(self, opts):
-        self.stdscr = curses_init()
+        self.stdscr = None
         self.socket_dirs = opts.socket_dirs
         self.socket_dir = opts.socket_dir
         self.position = 0
@@ -100,6 +102,7 @@ class TopClient:
         self.dotxpra = DotXpra(self.socket_dir, self.socket_dirs)
 
     def run(self):
+        self.stdscr = curses_init()
         for signum in (signal.SIGINT, signal.SIGTERM):
             signal.signal(signum, self.signal_handler)
         self.update_loop()
@@ -278,8 +281,14 @@ class TopSessionClient(MonitorXpraClient):
         self.server_last_info = typedict()
         self.server_last_info_time = 0
         self.info_timer = 0
+        self.stdscr = None
+        self.update_screen()
+
+    def server_connection_established(self, caps):
+        r = super().server_connection_established(caps)
         self.stdscr = curses_init()
         self.update_screen()
+        return r
 
     def run(self):
         register_os_signals(self.signal_handler, "Top Client")
