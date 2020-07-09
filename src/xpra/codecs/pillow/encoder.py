@@ -51,6 +51,8 @@ def get_info() -> dict:
 
 def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool, grayscale : bool=False, resize=None):
     log("pillow.encode%s", (coding, image, quality, speed, supports_transparency, grayscale, resize))
+    assert coding in ("jpeg", "webp", "png", "png/P", "png/L"), "unsupported encoding: %s" % coding
+    assert image, "no image to encode"
     pixel_format = bytestostr(image.get_pixel_format())
     palette = None
     w = image.get_width()
