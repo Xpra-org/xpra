@@ -1,0 +1,258 @@
+From 84882fc73a69c3b54f4ddd169a46b56b4bb94193 Mon Sep 17 00:00:00 2001
+From: Mateusz Szygenda <mateusz.szygenda@gmail.com>
+Date: Sun, 5 Jul 2020 18:02:29 +0200
+Subject: [PATCH] propagates unhandled keyboard events back to OS on OSX
+
+This implements new method gdk_display_propagate_native_event
+which purpose is to send unhandled native events back to OS so that
+default behavior can be triggered.
+
+On OSX this will make bindings like CMD+` (Switch App window) to
+work as designed and consistent with native apps.
+
+More details: https://gitlab.gnome.org/GNOME/gtk/-/issues/2914
+---
+ gdk/gdk-private.c              |  1 +
+ gdk/gdk-private.h              | 27 +++++++++++++++++----------
+ gdk/gdkdisplay.c               | 18 ++++++++++++++++++
+ gdk/gdkdisplayprivate.h        |  2 ++
+ gdk/quartz/gdkdisplay-quartz.c |  1 +
+ gdk/quartz/gdkdisplay-quartz.h |  3 ++-
+ gdk/quartz/gdkevents-quartz.c  | 40 ++++++++++++++++++++++++++++++++++++++++
+ gtk/gtkmain.c                  | 10 ++++++++++
+ 8 files changed, 91 insertions(+), 11 deletions(-)
+
+diff --git a/gdk/gdk-private.c b/gdk/gdk-private.c
+index 750edcd..90383ee 100644
+--- a/gdk/gdk-private.c
++++ b/gdk/gdk-private.c
+@@ -18,6 +18,7 @@ gdk__private__ (void)
+     gdk_display_set_rendering_mode,
+     gdk_display_get_debug_updates,
+     gdk_display_set_debug_updates,
++    gdk_display_propagate_native_event,
+     gdk_get_desktop_startup_id,
+     gdk_get_desktop_autostart_id,
+     gdk_profiler_is_running,
+diff --git a/gdk/gdk-private.h b/gdk/gdk-private.h
+index c71abe4..3551def 100644
+--- a/gdk/gdk-private.h
++++ b/gdk/gdk-private.h
+@@ -27,9 +27,12 @@ GdkRenderingMode gdk_display_get_rendering_mode (GdkDisplay       *display);
+ void             gdk_display_set_rendering_mode (GdkDisplay       *display,
+                                                  GdkRenderingMode  mode);
+ 
+-gboolean         gdk_display_get_debug_updates (GdkDisplay *display);
+-void             gdk_display_set_debug_updates (GdkDisplay *display,
+-                                                gboolean    debug_updates);
++gboolean         gdk_display_get_debug_updates      (GdkDisplay *display);
++void             gdk_display_set_debug_updates      (GdkDisplay *display,
++                                                     gboolean    debug_updates);
++
++gboolean         gdk_display_propagate_native_event (GdkDisplay *display,
++                                                     GdkEvent *event);
+ 
+ const gchar *   gdk_get_desktop_startup_id   (void);
+ const gchar *   gdk_get_desktop_autostart_id (void);
+@@ -52,13 +55,16 @@ typedef struct {
+   void (* gdk_window_freeze_toplevel_updates) (GdkWindow *window);
+   void (* gdk_window_thaw_toplevel_updates) (GdkWindow *window);
+ 
+-  GdkRenderingMode (* gdk_display_get_rendering_mode) (GdkDisplay       *display);
+-  void             (* gdk_display_set_rendering_mode) (GdkDisplay       *display,
+-                                                       GdkRenderingMode  mode);
++  GdkRenderingMode (* gdk_display_get_rendering_mode)        (GdkDisplay       *display);
++  void             (* gdk_display_set_rendering_mode)        (GdkDisplay       *display,
++                                                              GdkRenderingMode  mode);
++
++  gboolean         (* gdk_display_get_debug_updates)         (GdkDisplay *display);
++  void             (* gdk_display_set_debug_updates)         (GdkDisplay *display,
++                                                              gboolean debug_updates);
+ 
+-  gboolean         (* gdk_display_get_debug_updates) (GdkDisplay *display);
+-  void             (* gdk_display_set_debug_updates) (GdkDisplay *display,
+-                                                      gboolean    debug_updates);
++  gboolean         (* gdk_display_propagate_native_event)    (GdkDisplay *display,
++                                                              GdkEvent *event);
+ 
+   const gchar * (* gdk_get_desktop_startup_id)   (void);
+   const gchar * (* gdk_get_desktop_autostart_id) (void);
+@@ -66,6 +72,7 @@ typedef struct {
+   gboolean (* gdk_profiler_is_running) (void);
+   void     (* gdk_profiler_start)      (int fd);
+   void     (* gdk_profiler_stop)       (void);
++
+ } GdkPrivateVTable;
+ 
+ GDK_AVAILABLE_IN_ALL
+@@ -74,4 +81,4 @@ GdkPrivateVTable *      gdk__private__  (void);
+ gboolean gdk_running_in_sandbox (void);
+ gboolean gdk_should_use_portal (void);
+ 
+-#endif /* __GDK__PRIVATE_H__ */
++#endif /* __GDK__PRIVATE_H__ */
+\ No newline at end of file
+diff --git a/gdk/gdkdisplay.c b/gdk/gdkdisplay.c
+index 240c99f..a48c145 100644
+--- a/gdk/gdkdisplay.c
++++ b/gdk/gdkdisplay.c
+@@ -134,6 +134,13 @@ gdk_display_real_event_data_free (GdkDisplay     *display,
+ {
+ }
+ 
++static gboolean
++gdk_display_real_event_propagate_native (GdkDisplay     *display,
++                                         GdkEvent       *event)
++{
++  return FALSE;
++}
++
+ static GdkSeat *
+ gdk_display_real_get_default_seat (GdkDisplay *display)
+ {
+@@ -158,8 +165,10 @@ gdk_display_class_init (GdkDisplayClass *class)
+   class->make_default = gdk_display_real_make_default;
+   class->event_data_copy = gdk_display_real_event_data_copy;
+   class->event_data_free = gdk_display_real_event_data_free;
++  class->event_propagate_native = gdk_display_real_event_propagate_native;
+   class->get_default_seat = gdk_display_real_get_default_seat;
+ 
++
+   /**
+    * GdkDisplay::opened:
+    * @display: the object on which the signal is emitted
+@@ -2761,3 +2770,12 @@ gdk_display_monitor_removed (GdkDisplay *display,
+   g_signal_emit (display, signals[MONITOR_REMOVED], 0, monitor);
+   gdk_monitor_invalidate (monitor);
+ }
++
++gboolean
++gdk_display_propagate_native_event (GdkDisplay *display,
++                                    GdkEvent *event)
++{
++  g_return_val_if_fail (GDK_IS_DISPLAY (display), FALSE);
++
++  return GDK_DISPLAY_GET_CLASS (display)->event_propagate_native (display, event);
++}
+\ No newline at end of file
+diff --git a/gdk/gdkdisplayprivate.h b/gdk/gdkdisplayprivate.h
+index 4b5a009..5ef7c05 100644
+--- a/gdk/gdkdisplayprivate.h
++++ b/gdk/gdkdisplayprivate.h
+@@ -191,6 +191,8 @@ struct _GdkDisplayClass
+                                                  GdkEvent       *new_event);
+   void                       (*event_data_free) (GdkDisplay     *display,
+                                                  GdkEvent       *event);
++  gboolean                   (*event_propagate_native) (GdkDisplay *display,
++                                                        GdkEvent *event);
+   void                       (*create_window_impl) (GdkDisplay    *display,
+                                                     GdkWindow     *window,
+                                                     GdkWindow     *real_parent,
+diff --git a/gdk/quartz/gdkdisplay-quartz.c b/gdk/quartz/gdkdisplay-quartz.c
+index 70b3536..4802693 100644
+--- a/gdk/quartz/gdkdisplay-quartz.c
++++ b/gdk/quartz/gdkdisplay-quartz.c
+@@ -566,6 +566,7 @@ gdk_quartz_display_class_init (GdkQuartzDisplayClass *class)
+   display_class->notify_startup_complete = gdk_quartz_display_notify_startup_complete;
+   display_class->event_data_copy = _gdk_quartz_display_event_data_copy;
+   display_class->event_data_free = _gdk_quartz_display_event_data_free;
++  display_class->event_propagate_native = _gdk_quartz_display_event_propagate_native;
+   display_class->create_window_impl = _gdk_quartz_display_create_window_impl;
+   display_class->get_keymap = _gdk_quartz_display_get_keymap;
+   display_class->push_error_trap = gdk_quartz_display_push_error_trap;
+diff --git a/gdk/quartz/gdkdisplay-quartz.h b/gdk/quartz/gdkdisplay-quartz.h
+index a053ab1..85d31c0 100644
+--- a/gdk/quartz/gdkdisplay-quartz.h
++++ b/gdk/quartz/gdkdisplay-quartz.h
+@@ -52,7 +52,8 @@ void       _gdk_quartz_display_event_data_copy (GdkDisplay     *display,
+                                                 GdkEvent       *dst);
+ void       _gdk_quartz_display_event_data_free (GdkDisplay     *display,
+                                                 GdkEvent       *event);
+-
++void       _gdk_quartz_display_event_propagate_native (GdkDisplay     *display,
++                                                       GdkEvent       *event);
+ /* Display methods - cursor */
+ GdkCursor *_gdk_quartz_display_get_cursor_for_type     (GdkDisplay      *display,
+                                                         GdkCursorType    type);
+diff --git a/gdk/quartz/gdkevents-quartz.c b/gdk/quartz/gdkevents-quartz.c
+index 0d492c1..b2eede5 100644
+--- a/gdk/quartz/gdkevents-quartz.c
++++ b/gdk/quartz/gdkevents-quartz.c
+@@ -1927,3 +1927,43 @@ _gdk_quartz_display_event_data_free (GdkDisplay *display,
+       priv->windowing_data = NULL;
+     }
+ }
++
++static gboolean
++_gdk_quartz_event_should_be_handled_natively (NSEvent* event)
++{
++  NSEventType eventType = [event type];
++
++  /*
++   * In order to limit potential damage by passing native events back to OSX
++   * we pass through only events related to keyboard as they may relate to standard
++   * MacOS shortcuts like switch app window (Cmd+` etc.)
++   */
++  if (eventType == NSKeyDown || eventType == NSKeyUp || eventType == NSFlagsChanged)
++    return TRUE;
++  else
++    return FALSE;
++}
++
++gboolean
++_gdk_quartz_display_event_propagate_native (GdkDisplay *display,
++                                            GdkEvent   *event)
++{
++  GdkEventPrivate *priv = (GdkEventPrivate *) event;
++  NSEvent* native_event = NULL;
++
++  if (priv->windowing_data)
++    {
++      native_event = (NSEvent *)priv->windowing_data;
++    }
++
++  if (native_event && _gdk_quartz_event_should_be_handled_natively (native_event))
++    {
++      [NSApp sendEvent:native_event];
++
++      return TRUE;
++    }
++  else
++    {
++      return FALSE;
++    }
++}
+\ No newline at end of file
+diff --git a/gtk/gtkmain.c b/gtk/gtkmain.c
+index f7cbb34..6eb260a 100644
+--- a/gtk/gtkmain.c
++++ b/gtk/gtkmain.c
+@@ -2664,8 +2664,11 @@ propagate_event (GtkWidget *widget,
+        * for that window.
+        */
+       GtkWidget *window;
++      GdkDisplay *window_display;
+ 
+       window = gtk_widget_get_toplevel (widget);
++      window_display = gtk_widget_get_display (window);
++
+       if (GTK_IS_WINDOW (window))
+         {
+           g_object_ref (widget);
+@@ -2679,6 +2682,13 @@ propagate_event (GtkWidget *widget,
+               gtk_widget_is_sensitive (window))
+             handled_event = propagate_func (window, event);
+ 
++          /*
++           * If the event wasn't handled at window level
++           * propagate it up for native OS handling
++           */
++          if (!handled_event && !captured)
++            handled_event = GDK_PRIVATE_CALL (gdk_display_propagate_native_event) (window_display, event);
++
+           g_object_unref (widget);
+           return handled_event;
+         }
+-- 
+2.7.4
+

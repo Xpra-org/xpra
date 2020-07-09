@@ -228,6 +228,7 @@
     <branch module="gtk+/3.24/gtk+-3.24.20.tar.xz" version="3.24.20"
             hash="sha256:2dac69f716e8d04ba7a95091589e2baaec95dcace932cb15839163db479b1df3">
       <patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-revert-noobjc.patch" strip="1"/>
+      <patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-propagates-unhandled-keyboard-events-back-to-OS-on-OSX.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
