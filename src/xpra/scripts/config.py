@@ -986,7 +986,7 @@ def get_defaults():
                     "daemon"            : CAN_DAEMONIZE,
                     "start-via-proxy"   : False,
                     "attach"            : None,
-                    "use-display"       : "no",
+                    "use-display"       : "auto",
                     "fake-xinerama"     : fake_xinerama,
                     "resize-display"    : ["no", "yes"][not OSX and not WIN32],
                     "tray"              : True,
