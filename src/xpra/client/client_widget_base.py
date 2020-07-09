@@ -67,6 +67,13 @@ class ClientWidgetBase(object):
     def is_OR(self):
         return False
 
+    def freeze(self):
+        pass
+
+    def unfreeze(self):
+        pass
+
+
     def is_tray(self):
         return False
 
