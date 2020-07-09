@@ -66,7 +66,17 @@ index 141d931c64..08928b1e77 100644
  	gdkmonitor-quartz.c     \
  	gdkmonitor-quartz.h     \
  	gdkprivate-quartz.h	\
-* Unmerged path gdk/quartz/gdkcursor-quartz.c
+--- a/gdk/quartz/gdkcursor-quartz.c	2020-07-09 04:22:19.000000000 -0700
++++ b/gdk/quartz/gdkcursor-quartz.c	2020-07-09 04:23:29.000000000 -0700
+@@ -23,8 +23,6 @@
+ #include "gdkcursorprivate.h"
+ #include "gdkquartzcursor.h"
+ #include "gdkprivate-quartz.h"
+-#include "gdkinternal-quartz.h"
+-#include "gdkquartz-gtk-only.h"
+ 
+ #include "xcursors.h"
+ 
 diff --git a/gdk/quartz/gdkdevice-core-quartz.c b/gdk/quartz/gdkdevice-core-quartz.c
 index 788cbe4b04..8ba62c0ae0 100644
 --- a/gdk/quartz/gdkdevice-core-quartz.c
@@ -1008,7 +1018,18 @@ index a90d84774d..a88eb16e9b 100644
  G_END_DECLS
  
  #endif /* __GDK_QUARTZ_WINDOW_H__ */
-* Unmerged path gdk/quartz/gdkselection-quartz.c
+--- a/gdk/quartz/gdkselection-quartz.c	2020-07-09 04:22:23.000000000 -0700
++++ b/gdk/quartz/gdkselection-quartz.c	2020-07-09 04:24:11.000000000 -0700
+@@ -23,8 +23,6 @@
+ #include "gdkselection.h"
+ #include "gdkproperty.h"
+ #include "gdkquartz.h"
+-#include "gdkinternal-quartz.h"
+-#include "gdkquartz-gtk-only.h"
+ 
+ gboolean
+ _gdk_quartz_display_set_selection_owner (GdkDisplay *display,
+ 
 diff --git a/gdk/quartz/gdkutils-quartz.c b/gdk/quartz/gdkutils-quartz.c
 index 1edb94ad14..30eff8a7e1 100644
 --- a/gdk/quartz/gdkutils-quartz.c
