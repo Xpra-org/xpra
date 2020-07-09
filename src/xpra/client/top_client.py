@@ -297,8 +297,8 @@ class TopSessionClient(MonitorXpraClient):
         #overriden in subclasses!
         return "top"
 
-    def setup_connection(self, conn):
-        r = super().setup_connection(conn)
+    def server_connection_established(self, caps):
+        r = super().server_connection_established(caps)
         self.stdscr = curses_init()
         self.update_screen()
         return r
