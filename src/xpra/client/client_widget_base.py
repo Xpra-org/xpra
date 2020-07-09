@@ -55,6 +55,13 @@ class ClientWidgetBase:
         backing.init(ww, wh, bw, bh)
         return backing
 
+    def freeze(self):
+        pass
+
+    def unfreeze(self):
+        pass
+
+
     def workspace_changed(self):            # pragma: no cover
         pass
 
