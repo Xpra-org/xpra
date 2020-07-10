@@ -503,6 +503,9 @@ FORMAT_TO_STR = {
     #AV_PIX_FMT_NB : "NB",
     }
 
+#given one of our format names,
+#describing the pixel data fed to the encoder,
+#what ffmpeg AV_PIX_FMT we expect to find in the output:
 FORMAT_TO_ENUM = {
             "YUV420P"   : AV_PIX_FMT_YUV420P,
             "YUV422P"   : AV_PIX_FMT_YUV422P,
@@ -513,6 +516,7 @@ FORMAT_TO_ENUM = {
             "ARGB"      : AV_PIX_FMT_ARGB,
             "BGRA"      : AV_PIX_FMT_BGRA,
             "GBRP"      : AV_PIX_FMT_GBRP,
+            "BGR48"     : AV_PIX_FMT_GBRP10LE,
             }
 #for planar formats, this is the number of bytes per channel
 BYTES_PER_PIXEL = {
@@ -525,12 +529,18 @@ BYTES_PER_PIXEL = {
     AV_PIX_FMT_ARGB     : 4,
     AV_PIX_FMT_BGRA     : 4,
     AV_PIX_FMT_GBRP     : 1,
+    AV_PIX_FMT_GBRP10LE : 6,
     }
 
+#given an ffmpeg pixel format,
+#what is our format name for it:
 COLORSPACES = tuple(FORMAT_TO_ENUM.keys())
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
+#ENUM_TO_FORMAT[AV_PIX_FMT_YUV422P10LE] = "YUV422P10"
+ENUM_TO_FORMAT[AV_PIX_FMT_GBRP10LE] = "GBRP10"
+
 
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
@@ -596,9 +606,12 @@ def get_input_colorspaces(encoding):
 def get_output_colorspace(encoding, csc):
     if encoding not in CODECS:
         return ""
-    if encoding=="h264" and csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
-        #h264 from plain RGB data is returned as "GBRP"!
-        return "GBRP"
+    if encoding=="h264":
+        if csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
+            #h264 from plain RGB data is returned as "GBRP"!
+            return "GBRP"
+        if csc=="BGR48":
+            return "GBRP10"
     elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
         return "YUV420P"
     #everything else as normal:
@@ -951,7 +964,8 @@ cdef class Decoder:
             log("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
 
         cs = self.get_actual_colorspace()
-        if cs.endswith("P"):
+        log("actual_colorspace(%s)=%s", self.actual_pix_fmt, cs)
+        if cs.find("P")>0:  #ie: GBRP, YUV420P, YUV422P10LE etc
             divs = get_subsampling_divs(cs)
             nplanes = 3
             for i in range(3):
@@ -968,16 +982,30 @@ cdef class Decoder:
                 size = height * stride
                 outsize += size
 
-                out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, True))
+                if cs=="GBRP10":
+                    b = bytearray(size)
+                    for z in range(size//2):
+                        b[z*2] = av_frame.data[i][z*2+1]
+                        b[z*2+1] = av_frame.data[i][z*2]
+                    obuf = bytes(b)
+                else:
+                    obuf = memory_as_pybuffer(<void *>av_frame.data[i], size, True)
+                out.append(obuf)
+                #if cs=="GBRP10":
+                #    from xpra.os_util import memoryview_to_bytes
+                #    for y in range(12):
+                #        line = height*y//12
+                #        line_data = memoryview_to_bytes(out[-1])[line*stride:(line+1)*stride]
+                #        log("plane %s line %3i %s..%s", cs[i:i+1], line, hexstr(line_data[:10]), hexstr(line_data[-10:]))
                 strides.append(stride)
-                log("decompress_image() read back yuv plane %s: %s bytes", i, size)
+                log("decompress_image() read back '%s' plane: %s bytes", cs[i:i+1], size)
         else:
             #RGB mode: "out" is a single buffer
             strides = av_frame.linesize[0]+av_frame.linesize[1]+av_frame.linesize[2]
             outsize = self.codec_ctx.height * strides
             out = memory_as_pybuffer(<void *>av_frame.data[0], outsize, True)
             nplanes = 0
-            log("decompress_image() read back rgb buffer: %s bytes", outsize)
+            log("decompress_image() read back '%s' buffer: %s bytes", cs, outsize)
 
         if outsize==0:
             av_frame_unref(av_frame)

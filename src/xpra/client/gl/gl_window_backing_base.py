@@ -55,7 +55,7 @@ from xpra.os_util import (
     POSIX,
     DummyContextManager,
     )
-from xpra.util import envint, envbool, repr_ellipsized
+from xpra.util import envint, envbool, repr_ellipsized, first_time
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.client.window_backing_base import (
@@ -122,6 +122,8 @@ PIXEL_FORMAT_TO_DATATYPE = {
     "YUV420P" : GL_UNSIGNED_BYTE,
     "YUV422P" : GL_UNSIGNED_BYTE,
     "YUV444P" : GL_UNSIGNED_BYTE,
+    "GBRP"  : GL_UNSIGNED_BYTE,
+    "GBRP10" : GL_UNSIGNED_SHORT,
     }
 CONSTANT_TO_PIXEL_FORMAT = {
     GL_BGR   : "BGR",
@@ -142,6 +144,7 @@ DATATYPE_TO_STR = {
     GL_UNSIGNED_INT_2_10_10_10_REV  : "UNSIGNED_INT_2_10_10_10_REV",
     GL_UNSIGNED_INT_10_10_10_2      : "UNSIGNED_INT_10_10_10_2",
     GL_UNSIGNED_BYTE                : "UNSIGNED_BYTE",
+    GL_UNSIGNED_SHORT               : "UNSIGNED_SHORT",
     GL_UNSIGNED_SHORT_5_6_5         : "UNSIGNED_SHORT_5_6_5",
     }
 
@@ -299,10 +302,12 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.bit_depth>32:
             self.internal_format = GL_RGBA16
             self.RGB_MODES.append("r210")
+            self.RGB_MODES.append("GBRP10")
         elif self.bit_depth==30:
             self.internal_format = GL_RGB10_A2
             self.RGB_MODES.append("r210")
-        elif self.bit_depth==16:
+            self.RGB_MODES.append("GBRP10")
+        elif 0<self.bit_depth<=16:
             if self._alpha_enabled:
                 if envbool("XPRA_GL_RGBA4", True):
                     self.internal_format = GL_RGBA4
@@ -315,6 +320,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.RGB_MODES.append("BGR565")
                 self.RGB_MODES.append("RGB565")
         else:
+            if self.bit_depth not in (0, 24, 32) and first_time("bit-depth-%i" % self.bit_depth):
+                log.warn("Warning: invalid bit depth %i, using 24", self.bit_depth)
             #assume 24:
             if self._alpha_enabled:
                 self.internal_format = GL_RGBA8
@@ -976,7 +983,7 @@ class GLWindowBackingBase(WindowBackingBase):
         return "copy:bytes(%s)" % type(img_data), strtobytes(img_data)
 
     def set_alignment(self, width : int, rowstride : int, pixel_format):
-        bytes_per_pixel = len(pixel_format)       #ie: BGRX -> 4
+        bytes_per_pixel = len(pixel_format)       #ie: BGRX -> 4, Y -> 1, YY -> 2
         # Compute alignment and row length
         row_length = 0
         alignment = 1
@@ -1104,7 +1111,7 @@ class GLWindowBackingBase(WindowBackingBase):
             #copy so the data will be usable (usually a str)
             img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
-        if pixel_format=="GBRP":
+        if pixel_format.startswith("GBRP"):
             shader = RGBP2RGB_SHADER
         else:
             shader = YUV2RGB_SHADER
@@ -1119,7 +1126,7 @@ class GLWindowBackingBase(WindowBackingBase):
         x, y = self.gravity_adjust(x, y, options)
         try:
             pixel_format = img.get_pixel_format()
-            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", ), \
+            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP10"), \
                 "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
 
             context = self.gl_context()
@@ -1184,7 +1191,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
-        BPP = 1
+        BPP = 2 if pixel_format.endswith("P10") else 1
         assert len(rowstrides)==3 and len(img_data)==3
         for texture, index, tex_name in (
             (GL_TEXTURE0, TEX_Y, "Y"*BPP),
@@ -1218,7 +1225,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV2RGB_SHADER):
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
-        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP"):
+        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP10"):
             #not ready to render yet
             return
         self.gl_marker("painting planar update, format %s", self.pixel_format)
