@@ -1918,6 +1918,7 @@ def make_client(error_cb, opts):
                 progress_process.terminate()
             except Exception:
                 pass
+        raise
     return app
 
 
@@ -2004,6 +2005,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
                 sns[x] = v
         hello_extra = {"start-new-session" : sns}
 
+    app = None
     try:
         if opts.attach is False:
             from xpra.client.gobject_client_base import WaitForDisconnectXpraClient, RequestStartClient
@@ -2030,7 +2032,8 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         app.setup_connection(conn)
         app.show_progress(80, "connecting to server")
     except Exception as e:
-        app.show_progress(100, "failure: %s" % e)
+        if app:
+            app.show_progress(100, "failure: %s" % e)
         raise
     return do_run_client(app)
 
