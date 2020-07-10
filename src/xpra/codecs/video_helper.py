@@ -22,6 +22,7 @@ CODEC_TO_MODULE = {
     "x265"       : "enc_x265",
     "nvenc"      : "nvenc",
     "swscale"    : "csc_swscale",
+    "cython"     : "csc_cython",
     "libyuv"     : "csc_libyuv",
     "avcodec2"   : "dec_avcodec2",
     "ffmpeg"     : "enc_ffmpeg",
@@ -49,7 +50,7 @@ def try_import_modules(*codec_names):
 #try to import the module that contains them (cheap check):
 ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg")
 HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc")
-ALL_CSC_MODULE_OPTIONS = try_import_modules("swscale", "libyuv")
+ALL_CSC_MODULE_OPTIONS = try_import_modules("swscale", "cython", "libyuv")
 NO_GFX_CSC_OPTIONS = []
 ALL_VIDEO_DECODER_OPTIONS = try_import_modules("avcodec2", "vpx")
 
@@ -405,16 +406,17 @@ class VideoHelper:
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)
         """
-        log("get_client_full_csc_modes(%s) decoder encodings=%s",
+        log.warn("get_server_full_csc_modes(%s) decoder encodings=%s",
             client_supported_csc_modes, self._video_decoder_specs.keys())
         full_csc_modes = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None
             for colorspace, decoder_specs in sorted(encoding_specs.items()):
                 for decoder_name, decoder_module in decoder_specs:
-                    log("found decoder %12s for %5s with %7s mode", decoder_name, encoding, colorspace)
                     #figure out the actual output colorspace:
                     output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
+                    log("found decoder %12s for %5s with %7s mode, outputs '%s'",
+                             decoder_name, encoding, colorspace, output_colorspace)
                     if output_colorspace in client_supported_csc_modes:
                         encoding_colorspaces = full_csc_modes.setdefault(encoding, [])
                         if colorspace not in encoding_colorspaces:

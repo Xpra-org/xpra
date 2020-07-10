@@ -65,8 +65,11 @@ def make_test_image(pixel_format, w, h):
             strides.append(w//vdiv[0])
         image = ImageWrapper(0, 0, w, h, planes, pixel_format, 32, strides, planes=nplanes, thread_safe=True)
         #l = len(y)+len(u)+len(v)
-    elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210"):
-        stride = w*len(pixel_format)
+    elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
+        if pixel_format=="BGR48":
+            stride = w*6
+        else:
+            stride = w*len(pixel_format)
         rgb_data = makebuf(stride*h)
         image = ImageWrapper(0, 0, w, h, rgb_data, pixel_format, 32, stride, planes=ImageWrapper.PACKED, thread_safe=True)
         #l = len(rgb_data)

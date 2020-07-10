@@ -159,6 +159,7 @@ CODEC_OPTIONS = {
     #csc:
     "csc_swscale"   : ("swscale colorspace conversion", "csc_swscale", "colorspace_converter", "ColorspaceConverter"),
     "csc_libyuv"    : ("libyuv colorspace conversion", "csc_libyuv", "colorspace_converter", "ColorspaceConverter"),
+    "csc_cython"    : ("cython colorspace conversion", "csc_cython", "colorspace_converter", "ColorspaceConverter"),
     #decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
@@ -228,7 +229,7 @@ def has_codec(name) -> bool:
     return name in codecs
 
 
-CSC_CODECS = "csc_swscale", "csc_libyuv"
+CSC_CODECS = "csc_swscale", "csc_cython", "csc_libyuv"
 ENCODER_CODECS = "enc_pillow", "enc_webp", "enc_jpeg"
 ENCODER_VIDEO_CODECS = "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg"
 DECODER_CODECS = "dec_pillow", "dec_webp", "dec_jpeg"

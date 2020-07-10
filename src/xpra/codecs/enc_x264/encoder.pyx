@@ -372,8 +372,8 @@ COLORSPACES = {
     }
 emit_ifdef_bitdepth()
 if SUPPORT_30BPP:
-    COLORSPACE_FORMATS["r210"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES)
-    COLORSPACES["r210"] = ("r210", )
+    COLORSPACE_FORMATS["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES)
+    COLORSPACES["BGR48"] = ("BGR48", )
 emit_endif_bitdepth()
 if SUPPORT_24BPP:
     COLORSPACES.update({
@@ -841,20 +841,15 @@ cdef class Encoder:
 
         x264_picture_init(&pic_in)
 
-        if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0 or self.src_format=="r210":
+        if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
             assert len(pixels)>0
             assert istrides>0
-            emit_ifdef_bitdepth()
-            if self.src_format=="r210":
-                #CSC should be moved elsewhere!
-                from xpra.codecs.argb.argb import r210_to_bgr48
-                pixels = r210_to_bgr48(pixels, self.width, self.height, istrides, self.width*6)
-                istrides = self.width*6
-            emit_endif_bitdepth()
             assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
-            for i in range(3):
-                pic_in.img.plane[i] = pic_buf
-                pic_in.img.i_stride[i] = istrides
+            pic_in.img.plane[0] = pic_buf
+            pic_in.img.i_stride[0] = istrides
+            for i in range(1, 3):
+                pic_in.img.plane[i] = NULL
+                pic_in.img.i_stride[i] = 0
             self.bytes_in += pic_buf_len
             pic_in.img.i_plane = 1
         else:
