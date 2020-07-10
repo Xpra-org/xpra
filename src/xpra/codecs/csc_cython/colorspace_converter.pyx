@@ -114,12 +114,12 @@ def get_spec(in_colorspace, out_colorspace):
 class CythonImageWrapper(ImageWrapper):
 
     def free(self):                             #@DuplicatedSignature
-        log("CythonImageWrapper.free() cython_buffer=%#x", <unsigned long> self.cython_buffer)
+        log("CythonImageWrapper.free() cython_buffer=%#x", <uintptr_t> self.cython_buffer)
         ImageWrapper.free(self)
         cb = self.cython_buffer
         if cb>0:
             self.cython_buffer = 0
-            free(<void *> (<unsigned long> cb))
+            free(<void *> (<uintptr_t> cb))
 
     def _cn(self):
         return "CythonImageWrapper"
@@ -524,13 +524,13 @@ cdef class ColorspaceConverter:
         strides = []
         for i in range(3):
             strides.append(self.dst_strides[i])
-            planes.append(memory_as_pybuffer(<void *> (<unsigned long> (output_image + self.offsets[i])), self.dst_sizes[i], True))
+            planes.append(memory_as_pybuffer(<void *> ((<uintptr_t> output_image) + self.offsets[i]), self.dst_sizes[i], True))
         elapsed = time.time()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
         out_image = CythonImageWrapper(0, 0, dst_width, dst_height, planes, self.dst_format, 24, strides, ImageWrapper.PLANAR_3)
-        out_image.cython_buffer = <unsigned long> output_image
+        out_image.cython_buffer = <uintptr_t> output_image
         return out_image
 
 
@@ -568,7 +568,7 @@ cdef class ColorspaceConverter:
         self.time += elapsed
         self.frames += 1
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, bgr48_buffer, "BGR48", 48, dst_stride, ImageWrapper.PACKED)
-        out_image.cython_buffer = <unsigned long> bgr48
+        out_image.cython_buffer = <uintptr_t> bgr48
         return out_image
 
 
@@ -666,7 +666,7 @@ cdef class ColorspaceConverter:
         self.time += elapsed
         self.frames += 1
         out_image = CythonImageWrapper(0, 0, dst_width, dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
-        out_image.cython_buffer = <unsigned long> output_image
+        out_image.cython_buffer = <uintptr_t> output_image
         return out_image
 
 
@@ -745,7 +745,7 @@ cdef class ColorspaceConverter:
         self.time += elapsed
         self.frames += 1
         out_image = CythonImageWrapper(0, 0, dst_width, dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
-        out_image.cython_buffer = <unsigned long> output_image
+        out_image.cython_buffer = <uintptr_t> output_image
         return out_image
 
 
