@@ -555,8 +555,8 @@ cdef class Encoder:
             return TUNE
         if self.content_type=="video":
             return b"film"
-        elif self.content_type=="text":
-            return b"grain"
+        #elif self.content_type=="text":
+        #    return b"grain"
         #return "animation"
         return b"zerolatency"
 
