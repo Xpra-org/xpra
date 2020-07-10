@@ -406,7 +406,7 @@ class VideoHelper:
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)
         """
-        log.warn("get_server_full_csc_modes(%s) decoder encodings=%s",
+        log("get_server_full_csc_modes(%s) decoder encodings=%s",
             client_supported_csc_modes, self._video_decoder_specs.keys())
         full_csc_modes = {}
         for encoding, encoding_specs in self._video_decoder_specs.items():
