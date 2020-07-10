@@ -197,6 +197,7 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
+csc_cython_ENABLED      = DEFAULT
 nvenc_ENABLED = DEFAULT and BITS==64 and pkg_config_version("7", "nvenc")
 nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT
@@ -223,7 +224,7 @@ SWITCHES = [
     "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
     "v4l2",
     "dec_avcodec2", "csc_swscale",
-    "csc_libyuv",
+    "csc_cython", "csc_libyuv",
     "bencode", "cython_bencode", "vsock", "netdev", "mdns",
     "clipboard",
     "scripts",
@@ -933,6 +934,7 @@ def clean():
                    "xpra/codecs/dec_avcodec2/decoder.c",
                    "xpra/codecs/csc_libyuv/colorspace_converter.cpp",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
+                   "xpra/codecs/csc_cython/colorspace_converter.c",
                    "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
@@ -2209,6 +2211,12 @@ if csc_swscale_ENABLED:
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
                 **swscale_pkgconfig))
 
+toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
+if csc_cython_ENABLED:
+    csc_cython_pkgconfig = pkgconfig(optimize=3)
+    cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
+                         ["xpra/codecs/csc_cython/colorspace_converter.pyx"]+membuffers_c,
+                         **csc_cython_pkgconfig))
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:

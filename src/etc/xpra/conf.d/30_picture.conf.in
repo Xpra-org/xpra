@@ -25,7 +25,7 @@ encoding = auto
 video-encoders = all
 
 # Used by both the client and server for colourspace conversion:
-# csc-modules = swscale, libyuv
+# csc-modules = swscale, cython, libyuv
 # csc-modules = none
 # csc-modules = all
 csc-modules = all
