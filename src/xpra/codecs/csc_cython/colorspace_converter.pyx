@@ -190,6 +190,22 @@ cdef inline unsigned char clamp(const long v) nogil:
     else:
         return <unsigned char> (v>>shift)
 
+cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
+                                    unsigned int w, unsigned int h,
+                                    unsigned int src_stride, unsigned int dst_stride) nogil:
+    cdef unsigned int y = 0
+    cdef unsigned int i = 0
+    cdef unsigned int v
+    for y in range(h):
+        i = y*dst_stride//2
+        for x in range(w):
+            v = r210[x]
+            bgr48[i] = v&0x000003ff
+            bgr48[i+1] = (v&0x000ffc00) >> 10
+            bgr48[i+2] = (v&0x3ff00000) >> 20
+            i = i + 3
+        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+
 
 cdef class ColorspaceConverter:
     cdef unsigned int src_width
@@ -537,23 +553,14 @@ cdef class ColorspaceConverter:
 
         cdef unsigned int w = self.src_width
         cdef unsigned int h = self.src_height
-        cdef unsigned int dst_stride = self.dst_strides[0]
         cdef unsigned int src_stride = image.get_rowstride()
+        cdef unsigned int dst_stride = self.dst_strides[0]
 
-        cdef unsigned int y = 0
-        cdef unsigned int i = 0
-        cdef unsigned int v
-        #enable nogil if image is thread safe?
-        #with nogil:
-        for y in range(h):
-            i = y*dst_stride//2
-            for x in range(w):
-                v = r210[x]
-                bgr48[i] = v&0x000003ff
-                bgr48[i+1] = (v&0x000ffc00) >> 10
-                bgr48[i+2] = (v&0x3ff00000) >> 20
-                i = i + 3
-            r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+        if image.is_thread_safe():
+            with nogil:
+                r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
+        else:
+            r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
 
         bgr48_buffer = memory_as_pybuffer(<void *> bgr48, self.dst_sizes[0], True)
         cdef double elapsed = time.time()-start
