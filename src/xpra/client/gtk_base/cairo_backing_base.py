@@ -133,6 +133,10 @@ class CairoBackingBase(WindowBackingBase):
         return self._do_paint_rgb(cairo.FORMAT_RGB24, False, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
+    def _do_paint_rgb30(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+        return self._do_paint_rgb(cairo.FORMAT_RGB30, True, img_data,
+                                  x, y, width, height, render_width, render_height, rowstride, options)
+
     def _do_paint_rgb32(self, img_data, x : int, y : int, width : int, height : int,
                         render_width : int, render_height : int, rowstride : int, options):
         if self._alpha_enabled:

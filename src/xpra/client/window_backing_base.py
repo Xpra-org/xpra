@@ -420,9 +420,14 @@ class WindowBackingBase:
             if self._backing is None:
                 fire_paint_callbacks(callbacks, -1, "no backing")
                 return
-            bpp = len(rgb_format)
+            if rgb_format=="r210":
+                bpp = 30
+            else:
+                bpp = len(rgb_format)*8     #ie: "BGRA" -> 32
             if bpp==24:
                 paint_fn = self._do_paint_rgb24
+            elif bpp==30:
+                paint_fn = self._do_paint_rgb30
             elif bpp==32:
                 paint_fn = self._do_paint_rgb32
             else:
@@ -439,6 +444,9 @@ class WindowBackingBase:
                 fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
+        raise Exception("override me!")
+
+    def _do_paint_rgb30(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
         raise Exception("override me!")
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
