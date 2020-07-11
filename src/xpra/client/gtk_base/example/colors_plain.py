@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import cairo
 import gi
@@ -23,6 +23,9 @@ class ColorPlainWindow(Gtk.Window):
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         self.set_title("Colors")
+        icon = get_icon_pixbuf("encoding.png")
+        if icon:
+            self.set_icon(icon)
         drawing_area = Gtk.DrawingArea()
         drawing_area.connect("draw", self.area_draw)
         self.add(drawing_area)

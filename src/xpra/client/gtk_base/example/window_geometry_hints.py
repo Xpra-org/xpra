@@ -10,7 +10,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gtk, Gdk, GLib   #pylint: disable=wrong-import-position
 
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 
 class HintedWindows(Gtk.Window):
@@ -20,6 +20,9 @@ class HintedWindows(Gtk.Window):
         self.set_title(title or "")
         add_close_accel(self, self.delete_event)
         self.connect("delete_event", self.delete_event)
+        icon = get_icon_pixbuf("windows.png")
+        if icon:
+            self.set_icon(icon)
 
         if kwargs.pop("headerbar", False):
             hb = Gtk.HeaderBar()

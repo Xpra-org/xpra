@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -18,6 +18,9 @@ def make_window():
     win.set_position(Gtk.WindowPosition.CENTER)
     win.set_title('Opacity Test')
     win.connect('delete-event', Gtk.main_quit)
+    icon = get_icon_pixbuf("windows.png")
+    if icon:
+        win.set_icon(icon)
 
     btn = Gtk.Button(label="Change Opacity")
     def change_opacity(*_args):

@@ -7,7 +7,7 @@
 from xpra.os_util import POSIX, OSX
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import os
 from datetime import datetime
@@ -25,6 +25,9 @@ def make_window():
 	window.set_size_request(640, 200)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
+	icon = get_icon_pixbuf("windows.png")
+	if icon:
+		window.set_icon(icon)
 	vbox = Gtk.VBox()
 	N = 8
 	labels = []

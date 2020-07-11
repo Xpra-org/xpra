@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import cairo
 import gi
@@ -21,6 +21,9 @@ class TransparentWindow(Gtk.Window):
         self.set_title("Window Transparency")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
+        icon = get_icon_pixbuf("windows.png")
+        if icon:
+            self.set_icon(icon)
         screen = self.get_screen()
         visual = screen.get_rgba_visual()
         if visual and screen.is_composited():

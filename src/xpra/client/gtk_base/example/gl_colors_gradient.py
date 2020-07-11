@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.platform import program_context
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 from OpenGL.GL import (
     glClear, glClearColor, glViewport,
@@ -46,6 +46,9 @@ class ColorTest:
         win = Gtk.Window()
         win.set_title('OpenGL Color Gradient')
         win.connect('destroy', Gtk.main_quit)
+        icon = get_icon_pixbuf("encoding.png")
+        if icon:
+            win.set_icon(icon)
         self.win = win
 
         vbox = Gtk.VBox()

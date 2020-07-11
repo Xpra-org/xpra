@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import cairo
 import gi
@@ -24,6 +24,9 @@ class ColorGradientWindow(Gtk.Window):
         self.set_default_size(1024, 768)
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
+        icon = get_icon_pixbuf("encoding.png")
+        if icon:
+            self.set_icon(icon)
         self.bpc = 16
         drawing_area = Gtk.DrawingArea()
         drawing_area.connect("draw", self.area_draw)

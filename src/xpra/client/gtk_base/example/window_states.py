@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -19,6 +19,9 @@ def make_window():
 	window.set_size_request(320, 500)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
+	icon = get_icon_pixbuf("ticked.png")
+	if icon:
+		window.set_icon(icon)
 	vbox = Gtk.VBox(False, 0)
 
 	def add_buttons(t1, cb1, t2, cb2):
