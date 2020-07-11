@@ -29,6 +29,7 @@ from xpra.common import (
 from xpra.log import Logger
 
 log = Logger("paint")
+videolog = Logger("video", "paint")
 
 INTEGRITY_HASH = envbool("XPRA_INTEGRITY_HASH", False)
 PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
@@ -74,6 +75,23 @@ def fire_paint_callbacks(callbacks, success=True, message=""):
             x(success, message)
         except Exception:
             log.error("error calling %s(%s)", x, success, exc_info=True)
+
+
+def verify_checksum(img_data, options):
+    l = options.intget("z.len")
+    if l:
+        assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
+    try:
+        chksum = options.get("z.md5")
+        if chksum:
+            h = hashlib.md5(img_data)
+    except ValueError:
+        chksum = options.get("z.sha1")
+        if chksum:
+            h = hashlib.sha1(img_data)
+    if h:
+        hd = h.hexdigest()
+        assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
 
 
 """
@@ -266,10 +284,10 @@ class WindowBackingBase:
         self.close_decoder(False)
 
     def close_decoder(self, blocking=False):
-        log("close_decoder(%s)", blocking)
+        videolog("close_decoder(%s)", blocking)
         dl = self._decoder_lock
         if dl is None or not dl.acquire(blocking):
-            log("close_decoder(%s) lock %s not acquired", blocking, dl)
+            videolog("close_decoder(%s) lock %s not acquired", blocking, dl)
             return False
         try:
             self.do_clean_video_decoder()
@@ -307,7 +325,7 @@ class WindowBackingBase:
             target_rgb_modes = tuple(x for x in target_rgb_modes if x.find("A")<0)
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
         full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
-        log("_get_full_csc_modes(%s)=%s (target_rgb_modes=%s)", rgb_modes, full_csc_modes, target_rgb_modes)
+        videolog("_get_full_csc_modes(%s)=%s (target_rgb_modes=%s)", rgb_modes, full_csc_modes, target_rgb_modes)
         return full_csc_modes
 
 
@@ -402,7 +420,7 @@ class WindowBackingBase:
             if self._backing is None:
                 fire_paint_callbacks(callbacks, -1, "no backing")
                 return
-            bpp = len(rgb_format)*8
+            bpp = len(rgb_format)
             if bpp==24:
                 paint_fn = self._do_paint_rgb24
             elif bpp==32:
@@ -439,10 +457,11 @@ class WindowBackingBase:
         global CSC_OPTIONS
         in_options = CSC_OPTIONS.get(src_format, {})
         assert in_options, "no csc options for '%s' input in %s" % (src_format, CSC_OPTIONS)
+        videolog("make_csc%s",
+            (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
-            log("make_csc%s specs=%s",
-                (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed), specs)
+            videolog("make_csc specs(%s)=%s", dst_format, specs)
             if not specs:
                 continue
             for spec in specs:
@@ -455,26 +474,26 @@ class WindowBackingBase:
                                dst_width, dst_height, dst_format, speed)
                     return csc
                 except Exception as e:
-                    log("make_csc%s",
+                    videolog("make_csc%s",
                         (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed),
                         exc_info=True)
-                    log.error("Error: failed to create csc instance %s", spec.codec_class)
-                    log.error(" for %s to %s: %s", src_format, dst_format, e)
-        log.error("Error: no matching CSC module found")
-        log.error(" for %ix%i %s source format,", src_width, src_height, src_format)
-        log.error(" to %ix%i %s", dst_width, dst_height, " or ".join(dst_format_options))
-        log.error(" with options=%s, speed=%i", dst_format_options, speed)
-        log.error(" tested:")
+                    videolog.error("Error: failed to create csc instance %s", spec.codec_class)
+                    videolog.error(" for %s to %s: %s", src_format, dst_format, e)
+        videolog.error("Error: no matching CSC module found")
+        videolog.error(" for %ix%i %s source format,", src_width, src_height, src_format)
+        videolog.error(" to %ix%i %s", dst_width, dst_height, " or ".join(dst_format_options))
+        videolog.error(" with options=%s, speed=%i", dst_format_options, speed)
+        videolog.error(" tested:")
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
             if not specs:
                 continue
-            log.error(" * %s:", dst_format)
+            videolog.error(" * %s:", dst_format)
             for spec in specs:
-                log.error("   - %s:", spec)
+                videolog.error("   - %s:", spec)
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
-                    log.error("       "+v[0], *v[1:])
+                    videolog.error("       "+v[0], *v[1:])
         raise Exception("no csc module found for wid %i %s(%sx%s) to %s(%sx%s) in %s" %
                         (self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
                          dst_width, dst_height, CSC_OPTIONS))
@@ -527,27 +546,27 @@ class WindowBackingBase:
             vd = self._video_decoder
             if vd:
                 if options.intget("frame", -1)==0:
-                    log("paint_with_video_decoder: first frame of new stream")
+                    videolog("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
                 elif vd.get_encoding()!=coding:
-                    log("paint_with_video_decoder: encoding changed from %s to %s", vd.get_encoding(), coding)
+                    videolog("paint_with_video_decoder: encoding changed from %s to %s", vd.get_encoding(), coding)
                     self.do_clean_video_decoder()
                 elif vd.get_width()!=enc_width or vd.get_height()!=enc_height:
-                    log("paint_with_video_decoder: video dimensions have changed from %s to %s",
+                    videolog("paint_with_video_decoder: video dimensions have changed from %s to %s",
                         (vd.get_width(), vd.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
                 elif vd.get_colorspace()!=input_colorspace:
                     #this should only happen on encoder restart, which means this should be the first frame:
-                    log.warn("Warning: colorspace unexpectedly changed from %s to %s",
+                    videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
                              vd.get_colorspace(), input_colorspace)
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
-                log("paint_with_video_decoder: new %s(%s,%s,%s)",
+                videolog("paint_with_video_decoder: new %s(%s,%s,%s)",
                     decoder_module.Decoder, width, height, input_colorspace)
                 vd = decoder_module.Decoder()
                 vd.init_context(coding, enc_width, enc_height, input_colorspace)
                 self._video_decoder = vd
-                log("paint_with_video_decoder: info=%s", vd.get_info())
+                videolog("paint_with_video_decoder: info=%s", vd.get_info())
 
             img = vd.decompress_image(img_data, options)
             if not img:
@@ -559,13 +578,13 @@ class WindowBackingBase:
                     fire_paint_callbacks(callbacks, False,
                                          "video decoder %s failed to decode %i bytes of %s data" % (
                                              vd.get_type(), len(img_data), coding))
-                    log.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
-                    log.error(" %sx%s pixels using %s", width, height, vd.get_type())
-                    log.error(" frame options:")
+                    videolog.error("Error: decode failed on %s bytes of %s data", len(img_data), coding)
+                    videolog.error(" %sx%s pixels using %s", width, height, vd.get_type())
+                    videolog.error(" frame options:")
                     for k,v in options.items():
                         if isinstance(v, bytes):
                             v = bytestostr(v)
-                        log.error("   %s=%s", bytestostr(k), v)
+                        videolog.error("   %s=%s", bytestostr(k), v)
                 return
 
             x, y = self.gravity_adjust(x, y, options)
@@ -581,17 +600,17 @@ class WindowBackingBase:
         cd = self._csc_decoder
         if cd is not None:
             if cd.get_src_format()!=pixel_format:
-                log("do_video_paint csc: switching src format from %s to %s", cd.get_src_format(), pixel_format)
+                videolog("do_video_paint csc: switching src format from %s to %s", cd.get_src_format(), pixel_format)
                 self.do_clean_csc_decoder()
             elif cd.get_dst_format() not in target_rgb_formats:
-                log("do_video_paint csc: switching dst format from %s to %s", cd.get_dst_format(), target_rgb_formats)
+                videolog("do_video_paint csc: switching dst format from %s to %s", cd.get_dst_format(), target_rgb_formats)
                 self.do_clean_csc_decoder()
             elif cd.get_src_width()!=enc_width or cd.get_src_height()!=enc_height:
-                log("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
                          enc_width, enc_height, cd.get_src_width(), cd.get_src_height())
                 self.do_clean_csc_decoder()
             elif cd.get_dst_width()!=width or cd.get_dst_height()!=height:
-                log("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
                          width, height, cd.get_dst_width(), cd.get_dst_height())
                 self.do_clean_csc_decoder()
         if self._csc_decoder is None:
@@ -602,11 +621,11 @@ class WindowBackingBase:
             csc_speed = int(min(100, 100-q, 100.0 * (enc_width*enc_height) / (width*height)))
             cd = self.make_csc(enc_width, enc_height, pixel_format,
                                            width, height, target_rgb_formats, csc_speed)
-            log("do_video_paint new csc decoder: %s", cd)
+            videolog("do_video_paint new csc decoder: %s", cd)
             self._csc_decoder = cd
         rgb_format = cd.get_dst_format()
         rgb = cd.convert_image(img)
-        log("do_video_paint rgb using %s.convert_image(%s)=%s", cd, img, rgb)
+        videolog("do_video_paint rgb using %s.convert_image(%s)=%s", cd, img, rgb)
         img.free()
         assert rgb.get_planes()==0, "invalid number of planes for %s: %s" % (rgb_format, rgb.get_planes())
         #make a new options dict and set the rgb format:
@@ -645,20 +664,7 @@ class WindowBackingBase:
             coding = bytestostr(coding)
             options["encoding"] = coding            #used for choosing the color of the paint box
             if INTEGRITY_HASH:
-                l = options.intget("z.len")
-                if l:
-                    assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
-                try:
-                    chksum = options.get("z.md5")
-                    if chksum:
-                        h = hashlib.md5(img_data)
-                except ValueError:
-                    chksum = options.get("z.sha1")
-                    if chksum:
-                        h = hashlib.sha1(img_data)
-                if h:
-                    hd = h.hexdigest()
-                    assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
+                verify_checksum(img_data, options)
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
