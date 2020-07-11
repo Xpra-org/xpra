@@ -1460,7 +1460,7 @@ class WindowClient(StubClientMixin):
                 decode_time = 0
                 paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%s, %s: %sx%s",
                          success, message, wid, coding, width, height)
-            self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, str(message))
+            self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, repr_ellipsized(message, 512))
         self._draw_counter += 1
         if PAINT_FAULT_RATE>0 and (self._draw_counter % PAINT_FAULT_RATE)==0:
             drawlog.warn("injecting paint fault for %s draw packet %i, sequence number=%i",
