@@ -38,7 +38,7 @@ Instead we have to use PIL to convert via a PNG or Pixbuf!
 """
 class CairoBacking(CairoBackingBase):
 
-    RGB_MODES = ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210"]
+    RGB_MODES = ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565"]
 
     def __repr__(self):
         return "gtk3.CairoBacking(%s)" % self._backing
@@ -55,6 +55,7 @@ class CairoBacking(CairoBackingBase):
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
             if (cairo_format==cairo.FORMAT_RGB24 and rgb_format in ("RGB", "RGBX", "BGR", "BGRX")) or \
                 (cairo_format==cairo.FORMAT_ARGB32 and rgb_format in ("BGRX", "BGRA")) or \
+                (cairo_format==cairo.FORMAT_RGB16_565 and rgb_format in ("BGR565", )) or \
                 (cairo_format==cairo.FORMAT_RGB30 and rgb_format in ("r210", )):
                 img_surface = cairo.ImageSurface(cairo_format, width, height)
                 set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)

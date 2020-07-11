@@ -80,6 +80,20 @@ CAIRO_FORMAT = {
         CAIRO_FORMAT_RGB30      : "RGB30",
         }
 
+cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stride, int height):
+    cdef int y
+    cdef int stride = src_stride
+    with nogil:
+        if src_stride==dst_stride:
+            memcpy(<void*> dst, <void*> src, stride*height)
+        else:
+            if dst_stride<src_stride:
+                stride = dst_stride
+            for y in range(height):
+                memcpy(<void*> dst, <void*> src, stride)
+                src += src_stride
+                dst += dst_stride
+
 def set_image_surface_data(object image_surface, rgb_format, object pixel_data, int width, int height, int stride):
     #convert pixel_data to a C buffer:
     cdef const unsigned char * cbuf = NULL
@@ -100,7 +114,8 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     cdef int iwidth     = cairo_image_surface_get_width(surface)
     cdef int iheight    = cairo_image_surface_get_height(surface)
     assert iwidth>=width and iheight>=height, "invalid image surface: expected at least %sx%s but got %sx%s" % (width, height, iwidth, iheight)
-    assert istride>=iwidth*4, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
+    BPP = 2 if format==CAIRO_FORMAT_RGB16_565 else 4
+    assert istride>=iwidth*BPP, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
     #log("set_image_surface_data%s pixel buffer=%#x, surface=%#x, data=%#x, stride=%i, width=%i, height=%i", (image_surface, rgb_format, pixel_data, width, height, stride), <uintptr_t> cbuf, <uintptr_t> surface, <uintptr_t> data, istride, iwidth, iheight)
     cdef int x, y
     cdef int srci, dsti
@@ -161,26 +176,12 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
                         cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
                         cdata[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
         elif rgb_format in ("BGRA", "BGRX"):
-            with nogil:
-                if stride==istride:
-                    memcpy(<void*> cdata, <void*> cbuf, stride*height)
-                else:
-                    for y in range(height):
-                        src = (<uintptr_t> cbuf) + y*stride
-                        dst = (<uintptr_t> cdata) + y*istride
-                        memcpy(<void*> dst, <void*> src, istride)
+            simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
         else:
             raise ValueError("unhandled pixel format for ARGB32: '%s'" % rgb_format)
     elif format==CAIRO_FORMAT_RGB30:
         if rgb_format in ("r210"):
-            with nogil:
-                if stride==istride:
-                    memcpy(<void*> cdata, <void*> cbuf, stride*height)
-                else:
-                    for y in range(height):
-                        src = (<uintptr_t> cbuf) + y*stride
-                        dst = (<uintptr_t> cdata) + y*istride
-                        memcpy(<void*> dst, <void*> src, istride)
+            simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
         #UNTESTED!
         #elif rgb_format in ("BGR48"):
         #access 16-bit per pixel at a time:
@@ -197,6 +198,9 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
         #                dsti += 1
         else:
             raise ValueError("unhandled pixel format for RGB30 '%s'" % rgb_format)
+    elif format==CAIRO_FORMAT_RGB16_565:
+        if rgb_format in ("BGR565"):
+            simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
     else:
         raise ValueError("unhandled cairo format '%s'" % format)
     cairo_surface_mark_dirty(surface)
