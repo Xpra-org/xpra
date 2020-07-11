@@ -49,20 +49,21 @@ def make_test_image(pixel_format, w, h):
     from xpra.codecs.codec_constants import get_subsampling_divs
     #import time
     #start = monotonic_time()
-    if pixel_format.startswith("YUV") or pixel_format=="GBRP" or pixel_format=="NV12":
+    if pixel_format.startswith("YUV") or pixel_format.startswith("GBRP") or pixel_format=="NV12":
         divs = get_subsampling_divs(pixel_format)
+        Bpp = 2 if pixel_format.endswith("P10") else 1
         nplanes = len(divs)
         ydiv = divs[0]  #always (1, 1)
-        y = makebuf(w//ydiv[0]*h//ydiv[1])
+        y = makebuf(w//ydiv[0]*h//ydiv[1]*Bpp)
         udiv = divs[1]
-        u = makebuf(w//udiv[0]*h//udiv[1])
+        u = makebuf(w//udiv[0]*h//udiv[1]*Bpp)
         planes = [y, u]
-        strides = [w//ydiv[0], w//udiv[0]]
+        strides = [w//ydiv[0]*Bpp, w//udiv[0]*Bpp]
         if nplanes==3:
             vdiv = divs[2]
-            v = makebuf(w//vdiv[0]*h//vdiv[1])
+            v = makebuf(w//vdiv[0]*h//vdiv[1]*Bpp)
             planes.append(v)
-            strides.append(w//vdiv[0])
+            strides.append(w//vdiv[0]*Bpp)
         image = ImageWrapper(0, 0, w, h, planes, pixel_format, 32, strides, planes=nplanes, thread_safe=True)
         #l = len(y)+len(u)+len(v)
     elif pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
