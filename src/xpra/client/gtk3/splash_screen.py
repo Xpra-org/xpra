@@ -4,13 +4,12 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import Gtk, GdkPixbuf, GLib, Pango
+from gi.repository import Gtk, GLib, Pango
 
 from xpra import __version__
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
-from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import force_focus
 from xpra.log import Logger
 
@@ -32,7 +31,7 @@ class SplashScreen(Gtk.Window):
         self.set_decorated(False)
         vbox = Gtk.VBox()
         hbox = Gtk.HBox(homogeneous=False)
-        icon = self.get_pixbuf("xpra")
+        icon = get_icon_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
@@ -117,19 +116,6 @@ class SplashScreen(Gtk.Window):
     def handle_signal(self, signum, _frame=None):
         self.exit_code = 128-(signum or 0)
         GLib.idle_add(self.exit)
-
-    def get_pixbuf(self, icon_name):
-        try:
-            if not icon_name:
-                log("get_pixbuf(%s)=None", icon_name)
-                return None
-            icon_filename = get_icon_filename(icon_name)
-            log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
-            if icon_filename:
-                return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        except Exception:
-            log.error("Error: failed to load '%s'", icon_name, exc_info=True)
-        return None
 
 
 def main(args):

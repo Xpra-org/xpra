@@ -8,15 +8,15 @@ import sys
 import os.path
 import subprocess
 
-from gi.repository import GLib, Pango, Gtk, Gdk, Gio, GdkPixbuf
+from gi.repository import GLib, Pango, Gtk, Gdk, Gio
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
     add_close_accel,
     add_window_accel, imagebutton,
-    scaled_image,
+    scaled_image, get_icon_pixbuf,
     )
-from xpra.platform.paths import get_icon_dir, get_xpra_command
+from xpra.platform.paths import get_xpra_command
 from xpra.os_util import OSX, WIN32, platform_name
 from xpra.log import Logger
 from xpra.gtk_common.about import about
@@ -51,12 +51,6 @@ def exec_command(cmd):
     log("exec_command(%s)=%s", cmd, proc)
     return proc
 
-def get_pixbuf(icon_name):
-    icon_filename = os.path.join(get_icon_dir(), icon_name)
-    if os.path.exists(icon_filename):
-        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-    return None
-
 
 class GUI(Gtk.Window):
 
@@ -90,7 +84,7 @@ class GUI(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_pixbuf("xpra")
+        icon = get_icon_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
         add_close_accel(self, self.quit)
@@ -108,18 +102,18 @@ class GUI(Gtk.Window):
         self.widgets = []
         label_font = Pango.FontDescription("sans 16")
         if has_client:
-            icon = get_pixbuf("browse.png")
+            icon = get_icon_pixbuf("browse.png")
             self.browse_button = imagebutton("Browse", icon,
                                              "Browse and connect to local sessions", clicked_callback=self.browse,
                                              icon_size=48, label_font=label_font)
             self.widgets.append(self.browse_button)
-            icon = get_pixbuf("connect.png")
+            icon = get_icon_pixbuf("connect.png")
             self.connect_button = imagebutton("Connect", icon,
                                               "Connect to a session", clicked_callback=self.show_launcher,
                                               icon_size=48, label_font=label_font)
             self.widgets.append(self.connect_button)
         if has_server:
-            icon = get_pixbuf("server-connected.png")
+            icon = get_icon_pixbuf("server-connected.png")
             self.shadow_button = imagebutton("Shadow", icon,
                                              "Start a shadow server", clicked_callback=self.start_shadow,
                                              icon_size=48, label_font=label_font)
@@ -127,7 +121,7 @@ class GUI(Gtk.Window):
                 self.shadow_button.set_tooltip_text("This build of Xpra does not support starting sessions")
                 self.shadow_button.set_sensitive(False)
             self.widgets.append(self.shadow_button)
-            icon = get_pixbuf("windows.png")
+            icon = get_icon_pixbuf("windows.png")
             self.start_button = imagebutton("Start", icon,
                                             "Start a session", clicked_callback=self.start,
                                             icon_size=48, label_font=label_font)
@@ -264,7 +258,7 @@ class StartSession(Gtk.Window):
         self.set_title("Start Xpra Session")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
-        icon = get_pixbuf("xpra")
+        icon = get_icon_pixbuf("xpra")
         if icon:
             self.set_icon(icon)
         self.connect("delete-event", self.close)
@@ -347,10 +341,9 @@ class StartSession(Gtk.Window):
             btn = Gtk.Button(label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
-            if icon_name:
-                icon = get_pixbuf(icon_name)
-                if icon:
-                    btn.set_image(scaled_image(icon, 24))
+            icon = get_icon_pixbuf(icon_name)
+            if icon:
+                btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn
         self.cancel_btn = btn("Cancel", "", self.close, "quit.png")

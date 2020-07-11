@@ -7,10 +7,10 @@
 import os.path
 import sys
 import time
-from gi.repository import Gtk, Gdk, GdkPixbuf
+from gi.repository import Gtk, Gdk
 
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image,
+    add_close_accel, scaled_image, get_icon_pixbuf,
     get_display_info, get_default_root_window,
     choose_file, get_gtk_version_info,
     )
@@ -41,7 +41,7 @@ class BugReport:
         self.window.set_default_size(400, 300)
         self.window.set_title("Xpra Bug Report")
 
-        icon_pixbuf = self.get_icon("bugs.png")
+        icon_pixbuf = get_icon_pixbuf("bugs.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
@@ -51,7 +51,7 @@ class BugReport:
 
         # Title
         hbox = Gtk.HBox(False, 0)
-        icon_pixbuf = self.get_icon("xpra.png")
+        icon_pixbuf = get_icon_pixbuf("xpra.png")
         if icon_pixbuf and self.show_about:
             from xpra.gtk_common.about import about
             logo_button = Gtk.Button("")
@@ -193,7 +193,7 @@ class BugReport:
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             if icon_name:
-                icon = self.get_icon(icon_name)
+                icon = self.get_icon_pixbuf(icon_name)
                 if icon:
                     btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
@@ -247,14 +247,6 @@ class BugReport:
         log("quit%s", args)
         self.destroy()
         Gtk.main_quit()
-
-
-    def get_icon(self, icon_name):
-        from xpra.platform.paths import get_icon_dir
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
 
     def get_data(self):

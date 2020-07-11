@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import os.path
-from gi.repository import GLib, Gtk, GdkPixbuf
+from gi.repository import GLib, Gtk
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.os_util import monotonic_time
 from xpra.util import AdHocStruct, typedict
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image,
+    add_close_accel, scaled_image, get_icon_pixbuf,
     get_pixbuf_from_data, TableBuilder,
     )
-from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("util")
@@ -43,7 +41,7 @@ class ServerCommandsWindow:
         self.window.set_default_size(400, 150)
         self.window.set_title("Server Commands")
 
-        icon_pixbuf = self.get_icon("list.png")
+        icon_pixbuf = get_icon_pixbuf("list.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
@@ -75,10 +73,9 @@ class ServerCommandsWindow:
         settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)
         btn.connect("clicked", callback)
-        if icon_name:
-            icon = self.get_icon(icon_name)
-            if icon:
-                btn.set_image(scaled_image(icon, 24))
+        icon = get_icon_pixbuf(icon_name)
+        if icon:
+            btn.set_image(scaled_image(icon, 24))
         return btn
 
     def populate_table(self):
@@ -197,13 +194,6 @@ class ServerCommandsWindow:
         log("quit%s", args)
         self.destroy()
         Gtk.main_quit()
-
-
-    def get_icon(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
 
 def main(): # pragma: no cover

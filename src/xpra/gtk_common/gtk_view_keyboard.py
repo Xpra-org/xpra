@@ -9,7 +9,6 @@ from xpra.util import csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.platform.paths import get_icon
 
 import gi
 gi.require_version("Gdk", "3.0")
@@ -17,6 +16,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import GLib, Pango, Gtk, Gdk
 
+from xpra.gtk_common.gtk_util import get_icon_pixbuf
 
 
 class KeyboardStateInfoWindow:
@@ -63,7 +63,7 @@ class KeyboardStateInfoWindow:
         keymap.connect("keys-changed", self.keymap_changed)
         self.show_keymap("current keymap")
 
-        icon = get_icon("keyboard.png")
+        icon = get_icon_pixbuf("keyboard.png")
         if icon:
             self.window.set_icon(icon)
 

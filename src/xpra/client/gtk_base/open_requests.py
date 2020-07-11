@@ -12,7 +12,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("Pango", "1.0")
-from gi.repository import GLib, Gtk, GdkPixbuf, Pango
+from gi.repository import GLib, Gtk, Pango
 
 from xpra.util import envint
 from xpra.os_util import monotonic_time, bytestostr, WIN32, OSX
@@ -22,9 +22,9 @@ from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.simple_stats import std_unit, std_unit_dec
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image,
-    TableBuilder,
+    TableBuilder, get_icon_pixbuf,
     )
-from xpra.platform.paths import get_icon_dir, get_download_dir
+from xpra.platform.paths import get_download_dir
 from xpra.log import Logger
 
 log = Logger("gtk", "file")
@@ -56,7 +56,7 @@ class OpenRequestsWindow:
         self.window.set_default_size(400, 150)
         self.window.set_title("Transfers")
 
-        icon_pixbuf = self.get_icon("download.png")
+        icon_pixbuf = get_icon_pixbuf("download.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
@@ -95,7 +95,7 @@ class OpenRequestsWindow:
         btn.set_tooltip_text(tooltip)
         btn.connect("clicked", callback)
         if icon_name:
-            icon = self.get_icon(icon_name)
+            icon = get_icon_pixbuf(icon_name)
             if icon:
                 btn.set_image(scaled_image(icon, 24))
         return btn
@@ -308,13 +308,6 @@ class OpenRequestsWindow:
         log("quit%s", args)
         self.destroy()
         Gtk.main_quit()
-
-
-    def get_icon(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
 
 def main():     # pragma: no cover

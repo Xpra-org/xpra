@@ -1,20 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import os.path
-
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import GLib, Pango, Gtk, GdkPixbuf
+from gi.repository import GLib, Pango, Gtk
 
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 
 log = Logger("util")
@@ -30,7 +27,7 @@ class AuthDialog(Gtk.Window):
         self.set_border_width(20)
         self.set_resizable(True)
         self.set_decorated(True)
-        icon = self.get_pixbuf("authentication.png")
+        icon = get_icon_pixbuf("authentication.png")
         if icon:
             self.set_icon(icon)
         add_close_accel(self, self.quit)
@@ -105,16 +102,6 @@ class AuthDialog(Gtk.Window):
         self.exit_code = 128 + signum
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.do_quit()
-
-
-    def get_pixbuf(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            try:
-                return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-            except Exception as e:
-                log("pixbuf_new_from_file(%s) failed: %s", icon_filename, e)
-        return None
 
 
 def main():

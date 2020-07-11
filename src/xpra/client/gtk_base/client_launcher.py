@@ -27,7 +27,7 @@ from xpra.scripts.config import read_config, make_defaults_struct, validate_conf
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse,
-    choose_file, imagebutton,
+    choose_file, imagebutton, get_icon_pixbuf,
     )
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX, POSIX
@@ -118,12 +118,6 @@ def has_mdns():
 def noop(*args):
     log("noop%s", args)
 
-def get_pixbuf(icon_name):
-    icon_filename = os.path.join(get_icon_dir(), icon_name)
-    if os.path.exists(icon_filename):
-        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-    return None
-
 
 class ApplicationWindow:
 
@@ -188,7 +182,7 @@ class ApplicationWindow:
         self.window.set_position(Gtk.WindowPosition.CENTER)
         self.window.set_wmclass("xpra-launcher-gui", "Xpra-Launcher-GUI")
         add_close_accel(self.window, self.destroy)
-        icon = get_pixbuf("connect.png")
+        icon = get_icon_pixbuf("connect.png")
         if icon:
             self.window.set_icon(icon)
 
@@ -432,7 +426,7 @@ class ApplicationWindow:
         # Connect button:
         self.connect_btn = Gtk.Button("Connect")
         self.connect_btn.connect("clicked", self.connect_clicked)
-        connect_icon = self.get_icon("retry.png")
+        connect_icon = get_icon_pixbuf("retry.png")
         if connect_icon:
             self.connect_btn.set_image(scaled_image(connect_icon, 24))
         hbox.pack_start(self.connect_btn)
@@ -450,9 +444,7 @@ class ApplicationWindow:
         except:
             pixbuf = None
         if not pixbuf:
-            icon_filename = os.path.join(get_icon_dir(), "%s.png" % icon_name)
-            if os.path.exists(icon_filename):
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+            pixbuf = get_icon_pixbuf("%s.png" % icon_name)
             if pixbuf:
                 for size in (16, 32, 48):
                     scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
@@ -549,11 +541,6 @@ class ApplicationWindow:
     def run(self):
         Gtk.main()
 
-    def get_icon(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
     def mode_changed(self, *_args):
         mode = self.mode_combo.get_active_text().lower()

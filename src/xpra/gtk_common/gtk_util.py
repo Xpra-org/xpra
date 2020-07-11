@@ -648,6 +648,16 @@ def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
     return menu_item
 
 
+def get_icon_pixbuf(icon_name):
+    if not icon_name:
+        return None
+    from xpra.platform.paths import get_icon_dir
+    icon_filename = os.path.join(get_icon_dir(), icon_name)
+    if os.path.exists(icon_filename):
+        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+    return None
+
+
 def add_close_accel(window, callback):
     accel_groups = []
     def wa(s, cb):

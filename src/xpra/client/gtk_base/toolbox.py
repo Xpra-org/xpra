@@ -12,15 +12,15 @@ import subprocess
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, GdkPixbuf, Gio
+from gi.repository import Gtk, Gio
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
-    add_close_accel,
+    add_close_accel, get_icon_pixbuf,
     imagebutton,
     label,
     )
-from xpra.platform.paths import get_icon_dir, get_python_execfile_command
+from xpra.platform.paths import get_python_execfile_command
 from xpra.os_util import OSX, WIN32, is_X11
 from xpra.log import Logger
 
@@ -36,12 +36,6 @@ def exec_command(cmd):
     proc = subprocess.Popen(cmd, env=env, creationflags=creationflags)
     log("exec_command(%s)=%s", cmd, proc)
     return proc
-
-def get_pixbuf(icon_name):
-    icon_filename = os.path.join(get_icon_dir(), icon_name)
-    if os.path.exists(icon_filename):
-        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-    return None
 
 
 class ToolboxGUI(Gtk.Window):
@@ -76,7 +70,7 @@ class ToolboxGUI(Gtk.Window):
         try:
             pixbuf = icon_theme.load_icon(icon_name, 96, 0)
         except Exception:
-            pixbuf = get_pixbuf("xpra")
+            pixbuf = get_icon_pixbuf("xpra")
         if pixbuf:
             self.set_icon(pixbuf)
         add_close_accel(self, self.quit)

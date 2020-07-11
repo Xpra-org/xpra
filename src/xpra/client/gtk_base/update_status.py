@@ -5,19 +5,16 @@
 # later version. See the file COPYING for details.
 
 import sys
-import os.path
-
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import GLib, Pango, Gtk, GdkPixbuf
+from gi.repository import GLib, Pango, Gtk
 
 from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image,
+    add_close_accel, scaled_image, get_icon_pixbuf,
     )
-from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("util")
@@ -40,7 +37,7 @@ class UpdateStatusWindow:
         self.window.set_default_size(400, 200)
         self.window.set_title("Xpra Version Check")
 
-        icon = self.get_icon("update.png")
+        icon = get_icon_pixbuf("update.png")
         if icon:
             self.window.set_icon(icon)
         self.window.set_position(Gtk.WindowPosition.CENTER)
@@ -63,10 +60,9 @@ class UpdateStatusWindow:
             btn = Gtk.Button(label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
-            if icon_name:
-                icon = self.get_icon(icon_name)
-                if icon:
-                    btn.set_image(scaled_image(icon, 24))
+            icon = get_icon_pixbuf(icon_name)
+            if icon:
+                btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn
         btn("Download", "Show download page", self.download, "download.png")
@@ -141,13 +137,6 @@ class UpdateStatusWindow:
         log("quit%s", args)
         self.destroy()
         Gtk.main_quit()
-
-
-    def get_icon(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
 
     def download(self, *_args):

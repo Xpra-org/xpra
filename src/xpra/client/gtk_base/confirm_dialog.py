@@ -4,20 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-import os.path
 import sys
 
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Pango, Gtk, GdkPixbuf
+from gi.repository import Pango, Gtk
 
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.gtk_common.gtk_util import add_close_accel, color_parse
+from xpra.gtk_common.gtk_util import add_close_accel, color_parse, get_icon_pixbuf
 from xpra.platform.gui import force_focus
-from xpra.platform.paths import get_icon_dir
 from xpra.os_util import get_util_logger
 
 log = get_util_logger()
@@ -35,12 +32,9 @@ class ConfirmDialogWindow(Gtk.Dialog):
         self.set_title(title)
         add_close_accel(self, self.quit)
 
-        if icon:
-            icon_filename = os.path.join(get_icon_dir(), icon)
-            if os.path.exists(icon_filename):
-                icon_pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-                if icon_pixbuf:
-                    self.set_icon(icon_pixbuf)
+        icon_pixbuf = get_icon_pixbuf(icon)
+        if icon_pixbuf:
+            self.set_icon(icon_pixbuf)
 
         vbox = self.get_content_area()
         vbox.set_spacing(10)

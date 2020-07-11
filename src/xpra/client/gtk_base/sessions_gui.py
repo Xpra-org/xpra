@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
-import os.path
 import socket
 import subprocess
 
@@ -13,16 +12,16 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Pango, GLib, Gtk, GdkPixbuf, Gio
+from gi.repository import Pango, GLib, Gtk, Gio
 
-from xpra.platform.paths import get_icon_dir, get_xpra_command, get_nodock_command
+from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
 from xpra.child_reaper import getChildReaper
 from xpra.exit_codes import EXIT_STR
 from xpra.gtk_common.gtk_util import (
     add_close_accel, TableBuilder, scaled_image, color_parse,
-    imagebutton,
+    imagebutton, get_icon_pixbuf,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.net.net_util import if_indextoname
@@ -32,12 +31,6 @@ from xpra.log import Logger
 
 log = Logger("client", "util")
 
-
-def get_pixbuf(icon_name):
-    icon_filename = os.path.join(get_icon_dir(), icon_name)
-    if os.path.exists(icon_filename):
-        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-    return None
 
 class SessionsGUI(Gtk.Window):
 
@@ -54,7 +47,7 @@ class SessionsGUI(Gtk.Window):
         self.set_wmclass("xpra-sessions-gui", "Xpra-Sessions-GUI")
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
-        icon = get_pixbuf("browse.png")
+        icon = get_icon_pixbuf("browse.png")
         if icon:
             self.set_icon(icon)
 
@@ -307,7 +300,7 @@ class SessionsGUI(Gtk.Window):
             platform_icon_name = self.get_platform_icon_name(platform)
             pwidget = None
             if platform_icon_name:
-                pwidget = scaled_image(self.get_pixbuf("%s.png" % platform_icon_name), 28)
+                pwidget = scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28)
                 if pwidget:
                     pwidget.set_tooltip_text(platform_icon_name)
             if not pwidget:
@@ -400,7 +393,7 @@ class SessionsGUI(Gtk.Window):
         d = {}
         proc = self.clients.get(key)
         if proc and proc.poll() is None:
-            icon = self.get_pixbuf("disconnected.png")
+            icon = get_icon_pixbuf("disconnected.png")
             def disconnect_client(btn):
                 log("disconnect_client(%s) proc=%s", btn, proc)
                 self.clients_disconnecting.add(key)
@@ -409,10 +402,10 @@ class SessionsGUI(Gtk.Window):
             btn = imagebutton("Disconnect", icon, clicked_callback=disconnect_client)
             return Gtk.Label("Already connected with pid=%i" % proc.pid), btn, Gtk.Label("")
 
-        icon = self.get_pixbuf("browser.png")
+        icon = get_icon_pixbuf("browser.png")
         bopen = imagebutton("Open", icon)
 
-        icon = self.get_pixbuf("connect.png")
+        icon = get_icon_pixbuf("connect.png")
         if len(recs)==1:
             #single record, single uri:
             rec = recs[0]
@@ -490,12 +483,6 @@ class SessionsGUI(Gtk.Window):
             }.items():
             if platform.startswith(p):
                 return i
-        return None
-
-    def get_pixbuf(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         return None
 
 

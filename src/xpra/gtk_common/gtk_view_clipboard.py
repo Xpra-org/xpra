@@ -8,9 +8,8 @@ from collections import deque
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.platform.paths import get_icon
 from xpra.util import csv
-from xpra.gtk_common.gtk_util import TableBuilder, label
+from xpra.gtk_common.gtk_util import TableBuilder, label, get_icon_pixbuf
 from xpra.platform.features import CLIPBOARDS
 
 import gi
@@ -219,7 +218,7 @@ class ClipboardStateInfoWindow:
 
         self.window.add(vbox)
         self.window.show_all()
-        icon = get_icon("clipboard.png")
+        icon = get_icon_pixbuf("clipboard.png")
         if icon:
             self.window.set_icon(icon)
         try:

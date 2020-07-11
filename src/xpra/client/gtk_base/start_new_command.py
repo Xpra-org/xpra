@@ -4,21 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 import sys
-import os.path
-
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Pango, Gtk, GdkPixbuf
+from gi.repository import Pango, Gtk
 
 from xpra.gtk_common.gtk_util import (
-    add_close_accel, scaled_image,
+    add_close_accel, scaled_image, get_icon_pixbuf,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.platform.paths import get_icon_dir
 from xpra.util import typedict
 from xpra.log import Logger, enable_debug_for
 
@@ -44,7 +40,7 @@ class StartNewCommand:
         self.window.set_default_size(400, 150)
         self.window.set_title("Start New Command")
 
-        icon_pixbuf = self.get_icon("forward.png")
+        icon_pixbuf = get_icon_pixbuf("forward.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
@@ -101,10 +97,9 @@ class StartNewCommand:
             btn = Gtk.Button(label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
-            if icon_name:
-                icon = self.get_icon(icon_name)
-                if icon:
-                    btn.set_image(scaled_image(icon, 24))
+            icon = get_icon_pixbuf(icon_name)
+            if icon:
+                btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn
         btn("Run", "Run this command", self.run_command, "forward.png")
@@ -173,13 +168,6 @@ class StartNewCommand:
         log("quit%s", args)
         self.destroy()
         Gtk.main_quit()
-
-
-    def get_icon(self, icon_name):
-        icon_filename = os.path.join(get_icon_dir(), icon_name)
-        if os.path.exists(icon_filename):
-            return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        return None
 
 
     def run_command(self, *_args):
