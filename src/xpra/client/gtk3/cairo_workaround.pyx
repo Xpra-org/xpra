@@ -201,6 +201,8 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     elif format==CAIRO_FORMAT_RGB16_565:
         if rgb_format in ("BGR565"):
             simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+        else:
+            raise ValueError("unhandled pixel format for RGB16_565 '%s'" % rgb_format)
     else:
         raise ValueError("unhandled cairo format '%s'" % format)
     cairo_surface_mark_dirty(surface)
