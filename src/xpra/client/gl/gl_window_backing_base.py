@@ -1196,9 +1196,9 @@ class GLWindowBackingBase(WindowBackingBase):
         glPixelStorei(GL_UNPACK_SWAP_BYTES, BPP==2)
         assert len(rowstrides)==3 and len(img_data)==3
         for texture, index, tex_name in (
-            (GL_TEXTURE0, TEX_Y, "Y"*BPP),
-            (GL_TEXTURE1, TEX_U, "U"*BPP),
-            (GL_TEXTURE2, TEX_V, "V"*BPP),
+            (GL_TEXTURE0, TEX_Y, pixel_format[0:1]*BPP),
+            (GL_TEXTURE1, TEX_U, pixel_format[1:2]*BPP),
+            (GL_TEXTURE2, TEX_V, pixel_format[2:3]*BPP),
             ):
             div_w, div_h = divs[index]
             w = width//div_w
