@@ -21,6 +21,7 @@ from OpenGL.GL import (
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5,
+    GL_UNPACK_SWAP_BYTES,
     GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST,
@@ -1192,6 +1193,7 @@ class GLWindowBackingBase(WindowBackingBase):
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
         BPP = 2 if pixel_format.endswith("P10") else 1
+        glPixelStorei(GL_UNPACK_SWAP_BYTES, BPP==2)
         assert len(rowstrides)==3 and len(img_data)==3
         for texture, index, tex_name in (
             (GL_TEXTURE0, TEX_Y, "Y"*BPP),
@@ -1221,6 +1223,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexSubImage2D(target, 0, 0, 0, w, h, GL_LUMINANCE, upload_format, pixel_data)
             glBindTexture(target, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
+        glPixelStorei(GL_UNPACK_SWAP_BYTES, False)
 
     def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV2RGB_SHADER):
         log("%s.render_planar_update%s pixel_format=%s",

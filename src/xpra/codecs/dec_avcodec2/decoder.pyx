@@ -982,21 +982,7 @@ cdef class Decoder:
                 size = height * stride
                 outsize += size
 
-                if cs=="GBRP10":
-                    b = bytearray(size)
-                    for z in range(size//2):
-                        b[z*2] = av_frame.data[i][z*2+1]
-                        b[z*2+1] = av_frame.data[i][z*2]
-                    obuf = bytes(b)
-                else:
-                    obuf = memory_as_pybuffer(<void *>av_frame.data[i], size, True)
-                out.append(obuf)
-                #if cs=="GBRP10":
-                #    from xpra.os_util import memoryview_to_bytes
-                #    for y in range(12):
-                #        line = height*y//12
-                #        line_data = memoryview_to_bytes(out[-1])[line*stride:(line+1)*stride]
-                #        log("plane %s line %3i %s..%s", cs[i:i+1], line, hexstr(line_data[:10]), hexstr(line_data[-10:]))
+                out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, True))
                 strides.append(stride)
                 log("decompress_image() read back '%s' plane: %s bytes", cs[i:i+1], size)
         else:
