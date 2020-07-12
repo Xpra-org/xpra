@@ -5,7 +5,8 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.util import envbool
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import cairo
 import gi
@@ -35,6 +36,9 @@ class FontWindow(Gtk.Window):
         self.set_default_size(800, 600)
         self.set_app_paintable(True)
         self.set_title("Font Rendering")
+        icon = get_icon_pixbuf("font.png")
+        if icon:
+            self.set_icon(icon)
         drawing_area = Gtk.DrawingArea()
         drawing_area.connect("draw", self.area_draw)
         self.add(drawing_area)
@@ -52,13 +56,14 @@ class FontWindow(Gtk.Window):
     def area_draw(self, widget, cr):
         layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
-        print("PangoContext: %s (%s)" % (pctx, type(pctx)))
-        #print("PangoContext: %s" % dir(pctx))
-        print(" font map=%s" % pctx.get_font_map())
-        #print(" families=%s" % pctx.list_families())
-        print(" font description=%s" % pctx.get_font_description())
-        print(" language=%s" % pctx.get_language())
-        print(" get_base_dir=%s" % pctx.get_base_dir())
+        if envbool("XPRA_LOG_PANGO", False):
+            print("PangoContext: %s (%s)" % (pctx, type(pctx)))
+            #print("PangoContext: %s" % dir(pctx))
+            print(" font map=%s" % pctx.get_font_map())
+            #print(" families=%s" % pctx.list_families())
+            print(" font description=%s" % pctx.get_font_description())
+            print(" language=%s" % pctx.get_language())
+            print(" get_base_dir=%s" % pctx.get_base_dir())
 
         for y in range(2):
             for x in range(2):

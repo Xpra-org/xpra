@@ -6,7 +6,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import sys
 import gi
@@ -21,6 +21,9 @@ def make_window():
     window.set_default_size(320, 200)
     window.set_border_width(20)
     window.set_position(Gtk.WindowPosition.CENTER)
+    icon = get_icon_pixbuf("font.png")
+    if icon:
+        window.set_icon(icon)
 
     entry = Gtk.Entry()
     entry.set_text("hello")

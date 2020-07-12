@@ -9,7 +9,7 @@ if POSIX and not OSX:
     from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
     init_gdk_display_source()
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -23,6 +23,9 @@ class BellWindow(Gtk.Window):
         self.set_default_size(320, 120)
         self.set_title("Test System Bell")
         self.connect("destroy", Gtk.main_quit)
+        icon = get_icon_pixbuf("bell.png")
+        if icon:
+            self.set_icon(icon)
         btn = Gtk.Button(label="default bell")
         btn.connect('clicked', self.bell)
         self.add(btn)

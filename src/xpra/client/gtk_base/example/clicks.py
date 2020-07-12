@@ -6,7 +6,7 @@ import sys
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -23,6 +23,9 @@ class TestForm(object):
 		self.window.set_default_size(320, 200)
 		self.window.set_border_width(20)
 		self.window.set_position(Gtk.WindowPosition.CENTER)
+		icon = get_icon_pixbuf("pointer.png")
+		if icon:
+			self.window.set_icon(icon)
 
 		vbox = Gtk.VBox()
 		self.info = Gtk.Label(label="")

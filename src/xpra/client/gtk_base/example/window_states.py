@@ -22,10 +22,10 @@ def make_window():
 	icon = get_icon_pixbuf("ticked.png")
 	if icon:
 		window.set_icon(icon)
-	vbox = Gtk.VBox(False, 0)
+	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
 	def add_buttons(t1, cb1, t2, cb2):
-		hbox = Gtk.HBox(True, 10)
+		hbox = Gtk.HBox(homogeneous=True, spacing=10)
 		b1 = Gtk.Button(label=t1)
 		def vcb1(*_args):
 			cb1()
@@ -106,7 +106,7 @@ def make_window():
 				Gdk.WindowState.ABOVE		: "above",
 				Gdk.WindowState.BELOW		: "below",
 				}
-		print("window_state(%s, %s)" % (widget, event))
+		#print("window_state(%s, %s)" % (widget, event))
 		print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])
 	window.connect("window-state-event", window_state)
 	window.add(vbox)

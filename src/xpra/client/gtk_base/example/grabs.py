@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING, add_close_accel  #pylint: disable=wrong-import-position
+from xpra.gtk_common.gtk_util import GRAB_STATUS_STRING, add_close_accel, get_icon_pixbuf  #pylint: disable=wrong-import-position
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -20,6 +20,9 @@ def make_grab_window():
 	window.connect("delete_event", Gtk.main_quit)
 	window.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
 	window.set_position(Gtk.WindowPosition.CENTER)
+	icon = get_icon_pixbuf("pointer.png")
+	if icon:
+		window.set_icon(icon)
 	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 	hbox = Gtk.HBox(homogeneous=False, spacing=0)
 	vbox.pack_start(hbox, expand=False, fill=False, padding=10)

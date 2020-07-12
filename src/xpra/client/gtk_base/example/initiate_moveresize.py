@@ -15,7 +15,7 @@ from xpra.util import (
 	MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT, MOVERESIZE_SIZE_LEFT, \
 	MOVERESIZE_MOVE, MOVERESIZE_CANCEL,
 	)
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.platform import program_context
 
 
@@ -27,6 +27,9 @@ def make_window():
 	window.set_size_request(width, height)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
+	icon = get_icon_pixbuf("windows.png")
+	if icon:
+		window.set_icon(icon)
 	window.realize()
 	root = window.get_window().get_screen().get_root_window()
 

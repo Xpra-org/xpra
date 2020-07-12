@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import sys
 import gi
@@ -22,6 +22,9 @@ def make_window():
 	window.set_size_request(400, 100)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
+	icon = get_icon_pixbuf("font.png")
+	if icon:
+		window.set_icon(icon)
 	entry = Gtk.Entry()
 	entry.set_max_length(50)
 	entry.connect("changed", change_callback, window)

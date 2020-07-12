@@ -75,6 +75,9 @@ class OptionWindow(Gtk.Window):
         self.set_default_size(320, 200)
         self.set_border_width(20)
         self.set_position(Gtk.WindowPosition.CENTER)
+        icon = get_icon_pixbuf("windows.png")
+        if icon:
+            self.set_icon(icon)
 
         t = Gtk.Table(n_rows=9, n_columns=3, homogeneous=True)
         def attach(widget, col, row):

@@ -5,7 +5,7 @@
 
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
-from xpra.gtk_common.gtk_util import get_default_root_window, add_close_accel
+from xpra.gtk_common.gtk_util import get_default_root_window, add_close_accel, get_icon_pixbuf
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -18,12 +18,17 @@ def make_window():
 	window.set_size_request(400, 300)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
+	icon = get_icon_pixbuf("windows.png")
+	if icon:
+		window.set_icon(icon)
 	vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
 	btn = Gtk.Button(label="Create Transient")
 	def create_transient(*_args):
 		tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 		tw.set_size_request(200, 100)
+		if icon:
+			tw.set_icon(icon)
 		tw.connect("delete_event", lambda x,y : tw.destroy())
 		tw.set_transient_for(window)
 		tw.add(Gtk.Label("Transient Window"))
@@ -41,6 +46,8 @@ def make_window():
 	def create_root_transient(*_args):
 		tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 		tw.set_size_request(200, 100)
+		if icon:
+			tw.set_icon(icon)
 		tw.connect("delete_event", lambda x,y : tw.destroy())
 		tw.realize()
 		tw.get_window().set_transient_for(get_default_root_window())

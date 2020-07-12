@@ -6,7 +6,7 @@
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk_common.cursor_names import cursor_types  #pylint: disable=wrong-import-position
-from xpra.gtk_common.gtk_util import add_close_accel
+from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -23,6 +23,9 @@ def main():
 		window.set_size_request(width, height)
 		window.connect("delete_event", Gtk.main_quit)
 		window.set_position(Gtk.WindowPosition.CENTER)
+		icon = get_icon_pixbuf("pointer.png")
+		if icon:
+			window.set_icon(icon)
 		cursor_combo = Gtk.ComboBoxText()
 		cursor_combo.append_text("")
 		for name in sorted(cursor_types.keys()):
