@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -253,6 +253,8 @@ cdef extern from "libavcodec/avcodec.h":
         int *linesize
         int format
         void *opaque
+        int width
+        int height
     ctypedef struct AVCodec:
         pass
     ctypedef struct AVDictionary:
@@ -964,8 +966,9 @@ cdef class Decoder:
             log("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
 
         cs = self.get_actual_colorspace()
-        log("actual_colorspace(%s)=%s", self.actual_pix_fmt, cs)
-        if cs.find("P")>0:  #ie: GBRP, YUV420P, YUV422P10LE etc
+        log("actual_colorspace(%s)=%s, frame size: %4ix%-4i",
+                 self.actual_pix_fmt, cs, av_frame.width, av_frame.height)
+        if cs.find("P")>0:  #ie: GBRP, YUV420P, GBRP10 etc
             divs = get_subsampling_divs(cs)
             nplanes = 3
             for i in range(3):
