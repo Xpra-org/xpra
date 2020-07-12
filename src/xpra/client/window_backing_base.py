@@ -471,7 +471,11 @@ class WindowBackingBase:
                        dst_width, dst_height, dst_format_options, speed):
         global CSC_OPTIONS
         in_options = CSC_OPTIONS.get(src_format, {})
-        assert in_options, "no csc options for '%s' input in %s" % (src_format, CSC_OPTIONS)
+        if not in_options:
+            log.error("Error: no csc options for '%s' input, only found:", src_format)
+            for k,v in CSC_OPTIONS.items():
+                log.error(" * %-8s : %s", k, csv(v))
+            raise Exception("no csc options for '%s' input in %s" % (src_format, csv(CSC_OPTIONS.keys())))
         videolog("make_csc%s",
             (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
         for dst_format in dst_format_options:
