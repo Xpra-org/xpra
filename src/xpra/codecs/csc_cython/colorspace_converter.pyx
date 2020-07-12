@@ -196,7 +196,6 @@ cdef inline unsigned char clamp(const long v) nogil:
 cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
                                     unsigned int w, unsigned int h,
                                     unsigned int src_stride, unsigned int dst_stride) nogil:
-    assert (dst_stride%2)==0
     cdef unsigned int y = 0
     cdef unsigned int i = 0
     cdef unsigned int v
@@ -584,6 +583,7 @@ cdef class ColorspaceConverter:
         cdef unsigned int src_stride = image.get_rowstride()
         cdef unsigned int dst_stride = self.dst_strides[0]
 
+        assert (dst_stride%2)==0
         if image.is_thread_safe():
             with nogil:
                 r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
