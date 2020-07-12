@@ -421,7 +421,7 @@ class VideoHelper:
                         encoding_colorspaces = full_csc_modes.setdefault(encoding, [])
                         if colorspace not in encoding_colorspaces:
                             encoding_colorspaces.append(colorspace)
-        log("get_client_full_csc_modes(%s)=%s", client_supported_csc_modes, full_csc_modes)
+        log("get_server_full_csc_modes(%s)=%s", client_supported_csc_modes, full_csc_modes)
         return full_csc_modes
 
 
