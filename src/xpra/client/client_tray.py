@@ -218,10 +218,10 @@ class TrayBacking(WindowBackingBase):
     def paint_scroll(self, _img_data, _options, callbacks):
         raise Exception("scroll should not be used with tray icons")
 
-
-    def _do_paint_rgb24(self, img_data, x, y, width, height, rowstride, options):
+    def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
         log("TrayBacking(%i)._do_paint_rgb24%s",
-            self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
+            self.wid, ("%s bytes" % len(img_data), x, y, width, height, render_width, render_height, rowstride, options))
+        assert width==render_width and height==render_height, "tray rgb must not use scaling"
         self.data = ("rgb24", width, height, rowstride, img_data[:], options)
         if SAVE:
             from PIL import Image
@@ -231,9 +231,10 @@ class TrayBacking(WindowBackingBase):
             log.info("tray rgb24 update saved to %s", filename)
         return True
 
-    def _do_paint_rgb32(self, img_data, x, y, width, height, rowstride, options):
+    def _do_paint_rgb32(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
         log("TrayBacking(%i)._do_paint_rgb32%s",
-            self.wid, ("%s bytes" % len(img_data), x, y, width, height, rowstride, options))
+            self.wid, ("%s bytes" % len(img_data), x, y, width, height, render_width, render_height, rowstride, options))
+        assert width==render_width and height==render_height, "tray rgb must not use scaling"
         self.data = ("rgb32", width, height, rowstride, img_data[:], options)
         if SAVE:
             from PIL import Image
