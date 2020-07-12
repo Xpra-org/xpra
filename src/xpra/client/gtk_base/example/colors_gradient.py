@@ -19,7 +19,6 @@ class ColorGradientWindow(Gtk.Window):
 
     def __init__(self):
         super().__init__()
-        self.set_title("Color Bit Depth")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(1024, 768)
         self.set_app_paintable(True)
@@ -28,6 +27,7 @@ class ColorGradientWindow(Gtk.Window):
         if icon:
             self.set_icon(icon)
         self.bpc = 16
+        self.set_title("Color Bit Depth: %i" % self.bpc)
         drawing_area = Gtk.DrawingArea()
         drawing_area.connect("draw", self.area_draw)
         self.add(drawing_area)
@@ -53,6 +53,7 @@ class ColorGradientWindow(Gtk.Window):
         else:
             self.bpc -= 1
         self.bpc = (self.bpc+16) % 16
+        self.set_title("Color Bit Depth: %i" % self.bpc)
         self.queue_draw()
         return True
 
@@ -61,6 +62,7 @@ class ColorGradientWindow(Gtk.Window):
             self.bpc = ((self.bpc-2) % 16)+1
         else:
             self.bpc = (self.bpc%16)+1
+        self.set_title("Color Bit Depth: %i" % self.bpc)
         self.queue_draw()
         return True
 
