@@ -1695,7 +1695,12 @@ cdef class Encoder:
         if hw_frame:
             av_frame_free(&hw_frame)
 
-        client_options = {}
+        #NV12 also uses YUV420P,
+        #only with a different pixel layout
+        #which is irrelevant to the client
+        client_options = {
+            "csc" : "YUV420P",
+            }
         if self.frames==0 and self.profile:
             client_options["profile"] = self.profile
             client_options["level"] = "3.0"

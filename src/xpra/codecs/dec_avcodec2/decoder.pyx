@@ -518,7 +518,7 @@ FORMAT_TO_ENUM = {
             "ARGB"      : AV_PIX_FMT_ARGB,
             "BGRA"      : AV_PIX_FMT_BGRA,
             "GBRP"      : AV_PIX_FMT_GBRP,
-            "BGR48"     : AV_PIX_FMT_GBRP10LE,
+            "GBRP10"    : AV_PIX_FMT_GBRP10LE,
             }
 #for planar formats, this is the number of bytes per channel
 BYTES_PER_PIXEL = {
@@ -536,12 +536,11 @@ BYTES_PER_PIXEL = {
 
 #given an ffmpeg pixel format,
 #what is our format name for it:
-COLORSPACES = tuple(FORMAT_TO_ENUM.keys())
+COLORSPACES = list(FORMAT_TO_ENUM.keys())+["r210"]
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
-#ENUM_TO_FORMAT[AV_PIX_FMT_YUV422P10LE] = "YUV422P10"
-ENUM_TO_FORMAT[AV_PIX_FMT_GBRP10LE] = "GBRP10"
+FORMAT_TO_ENUM["r210"] = AV_PIX_FMT_GBRP10LE
 
 
 def get_version():
@@ -612,7 +611,7 @@ def get_output_colorspace(encoding, csc):
         if csc in ("RGB", "XRGB", "BGRX", "ARGB", "BGRA"):
             #h264 from plain RGB data is returned as "GBRP"!
             return "GBRP"
-        if csc=="BGR48":
+        if csc=="GBRP10":
             return "GBRP10"
     elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
         return "YUV420P"
@@ -719,14 +718,7 @@ cdef class Decoder:
         self.width = width
         self.height = height
         assert colorspace in COLORSPACES, "invalid colorspace: %s" % colorspace
-        self.colorspace = ""
-        for x in COLORSPACES:
-            if x==colorspace:
-                self.colorspace = x
-                break
-        if not self.colorspace:
-            log.error("invalid pixel format: %s", colorspace)
-            return  False
+        self.colorspace = str(colorspace)
         self.pix_fmt = FORMAT_TO_ENUM.get(colorspace, AV_PIX_FMT_NONE)
         if self.pix_fmt==AV_PIX_FMT_NONE:
             log.error("invalid pixel format: %s", colorspace)

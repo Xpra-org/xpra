@@ -566,6 +566,7 @@ cdef class Encoder:
         finally:
             x265_picture_free(pic_out)
         client_options = {
+                "csc"       : self.src_format,
                 "frame"     : self.frames,
                 "pts"     : image.get_timestamp()-self.first_frame_timestamp,
                 }

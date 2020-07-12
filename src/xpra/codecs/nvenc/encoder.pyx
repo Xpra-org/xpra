@@ -47,6 +47,7 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 cdef int MIN_COMPUTE = 0x30
 
+cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
 cdef int NATIVE_RGB = int(not WIN32)
@@ -1300,6 +1301,8 @@ def get_COLORSPACES(encoding):
         "XRGB" : out_cs,
         "ARGB" : out_cs,
         }
+    if SUPPORT_30BPP:
+        COLORSPACES["r210"] = ("GBRP10", )
     return COLORSPACES
 
 def get_input_colorspaces(encoding):
@@ -1355,7 +1358,7 @@ def get_spec(encoding, colorspace):
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
     global MAX_SIZE
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-    has_lossless_mode = colorspace in ("XRGB", "ARGB", "BGRX", "BGRA" ) and encoding=="h264"
+    has_lossless_mode = colorspace in ("XRGB", "ARGB", "BGRX", "BGRA", "r210") and encoding=="h264"
     cs = video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED),
                       codec_class=Encoder, codec_type=get_type(),
                       quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
@@ -1363,7 +1366,7 @@ def get_spec(encoding, colorspace):
                       #using a hardware encoder for something this small is silly:
                       min_w=min_w, min_h=min_h,
                       max_w=max_w, max_h=max_h,
-                      can_scale=True,
+                      can_scale=colorspace!="r210",
                       width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
     cs.get_runtime_factor = get_runtime_factor
     return cs
@@ -1541,7 +1544,7 @@ cdef class Encoder:
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
-        assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX"), "invalid source format %s" % src_format
+        assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX", "r210"), "invalid source format %s" % src_format
         assert "YUV420P" in dst_formats or "YUV444P" in dst_formats
         self.width = width
         self.height = height
@@ -1635,6 +1638,8 @@ cdef class Encoder:
         nativergb = NATIVE_RGB and hasyuv444
         if nativergb and self.src_format in ("BGRX", "BGRA"):
             v = "BGRX"
+        elif self.src_format=="r210":
+            v = "r210"
         else:
             x,y = self.scaling
             hasyuv420 = YUV420_ENABLED and "YUV420P" in self.dst_formats
@@ -1655,7 +1660,7 @@ cdef class Encoder:
 
     def get_target_lossless(self, pixel_format, quality):
         global LOSSLESS_ENABLED, LOSSLESS_CODEC_SUPPORT
-        if pixel_format!="YUV444P":
+        if pixel_format not in ("YUV444P", "r210"):
             return False
         if not LOSSLESS_CODEC_SUPPORT.get(self.encoding, LOSSLESS_ENABLED):
             return False
@@ -1713,6 +1718,13 @@ cdef class Encoder:
             assert NATIVE_RGB
             kernel_name = None
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_ARGB
+            plane_size_div= 1
+            wmult = 4
+            hmult = 1
+        elif self.pixel_format=="r210":
+            assert NATIVE_RGB
+            kernel_name = None
+            self.bufferFmt = NV_ENC_BUFFER_FORMAT_ARGB10
             plane_size_div= 1
             wmult = 4
             hmult = 1
@@ -1884,6 +1896,8 @@ cdef class Encoder:
                 #config.rcParams.initialRCQP.qpInterB = qpmin
 
             if self.pixel_format=="BGRX":
+                chromaFormatIDC = 3
+            elif self.pixel_format=="r210":
                 chromaFormatIDC = 3
             elif self.pixel_format=="NV12":
                 chromaFormatIDC = 1
@@ -2525,6 +2539,7 @@ cdef class Encoder:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
         client_options = {
+                    "csc"       : self.src_format,
                     "frame"     : int(self.frames),
                     "pts"       : int(timestamp-self.first_frame_timestamp),
                     "speed"     : self.speed,
@@ -2596,22 +2611,24 @@ cdef class Encoder:
                 preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
                 if DEBUG_API:
                     log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
-                presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
-                if presetConfig!=NULL:
-                    try:
-                        encConfig = &presetConfig.presetCfg
-                        if DEBUG_API:
-                            log("presetConfig.presetCfg=%s", <uintptr_t> encConfig)
-                        gop = {NVENC_INFINITE_GOPLENGTH : "infinite"}.get(encConfig.gopLength, encConfig.gopLength)
-                        log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
-                    finally:
-                        free(presetConfig)
                 if preset_name is None:
                     unknowns.append(guidstr(preset_GUID))
                 else:
+                    presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
+                    if presetConfig!=NULL:
+                        try:
+                            encConfig = &presetConfig.presetCfg
+                            if DEBUG_API:
+                                log("presetConfig.presetCfg=%s", <uintptr_t> encConfig)
+                            gop = {NVENC_INFINITE_GOPLENGTH : "infinite"}.get(encConfig.gopLength, encConfig.gopLength)
+                            log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
+                        finally:
+                            free(presetConfig)
                     presets[preset_name] = guidstr(preset_GUID)
             if len(unknowns)>0:
-                log.warn("Warning: found some unknown NVENC presets: %s", csv(unknowns))
+                log.warn("Warning: found some unknown NVENC presets:")
+                for x in unknowns:
+                    log.warn(" * %s", x)
         finally:
             free(preset_GUIDs)
         if DEBUG_API:

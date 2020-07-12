@@ -364,21 +364,21 @@ if SUPPORT_24BPP:
         })
 
 COLORSPACES = {
-    "YUV420P"   : ("YUV420P",),
-    "YUV422P"   : ("YUV422P",),
-    "YUV444P"   : ("YUV444P",),
-    "BGRA"      : ("BGRA",),
-    "BGRX"      : ("BGRX",),
+    "YUV420P"   : "YUV420P",
+    "YUV422P"   : "YUV422P",
+    "YUV444P"   : "YUV444P",
+    "BGRA"      : "BGRA",
+    "BGRX"      : "BGRX",
     }
 emit_ifdef_bitdepth()
 if SUPPORT_30BPP:
     COLORSPACE_FORMATS["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES)
-    COLORSPACES["BGR48"] = ("BGR48", )
+    COLORSPACES["BGR48"] = "GBRP10"
 emit_endif_bitdepth()
 if SUPPORT_24BPP:
     COLORSPACES.update({
-        "BGR"       : ("BGR",),
-        "RGB"       : ("RGB",),
+        "BGR"       : "BGR",
+        "RGB"       : "RGB",
         })
 
 
@@ -414,7 +414,7 @@ def get_input_colorspaces(encoding):
 def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
-    return COLORSPACES[input_colorspace]
+    return (COLORSPACES[input_colorspace],)
 
 if X264_BUILD<146:
     #untested, but should be OK for 4k:
@@ -430,7 +430,7 @@ def get_spec(encoding, colorspace):
     #we can handle high quality and any speed
     #setup cost is moderate (about 10ms)
     has_lossless_mode = colorspace in ("YUV444P", "BGR", "BGRA", "BGRX", "RGB")
-    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=COLORSPACES[colorspace],
+    return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
                       has_lossless_mode=has_lossless_mode,
                       codec_class=Encoder, codec_type=get_type(),
                       quality=60+40*int(has_lossless_mode), speed=60,
@@ -479,6 +479,7 @@ cdef class Encoder:
     cdef unsigned int fast_decode
     #cdef int opencl
     cdef object src_format
+    cdef object csc_format
     cdef object content_type
     cdef object profile
     cdef object tune
@@ -520,6 +521,7 @@ cdef class Encoder:
         self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)
         self.preset = self.get_preset_for_speed(speed)
         self.src_format = src_format
+        self.csc_format = COLORSPACES[src_format]
         self.colorspace = cs_info[0]
         self.frames = 0
         self.frame_types = {}
@@ -686,6 +688,7 @@ cdef class Encoder:
             "quality"       : self.quality,
             "lossless"      : self.quality==100,
             "src_format"    : self.src_format,
+            "csc_format"    : self.csc_format,
             "content-type"  : self.content_type,
             "version"       : get_version(),
             "frame-types"   : self.frame_types,
@@ -929,6 +932,7 @@ cdef class Encoder:
                 "pts"       : int(pic_out.i_pts),
                 #"quality"   : max(0, min(100, quality)),
                 #"speed"     : max(0, min(100, speed)),
+                "csc"       : self.csc_format,
                 "type"      : slice_type,
                 }
         if self.delayed_frames>0:

@@ -15,7 +15,7 @@ log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec
 from xpra.os_util import bytestostr, WIN32, OSX, POSIX, BITS
-from xpra.util import AtomicInteger, envint, envbool
+from xpra.util import AtomicInteger, envint, envbool, typedict
 from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t
@@ -582,7 +582,7 @@ cdef class Encoder:
             assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
-        cdef unsigned long bandwidth_limit = options.intget("bandwidth-limit", self.bandwidth_limit)
+        cdef unsigned long bandwidth_limit = typedict(options).intget("bandwidth-limit", self.bandwidth_limit)
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()
@@ -591,7 +591,8 @@ cdef class Encoder:
         if quality>=0:
             self.set_encoding_quality(quality)
         return self.do_compress_image(pic_in, strides), {
-            "frame"    : int(self.frames),
+            "csc"       : self.src_format,
+            "frame"     : int(self.frames),
             #"quality"  : min(99+self.lossless, self.quality),
             #"speed"    : self.speed,
             }

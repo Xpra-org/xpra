@@ -1334,10 +1334,9 @@ class WindowVideoSource(WindowSource):
                 #    pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
                 #we have csc module(s) that can get us from pixel_format to out_csc:
                 for out_csc, l in csc_specs.items():
-                    actual_csc = self.csc_equiv(out_csc)
                     if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE==out_csc:
                         for csc_spec in l:
-                            add_scores("via %s (%s)" % (out_csc, actual_csc), csc_spec, out_csc)
+                            add_scores("via %s" % out_csc, csc_spec, out_csc)
         s = sorted(scores, key=lambda x : -x[0])
         scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
         if self.is_cancelled():
@@ -1348,14 +1347,6 @@ class WindowVideoSource(WindowSource):
             self.last_pipeline_scores = s
         self.last_pipeline_time = monotonic_time()
         return s
-
-    def csc_equiv(self, csc_mode):
-        #in some places, we want to check against the subsampling used
-        #and not the colorspace itself.
-        #and NV12 uses the same subsampling as YUV420P...
-        #(the colorspace should be separated from the encoding format)
-        return {"NV12" : "YUV420P",
-                "BGRX" : "YUV444P"}.get(csc_mode, csc_mode)
 
 
     def get_video_fps(self, width, height):
@@ -2235,9 +2226,6 @@ class WindowVideoSource(WindowSource):
             self.video_stream_file.write(data)
             self.video_stream_file.flush()
 
-        #tell the client which colour subsampling we used:
-        #(note: see csc_equiv!)
-        client_options["csc"] = self.csc_equiv(csc)
         #tell the client about scaling (the size of the encoded picture):
         #(unless the video encoder has already done so):
         scaled_size = None
@@ -2328,7 +2316,6 @@ class WindowVideoSource(WindowSource):
         if self.video_stream_file:
             self.video_stream_file.write(data)
             self.video_stream_file.flush()
-        client_options["csc"] = self.csc_equiv(csc)
         if frame<self.start_video_frame:
             client_options["paint"] = False
         if scaled_size:
