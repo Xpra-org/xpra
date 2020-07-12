@@ -22,6 +22,7 @@ class FakeApplication:
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
+        self.display_desc = {}
         self.session_name = "Test System Tray"
         self.mmap_enabled = False
         self.windows_enabled = True
