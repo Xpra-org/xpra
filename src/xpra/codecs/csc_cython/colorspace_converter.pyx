@@ -71,6 +71,7 @@ COLORSPACES = {
                "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
                "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
                "r210"       : get_CS("r210",    ["YUV420P", "BGR48"]),
+               "GBRP10"     : get_CS("GBRP10",  ["r210", ]),
                }
 
 
@@ -102,10 +103,12 @@ def get_output_colorspaces(input_colorspace):
 def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
-    #low score as this should be used as fallback only:
     can_scale = True
     if in_colorspace=="r210" and out_colorspace=="BGR48":
         can_scale = False
+    elif in_colorspace=="GBRP10" and out_colorspace=="r210":
+        can_scale = False
+    #low score as this should be used as fallback only:
     return csc_spec(in_colorspace, out_colorspace,
                     ColorspaceConverter, codec_type=get_type(),
                     quality=50, speed=10, setup_cost=10, min_w=2, min_h=2, max_w=16*1024, max_h=16*1024, can_scale=can_scale)
@@ -193,6 +196,7 @@ cdef inline unsigned char clamp(const long v) nogil:
 cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
                                     unsigned int w, unsigned int h,
                                     unsigned int src_stride, unsigned int dst_stride) nogil:
+    assert (dst_stride%2)==0
     cdef unsigned int y = 0
     cdef unsigned int i = 0
     cdef unsigned int v
@@ -203,8 +207,24 @@ cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r
             bgr48[i] = v&0x000003ff
             bgr48[i+1] = (v&0x000ffc00) >> 10
             bgr48[i+2] = (v&0x3ff00000) >> 20
-            i = i + 3
+            i += 3
         r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+
+cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
+                                     unsigned int width, unsigned int height,
+                                     unsigned int src_stride, unsigned int dst_stride) nogil:
+    cdef unsigned int x, y
+    cdef unsigned short *b
+    cdef unsigned short *g
+    cdef unsigned short *r
+    cdef unsigned int *dst
+    for y in range(height):
+        dst = <unsigned int*> (r210 + y*dst_stride)
+        g = <unsigned short*> ((<uintptr_t> gbrp10[0]) + y*src_stride)
+        b = <unsigned short*> ((<uintptr_t> gbrp10[1]) + y*src_stride)
+        r = <unsigned short*> ((<uintptr_t> gbrp10[2]) + y*src_stride)
+        for x in range(width):
+            dst[x] = (b[x] & 0x3ff) + ((g[x] & 0x3ff)<<10) + ((r[x] & 0x3ff)<<20)
 
 
 cdef class ColorspaceConverter:
@@ -248,6 +268,9 @@ cdef class ColorspaceConverter:
             self.dst_sizes[i]   = 0
             self.offsets[i]     = 0
 
+        def assert_no_scaling():
+            assert src_width==dst_width and src_height==dst_height, "scaling is not supported for %s to %s" % (src_format, dst_format)
+
         if src_format in ("BGRX", "RGBX", "RGB", "BGR", "r210") and dst_format=="YUV420P":
             self.dst_strides[0] = roundup(self.dst_width,   STRIDE_ROUNDUP)
             self.dst_strides[1] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
@@ -273,12 +296,17 @@ cdef class ColorspaceConverter:
                 assert src_format=="r210"
                 self.convert_image_function = self.r210_to_YUV420P
         elif src_format=="r210" and dst_format=="BGR48":
+            assert_no_scaling()
             self.dst_strides[0] = roundup(self.dst_width*6, STRIDE_ROUNDUP)
             self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
             self.buffer_size = self.dst_sizes[0]+self.dst_strides[0]
             self.convert_image_function = self.r210_to_BGR48
-            assert src_width==dst_width
-            assert src_height==dst_height
+        elif src_format=="GBRP10" and dst_format=="r210":
+            assert_no_scaling()
+            self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
+            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
+            self.buffer_size = self.dst_sizes[0]+self.dst_strides[0]
+            self.convert_image_function = self.GBRP10_to_r210
         elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX", "RGB", "BGR"):
             #3 or 4 bytes per pixel:
             self.dst_strides[0] = roundup(self.dst_width*len(dst_format), STRIDE_ROUNDUP)
@@ -425,7 +453,7 @@ cdef class ColorspaceConverter:
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         input_stride = image.get_rowstride()
-        log("do_RGB_to_YUV420P(%s, %i, %i, %i, %i) input=%s, strides=%s" % (image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride))
+        log("do_RGB_to_YUV420P(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
 
         assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
         #allocate output buffer:
@@ -542,7 +570,7 @@ cdef class ColorspaceConverter:
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         input_stride = image.get_rowstride()
-        log("r210_to_BGR48(%s) input=%s, strides=%s" % (image, len(pixels), input_stride))
+        log("r210_to_BGR48(%s) input=%s, strides=%s", image, len(pixels), input_stride)
 
         cdef Py_ssize_t pic_buf_len = 0
         cdef const unsigned int *r210
@@ -564,11 +592,59 @@ cdef class ColorspaceConverter:
 
         bgr48_buffer = memory_as_pybuffer(<void *> bgr48, self.dst_sizes[0], True)
         cdef double elapsed = time.time()-start
-        log("%s took %.1fms", self, 1000.0*elapsed)
+        log("r210_to_BGR48 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, bgr48_buffer, "BGR48", 48, dst_stride, ImageWrapper.PACKED)
         out_image.cython_buffer = <uintptr_t> bgr48
+        return out_image
+
+
+    def GBRP10_to_r210(self, image):
+        cdef double start = time.time()
+        assert image.get_planes()==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % image.get_planes()
+        assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
+        assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
+        pixels = image.get_pixels()
+        assert pixels, "failed to get pixels from %s" % image
+
+        input_strides = image.get_rowstride()
+        cdef unsigned int w = self.src_width
+        cdef unsigned int h = self.src_height
+        cdef unsigned int src_stride = input_strides[0]
+        cdef unsigned int dst_stride = self.dst_strides[0]
+        assert input_strides[1]==src_stride and input_strides[2]==src_stride, "mismatch in rowstrides: %s" % (input_strides,)
+        assert src_stride>=w*2
+        assert dst_stride>=w*4
+        assert self.dst_sizes[0]>=dst_stride*h
+
+        cdef Py_ssize_t pic_buf_len[3]
+        cdef uintptr_t gbrp10[3]
+        cdef unsigned int i
+        for i in range(3):
+            assert object_as_buffer(pixels[i], <const void**> &gbrp10[i], &pic_buf_len[i])==0
+            assert pic_buf_len[i]>=src_stride*h, "input plane '%s' is too small: %i bytes" % ("GBR"[i], pic_buf_len[i])
+
+        #allocate output buffer:
+        cdef unsigned int *r210 = <unsigned int*> memalign(self.dst_sizes[0])
+
+        if image.is_thread_safe():
+            with nogil:
+                gbrp10_to_r210_copy(<uintptr_t> r210, gbrp10,
+                                    w, h,
+                                    src_stride, dst_stride)
+        else:
+            gbrp10_to_r210_copy(<uintptr_t> r210, gbrp10,
+                                w, h,
+                                src_stride, dst_stride)
+
+        r210_buffer = memory_as_pybuffer(<void *> r210, self.dst_sizes[0], True)
+        cdef double elapsed = time.time()-start
+        log("GBRP10_to_r210 took %.1fms", 1000.0*elapsed)
+        self.time += elapsed
+        self.frames += 1
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, r210_buffer, "r210", 30, dst_stride, ImageWrapper.PACKED)
+        out_image.cython_buffer = <uintptr_t> r210
         return out_image
 
 

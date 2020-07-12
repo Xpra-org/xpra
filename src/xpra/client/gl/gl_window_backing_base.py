@@ -21,7 +21,6 @@ from OpenGL.GL import (
     GL_DONT_CARE, GL_TRUE, GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_LIGHTING, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
     GL_UNSIGNED_INT_2_10_10_10_REV, GL_UNSIGNED_INT_10_10_10_2, GL_UNSIGNED_SHORT_5_6_5,
-    GL_UNPACK_SWAP_BYTES,
     GL_BLEND, GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA,
     GL_TEXTURE_MAX_LEVEL, GL_TEXTURE_BASE_LEVEL,
     GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST,
@@ -124,7 +123,7 @@ PIXEL_FORMAT_TO_DATATYPE = {
     "YUV422P" : GL_UNSIGNED_BYTE,
     "YUV444P" : GL_UNSIGNED_BYTE,
     "GBRP"  : GL_UNSIGNED_BYTE,
-    "GBRP10" : GL_UNSIGNED_SHORT,
+    "GBRP16" : GL_UNSIGNED_SHORT,
     }
 CONSTANT_TO_PIXEL_FORMAT = {
     GL_BGR   : "BGR",
@@ -303,11 +302,11 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.bit_depth>32:
             self.internal_format = GL_RGBA16
             self.RGB_MODES.append("r210")
-            self.RGB_MODES.append("GBRP10")
+            #self.RGB_MODES.append("GBRP16")
         elif self.bit_depth==30:
             self.internal_format = GL_RGB10_A2
             self.RGB_MODES.append("r210")
-            self.RGB_MODES.append("GBRP10")
+            #self.RGB_MODES.append("GBRP16")
         elif 0<self.bit_depth<=16:
             if self._alpha_enabled:
                 if envbool("XPRA_GL_RGBA4", True):
@@ -1112,6 +1111,10 @@ class GLWindowBackingBase(WindowBackingBase):
             #copy so the data will be usable (usually a str)
             img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
+        if pixel_format=="GBRP10":
+            #call superclass to handle csc
+            #which will end up calling paint rgb with r210 data
+            return super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
         if pixel_format.startswith("GBRP"):
             shader = RGBP2RGB_SHADER
         else:
@@ -1127,7 +1130,7 @@ class GLWindowBackingBase(WindowBackingBase):
         x, y = self.gravity_adjust(x, y, options)
         try:
             pixel_format = img.get_pixel_format()
-            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP10"), \
+            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16"), \
                 "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
 
             context = self.gl_context()
@@ -1192,8 +1195,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
         img_data = img.get_pixels()
-        BPP = 2 if pixel_format.endswith("P10") else 1
-        glPixelStorei(GL_UNPACK_SWAP_BYTES, BPP==2)
+        BPP = 2 if pixel_format.endswith("P16") else 1
         assert len(rowstrides)==3 and len(img_data)==3
         for texture, index, tex_name in (
             (GL_TEXTURE0, TEX_Y, pixel_format[0:1]*BPP),
@@ -1223,12 +1225,11 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexSubImage2D(target, 0, 0, 0, w, h, GL_LUMINANCE, upload_format, pixel_data)
             glBindTexture(target, 0)
         #glActiveTexture(GL_TEXTURE0)    #redundant, we always call render_planar_update afterwards
-        glPixelStorei(GL_UNPACK_SWAP_BYTES, False)
 
     def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV2RGB_SHADER):
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
-        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP10"):
+        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16"):
             #not ready to render yet
             return
         self.gl_marker("painting planar update, format %s", self.pixel_format)
