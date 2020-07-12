@@ -106,7 +106,6 @@ class RemoteLogging(StubClientMixin):
 
 
     def remote_logging_handler(self, log, level, msg, *args, **kwargs):
-        print("remote_logging_handler%s", (log, level, msg, args, kwargs))
         #prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
@@ -125,7 +124,6 @@ class RemoteLogging(StubClientMixin):
             else:
                 s = msg
             data = self.compressed_wrapper("text", enc(s), level=1)
-            print("compressed_wrapper(%s)=%s", type(s), type(getattr(data, "data", data)))
             self.send("logging", level, data, dtime)
             exc_info = kwargs.get("exc_info")
             if exc_info is True:
