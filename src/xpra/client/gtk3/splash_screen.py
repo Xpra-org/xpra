@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from gi.repository import Gtk, GLib, Pango
+from gi.repository import Gtk, Gdk, GLib, Pango
 
 from xpra import __version__
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
@@ -22,13 +22,19 @@ class SplashScreen(Gtk.Window):
 
     def __init__(self):
         self.exit_code = None
-        super().__init__(type=Gtk.WindowType.POPUP)
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("delete_event", self.exit)
         title = "Xpra %s" % __version__
         self.set_title("Xpra")
         self.set_size_request(320, 160)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
+        self.set_opacity(0.8)
+        self.set_accept_focus(False)
+        self.set_focus_on_map(False)
+        self.set_skip_pager_hint(True)
+        self.set_skip_taskbar_hint(True)
+        self.set_type_hint(Gdk.WindowTypeHint.SPLASHSCREEN)
         vbox = Gtk.VBox()
         hbox = Gtk.HBox(homogeneous=False)
         icon = get_icon_pixbuf("xpra")
