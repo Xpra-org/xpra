@@ -134,7 +134,6 @@ DEF STRIDE_ROUNDUP = 2
 #Pre-calculate some coefficients and define them as constants
 #We use integer calculations so everything is multipled by 2**16
 #To get the result as a byte, we just bitshift:
-DEF shift = 16
 
 #RGB to YUV
 #Y[o] = clamp(0.257 * R + 0.504 * G + 0.098 * B + 16)
@@ -191,7 +190,7 @@ cdef inline unsigned char clamp(const long v) nogil:
     elif v>=max_clamp:
         return 255
     else:
-        return <unsigned char> (v>>shift)
+        return <unsigned char> (v>>16)
 
 cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
                                     unsigned int w, unsigned int h,
@@ -402,7 +401,14 @@ cdef class ColorspaceConverter:
 
 
     def convert_image(self, image):
-        return self.convert_image_function(image)
+        cdef double start = time.time()
+        fn = self.convert_image_function
+        r = fn(image)
+        cdef double elapsed = time.time()-start
+        log("%s took %.1fms", fn, 1000.0*elapsed)
+        self.time += elapsed
+        self.frames += 1
+        return r
 
 
     def r210_to_YUV420P(self, image):
@@ -438,9 +444,7 @@ cdef class ColorspaceConverter:
         cdef unsigned char *U
         cdef unsigned char *V
 
-        start = time.time()
         self.validate_rgb_image(image)
-        iplanes = image.get_planes()
         pixels = image.get_pixels()
         input_stride = image.get_rowstride()
         log("do_RGB_to_YUV420P(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
@@ -536,20 +540,20 @@ cdef class ColorspaceConverter:
                             Bsum /= sum
                             U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
                             V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
+        return self.planar3_image_wrapper(<void *> output_image)
 
+    cdef planar3_image_wrapper(self, void *buf, unsigned char bpp=24):
         #create python buffer from each plane:
         planes = []
         strides = []
+        cdef unsigned char i
         for i in range(3):
             strides.append(self.dst_strides[i])
-            planes.append(memory_as_pybuffer(<void *> ((<uintptr_t> output_image) + self.offsets[i]), self.dst_sizes[i], True))
-        elapsed = time.time()-start
-        log("%s took %.1fms", self, 1000.0*elapsed)
-        self.time += elapsed
-        self.frames += 1
-        out_image = CythonImageWrapper(0, 0, dst_width, dst_height, planes, self.dst_format, 24, strides, ImageWrapper.PLANAR_3)
-        out_image.cython_buffer = <uintptr_t> output_image
+            planes.append(memory_as_pybuffer(<void *> ((<uintptr_t> buf) + self.offsets[i]), self.dst_sizes[i], True))
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, bpp, strides, ImageWrapper.PLANAR_3)
+        out_image.cython_buffer = <uintptr_t> buf
         return out_image
+
 
     def validate_rgb_image(self, image):
         assert image.get_planes()==ImageWrapper.PACKED, "invalid input format: %s planes" % image.get_planes()
@@ -558,7 +562,6 @@ cdef class ColorspaceConverter:
         assert image.get_pixels(), "failed to get pixels from %s" % image
 
     def r210_to_BGR48(self, image):
-        cdef double start = time.time()
         self.validate_rgb_image(image)
         pixels = image.get_pixels()
         input_stride = image.get_rowstride()
@@ -582,14 +585,12 @@ cdef class ColorspaceConverter:
                 r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
         else:
             r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
+        return self.packed_image_wrapper(<void *> bgr48, 48)
 
-        bgr48_buffer = memory_as_pybuffer(<void *> bgr48, self.dst_sizes[0], True)
-        cdef double elapsed = time.time()-start
-        log("r210_to_BGR48 took %.1fms", 1000.0*elapsed)
-        self.time += elapsed
-        self.frames += 1
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, bgr48_buffer, "BGR48", 48, dst_stride, ImageWrapper.PACKED)
-        out_image.cython_buffer = <uintptr_t> bgr48
+    cdef packed_image_wrapper(self, void *buf, unsigned char bpp=24):
+        pybuf = memory_as_pybuffer(buf, self.dst_sizes[0], True)
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, pybuf, self.dst_format, bpp, self.dst_strides[0], ImageWrapper.PACKED)
+        out_image.cython_buffer = <uintptr_t> buf
         return out_image
 
 
@@ -600,7 +601,6 @@ cdef class ColorspaceConverter:
         assert image.get_pixels(), "failed to get pixels from %s" % image
 
     def GBRP10_to_r210(self, image):
-        cdef double start = time.time()
         self.validate_planar3_image(image)
         pixels = image.get_pixels()
         input_strides = image.get_rowstride()
@@ -632,15 +632,7 @@ cdef class ColorspaceConverter:
             gbrp10_to_r210_copy(<uintptr_t> r210, gbrp10,
                                 w, h,
                                 src_stride, dst_stride)
-
-        r210_buffer = memory_as_pybuffer(<void *> r210, self.dst_sizes[0], True)
-        cdef double elapsed = time.time()-start
-        log("GBRP10_to_r210 took %.1fms", 1000.0*elapsed)
-        self.time += elapsed
-        self.frames += 1
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, r210_buffer, "r210", 30, dst_stride, ImageWrapper.PACKED)
-        out_image.cython_buffer = <uintptr_t> r210
-        return out_image
+        return self.packed_image_wrapper(<void *> r210, 30)
 
 
     def YUV420P_to_RGBX(self, image):
@@ -670,7 +662,6 @@ cdef class ColorspaceConverter:
         cdef unsigned int Ystride, Ustride, Vstride      #
         cdef object rgb
 
-        start = time.time()
         self.validate_planar3_image(image)
         iplanes = image.get_planes()
         planes = image.get_pixels()
@@ -728,14 +719,7 @@ cdef class ColorspaceConverter:
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
                             if Bpp==4:
                                 output_image[o + Xindex] = 255
-        rgb = memory_as_pybuffer(<void *> output_image, self.dst_sizes[0], True)
-        elapsed = time.time()-start
-        log("%s took %.1fms", self, 1000.0*elapsed)
-        self.time += elapsed
-        self.frames += 1
-        out_image = CythonImageWrapper(0, 0, dst_width, dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
-        out_image.cython_buffer = <uintptr_t> output_image
-        return out_image
+        return self.packed_image_wrapper(<void *> output_image, 24)
 
 
     def GBRP_to_RGBX(self, image):
@@ -761,7 +745,6 @@ cdef class ColorspaceConverter:
         cdef unsigned int Gstride, Bstride, Rstride
         cdef object rgb                         #@DuplicatedSignature
 
-        start = time.time()
         self.validate_planar3_image(image)
         iplanes = image.get_planes()
         planes = image.get_pixels()
@@ -803,15 +786,7 @@ cdef class ColorspaceConverter:
                     output_image[o+Bdst] = Bptr[sx]
                     output_image[o+Xdst] = 255
                     o += 4
-
-        rgb = memory_as_pybuffer(<void *> output_image, self.dst_sizes[0], True)
-        elapsed = time.time()-start
-        log("%s took %.1fms", self, 1000.0*elapsed)
-        self.time += elapsed
-        self.frames += 1
-        out_image = CythonImageWrapper(0, 0, dst_width, dst_height, rgb, self.dst_format, 24, stride, ImageWrapper.PACKED)
-        out_image.cython_buffer = <uintptr_t> output_image
-        return out_image
+        return self.packed_image_wrapper(<void *> output_image, 24)
 
 
 def selftest(full=False):
