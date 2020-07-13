@@ -31,7 +31,7 @@ add_x_event_signal          = gdk_bindings.add_x_event_signal
 add_x_event_type_name       = gdk_bindings.add_x_event_type_name
 
 
-from xpra.gtk_common.gtk3 import gdk_bindings   #@UnresolvedImport, @UnusedImport, @Reimport
+from xpra.gtk_common.gtk3 import gdk_bindings as common_bindings   #@UnresolvedImport, @UnusedImport, @Reimport
 
-get_display_for             = gdk_bindings.get_display_for
-calc_constrained_size       = gdk_bindings.calc_constrained_size
+get_display_for             = common_bindings.get_display_for
+calc_constrained_size       = common_bindings.calc_constrained_size
