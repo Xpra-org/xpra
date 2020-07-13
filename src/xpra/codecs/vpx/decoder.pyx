@@ -91,20 +91,11 @@ cdef extern from "vpx/vpx_decoder.h":
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES = {}
 CODECS = ["vp8", "vp9"]
-COLORSPACES["vp8"] = ["YUV420P"]
-vp9_cs = ["YUV420P"]
-#this is the ABI version with libvpx 1.4.0:
-if VPX_DECODER_ABI_VERSION>=9:
-    vp9_cs.append("YUV444P")
-else:
-    if OSX:
-        pass        #cannot build libvpx 1.4 on osx... so skip warning
-    else:
-        log.warn("Warning: libvpx ABI version %s is too old:", VPX_DECODER_ABI_VERSION)
-        log.warn(" disabling YUV444P support with VP9")
-COLORSPACES["vp9"] = vp9_cs
+COLORSPACES = {
+    "vp8"   : ("YUV420P"),
+    "vp9"   : ("YUV420P", "YUV444P"),
+    }
 
 
 def init_module():
