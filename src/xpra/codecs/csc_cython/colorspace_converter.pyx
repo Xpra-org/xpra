@@ -14,7 +14,7 @@ import time
 from xpra.log import Logger
 log = Logger("csc", "cython")
 
-from xpra.codecs.codec_constants import csc_spec
+from xpra.codecs.codec_constants import csc_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
 from libc.stdint cimport uint8_t, uintptr_t # pylint: disable=syntax-error
@@ -270,19 +270,27 @@ cdef class ColorspaceConverter:
         def assert_no_scaling():
             assert src_width==dst_width and src_height==dst_height, "scaling is not supported for %s to %s" % (src_format, dst_format)
 
-        if src_format in ("BGRX", "RGBX", "RGB", "BGR", "r210") and dst_format=="YUV420P":
-            self.dst_strides[0] = roundup(self.dst_width,   STRIDE_ROUNDUP)
-            self.dst_strides[1] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
-            self.dst_strides[2] = roundup(self.dst_width/2, STRIDE_ROUNDUP)
-            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
-            self.dst_sizes[1] = self.dst_strides[1] * self.dst_height/2
-            self.dst_sizes[2] = self.dst_strides[2] * self.dst_height/2
+        def allocate_yuv(fmt="YUV420P", Bpp=1):
+            divs = get_subsampling_divs(fmt)
+            assert divs, "invalid pixel format '%s'" % fmt
+            for i, div in enumerate(divs):
+                xdiv, ydiv = div
+                self.dst_strides[i] = roundup(self.dst_width*Bpp/xdiv, STRIDE_ROUNDUP)
+                self.dst_sizes[i] = self.dst_strides[i] * self.dst_height//ydiv
             #U channel follows Y with 1 line padding, V follows U with another line of padding:
             self.offsets[0] = 0
-            self.offsets[1] = self.dst_strides[0] * (self.dst_height+1)
-            self.offsets[2] = self.offsets[1] + (self.dst_strides[1] * (self.dst_height/2+1))
+            self.offsets[1] = self.offsets[0] + self.dst_sizes[0] + self.dst_strides[0]
+            self.offsets[2] = self.offsets[1] + self.dst_sizes[1] + self.dst_strides[1]
             #output buffer ends after V + 1 line of padding:
-            self.buffer_size = self.offsets[2] + (self.dst_strides[2] * (self.dst_height/2+1))
+            self.buffer_size = self.offsets[2] + self.dst_sizes[2] + self.dst_strides[2]
+
+        def allocate_rgb(Bpp=4):
+            self.dst_strides[0] = roundup(self.dst_width*Bpp, STRIDE_ROUNDUP)
+            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
+            self.buffer_size = self.dst_sizes[0]+self.dst_strides[0]
+
+        if src_format in ("BGRX", "RGBX", "RGB", "BGR", "r210") and dst_format=="YUV420P":
+            allocate_yuv("YUV420P")
             if src_format=="BGRX":
                 self.convert_image_function = self.BGRX_to_YUV420P
             elif src_format=="RGBX":
@@ -296,24 +304,15 @@ cdef class ColorspaceConverter:
                 self.convert_image_function = self.r210_to_YUV420P
         elif src_format=="r210" and dst_format=="BGR48":
             assert_no_scaling()
-            self.dst_strides[0] = roundup(self.dst_width*6, STRIDE_ROUNDUP)
-            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
-            self.buffer_size = self.dst_sizes[0]+self.dst_strides[0]
+            allocate_rgb(6)
             self.convert_image_function = self.r210_to_BGR48
         elif src_format=="GBRP10" and dst_format=="r210":
             assert_no_scaling()
-            self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
-            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
-            self.buffer_size = self.dst_sizes[0]+self.dst_strides[0]
+            allocate_rgb()
             self.convert_image_function = self.GBRP10_to_r210
         elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX", "RGB", "BGR"):
             #3 or 4 bytes per pixel:
-            self.dst_strides[0] = roundup(self.dst_width*len(dst_format), STRIDE_ROUNDUP)
-            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
-            self.offsets[0] = 0
-            #output buffer ends after 1 line of padding:
-            self.buffer_size = self.dst_sizes[0] + roundup(dst_width*len(dst_format), STRIDE_ROUNDUP)
-
+            allocate_rgb(len(dst_format))
             if dst_format=="RGBX":
                 self.convert_image_function = self.YUV420P_to_RGBX
             elif dst_format=="BGRX":
@@ -325,12 +324,7 @@ cdef class ColorspaceConverter:
                 self.convert_image_function = self.YUV420P_to_BGR
         elif src_format=="GBRP" and dst_format in ("RGBX", "BGRX"):
             #4 bytes per pixel:
-            self.dst_strides[0] = roundup(self.dst_width*4, STRIDE_ROUNDUP)
-            self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
-            self.offsets[0] = 0
-            #output buffer ends after 1 line of padding:
-            self.buffer_size = self.dst_sizes[0] + roundup(dst_width*4, STRIDE_ROUNDUP)
-
+            allocate_rgb(4)
             if dst_format=="RGBX":
                 self.convert_image_function = self.GBRP_to_RGBX
             else:
@@ -445,12 +439,9 @@ cdef class ColorspaceConverter:
         cdef unsigned char *V
 
         start = time.time()
+        self.validate_rgb_image(image)
         iplanes = image.get_planes()
-        assert iplanes==ImageWrapper.PACKED, "invalid input format: %s planes" % iplanes
-        assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
-        assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         pixels = image.get_pixels()
-        assert pixels, "failed to get pixels from %s" % image
         input_stride = image.get_rowstride()
         log("do_RGB_to_YUV420P(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
 
@@ -560,14 +551,16 @@ cdef class ColorspaceConverter:
         out_image.cython_buffer = <uintptr_t> output_image
         return out_image
 
-
-    def r210_to_BGR48(self, image):
-        cdef double start = time.time()
+    def validate_rgb_image(self, image):
         assert image.get_planes()==ImageWrapper.PACKED, "invalid input format: %s planes" % image.get_planes()
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
+        assert image.get_pixels(), "failed to get pixels from %s" % image
+
+    def r210_to_BGR48(self, image):
+        cdef double start = time.time()
+        self.validate_rgb_image(image)
         pixels = image.get_pixels()
-        assert pixels, "failed to get pixels from %s" % image
         input_stride = image.get_rowstride()
         log("r210_to_BGR48(%s) input=%s, strides=%s", image, len(pixels), input_stride)
 
@@ -600,14 +593,16 @@ cdef class ColorspaceConverter:
         return out_image
 
 
-    def GBRP10_to_r210(self, image):
-        cdef double start = time.time()
+    def validate_planar3_image(self, image):
         assert image.get_planes()==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % image.get_planes()
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
-        pixels = image.get_pixels()
-        assert pixels, "failed to get pixels from %s" % image
+        assert image.get_pixels(), "failed to get pixels from %s" % image
 
+    def GBRP10_to_r210(self, image):
+        cdef double start = time.time()
+        self.validate_planar3_image(image)
+        pixels = image.get_pixels()
         input_strides = image.get_rowstride()
         cdef unsigned int w = self.src_width
         cdef unsigned int h = self.src_height
@@ -676,12 +671,9 @@ cdef class ColorspaceConverter:
         cdef object rgb
 
         start = time.time()
+        self.validate_planar3_image(image)
         iplanes = image.get_planes()
-        assert iplanes==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % iplanes
-        assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
-        assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         planes = image.get_pixels()
-        assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
         log("do_YUV420P_to_RGB(%s) strides=%s", (image, Bpp, Rindex, Gindex, Bindex, Xindex), input_strides)
 
@@ -770,12 +762,9 @@ cdef class ColorspaceConverter:
         cdef object rgb                         #@DuplicatedSignature
 
         start = time.time()
+        self.validate_planar3_image(image)
         iplanes = image.get_planes()
-        assert iplanes==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % iplanes
-        assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
-        assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         planes = image.get_pixels()
-        assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
         log("do_RGBP_to_RGB(%s) strides=%s", (image, Rsrc, Gsrc, Bsrc, Rdst, Gdst, Bdst, Xdst), input_strides)
 
