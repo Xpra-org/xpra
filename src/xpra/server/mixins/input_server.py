@@ -281,7 +281,6 @@ class InputServer(StubServerMixin):
         ss.user_event()
 
     def _process_keyboard_sync_enabled_status(self, proto, packet):
-        assert proto in self._server_sources
         if self.readonly:
             return
         ss = self.get_server_source(proto)
