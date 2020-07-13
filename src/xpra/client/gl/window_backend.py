@@ -186,7 +186,6 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
 
 
 def main():
-    log = Logger("opengl")
     try:
         opengl_props, gl_client_window_module = get_gl_client_window_module(True)
         log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
