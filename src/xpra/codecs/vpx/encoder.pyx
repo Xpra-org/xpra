@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from collections import deque
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
-from xpra.codecs.codec_constants import video_spec
+from xpra.codecs.codec_constants import video_spec, get_subsampling_divs
 from xpra.os_util import bytestostr, WIN32, OSX, POSIX, BITS
 from xpra.util import AtomicInteger, envint, envbool, typedict
 from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
@@ -52,10 +52,12 @@ from libc.stdint cimport int64_t
 ctypedef long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
 
-USAGE_STREAM_FROM_SERVER    = 0x0
-USAGE_LOCAL_FILE_PLAYBACK   = 0x1
-USAGE_CONSTRAINED_QUALITY   = 0x2
-USAGE_CONSTANT_QUALITY      = 0x3
+DEF USAGE_STREAM_FROM_SERVER    = 0x0
+DEF USAGE_LOCAL_FILE_PLAYBACK   = 0x1
+DEF USAGE_CONSTRAINED_QUALITY   = 0x2
+DEF USAGE_CONSTANT_QUALITY      = 0x3
+
+DEF VPX_CODEC_USE_HIGHBITDEPTH = 0x40000
 
 
 cdef extern from "vpx/vpx_codec.h":
@@ -76,6 +78,10 @@ cdef extern from "vpx/vpx_codec.h":
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
     cdef int VPX_IMG_FMT_I444
+    cdef int VPX_IMG_FMT_I44416
+    cdef int VPX_IMG_FMT_HIGHBITDEPTH
+    cdef int VPX_IMG_FMT_HAS_ALPHA
+
     ctypedef struct vpx_image_t:
         unsigned int w
         unsigned int h
@@ -117,12 +123,14 @@ cdef extern from "vpx/vpx_encoder.h":
     ctypedef struct vpx_rational_t:
         int num     #fraction numerator
         int den     #fraction denominator
+    ctypedef int vpx_bit_depth_t
     ctypedef struct vpx_codec_enc_cfg_t:
         unsigned int g_usage
         unsigned int g_threads
         unsigned int g_profile
         unsigned int g_w
         unsigned int g_h
+        vpx_bit_depth_t g_bit_depth
         vpx_rational_t g_timebase
         unsigned int g_error_resilient
         unsigned int g_pass
@@ -204,7 +212,7 @@ CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
 #this is the ABI version with libvpx 1.4.0:
 assert VPX_ENCODER_ABI_VERSION>=10, "vpx abi version is too old: %i (minimum is 10)" % VPX_ENCODER_ABI_VERSION
-COLORSPACES["vp9"] = ("YUV420P", "YUV444P")
+COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 
 VP9_RANGE = 3
 #as of 1.8:
@@ -248,6 +256,8 @@ def get_output_colorspaces(encoding, input_colorspace):
     csoptions = COLORSPACES[encoding]
     assert input_colorspace in csoptions, "invalid input colorspace: %s, %s only supports %s" % (input_colorspace, encoding, csoptions)
     #always unchanged in output:
+    if input_colorspace=="YUV444P10":
+        return ["r210",]
     return [input_colorspace]
 
 
@@ -299,7 +309,7 @@ def get_spec(encoding, colorspace):
         speed = 50
         quality = 50
     else:
-        lossless_mode = colorspace=="YUV444P"
+        lossless_mode = colorspace.startswith("YUV444P")
         speed = 20
         quality = 50 + 50*int(lossless_mode)
         if VPX_ENCODER_ABI_VERSION>=11:
@@ -318,6 +328,8 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
         return VPX_IMG_FMT_I420
     if colorspace=="YUV444P" and ENABLE_VP9_YUV444:
         return VPX_IMG_FMT_I444
+    if colorspace=="YUV444P10" and ENABLE_VP9_YUV444:
+        return VPX_IMG_FMT_I44416
     raise Exception("invalid colorspace %s" % colorspace)
 
 def get_error_string(int err):
@@ -350,6 +362,7 @@ cdef class Encoder:
 
 #init_context(w, h, src_format, encoding, quality, speed, scaling, options)
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
+        log("vpx init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         assert encoding in CODECS, "invalid encoding: %s" % encoding
         assert scaling==(1,1), "vpx does not handle scaling"
         assert encoding in get_encodings()
@@ -364,6 +377,7 @@ cdef class Encoder:
         self.src_format = bytestostr(src_format)
 
         cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
+        cdef vpx_codec_flags_t flags = 0
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -390,7 +404,15 @@ cdef class Encoder:
 
         self.update_cfg()
         self.cfg.g_usage = USAGE_STREAM_FROM_SERVER
-        self.cfg.g_profile = int(bool(self.src_format=="YUV444P"))          #use 1 for YUV444P and RGB support
+        if self.src_format=="YUV444P":
+            self.cfg.g_profile = 1
+            self.cfg.g_bit_depth = 8
+        elif self.src_format=="YUV444P10":
+            self.cfg.g_profile = 3
+            self.cfg.g_bit_depth = 10
+            flags |= VPX_CODEC_USE_HIGHBITDEPTH
+        else:
+            self.cfg.g_profile = 0
         self.cfg.g_w = width
         self.cfg.g_h = height
         cdef vpx_rational_t timebase
@@ -414,7 +436,7 @@ cdef class Encoder:
 
         log("our configuration:")
         self.log_cfg()
-        cdef int ret = vpx_codec_enc_init_ver(self.context, codec_iface, &self.cfg, 0, VPX_ENCODER_ABI_VERSION)
+        cdef int ret = vpx_codec_enc_init_ver(self.context, codec_iface, &self.cfg, flags, VPX_ENCODER_ABI_VERSION)
         if ret!=0:
             free(self.context)
             self.context = NULL
@@ -573,10 +595,15 @@ cdef class Encoder:
         assert pixels, "failed to get pixels from %s" % image
         assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
+        cdef unsigned int Bpp = 1 + int(self.src_format.endswith("P10"))
+        divs = get_subsampling_divs(self.src_format)
         for i in range(3):
+            xdiv, ydiv = divs[i]
             assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
             pic_in[i] = pic_buf
             strides[i] = istrides[i]
+            assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
+            assert pic_buf_len>=istrides[i]*self.height//ydiv
         cdef unsigned long bandwidth_limit = typedict(options).intget("bandwidth-limit", self.bandwidth_limit)
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
@@ -619,7 +646,7 @@ cdef class Encoder:
         if self.src_format=="YUV420P":
             image.x_chroma_shift = 1
             image.y_chroma_shift = 1
-        elif self.src_format=="YUV444P":
+        elif self.src_format.startswith("YUV444P"):
             image.x_chroma_shift = 0
             image.y_chroma_shift = 0
         else:
@@ -632,12 +659,15 @@ cdef class Encoder:
         cdef unsigned long deadline
         if self.speed>=90 or self.encoding=="vp9":
             deadline = VPX_DL_REALTIME
+            deadline_str = "REALTIME"
         elif self.speed<10 or self.quality>=90:
             deadline = VPX_DL_BEST_QUALITY
+            deadline_str = "BEST_QUALITY"
         else:
             deadline = MAX(2, VPX_DL_GOOD_QUALITY * (90-self.speed) // 100)
             #cap the deadline at 250ms, which is already plenty
             deadline = MIN(250*1000, deadline)
+            deadline_str = "%8.3fms" % deadline
         start = monotonic_time()
         with nogil:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
@@ -646,11 +676,11 @@ cdef class Encoder:
             log.error("%s codec encoding error %s: %s", self.encoding, ret, get_error_string(ret))
             return None
         end = monotonic_time()
-        log("vpx_codec_encode for %s took %ims (deadline=%8.3fms for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline/1000.0, self.speed, self.quality)
+        log("vpx_codec_encode for %s took %ims (deadline=%16s for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline_str, self.speed, self.quality)
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
         end = monotonic_time()
-        if pkt.kind != VPX_CODEC_CX_FRAME_PKT:
+        if pkt==NULL or pkt.kind!=VPX_CODEC_CX_FRAME_PKT:
             free(image)
             log.error("%s invalid packet type: %s", self.encoding, PACKET_KIND.get(pkt.kind, pkt.kind))
             return None
@@ -658,12 +688,13 @@ cdef class Encoder:
         #we copy the compressed data here, we could manage the buffer instead
         #using vpx_codec_set_cx_data_buf every time with a wrapper for freeing it,
         #but since this is compressed data, no big deal
-        img = (<char*> pkt.data.frame.buf)[:pkt.data.frame.sz]
+        cdef size_t size = pkt.data.frame.sz
+        img = (<char*> pkt.data.frame.buf)[:size]
         free(image)
-        log("vpx returning %s image: %s bytes", self.encoding, len(img))
+        log("vpx returning %s data: %s bytes", self.encoding, size)
         end = monotonic_time()
         self.last_frame_times.append((start, end))
-        if self.file and pkt.data.frame.sz>0:
+        if self.file and size>0:
             self.file.write(img)
             self.file.flush()
         return img

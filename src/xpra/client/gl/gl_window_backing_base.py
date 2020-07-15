@@ -124,6 +124,8 @@ PIXEL_FORMAT_TO_DATATYPE = {
     "YUV444P" : GL_UNSIGNED_BYTE,
     "GBRP"  : GL_UNSIGNED_BYTE,
     "GBRP16" : GL_UNSIGNED_SHORT,
+    "YUV444P10" : GL_UNSIGNED_SHORT,
+    "YUV444P16" : GL_UNSIGNED_SHORT,
     }
 CONSTANT_TO_PIXEL_FORMAT = {
     GL_BGR   : "BGR",
@@ -1111,7 +1113,7 @@ class GLWindowBackingBase(WindowBackingBase):
             #copy so the data will be usable (usually a str)
             img.clone_pixel_data()
         pixel_format = img.get_pixel_format()
-        if pixel_format=="GBRP10":
+        if pixel_format in ("GBRP10", "YUV444P10"):
             #call superclass to handle csc
             #which will end up calling paint rgb with r210 data
             return super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
@@ -1130,7 +1132,7 @@ class GLWindowBackingBase(WindowBackingBase):
         x, y = self.gravity_adjust(x, y, options)
         try:
             pixel_format = img.get_pixel_format()
-            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16"), \
+            assert pixel_format in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16", "YUV444P16"), \
                 "sorry the GL backing does not handle pixel format '%s' yet!" % (pixel_format)
 
             context = self.gl_context()
@@ -1229,7 +1231,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def render_planar_update(self, rx : int, ry : int, rw : int, rh : int, x_scale=1, y_scale=1, shader=YUV2RGB_SHADER):
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, x_scale, y_scale, shader), self.pixel_format)
-        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16"):
+        if self.pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "GBRP16", "YUV444P16"):
             #not ready to render yet
             return
         self.gl_marker("painting planar update, format %s", self.pixel_format)

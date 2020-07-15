@@ -519,6 +519,7 @@ FORMAT_TO_ENUM = {
             "BGRA"      : AV_PIX_FMT_BGRA,
             "GBRP"      : AV_PIX_FMT_GBRP,
             "GBRP10"    : AV_PIX_FMT_GBRP10LE,
+            "YUV444P10" : AV_PIX_FMT_YUV444P10LE,
             }
 #for planar formats, this is the number of bytes per channel
 BYTES_PER_PIXEL = {
@@ -532,11 +533,12 @@ BYTES_PER_PIXEL = {
     AV_PIX_FMT_BGRA     : 4,
     AV_PIX_FMT_GBRP     : 1,
     AV_PIX_FMT_GBRP10LE : 6,
+    AV_PIX_FMT_YUV444P10LE  : 2,
     }
 
 #given an ffmpeg pixel format,
 #what is our format name for it:
-COLORSPACES = list(FORMAT_TO_ENUM.keys())+["r210"]
+COLORSPACES = list(FORMAT_TO_ENUM.keys())+["r210", "YUV444P10"]
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
@@ -602,7 +604,7 @@ def get_input_colorspaces(encoding):
     elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
         return ("YUV420P",)
     assert encoding=="vp9"
-    return ("YUV420P", "YUV444P")
+    return ("YUV420P", "YUV444P", "YUV444P10")
 
 def get_output_colorspace(encoding, csc):
     if encoding not in CODECS:
@@ -613,6 +615,8 @@ def get_output_colorspace(encoding, csc):
             return "GBRP"
         if csc=="GBRP10":
             return "GBRP10"
+        if csc=="YUV444P10":
+            return "YUV444P10"
     elif encoding in ("vp8", "mpeg4", "mpeg1", "mpeg2"):
         return "YUV420P"
     #everything else as normal:

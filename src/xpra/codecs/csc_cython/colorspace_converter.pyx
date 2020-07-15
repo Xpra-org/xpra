@@ -70,7 +70,8 @@ COLORSPACES = {
                "RGB"        : get_CS("RGB",     ["YUV420P"]),
                "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
                "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
-               "r210"       : get_CS("r210",    ["YUV420P", "BGR48"]),
+               "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
+               "YUV444P10"  : get_CS("YUV444P10", ["r210"]),
                "GBRP10"     : get_CS("GBRP10",  ["r210", ]),
                }
 
@@ -104,9 +105,9 @@ def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     can_scale = True
-    if in_colorspace=="r210" and out_colorspace=="BGR48":
+    if in_colorspace=="r210" or out_colorspace=="r210":
         can_scale = False
-    elif in_colorspace=="GBRP10" and out_colorspace=="r210":
+    elif in_colorspace=="GBRP10":
         can_scale = False
     #low score as this should be used as fallback only:
     return csc_spec(in_colorspace, out_colorspace,
@@ -158,7 +159,8 @@ DEF VB = -4653      #-0.071  * 2**16
 DEF Vc = 128
 DEF VC = 8388608    # 128    * 2**16
 
-DEF max_clamp = 16777216    #2**(16+8)
+DEF MAX_CLAMP = 16777216    #2**(16+8)
+DEF MAX_CLAMP10 = 67108864  #2**(16+10)
 
 #YUV to RGB:
 #Y, Cb and Cr are adjusted as:
@@ -187,10 +189,19 @@ DEF BV = 0
 cdef inline unsigned char clamp(const long v) nogil:
     if v<=0:
         return 0
-    elif v>=max_clamp:
-        return 255
-    else:
-        return <unsigned char> (v>>16)
+    #v += 2**15
+    if v>=MAX_CLAMP:
+        return 0xff         #2**8-1
+    return <unsigned char> (v>>16)
+
+cdef inline unsigned short clamp10(const long v) nogil:
+    if v<=0:
+        return 0
+    #v += 2**15
+    if v>=MAX_CLAMP10:
+        return 0x3ff        #2**10-1
+    return <unsigned short> (v>>16)
+
 
 cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
                                     unsigned int w, unsigned int h,
@@ -223,6 +234,54 @@ cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
         r = <unsigned short*> ((<uintptr_t> gbrp10[2]) + y*src_stride)
         for x in range(width):
             dst[x] = (b[x] & 0x3ff) + ((g[x] & 0x3ff)<<10) + ((r[x] & 0x3ff)<<20)
+
+cdef inline void r210_to_YUV444P10_copy(unsigned short *Y, unsigned short *U, unsigned short *V, uintptr_t r210data,
+                                        unsigned int width, unsigned int height,
+                                        unsigned int Ystride, unsigned int Ustride, unsigned int Vstride,
+                                        unsigned int r210_stride) nogil:
+    cdef const unsigned int *r210_row
+    cdef unsigned int r210
+    cdef unsigned int R, G, B
+    cdef unsigned int x, y
+    for y in range(height):
+        r210_row = <unsigned int*> (r210data + r210_stride*y)
+        for x in range(width):
+            r210 = r210_row[x]
+            R = (r210&0x3ff00000) >> 20
+            G = (r210&0x000ffc00) >> 10
+            B = (r210&0x000003ff)
+            Y[x] = clamp10(YR * R + YG * G + YB * B + YC*4)
+            U[x] = clamp10(UR * R + UG * G + UB * B + UC*4)
+            V[x] = clamp10(VR * R + VG * G + VB * B + VC*4)
+        Y = <unsigned short *> ((<uintptr_t> Y) + Ystride)
+        U = <unsigned short *> ((<uintptr_t> U) + Ustride)
+        V = <unsigned short *> ((<uintptr_t> V) + Vstride)
+
+
+cdef inline void YUV444P10_to_r210_copy(uintptr_t r210data, const unsigned short *Ybuf, const unsigned short *Ubuf, const unsigned short *Vbuf,
+                                        unsigned int width, unsigned int height,
+                                        unsigned int r210_stride,
+                                        unsigned int Ystride, unsigned int Ustride, unsigned int Vstride) nogil:
+        cdef unsigned short *Yrow
+        cdef unsigned short *Urow
+        cdef unsigned short *Vrow
+        cdef short Y, U, V
+        cdef unsigned int *r210row
+        cdef unsigned int x, y
+        for y in range(height):
+            Yrow = <unsigned short*> ((<uintptr_t> Ybuf) + y*Ystride)
+            Urow = <unsigned short*> ((<uintptr_t> Ubuf) + y*Ustride)
+            Vrow = <unsigned short*> ((<uintptr_t> Vbuf) + y*Vstride)
+            r210row = <unsigned int*> (r210data + y*r210_stride)
+            for x in range(width):
+                Y = (Yrow[x] & 0x3ff) - Yc*4
+                U = (Urow[x] & 0x3ff) - Uc*4
+                V = (Vrow[x] & 0x3ff) - Vc*4
+                r210row[x] = (
+                    (clamp10(RY * Y + RU * U + RV * V)<<20) |
+                    (clamp10(GY * Y + GU * U + GV * V)<<10) |
+                    (clamp10(BY * Y + BU * U + BV * V))
+                    )
 
 
 cdef class ColorspaceConverter:
@@ -274,7 +333,7 @@ cdef class ColorspaceConverter:
             assert divs, "invalid pixel format '%s'" % fmt
             for i, div in enumerate(divs):
                 xdiv, ydiv = div
-                self.dst_strides[i] = roundup(self.dst_width*Bpp/xdiv, STRIDE_ROUNDUP)
+                self.dst_strides[i] = roundup(self.dst_width*Bpp//xdiv, STRIDE_ROUNDUP)
                 self.dst_sizes[i] = self.dst_strides[i] * self.dst_height//ydiv
             #U channel follows Y with 1 line padding, V follows U with another line of padding:
             self.offsets[0] = 0
@@ -282,14 +341,21 @@ cdef class ColorspaceConverter:
             self.offsets[2] = self.offsets[1] + self.dst_sizes[1] + self.dst_strides[1]
             #output buffer ends after V + 1 line of padding:
             self.buffer_size = self.offsets[2] + self.dst_sizes[2] + self.dst_strides[2]
+            log("allocate_yuv(%s, %i) buffer_size=%s, sizes=%s, strides=%s",
+                fmt, Bpp, self.buffer_size,
+                tuple(self.dst_sizes[i] for i in range(3)),
+                tuple(self.dst_strides[i] for i in range(3))
+                )
 
         def allocate_rgb(Bpp=4):
             self.dst_strides[0] = roundup(self.dst_width*Bpp, STRIDE_ROUNDUP)
             self.dst_sizes[0] = self.dst_strides[0] * self.dst_height
             self.buffer_size = self.dst_sizes[0]+self.dst_strides[0]
+            log("allocate_rgb(%i) buffer_size=%s, dst size=%s, stride=%s",
+                Bpp, self.buffer_size, self.dst_sizes[0], self.dst_strides[0])
 
         if src_format in ("BGRX", "RGBX", "RGB", "BGR", "r210") and dst_format=="YUV420P":
-            allocate_yuv("YUV420P")
+            allocate_yuv(dst_format)
             if src_format=="BGRX":
                 self.convert_image_function = self.BGRX_to_YUV420P
             elif src_format=="RGBX":
@@ -305,9 +371,17 @@ cdef class ColorspaceConverter:
             assert_no_scaling()
             allocate_rgb(6)
             self.convert_image_function = self.r210_to_BGR48
+        elif src_format=="r210" and dst_format=="YUV444P10":
+            assert_no_scaling()
+            allocate_yuv(dst_format, 2)
+            self.convert_image_function = self.r210_to_YUV444P10
+        elif src_format=="YUV444P10" and dst_format=="r210":
+            assert_no_scaling()
+            allocate_rgb(4)
+            self.convert_image_function = self.YUV444P10_to_r210
         elif src_format=="GBRP10" and dst_format=="r210":
             assert_no_scaling()
-            allocate_rgb()
+            allocate_rgb(4)
             self.convert_image_function = self.GBRP10_to_r210
         elif src_format=="YUV420P" and dst_format in ("RGBX", "BGRX", "RGB", "BGR"):
             #3 or 4 bytes per pixel:
@@ -466,8 +540,8 @@ cdef class ColorspaceConverter:
         cdef unsigned int dst_height = self.dst_height
 
         #we process 4 pixels at a time:
-        workw = roundup(dst_width/2, 2)
-        workh = roundup(dst_height/2, 2)
+        workw = roundup(dst_width//2, 2)
+        workh = roundup(dst_height//2, 2)
         #from now on, we can release the gil:
         if self.src_format=="r210":
             assert Bpp==4
@@ -501,11 +575,8 @@ cdef class ColorspaceConverter:
                                 Bsum += B
                         #write 1U and 1V:
                         if sum>0:
-                            Rsum /= sum
-                            Gsum /= sum
-                            Bsum /= sum
-                            U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
-                            V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
+                            U[y*Ustride + x] = clamp(UR * Rsum//sum + UG * Gsum//sum + UB * Bsum//sum + UC)
+                            V[y*Vstride + x] = clamp(VR * Rsum//sum + VG * Gsum//sum + VB * Bsum//sum + VC)
         else:
             with nogil:
                 for y in range(workh):
@@ -560,6 +631,81 @@ cdef class ColorspaceConverter:
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert image.get_pixels(), "failed to get pixels from %s" % image
+
+    def r210_to_YUV444P10(self, image):
+        self.validate_rgb_image(image)
+        pixels = image.get_pixels()
+        cdef unsigned int input_stride = image.get_rowstride()
+        log("r210_to_YUV444P10(%s) input=%s, strides=%s", image, len(pixels), input_stride)
+
+        cdef const void *input_image
+        cdef Py_ssize_t pic_buf_len = 0
+        assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
+        #allocate output buffer:
+        cdef void *output_image = memalign(self.buffer_size)
+        cdef unsigned short *Y = <unsigned short *> ((<uintptr_t> output_image) + self.offsets[0])
+        cdef unsigned short *U = <unsigned short *> ((<uintptr_t> output_image) + self.offsets[1])
+        cdef unsigned short *V = <unsigned short *> ((<uintptr_t> output_image) + self.offsets[2])
+        #copy to local variables (ensures C code will be optimized correctly)
+        cdef unsigned int Ystride = self.dst_strides[0]
+        cdef unsigned int Ustride = self.dst_strides[1]
+        cdef unsigned int Vstride = self.dst_strides[2]
+
+        if image.is_thread_safe():
+            with nogil:
+                r210_to_YUV444P10_copy(Y, U, V, <uintptr_t> input_image,
+                                       self.dst_width, self.dst_height,
+                                       Ystride, Ustride, Vstride,
+                                       input_stride)
+        else:
+            r210_to_YUV444P10_copy(Y, U, V, <uintptr_t> input_image,
+                                   self.dst_width, self.dst_height,
+                                   Ystride, Ustride, Vstride,
+                                   input_stride)
+        return self.planar3_image_wrapper(output_image)
+
+    def YUV444P10_to_r210(self, image):
+        self.validate_planar3_image(image)
+        iplanes = image.get_planes()
+        planes = image.get_pixels()
+        input_strides = image.get_rowstride()
+        log("YUV444P10_to_r210(%s) strides=%s", image, input_strides)
+
+        #copy to local variables:
+        cdef unsigned int Ystride = input_strides[0]
+        cdef unsigned int Ustride = input_strides[1]
+        cdef unsigned int Vstride = input_strides[2]
+        cdef unsigned int width = self.dst_width
+        cdef unsigned int height = self.dst_height
+
+        cdef Py_ssize_t buf_len = 0
+        cdef const unsigned short *Ybuf
+        cdef const unsigned short *Ubuf
+        cdef const unsigned short *Vbuf
+        assert object_as_buffer(planes[0], <const void **> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
+        assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
+        assert object_as_buffer(planes[1], <const void **> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
+        assert buf_len>=Ustride*image.get_height()//2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()//2)
+        assert object_as_buffer(planes[2], <const void **> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
+        assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//2)
+
+        #allocate output buffer:
+        cdef void *output_image = memalign(self.buffer_size)
+        cdef unsigned int stride = self.dst_strides[0]
+
+        if image.is_thread_safe():
+            with nogil:
+                YUV444P10_to_r210_copy(<uintptr_t> output_image, Ybuf, Ubuf, Vbuf,
+                                       width, height,
+                                       stride,
+                                       Ystride, Ustride, Vstride)
+        else:
+            YUV444P10_to_r210_copy(<uintptr_t> output_image, Ybuf, Ubuf, Vbuf,
+                                   width, height,
+                                   stride,
+                                   Ystride, Ustride, Vstride)
+        return self.packed_image_wrapper(output_image, 30)
+
 
     def r210_to_BGR48(self, image):
         self.validate_rgb_image(image)
@@ -681,9 +827,9 @@ cdef class ColorspaceConverter:
         assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
         assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
         assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
-        assert buf_len>=Ustride*image.get_height()//2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()/2)
+        assert buf_len>=Ustride*image.get_height()//2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()//2)
         assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
-        assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()/2)
+        assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//2)
 
         #allocate output buffer:
         output_image = <unsigned char*> memalign(self.buffer_size)

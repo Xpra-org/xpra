@@ -9,7 +9,7 @@
 import sys
 import binascii
 
-from xpra.util import csv, typedict
+from xpra.util import csv, typedict, roundup
 from xpra.log import Logger
 log = Logger("encoding")
 
@@ -51,7 +51,11 @@ def make_test_image(pixel_format, w, h):
     #start = monotonic_time()
     if pixel_format.startswith("YUV") or pixel_format.startswith("GBRP") or pixel_format=="NV12":
         divs = get_subsampling_divs(pixel_format)
-        Bpp = 2 if pixel_format.endswith("P10") else 1
+        try:
+            depth = int(pixel_format.split("P")[1])   #ie: YUV444P10 -> 10
+        except (IndexError, ValueError):
+            depth = 8
+        Bpp = roundup(depth, 8)//8
         nplanes = len(divs)
         ydiv = divs[0]  #always (1, 1)
         y = makebuf(w//ydiv[0]*h//ydiv[1]*Bpp)

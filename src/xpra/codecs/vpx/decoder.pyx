@@ -15,7 +15,7 @@ log = Logger("decoder", "vpx")
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
-from xpra.os_util import bytestostr, OSX
+from xpra.os_util import bytestostr
 from xpra.util import envint
 
 from libc.stdint cimport uint8_t
@@ -48,6 +48,8 @@ cdef extern from "vpx/vpx_codec.h":
 
 cdef extern from "vpx/vpx_image.h":
     cdef int VPX_IMG_FMT_I420
+    cdef int VPX_IMG_FMT_I444
+    cdef int VPX_IMG_FMT_HIGHBITDEPTH
     ctypedef struct vpx_image_t:
         unsigned int w
         unsigned int h
@@ -171,6 +173,7 @@ cdef class Decoder:
     cdef object __weakref__
 
     def init_context(self, encoding, width, height, colorspace):
+        log("vpx decoder init_context%s", (encoding, width, height, colorspace))
         assert encoding in CODECS
         assert colorspace in get_input_colorspaces(encoding)
         cdef int flags = 0
