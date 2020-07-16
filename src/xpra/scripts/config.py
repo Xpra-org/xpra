@@ -798,6 +798,10 @@ def get_default_key_shortcuts():
                (True,   "#+bar:scalereset"),
                (True,   "#+question:scalingoff"),
                (OSX,    "#+degree:scalereset"),
+               (OSX,    "meta+grave:void"),
+               (OSX,    "shift+meta+grave:void"),
+               (OSX,    "ctrl+grave:void"),
+               (OSX,    "shift+ctrl+grave:void"),
                )
                  if e]
 
