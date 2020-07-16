@@ -296,8 +296,9 @@ class KeyboardHelper:
             (win32 uses this for AltGr emulation)
         """
         if self.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
-            return
+            return True
         self.keyboard.process_key_event(self.send_key_action, wid, key_event)
+        return False
 
     def send_key_action(self, wid, key_event):
         log("send_key_action(%s, %s)", wid, key_event)
