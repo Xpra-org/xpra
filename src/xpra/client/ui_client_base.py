@@ -711,10 +711,10 @@ class UIXpraClient(ClientBaseClass):
 
     def handle_key_action(self, window, key_event):
         if self.readonly or self.keyboard_helper is None:
-            return
+            return False
         wid = self._window_to_id[window]
         keylog("handle_key_action(%s, %s) wid=%s", window, key_event, wid)
-        self.keyboard_helper.handle_key_action(window, wid, key_event)
+        return self.keyboard_helper.handle_key_action(window, wid, key_event)
 
     def mask_to_names(self, mask):
         if self.keyboard_helper is None:

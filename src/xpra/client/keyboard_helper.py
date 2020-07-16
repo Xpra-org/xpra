@@ -295,9 +295,8 @@ class KeyboardHelper:
             a chance to fire more than one send_key_action.
             (win32 uses this for AltGr emulation)
         """
-        if self.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
-            return True
-        self.keyboard.process_key_event(self.send_key_action, wid, key_event)
+        if not self.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
+            self.keyboard.process_key_event(self.send_key_action, wid, key_event)
         return False
 
     def send_key_action(self, wid, key_event):
