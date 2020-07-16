@@ -1458,10 +1458,19 @@ class GTKTrayMenuBase(MenuHelper):
 
     def make_shutdownmenuitem(self):
         def ask_shutdown_confirm(*_args):
+            messages = []
+            #uri = self.client.display_desc.get("display_name")
+            #if uri:
+            #    messages.append("URI: %s" % uri)
+            session_name = self.client.session_name or self.client.server_session_name
+            if session_name:
+                messages.append("Shutting down the session '%s' may result in data loss," % session_name)
+            else:
+                messages.append("Shutting down this session may result in data loss,")
+            messages.append("are you sure you want to proceed?")
             dialog = Gtk.MessageDialog (None, 0, Gtk.MessageType.QUESTION,
                                     Gtk.ButtonsType.NONE,
-                                    "Shutting down this session may cause data loss,\n"+
-                                    "are you sure you want to proceed?")
+                                    "\n".join(messages))
             dialog.add_button(Gtk.STOCK_CANCEL, 0)
             SHUTDOWN = 1
             dialog.add_button("Shutdown", SHUTDOWN)
