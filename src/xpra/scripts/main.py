@@ -974,7 +974,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             attr_sep = ","
             parts = ["", s]
         else:
-            return
+            parts = []
         if display is None:
             try:
                 assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
