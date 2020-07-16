@@ -799,9 +799,7 @@ def get_default_key_shortcuts():
                (True,   "#+question:scalingoff"),
                (OSX,    "#+degree:scalereset"),
                (OSX,    "meta+grave:void"),
-               (OSX,    "shift+meta+grave:void"),
-               (OSX,    "ctrl+grave:void"),
-               (OSX,    "shift+ctrl+grave:void"),
+               (OSX,    "meta+shift+asciitilde:void"),
                )
                  if e]
 
