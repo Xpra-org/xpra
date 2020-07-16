@@ -1296,7 +1296,7 @@ class WindowVideoSource(WindowSource):
                 #find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
                 if not colorspace_specs:
-                    #scorelog(" no matching colorspace specs for %s - %s", enc_in_format, info)
+                    scorelog(" no matching colorspace specs for %s - %s", enc_in_format, info)
                     return
                 #log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
                 for encoder_spec in colorspace_specs:
@@ -1321,9 +1321,9 @@ class WindowVideoSource(WindowSource):
                                                     score_delta, ffps, detection)
                     if score_data:
                         scores.append(score_data)
-                    #else:
-                    #    scorelog(" no score data for %s",
-                    #             (enc_in_format, csc_spec, encoder_spec, width, height, scaling, ".."))
+                    else:
+                        scorelog(" no score data for %s",
+                                 (enc_in_format, csc_spec, encoder_spec, width, height, scaling, ".."))
             if not FORCE_CSC or src_format==FORCE_CSC_MODE:
                 add_scores("direct (no csc)", None, src_format)
 
