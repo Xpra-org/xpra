@@ -1456,6 +1456,9 @@ class WindowVideoSource(WindowSource):
                     elif not video:
                         #downscale non-video content less:
                         target *= 2
+                    if self.image_depth==30:
+                        #high bit depth is normally used for high quality
+                        target *= 10
                     #high quality means less scaling:
                     target = target * (10+q)**2 // 50**2
                     #high speed means more scaling:
