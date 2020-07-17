@@ -352,8 +352,8 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 	#so they will require special treatment:
 	#xpra numpy cryptography PIL nacl cffi gtk rencode gobject glib > /dev/null
 	zip --move -ur library.zip OpenGL test encodings unittest ldap3 future paramiko html \
-			pyasn1 distutils comtypes asn1crypto ldap email websocket multiprocessing \
-			pkg_resources pyu2f pycparser idna ctypes websockify json pygtkcompat \
+			pyasn1 distutils comtypes asn1crypto ldap email multiprocessing \
+			pkg_resources pyu2f pycparser idna ctypes json \
 			http enum sqlite3 winreg copyreg _thread _dummythread builtins importlib \
 			logging queue urllib xml xmlrpc pyasn1_modules concurrent pynvml collections > /dev/null
 fi
