@@ -11,6 +11,7 @@ Functions for converting to and from X11 properties.
 """
 
 import struct
+from io import BytesIO
 
 from xpra.os_util import hexstr
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
@@ -221,11 +222,11 @@ def _read_image(_disp, stream):
         return None
     return width, height, "BGRA", data
 
-# This returns a cairo ImageSurface which contains the largest icon defined in
-# a _NET_WM_ICON property.
+# This returns a list of icons from a _NET_WM_ICON property.
+# each icon is a tuple:
+# (width, height, fmt, data)
 def NetWMIcons(disp, data):
     icons = []
-    from io import BytesIO
     stream = BytesIO(data)
     while True:
         icon = _read_image(disp, stream)
