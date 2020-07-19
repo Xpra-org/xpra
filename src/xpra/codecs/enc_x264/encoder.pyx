@@ -555,12 +555,17 @@ cdef class Encoder:
         log("x264: get_tune() TUNE=%s, fast_decode=%s, content_type=%s", TUNE, self.fast_decode, self.content_type)
         if TUNE:
             return TUNE
+        tunes = []
         if self.content_type=="video":
-            return b"film"
-        #elif self.content_type=="text":
-        #    return b"grain"
-        #return "animation"
-        return b"zerolatency"
+            tunes.append(b"film")
+        elif self.content_type=="text":
+            tunes.append(b"grain")
+            tunes.append(b"zerolatency")
+        else:
+            tunes.append(b"zerolatency")
+        if self.fast_decode:
+            tunes.append(b"fastdecode")
+        return b",".join(tunes)
 
     cdef init_encoder(self, options):
         cdef x264_param_t param
