@@ -2104,6 +2104,7 @@ class WindowSource(WindowIconSource):
             damage_in_latency = now-process_damage_time
             statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
+        self.statistics.last_packet_time = monotonic_time()
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent,
                           self.get_fail_cb(packet), client_options.get("flush", 0))
 

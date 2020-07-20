@@ -476,6 +476,8 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="size out of range for video encoder")
 
         now = monotonic_time()
+        if now-self.statistics.last_packet_time>1:
+            return nonvideo(quality+30, "no recent updates")
         if now-self.statistics.last_resized<0.350:
             return nonvideo(quality-30, "resized recently")
 
