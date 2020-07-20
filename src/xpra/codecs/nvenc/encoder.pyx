@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -1331,7 +1331,7 @@ context_counter = AtomicInteger()
 context_gen_counter = AtomicInteger()
 cdef double last_context_failure = 0
 
-def get_runtime_factor():
+def get_runtime_factor() -> float:
     global last_context_failure, context_counter
     device_count = len(init_all_devices())
     max_contexts = CONTEXT_LIMIT * device_count
@@ -1377,13 +1377,13 @@ def get_spec(encoding, colorspace):
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
 PRETTY_VERSION = (int(NVENCAPI_MAJOR_VERSION), int(NVENCAPI_MINOR_VERSION))
 
-def get_version():
+def get_version() -> str:
     return ".".join((str(x) for x in PRETTY_VERSION))
 
-def get_type():
+def get_type() -> str:
     return "nvenc"
 
-def get_info():
+def get_info() -> dict:
     global last_context_failure, context_counter, context_gen_counter
     info = {
             "version"           : PRETTY_VERSION,
@@ -1584,7 +1584,7 @@ cdef class Encoder:
             self.init_device(options)
 
 
-    def threaded_init_device(self, options):
+    def threaded_init_device(self, options : dict):
         global device_lock
         with device_lock:
             if SLOW_DOWN_INIT:
@@ -1598,7 +1598,7 @@ cdef class Encoder:
                 log.warn(" %s", e)
                 self.clean()
 
-    def init_device(self, options):
+    def init_device(self, options : dict):
         cdef double start = monotonic_time()
         self.select_cuda_device(options)
         try:
@@ -1625,7 +1625,7 @@ cdef class Encoder:
         return bool(self.ready)
 
 
-    def select_cuda_device(self, options={}):
+    def select_cuda_device(self, options : dict):
         self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
         if self.cuda_device_id<0 or not self.cuda_device:
             #we've initialized this codec,
@@ -1661,7 +1661,7 @@ cdef class Encoder:
             quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, csv(self.dst_formats))
         return v
 
-    def get_target_lossless(self, pixel_format, quality):
+    def get_target_lossless(self, pixel_format : str, quality : int):
         global LOSSLESS_ENABLED, LOSSLESS_CODEC_SUPPORT
         if pixel_format not in ("YUV444P", "r210"):
             return False
@@ -2048,7 +2048,7 @@ cdef class Encoder:
     def __repr__(self):
         return "nvenc(%s/%s/%s - %s - %4ix%-4i)" % (self.src_format, self.pixel_format, self.codec_name, self.preset_name, self.width, self.height)
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return bool(self.closed)
 
     def __dealloc__(self):
@@ -2166,27 +2166,27 @@ cdef class Encoder:
             log("cuda_clean() (still %s context%s in use)", context_counter, engs(context_counter))
         self.cuda_context_ptr = <void *> 0
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):                     #@DuplicatedSignature
+    def get_type(self) -> str:                     #@DuplicatedSignature
         return "nvenc"
 
-    def get_encoding(self):                     #@DuplicatedSignature
+    def get_encoding(self) -> str:                     #@DuplicatedSignature
         return self.encoding
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
-    def set_encoding_speed(self, speed):
+    def set_encoding_speed(self, int speed):
         if self.speed!=speed:
             self.speed = speed
             self.update_bitrate()
 
-    def set_encoding_quality(self, quality):
+    def set_encoding_quality(self, int quality):
         cdef NVENCSTATUS r                          #@DuplicatedSignature
         cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
         assert self.context, "context is not initialized"
@@ -2245,7 +2245,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, quality=-1, speed=-1, options={}, retry=0):
+    def compress_image(self, image, int quality=-1, int speed=-1, options={}, int retry=0):
         self.cuda_context.push()
         try:
             try:
@@ -2266,7 +2266,7 @@ cdef class Encoder:
             self.init_cuda()
             return self.compress_image(image, options, retry+1)
 
-    cdef do_compress_image(self, image, options={}):
+    cdef do_compress_image(self, image, options):
         cdef unsigned int stride, w, h
         assert self.context, "context is not initialized"
         assert self.context!=NULL, "context is not initialized"
