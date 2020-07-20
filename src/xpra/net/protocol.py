@@ -574,7 +574,7 @@ class Protocol:
                     packet[i] = item.data
                     min_comp_size += l
                     size_check += l
-            elif ti in (str, bytes) and level>0 and l>LARGE_PACKET_SIZE:
+            elif ti==bytes and level>0 and l>LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
                 log.warn(" in packet '%s' at position %i: %s bytes", packet[0], i, len(item))
                 #add new binary packet with large item:
