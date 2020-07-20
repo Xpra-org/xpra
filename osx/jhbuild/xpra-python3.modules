@@ -400,9 +400,9 @@
 
 	<distutils id="python3-lz4" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/86/4e/332f0a0f96e0754fcf7df12966edc0882910a4e4d34f4f42c2dd887595ad/lz4-3.0.2.tar.gz"
-			hash="sha256:9c9f6a8b71c18c24bd83537a4d616f0301623a5e98db7c7ca956d608e1bcd4c7"
-			version="3.0.2">
+			module="/packages/4c/c3/97c5aaeb8c70eafb0cba7dcbcb7709c2697d8a92bdef90d36b018dc502f6/lz4-3.1.0.tar.gz"
+			hash="sha256:debe75513db3eb9e5cdcd82a329ff38374b6316ab65b848b571e0404746c1e05"
+			version="3.1.0">
 		</branch>
 		<dependencies>
 			<dep package="lz4"/>
