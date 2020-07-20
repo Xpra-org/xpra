@@ -1159,6 +1159,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return False
             if not metadata.boolget("decorations", True):
                 return False
+            hbl = (self.headerbar or "").lower().strip()
+            if hbl not in FALSE_OPTIONS:
+                #any risk that we may end up using headerbar,
+                #means we can't enable opengl
+                return False
         return True
 
     def toggle_opengl(self, *_args):

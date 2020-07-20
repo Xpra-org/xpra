@@ -953,7 +953,7 @@ def get_defaults():
                     "open-url"          : "auto",
                     "file-transfer"     : "auto",
                     "printing"          : "yes",
-                    "headerbar"         : ["auto", "no"][OSX],
+                    "headerbar"         : ["auto", "no"][OSX or WIN32],
                     "challenge-handlers": ["all"],
                     #ssl options:
                     "ssl"               : "auto",
