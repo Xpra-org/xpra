@@ -21,7 +21,7 @@ from xpra.gtk_common.gtk_util import (
     label,
     )
 from xpra.platform.paths import get_python_execfile_command
-from xpra.os_util import OSX, WIN32, is_X11
+from xpra.os_util import WIN32, is_X11
 from xpra.log import Logger
 
 log = Logger("client", "util")
@@ -184,11 +184,7 @@ def main():
         gui = ToolboxGUI()
         register_os_signals(gui.app_signal, "Xpra Toolbox")
         ready()
-        if OSX:
-            from xpra.platform.darwin.gui import wait_for_open_handlers
-            wait_for_open_handlers(gui.show, gui.open_file, gui.open_url)
-        else:
-            gui.show()
+        gui.show()
         Gtk.main()
         log("do_main() gui.exit_code=%i", gui.exit_code)
         return gui.exit_code
