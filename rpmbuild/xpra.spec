@@ -586,10 +586,13 @@ fi
 
 
 %changelog
-* Wed Jul 08 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Tue Jul 21 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix encryption option overzealously enforced on all socket types
+- fix network layer compression errors that can cause connections to drop
 - fix printing errors with some shell character encodings
 - fix windows not getting focused when clicking on title bar (HTML5)
+- fix suspend / resume errors with tray windows
+- fix garbled terminal when ssh messages and 'top' client conflict
 - fix OpenGL force-enable option not honoured
 - fix tray geometry errors
 - fix minimum video scaling not being honoured via heuristics
@@ -610,6 +613,7 @@ fi
 - fix notification widget wrongly stealing input focus
 - fix support for building with CUDA 11.0
 - fix unshrinkable session-info window
+- avoid ever using b-frames for text content
 - silence unhelpful gtk warnings on MacOS
 - avoid opengl warning with wayland
 - add extra environment variables to try to disable any server side scaling
