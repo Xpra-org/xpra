@@ -18,7 +18,7 @@ from pycuda import driver
 
 from xpra.os_util import WIN32, OSX, LINUX, strtobytes
 from xpra.make_thread import start_thread
-from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
+from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time, typedict
 from xpra.codecs.cuda_common.cuda_context import (
     init_all_devices, get_devices, select_device, get_device_info, get_device_name,
     get_cuda_info, get_pycuda_info, device_info, reset_state,
@@ -1584,7 +1584,7 @@ cdef class Encoder:
             self.init_device(options)
 
 
-    def threaded_init_device(self, options : dict):
+    def threaded_init_device(self, options : typedict):
         global device_lock
         with device_lock:
             if SLOW_DOWN_INIT:
@@ -1598,7 +1598,7 @@ cdef class Encoder:
                 log.warn(" %s", e)
                 self.clean()
 
-    def init_device(self, options : dict):
+    def init_device(self, options : typedict):
         cdef double start = monotonic_time()
         self.select_cuda_device(options)
         try:
@@ -1625,8 +1625,8 @@ cdef class Encoder:
         return bool(self.ready)
 
 
-    def select_cuda_device(self, options : dict):
-        self.cuda_device_id, self.cuda_device = select_device(options.get("cuda_device", -1), min_compute=MIN_COMPUTE)
+    def select_cuda_device(self, options : typedict):
+        self.cuda_device_id, self.cuda_device = select_device(options.intget("cuda_device", -1), min_compute=MIN_COMPUTE)
         if self.cuda_device_id<0 or not self.cuda_device:
             #we've initialized this codec,
             #so some devices must be available?
@@ -2888,10 +2888,10 @@ def init_module():
 
         for device_id in devices:
             log("testing encoder with device %s", device_id)
-            options = {
+            options = typedict({
                 "cuda_device"   : device_id,
                 "threaded-init" : False,
-                }
+                })
             try:
                 test_encoder = Encoder()
                 test_encoder.select_cuda_device(options)
