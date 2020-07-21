@@ -71,7 +71,7 @@ class CairoBacking(CairoBackingBase):
                 if resample=="NEAREST":
                     interp_type = GdkPixbuf.InterpType.NEAREST
                 elif resample in ("BICUBIC", "LANCZOS"):
-                    interp_type = GdkPixbuf.InterpTyp.HYPER
+                    interp_type = GdkPixbuf.InterpType.HYPER
                 else:
                     interp_type = GdkPixbuf.InterpType.BILINEAR
                 pixbuf = pixbuf.scale_simple(render_width, render_height, interp_type)
