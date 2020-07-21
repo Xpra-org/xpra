@@ -870,10 +870,12 @@ fi
 
 
 %changelog
-* Wed Jul 08 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
+* Tue Jul 21 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
 - fix encryption option overzealously enforced on all socket types
+- fix network layer compression errors that can cause connections to drop
 - fix printing errors with some shell character encodings
 - fix windows not getting focused when clicking on title bar (HTML5)
+- fix suspend / resume errors with tray windows
 - fix Python2 / GTK2 compatibility regression from 3.0.10
 - fix tray geometry errors
 - fix minimum video scaling not being honoured via heuristics
@@ -888,6 +890,7 @@ fi
 - fix notification widget wrongly stealing input focus
 - fix support for building with CUDA 11.0
 - fix unshrinkable session-info window
+- avoid ever using b-frames for text content
 - silence unhelpful gtk warnings on MacOS
 - avoid opengl warning with wayland
 - discard invalid clipboard requests early

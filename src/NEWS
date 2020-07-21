@@ -1,8 +1,10 @@
-v3.0.11 (2020-07-08)
+v3.0.11 (2020-07-21)
 ======================
 	-- fix encryption option overzealously enforced on all socket types
+	-- fix network layer compression errors that can cause connections to drop
 	-- fix printing errors with some shell character encodings
 	-- fix windows not getting focused when clicking on title bar (HTML5)
+	-- fix suspend / resume errors with tray windows
 	-- fix Python2 / GTK2 compatibility regression from 3.0.10
 	-- fix tray geometry errors
 	-- fix minimum video scaling not being honoured via heuristics
@@ -17,6 +19,7 @@ v3.0.11 (2020-07-08)
 	-- fix notification widget wrongly stealing input focus
 	-- fix support for building with CUDA 11.0
 	-- fix unshrinkable session-info window
+	-- avoid ever using b-frames for text content
 	-- silence unhelpful gtk warnings on MacOS
 	-- avoid opengl warning with wayland
 	-- discard invalid clipboard requests early
