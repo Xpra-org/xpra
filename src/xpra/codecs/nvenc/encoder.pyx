@@ -1221,6 +1221,12 @@ CODEC_PROFILES_GUIDS = {
         },
     }
 
+PROFILE_STR = {}
+for codec_guid, profiles in CODEC_PROFILES_GUIDS.items():
+    for profile_guid, profile_name in profiles.items():
+        PROFILE_STR[profile_guid] = profile_name
+
+
 #this one is not defined anywhere but in the OBS source
 #(I think they have access to information we do not have):
 #GUID NV_ENC_PRESET_STREAMING = c_parseguid("7ADD423D-D035-4F6F-AEA5-50885658643C")
@@ -1485,6 +1491,7 @@ cdef class Encoder:
     cdef NV_ENC_BUFFER_FORMAT bufferFmt
     cdef object codec_name
     cdef object preset_name
+    cdef object profile_name
     cdef object pixel_format
     cdef uint8_t lossless
     #statistics, etc:
@@ -1573,6 +1580,7 @@ cdef class Encoder:
 
         #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
+        self.profile_name = self._get_profile(options)
         self.lossless = self.get_target_lossless(self.pixel_format, self.quality)
         log("using %s %s compression at %s%% quality with pixel format %s",
             ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
@@ -1582,6 +1590,21 @@ cdef class Encoder:
             start_thread(self.threaded_init_device, "threaded-init-device", daemon=True, args=(options,))
         else:
             self.init_device(options)
+
+
+    cdef _get_profile(self, options):
+        #convert the pixel format into a "colourspace" string:
+        csc_mode = "YUV420P"
+        if self.pixel_format in ("BGRX", "BGRA", "YUV444P"):
+            csc_mode = "YUV444P"
+        elif self.pixel_format=="r210":
+            csc_mode = "YUV444P10"
+
+        #use the environment as default if present:
+        profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, "")
+        #now see if the client has requested a different value:
+        profile = options.strget("h264.%s.profile" % csc_mode, profile)
+        return profile
 
 
     def threaded_init_device(self, options : typedict):
@@ -1836,6 +1859,16 @@ cdef class Encoder:
         preset = self.get_preset(self.codec)
         self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
         log("init_params(%s) using preset=%s", codecstr(codec), presetstr(preset))
+        profiles = self.query_profiles(codec)
+        if self.profile_name and profiles and self.profile_name not in profiles:
+            self.profile_name = profiles[0]
+        profile_guidstr = profiles.get(self.profile_name)
+        cdef GUID profile
+        if profile_guidstr:
+            profile = c_parseguid(profile_guidstr)
+        else:
+            profile = NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID
+        log("using profile=%s", PROFILE_STR.get(guidstr(profile)))
 
         input_format = BUFFER_FORMAT[self.bufferFmt]
         input_formats = self.query_input_formats(codec)
@@ -1870,6 +1903,7 @@ cdef class Encoder:
             #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
             #config.rcParams.enableMinQP = 1
             #config.rcParams.enableMaxQP = 1
+            config.profileGUID = profile
             config.gopLength = NVENC_INFINITE_GOPLENGTH
             config.frameIntervalP = 1
             #0=max quality, 63 lowest quality
@@ -2019,6 +2053,8 @@ cdef class Encoder:
                 "ratio_pct" : int(100 * self.bytes_out // b)})
         if self.preset_name:
             info["preset"] = self.preset_name
+        if self.profile_name:
+            info["profile"] = self.profile_name
         cdef double t = self.time
         info["total_time_ms"] = int(self.time*1000.0)
         if self.frames>0 and t>0:
