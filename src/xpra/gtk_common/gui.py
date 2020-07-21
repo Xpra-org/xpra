@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -84,7 +84,7 @@ class GUI(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_icon_pixbuf("xpra")
+        icon = get_icon_pixbuf("xpra.png")
         if icon:
             self.set_icon(icon)
         add_close_accel(self, self.quit)
@@ -258,7 +258,7 @@ class StartSession(Gtk.Window):
         self.set_title("Start Xpra Session")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
-        icon = get_icon_pixbuf("xpra")
+        icon = get_icon_pixbuf("xpra.png")
         if icon:
             self.set_icon(icon)
         self.connect("delete-event", self.close)

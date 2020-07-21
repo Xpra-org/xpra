@@ -37,7 +37,7 @@ class SplashScreen(Gtk.Window):
         self.set_type_hint(Gdk.WindowTypeHint.SPLASHSCREEN)
         vbox = Gtk.VBox()
         hbox = Gtk.HBox(homogeneous=False)
-        icon = get_icon_pixbuf("xpra")
+        icon = get_icon_pixbuf("xpra.png")
         if icon:
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
