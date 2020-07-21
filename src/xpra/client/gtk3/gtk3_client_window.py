@@ -80,9 +80,11 @@ class GTK3ClientWindow(GTKClientWindowBase):
             if sc is None:
                 return True
             tsc = typedict(sc)
-            mins = tsc.intpair("minimum-size")
             maxs = tsc.intpair("maximum-size")
-            if maxs and maxs!=(0, 0) and maxs!=mins:
+            if maxs:
+                return False
+            mins = tsc.intpair("minimum-size")
+            if mins and mins!=(0, 0):
                 return False
             if tsc.intpair("increment", (0, 0))!=(0, 0):
                 return False
