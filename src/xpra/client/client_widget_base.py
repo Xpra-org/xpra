@@ -64,3 +64,10 @@ class ClientWidgetBase(object):
 
     def is_GL(self):
         return False
+
+    def freeze(self):
+        pass
+
+    def unfreeze(self):
+        pass
+
