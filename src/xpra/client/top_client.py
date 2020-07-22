@@ -8,7 +8,6 @@ import sys
 import curses
 import signal
 import traceback
-from datetime import datetime
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
