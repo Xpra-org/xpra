@@ -78,7 +78,7 @@ class X11ServerBase(X11ServerCore):
         if pid:
             from xpra.scripts.server import _save_int
             _save_int(b"_XPRA_SERVER_PID", pid)
-        elif self.clobber:
+        else:
             from xpra.scripts.server import _get_int
             pid = _get_int(b"_XPRA_SERVER_PID")
             if not pid:
@@ -201,7 +201,10 @@ class X11ServerBase(X11ServerCore):
 
     def get_info(self, proto=None, client_uuids=None):
         info = super().get_info(proto=proto, client_uuids=client_uuids)
-        info.setdefault("display", {})["icc"] = self.get_icc_info()
+        display_info = info.setdefault("display", {})
+        if self.display_pid:
+            display_info["pid"] = self.display_pid
+        display_info["icc"] = self.get_icc_info()
         return info
 
     def get_icc_info(self) -> dict:

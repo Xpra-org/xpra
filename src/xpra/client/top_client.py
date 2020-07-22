@@ -435,11 +435,15 @@ class TopSessionClient(MonitorXpraClient):
             if cursor_info:
                 cx, cy = cursor_info.inttupleget("position", (0, 0))
                 dinfo.append("cursor at %ix%i" % (cx, cy))
+            display_info = self.slidictget("display")
+            pid = display_info.intget("pid")
+            if pid:
+                dinfo.append("pid %i" % pid)
             self.stdscr.addstr(4, 0, csv(dinfo))
             if height<=5:
                 return
             hpos = 5
-            gl_info = self.get_gl_info(self.slidictget("opengl"))
+            gl_info = self.get_gl_info(display_info.dictget("opengl"))
             if gl_info:
                 self.stdscr.addstr(5, 0, gl_info)
                 hpos += 1
@@ -658,7 +662,7 @@ class TopSessionClient(MonitorXpraClient):
             if isinstance(v, (tuple, list)):
                 return sep.join(bytestostr(x) for x in v)
             return bytestostr(v)
-        if not gli.boolget("enabled", False):
+        if not gli.boolget("enabled", True):
             return "OpenGL disabled %s" % gli.strget("message", "")
         gl_info = "OpenGL %s enabled: %s" % (strget("opengl", "."), gli.strget("renderer") or gli.strget("vendor"))
         depth = gli.intget("depth")
