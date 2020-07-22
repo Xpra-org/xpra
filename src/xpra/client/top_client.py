@@ -33,6 +33,8 @@ YELLOW = 2
 RED = 3
 
 EXIT_KEYS = (ord("q"), ord("Q"))
+PAUSE_KEYS = (ord("p"), ord("P"))
+
 
 def get_title():
     title = "Xpra top %s" % __version__
@@ -290,6 +292,7 @@ class TopSessionClient(MonitorXpraClient):
         self.server_last_info = typedict()
         self.server_last_info_time = 0
         self.info_timer = 0
+        self.paused = False
         self.stdscr = None
 
     def client_type(self):
@@ -335,17 +338,20 @@ class TopSessionClient(MonitorXpraClient):
 
     def update_screen(self):
         self.log("update_screen()")
-        self.stdscr.erase()
-        try:
-            self.do_update_screen()
-        except Exception as e:
-            self.err(e)
-        finally:
-            self.stdscr.refresh()
+        if not self.paused:
+            self.stdscr.erase()
+            try:
+                self.do_update_screen()
+            except Exception as e:
+                self.err(e)
+            finally:
+                self.stdscr.refresh()
         v = self.stdscr.getch()
         if v in EXIT_KEYS:
             self.log("exit on key '%s'" % v)
             self.quit(0)
+        if v in PAUSE_KEYS:
+            self.paused = not self.paused
 
     def do_update_screen(self):
         self.log("do_update_screen()")
