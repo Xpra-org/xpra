@@ -405,6 +405,9 @@ class TopSessionClient(MonitorXpraClient):
                 return
             thread_info = self.slidictget("threads")
             rinfo = "%i threads" % thread_info.intget("count")
+            server_pid = server_info.intget("pid", 0)
+            if server_pid:
+                rinfo += ", pid %i" % server_pid
             cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
                 rinfo += ", %s" % cpuinfo.strget("hz_actual")
@@ -616,7 +619,13 @@ class TopSessionClient(MonitorXpraClient):
                     v = GRAVITY_STR.get(v, v)
                 return "%s=%s" % (k, str(v))
             g_str += " - %s" % csv(sc_str(k, v) for k,v in sc.items())
+        line1 = ""
+        pid = wi.intget("pid", 0)
+        if pid:
+            line1 = "pid %i: " % pid
         title = wi.strget("title", "")
+        if title:
+            line1 += ' "%s"' % title
         attrs = [
             x for x in (
                 "above", "below", "bypass-compositor",
@@ -630,7 +639,10 @@ class TopSessionClient(MonitorXpraClient):
             attrs.insert(0, "hidden")
         wtype = wi.strtupleget("window-type", ("NORMAL",))
         tinfo = " - ".join(csv(x) for x in (wtype, attrs) if x)
-        info = (title, g_str, tinfo)
+        info = []
+        if line1:
+            info.append(line1)
+        info += [g_str, tinfo]
         return tuple((x, WHITE) for x in info if x)
 
     def get_gl_info(self, gli):
