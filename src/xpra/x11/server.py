@@ -1046,7 +1046,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
                         counter = max(0, resize_counter-1)
                         from xpra.server.source.windows_mixin import WindowsMixin
                         for s in self._server_sources.values():
-                            if s!=ss and isinstance(ss, WindowsMixin):
+                            if s!=ss and isinstance(s, WindowsMixin):
                                 s.resize_window(wid, window, aw, ah, resize_counter=counter)
                     damage |= owx!=ax or owy!=ay or resized
             if not shown and not skip_geometry:
