@@ -209,6 +209,8 @@ class TopClient:
                 else:
                     attr = 0
                 for s in info:
+                    if len(s)>=width-4:
+                        s = s[:width-6]+".."
                     s = s.ljust(width-4)
                     self.stdscr.addstr(hpos, 2, s, attr)
                     hpos += 1
@@ -360,10 +362,18 @@ class TopSessionClient(MonitorXpraClient):
         height, width = self.stdscr.getmaxyx()
         #log.info("update_screen() %ix%i", height, width)
         title = get_title()
-        x = max(0, width//2-len(title)//2)
         sli = self.server_last_info
+        def _addstr(pad, y, x, s, *args):
+            if len(s)+x>=width-pad:
+                s = s[:max(0, width-x-2-pad)]+".."
+            self.stdscr.addstr(y, x, s, *args)
+        def addstr_main(y, x, s, *args):
+            _addstr(0, y, x, s, *args)
+        def addstr_box(y, x, s, *args):
+            _addstr(2, y, x, s, *args)
         try:
-            self.stdscr.addstr(0, x, title, curses.A_BOLD)
+            x = max(0, width//2-len(title)//2)
+            addstr_main(0, x, title, curses.A_BOLD)
             if height<=1:
                 return
             server_info = self.slidictget("server")
@@ -388,7 +398,7 @@ class TopSessionClient(MonitorXpraClient):
                     platform_name(proxy_platform, proxy_distro or proxy_release),
                     std(proxy_version or "unknown")
                     )
-            self.stdscr.addstr(1, 0, server_str)
+            addstr_main(1, 0, server_str)
             if height<=2:
                 return
             #load and uptime:
@@ -405,7 +415,7 @@ class TopSessionClient(MonitorXpraClient):
             if load and len(load)==3:
                 float_load = tuple(v/1000.0 for v in load)
                 load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
-            self.stdscr.addstr(2, 0, "xpra top - %s%s, %2i users%s" % (
+            addstr_main(2, 0, "xpra top - %s%s, %2i users%s" % (
                                now.strftime("%H:%M:%S"), uptime, nclients, load_average))
             if height<=3:
                 return
@@ -424,7 +434,7 @@ class TopSessionClient(MonitorXpraClient):
             elif elapsed>2:
                 rinfo += " - last updated %i seconds ago" % elapsed
                 color = RED
-            self.stdscr.addstr(3, 0, rinfo, curses.color_pair(color))
+            addstr_main(3, 0, rinfo, curses.color_pair(color))
             if height<=4:
                 return
             #display:
@@ -445,21 +455,21 @@ class TopSessionClient(MonitorXpraClient):
             pid = display_info.intget("pid")
             if pid:
                 dinfo.append("pid %i" % pid)
-            self.stdscr.addstr(4, 0, csv(dinfo))
+            addstr_main(4, 0, csv(dinfo))
             if height<=5:
                 return
             hpos = 5
             gl_info = self.get_gl_info(display_info.dictget("opengl"))
             if gl_info:
-                self.stdscr.addstr(5, 0, gl_info)
+                addstr_main(5, 0, gl_info)
                 hpos += 1
 
             if hpos<height-3:
                 hpos += 1
                 if nclients==0:
-                    self.stdscr.addstr(hpos, 0, "no clients connected")
+                    addstr_main(hpos, 0, "no clients connected")
                 else:
-                    self.stdscr.addstr(hpos, 0, "%i client%s connected:" % (nclients, engs(nclients)))
+                    addstr_main(hpos, 0, "%i client%s connected:" % (nclients, engs(nclients)))
                 hpos += 1
             client_info = self.slidictget("client")
             client_no = 0
@@ -482,19 +492,19 @@ class TopSessionClient(MonitorXpraClient):
                 if hpos+2+l>height:
                     if hpos<height:
                         more = nclients-client_no
-                        self.stdscr.addstr(hpos, 0, "%i client%s not shown" % (more, engs(more)), curses.A_BOLD)
+                        addstr_box(hpos, 0, "%i client%s not shown" % (more, engs(more)), curses.A_BOLD)
                     break
                 self.box(1, hpos, width-2, 2+l)
                 for i, info in enumerate(ci):
                     info_text, color = info
                     cpair = curses.color_pair(color)
-                    self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
+                    addstr_box(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
 
             windows = self.slidictget("windows")
             if hpos<height-3:
                 hpos += 1
-                self.stdscr.addstr(hpos, 0, "%i window%s:" % (len(windows), engs(windows)))
+                addstr_main(hpos, 0, "%i window%s:" % (len(windows), engs(windows)))
                 hpos += 1
             wins = tuple(windows.values())
             nwindows = len(wins)
@@ -504,14 +514,14 @@ class TopSessionClient(MonitorXpraClient):
                 if hpos+2+l>height:
                     if hpos<height:
                         more = nwindows-win_no
-                        self.stdscr.addstr(hpos, 0, "terminal window is too small: %i window%s not shown" % \
+                        addstr_main(hpos, 0, "terminal window is too small: %i window%s not shown" % \
                                            (more, engs(more)), curses.A_BOLD)
                     break
                 self.box(1, hpos, width-2, 2+l)
                 for i, info in enumerate(wi):
                     info_text, color = info
                     cpair = curses.color_pair(color)
-                    self.stdscr.addstr(hpos+i+1, 2, info_text, cpair)
+                    addstr_box(hpos+i+1, 2, info_text, cpair)
                 hpos += 2+l
         except Exception as e:
             self.err(e)
