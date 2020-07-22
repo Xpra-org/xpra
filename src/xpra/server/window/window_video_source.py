@@ -93,6 +93,7 @@ VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 50)))
 MIN_SCROLL_IMAGE_SIZE = envint("XPRA_MIN_SCROLL_IMAGE_SIZE", 384)
 
+SAVE_VIDEO_PATH = os.environ.get("XPRA_SAVE_VIDEO_PATH", "")
 SAVE_VIDEO_STREAMS = envbool("XPRA_SAVE_VIDEO_STREAMS", False)
 SAVE_VIDEO_FRAMES = os.environ.get("XPRA_SAVE_VIDEO_FRAMES")
 if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
@@ -2118,7 +2119,9 @@ class WindowVideoSource(WindowSource):
                           }
             t = monotonic_time()
             tstr = time.strftime("%H-%M-%S", time.localtime(t))
-            filename = "./W%i-VDO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_VIDEO_FRAMES)
+            filename = "W%i-VDO-%s.%03i.%s" % (self.wid, tstr, (t*1000)%1000, SAVE_VIDEO_FRAMES)
+            if SAVE_VIDEO_PATH:
+                filename = os.path.join(SAVE_VIDEO_PATH, filename)
             videolog("do_video_encode: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
             img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
 
@@ -2228,6 +2231,8 @@ class WindowVideoSource(WindowSource):
             self.close_video_stream_file()
             elapsed = monotonic_time()-self.start_time
             stream_filename = "window-%i-%.1f-%s.%s" % (self.wid, elapsed, ve.get_type(), ve.get_encoding())
+            if SAVE_VIDEO_PATH:
+                stream_filename = os.path.join(SAVE_VIDEO_PATH, stream_filename)
             self.video_stream_file = open(stream_filename, "wb")
             log.info("saving new %s stream for window %i to %s", ve.get_encoding(), self.wid, stream_filename)
         if self.video_stream_file:
