@@ -1791,13 +1791,16 @@ class WindowVideoSource(WindowSource):
                 #don't scroll very low quality content, better to refresh it
                 scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)",
                           coding, client_options.get("scaled_size"), client_options.get("quality", 100))
-                self.free_scroll_data()
+                self.do_free_scroll_data()
             else:
                 sd.invalidate(x, y, w, h)
         return packet
 
 
     def free_scroll_data(self):
+        self.call_in_encode_thread(False, self.do_free_scroll_data)
+
+    def do_free_scroll_data(self):
         sd = self.scroll_data
         if sd:
             self.scroll_data = None
@@ -1825,7 +1828,7 @@ class WindowVideoSource(WindowSource):
         scroll_data = self.scroll_data
         if self.b_frame_flush_timer and scroll_data:
             scrolllog("no scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
-            self.free_scroll_data()
+            self.do_free_scroll_data()
             return False
         return self.do_scroll_encode("scroll", image, options, self.scroll_min_percent)
 
@@ -1890,7 +1893,7 @@ class WindowVideoSource(WindowSource):
                 scrolllog.error("Error during scrolling detection")
                 scrolllog.error(" with image=%s, options=%s", image, options, exc_info=True)
             #make sure we start again from scratch next time:
-            self.free_scroll_data()
+            self.do_free_scroll_data()
         return False
 
     def encode_scrolling(self, scroll_data, image, options, match_pct, max_zones=20):
