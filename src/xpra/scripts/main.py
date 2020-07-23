@@ -364,298 +364,298 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         "request-start", "request-start-desktop", "request-shadow",
         ):
         options.encodings = validated_encodings(options.encodings)
-    return do_run_mode(script_file, error_cb, options, args, mode, defaults)
+    try:
+        return do_run_mode(script_file, error_cb, options, args, mode, defaults)
+    except KeyboardInterrupt as e:
+        info("\ncaught %s, exiting" % repr(e))
+        return 128+signal.SIGINT
 
 
 def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
-    try:
-        if mode in ("start", "start-desktop", "shadow") and display_is_remote:
-            #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
-            return run_remote_server(error_cb, options, args, mode, defaults)
+    if mode in ("start", "start-desktop", "shadow") and display_is_remote:
+        #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
+        return run_remote_server(error_cb, options, args, mode, defaults)
 
-        if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
-            assert not display_is_remote
-            #maybe the server is already running
-            #and we don't need to bother trying to start it:
+    if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
+        assert not display_is_remote
+        #maybe the server is already running
+        #and we don't need to bother trying to start it:
+        try:
+            display = pick_display(error_cb, options, args)
+        except Exception:
+            pass
+        else:
+            dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+            display_name = display.get("display_name")
+            if display_name:
+                state = dotxpra.get_display_state(display_name)
+                if state==DotXpra.LIVE:
+                    noerr(sys.stdout.write, "existing live display found, attaching")
+                    return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+
+    if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
+        (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
+        try:
+            cwd = os.getcwd()
+        except OSError:
+            os.chdir("/")
+            cwd = "/"
+        env = os.environ.copy()
+        start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
+        if start_via_proxy is not False and (not POSIX or getuid()!=0) and options.daemon:
             try:
-                display = pick_display(error_cb, options, args)
+                from xpra import client
+                assert client
+            except ImportError as e:
+                if start_via_proxy is True:
+                    error_cb("cannot start-via-proxy: xpra client is not installed")
+            else:
+                err = None
+                try:
+                    #this will use the client "start-new-session" feature,
+                    #to start a new session and connect to it at the same time:
+                    app = get_client_app(error_cb, options, args, "request-%s" % mode)
+                    r = do_run_client(app)
+                    #OK or got a signal:
+                    NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
+                    if app.completed_startup:
+                        #if we had connected to the session,
+                        #we can ignore more error codes:
+                        NO_RETRY += [
+                                EXIT_CONNECTION_LOST,
+                                EXIT_REMOTE_ERROR,
+                                EXIT_INTERNAL_ERROR,
+                                EXIT_FILE_TOO_BIG,
+                                ]
+                    if r in NO_RETRY:
+                        return r
+                    if r==EXIT_FAILURE:
+                        err = "unknown general failure"
+                    else:
+                        err = EXIT_STR.get(r, r)
+                except Exception as e:
+                    log = Logger("proxy")
+                    log("failed to start via proxy", exc_info=True)
+                    err = str(e)
+                if start_via_proxy is True:
+                    raise InitException("failed to start-via-proxy: %s" % (err,))
+                #warn and fall through to regular server start:
+                warn("Warning: cannot use the system proxy for '%s' subcommand," % (mode, ))
+                warn(" %s" % (err,))
+                warn(" more information may be available in your system log")
+                #re-exec itself and disable start-via-proxy:
+                args = sys.argv[:]+["--start-via-proxy=no"]
+                #warn("re-running with: %s" % (args,))
+                os.execv(args[0], args)
+                #this code should be unreachable!
+                return 1
+        current_display = nox()
+        try:
+            from xpra import server
+            assert server
+            from xpra.scripts.server import run_server, add_when_ready
+        except ImportError as e:
+            error_cb("Xpra server is not installed")
+        if options.attach is True:
+            def attach_client():
+                from xpra.platform.paths import get_xpra_command
+                cmd = get_xpra_command()+["attach"]
+                display_name = os.environ.get("DISPLAY")
+                if display_name:
+                    cmd += [display_name]
+                #options has been "fixed up", make sure this has too:
+                fixup_options(defaults)
+                for x in CLIENT_OPTIONS:
+                    f = x.replace("-", "_")
+                    try:
+                        d = getattr(defaults, f)
+                        c = getattr(options, f)
+                    except Exception as e:
+                        print("error on %s: %s" % (f, e))
+                        continue
+                    if c!=d:
+                        if OPTION_TYPES.get(x)==list:
+                            v = csv(c)
+                        else:
+                            v = str(c)
+                        cmd.append("--%s=%s" % (x, v))
+                proc = Popen(cmd, cwd=cwd, env=env, start_new_session=POSIX and not OSX)
+                from xpra.child_reaper import getChildReaper
+                getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
+            add_when_ready(attach_client)
+        return run_server(error_cb, options, mode, script_file, args, current_display)
+    elif mode in (
+        "attach", "listen", "detach",
+        "screenshot", "version", "info", "id",
+        "control", "_monitor", "shell", "print",
+        "connect-test", "request-start", "request-start-desktop", "request-shadow",
+        ):
+        return run_client(error_cb, options, args, mode)
+    elif mode in ("stop", "exit"):
+        return run_stopexit(mode, error_cb, options, args)
+    elif mode == "top":
+        from xpra.client.top_client import TopClient, TopSessionClient
+        app = None
+        if args:
+            try:
+                display_desc = pick_display(error_cb, options, args)
             except Exception:
                 pass
             else:
-                dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-                display_name = display.get("display_name")
-                if display_name:
-                    state = dotxpra.get_display_state(display_name)
-                    if state==DotXpra.LIVE:
-                        noerr(sys.stdout.write, "existing live display found, attaching")
-                        return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
-
-        if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
-            (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
-            try:
-                cwd = os.getcwd()
-            except OSError:
-                os.chdir("/")
-                cwd = "/"
-            env = os.environ.copy()
-            start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
-            if start_via_proxy is not False and (not POSIX or getuid()!=0) and options.daemon:
+                #show the display we picked automatically:
+                app = TopSessionClient(options)
                 try:
-                    from xpra import client
-                    assert client
-                except ImportError as e:
-                    if start_via_proxy is True:
-                        error_cb("cannot start-via-proxy: xpra client is not installed")
-                else:
-                    err = None
-                    try:
-                        #this will use the client "start-new-session" feature,
-                        #to start a new session and connect to it at the same time:
-                        app = get_client_app(error_cb, options, args, "request-%s" % mode)
-                        r = do_run_client(app)
-                        #OK or got a signal:
-                        NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
-                        if app.completed_startup:
-                            #if we had connected to the session,
-                            #we can ignore more error codes:
-                            NO_RETRY += [
-                                    EXIT_CONNECTION_LOST,
-                                    EXIT_REMOTE_ERROR,
-                                    EXIT_INTERNAL_ERROR,
-                                    EXIT_FILE_TOO_BIG,
-                                    ]
-                        if r in NO_RETRY:
-                            return r
-                        if r==EXIT_FAILURE:
-                            err = "unknown general failure"
-                        else:
-                            err = EXIT_STR.get(r, r)
-                    except Exception as e:
-                        log = Logger("proxy")
-                        log("failed to start via proxy", exc_info=True)
-                        err = str(e)
-                    if start_via_proxy is True:
-                        raise InitException("failed to start-via-proxy: %s" % (err,))
-                    #warn and fall through to regular server start:
-                    warn("Warning: cannot use the system proxy for '%s' subcommand," % (mode, ))
-                    warn(" %s" % (err,))
-                    warn(" more information may be available in your system log")
-                    #re-exec itself and disable start-via-proxy:
-                    args = sys.argv[:]+["--start-via-proxy=no"]
-                    #warn("re-running with: %s" % (args,))
-                    os.execv(args[0], args)
-                    #this code should be unreachable!
-                    return 1
-            current_display = nox()
-            try:
-                from xpra import server
-                assert server
-                from xpra.scripts.server import run_server, add_when_ready
-            except ImportError as e:
-                error_cb("Xpra server is not installed")
-            if options.attach is True:
-                def attach_client():
-                    from xpra.platform.paths import get_xpra_command
-                    cmd = get_xpra_command()+["attach"]
-                    display_name = os.environ.get("DISPLAY")
-                    if display_name:
-                        cmd += [display_name]
-                    #options has been "fixed up", make sure this has too:
-                    fixup_options(defaults)
-                    for x in CLIENT_OPTIONS:
-                        f = x.replace("-", "_")
-                        try:
-                            d = getattr(defaults, f)
-                            c = getattr(options, f)
-                        except Exception as e:
-                            print("error on %s: %s" % (f, e))
-                            continue
-                        if c!=d:
-                            if OPTION_TYPES.get(x)==list:
-                                v = csv(c)
-                            else:
-                                v = str(c)
-                            cmd.append("--%s=%s" % (x, v))
-                    proc = Popen(cmd, cwd=cwd, env=env, start_new_session=POSIX and not OSX)
-                    from xpra.child_reaper import getChildReaper
-                    getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
-                add_when_ready(attach_client)
-            return run_server(error_cb, options, mode, script_file, args, current_display)
-        elif mode in (
-            "attach", "listen", "detach",
-            "screenshot", "version", "info", "id",
-            "control", "_monitor", "shell", "print",
-            "connect-test", "request-start", "request-start-desktop", "request-shadow",
-            ):
-            return run_client(error_cb, options, args, mode)
-        elif mode in ("stop", "exit"):
-            return run_stopexit(mode, error_cb, options, args)
-        elif mode == "top":
-            from xpra.client.top_client import TopClient, TopSessionClient
-            app = None
-            if args:
-                try:
-                    display_desc = pick_display(error_cb, options, args)
+                    connect_to_server(app, display_desc, options)
                 except Exception:
-                    pass
-                else:
-                    #show the display we picked automatically:
-                    app = TopSessionClient(options)
-                    try:
-                        connect_to_server(app, display_desc, options)
-                    except Exception:
-                        app = None
-            if not app:
-                #show all sessions:
-                app = TopClient(options)
-            return app.run()
-        elif mode == "list":
-            return run_list(error_cb, options, args)
-        elif mode == "list-windows":
-            return run_list_windows(error_cb, options, args)
-        elif mode == "list-mdns" and supports_mdns:
-            return run_list_mdns(error_cb, args)
-        elif mode == "mdns-gui" and supports_mdns:
-            check_display()
-            return run_mdns_gui(error_cb, options)
-        elif mode == "sessions":
-            check_display()
-            return run_sessions_gui(error_cb, options)
-        elif mode == "launcher":
-            check_display()
-            from xpra.client.gtk_base.client_launcher import main as launcher_main
-            return launcher_main(["xpra"]+args)
-        elif mode == "gui":
-            check_display()
-            from xpra.gtk_common.gui import main as gui_main        #@Reimport
-            return gui_main()
-        elif mode == "bug-report":
-            check_display()
-            from xpra.scripts.bug_report import main as bug_main    #@Reimport
-            bug_main(["xpra"]+args)
-        elif mode in (
-            "_proxy",
-            "_proxy_start",
-            "_proxy_start_desktop",
-            "_proxy_shadow_start",
-            ) and (supports_server or supports_shadow):
-            nox()
-            return run_proxy(error_cb, options, script_file, args, mode, defaults)
-        elif mode in ("_sound_record", "_sound_play", "_sound_query"):
-            if not has_sound_support():
-                error_cb("no sound support!")
-            from xpra.sound.wrapper import run_sound
-            return run_sound(mode, error_cb, options, args)
-        elif mode=="_dialog":
-            check_display()
-            return run_dialog(args)
-        elif mode=="_pass":
-            check_display()
-            return run_pass(args)
-        elif mode=="send-file":
-            check_display()
-            return run_send_file(args)
-        elif mode=="splash":
-            return run_splash(args)
-        elif mode=="opengl":
-            check_display()
-            return run_glcheck(options)
-        elif mode=="opengl-probe":
-            check_display()
-            return run_glprobe(options)
-        elif mode=="opengl-test":
-            check_display()
-            return run_glprobe(options, True)
-        elif mode=="encoding":
-            from xpra.codecs import loader
-            return loader.main()
-        elif mode=="webcam":
-            check_display()
-            from xpra.scripts import show_webcam
-            return show_webcam.main()
-        elif mode=="clipboard-test":
-            check_display()
-            from xpra.gtk_common import gtk_view_clipboard
-            return gtk_view_clipboard.main()
-        elif mode=="keyboard":
-            from xpra.platform import keyboard
-            return keyboard.main()
-        elif mode=="keyboard-test":
-            check_display()
-            from xpra.gtk_common import gtk_view_keyboard
-            return gtk_view_keyboard.main()
-        elif mode=="keymap":
-            from xpra.gtk_common import keymap
-            return keymap.main()
-        elif mode=="gtk-info":
-            check_display()
-            from xpra.scripts import gtk_info
-            return gtk_info.main()
-        elif mode=="gui-info":
-            check_display()
-            from xpra.platform import gui
-            return gui.main()
-        elif mode=="network-info":
-            from xpra.net import net_util
-            return net_util.main()
-        elif mode=="path-info":
-            from xpra.platform import paths
-            return paths.main()
-        elif mode=="printing-info":
-            from xpra.platform import printing
-            return printing.main()
-        elif mode=="version-info":
-            from xpra.scripts import version
-            return version.main()
-        elif mode=="toolbox":
-            check_display()
-            from xpra.client.gtk_base import toolbox
-            return toolbox.main()
-        elif mode=="colors-test":
-            check_display()
-            from xpra.client.gtk_base.example import colors
-            return colors.main()
-        elif mode=="colors-gradient-test":
-            check_display()
-            from xpra.client.gtk_base.example import colors_gradient
-            return colors_gradient.main()
-        elif mode=="transparent-colors":
-            check_display()
-            from xpra.client.gtk_base.example import transparent_colors
-            return transparent_colors.main()
-        elif mode=="transparent-window":
-            check_display()
-            from xpra.client.gtk_base.example import transparent_window
-            return transparent_window.main()
-        elif mode == "initenv":
-            if not POSIX:
-                raise InitExit(EXIT_UNSUPPORTED, "initenv is not supported on this OS")
-            from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
-            script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
-            write_runner_shell_scripts(script, False)
-            return 0
-        elif mode == "showconfig":
-            return run_showconfig(options, args)
-        elif mode == "showsetting":
-            return run_showsetting(options, args)
-        else:
-            from xpra.scripts.parsing import get_usage
-            if mode!="help":
-                print("Invalid subcommand '%s'" % (mode,))
-            print("Usage:")
-            from xpra.platform.features import LOCAL_SERVERS_SUPPORTED
-            if not LOCAL_SERVERS_SUPPORTED:
-                print("(this xpra installation does not support starting local servers)")
-            cmd = os.path.basename(sys.argv[0])
-            for x in get_usage():
-                print("\t%s %s" % (cmd, x))
-            print()
-            print("see 'man xpra' or 'xpra --help' for more details")
-            return 1
-    except KeyboardInterrupt as e:
-        info("\ncaught %s, exiting" % repr(e))
-        return 128+signal.SIGINT
+                    app = None
+        if not app:
+            #show all sessions:
+            app = TopClient(options)
+        return app.run()
+    elif mode == "list":
+        return run_list(error_cb, options, args)
+    elif mode == "list-windows":
+        return run_list_windows(error_cb, options, args)
+    elif mode == "list-mdns" and supports_mdns:
+        return run_list_mdns(error_cb, args)
+    elif mode == "mdns-gui" and supports_mdns:
+        check_display()
+        return run_mdns_gui(error_cb, options)
+    elif mode == "sessions":
+        check_display()
+        return run_sessions_gui(error_cb, options)
+    elif mode == "launcher":
+        check_display()
+        from xpra.client.gtk_base.client_launcher import main as launcher_main
+        return launcher_main(["xpra"]+args)
+    elif mode == "gui":
+        check_display()
+        from xpra.gtk_common.gui import main as gui_main        #@Reimport
+        return gui_main()
+    elif mode == "bug-report":
+        check_display()
+        from xpra.scripts.bug_report import main as bug_main    #@Reimport
+        bug_main(["xpra"]+args)
+    elif mode in (
+        "_proxy",
+        "_proxy_start",
+        "_proxy_start_desktop",
+        "_proxy_shadow_start",
+        ) and (supports_server or supports_shadow):
+        nox()
+        return run_proxy(error_cb, options, script_file, args, mode, defaults)
+    elif mode in ("_sound_record", "_sound_play", "_sound_query"):
+        if not has_sound_support():
+            error_cb("no sound support!")
+        from xpra.sound.wrapper import run_sound
+        return run_sound(mode, error_cb, options, args)
+    elif mode=="_dialog":
+        check_display()
+        return run_dialog(args)
+    elif mode=="_pass":
+        check_display()
+        return run_pass(args)
+    elif mode=="send-file":
+        check_display()
+        return run_send_file(args)
+    elif mode=="splash":
+        return run_splash(args)
+    elif mode=="opengl":
+        check_display()
+        return run_glcheck(options)
+    elif mode=="opengl-probe":
+        check_display()
+        return run_glprobe(options)
+    elif mode=="opengl-test":
+        check_display()
+        return run_glprobe(options, True)
+    elif mode=="encoding":
+        from xpra.codecs import loader
+        return loader.main()
+    elif mode=="webcam":
+        check_display()
+        from xpra.scripts import show_webcam
+        return show_webcam.main()
+    elif mode=="clipboard-test":
+        check_display()
+        from xpra.gtk_common import gtk_view_clipboard
+        return gtk_view_clipboard.main()
+    elif mode=="keyboard":
+        from xpra.platform import keyboard
+        return keyboard.main()
+    elif mode=="keyboard-test":
+        check_display()
+        from xpra.gtk_common import gtk_view_keyboard
+        return gtk_view_keyboard.main()
+    elif mode=="keymap":
+        from xpra.gtk_common import keymap
+        return keymap.main()
+    elif mode=="gtk-info":
+        check_display()
+        from xpra.scripts import gtk_info
+        return gtk_info.main()
+    elif mode=="gui-info":
+        check_display()
+        from xpra.platform import gui
+        return gui.main()
+    elif mode=="network-info":
+        from xpra.net import net_util
+        return net_util.main()
+    elif mode=="path-info":
+        from xpra.platform import paths
+        return paths.main()
+    elif mode=="printing-info":
+        from xpra.platform import printing
+        return printing.main()
+    elif mode=="version-info":
+        from xpra.scripts import version
+        return version.main()
+    elif mode=="toolbox":
+        check_display()
+        from xpra.client.gtk_base import toolbox
+        return toolbox.main()
+    elif mode=="colors-test":
+        check_display()
+        from xpra.client.gtk_base.example import colors
+        return colors.main()
+    elif mode=="colors-gradient-test":
+        check_display()
+        from xpra.client.gtk_base.example import colors_gradient
+        return colors_gradient.main()
+    elif mode=="transparent-colors":
+        check_display()
+        from xpra.client.gtk_base.example import transparent_colors
+        return transparent_colors.main()
+    elif mode=="transparent-window":
+        check_display()
+        from xpra.client.gtk_base.example import transparent_window
+        return transparent_window.main()
+    elif mode == "initenv":
+        if not POSIX:
+            raise InitExit(EXIT_UNSUPPORTED, "initenv is not supported on this OS")
+        from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
+        script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
+        write_runner_shell_scripts(script, False)
+        return 0
+    elif mode == "showconfig":
+        return run_showconfig(options, args)
+    elif mode == "showsetting":
+        return run_showsetting(options, args)
+    else:
+        from xpra.scripts.parsing import get_usage
+        if mode!="help":
+            print("Invalid subcommand '%s'" % (mode,))
+        print("Usage:")
+        from xpra.platform.features import LOCAL_SERVERS_SUPPORTED
+        if not LOCAL_SERVERS_SUPPORTED:
+            print("(this xpra installation does not support starting local servers)")
+        cmd = os.path.basename(sys.argv[0])
+        for x in get_usage():
+            print("\t%s %s" % (cmd, x))
+        print()
+        print("see 'man xpra' or 'xpra --help' for more details")
+        return 1
 
 
 def find_session_by_name(opts, session_name):
