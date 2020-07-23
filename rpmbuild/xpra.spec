@@ -237,6 +237,7 @@ Recommends:			python3-cups
 Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:			python3-pyxdg
+Recommends:         python3-psutil
 #without this, the system tray is unusable!
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus

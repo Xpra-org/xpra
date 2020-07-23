@@ -111,6 +111,8 @@ class TopClient:
         self.message = None
         self.exit_code = None
         self.dotxpra = DotXpra(self.socket_dir, self.socket_dirs)
+        self.last_getch = 0
+        self.psprocess = {}
 
     def run(self):
         self.stdscr = curses_init()
@@ -130,7 +132,11 @@ class TopClient:
         while self.exit_code is None:
             self.update_screen()
             while True:
+                elapsed = int(1000*monotonic_time()-self.last_getch)
+                delay = max(0, min(1000, 1000-elapsed))
+                self.stdscr.timeout(delay)
                 v = self.stdscr.getch()
+                self.last_getch = int(1000*monotonic_time())
                 if v==-1:
                     break
                 #print("v=%s" % (v,))
@@ -275,6 +281,22 @@ class TopClient:
             else:
                 info[0] = "%s  %s" % (display, name)
                 info.insert(1, "uuid=%s, type=%s" % (uuid, stype))
+            try:
+                pid = int(d.get("pid"))
+            except (ValueError, TypeError):
+                pass
+            else:
+                try:
+                    process = self.psprocess.get(pid)
+                    if not process:
+                        import psutil
+                        process = psutil.Process(pid)
+                        self.psprocess[pid] = process
+                    else:
+                        cpu = process.cpu_percent()
+                        info[0] += ", %i%% CPU" % (cpu)
+                except Exception:
+                    pass
         return info
 
     def get_display_id_info(self, path):
@@ -324,6 +346,7 @@ class TopSessionClient(MonitorXpraClient):
         self.info_timer = 0
         self.paused = False
         self.stdscr = None
+        self.psprocess = {}
 
     def client_type(self):
         #overriden in subclasses!
@@ -470,6 +493,17 @@ class TopSessionClient(MonitorXpraClient):
             server_pid = server_info.intget("pid", 0)
             if server_pid:
                 rinfo += ", pid %i" % server_pid
+                try:
+                    process = self.psprocess.get(server_pid)
+                    if not process:
+                        import psutil
+                        process = psutil.Process(server_pid)
+                        self.psprocess[server_pid] = process
+                    else:
+                        cpu = process.cpu_percent()
+                        rinfo += ", %i%% CPU" % (cpu)
+                except Exception:
+                    pass
             cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
                 rinfo += ", %s" % cpuinfo.strget("hz_actual")
