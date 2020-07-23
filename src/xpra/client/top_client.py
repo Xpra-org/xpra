@@ -151,25 +151,7 @@ class TopClient:
                 elif v==259:    #up arrow
                     self.position = max(self.position-1, 0)
                 elif v==10 and self.selected_session:
-                    #show this session:
-                    cmd = get_nodock_command()+["top", self.selected_session]
-                    try:
-                        self.cleanup()
-                        proc = Popen(cmd)
-                        exit_code = proc.wait()
-                        txt = "top subprocess terminated"
-                        attr = 0
-                        if exit_code!=0:
-                            attr = curses.color_pair(RED)
-                            txt += " with error code %i" % exit_code
-                            if exit_code in EXIT_STR:
-                                txt += " (%s)" % EXIT_STR.get(exit_code, "").replace("_", " ")
-                            elif (exit_code-128) in SIGNAMES:   #pylint: disable=superfluous-parens
-                                txt += " (%s)" % SIGNAMES[exit_code-128]
-                        self.message = monotonic_time(), txt, attr
-                        #TODO: show exit code, especially if non-zero
-                    finally:
-                        self.stdscr = curses_init()
+                    self.show_selected_session()
                 elif v in (ord("s"), ord("S")):
                     self.run_subcommand("stop")
                 elif v in (ord("a"), ord("A")):
@@ -177,12 +159,34 @@ class TopClient:
                 elif v in (ord("d"), ord("D")):
                     self.run_subcommand("detach")
 
+    def show_selected_session(self):
+        #show this session:
+        try:
+            self.cleanup()
+            proc = self.do_run_subcommand("top")
+            exit_code = proc.wait()
+            txt = "top subprocess terminated"
+            attr = 0
+            if exit_code!=0:
+                attr = curses.color_pair(RED)
+                txt += " with error code %i" % exit_code
+                if exit_code in EXIT_STR:
+                    txt += " (%s)" % EXIT_STR.get(exit_code, "").replace("_", " ")
+                elif (exit_code-128) in SIGNAMES:   #pylint: disable=superfluous-parens
+                    txt += " (%s)" % SIGNAMES[exit_code-128]
+            self.message = monotonic_time(), txt, attr
+        finally:
+            self.stdscr = curses_init()
+
     def run_subcommand(self, subcommand):
+        return self.do_run_subcommand(subcommand, stdout=DEVNULL, stderr=DEVNULL)
+
+    def do_run_subcommand(self, subcommand, **kwargs):
         cmd = get_nodock_command()+[subcommand, self.selected_session]
         try:
-            Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
+            return Popen(cmd, **kwargs)
         except Exception:
-            pass
+            return None
 
 
     def update_screen(self):
