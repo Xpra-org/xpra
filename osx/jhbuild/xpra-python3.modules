@@ -745,6 +745,19 @@
 		</after>
 	</distutils>
 
+	<distutils id="python3-psutil" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/aa/3e/d18f2c04cf2b528e18515999b0c8e698c136db78f62df34eee89cee205f1/psutil-5.7.2.tar.gz"
+			hash="sha256:90990af1c3c67195c44c9a889184f84f5b2320dce3ee3acbd054e3ba0b4a7beb"
+			version="5.7.2"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
 	<distutils id="python3-pycups" python3="1">
 		<branch repo="pypi.python.org"
 			module="/packages/0c/bb/82546806a86dc16f5eeb76f62ffdc42cce3d43aacd4e25a8b5300eec0263/pycups-2.0.1.tar.gz"
@@ -821,6 +834,7 @@
 		  <dep package="python3-cryptography"/>
 		  <dep package="python3-rencode"/>
 		  <dep package="python3-yaml"/>
+		  <dep package="python3-psutil"/>
 		  <dep package="python3-macholib"/>
 		  <dep package="python3-modulegraph"/>
 		  <dep package="python3-altgraph"/>
