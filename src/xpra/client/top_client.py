@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import sys
 import curses
 import signal
 import traceback
@@ -13,7 +12,8 @@ from datetime import datetime, timedelta
 
 from xpra import __version__
 from xpra.util import typedict, std, envint, csv, engs, repr_ellipsized
-from xpra.os_util import platform_name, bytestostr, monotonic_time, POSIX
+from xpra.os_util import platform_name, bytestostr, monotonic_time, POSIX, SIGNAMES
+from xpra.exit_codes import EXIT_STR
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.dotxpra import DotXpra
@@ -34,6 +34,10 @@ RED = 3
 
 EXIT_KEYS = (ord("q"), ord("Q"))
 PAUSE_KEYS = (ord("p"), ord("P"))
+SIGNAL_KEYS = {
+    3 : signal.SIGINT,
+    26 : signal.SIGSTOP,
+    }
 
 
 def get_title():
@@ -53,7 +57,7 @@ def curses_init():
     stdscr.nodelay(True)
     stdscr.clear()
     curses.noecho()
-    curses.cbreak()
+    curses.raw()
     curses.start_color()
     curses.use_default_colors()
     #for i in range(0, curses.COLORS):
@@ -73,7 +77,6 @@ def curses_clean(stdscr):
     curses.endwin()
 
 def curses_err(stdscr, e):
-    import traceback
     if CURSES_LOG:
         with open(CURSES_LOG, "ab") as f:
             f.write(b"%s\n" % e)
@@ -105,8 +108,8 @@ class TopClient:
         self.socket_dir = opts.socket_dir
         self.position = 0
         self.selected_session = None
+        self.message = None
         self.exit_code = None
-        self.subprocess_exit_code = None
         self.dotxpra = DotXpra(self.socket_dir, self.socket_dirs)
 
     def run(self):
@@ -117,8 +120,8 @@ class TopClient:
         self.cleanup()
         return self.exit_code
 
-    def signal_handler(self, *_args):
-        self.exit_code = 128+signal.SIGINT
+    def signal_handler(self, signum, *_args):
+        self.exit_code = 128+signum
 
     def cleanup(self):
         curses_clean(self.stdscr)
@@ -126,37 +129,53 @@ class TopClient:
     def update_loop(self):
         while self.exit_code is None:
             self.update_screen()
-            curses.halfdelay(50)
-            v = self.stdscr.getch()
-            #print("v=%s" % (v,))
-            if v in EXIT_KEYS:
-                self.exit_code = 0
-            elif v==258:    #down arrow
-                self.position += 1
-            elif v==259:    #up arrow
-                self.position = max(self.position-1, 0)
-            elif v==10 and self.selected_session:
-                #show this session:
-                cmd = get_nodock_command()+["top", self.selected_session]
-                try:
-                    self.cleanup()
-                    proc = Popen(cmd)
-                    exit_code = proc.wait()
-                    #TODO: show exit code, especially if non-zero
-                finally:
-                    self.stdscr = curses_init()
-            elif v in (ord("s"), ord("S")):
-                self.run_subcommand("stop")
-            elif v in (ord("a"), ord("A")):
-                self.run_subcommand("attach")
-            elif v in (ord("d"), ord("D")):
-                self.run_subcommand("detach")
+            while True:
+                v = self.stdscr.getch()
+                if v==-1:
+                    break
+                #print("v=%s" % (v,))
+                if v in EXIT_KEYS:
+                    self.exit_code = 0
+                    break
+                if v in SIGNAL_KEYS:
+                    self.exit_code = 128+SIGNAL_KEYS[v]
+                    break
+                if v==258:    #down arrow
+                    self.position += 1
+                elif v==259:    #up arrow
+                    self.position = max(self.position-1, 0)
+                elif v==10 and self.selected_session:
+                    #show this session:
+                    cmd = get_nodock_command()+["top", self.selected_session]
+                    try:
+                        self.cleanup()
+                        proc = Popen(cmd)
+                        exit_code = proc.wait()
+                        txt = "top subprocess terminated"
+                        attr = 0
+                        if exit_code!=0:
+                            attr = curses.color_pair(RED)
+                            txt += " with error code %i" % exit_code
+                            if exit_code in EXIT_STR:
+                                txt += " (%s)" % EXIT_STR.get(exit_code, "").replace("_", " ")
+                            elif (exit_code-128) in SIGNAMES:   #pylint: disable=superfluous-parens
+                                txt += " (%s)" % SIGNAMES[exit_code-128]
+                        self.message = monotonic_time(), txt, attr
+                        #TODO: show exit code, especially if non-zero
+                    finally:
+                        self.stdscr = curses_init()
+                elif v in (ord("s"), ord("S")):
+                    self.run_subcommand("stop")
+                elif v in (ord("a"), ord("A")):
+                    self.run_subcommand("attach")
+                elif v in (ord("d"), ord("D")):
+                    self.run_subcommand("detach")
 
     def run_subcommand(self, subcommand):
         cmd = get_nodock_command()+[subcommand, self.selected_session]
         try:
             Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
-        except:
+        except Exception:
             pass
 
 
@@ -193,6 +212,15 @@ class TopClient:
             hpos += 1
             if height<=hpos:
                 return
+            if self.message:
+                ts, txt, attr = self.message
+                if monotonic_time()-ts<10:
+                    self.stdscr.addstr(hpos, 0, txt, attr)
+                    hpos += 1
+                    if height<=hpos:
+                        return
+                else:
+                    self.message = None
             n = len(displays)
             for i, (display, state_paths) in enumerate(displays.items()):
                 if height<=hpos:
@@ -302,6 +330,7 @@ class TopSessionClient(MonitorXpraClient):
         return "top"
 
     def server_connection_established(self, caps):
+        self.log("server_connection_established(%s)" % repr_ellipsized(caps))
         r = super().server_connection_established(caps)
         self.stdscr = curses_init()
         self.update_screen()
@@ -309,20 +338,27 @@ class TopSessionClient(MonitorXpraClient):
 
 
     def run(self):
-        register_os_signals(self.signal_handler, "Top Client")
-        return super().run()
+        register_os_signals(self.signal_handler, None)
+        v = super().run()
+        self.log("run()=%s" % v)
+        self.close_log()
+        return v
 
-    def signal_handler(self, *args):
-        self.log("signal_handler%s" % (args,))
-        self.cleanup()
-        sys.exit(128+signal.SIGINT)
+    def signal_handler(self, signum, *args):
+        self.log("exit_code=%s" % self.exit_code)
+        self.log("signal_handler(%s, %s)" % (signum, args,))
+        self.quit(128+signum)
+        self.log("exit_code=%s" % self.exit_code)
 
     def cleanup(self):
         self.cancel_info_timer()
         MonitorXpraClient.cleanup(self)
         curses_clean(self.stdscr)
+
+    def close_log(self):
         log_file = self.log_file
         if log_file:
+            self.log("closing log")
             self.log_file = None
             log_file.close()
 
@@ -330,6 +366,7 @@ class TopSessionClient(MonitorXpraClient):
         if self.log_file:
             now = datetime.now()
             self.log_file.write(("%s %s\n" % (now.strftime("%Y/%m/%d %H:%M:%S.%f"), message)).encode())
+            self.log_file.flush()
 
     def err(self, e):
         if self.log_file:
@@ -339,6 +376,7 @@ class TopSessionClient(MonitorXpraClient):
             curses_err(self.stdscr, e)
 
     def update_screen(self):
+        self.log("signal handlers=%s" % signal.getsignal(signal.SIGINT))
         self.log("update_screen()")
         if not self.paused:
             self.stdscr.erase()
@@ -348,12 +386,20 @@ class TopSessionClient(MonitorXpraClient):
                 self.err(e)
             finally:
                 self.stdscr.refresh()
-        v = self.stdscr.getch()
-        if v in EXIT_KEYS:
-            self.log("exit on key '%s'" % v)
-            self.quit(0)
-        if v in PAUSE_KEYS:
-            self.paused = not self.paused
+        while True:
+            v = self.stdscr.getch()
+            self.log("getch()=%s" % v)
+            if v==-1:
+                break
+            if v in EXIT_KEYS:
+                self.log("exit on key '%s'" % v)
+                self.quit(0)
+                break
+            if v in SIGNAL_KEYS:
+                self.quit(128+SIGNAL_KEYS[v])
+                break
+            if v in PAUSE_KEYS:
+                self.paused = not self.paused
 
     def do_update_screen(self):
         self.log("do_update_screen()")
