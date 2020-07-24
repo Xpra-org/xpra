@@ -42,6 +42,7 @@ xpra (1.0.15-1) UNRELEASED; urgency=low
   * fix quality and speed changes from the system tray (compatibility issue with newer clients)
   * try harder not to use video for tiny areas
   * fix suspend / resume errors with tray windows
+  * fix compatibility with CUDA 11.0
   * log CUDA device actually used - mutiple GPU setups
   * support CUDA 10.2
   * skip display number warnings when upgrading
