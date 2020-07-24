@@ -1979,6 +1979,7 @@ class ServerCore:
             "uuid"          : self.uuid,
             "platform"      : sys.platform,
             "pid"           : os.getpid(),
+            "machine-id"    : get_machine_id(),
             }
         display = os.environ.get("DISPLAY")
         if display:
@@ -2034,6 +2035,7 @@ class ServerCore:
             "current_time"      : int(now),
             "elapsed_time"      : int(now - self.start_time),
             "uuid"              : self.uuid,
+            "machine-id"        : get_machine_id(),
             }
         return info
 

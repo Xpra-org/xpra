@@ -12,7 +12,11 @@ from datetime import datetime, timedelta
 
 from xpra import __version__
 from xpra.util import typedict, std, envint, csv, engs, repr_ellipsized
-from xpra.os_util import platform_name, bytestostr, monotonic_time, POSIX, SIGNAMES
+from xpra.os_util import (
+    platform_name, get_machine_id,
+    bytestostr, monotonic_time,
+    POSIX, SIGNAMES,
+    )
 from xpra.exit_codes import EXIT_STR
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.gtk_common.gobject_compat import register_os_signals
@@ -285,22 +289,24 @@ class TopClient:
             else:
                 info[0] = "%s  %s" % (display, name)
                 info.insert(1, "uuid=%s, type=%s" % (uuid, stype))
-            try:
-                pid = int(d.get("pid"))
-            except (ValueError, TypeError):
-                pass
-            else:
+            machine_id = d.get("machine-id")
+            if machine_id is None or machine_id==get_machine_id():
                 try:
-                    process = self.psprocess.get(pid)
-                    if not process:
-                        import psutil
-                        process = psutil.Process(pid)
-                        self.psprocess[pid] = process
-                    else:
-                        cpu = process.cpu_percent()
-                        info[0] += ", %i%% CPU" % (cpu)
-                except Exception:
+                    pid = int(d.get("pid"))
+                except (ValueError, TypeError):
                     pass
+                else:
+                    try:
+                        process = self.psprocess.get(pid)
+                        if not process:
+                            import psutil
+                            process = psutil.Process(pid)
+                            self.psprocess[pid] = process
+                        else:
+                            cpu = process.cpu_percent()
+                            info[0] += ", %i%% CPU" % (cpu)
+                    except Exception:
+                        pass
         return info
 
     def get_display_id_info(self, path):
@@ -497,17 +503,19 @@ class TopSessionClient(MonitorXpraClient):
             server_pid = server_info.intget("pid", 0)
             if server_pid:
                 rinfo += ", pid %i" % server_pid
-                try:
-                    process = self.psprocess.get(server_pid)
-                    if not process:
-                        import psutil
-                        process = psutil.Process(server_pid)
-                        self.psprocess[server_pid] = process
-                    else:
-                        cpu = process.cpu_percent()
-                        rinfo += ", %i%% CPU" % (cpu)
-                except Exception:
-                    pass
+                machine_id = server_info.get("machine-id")
+                if machine_id is None or machine_id==get_machine_id():
+                    try:
+                        process = self.psprocess.get(server_pid)
+                        if not process:
+                            import psutil
+                            process = psutil.Process(server_pid)
+                            self.psprocess[server_pid] = process
+                        else:
+                            cpu = process.cpu_percent()
+                            rinfo += ", %i%% CPU" % (cpu)
+                    except Exception:
+                        pass
             cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
                 rinfo += ", %s" % cpuinfo.strget("hz_actual")
