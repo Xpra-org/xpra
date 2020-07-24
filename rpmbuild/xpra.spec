@@ -458,7 +458,7 @@ fi
 
 
 %changelog
-* Tue Jun 16 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
+* Fri Jul 24 2020 Antoine Martin <antoine@devloop.org.uk> 1.0.15-1
 - fix avcodec2 race condition crash
 - fix csc_swscale converter getting recycled every time
 - fix memory contents of the swscale pixel format object
@@ -474,6 +474,7 @@ fi
 - fix GDK scaling causing window painting issues (force off)
 - fix server hangs and unpainted windows due to invalid dimensions
 - fix unresponsive appindicator system tray
+- fix NVENC h264 stream compatibility with HTML5 client
 - fix scoring of NVENC codec (should be used ahead of sofware encoders)
 - fix NVENC error when pynvml is not installed
 - fix NVENC temporary failure retry code path
@@ -500,6 +501,7 @@ fi
 - fix webp image dimensions for transparency encoding
 - fix quality and speed changes from the system tray (compatibility issue with newer clients)
 - try harder not to use video for tiny areas
+- fix suspend / resume errors with tray windows
 - log CUDA device actually used - mutiple GPU setups
 - support CUDA 10.2
 - skip display number warnings when upgrading
