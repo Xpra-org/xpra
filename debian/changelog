@@ -2,6 +2,7 @@ xpra (3.0.11-1) UNRELEASED; urgency=low
   * fix encryption option overzealously enforced on all socket types
   * fix network layer compression errors that can cause connections to drop
   * fix printing errors with some shell character encodings
+  * fix NVENC h264 stream compatibility with HTML5 client
   * fix windows not getting focused when clicking on title bar (HTML5)
   * fix suspend / resume errors with tray windows
   * fix Python2 / GTK2 compatibility regression from 3.0.10
@@ -18,6 +19,7 @@ xpra (3.0.11-1) UNRELEASED; urgency=low
   * fix notification widget wrongly stealing input focus
   * fix support for building with CUDA 11.0
   * fix unshrinkable session-info window
+  * fix window resizing errors when non-GUI clients are also connected
   * avoid ever using b-frames for text content
   * silence unhelpful gtk warnings on MacOS
   * avoid opengl warning with wayland
@@ -27,8 +29,9 @@ xpra (3.0.11-1) UNRELEASED; urgency=low
   * ensure all toolbox windows set a correct and readable window title
   * convert invalid map events to warnings (no scary crash reports)
   * also update mdns records when the session name changes
+  * make it possible to specify the path used for saving video streams / frames
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 21 Jul 2020 16:54:36 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 24 Jul 2020 07:08:54 +0700
 
 xpra (3.0.10-2) UNRELEASED; urgency=low
   * fix python2 / GTK2 compatibility

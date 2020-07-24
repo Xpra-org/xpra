@@ -870,10 +870,11 @@ fi
 
 
 %changelog
-* Tue Jul 21 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
+* Fri Jul 24 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
 - fix encryption option overzealously enforced on all socket types
 - fix network layer compression errors that can cause connections to drop
 - fix printing errors with some shell character encodings
+- fix NVENC h264 stream compatibility with HTML5 client
 - fix windows not getting focused when clicking on title bar (HTML5)
 - fix suspend / resume errors with tray windows
 - fix Python2 / GTK2 compatibility regression from 3.0.10
@@ -890,6 +891,7 @@ fi
 - fix notification widget wrongly stealing input focus
 - fix support for building with CUDA 11.0
 - fix unshrinkable session-info window
+- fix window resizing errors when non-GUI clients are also connected
 - avoid ever using b-frames for text content
 - silence unhelpful gtk warnings on MacOS
 - avoid opengl warning with wayland
@@ -899,6 +901,7 @@ fi
 - ensure all toolbox windows set a correct and readable window title
 - convert invalid map events to warnings (no scary crash reports)
 - also update mdns records when the session name changes
+- make it possible to specify the path used for saving video streams / frames
 
 * Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 3.0.10-10xpra3
 - fix X11 server key symbol lookup via Xkb
