@@ -800,7 +800,7 @@ class WindowSource(object):
             return "png"
         for x in ("rgb32", "png", "webp"):
             if x in self.common_encodings:
-                if x=="webp" and (depth not in (24, 32) or w>16383 or w<2  or h>16383> or h<2):
+                if x=="webp" and (depth not in (24, 32) or w>16383 or w<2 or h>16383 or h<2):
                     continue
                 return x
         return self.common_encodings[0]
