@@ -586,10 +586,12 @@ fi
 
 
 %changelog
-* Tue Jul 21 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Fri Jul 24 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+- fix server crash caused by use after free in scrolling code
 - fix encryption option overzealously enforced on all socket types
 - fix network layer compression errors that can cause connections to drop
 - fix printing errors with some shell character encodings
+- fix NVENC h264 stream compatibility with HTML5 client
 - fix windows not getting focused when clicking on title bar (HTML5)
 - fix suspend / resume errors with tray windows
 - fix garbled terminal when ssh messages and 'top' client conflict
@@ -608,11 +610,13 @@ fi
 - fix rfb connections missing all screen updates
 - fix RPM spec file for CentOS 8
 - fix toolbox examples when running under wayland
+- fix 'xpra toolbox' subcommand on MacOS
 - fix MacOS outdated system version requirements in hidden sub application
 - fix sshfp support on MacOS (was missing dns python module)
 - fix notification widget wrongly stealing input focus
 - fix support for building with CUDA 11.0
 - fix unshrinkable session-info window
+- fix window resizing errors when non-GUI clients are also connected
 - avoid ever using b-frames for text content
 - silence unhelpful gtk warnings on MacOS
 - avoid opengl warning with wayland
@@ -622,6 +626,7 @@ fi
 - use 'text' mode for 'geany' (fixes lossy screen updates)
 - ensure all toolbox windows set a correct and readable window title
 - remove workaround for unsupported versions of Ubuntu
+- make it possible to specify the path used for saving video streams / frames
 
 * Thu Jun 04 2020 Antoine Martin <antoine@xpra.org> 4.0.2-1
 - fix encryption not honoured with TCP sockets upgraded to WebSocket
