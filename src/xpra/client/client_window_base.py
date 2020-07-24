@@ -9,7 +9,7 @@ import sys, os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.os_util import bytestostr, WIN32
+from xpra.os_util import bytestostr
 from xpra.util import typedict, envbool, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 log = Logger("window")
@@ -25,6 +25,8 @@ geomlog = Logger("geometry")
 REPAINT_ALL = os.environ.get("XPRA_REPAINT_ALL", "")
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
+
+WIN32 = sys.platform.startswith("win")
 
 
 class ClientWindowBase(ClientWidgetBase):
