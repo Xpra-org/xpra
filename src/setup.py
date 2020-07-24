@@ -2280,7 +2280,7 @@ if nvenc7_ENABLED:
         if code==0:
             vpos = out.rfind(", V")
             if vpos>0:
-                version = out[vpos+3:].strip("\n")
+                version = out[vpos+3:].split("\n")[0]
                 version_str = " version %s" % version
             else:
                 version = "0"
@@ -2331,7 +2331,10 @@ if nvenc7_ENABLED:
             cmd += ["--machine", "32"]
         if WIN32:
             cmd += ["-I%s" % os.path.abspath("win32")]
-        comp_code_options = [(30, 30), (35, 35)]
+        comp_code_options = []
+        if version<(11,):
+            comp_code_options.append((30, 30))
+        comp_code_options.append((35, 35))
         #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
         if version!=(0,) and version<(7, 5):
             print("CUDA version %s is very unlikely to work")
