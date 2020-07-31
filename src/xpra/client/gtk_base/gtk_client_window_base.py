@@ -1820,6 +1820,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             b.init(ww, wh, self._client.cx(ww), self._client.cy(wh))
         else:
             self.new_backing(self._client.cx(ww), self._client.cy(wh))
+        self._client_properties["encoding.render-size"] = b.render_size
 
     def resize(self, w, h, resize_counter=0):
         ww, wh = self.get_size()
