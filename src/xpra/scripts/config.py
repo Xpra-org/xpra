@@ -620,6 +620,7 @@ OPTION_TYPES = {
                     #arrays of strings:
                     "pulseaudio-configure-commands" : list,
                     "socket-dirs"       : list,
+                    "client-socket-dirs" : list,
                     "remote-xpra"       : list,
                     "encodings"         : list,
                     "proxy-video-encoders" : list,
@@ -700,7 +701,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "remote-clipboard", "local-clipboard",
                   "tcp-encryption", "tcp-encryption-keyfile", "encryption",  "encryption-keyfile",
                   "systemd-run", "systemd-run-args",
-                  "socket-dir", "socket-dirs",
+                  "socket-dir", "socket-dirs", "client-socket-dirs",
                   "border", "window-close", "min-size", "max-size", "desktop-scaling",
                   "file-transfer", "file-size-limit", "download-path",
                   "open-command", "open-files", "printing", "open-url",
@@ -844,7 +845,7 @@ def get_defaults():
         OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
         DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
         )
-    from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts, get_socket_dirs
+    from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts, get_socket_dirs, get_client_socket_dirs
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -1032,6 +1033,7 @@ def get_defaults():
                     "splash"            : True,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
                     "socket-dirs"       : get_socket_dirs(),
+                    "client-socket-dirs" : get_client_socket_dirs(),
                     "remote-xpra"       : get_remote_run_xpra_scripts(),
                     "encodings"         : ["all"],
                     "proxy-video-encoders" : [],

@@ -4,11 +4,13 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
+import os
+
 from xpra import __version__ as VERSION
 from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR, DONE
 from xpra.os_util import bytestostr
 from xpra.net.bytestreams import log_new_connection
-from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection
+from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
 from xpra.net.protocol import Protocol
 from xpra.exit_codes import EXIT_OK
@@ -43,10 +45,14 @@ class NetworkListener(StubClientMixin):
     def init(self, opts):
         def err(msg):
             raise InitException(msg)
-        #don't create regular local sockets or udp sockets for now:
-        opts.bind = ()
+        #don't listen on udp sockets for now:
         opts.bind_udp = ()
         self.sockets = create_sockets(opts, err)
+        local_sockets = setup_local_sockets(opts.bind,
+                                            None, opts.client_socket_dirs,
+                                            str(os.getpid()), True,
+                                            opts.mmap_group, opts.socket_permissions)
+        self.sockets.update(local_sockets)
 
     def run(self):
         self.start_listen_sockets()
@@ -61,7 +67,19 @@ class NetworkListener(StubClientMixin):
         for proto, tid in ct.items():
             self.source_remove(tid)
             proto.close()
-        for c in self.socket_cleanup:
+        socket_cleanup = self.socket_cleanup
+        log("cleanup_sockets() socket_cleanup=%s", socket_cleanup)
+        self.socket_cleanup = []
+        for c in socket_cleanup:
+            try:
+                c()
+            except Exception:
+                log.error("Error during socket listener cleanup", exc_info=True)
+        sockets = self.sockets
+        self.sockets = {}
+        log("cleanup_sockets() sockets=%s", sockets)
+        for sdef in sockets.keys():
+            c = sdef[-1]
             try:
                 c()
             except Exception:

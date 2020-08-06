@@ -148,6 +148,15 @@ def do_get_socket_dirs():
         SOCKET_DIRS.append("/var/run/xpra")
     return SOCKET_DIRS
 
+
+def do_get_client_socket_dirs():
+    DIRS = []
+    runtime_dir = _get_xpra_runtime_dir()
+    if runtime_dir:
+        DIRS.append(os.path.join(runtime_dir, "clients"))
+    return DIRS
+
+
 def do_get_default_log_dirs():
     log_dirs = []
     v = _get_xpra_runtime_dir()

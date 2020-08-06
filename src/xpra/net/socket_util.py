@@ -199,8 +199,6 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
 
 
 def create_sockets(opts, error_cb):
-    log = get_network_logger()
-
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_udp = parse_bind_ip(opts.bind_udp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
@@ -244,6 +242,7 @@ def create_sockets(opts, error_cb):
             sshlog.error("Error: cannot enable SSH socket upgrades:")
             sshlog.error(" %s", e)
             ssh_upgrades = False
+    log = get_network_logger()
     for socktype, defs in {
         "tcp"   : bind_tcp,
         "ssl"   : bind_ssl,

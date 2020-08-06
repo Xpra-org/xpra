@@ -1073,6 +1073,10 @@ def do_parse_cmdline(cmdline, defaults):
                       help="How often to synchronize the virtual framebuffer used for X11 seamless servers "
                       +"(0 to disable)."
                       +" Default: %s." % defaults.sync_xvfb)
+    group.add_option("--client-socket-dirs", action="store",
+                      dest="client_socket_dirs", default=defaults.client_socket_dirs,
+                      help="Directories where the clients create their control socket."
+                      +" Default: %s." % os.path.pathsep.join("'%s'" % x for x in defaults.client_socket_dirs))
     group.add_option("--socket-dirs", action="store",
                       dest="socket_dirs", default=defaults.socket_dirs,
                       help="Directories to look for the socket files in."

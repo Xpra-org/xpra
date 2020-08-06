@@ -73,6 +73,13 @@ def get_socket_dirs():
 def do_get_socket_dirs():
     return ["~/.xpra"]
 
+
+def get_client_socket_dirs():
+    return envaslist_or_delegate("XPRA_CLIENT_SOCKET_DIRS", do_get_client_socket_dirs)
+def do_get_client_socket_dirs():
+    return []
+
+
 def get_default_log_dirs():
     return envaslist_or_delegate("XPRA_LOG_DIRS", do_get_default_log_dirs)
 def do_get_default_log_dirs():
@@ -279,6 +286,7 @@ platform_import(globals(), "paths", False,
                 "do_get_ssh_known_hosts_files",
                 "do_get_user_conf_dirs",
                 "do_get_socket_dirs",
+                "do_get_client_socket_dirs",
                 "do_get_default_log_dirs",
                 "do_get_download_dir",
                 "do_get_libexec_dir",
@@ -305,6 +313,7 @@ def get_info():
         "ssh_conf"          : {"dirs"   : get_ssh_conf_dirs()},
         "user_conf"         : {"dirs"   : get_user_conf_dirs()},
         "socket"            : {"dirs"   : get_socket_dirs()},
+        "client-socket"     : {"dirs"   : get_client_socket_dirs()},
         "log"               : {"dirs"   : get_default_log_dirs()},
         "download"          : {"dir"    : get_download_dir()},
         "libexec"           : {"dir"    : get_libexec_dir()},
