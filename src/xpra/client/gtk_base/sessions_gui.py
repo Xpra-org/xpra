@@ -168,6 +168,9 @@ class SessionsGUI(Gtk.Window):
                     #try to query it
                     try:
                         info = self.get_session_info(sockpath)
+                        if info.get("session-type")=="client":
+                            log(" skipped client socket '%s': %s", sockpath, info)
+                            continue
                     except Exception as e:
                         log("get_session_info(%s)", sockpath, exc_info=True)
                         log.error("Error querying session info for %s", sockpath)
@@ -177,8 +180,12 @@ class SessionsGUI(Gtk.Window):
                         continue
                 #log("info(%s)=%s", sockpath, repr_ellipsized(str(info)))
                 info_cache[key] = info
+        if WIN32:
+            socktype = "namedpipe"
+        else:
+            socktype = "socket"
         def make_text(info):
-            text = {"mode" : "socket"}
+            text = {"mode" : socktype}
             for k, name in {
                 "platform"       : "platform",
                 "uuid"           : "uuid",

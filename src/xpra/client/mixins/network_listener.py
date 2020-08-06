@@ -5,10 +5,11 @@
 #pylint: disable-msg=E1101
 
 import os
+import sys
 
 from xpra import __version__ as VERSION
 from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR, DONE
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, get_machine_id
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
@@ -117,11 +118,15 @@ class NetworkListener(StubClientMixin):
             log.error("Error handling new connection", exc_info=True)
         return self.exit_code is None
 
-    def handle_new_connection(self, socktype, listener, _handle):
-        socket_info = self.socket_info.get(listener)
+    def handle_new_connection(self, socktype, listener, handle):
         assert socktype, "cannot find socket type for %s" % listener
         socket_options = self.socket_options.get(listener, {})
-        assert socktype!="named-pipe"
+        if socktype=="named-pipe":
+            from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
+            conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
+            log.info("New %s connection received on %s", socktype, conn.target)
+            self.make_protocol(socktype, conn, listener)
+            return
         conn = accept_connection(socktype, listener, SOCKET_TIMEOUT, socket_options)
         if conn is None:
             return
@@ -131,16 +136,17 @@ class NetworkListener(StubClientMixin):
             log.error(" ignoring new one: %s", conn.endpoint)
             conn.close()
             return
-        sock = conn._socket
-        socktype = conn.socktype
-        peername = conn.endpoint
-        sockname = sock.getsockname()
-        target = peername or sockname
-        log("handle_new_connection%s sockname=%s, target=%s",
-               (conn, socket_info, socket_options), sockname, target)
-        sock.settimeout(SOCKET_TIMEOUT)
+        try:
+            sockname = conn._socket.getsockname()
+        except Exception:
+            sockname = ""
+        log("handle_new_connection%s sockname=%s",
+               (socktype, listener, handle), sockname)
+        socket_info = self.socket_info.get(listener)
         log_new_connection(conn, socket_info)
+        self.make_protocol(socktype, conn, listener)
 
+    def make_protocol(self, socktype, conn, listener):
         socktype = socktype.lower()
         protocol = Protocol(self, conn, self.process_network_packet)
         #protocol.large_packets.append(b"info-response")
@@ -173,6 +179,11 @@ class NetworkListener(StubClientMixin):
                     proto.send_now(["hello", info])
                 #run in UI thread:
                 self.idle_add(send_info)
+            elif request=="id":
+                def send_id():
+                    proto.send_now(["hello", self.get_id_info()])
+                #run in UI thread:
+                self.idle_add(send_id)
             elif request=="detach":
                 def protocol_closed():
                     self.disconnect_and_quit(EXIT_OK, "network request")
@@ -197,3 +208,13 @@ class NetworkListener(StubClientMixin):
         #make sure the connection is closed:
         tid = self.timeout_add(REQUEST_TIMEOUT*1000, close)
         self._close_timers[proto] = tid
+
+    def get_id_info(self) -> dict:
+        #minimal information for identifying the session
+        return {
+            "session-type"  : "client",
+            "session-name"  : self.session_name,
+            "platform"      : sys.platform,
+            "pid"           : os.getpid(),
+            "machine-id"    : get_machine_id(),
+            }
