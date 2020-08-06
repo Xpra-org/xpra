@@ -13,7 +13,6 @@ import socket
 import signal
 import platform
 import threading
-import traceback
 from weakref import WeakKeyDictionary
 from time import sleep, time
 
@@ -40,6 +39,7 @@ from xpra.platform import set_name
 from xpra.platform.paths import get_app_dir
 from xpra.os_util import (
     register_SIGUSR_signals,
+    get_frame_info, get_info_env, get_sysconfig_info,
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
     getuid, monotonic_time, hexstr,
@@ -122,67 +122,13 @@ def get_server_info():
     info.update(get_host_info())
     return info
 
-def get_thread_info(proto=None, protocols=()):
+def get_thread_info(proto=None):
     #threads:
     if proto:
         info_threads = proto.get_threads()
     else:
         info_threads = ()
-    info = {
-            "count"        : threading.active_count() - len(info_threads),
-            "info.count"   : len(info_threads)
-            }
-    thread_ident = {
-            threading.current_thread().ident    : "info",
-            main_thread.ident                   : "main",
-            }
-    w = get_worker(False)
-    if w:
-        thread_ident[w.ident] = "worker"
-
-    it = info.setdefault("info", {})
-    #threads used by the "info" client:
-    for i, t in enumerate(info_threads):
-        it[i] = t.getName()
-        thread_ident[t.ident] = t.getName()
-    for p in protocols:
-        try:
-            threads = p.get_threads()
-            for t in threads:
-                thread_ident[t.ident] = t.getName()
-        except:
-            pass
-    #all non-info threads:
-    anit = info.setdefault("thread", {})
-    for i, t in enumerate(x for x in threading.enumerate() if x not in info_threads):
-        anit[i] = t.getName()
-    #platform specific bits:
-    try:
-        from xpra.platform.info import get_sys_info
-        info.update(get_sys_info())
-    except:
-        log.error("error getting system info", exc_info=True)
-    #extract frame info:
-    try:
-        def nn(x):
-            if x is None:
-                return ""
-            return str(x)
-        frames = sys._current_frames()
-        fi = info.setdefault("frame", {})
-        stack = None
-        for i,frame_pair in enumerate(frames.items()):
-            stack = traceback.extract_stack(frame_pair[1])
-            #sanitize stack to prevent None values (which cause encoding errors with the bencoder)
-            sanestack = []
-            for e in stack:
-                sanestack.append(tuple([nn(x) for x in e]))
-            fi[i] = {""         : thread_ident.get(frame_pair[0], "unknown"),
-                     "stack"    : sanestack}
-        del frames, stack
-    except Exception as e:
-        log.error("failed to get frame info: %s", e)
-    return info
+    return get_frame_info(info_threads)
 
 
 class ServerCore:
@@ -2071,37 +2017,10 @@ class ServerCore:
         info = {}
         def up(prefix, d):
             info[prefix] = d
-        filtered_env = os.environ.copy()
-        if filtered_env.get('XPRA_PASSWORD'):
-            filtered_env['XPRA_PASSWORD'] = "*****"
-        if filtered_env.get('XPRA_ENCRYPTION_KEY'):
-            filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
 
         si = self.get_server_info()
         if SYSCONFIG:
-            import sysconfig
-            sysinfo = {}
-            for attr in (
-                "platform",
-                "python-version",
-                "config-vars",
-                "paths",
-                ):
-                fn = "get_%s" % attr.replace("-", "_")
-                getter = getattr(sysconfig, fn, None)
-                if getter:
-                    try:
-                        sysinfo[attr] = getter()
-                    except ModuleNotFoundError:
-                        log("sysconfig.%s", fn, exc_info=True)
-                        if attr=="config-vars" and WIN32:
-                            continue
-                        if first_time(fn):
-                            log.warn("Warning: failed to collect %s sysconfig information", attr)
-                    except Exception:
-                        log.error("Error calling sysconfig.%s", fn, exc_info=True)
-            if sysinfo:
-                si["sysconfig"] = sysinfo
+            si["sysconfig"] = get_sysconfig_info()
         up("server", si)
 
         ni = get_net_info()
@@ -2120,7 +2039,9 @@ class ServerCore:
                    })
         up("network", ni)
         up("threads",   self.get_thread_info(proto))
-        up("env",       filtered_env)
+        from xpra.platform.info import get_sys_info
+        up("sys", get_sys_info())
+        up("env", get_info_env())
         if self.session_name:
             info["session"] = {"name" : self.session_name}
         if self.child_reaper:

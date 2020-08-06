@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 
 from xpra.client.client_base import XpraClientBase
@@ -13,8 +14,14 @@ from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
+from xpra.net.net_util import get_info as get_net_info
 from xpra.child_reaper import reaper_cleanup
-from xpra.os_util import platform_name, bytestostr, strtobytes, BITS, POSIX, is_Wayland
+from xpra.platform.info import get_sys_info
+from xpra.os_util import (
+    platform_name, bytestostr, strtobytes,
+    BITS, POSIX, is_Wayland,
+    get_frame_info, get_info_env, get_sysconfig_info,
+    )
 from xpra.util import (
     std, envbool, envint, typedict, updict, repr_ellipsized, ellipsizer, log_screen_sizes, engs, csv,
     merge_dicts,
@@ -76,6 +83,7 @@ log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
+SYSCONFIG = envbool("XPRA_SYSCONFIG", False)
 
 
 """
@@ -257,7 +265,15 @@ class UIXpraClient(ClientBaseClass):
 
 
     def get_info(self):
-        info = {}
+        info = {
+            "pid"       : os.getpid(),
+            "threads"   : get_frame_info(),
+            "env"       : get_info_env(),
+            "sys"       : get_sys_info(),
+            "network"   : get_net_info(),
+            }
+        if SYSCONFIG:
+            info["sysconfig"] = get_sysconfig_info()
         for c in CLIENT_BASES:
             try:
                 i = c.get_info(self)

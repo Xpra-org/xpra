@@ -37,6 +37,78 @@ def is_main_thread():
     return threading.current_thread()==main_thread
 
 
+def get_frame_info(ignore_threads=()):
+    info = {
+        "count"        : threading.active_count() - len(ignore_threads),
+        }
+    try:
+        import traceback
+        def nn(x):
+            if x is None:
+                return ""
+            return str(x)
+        thread_ident = {}
+        for t in threading.enumerate():
+            if t not in ignore_threads:
+                thread_ident[t.ident] = t.getName()
+            else:
+                thread_ident[t.ident] = None
+        thread_ident.update({
+                threading.current_thread().ident    : "info",
+                main_thread.ident                   : "main",
+                })
+        frames = sys._current_frames()
+        stack = None
+        for i,frame_pair in enumerate(frames.items()):
+            stack = traceback.extract_stack(frame_pair[1])
+            tident = thread_ident.get(frame_pair[0], "unknown")
+            if tident is None:
+                continue
+            #sanitize stack to prevent None values (which cause encoding errors with the bencoder)
+            sanestack = []
+            for e in stack:
+                sanestack.append(tuple([nn(x) for x in e]))
+            info[i] = {
+                ""          : tident,
+                "stack"     : sanestack,
+                }
+        del frames, stack
+    except Exception as e:
+        get_util_logger().error("failed to get frame info: %s", e)
+    return info
+
+def get_info_env():
+    filtered_env = os.environ.copy()
+    if filtered_env.get('XPRA_PASSWORD'):
+        filtered_env['XPRA_PASSWORD'] = "*****"
+    if filtered_env.get('XPRA_ENCRYPTION_KEY'):
+        filtered_env['XPRA_ENCRYPTION_KEY'] = "*****"
+    return filtered_env
+
+def get_sysconfig_info():
+    import sysconfig
+    sysinfo = {}
+    log = get_util_logger()
+    for attr in (
+        "platform",
+        "python-version",
+        "config-vars",
+        "paths",
+        ):
+        fn = "get_%s" % attr.replace("-", "_")
+        getter = getattr(sysconfig, fn, None)
+        if getter:
+            try:
+                sysinfo[attr] = getter()
+            except ModuleNotFoundError:
+                log("sysconfig.%s", fn, exc_info=True)
+                if attr=="config-vars" and WIN32:
+                    continue
+                log.warn("Warning: failed to collect %s sysconfig information", attr)
+            except Exception:
+                log.error("Error calling sysconfig.%s", fn, exc_info=True)
+    return sysinfo
+
 def strtobytes(x) -> bytes:
     if isinstance(x, bytes):
         return x
