@@ -2115,6 +2115,10 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
 
 
 def no_gtk():
+    if OSX:
+        #we can't verify on macos because importing GtkosxApplication
+        #will import Gtk, and we need GtkosxApplication early to find the paths
+        return
     Gtk = sys.modules.get("gi.repository.Gtk")
     if Gtk is None:
         #all good, not loaded
