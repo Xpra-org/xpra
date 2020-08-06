@@ -427,7 +427,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if shadowing and not extra_args:
         if WIN32 or OSX:
             #just a virtual name for the only display available:
-            display_name = ":0"
+            display_name = "Main"
         else:
             from xpra.scripts.main import guess_X11_display
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)

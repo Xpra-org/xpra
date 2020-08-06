@@ -90,9 +90,6 @@ FlushFileBuffers.restype = BOOL
 GetLastError = kernel32.GetLastError
 GetLastError.argtypes = []
 GetLastError.restype = DWORD
-GetCurrentProcess = kernel32.GetCurrentProcess
-GetCurrentProcess.argtypes = []
-GetCurrentProcess.restype = HANDLE
 
 advapi32 = WinDLL("advapi32", use_last_error=True)
 OpenProcessToken = advapi32.OpenProcessToken

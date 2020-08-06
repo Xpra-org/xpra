@@ -437,6 +437,9 @@ def normalize_local_display_name(local_display_name):
 
 def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         mmap_group="auto", socket_permissions="600", username="", uid=0, gid=0):
+    log = get_network_logger()
+    log("setup_local_sockets%s", (bind, socket_dir, socket_dirs, display_name, clobber,
+                                  mmap_group, socket_permissions, username, uid, gid))
     if not bind:
         return {}
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
@@ -447,9 +450,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                            "at least one socket directory must be set to use unix domain sockets")
     from xpra.platform.dotxpra import DotXpra, norm_makepath
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
-    if display_name is not None:
+    if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    log = get_network_logger()
     defs = {}
     try:
         sockpaths = {}
@@ -464,8 +466,11 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 options = parse_simple_dict(parts[1])
             if sockpath=="auto":
                 assert display_name is not None
-                for sockpath in dotxpra.norm_socket_paths(display_name):
-                    sockpaths[sockpath] = options
+                if WIN32:
+                    sockpaths[display_name] = options
+                else:
+                    for sockpath in dotxpra.norm_socket_paths(display_name):
+                        sockpaths[sockpath] = options
                 log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
             else:
                 sockpath = dotxpra.osexpand(sockpath)

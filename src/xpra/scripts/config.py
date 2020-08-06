@@ -874,10 +874,7 @@ def get_defaults():
             break
     xvfb = detect_xvfb_command(conf_dir, bin_dir, warn=None)
     xvfb_str = xvfb_cmd_str(xvfb)
-    if WIN32:
-        bind_dirs = ["Main"]
-    else:
-        bind_dirs = ["auto"]
+    bind_dirs = ["auto"]
 
     ssl_protocol = "TLSv1_2"
 

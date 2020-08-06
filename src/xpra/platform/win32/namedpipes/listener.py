@@ -15,6 +15,7 @@ from xpra.util import envbool
 from xpra.os_util import strtobytes
 from xpra.platform.win32.common import (
     CloseHandle, ERROR_IO_PENDING, FormatMessageSystem,
+    GetCurrentProcess,
     SECURITY_ATTRIBUTES,
     )
 from xpra.platform.win32.namedpipes.common import (
@@ -24,7 +25,7 @@ from xpra.platform.win32.namedpipes.common import (
     WaitForSingleObject, GetLastError,
     SetSecurityDescriptorDacl, SetSecurityDescriptorSacl,
     InitializeSecurityDescriptor,
-    GetCurrentProcess, OpenProcessToken, GetTokenInformation,
+    OpenProcessToken, GetTokenInformation,
     SetSecurityDescriptorOwner, SetSecurityDescriptorGroup,
     InitializeAcl, GetLengthSid,
     AddAccessAllowedAce, CreateWellKnownSid,
