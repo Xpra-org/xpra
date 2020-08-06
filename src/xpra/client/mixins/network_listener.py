@@ -49,10 +49,11 @@ class NetworkListener(StubClientMixin):
         #don't listen on udp sockets for now:
         opts.bind_udp = ()
         self.sockets = create_sockets(opts, err)
-        local_sockets = setup_local_sockets(opts.bind,
-                                            None, opts.client_socket_dirs,
-                                            str(os.getpid()), True,
-                                            opts.mmap_group, opts.socket_permissions)
+        if opts.bind:
+            local_sockets = setup_local_sockets(opts.bind,
+                                                None, opts.client_socket_dirs,
+                                                str(os.getpid()), True,
+                                                opts.mmap_group, opts.socket_permissions)
         self.sockets.update(local_sockets)
 
     def run(self):
