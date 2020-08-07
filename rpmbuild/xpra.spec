@@ -597,6 +597,8 @@ fi
 - fix garbled terminal when ssh messages and 'top' client conflict
 - fix OpenGL force-enable option not honoured
 - fix tray geometry errors
+- fix missing tray with Ubuntu Gnome
+- fix socket setup error handler
 - fix minimum video scaling not being honoured via heuristics
 - fix error in main thread verifier (fortunately, never fired)
 - fix archlinux build root stripping
