@@ -14,7 +14,7 @@ from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
 from xpra.net.protocol import Protocol
-from xpra.exit_codes import EXIT_OK
+from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitException
 from xpra.log import Logger
@@ -169,7 +169,7 @@ class NetworkListener(StubClientMixin):
                 proto.close()
             try:
                 self._potential_protocols.remove(proto)
-            except KeyError:
+            except ValueError:
                 pass
         if packet_type=="hello":
             caps = typedict(packet[1])
@@ -199,8 +199,17 @@ class NetworkListener(StubClientMixin):
             elif request=="command":
                 command = caps.strtupleget("command_request")
                 log("command request: %s", command)
-                self.idle_add(self._process_control, ["control"]+list(command))
-                proto.send_disconnect([DONE])
+                def process_control():
+                    try:
+                        self._process_control(["control"]+list(command))
+                        code = EXIT_OK
+                        response = "done"
+                    except Exception as e:
+                        code = EXIT_FAILURE
+                        response = str(e)
+                    hello = {"command_response"  : (code, response)}
+                    proto.send_now(("hello", hello))
+                self.idle_add(process_control)
             else:
                 log.info("request '%s' is not handled by this client", request)
                 proto.send_disconnect([PROTOCOL_ERROR])
