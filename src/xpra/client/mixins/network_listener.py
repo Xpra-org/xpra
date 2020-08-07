@@ -134,7 +134,7 @@ class NetworkListener(StubClientMixin):
         #limit number of concurrent network connections:
         if len(self._potential_protocols)>=MAX_CONCURRENT_CONNECTIONS:
             log.error("Error: too many connections (%i)", len(self._potential_protocols))
-            log.error(" ignoring new one: %s", conn.endpoint)
+            log.error(" ignoring new one: %s", conn.endpoint or conn)
             conn.close()
             return
         try:
