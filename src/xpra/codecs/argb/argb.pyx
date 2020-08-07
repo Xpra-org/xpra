@@ -94,7 +94,7 @@ def r210_to_rgba(buf,
     cdef Py_ssize_t cbuf_len = 0
     assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
-    assert cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
+    assert <unsigned int> cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
     return r210data_to_rgba(cbuf, w, h, src_stride, dst_stride)
 
 cdef r210data_to_rgba(unsigned int* r210,
@@ -129,7 +129,7 @@ def r210_to_rgbx(buf,
     cdef Py_ssize_t cbuf_len = 0
     assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
-    assert cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
+    assert <unsigned int> cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
     return r210data_to_rgbx(cbuf, w, h, src_stride, dst_stride)
 
 cdef r210data_to_rgbx(unsigned int* r210,
@@ -164,7 +164,7 @@ def r210_to_rgb(buf,
     cdef Py_ssize_t cbuf_len = 0
     assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
     assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
-    assert cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
+    assert <unsigned int> cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
     return r210data_to_rgb(cbuf, w, h, src_stride, dst_stride)
 
 #white:  3fffffff
