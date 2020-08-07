@@ -2751,7 +2751,7 @@ def run_list(error_cb, opts, extra_args):
     no_gtk()
     if extra_args:
         error_cb("too many arguments for mode")
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
     results = dotxpra.socket_details()
     if not results:
         sys.stdout.write("No xpra sessions found\n")
