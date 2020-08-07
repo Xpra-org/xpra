@@ -14,8 +14,11 @@ xpra (3.0.11-1) UNRELEASED; urgency=low
   * fix memory contents of the swscale pixel format object
   * fix csc_swscale converter getting recycled every time
   * fix division by zero errors during window cleanup
+  * fix detection of named-pipe creation errors
+  * fix MS Windows shadow server errors with 'bind=auto'
   * fix MS Windows servers slow to handle connections with mDNS enabled
   * fix sshfp support on MacOS (was missing dns python module)
+  * fix MacOS errors with some subcommands (ie: 'list')
   * fix notification widget wrongly stealing input focus
   * fix support for building with CUDA 11.0
   * fix unshrinkable session-info window
@@ -31,7 +34,7 @@ xpra (3.0.11-1) UNRELEASED; urgency=low
   * also update mdns records when the session name changes
   * make it possible to specify the path used for saving video streams / frames
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 24 Jul 2020 07:08:54 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 08 Jul 2020 11:37:28 +0700
 
 xpra (3.0.10-2) UNRELEASED; urgency=low
   * fix python2 / GTK2 compatibility

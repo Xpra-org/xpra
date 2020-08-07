@@ -65,7 +65,7 @@ Name:				xpra
 Version:			%{version}
 #Fedora-is-screwing-our-repo "solution",
 #use a revision number which will be higher:
-Release:			11%{?revision_no}xpra1%{?dist}
+Release:			10%{?revision_no}xpra1%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
@@ -870,7 +870,7 @@ fi
 
 
 %changelog
-* Fri Jul 24 2020 Antoine Martin <antoine@xpra.org> 3.0.11-11xpra1
+* Fri Aug 07 2020 Antoine Martin <antoine@xpra.org> 3.0.11-10xpra1
 - fix encryption option overzealously enforced on all socket types
 - fix network layer compression errors that can cause connections to drop
 - fix printing errors with some shell character encodings
@@ -886,8 +886,11 @@ fi
 - fix memory contents of the swscale pixel format object
 - fix csc_swscale converter getting recycled every time
 - fix division by zero errors during window cleanup
+- fix detection of named-pipe creation errors
+- fix MS Windows shadow server errors with 'bind=auto'
 - fix MS Windows servers slow to handle connections with mDNS enabled
 - fix sshfp support on MacOS (was missing dns python module)
+- fix MacOS errors with some subcommands (ie: 'list')
 - fix notification widget wrongly stealing input focus
 - fix support for building with CUDA 11.0
 - fix unshrinkable session-info window
