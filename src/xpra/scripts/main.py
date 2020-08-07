@@ -2115,6 +2115,10 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
     assert mode in ("start", "start-desktop", "shadow")
+    if OSX:
+        #we can't verify on macos because importing GtkosxApplication
+        #will import Gtk, and we need GtkosxApplication early to find the paths
+        return
     if mode in ("start", "start-desktop"):
         if len(args)==1:
             display_name = args[0]
