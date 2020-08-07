@@ -597,9 +597,6 @@ class ServerBase(ServerBaseClass):
                 log.error("Error gathering UI info on %s", c, exc_info=True)
         return info
 
-    def get_thread_info(self, proto) -> dict:
-        return get_thread_info(proto, tuple(self._server_sources.keys()))
-
 
     def get_info(self, proto=None, client_uuids=None) -> dict:
         log("ServerBase.get_info%s", (proto, client_uuids))
