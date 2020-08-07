@@ -167,6 +167,10 @@ class NetworkListener(StubClientMixin):
                 pass
             else:
                 proto.close()
+            try:
+                self._potential_protocols.remove(proto)
+            except KeyError:
+                pass
         if packet_type=="hello":
             caps = typedict(packet[1])
             proto.parse_remote_caps(caps)
@@ -200,7 +204,7 @@ class NetworkListener(StubClientMixin):
             else:
                 log.info("request '%s' is not handled by this client", request)
                 proto.send_disconnect([PROTOCOL_ERROR])
-        elif packet_type=="connection-lost":
+        elif packet_type in (Protocol.CONNECTION_LOST, Protocol.GIBBERISH):
             close()
             return
         else:
