@@ -406,7 +406,8 @@ def get_linux_distribution():
     return _linux_distribution
 
 def is_unity() -> bool:
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("unity")>=0
+    d = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+    return d.find("unity")>=0 or d.find("ubuntu")>=0
 
 def is_gnome() -> bool:
     if os.environ.get("XDG_SESSION_DESKTOP", "").split("-", 1)[0] in ("i3", "ubuntu", ):
