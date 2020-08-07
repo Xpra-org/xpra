@@ -7,7 +7,7 @@
 #@PydevCodeAnalysisIgnore
 
 from ctypes.wintypes import HANDLE, DWORD
-from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, pointer, POINTER
+from ctypes import byref, sizeof, create_string_buffer, cast, c_void_p, c_long, pointer, POINTER
 from threading import Thread
 
 from xpra.log import Logger
@@ -127,7 +127,7 @@ class NamedPipeListener(Thread):
                     log.error(" %s", e)
                     return
                 log("CreatePipeHandle()=%#x", pipe_handle)
-                if pipe_handle==INVALID_HANDLE_VALUE:
+                if c_long(pipe_handle).value==INVALID_HANDLE_VALUE:
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
                     return
             event = CreateEventA(None, True, False, None)
