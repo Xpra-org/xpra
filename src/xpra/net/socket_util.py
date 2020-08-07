@@ -600,8 +600,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     except Exception as e:
                         handle_socket_error(sockpath, sperms, e)
                         del e
-    except:
-        for sock, cleanup_socket in defs:
+    except Exception:
+        for sock, cleanup_socket in defs.items():
             try:
                 cleanup_socket()
             except Exception as e:
