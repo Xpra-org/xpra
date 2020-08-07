@@ -586,7 +586,7 @@ fi
 
 
 %changelog
-* Fri Jul 24 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Fri Aug 08 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix server crash caused by use after free in scrolling code
 - fix encryption option overzealously enforced on all socket types
 - fix network layer compression errors that can cause connections to drop
@@ -600,6 +600,8 @@ fi
 - fix minimum video scaling not being honoured via heuristics
 - fix error in main thread verifier (fortunately, never fired)
 - fix archlinux build root stripping
+- fix detection of named-pipe creation errors
+- fix MS Windows shadow server errors with 'bind=auto'
 - fix MS Windows Keymap_info.exe tool
 - fix MS Windows servers slow to handle connections with mDNS enabled
 - fix MacOS clipboard unnecessarily sending data
@@ -611,6 +613,7 @@ fi
 - fix RPM spec file for CentOS 8
 - fix toolbox examples when running under wayland
 - fix 'xpra toolbox' subcommand on MacOS
+- fix MacOS errors with some subcommands (ie: 'list')
 - fix MacOS outdated system version requirements in hidden sub application
 - fix sshfp support on MacOS (was missing dns python module)
 - fix notification widget wrongly stealing input focus

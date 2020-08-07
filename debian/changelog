@@ -12,6 +12,8 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix minimum video scaling not being honoured via heuristics
   * fix error in main thread verifier (fortunately, never fired)
   * fix archlinux build root stripping
+  * fix detection of named-pipe creation errors
+  * fix MS Windows shadow server errors with 'bind=auto'
   * fix MS Windows Keymap_info.exe tool
   * fix MS Windows servers slow to handle connections with mDNS enabled
   * fix MacOS clipboard unnecessarily sending data
@@ -23,6 +25,7 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix RPM spec file for CentOS 8
   * fix toolbox examples when running under wayland
   * fix 'xpra toolbox' subcommand on MacOS
+  * fix MacOS errors with some subcommands (ie: 'list')
   * fix MacOS outdated system version requirements in hidden sub application
   * fix sshfp support on MacOS (was missing dns python module)
   * fix notification widget wrongly stealing input focus
@@ -35,8 +38,12 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * add extra environment variables to try to disable any server side scaling
   * also update mdns records when the session name changes
   * workaround for older versions of python-cryptography
+  * use 'text' mode for 'geany' (fixes lossy screen updates)
+  * ensure all toolbox windows set a correct and readable window title
+  * remove workaround for unsupported versions of Ubuntu
+  * make it possible to specify the path used for saving video streams / frames
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 24 Jul 2020 07:08:54 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 08 Aug 2020 11:37:28 +0700
 
 xpra (4.0.2-1) UNRELEASED; urgency=low
   * fix encryption not honoured with TCP sockets upgraded to WebSocket
