@@ -27,7 +27,7 @@ class DotXpra:
 
 
     def norm_socket_paths(self, local_display_name):
-        return [local_display_name.lstrip(":")]
+        return [self.socket_path(local_display_name)]
 
 
     def socket_path(self, local_display_name):
