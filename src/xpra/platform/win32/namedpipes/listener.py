@@ -130,6 +130,8 @@ class NamedPipeListener(Thread):
                 log("CreatePipeHandle()=%#x", pipe_handle)
                 if c_long(pipe_handle).value==INVALID_HANDLE_VALUE:
                     log.error("Error: invalid handle for named pipe '%s'", self.pipe_name)
+                    e = GetLastError()
+                    log.error(" '%s' (%i)", FormatMessageSystem(e).rstrip("\n\r."), e)
                     return
             event = CreateEventA(None, True, False, None)
             overlapped = OVERLAPPED()
