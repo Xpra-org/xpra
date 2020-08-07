@@ -25,6 +25,11 @@ class DotXpra:
         #socket-dir is not used by the win32 shadow server
         pass
 
+
+    def norm_socket_paths(self, local_display_name):
+        return [local_display_name]
+
+
     def socket_path(self, local_display_name):
         return PIPE_PATH+PIPE_PREFIX+local_display_name.replace(":", "")
 

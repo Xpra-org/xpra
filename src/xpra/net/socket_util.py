@@ -466,11 +466,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 options = parse_simple_dict(parts[1])
             if sockpath=="auto":
                 assert display_name is not None
-                if WIN32:
-                    sockpaths[display_name] = options
-                else:
-                    for sockpath in dotxpra.norm_socket_paths(display_name):
-                        sockpaths[sockpath] = options
+                for sockpath in dotxpra.norm_socket_paths(display_name):
+                    sockpaths[sockpath] = options
                 log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
             else:
                 sockpath = dotxpra.osexpand(sockpath)
