@@ -171,6 +171,8 @@ class NetworkListener(StubClientMixin):
                 self._potential_protocols.remove(proto)
             except ValueError:
                 pass
+        def hello_reply(data):
+            proto.send_now(["hello", data])
         if packet_type=="hello":
             caps = typedict(packet[1])
             proto.parse_remote_caps(caps)
@@ -181,21 +183,18 @@ class NetworkListener(StubClientMixin):
                 def send_info():
                     info = self.get_info()
                     info["network"] = get_network_caps()
-                    proto.send_now(["hello", info])
+                    hello_reply(info)
                 #run in UI thread:
                 self.idle_add(send_info)
             elif request=="id":
-                def send_id():
-                    proto.send_now(["hello", self.get_id_info()])
-                #run in UI thread:
-                self.idle_add(send_id)
+                hello_reply(self.get_id_info())
             elif request=="detach":
                 def protocol_closed():
                     self.disconnect_and_quit(EXIT_OK, "network request")
                 proto.send_disconnect([DETACH_REQUEST], done_callback=protocol_closed)
                 return
             elif request=="version":
-                proto.send_now(["hello", {"version" : VERSION}])
+                hello_reply({"version" : VERSION})
             elif request=="command":
                 command = caps.strtupleget("command_request")
                 log("command request: %s", command)
@@ -207,8 +206,7 @@ class NetworkListener(StubClientMixin):
                     except Exception as e:
                         code = EXIT_FAILURE
                         response = str(e)
-                    hello = {"command_response"  : (code, response)}
-                    proto.send_now(("hello", hello))
+                    hello_reply({"command_response"  : (code, response)})
                 self.idle_add(process_control)
             else:
                 log.info("request '%s' is not handled by this client", request)
