@@ -256,9 +256,9 @@ class win32NotifyIcon:
         self.hwnd = CreateWindowExA(0, NIclassAtom, window_name, style,
             win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0, \
             0, 0, NIwc.hInstance, None)
-        if self.hwnd==0:
+        log("create_window() hwnd=%#x", self.hwnd or 0)
+        if not self.hwnd:
             raise ctypes.WinError(ctypes.get_last_error())
-        log("create_window() hwnd=%#x", self.hwnd)
         UpdateWindow(self.hwnd)
         #register callbacks:
         win32NotifyIcon.instances[self.hwnd] = self
