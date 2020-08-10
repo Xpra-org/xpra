@@ -304,9 +304,15 @@ if "clean" not in sys.argv:
         v = switches_info[k]
         print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Y", False : "N"}.get(v, v)))
 
-    if (enc_ffmpeg_ENABLED or enc_x264_ENABLED or enc_x265_ENABLED or
-        nvenc_ENABLED or OSX or x11_ENABLED):
-        assert cython_ENABLED
+    if not cython_ENABLED:
+        enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = False
+        csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = False
+        vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = False
+        webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
+        server_ENABLED = client_ENABLED = shadow_ENABLED = False
+        cython_bencode_ENABLED = False
+        gtk3_ENABLED = False
+        x11_ENABLED = False
     #sanity check the flags:
     if clipboard_ENABLED and not server_ENABLED and not gtk3_ENABLED:
         print("Warning: clipboard can only be used with the server or one of the gtk clients!")
