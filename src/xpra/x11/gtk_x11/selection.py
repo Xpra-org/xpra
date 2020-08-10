@@ -10,7 +10,7 @@
 # else steals it, then we should exit.
 
 import sys
-from struct import pack, unpack, calcsize
+from struct import unpack, calcsize
 from gi.repository import GObject, Gtk, Gdk, GLib
 
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
@@ -98,14 +98,11 @@ class ManagerSelection(GObject.GObject):
         # some weird tricks to get at these.
 
         # Ask ourselves when we acquired the selection:
-        def wait_for_contents(clipboard, target):
-            log("ManagerSelection.acquire(%s) wait_for_contents(%s, %s)",
-                when, clipboard, target)
-            atom = Gdk.Atom.intern(target, False)
-            return clipboard.wait_for_contents(atom)
         timestamp_atom = Gdk.Atom.intern("TIMESTAMP", False)
         contents = self.clipboard.wait_for_contents(timestamp_atom)
         ts_data = contents.get_data()
+        log("ManagerSelection.acquire(%s) %s.wait_for_contents(%s)=%s",
+            when, self.clipboard, timestamp_atom, ts_data)
 
         #data is a timestamp, X11 datatype is Time which is CARD32,
         #(which is 64 bits on 64-bit systems!)
