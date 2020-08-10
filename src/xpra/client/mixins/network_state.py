@@ -181,7 +181,7 @@ class NetworkState(StubClientMixin):
     def send_info_request(self, *categories):
         if not self.info_request_pending:
             self.info_request_pending = True
-            window_ids = ()	#no longer used or supported by servers
+            window_ids = () #no longer used or supported by servers
             self.send("info-request", [self.uuid], window_ids, categories)
 
 

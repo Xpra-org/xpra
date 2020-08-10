@@ -42,7 +42,7 @@ class AvahiListener:
 
     def service_resolved(self, interface, protocol, name, stype, domain, host, x, address, port, text_array, v):
         log("AvahiListener.service_resolved%s",
-		(interface, protocol, name, stype, domain, host, x, address, port, "..", v))
+        (interface, protocol, name, stype, domain, host, x, address, port, "..", v))
         if self.mdns_add:
             #parse text data:
             text = {}

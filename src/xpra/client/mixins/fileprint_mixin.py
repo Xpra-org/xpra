@@ -61,7 +61,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             printlog("parse_printing_capabilities() server printing support=%s", server_printing)
             if server_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
-                          	                                ("printer-info", "device-uri"))
+                                                        ("printer-info", "device-uri"))
                 self.timeout_add(1000, self.init_printing)
 
 
