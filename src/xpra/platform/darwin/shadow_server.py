@@ -13,7 +13,7 @@ from xpra.scripts.main import check_display
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.platform.darwin.keyboard_config import KeyboardConfig
-from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot, can_access_display
+from xpra.platform.darwin.gui import get_CG_imagewrapper, take_screenshot
 from xpra.log import Logger
 
 log = Logger("shadow", "osx")
