@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from ctypes import POINTER, WinDLL, c_void_p, Structure, c_int
+from ctypes import POINTER, WinDLL, Structure, c_int
 from ctypes import byref, cast, sizeof
 from ctypes.wintypes import WORD, DWORD, HANDLE, BOOL, LPSTR
 from xpra.util import print_nested_dict
