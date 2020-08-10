@@ -57,9 +57,10 @@ class KeyboardConfigBase:
             self.pressed_translation[client_keycode] = keycode, group
         return keycode, group
 
-    def do_get_keycode(self, _client_keycode, _keyname, _pressed, _modifiers, _keyval, _group):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, group):
         from xpra.log import Logger
         log = Logger("keyboard")
+        log("do_get_keycode%s", (client_keycode, keyname, pressed, modifiers, keyval, group))
         log.warn("Warning: %s does not implement get_keycode!", type(self))
         return -1
 
