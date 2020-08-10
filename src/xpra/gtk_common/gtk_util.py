@@ -61,7 +61,7 @@ def get_gtk_version_info() -> dict:
         MAJORMICROMINOR("gtk",  Gtk)
         MAJORMICROMINOR("glib", GLib)
 
-        av("cairo", cairo.version_info)
+        av("cairo", cairo.version_info)  #pylint: disable=no-member
         av("pango", Pango.version_string())
     return GTK_VERSION_INFO.copy()
 
@@ -77,7 +77,7 @@ def pixbuf_save_to_memory(pixbuf, fmt="png") -> bytes:
 
 def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVEL,
               event_mask=0, wclass=Gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
-              x=None, y=None, override_redirect=False, visual=None, **kwargs) -> Gdk.Window:
+              x=None, y=None, override_redirect=False, visual=None) -> Gdk.Window:
     attributes_mask = 0
     attributes = Gdk.WindowAttr()
     if x is not None:
@@ -140,17 +140,14 @@ def get_pixbuf_from_data(rgb_data, has_alpha : bool, w : int, h : int, rowstride
                                            has_alpha, 8, w, h, rowstride)
 
 def color_parse(*args) -> Gdk.Color:
-    try:
-        v = Gdk.RGBA()
-        ok = v.parse(*args)
-        if not ok:
-            return None
+    v = Gdk.RGBA()
+    ok = v.parse(*args)
+    if ok:
         return v.to_color()
-    except:
-        ok, v = Gdk.Color.parse(*args)
-    if not ok:
-        return None
-    return v
+    ok, v = Gdk.Color.parse(*args)
+    if ok:
+        return v
+    return None
 
 def get_default_root_window() -> Gdk.Window:
     screen = Gdk.Screen.get_default()
