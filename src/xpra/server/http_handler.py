@@ -105,11 +105,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         log(fmt, *args)
 
-    def print_traffic(self, token="."):
-        """ Show traffic flow mode. """
-        if self.traffic:
-            log(token)
-
 
     def end_headers(self):
         #magic for querying request header values:
