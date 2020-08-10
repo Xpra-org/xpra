@@ -6,8 +6,10 @@
 
 #@PydevCodeAnalysisIgnore
 
+import time
 import errno
 from ctypes import addressof, byref, c_ulong, c_char_p, c_char, c_void_p, cast, string_at
+from ctypes.wintypes import DWORD
 
 from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.net.bytestreams import Connection
@@ -92,10 +94,11 @@ class NamedPipeConnection(Connection):
     def read(self, n):
         return self._read(self._pipe_read, n)
 
-    def _pipe_read(self, buf):
+    def _pipe_read(self, n):
         read = c_ulong(0)
-        r = ReadFile(self.pipe_handle, self.read_buffer_ptr, BUFSIZE, byref(read), byref(self.read_overlapped))
-        log("ReadFile(..)=%i, len=%s", r, read.value)
+        n_bytes = DWORD(min(n, BUFSIZE))
+        r = ReadFile(self.pipe_handle, self.read_buffer_ptr, n_bytes, byref(read), byref(self.read_overlapped))
+        log("ReadFile(%i)=%i, len=%s", n, r, read.value)
         if not r and self.pipe_handle:
             e = GetLastError()
             if e!=ERROR_IO_PENDING:
@@ -191,7 +194,6 @@ class NamedPipeConnection(Connection):
 
 def connect_to_namedpipe(pipe_name, timeout=10):
     log("connect_to_namedpipe(%s, %i)", pipe_name, timeout)
-    import time
     start = time.time()
     while True:
         if time.time()-start>=timeout:
