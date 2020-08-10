@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import re
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
@@ -12,6 +11,7 @@ from xpra.util import std, csv, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.keyboard.layouts import parse_xkbmap_query
 from xpra.log import Logger
 
 init_gdk_display_source()
@@ -59,7 +59,7 @@ def clean_keyboard_state():
 # keyboard layouts
 
 def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
-                  xkbmap_print, xkbmap_query, xkbmap_query_struct={}):
+                  xkbmap_query, xkbmap_query_struct):
     """ xkbmap_layout is the generic layout name (used on non posix platforms)
         xkbmap_variant is the layout variant (may not be set)
         xkbmap_print is the output of "setxkbmap -print" on the client
@@ -71,7 +71,6 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
     #First we try to use data from setxkbmap -query,
     #preferably as structured data:
     if xkbmap_query and not xkbmap_query_struct:
-        from xpra.keyboard.layouts import parse_xkbmap_query
         xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
     if xkbmap_query_struct:
         log("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)
@@ -96,21 +95,6 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
             safe_setxkbmap(rules, model, layout, variant, options)
         else:
             safe_setxkbmap(rules, model, "", "", "")
-    if xkbmap_print:
-        #TODO: this is no longer used with any client, remove it
-        log("do_set_keymap using xkbmap_print")
-        #try to guess the layout by parsing "setxkbmap -print"
-        try:
-            sym_re = re.compile(r"\s*xkb_symbols\s*{\s*include\s*\"([\w\+]*)")
-            for line in xkbmap_print.splitlines():
-                m = sym_re.match(line)
-                if m:
-                    layout = std(m.group(1))
-                    log.info("guessing keyboard layout='%s'" % layout)
-                    safe_setxkbmap("evdev", "pc105", layout, "", xkbmap_options)
-                    return
-        except Exception as e:
-            log.info("error setting keymap: %s" % e)
     #fallback for non X11 clients:
     layout = xkbmap_layout or "us"
     log.info("setting keyboard layout to '%s'", std(layout))

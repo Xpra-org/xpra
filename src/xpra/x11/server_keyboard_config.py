@@ -8,7 +8,7 @@
 
 from gi.repository import Gdk
 
-from xpra.util import csv, nonl, envbool, repr_ellipsized
+from xpra.util import csv, nonl, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -47,7 +47,6 @@ class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
         KeyboardConfigBase.__init__(self)
         self.xkbmap_raw = False
-        self.xkbmap_print = None
         self.xkbmap_query = None
         self.xkbmap_query_struct = None
         self.xkbmap_mod_meanings = {}
@@ -117,7 +116,7 @@ class KeyboardConfig(KeyboardConfigBase):
             for mod, mod_name in self.xkbmap_mod_meanings.items():
                 modinfo[mod] = mod_name
         info["x11_keycode"] = self.xkbmap_x11_keycodes
-        for x in ("print", "layout", "variant", "mod_managed", "mod_pointermissing", "raw", "layout_groups"):
+        for x in ("layout", "variant", "mod_managed", "mod_pointermissing", "raw", "layout_groups"):
             v = getattr(self, "xkbmap_%s" % x)
             if v:
                 info[x] = v
@@ -145,7 +144,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 setattr(self, prop, nv)
                 modded[prop] = nv
         #plain strings:
-        for x in ("print", "query"):
+        for x in ("query", ):
             parse_option(x, props.strget)
         #lists:
         parse_option("keycodes", props.tupleget)
@@ -173,7 +172,7 @@ class KeyboardConfig(KeyboardConfigBase):
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
         m.update(KeyboardConfigBase.get_hash(self))
-        for x in (self.xkbmap_print, self.xkbmap_query, self.xkbmap_raw, \
+        for x in (self.xkbmap_query, self.xkbmap_raw, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):
             hashadd(x)
@@ -309,9 +308,9 @@ class KeyboardConfig(KeyboardConfigBase):
     def set_keymap(self, translate_only=False):
         if not self.enabled:
             return
-        log("set_keymap(%s) layout=%s, variant=%s, options=%s, print=%s, query=%s",
+        log("set_keymap(%s) layout=%s, variant=%s, options=%s, query=%s",
             translate_only, self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
-            nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+            nonl(self.xkbmap_query))
         if translate_only:
             self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
             self.add_gtk_keynames()
@@ -324,8 +323,8 @@ class KeyboardConfig(KeyboardConfigBase):
         with xlog:
             clean_keyboard_state()
             do_set_keymap(self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
-                          self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
-        log("set_keymap: xkbmap_print=%s, xkbmap_query=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query))
+                          self.xkbmap_query, self.xkbmap_query_struct)
+        log("set_keymap: xkbmap_query=%s", nonl(self.xkbmap_query))
         with xlog:
             #first clear all existing modifiers:
             clean_keyboard_state()
