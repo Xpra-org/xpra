@@ -748,7 +748,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             if r[2]!=0:
                 continue
             #let's find where xpra is installed:
-            r = rtc("FOR /F \"usebackq tokens=3*\" %A IN (`REG QUERY \"HKEY_LOCAL_MACHINE\Software\Xpra\" /v InstallPath`) DO (echo %A %B)")
+            r = rtc("FOR /F \"usebackq tokens=3*\" %A IN (`REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath`) DO (echo %A %B)")  #pylint: disable=line-too-long
             if r[2]==0:
                 #found in registry:
                 lines = r[0].splitlines()
