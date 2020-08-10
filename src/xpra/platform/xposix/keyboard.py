@@ -149,7 +149,7 @@ class Keyboard(KeyboardBase):
         def s(v):
             try:
                 return v.encode("latin1")
-            except:
+            except Exception:
                 return str(v)
         return s(layout), [s(x) for x in layouts], "", None, options
 
@@ -178,6 +178,6 @@ class Keyboard(KeyboardBase):
         self.keymap_modifiers = None
         try:
             dn = "%s %s" % (type(display).__name__, display.get_name())
-        except:
+        except Exception:
             dn = str(display)
         log("update_modifier_map(%s, %s) modifier_map=%s", dn, xkbmap_mod_meanings, self.modifier_map)

@@ -108,7 +108,7 @@ platform_import(globals(), "printing", False,
                 "DEFAULT_MIMETYPES")
 
 
-def main(argv=[]):
+def main(argv):
     if "-v" in argv or "--verbose" in argv:
         from xpra.log import add_debug_category, enable_debug_for
         add_debug_category("printing")

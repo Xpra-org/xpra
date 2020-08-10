@@ -49,7 +49,7 @@ def get_default_icon():
 
 def force_focus(duration=2000):
     #only implemented on macos
-    pass
+    assert isinstance(duration, int)
 
 
 def use_stdin():

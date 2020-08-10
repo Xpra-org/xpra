@@ -148,7 +148,7 @@ def get_lpinfo_drv(make_and_model):
         return None
     try:
         out = out.decode()
-    except:
+    except Exception:
         out = str(out)
     log("lpinfo out=%s", nonl(out))
     log("lpinfo err=%s", nonl(err))

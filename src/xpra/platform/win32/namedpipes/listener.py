@@ -179,7 +179,7 @@ class NamedPipeListener(Thread):
         try:
             log("CloseHandle(%#x)", pipe_handle)
             CloseHandle(pipe_handle)
-        except:
+        except Exception:
             log("CloseHandle(%#x)", pipe_handle, exc_info=True)
 
     def new_connection(self, listener, pipe_handle):
