@@ -45,35 +45,24 @@ def get_gtk_version_info() -> dict:
 
         #this isn't the actual version, (only shows as "3.0")
         #but still better than nothing:
-        import gi
         V("gi",         gi,         "__version__")
         V("gtk",        Gtk,        "_version")
         V("gdk",        Gdk,        "_version")
         V("gobject",    GObject,    "_version")
         V("pixbuf",     GdkPixbuf,     "_version")
 
-        av("pygtk", "n/a")
         V("pixbuf",     GdkPixbuf,     "PIXBUF_VERSION")
         def MAJORMICROMINOR(name, module):
             try:
                 v = tuple(getattr(module, x) for x in ("MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"))
                 av(name, ".".join(str(x) for x in v))
-            except:
+            except Exception:
                 pass
         MAJORMICROMINOR("gtk",  Gtk)
         MAJORMICROMINOR("glib", GLib)
 
-        #from here on, the code is the same for both GTK2 and GTK3, hooray:
-        vi = getattr(cairo, "version_info", None)
-        if vi:
-            av("cairo", vi)
-        else:
-            vfn = getattr(cairo, "cairo_version_string", None)
-            if vfn:
-                av("cairo", vfn())
-        vfn = getattr(Pango, "version_string")
-        if vfn:
-            av("pango", vfn())
+        av("cairo", cairo.version_info)
+        av("pango", Pango.version_string())
     return GTK_VERSION_INFO.copy()
 
 
