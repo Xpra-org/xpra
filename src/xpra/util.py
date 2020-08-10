@@ -540,7 +540,7 @@ def get_screen_info(screen_sizes):
 
 def dump_all_frames(logger=None):
     try:
-        frames = sys._current_frames()
+        frames = sys._current_frames()      #pylint: disable=protected-access
     except AttributeError:
         return
     else:
