@@ -607,7 +607,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         return paths.main()
     elif mode=="printing-info":
         from xpra.platform import printing
-        return printing.main()
+        return printing.main(args)
     elif mode=="version-info":
         from xpra.scripts import version
         return version.main()
@@ -1722,7 +1722,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
         if mode=="listen":
             if extra_args:
                 raise InitException("cannot specify extra arguments with 'listen' mode")
-            progress(80, "listening for incoming connections")
+            app.show_progress(80, "listening for incoming connections")
             from xpra.platform import get_username
             from xpra.net.socket_util import (
                 get_network_logger, setup_local_sockets, peek_connection,
