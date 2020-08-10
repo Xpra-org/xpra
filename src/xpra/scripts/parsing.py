@@ -1405,7 +1405,7 @@ def parse_vsock(vsock_str):
         try:
             cid = int(cid_str)
         except ValueError:
-            cid = STR_TO_CID.get(cid_str.upper())
+            cid = STR_TO_CID.get(cid_str.upper())  # @UndefinedVariable
             if cid is None:
                 raise InitException("invalid vsock cid '%s'" % cid_str) from None
     if port_str.lower() in ("auto", "any"):
