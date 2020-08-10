@@ -217,7 +217,6 @@ def w_to_utf8(data):
     if CONVERT_LINE_ENDINGS:
         return s.decode("utf8").replace("\r\n", "\n").encode("utf8")
     return strtobytes(s)
-        
 
 
 class Win32Clipboard(ClipboardTimeoutHelper):
