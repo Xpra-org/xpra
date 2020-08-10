@@ -334,7 +334,10 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     for try_harder in (False, True):
         filtered_preserve_keycode_entries = filter_mappings(indexed_mappings(preserve_keycode_entries), try_harder)
         log("filtered_preserve_keycode_entries=%s", filtered_preserve_keycode_entries)
-        trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes, filtered_preserve_keycode_entries, keysym_to_modifier, try_harder)
+        trans, new_keycodes, missing_keycodes = translate_keycodes(kcmin, kcmax, keycodes,
+                                                                   filtered_preserve_keycode_entries,
+                                                                   keysym_to_modifier,
+                                                                   try_harder)
         if not missing_keycodes:
             break
     instructions = keymap_to_xmodmap(new_keycodes)
@@ -407,7 +410,7 @@ def x11_keycodes_to_list(x11_mappings):
     return entries
 
 
-def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries={}, keysym_to_modifier={}, try_harder=False):
+def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder=False):
     """
         The keycodes given may not match the range that the server supports,
         or some of those keycodes may not be usable (only one modifier can
