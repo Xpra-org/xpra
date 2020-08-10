@@ -5,7 +5,7 @@
 
 #cython: language_level=3
 
-cdef override_logger()
+cdef override_logger()  #pylint: disable=syntax-error
 cdef restore_logger()
 
 cdef av_error_str(int errnum)

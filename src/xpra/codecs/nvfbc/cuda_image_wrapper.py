@@ -36,8 +36,8 @@ class CUDAImageWrapper(ImageWrapper):
         assert self.cuda_device_buffer, "bug: no device buffer"
         start = monotonic_time()
         ctx.push()
-        host_buffer = driver.pagelocked_empty(self.buffer_size, dtype=numpy.byte)
-        driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)
+        host_buffer = driver.pagelocked_empty(self.buffer_size, dtype=numpy.byte)   #pylint: disable=no-member
+        driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream) #pylint: disable=no-member
         self.wait_for_stream()
         self.pixels = host_buffer.tobytes()
         elapsed = monotonic_time()-start
@@ -91,6 +91,6 @@ class CUDAImageWrapper(ImageWrapper):
     def clean(self):
         try:
             self.wait_for_stream()
-        except driver.LogicError:
+        except driver.LogicError:  #pylint: disable=no-member
             log("%s.clean()", self, exc_info=True)
         self.free()

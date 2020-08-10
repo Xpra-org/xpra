@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 #@PydevCodeAnalysisIgnore
+#pylint: disable=no-member
 
 import os
 import pycuda               #@UnresolvedImport

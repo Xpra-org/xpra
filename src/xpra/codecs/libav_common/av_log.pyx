@@ -10,7 +10,7 @@ from xpra.util import nonl, envbool
 from xpra.log import Logger, is_debug_enabled
 log = Logger("libav")
 
-cdef int LIBAV_TRACE = envbool("XPRA_LIBAV_TRACE", False)
+cdef int LIBAV_TRACE = envbool("XPRA_LIBAV_TRACE", False)  #pylint: disable=syntax-error
 
 
 cdef extern from "libavutil/error.h":

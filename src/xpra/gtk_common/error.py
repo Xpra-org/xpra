@@ -76,7 +76,7 @@ def get_X_error(xerror):
         from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
         if xerror_to_name is None:
             xerror_to_name = {}
-            for name,code in constants.items():
+            for name,code in constants.items():  # @UndefinedVariable
                 if name=="Success" or name.startswith("Bad"):
                     xerror_to_name[code] = name
             log("get_X_error(..) initialized error names: %s", xerror_to_name)
