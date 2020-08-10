@@ -412,7 +412,7 @@ def init_keycodes():
         vk_code = v & 0xff
         if vk_code>0 and vk_code!=0xff:
             log("KEYCODE[%s]=%i (%s)", char, vk_code, name)
-            KEYCODES[name] = vk_code
+            keycodes[name] = vk_code
 
     keycodes.update({
         "Shift_L"       : win32con.VK_LSHIFT,
