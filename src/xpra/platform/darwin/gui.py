@@ -207,7 +207,7 @@ def get_double_click_time():
         #(but still call it "Time" you see)
         MS_PER_TICK = 1000.0/60
         return int(GetDblTime() * MS_PER_TICK)
-    except:
+    except Exception:
         return -1
 
 
@@ -238,7 +238,7 @@ def get_window_frame_size(x, y, w, h):
                 "offset"    : (dx+dw//2, dy+dh),
                 "frame"     : (dx+dw//2, dx+dw//2, dy+dh, dy),
                 }
-    except:
+    except Exception:
         log("failed to query frame size using Quartz, using hardcoded value", exc_info=True)
         return {            #left, right, top, bottom:
                 "offset"    : (0, 22),

@@ -78,12 +78,16 @@ class DBUS_Notifier(NotifierBase):
                 app_str = self.app_name_format % app_name
             except TypeError:
                 app_str = app_name or "Xpra"
-            self.last_notification = (dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, expire_timeout, icon)
+            self.last_notification = (
+                dbus_id, tray, nid, app_name, replaces_nid,
+                app_icon, summary, body, expire_timeout, icon,
+                )
             def NotifyReply(notification_id):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
                 self.actual_notification_id[nid] = int(notification_id)
             dbus_hints = self.parse_hints(hints)
-            log("calling %s%s", self.dbusnotify.Notify, (app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout))
+            log("calling %s%s", self.dbusnotify.Notify,
+                (app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout))
             self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, expire_timeout,
                  reply_handler = NotifyReply,
                  error_handler = self.NotifyError)
