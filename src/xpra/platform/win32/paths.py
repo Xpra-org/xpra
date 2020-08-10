@@ -23,7 +23,7 @@ def sh_get_folder_path(v):
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
         SHGetFolderPath(0, v, None, 0, buf)
         return buf.value
-    except:
+    except Exception:
         return None
 
 def _get_data_dir(roaming=True):

@@ -13,7 +13,7 @@ from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_s
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD
 
 from xpra.util import typedict, csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
-from xpra.os_util import memoryview_to_bytes, bytestostr
+from xpra.os_util import bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
     GUID, WNDCLASSEX, WNDPROC,
@@ -237,7 +237,7 @@ class win32NotifyIcon:
         if iconPathName:
             try:
                 iconPathName = iconPathName.decode()
-            except:
+            except Exception:
                 pass
             self.current_icon = self.LoadImage(iconPathName) or FALLBACK_ICON
         self.create_tray_window()
@@ -389,7 +389,7 @@ class win32NotifyIcon:
                                          }.get(img_type))
             v = LoadImageW(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
             assert v is not None
-        except:
+        except Exception:
             log.error("Error: failed to load icon '%s'", iconPathName, exc_info=True)
             return None
         else:
@@ -448,8 +448,8 @@ class win32NotifyIcon:
             if cb:
                 self.exit_callback = None
                 cb()
-        except:
-            log.error("destroy()", exc_info=True)
+        except Exception:
+            log.error("Error removing tray", exc_info=True)
         if hwnd:
             try:
                 del win32NotifyIcon.instances[hwnd]
@@ -471,7 +471,7 @@ def NotifyIconWndProc(hwnd, msg, wParam, lParam):
     def i(v):
         try:
             return int(v)
-        except:
+        except (ValueError, TypeError):
             return v
     log("NotifyIconWndProc%s instance=%s, message(%i)=%s", (i(hwnd), i(msg), i(wParam), i(lParam)), instance, msg, fn)
     #log("potential matching win32 constants for message: %s", [x for x in dir(win32con) if getattr(win32con, x)==msg])
@@ -496,7 +496,7 @@ if NIclassAtom==0:
 def main():
     from xpra.platform.win32.common import user32
 
-    def click_callback(button, pressed):
+    def click_callback(_button, _pressed):
         menu = CreatePopupMenu()
         AppendMenu(menu, win32con.MF_STRING, 1024, "Generate balloon")
         AppendMenu(menu, win32con.MF_STRING, 1025, "Exit")

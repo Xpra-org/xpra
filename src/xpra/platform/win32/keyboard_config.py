@@ -46,7 +46,8 @@ class KeyboardConfig(KeyboardConfigBase):
         log("keys pressed=%s", ",".join(str(VK_NAMES.get(i, i)) for i in range(256) if GetAsyncKeyState(i)>0))
         current = set(self.get_current_mask())
         wanted = set(modifier_list or [])
-        log("make_keymask_match: current mask=%s, wanted=%s, ignoring=%s/%s", current, wanted, ignored_modifier_keycode, ignored_modifier_keynames)
+        log("make_keymask_match: current mask=%s, wanted=%s, ignoring=%s/%s",
+            current, wanted, ignored_modifier_keycode, ignored_modifier_keynames)
         if current==wanted:
             return
         def is_ignored(modifier):
@@ -376,56 +377,61 @@ DEFS = {
     "OEM_BACKTAB"           : 0xF5,
 }
 
-VK_NAMES = {}
-for name in (x for x in dir(win32con) if x.startswith("VK_")):
-    VK_NAMES[getattr(win32con, name)] = name
-for name, val in DEFS.items():
-    VK_NAMES[val] = "VK_"+name
+def init_vk_names():
+    names = {}
+    for name in (x for x in dir(win32con) if x.startswith("VK_")):
+        names[getattr(win32con, name)] = name
+    for name, val in DEFS.items():
+        names[val] = "VK_"+name
+    return names
+VK_NAMES = init_vk_names()
 log("VK_NAMES=%s", VK_NAMES)
 
+def init_keycodes():
+    #lookup the constants:
+    keycodes = {}
+    for vk, name in VIRTUAL_KEYS:
+        vk_name = "VK_%s" % vk
+        if hasattr(win32con, vk_name):
+            val = getattr(win32con, vk_name)
+            keycodes[name] = val
+            log("KEYCODES[%s]=win32con.%s=%s", name, vk_name, val)
+        elif vk in DEFS:
+            #fallback to our hardcoded definitions:
+            val = DEFS[vk]
+            keycodes[name] = val
+            log("KEYCODES[%s]=%s=%s", name, vk, val)
+        else:
+            log.warn("missing key constant: %s", vk_name)
+
+    for name, char in KEYSYM_DEFS.items():
+        if len(char)!=1:
+            log.warn("invalid character '%s' : '%s' (len=%i)", name, char, len(char))
+            continue
+        v = VkKeyScanW(char)
+        vk_code = v & 0xff
+        if vk_code>0 and vk_code!=0xff:
+            log("KEYCODE[%s]=%i (%s)", char, vk_code, name)
+            KEYCODES[name] = vk_code
+
+    keycodes.update({
+        "Shift_L"       : win32con.VK_LSHIFT,
+        "Shift_R"       : win32con.VK_RSHIFT,
+        "Control_L"     : win32con.VK_LCONTROL,
+        "Control_R"     : win32con.VK_RCONTROL,
+        "Caps_Lock"     : win32con.VK_CAPITAL,
+        "Num_Lock"      : win32con.VK_NUMLOCK,
+        "Scroll_Lock"   : win32con.VK_SCROLL,
+        })
+
+    for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+        keycodes[c] = ord(c)
+        keycodes[c.lower()] = ord(c)
+    for c in "0123456789":
+        keycodes[c] = ord(c)
+    return keycodes
+
 #lookup the constants:
-KEYCODES = {}
-for vk, name in VIRTUAL_KEYS:
-    vk_name = "VK_%s" % vk
-    if hasattr(win32con, vk_name):
-        val = getattr(win32con, vk_name)
-        KEYCODES[name] = val
-        log("KEYCODES[%s]=win32con.%s=%s", name, vk_name, val)
-    elif vk in DEFS:
-        #fallback to our hardcoded definitions:
-        val = DEFS[vk]
-        KEYCODES[name] = val
-        log("KEYCODES[%s]=%s=%s", name, vk, val)
-    else:
-        log.warn("missing key constant: %s", vk_name)
-
-for name, char in KEYSYM_DEFS.items():
-    try:
-        bchar = char.encode("latin1")
-    except:
-        continue
-    if len(char)!=1:
-        log.warn("invalid character '%s' : '%s' (len=%i)", name, char, len(char))
-        continue
-    v = VkKeyScanW(char)
-    vk_code = v & 0xff
-    if vk_code>0 and vk_code!=0xff:
-        log("KEYCODE[%s]=%i (%s)", char, vk_code, name)
-        KEYCODES[name] = vk_code
-
-KEYCODES.update({
-    "Shift_L"       : win32con.VK_LSHIFT,
-    "Shift_R"       : win32con.VK_RSHIFT,
-    "Control_L"     : win32con.VK_LCONTROL,
-    "Control_R"     : win32con.VK_RCONTROL,
-    "Caps_Lock"     : win32con.VK_CAPITAL,
-    "Num_Lock"      : win32con.VK_NUMLOCK,
-    "Scroll_Lock"   : win32con.VK_SCROLL,
-    })
-
-for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-    KEYCODES[c] = ord(c)
-    KEYCODES[c.lower()] = ord(c)
-for c in "0123456789":
-    KEYCODES[c] = ord(c)
+KEYCODES = init_keycodes()
 log("KEYCODES: %s", KEYCODES)
+

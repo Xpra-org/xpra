@@ -179,7 +179,7 @@ class Win32EventListener:
                 for c in callbacks:
                     try:
                         c(wParam, lParam)
-                    except:
+                    except Exception:
                         log.error("error in callback %s", c, exc_info=True)
             elif msg in self.ignore_events:
                 log("%s: %s / %s", self.ignore_events.get(msg), wParam, lParam)

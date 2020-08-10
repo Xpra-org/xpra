@@ -48,16 +48,19 @@ log("PRINTER_ENUM_VALUES: %s", PRINTER_ENUM_VALUES)
 
 log("PRINTER_FLAGS=%s", csv(PRINTER_FLAGS))
 VALID_PRINTER_FLAGS = ("LOCAL", "SHARED", "CONNECTIONS", "NETWORK", "REMOTE")
-PRINTER_ENUMS = []
-for v in PRINTER_FLAGS:                     #ie: "SHARED+NETWORK+CONNECTIONS"
-    flags = v.replace('|','+').split("+")   #ie: ["SHARED", "NETWORK", "CONNECTIONS"]
-    values = []
-    for flag in flags:                      #ie: "SHARED"
-        if flag not in VALID_PRINTER_FLAGS:
-            log.warn("Warning: the following printer flag is invalid and will be ignored: %s", flag)
-        else:
-            values.append(flag)             #ie: "SHARED"
-    PRINTER_ENUMS.append(values)
+def get_printer_enums():
+    printer_enums = []
+    for v in PRINTER_FLAGS:                     #ie: "SHARED+NETWORK+CONNECTIONS"
+        flags = v.replace('|','+').split("+")   #ie: ["SHARED", "NETWORK", "CONNECTIONS"]
+        values = []
+        for flag in flags:                      #ie: "SHARED"
+            if flag not in VALID_PRINTER_FLAGS:
+                log.warn("Warning: the following printer flag is invalid and will be ignored: %s", flag)
+            else:
+                values.append(flag)             #ie: "SHARED"
+        printer_enums.append(values)
+    return tuple(printer_enums)
+PRINTER_ENUMS = get_printer_enums()
 log("PRINTER_ENUMS=%s", PRINTER_ENUMS)
 
 
@@ -168,7 +171,9 @@ def get_printers():
                 log("found printer: %#x, %s, %s, %s", flags, desc, name, comment)
                 #strip duplicated and empty strings from the description:
                 desc_els = []
-                [desc_els.append(x) for x in desc.split(",") if (x and not desc_els.count(x))]
+                for x in desc.split(","):
+                    if x and not desc_els.count(x):
+                        desc_els.append(x)
                 info = {"printer-info"            : bytestostr(",".join(desc_els)),
                         "type"                    : penum}
                 if comment:

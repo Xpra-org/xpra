@@ -562,6 +562,8 @@ advapi32 = WinDLL("advapi32")
 CreateProcessAsUserA = advapi32.CreateProcessAsUserA
 CreateProcessAsUserA.restype = BOOL
 CreateProcessAsUserA.argtypes = [HANDLE, LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES, BOOL, DWORD, LPVOID, LPCSTR, LPCSTR, PSTARTUPINFOA, PPROCESS_INFORMATION]
+GetUserNameA = advapi32.GetUserNameA
+GetUserNameA.restype = BOOL
 
 gdi32 = WinDLL("gdi32", use_last_error=True)
 CreateCompatibleDC = gdi32.CreateCompatibleDC

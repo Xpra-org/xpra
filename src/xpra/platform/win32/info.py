@@ -4,11 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-import ctypes
-from ctypes.wintypes import DWORD
 
-advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
-GetUserNameA = advapi32.GetUserNameA
 
 def get_sys_info():
     return  {}
@@ -19,30 +15,17 @@ def get_username():
 
 def get_name():
     try:
+        from ctypes import byref, create_string_buffer, WinError, get_last_error
+        from ctypes.wintypes import DWORD
+        from xpra.platform.win32.common import GetUserNameA
         max_len = 256
         size = DWORD(max_len)
-        buf = ctypes.create_string_buffer(max_len + 1)
-        if not GetUserNameA(ctypes.byref(buf), ctypes.byref(size)):
-            raise ctypes.WinError(ctypes.get_last_error())
+        buf = create_string_buffer(max_len + 1)
+        if not GetUserNameA(byref(buf), byref(size)):
+            raise WinError(get_last_error())
         return buf.value
-    except:
+    except Exception:
         return os.environ.get("USERNAME", "")
 
-def get_pywin32_version():
-    try:
-        #the "official" way:
-        import distutils.sysconfig
-        pth = distutils.sysconfig.get_python_lib(plat_specific=1)
-        v = open(os.path.join(pth, "pywin32.version.txt")).read().strip()
-        if v:
-            return v
-    except:
-        pass
-    return None
-
 def get_version_info():
-    d = {}
-    v = get_pywin32_version()
-    if v:
-        d["pywin32.version"] = v
-    return d
+    return {}

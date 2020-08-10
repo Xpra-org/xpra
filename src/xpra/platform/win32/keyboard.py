@@ -6,8 +6,12 @@
 
 import ctypes
 from ctypes.wintypes import HANDLE
+from ctypes import create_string_buffer
 
-from xpra.platform.win32.common import GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout, GetIntSystemParametersInfo, GetKeyboardLayoutName
+from xpra.platform.win32.common import (
+    GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
+    GetIntSystemParametersInfo, GetKeyboardLayoutName,
+    )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.layouts import WIN32_LAYOUTS, WIN32_KEYBOARDS
@@ -15,7 +19,6 @@ from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.util import csv, envint, envbool
 from xpra.os_util import bytestostr
 from xpra.log import Logger
-from ctypes import create_string_buffer
 
 log = Logger("keyboard")
 
@@ -83,7 +86,7 @@ class Keyboard(KeyboardBase):
                 elif not numlock and self.num_lock_modifier in names:
                     names.remove(self.num_lock_modifier)
                 log("mask_to_names(%s) GetKeyState(VK_NUMLOCK)=%s, names=%s", mask, numlock, names)
-            except:
+            except Exception:
                 pass
         else:
             log("mask_to_names(%s)=%s", mask, names)
@@ -157,7 +160,8 @@ class Keyboard(KeyboardBase):
                 kbid = hkl & 0xffff
                 if kbid in WIN32_LAYOUTS:
                     code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
-                    log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", _layout, _variants, code, kbid, hkl)
+                    log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)",
+                        _layout, _variants, code, kbid, hkl)
                     if _layout not in layouts:
                         layouts.append(_layout)
         except Exception as e:
@@ -169,7 +173,8 @@ class Keyboard(KeyboardBase):
             kbid = hkl & 0xffff
             if kbid in WIN32_LAYOUTS:
                 code, _, _, _, layout0, variants = WIN32_LAYOUTS.get(kbid)
-                log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)", layout0, variants, code, kbid, hkl)
+                log("found keyboard layout '%s' with variants=%s, code '%s' for kbid=%i (%#x)",
+                    layout0, variants, code, kbid, hkl)
             if not layout0:
                 log("unknown keyboard layout for kbid: %i (%#x)", kbid, hkl)
             elif layout0 not in layouts:
