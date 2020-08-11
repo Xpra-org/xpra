@@ -19,7 +19,7 @@ from pycuda import driver
 
 from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr, strtobytes
 from xpra.make_thread import start_thread
-from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time
+from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time, typedict
 from xpra.codecs.cuda_common.cuda_context import (
     init_all_devices, get_devices, select_device, get_device_info, get_device_name,
     get_cuda_info, get_pycuda_info, device_info, reset_state,
@@ -1594,7 +1594,7 @@ cdef class Encoder:
         #use the environment as default if present:
         profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, "")
         #now see if the client has requested a different value:
-        profile = options.strget("h264.%s.profile" % csc_mode, profile)
+        profile = typedict(options).strget("h264.%s.profile" % csc_mode, profile)
         return profile
 
 
