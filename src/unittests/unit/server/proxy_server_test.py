@@ -17,7 +17,8 @@ class ProxyServerTest(ServerTestUtil):
 		cmd = ["proxy", display, "--no-daemon"]
 		cmdstr = " ".join("'%s'" % c for c in cmd)
 		proxy = self.run_xpra(cmd)
-		assert pollwait(proxy, 5) is None, "proxy failed to start with cmd=%s" % cmdstr
+		r = pollwait(proxy, 5)
+		assert r is None, "proxy failed to start with cmd=%s, exit code=%s" % (cmdstr, r)
 		assert display in self.dotxpra.displays(), "proxy display not found"
 		self.check_stop_server(proxy, "stop", display)
 
