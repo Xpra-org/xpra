@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import cairo
+from cairo import OPERATOR_SOURCE, OPERATOR_OVER  #pylint: disable=no-name-in-module
 from gi.repository import Gdk
 
 from xpra.os_util import monotonic_time, memoryview_to_bytes
@@ -20,7 +20,7 @@ def setup_cairo_context(context, ww : int, wh : int, w : int, h : int, offset_x 
         context.scale(ww/w, wh/h)
     if offset_x!=0 or offset_y!=0:
         context.translate(offset_x, offset_y)
-    context.set_operator(cairo.OPERATOR_SOURCE)
+    context.set_operator(OPERATOR_SOURCE)
 
 def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_time):
     if not cursor_data:
@@ -43,6 +43,6 @@ def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_
     argb = unpremultiply_argb(pixels)
     img_data = memoryview_to_bytes(argb)
     pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw*4)
-    context.set_operator(cairo.OPERATOR_OVER)
+    context.set_operator(OPERATOR_OVER)
     Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
     context.paint()
