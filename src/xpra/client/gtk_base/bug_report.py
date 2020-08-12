@@ -193,7 +193,7 @@ class BugReport:
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
             if icon_name:
-                icon = self.get_icon_pixbuf(icon_name)
+                icon = get_icon_pixbuf(icon_name)
                 if icon:
                     btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
@@ -348,7 +348,7 @@ class BugReport:
             dialog = Gtk.MessageDialog(self.window, 0, Gtk.MessageType.WARNING,
                                        Gtk.ButtonsType.CLOSE, "Failed to save ZIP file")
             dialog.format_secondary_text("%s" % e)
-            def close(*args):
+            def close(*_args):
                 dialog.destroy()
             dialog.connect("response", close)
             dialog.show_all()
