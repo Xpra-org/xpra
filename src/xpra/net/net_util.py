@@ -17,7 +17,7 @@ log = Logger("network", "util")
 
 netifaces_version = 0
 _netifaces = None
-def import_netifaces():
+def import_netifaces() -> object:
     global _netifaces, netifaces_version
     if _netifaces is None:
         try:

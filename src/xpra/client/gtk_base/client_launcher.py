@@ -38,7 +38,6 @@ from xpra.scripts.main import (
     connect_to, make_client, configure_network, is_local,
     add_ssh_args, parse_ssh_string, add_ssh_proxy_args,
     )
-from xpra.platform.paths import get_icon_dir
 from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
 
@@ -441,7 +440,7 @@ class ApplicationWindow:
         theme = Gtk.IconTheme.get_default()
         try:
             pixbuf = theme.load_icon(icon_name, Gtk.IconSize.BUTTON, Gtk.IconLookupFlags.USE_BUILTIN)
-        except:
+        except Exception:
             pixbuf = None
         if not pixbuf:
             pixbuf = get_icon_pixbuf("%s.png" % icon_name)

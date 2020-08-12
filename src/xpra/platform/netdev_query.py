@@ -39,7 +39,7 @@ def main():
                 print("* %s (index=%s)" % (iface.ljust(20), if_nametoindex(iface)))
             else:
                 print("* %s" % iface)
-            addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable
+            addresses = netifaces.ifaddresses(iface)     #@UndefinedVariable pylint: disable=no-member
             for addr, defs in addresses.items():
                 if addr in (socket.AF_INET, socket.AF_INET6):
                     for d in defs:
