@@ -960,7 +960,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glLineWidth(self.paint_box_line_width+0.5+int(encoding=="scroll")*2)
         glBegin(GL_LINE_LOOP)
         color = get_paint_box_color(encoding)
-        log("Painting colored box around %s screen update using: %s (delta=%s)", encoding, color, is_delta)
+        log("Painting colored box around %s screen update using: %s", encoding, color)
         glColor4f(*color)
         for px,py in ((x, y), (x+w, y), (x+w, y+h), (x, y+h)):
             glVertex2i(px, py)
