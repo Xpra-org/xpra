@@ -110,8 +110,6 @@ class Keyboard(KeyboardBase):
 
     def get_xkb_rules_names_property(self):
         #parses the "_XKB_RULES_NAMES" X11 property
-        #FIXME: a bit ugly to call gtk here...
-        #but otherwise we have to call XGetWindowProperty and deal with X11 errors..
         if not is_X11():
             return ""
         xkb_rules_names = ""
