@@ -116,7 +116,7 @@ def get_runtime_dir():
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
     if runtime_dir:
         #replace uid with the string "$UID"
-        head, tail = list(os.path.split(runtime_dir))
+        head, tail = os.path.split(runtime_dir)
         try:
             assert int(tail)>=0
             runtime_dir = os.path.join(head, "$UID")
