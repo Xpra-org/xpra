@@ -232,7 +232,8 @@ WIN32_KEYBOARDS = {
     0x00010407  : ("de", "German (IBM)"),
     0x000c0c00  : ("??", "Gothic"),
     0x00000408  : ("gr", "Greek"),
-    0x00010408  : ("gr", "Greek (220)"),
+    #Duplicate of 'tr':
+    #0x00010408  : ("gr", "Greek (220)"),
     0x00030408  : ("gr", "Greek (220) Latin"),
     0x00020408  : ("gr", "Greek (319)"),
     0x00040408  : ("gr", "Greek (319) Latin"),
@@ -293,7 +294,8 @@ WIN32_KEYBOARDS = {
     0x000f0c00  : ("??", "Old Italic"),
     0x000e0c00  : ("??", "Osmanya"),
     0x00000463  : ("af", "Pashto (Afghanistan)"),
-    0x00000429  : ("ir", "Persian"),
+    #duplicate of 'ku'
+    #0x00000429  : ("ir", "Persian"),
     0x00050429  : ("ir", "Persian (Standard)"),
     0x000a0c00  : ("cn", "Phags-pa"),
     0x00010415  : ("pl", "Polish (214)"),
@@ -308,7 +310,8 @@ WIN32_KEYBOARDS = {
     0x00000419  : ("ru", "Russian"),
     0x00020419  : ("ru", "Russian - Mnemonic"),
     0x00010419  : ("ru", "Russian (Typewriter)"),
-    0x00000485  : ("ru", "Sakha"),
+    #duplicate of 'tr'
+    #0x00000485  : ("ru", "Sakha"),
     0x0002083b  : ("fi", "Sami Extended Finland-Sweden"),
     0x0001043b  : ("no", "Sami Extended Norway"),
     0x00011809  : ("gb", "Scottish Gaelic"),
