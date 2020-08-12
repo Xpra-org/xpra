@@ -15,7 +15,7 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
 from xpra.util import iround, first_time, envint, envbool
-from xpra.os_util import strtobytes, WIN32, OSX, POSIX
+from xpra.os_util import strtobytes, WIN32, OSX
 from xpra.log import Logger
 
 log = Logger("gtk", "util")
@@ -156,20 +156,20 @@ def get_default_root_window() -> Gdk.Window:
     return screen.get_root_window()
 
 def get_root_size():
-    if WIN32 or (POSIX and not OSX):
-        #FIXME: hopefully, we can remove this code once GTK3 on win32 is fixed?
-        #we do it the hard way because the root window geometry is invalid on win32:
-        #and even just querying it causes this warning:
+    if OSX:
+        #the easy way:
+        root = get_default_root_window()
+        w, h = root.get_geometry()[2:4]
+    else:
+        #GTK3 on win32 triggers this warning:
         #"GetClientRect failed: Invalid window handle."
+        #if we try to use the root window,
+        #and on Linux with Wayland, we get bogus values...
         screen = Gdk.Screen.get_default()
         if screen is None:
             return 1920, 1024
         w = screen.get_width()
         h = screen.get_height()
-    else:
-        #the easy way for platforms that work out of the box:
-        root = get_default_root_window()
-        w, h = root.get_geometry()[2:4]
     if w<=0 or h<=0 or w>32768 or h>32768:
         if first_time("Gtk root window dimensions"):
             log.warn("Warning: Gdk returned invalid root window dimensions: %ix%i", w, h)
@@ -390,84 +390,31 @@ def get_screen_info(display, screen) -> dict:
     if not WIN32:
         try:
             w = screen.get_root_window()
-            info["root"] = w.get_geometry()
-        except:
+            if w:
+                info["root"] = w.get_geometry()
+        except Exception:
             pass
     info["name"] = screen.make_display_name()
     for x in ("width", "height", "width_mm", "height_mm", "resolution", "primary_monitor"):
         fn = getattr(screen, "get_"+x)
         try:
             info[x] = int(fn())
-        except:
+        except Exception:
             pass
     info["monitors"] = screen.get_n_monitors()
     m_info = info.setdefault("monitor", {})
     for i in range(screen.get_n_monitors()):
         m_info[i] = get_monitor_info(display, screen, i)
-    try:
-        fo = screen.get_font_options()
-        #win32 and osx return nothing here...
-        if fo:
-            fontoptions = info.setdefault("fontoptions", {})
-            for x,vdict in {
-                "antialias" : {
-                    cairo.ANTIALIAS_DEFAULT     : "default",
-                    cairo.ANTIALIAS_NONE        : "none",
-                    cairo.ANTIALIAS_GRAY        : "gray",
-                    cairo.ANTIALIAS_SUBPIXEL    : "subpixel",
-                    },
-                "hint_metrics" : {
-                    cairo.HINT_METRICS_DEFAULT  : "default",
-                    cairo.HINT_METRICS_OFF      : "off",
-                    cairo.HINT_METRICS_ON       : "on",
-                    },
-                "hint_style" : {
-                    cairo.HINT_STYLE_DEFAULT    : "default",
-                    cairo.HINT_STYLE_NONE       : "none",
-                    cairo.HINT_STYLE_SLIGHT     : "slight",
-                    cairo.HINT_STYLE_MEDIUM     : "medium",
-                    cairo.HINT_STYLE_FULL       : "full",
-                    },
-                "subpixel_order": {
-                    cairo.SUBPIXEL_ORDER_DEFAULT    : "default",
-                    cairo.SUBPIXEL_ORDER_RGB        : "RGB",
-                    cairo.SUBPIXEL_ORDER_BGR        : "BGR",
-                    cairo.SUBPIXEL_ORDER_VRGB       : "VRGB",
-                    cairo.SUBPIXEL_ORDER_VBGR       : "VBGR",
-                    },
-                }.items():
-                fn = getattr(fo, "get_"+x)
-                val = fn()
-                fontoptions[x] = vdict.get(val, val)
-    except:
-        pass
+    fo = screen.get_font_options()
+    #win32 and osx return nothing here...
+    if fo:
+        fontoptions = info.setdefault("fontoptions", {})
+        fontoptions.update(get_font_info(fo))
     vinfo = info.setdefault("visual", {})
     def visual(name, v):
-        if not v:
-            return
-        for x, vdict in {
-            "bits_per_rgb"          : {},
-            "byte_order"            : BYTE_ORDER_NAMES,
-            "colormap_size"         : {},
-            "depth"                 : {},
-            "red_pixel_details"     : {},
-            "green_pixel_details"   : {},
-            "blue_pixel_details"    : {},
-            "visual_type"           : VISUAL_NAMES,
-            }.items():
-            val = None
-            try:
-                #ugly workaround for "visual_type" -> "type" for GTK2...
-                val = getattr(v, x.replace("visual_", ""))
-            except AttributeError:
-                try:
-                    fn = getattr(v, "get_"+x)
-                except AttributeError:
-                    pass
-                else:
-                    val = fn()
-            if val is not None:
-                vinfo.setdefault(name, {})[x] = vdict.get(val, val)
+        i = get_visual_info(v)
+        if i:
+            vinfo[name] = i
     visual("rgba", screen.get_rgba_visual())
     visual("system_visual", screen.get_system_visual())
     if SHOW_ALL_VISUALS:
@@ -505,6 +452,70 @@ def get_screen_info(display, screen) -> dict:
             x = x[4:]
         sinfo[x] = v
     return info
+
+def get_font_info(font_options):
+    #pylint: disable=no-member
+    font_info = {}
+    for x,vdict in {
+        "antialias" : {
+            cairo.ANTIALIAS_DEFAULT     : "default",
+            cairo.ANTIALIAS_NONE        : "none",
+            cairo.ANTIALIAS_GRAY        : "gray",
+            cairo.ANTIALIAS_SUBPIXEL    : "subpixel",
+            },
+        "hint_metrics" : {
+            cairo.HINT_METRICS_DEFAULT  : "default",
+            cairo.HINT_METRICS_OFF      : "off",
+            cairo.HINT_METRICS_ON       : "on",
+            },
+        "hint_style" : {
+            cairo.HINT_STYLE_DEFAULT    : "default",
+            cairo.HINT_STYLE_NONE       : "none",
+            cairo.HINT_STYLE_SLIGHT     : "slight",
+            cairo.HINT_STYLE_MEDIUM     : "medium",
+            cairo.HINT_STYLE_FULL       : "full",
+            },
+        "subpixel_order": {
+            cairo.SUBPIXEL_ORDER_DEFAULT    : "default",
+            cairo.SUBPIXEL_ORDER_RGB        : "RGB",
+            cairo.SUBPIXEL_ORDER_BGR        : "BGR",
+            cairo.SUBPIXEL_ORDER_VRGB       : "VRGB",
+            cairo.SUBPIXEL_ORDER_VBGR       : "VBGR",
+            },
+        }.items():
+        fn = getattr(font_options, "get_"+x)
+        val = fn()
+        font_info[x] = vdict.get(val, val)
+    return font_info
+
+def get_visual_info(v):
+    if not v:
+        return {}
+    vinfo = {}
+    for x, vdict in {
+        "bits_per_rgb"          : {},
+        "byte_order"            : BYTE_ORDER_NAMES,
+        "colormap_size"         : {},
+        "depth"                 : {},
+        "red_pixel_details"     : {},
+        "green_pixel_details"   : {},
+        "blue_pixel_details"    : {},
+        "visual_type"           : VISUAL_NAMES,
+        }.items():
+        val = None
+        try:
+            #ugly workaround for "visual_type" -> "type" for GTK2...
+            val = getattr(v, x.replace("visual_", ""))
+        except AttributeError:
+            try:
+                fn = getattr(v, "get_"+x)
+            except AttributeError:
+                pass
+            else:
+                val = fn()
+        if val is not None:
+            vinfo[x] = vdict.get(val, val)
+    return vinfo
 
 def get_monitor_info(_display, screen, i) -> dict:
     info = {}
@@ -605,14 +616,14 @@ def imagebutton(title, icon, tooltip=None, clicked_callback=None, icon_size=32,
         try:
             alignment = button.get_children()[0]
             b_hbox = alignment.get_children()[0]
-            label = b_hbox.get_children()[1]
+            l = b_hbox.get_children()[1]
         except IndexError:
             pass
         else:
             if label_color:
-                label.modify_fg(Gtk.StateType.NORMAL, label_color)
+                l.modify_fg(Gtk.StateType.NORMAL, label_color)
             if label_font:
-                label.modify_font(label_font)
+                l.modify_font(label_font)
     return button
 
 def menuitem(title, image=None, tooltip=None, cb=None) -> Gtk.ImageMenuItem:
@@ -685,10 +696,10 @@ class TableBuilder:
     def get_table(self):
         return self.table
 
-    def add_row(self, label, *widgets, **kwargs):
-        if label:
+    def add_row(self, widget=None, *widgets, **kwargs):
+        if widget:
             l_al = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
-            l_al.add(label)
+            l_al.add(widget)
             self.attach(l_al, 0)
         if widgets:
             i = 1
@@ -700,7 +711,9 @@ class TableBuilder:
                 i += 1
         self.inc()
 
-    def attach(self, widget, i, count=1, xoptions=Gtk.AttachOptions.FILL, yoptions=Gtk.AttachOptions.FILL, xpadding=10, ypadding=0):
+    def attach(self, widget, i, count=1,
+               xoptions=Gtk.AttachOptions.FILL, yoptions=Gtk.AttachOptions.FILL,
+               xpadding=10, ypadding=0):
         self.table.attach(widget, i, i+count, self.row, self.row+1,
                           xoptions=xoptions, yoptions=yoptions, xpadding=xpadding, ypadding=ypadding)
 
