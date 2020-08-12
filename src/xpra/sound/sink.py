@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.sound.gstreamer_util import (
     plugin_str, get_decoder_elements,
     get_queue_time, normv, get_decoders,
-    get_default_sink, get_sink_plugins,
+    get_default_sink_plugin, get_sink_plugins,
     MP3, CODEC_ORDER, gst, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS,
     GST_FLOW_OK,
@@ -68,7 +68,7 @@ class SoundSink(SoundPipeline):
 
     def __init__(self, sink_type=None, sink_options=None, codecs=(), codec_options=None, volume=1.0):
         if not sink_type:
-            sink_type = get_default_sink()
+            sink_type = get_default_sink_plugin()
         if sink_type not in get_sink_plugins():
             raise InitExit(1, "invalid sink: %s" % sink_type)
         matching = [x for x in CODEC_ORDER if (x in codecs and x in get_decoders())]

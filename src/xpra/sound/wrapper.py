@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import sys
 
 from collections import namedtuple
 from xpra.sound.gstreamer_util import (
-    parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink, get_default_source,
+    parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
     import_gst, format_element_options,
     can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
     )
@@ -162,7 +162,7 @@ def run_sound(mode, error_cb, options, args):
                  "sources"          : sources,
                  "source.default"   : get_default_source() or "",
                  "sinks"            : sinks,
-                 "sink.default"     : get_default_sink() or "",
+                 "sink.default"     : get_default_sink_plugin() or "",
                  "muxers"           : get_muxers(),
                  "demuxers"         : get_demuxers(),
                  "gst.version"      : [int(x) for x in get_gst_version()],

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -165,13 +165,12 @@ ENCODER_DEFAULT_OPTIONS_COMMON = {
             #"vorbisenc"     : {"perfect-timestamp" : 1},
                            }
 ENCODER_DEFAULT_OPTIONS = {
-                                #FIXME: figure out when it is safe to apply the "bitrate-type" setting:
-                                "opusenc"       : {
-                                                   #only available with 1.6 onwards?
-                                                   #"bitrate-type"   : 2,      #constrained vbr
-                                                   "complexity"     : 0
-                                                   },
-                           }
+    "opusenc"       : {
+        #only available with 1.6 onwards?
+        "bitrate-type"   : 1,      #vbr
+        "complexity"     : 0
+        },
+    }
 #we may want to review this if/when we implement UDP transport:
 MUXER_DEFAULT_OPTIONS = {
             "oggmux"        : {
@@ -559,7 +558,7 @@ def get_sink_plugins():
         SINKS += ["alsasink", "osssink", "oss4sink", "jackaudiosink"]
     return SINKS
 
-def get_default_sink():
+def get_default_sink_plugin():
     sink = os.environ.get("XPRA_SOUND_SINK")
     sinks = get_sink_plugins()
     if sink:
@@ -576,7 +575,7 @@ def get_default_sink():
             else:
                 return "pulsesink"
     except ImportError as e:
-        log("get_default_sink() no pulsesink: %s", e)
+        log("get_default_sink_plugin() no pulsesink: %s", e)
     for sink in sinks:
         if has_plugins(sink):
             return sink
@@ -925,7 +924,7 @@ def main():
         print("stream compressors: %s" % csv(get_stream_compressors()))
         print("source plugins:     %s" % csv([x for x in get_source_plugins() if x in apn]))
         print("sink plugins:       %s" % csv([x for x in get_sink_plugins() if x in apn]))
-        print("default sink:       %s" % get_default_sink())
+        print("default sink:       %s" % get_default_sink_plugin())
 
 
 if __name__ == "__main__":
