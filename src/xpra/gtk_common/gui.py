@@ -219,6 +219,7 @@ class GUI(Gtk.Window):
     def start(self, *_args):
         if not self.start_session:
             self.start_session = StartSession()
+        self.start_session.populate_menus()
         self.start_session.show()
         self.start_session.present()
 
@@ -261,8 +262,8 @@ class StartSession(Gtk.Window):
         icon = get_icon_pixbuf("xpra.png")
         if icon:
             self.set_icon(icon)
-        self.connect("delete-event", self.close)
-        add_close_accel(self, self.close)
+        self.connect("delete-event", self.hide_window)
+        add_close_accel(self, self.hide_window)
 
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(0)
@@ -346,17 +347,12 @@ class StartSession(Gtk.Window):
                 btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn
-        self.cancel_btn = btn("Cancel", "", self.close, "quit.png")
+        self.cancel_btn = btn("Cancel", "", self.hide_window, "quit.png")
         self.run_btn = btn("Start", "Start this command in an xpra session", self.run_command, "forward.png")
         self.run_btn.set_sensitive(False)
 
         vbox.show_all()
         self.add(vbox)
-
-
-    def show(self):
-        Gtk.Window.show(self)
-        self.populate_menus()
 
 
     def populate_menus(self):
@@ -458,8 +454,8 @@ class StartSession(Gtk.Window):
         self.populate_menus()
 
 
-    def close(self, *args):
-        log("close%s", args)
+    def hide_window(self, *args):
+        log("hide_window%s", args)
         self.hide()
         return True
 
