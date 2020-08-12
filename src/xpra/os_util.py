@@ -57,7 +57,7 @@ def get_frame_info(ignore_threads=()):
                 threading.current_thread().ident    : "info",
                 main_thread.ident                   : "main",
                 })
-        frames = sys._current_frames()
+        frames = sys._current_frames()  #pylint: disable=protected-access
         stack = None
         for i,frame_pair in enumerate(frames.items()):
             stack = traceback.extract_stack(frame_pair[1])
@@ -99,7 +99,7 @@ def get_sysconfig_info():
         getter = getattr(sysconfig, fn, None)
         if getter:
             try:
-                sysinfo[attr] = getter()
+                sysinfo[attr] = getter()  #pylint: disable=not-callable
             except ModuleNotFoundError:
                 log("sysconfig.%s", fn, exc_info=True)
                 if attr=="config-vars" and WIN32:
