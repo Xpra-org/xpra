@@ -5,6 +5,11 @@
 # later version. See the file COPYING for details.
 
 import cairo
+from cairo import (  #pylint: disable=no-name-in-module
+    Context, ImageSurface,
+    FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,
+    OPERATOR_SOURCE, OPERATOR_CLEAR,
+    )
 from gi.repository import GLib, Gdk
 
 from xpra.client.paint_colors import get_paint_box_color
@@ -52,9 +57,9 @@ class CairoBackingBase(WindowBackingBase):
         if bw==0 or bh==0:
             #this can happen during cleanup
             return None
-        self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, bw, bh)
-        cr = cairo.Context(self._backing)
-        cr.set_operator(cairo.OPERATOR_CLEAR)
+        self._backing = ImageSurface(FORMAT_ARGB32, bw, bh)
+        cr = Context(self._backing)
+        cr.set_operator(OPERATOR_CLEAR)
         cr.set_source_rgba(1, 1, 1, 1)
         cr.rectangle(0, 0, bw, bh)
         cr.fill()
@@ -64,7 +69,7 @@ class CairoBackingBase(WindowBackingBase):
             cr.translate(dx-sx, dy-sy)
             cr.rectangle(sx, sy, w, h)
             cr.fill()
-            cr.set_operator(cairo.OPERATOR_SOURCE)
+            cr.set_operator(OPERATOR_SOURCE)
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
             self._backing.flush()
@@ -96,18 +101,18 @@ class CairoBackingBase(WindowBackingBase):
         log("cairo_paint_surface%s backing=%s, paint box line width=%i",
             (set_source_fn, source, x, y, iw, ih, width, height, options),
             self._backing, self.paint_box_line_width)
-        gc = cairo.Context(self._backing)
+        gc = Context(self._backing)
         if self.paint_box_line_width:
             gc.save()
 
         gc.rectangle(x, y, width, height)
         gc.clip()
 
-        gc.set_operator(cairo.OPERATOR_CLEAR)
+        gc.set_operator(OPERATOR_CLEAR)
         gc.rectangle(x, y, width, height)
         gc.fill()
 
-        gc.set_operator(cairo.OPERATOR_SOURCE)
+        gc.set_operator(OPERATOR_SOURCE)
         gc.translate(x, y)
         if iw!=width or ih!=height:
             gc.scale(width/iw, height/ih)
@@ -128,24 +133,24 @@ class CairoBackingBase(WindowBackingBase):
         gc.stroke()
 
     def _do_paint_rgb16(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        return self._do_paint_rgb(cairo.FORMAT_RGB16_565, False, img_data,
+        return self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb24(self, img_data, x : int, y : int, width : int, height : int,
                         render_width : int, render_height : int, rowstride : int, options):
-        return self._do_paint_rgb(cairo.FORMAT_RGB24, False, img_data,
+        return self._do_paint_rgb(FORMAT_RGB24, False, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb30(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        return self._do_paint_rgb(cairo.FORMAT_RGB30, True, img_data,
+        return self._do_paint_rgb(FORMAT_RGB30, True, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb32(self, img_data, x : int, y : int, width : int, height : int,
                         render_width : int, render_height : int, rowstride : int, options):
         if self._alpha_enabled:
-            cformat = cairo.FORMAT_ARGB32
+            cformat = FORMAT_ARGB32
         else:
-            cformat = cairo.FORMAT_RGB24
+            cformat = FORMAT_RGB24
         return self._do_paint_rgb(cformat, True, img_data,
                                   x, y, width, height, render_width, render_height, rowstride, options)
 
@@ -160,7 +165,7 @@ class CairoBackingBase(WindowBackingBase):
         return props
 
 
-    def paint_scroll(self, img_data, _options, callbacks):
+    def paint_scroll(self, img_data, options, callbacks):
         self.idle_add(self.do_paint_scroll, img_data, callbacks)
 
     def do_paint_scroll(self, scrolls, callbacks):
@@ -169,7 +174,7 @@ class CairoBackingBase(WindowBackingBase):
         if not gc:
             fire_paint_callbacks(callbacks, False, message="no context")
             return
-        gc.set_operator(cairo.OPERATOR_SOURCE)
+        gc.set_operator(OPERATOR_SOURCE)
         for sx,sy,sw,sh,xdelta,ydelta in scrolls:
             gc.set_source_surface(old_backing, xdelta, ydelta)
             x = sx+xdelta
@@ -213,8 +218,8 @@ class CairoBackingBase(WindowBackingBase):
         img.save(png, format="PNG")
         reader = BytesIO(png.getvalue())
         png.close()
-        img = cairo.ImageSurface.create_from_png(reader)
-        self.cairo_paint_surface(img, x, y, {})
+        img = ImageSurface.create_from_png(reader)
+        self.cairo_paint_surface(img, x, y, width, height, {})
         return True
 
 
