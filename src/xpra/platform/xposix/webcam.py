@@ -37,6 +37,7 @@ def check_virtual_dir(warn=True):
             log.warn("Warning: webcam forwarding is disabled")
             log.warn(" the virtual video directory '%s' was not found", v4l2_virtual_dir)
             log.warn(" make sure that the 'v4l2loopback' kernel module is installed and loaded")
+            log.warn(" or use the 'webcam=no' option")
         return False
     return True
 
