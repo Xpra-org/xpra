@@ -2376,7 +2376,8 @@ cdef class Encoder:
             stride = image_stride
             copy_len = h*image_stride
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
-            log("copying %s bytes from %s into %s (len=%i), in one shot", pix_len, type(pixels), type(self.inputBuffer), len(self.inputBuffer))
+            log("copying %s bytes from %s into %s (len=%i), in one shot",
+                pix_len, type(pixels), type(self.inputBuffer), len(self.inputBuffer))
             #log("target: %s, %s, %s", buf.shape, buf.size, buf.dtype)
             if isinstance(pixels, memoryview):
                 tmp = numpy.asarray(pixels, numpy.int8)
@@ -2396,7 +2397,8 @@ cdef class Encoder:
             #before uploading to the device... this is probably costly!
             stride = self.inputPitch
             min_stride = min(self.inputPitch, image_stride)
-            log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i, target stride=%i)", stride*h, type(pixels), type(self.inputBuffer), min_stride, image_stride, self.inputPitch)
+            log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i, target stride=%i)",
+                stride*h, type(pixels), type(self.inputBuffer), min_stride, image_stride, self.inputPitch)
             try:
                 for i in range(h):
                     x = i*self.inputPitch
