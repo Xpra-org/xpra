@@ -1861,7 +1861,7 @@ cdef class Encoder:
         log("init_params(%s) using preset=%s", codecstr(codec), presetstr(preset))
         profiles = self.query_profiles(codec)
         if self.profile_name and profiles and self.profile_name not in profiles:
-            self.profile_name = profiles[0]
+            self.profile_name = tuple(profiles.keys())[0]
         profile_guidstr = profiles.get(self.profile_name)
         cdef GUID profile
         if profile_guidstr:
