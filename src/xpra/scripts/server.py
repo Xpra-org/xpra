@@ -892,7 +892,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.init(opts)
         app.init_sockets(sockets)
         app.init_dbus(dbus_pid, dbus_env)
-        if not shadowing:
+        if not shadowing and not proxying:
             app.init_display_pid(xvfb_pid)
         app.original_desktop_display = desktop_display
         del opts
