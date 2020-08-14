@@ -28,8 +28,8 @@ class TestMotion(unittest.TestCase):
 
 	def do_calculate_distances(self, rect, array1, array2, min_hits=2, max_distance=1000):
 		sd = motion.ScrollData(*rect)
-		sd._test_update(array1)
-		sd._test_update(array2)
+		sd.test_update(array1)
+		sd.test_update(array2)
 		sd.calculate(max_distance)
 		return sd.get_scroll_values(min_hits)
 
@@ -107,24 +107,9 @@ class TestMotion(unittest.TestCase):
 		#W, H, BPP = 2, 4, 4
 		LEN = W * H * BPP
 		import numpy as np
-		try:
-			na1 = np.random.randint(255, size=LEN, dtype="uint8")
-		except TypeError as e:
-			#older numpy version may not have dtype argument..
-			#and may not accept 64-bit values
-			print("skipping motion detection test")
-			print(" because of incompatible numpy version: %s" % e)
-			try:
-				print(" numpy %s" % np.version.version)
-			except:
-				pass
-			return
+		na1 = np.random.randint(255, size=LEN, dtype="uint8")
 		def tobytes(a):
-			try:
-				return a.tobytes()
-			except:
-				#older versions of numpy (ie: centos7)
-				return a.tostring()
+			return a.tobytes()
 		buf1 = tobytes(na1)
 		#push first image:
 		sd = motion.ScrollData(0, 0, W, H)
@@ -154,13 +139,12 @@ class TestMotion(unittest.TestCase):
 			linecount = sum(line_defs.values())
 			assert linecount>0, "could not find distance %i in %s" % (N, line_defs)
 			assert linecount == (H-N), "expected to match %i lines but got %i" % (H-N, linecount)
-		if False:
-			import binascii
-			log("na1:\n%s" % binascii.hexlify(tobytes(na1)))
-			log("na2:\n%s" % binascii.hexlify(tobytes(na2)))
-			np.set_printoptions(threshold=np.inf)
-			log("na1:\n%s" % (na1, ))
-			log("na2:\n%s" % (na2, ))
+		#import binascii
+		#log("na1:\n%s" % binascii.hexlify(tobytes(na1)))
+		#log("na2:\n%s" % binascii.hexlify(tobytes(na2)))
+		#np.set_printoptions(threshold=np.inf)
+		#log("na1:\n%s" % (na1, ))
+		#log("na2:\n%s" % (na2, ))
 
 	def test_csum_data(self):
 		a1=[
@@ -203,8 +187,8 @@ class TestMotion(unittest.TestCase):
 			]
 		#distances = motion.scroll_distances(a1[100:400], a2[100:400], 2, 1000)
 		sd = motion.ScrollData(0, 0, 1050, len(a1))
-		sd._test_update(a1)
-		sd._test_update(a2)
+		sd.test_update(a1)
+		sd.test_update(a2)
 		sd.calculate(1000)
 		scroll, count = sd.get_best_match()
 		wh = len(a1)

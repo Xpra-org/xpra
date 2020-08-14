@@ -65,7 +65,7 @@ cdef class ScrollData:
         return "ScrollDistances(%ix%i)" % (self.width, self.height)
 
     #only used by the unit tests:
-    def _test_update(self, arr):
+    def test_update(self, arr):
         if self.a1:
             free(self.a1)
             self.a1 = NULL
