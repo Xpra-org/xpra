@@ -23,7 +23,7 @@ class ServerSocketsTest(ServerTestUtil):
 
 	def get_run_env(self):
 		env = super().get_run_env()
-		env["XPRA_CONNECT_TIMEOUT"] = CONNECT_WAIT
+		env["XPRA_CONNECT_TIMEOUT"] = str(CONNECT_WAIT)
 		return env
 
 	def start_server(self, *args):
