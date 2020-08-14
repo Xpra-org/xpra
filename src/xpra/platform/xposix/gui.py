@@ -488,7 +488,9 @@ def _send_client_message(window, message_type, *values):
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
         SubstructureRedirectMask = constants["SubstructureRedirectMask"]
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-        X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
+        from xpra.gtk_common.error import xsync
+        with xsync:
+            X11Window.sendClientMessage(root_xid, xid, False, event_mask, message_type, *values)
     except Exception as e:
         log.warn("failed to send client message '%s' with values=%s: %s", message_type, values, e)
 
