@@ -254,15 +254,18 @@ class ProcessTestUtil(unittest.TestCase):
 
 
     @classmethod
-    def find_free_display_no(cls):
+    def find_free_display_no(cls, exclude=()):
         #X11 sockets:
         X11_displays = cls.find_X11_displays()
         start = cls.display_start % 10000
         for i in range(start, 20000):
             display = ":%i" % i
-            if display and display not in X11_displays:
-                cls.display_start += 100
-                return i
+            if display in exclude:
+                continue
+            if display in X11_displays:
+                continue
+            cls.display_start += 100
+            return i
         raise Exception("failed to find any free displays!")
 
     @classmethod

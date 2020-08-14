@@ -38,6 +38,10 @@ class ServerTestUtil(ProcessTestUtil):
         return cls.dotxpra.displays()
 
     @classmethod
+    def find_free_display(cls):
+        return ":%i" % cls.find_free_display_no(cls.displays())
+
+    @classmethod
     def setUpClass(cls):
         ProcessTestUtil.setUpClass()
         tmpdir = os.environ.get("TMPDIR", "/tmp")
