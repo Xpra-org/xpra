@@ -556,6 +556,8 @@ def shellsub(s, subs=None):
 
 
 def osexpand(s, actual_username="", uid=0, gid=0, subs=None):
+    if not s:
+        return s
     def expanduser(s):
         if actual_username and s.startswith("~/"):
             #replace "~/" with "~$actual_username/"
@@ -573,7 +575,9 @@ def osexpand(s, actual_username="", uid=0, gid=0, subs=None):
             })
         if not OSX:
             from xpra.platform.xposix.paths import get_runtime_dir
-            d["XDG_RUNTIME_DIR"] = os.environ.get("XDG_RUNTIME_DIR", get_runtime_dir())
+            rd = get_runtime_dir()
+            if rd and "XDG_RUNTIME_DIR" not in os.environ:
+                d["XDG_RUNTIME_DIR"] = rd
     if actual_username:
         d["USERNAME"] = actual_username
         d["USER"] = actual_username
