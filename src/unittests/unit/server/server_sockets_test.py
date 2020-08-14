@@ -193,12 +193,6 @@ class ServerSocketsTest(ServerTestUtil):
 			ServerSocketsTest.default_xpra_args = saved_default_xpra_args
 			shutil.rmtree(tmpdir)
 
-	def get_run_env(self):
-		env = ServerTestUtil.get_run_env(self)
-		#we want commands to timeout quickly
-		env["XPRA_CONNECT_TIMEOUT"] = "5"
-		return env
-
 
 def main():
 	if POSIX and not OSX:
