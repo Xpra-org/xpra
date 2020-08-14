@@ -123,9 +123,9 @@ def get_runtime_dir():
         except (ValueError, AssertionError):
             pass
     else:
-        for d in ("/run", "/var/run"):
+        for d in ("/run/user", "/var/run/user"):
             if os.path.exists(d) and os.path.isdir(d):
-                runtime_dir = d+"/user/$UID"
+                runtime_dir = d+"/$UID"
                 break
     return runtime_dir
 
