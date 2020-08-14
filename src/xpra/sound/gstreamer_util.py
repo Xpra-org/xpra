@@ -866,7 +866,7 @@ def parse_sound_source(all_plugins, sound_source_plugin, device, want_monitor_de
             options = [x for x in get_source_plugins() if x in all_plugins]
             if not options:
                 log.error("no source plugins available")
-                return None
+                return None, {}
             log("parse_sound_source: no plugin specified, using default: %s", options[0])
             simple_str = options[0]
     for s in ("src", "sound", "audio"):
