@@ -1263,6 +1263,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
             #which will look at the window metadata again
             workspacelog("workspace=%s will be set when the window is mapped", wn(workspace))
             return
+        workspace = workspace & 0xffffffff
         desktop = self.get_desktop_workspace()
         ndesktops = self.get_workspace_count()
         current = self.get_window_workspace()
@@ -1315,7 +1316,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if target is None:
             workspacelog("do_get_workspace: target is None, returning %s", wn(default_value))
             return default_value        #window is not realized yet
-        value = self.xget_u32_property(target, prop)
+        value = self.xget_u32_property(target, prop) & 0xffffffff
         if value is not None:
             workspacelog("do_get_workspace %s=%s on window %#x", prop, wn(value), get_xwindow(target))
             return value
