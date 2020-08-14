@@ -10,7 +10,7 @@ import unittest
 import binascii
 
 from xpra.util import AdHocStruct
-from xpra.os_util import OSEnvContext, hexstr
+from xpra.os_util import OSEnvContext
 
 
 class XSettingsTest(unittest.TestCase):
