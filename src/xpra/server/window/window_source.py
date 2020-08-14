@@ -905,10 +905,8 @@ class WindowSource(WindowIconSource):
         return self.encoding
 
     def encoding_is_grayscale(self, *args):
-        e = self.get_auto_encoding(*args)
-        if e.startswith("rgb"):
-            return "png"
-        if e.startswith("png"):
+        e = self.get_auto_encoding(*args)  #pylint: disable=no-value-for-parameter
+        if e.startswith("rgb") or e.startswith("png"):
             return "png/L"
         return e
 

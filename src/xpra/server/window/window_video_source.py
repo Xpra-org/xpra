@@ -2067,7 +2067,7 @@ class WindowVideoSource(WindowSource):
         if warn:
             videolog.warn("using non-video fallback encoding")
         if self.image_depth==8:
-            if self.encoding_is_grayscale():
+            if self.encoding=="grayscale":
                 encoding = "png/L"
             else:
                 encoding = "png/P"
