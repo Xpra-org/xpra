@@ -15,7 +15,7 @@ from io import BytesIO
 from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
 from threading import Lock
 
-from xpra.util import envbool, envint, print_nested_dict, first_time
+from xpra.util import envbool, envint, print_nested_dict, first_time, engs
 from xpra.os_util import load_binary_file, OSEnvContext
 from xpra.log import Logger, add_debug_category
 
@@ -25,6 +25,8 @@ LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)
 EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
 MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 65536)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
+
+large_icons = []
 
 
 def isvalidtype(v):
@@ -105,8 +107,8 @@ def load_icon_from_file(filename):
         return None
     log("got icon data from '%s': %i bytes", filename, len(icondata))
     if len(icondata)>MAX_ICON_SIZE and first_time("icon-size-warning-%s" % filename):
-        log.warn("Warning: icon is quite large (%i KB):", len(icondata)//1024)
-        log.warn(" '%s'", filename)
+        global large_icons
+        large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
 
 def load_icon_from_theme(icon_name, theme=None):
@@ -230,13 +232,19 @@ def remove_icons(menu_data):
 load_lock = Lock()
 xdg_menu_data = None
 def load_xdg_menu_data(force_reload=False):
-    global xdg_menu_data
+    global xdg_menu_data, large_icons
     with load_lock:
         if not xdg_menu_data or force_reload:
+            large_icons = []
             xdg_menu_data = do_load_xdg_menu_data()
             if xdg_menu_data:
                 l = sum(len(x) for x in xdg_menu_data.values())
                 log.info("loaded %i start menu entries from %i sub-menus", l, len(xdg_menu_data))
+            if large_icons:
+                log.warn("Warning: found %i large icon%s:", len(large_icons), engs(large_icons))
+                for filename, size in large_icons:
+                    log.warn(" '%s' (%i KB)", filename, size//1024)
+                log.warn(" more bandwidth will used by the start menu data")
     return xdg_menu_data
 
 def do_load_xdg_menu_data():
