@@ -514,7 +514,7 @@ class BaseWindowModel(CoreX11WindowModel):
         #intercept state properties to route via update_state()
         if pspec.name in self._state_properties:
             #virtual property for WM_STATE:
-            self.update_state(pspec.name, value)
+            self.update_wm_state(pspec.name, value)
             return
         super().do_set_property(pspec, value)
 
