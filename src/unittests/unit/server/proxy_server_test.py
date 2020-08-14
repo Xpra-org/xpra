@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
-from xpra.os_util import pollwait, POSIX
+from xpra.os_util import pollwait
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -18,6 +18,8 @@ class ProxyServerTest(ServerTestUtil):
 		cmdstr = " ".join("'%s'" % c for c in cmd)
 		proxy = self.run_xpra(cmd)
 		r = pollwait(proxy, 5)
+		if r is not None:
+			self.show_proc_pipes(proxy)
 		assert r is None, "proxy failed to start with cmd=%s, exit code=%s" % (cmdstr, r)
 		assert display in self.dotxpra.displays(), "proxy display not found"
 		self.check_stop_server(proxy, "stop", display)
@@ -32,9 +34,7 @@ class ProxyServerTest(ServerTestUtil):
 
 
 def main():
-	#TODO: re-instate this test on win32 once named pipes are fixed
-	if POSIX:
-		unittest.main()
+	unittest.main()
 
 
 if __name__ == '__main__':
