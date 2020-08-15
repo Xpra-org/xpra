@@ -136,6 +136,10 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None, Xdummy_ENABLED=None
     if platform.uname()[4].startswith("arm"):
         #arm struggles to launch Xdummy, so use Xvfb:
         return get_Xvfb_command()
+    if is_Ubuntu() or is_Debian():
+        #These distros do weird things and this can cause the real X11 server to crash
+        #see ticket #2834
+        return get_Xvfb_command()
 
     xorg_bin = get_xorg_bin()
     def Xorg_suid_check():
