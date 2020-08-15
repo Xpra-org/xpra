@@ -39,7 +39,10 @@ class ServerTestUtil(ProcessTestUtil):
 
     @classmethod
     def find_free_display(cls):
-        return ":%i" % cls.find_free_display_no(cls.displays())
+        dno = cls.find_free_display_no(cls.displays())
+        if POSIX:
+            return ":%i" % dno
+        return str(dno)
 
     @classmethod
     def setUpClass(cls):
