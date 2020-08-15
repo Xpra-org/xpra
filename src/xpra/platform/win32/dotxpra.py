@@ -14,6 +14,10 @@ PIPE_ROOT = "\\\\"
 PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT
 
 
+def norm_makepath(dirpath, name):
+    return PIPE_PATH+PIPE_PREFIX+name.lstrip(":")
+
+
 class DotXpra:
     def __init__(self, sockdir=None, sockdirs=(), actual_username="", *_args, **_kwargs):
         self.username = actual_username
@@ -35,7 +39,7 @@ class DotXpra:
 
 
     def socket_path(self, local_display_name):
-        return PIPE_PATH+PIPE_PREFIX+local_display_name.replace(":", "")
+        return norm_makepath(None, local_display_name)
 
     LIVE = LIVE
     DEAD = DEAD
