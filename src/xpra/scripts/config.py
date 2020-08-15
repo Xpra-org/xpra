@@ -874,7 +874,6 @@ def get_defaults():
             break
     xvfb = detect_xvfb_command(conf_dir, bin_dir, warn=None)
     xvfb_str = xvfb_cmd_str(xvfb)
-    bind_dirs = ["auto"]
 
     ssl_protocol = "TLSv1_2"
 
@@ -1042,7 +1041,7 @@ def get_defaults():
                     "compressors"       : ["all"],
                     "packet-encoders"   : ["all"],
                     "key-shortcut"      : get_default_key_shortcuts(),
-                    "bind"              : bind_dirs,
+                    "bind"              : ["auto"],
                     "bind-vsock"        : [],
                     "bind-tcp"          : [],
                     "bind-udp"          : [],
