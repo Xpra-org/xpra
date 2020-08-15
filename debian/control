@@ -73,9 +73,8 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-lz4
 # clipboard packet compression:
         ,python3-brotli
-#we need a vfb: either Xdummy (Debian) or Xvfb (some Ubuntu versions break Xorg tty access)
-#install both so users can choose which one they want to use:
-        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
+#we need a vfb: either Xdummy or Xvfb
+#        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
         ,xvfb
         ,keyboard-configuration
 # fast JPEG client support:
