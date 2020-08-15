@@ -802,16 +802,12 @@ def build_xpra_conf(install_dir):
         )
     #remove build paths and user specific paths with UID ("/run/user/UID/Xpra"):
     socket_dirs = get_socket_dirs()
-    if WIN32:
-        bind = "Main"
-    else:
-        if os.getuid()>0:
-            #remove any paths containing the uid,
-            #osx uses /var/tmp/$UID-Xpra,
-            #but this should not be included in the default config for all users!
-            #(the buildbot's uid!)
-            socket_dirs = [x for x in socket_dirs if x.find(str(os.getuid()))<0]
-        bind = "auto"
+    if POSIX and os.getuid()>0:
+        #remove any paths containing the uid,
+        #osx uses /var/tmp/$UID-Xpra,
+        #but this should not be included in the default config for all users!
+        #(the buildbot's uid!)
+        socket_dirs = [x for x in socket_dirs if x.find(str(os.getuid()))<0]
     #FIXME: we should probably get these values from the default config instead
     pdf, postscript = "", ""
     if POSIX and printing_ENABLED:
@@ -842,7 +838,7 @@ def build_xpra_conf(install_dir):
             'pulseaudio_command'    : pretty_cmd(get_default_pulseaudio_command()),
             'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),
             'conf_dir'              : conf_dir,
-            'bind'                  : bind,
+            'bind'                  : "auto",
             'ssl_cert'              : ssl_cert or "",
             'ssl_key'               : ssl_key or "",
             'systemd_run'           : get_default_systemd_run(),
