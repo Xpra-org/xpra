@@ -8,7 +8,7 @@
 #stretch:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 #buster:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
-BUILDOPTS= --with-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
+BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
 %:
 	dh $@ --with python3 --with systemd
