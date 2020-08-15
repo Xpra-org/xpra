@@ -21,7 +21,8 @@ class ProxyServerTest(ServerTestUtil):
 		if r is not None:
 			self.show_proc_pipes(proxy)
 		assert r is None, "proxy failed to start with cmd=%s, exit code=%s" % (cmdstr, r)
-		assert display in self.dotxpra.displays(), "proxy display not found"
+		displays = self.dotxpra.displays()
+		assert display in displays, "proxy display '%s' not found in %s" % (display, displays)
 		self.check_stop_server(proxy, "stop", display)
 
 	@classmethod

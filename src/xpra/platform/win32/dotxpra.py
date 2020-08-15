@@ -26,6 +26,10 @@ class DotXpra:
         pass
 
 
+    def displays(self, check_uid=0, matching_state=None):
+        return tuple(self.get_all_namedpipes().keys())
+
+
     def norm_socket_paths(self, local_display_name):
         return [self.socket_path(local_display_name)]
 
