@@ -16,7 +16,8 @@ from xpra.net.net_util import get_free_tcp_port
 from unit.server_test_util import ServerTestUtil, log, estr
 
 
-CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 60)
+CONNECT_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 20)
+SUBPROCESS_WAIT = envint("XPRA_TEST_SUBPROCESS_WAIT", CONNECT_WAIT*2)
 
 
 class ServerSocketsTest(ServerTestUtil):
@@ -48,7 +49,7 @@ class ServerSocketsTest(ServerTestUtil):
 				break
 			if r is None:
 				client.terminate()
-			if monotonic_time()-start>CONNECT_WAIT*2:
+			if monotonic_time()-start>SUBPROCESS_WAIT:
 				raise Exception("version client failed to connect, returned %s" % estr(r))
 		#try to connect
 		cmd = ["connect-test", uri] + client_args
@@ -58,13 +59,18 @@ class ServerSocketsTest(ServerTestUtil):
 			cmd += ["--password-file=%s" % f.name]
 			cmd += ["--challenge-handlers=file:filename=%s" % f.name]
 		client = self.run_xpra(cmd)
-		r = pollwait(client, CONNECT_WAIT)
+		r = pollwait(client, SUBPROCESS_WAIT)
 		if f:
 			f.close()
 		if r is None:
 			client.terminate()
 		server.terminate()
 		if r!=exit_code:
+			log.error("Exit code mismatch")
+			log.error(" server args=%s", server_args)
+			log.error(" client args=%s", client_args)
+			if r is None:
+				raise Exception("expected info client to return %s but it is still running" % (estr(exit_code),))
 			raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
 		pollwait(server, 10)
 
