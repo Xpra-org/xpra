@@ -14,11 +14,18 @@ from xpra.os_util import get_util_logger, osexpand, umask_context
 from xpra.platform.dotxpra_common import PREFIX, LIVE, DEAD, UNKNOWN, INACCESSIBLE
 from xpra.platform import platform_import
 
+DISPLAY_PREFIX = ":"
+
 
 def norm_makepath(dirpath, name):
-    if name[0]==":":
-        name = name[1:]
+    if DISPLAY_PREFIX and name.startswith(DISPLAY_PREFIX):
+        name = name[len(DISPLAY_PREFIX):]
     return os.path.join(dirpath, PREFIX + name)
+
+def strip_display_prefix(s):
+    if s.startswith(DISPLAY_PREFIX):
+        return s[len(DISPLAY_PREFIX):]
+    return s
 
 def debug(msg, *args, **kwargs):
     log = get_util_logger()
@@ -138,7 +145,7 @@ class DotXpra:
             seen.add(real_dir)
             #ie: "~/.xpra/HOSTNAME-"
             base = os.path.join(d, PREFIX)
-            potential_sockets = glob.glob(base + display.lstrip(":"))
+            potential_sockets = glob.glob(base + strip_display_prefix(display))
             for sockpath in sorted(potential_sockets):
                 try:
                     s = os.stat(sockpath)
@@ -147,7 +154,7 @@ class DotXpra:
                     #socket cannot be accessed
                     continue
                 if stat.S_ISSOCK(s.st_mode):
-                    local_display = ":"+sockpath[len(base):]
+                    local_display = DISPLAY_PREFIX+sockpath[len(base):]
                     if local_display!=display:
                         debug("get_display_state: '%s' display does not match (%s vs %s)",
                               sockpath, local_display, display)
@@ -179,9 +186,10 @@ class DotXpra:
             #ie: "~/.xpra/HOSTNAME-"
             base = os.path.join(d, PREFIX)
             if matching_display:
-                potential_sockets = glob.glob(base + matching_display.lstrip(":"))
+                dstr = strip_display_prefix(matching_display)
             else:
-                potential_sockets = glob.glob(base + "*")
+                dstr = "*"
+            potential_sockets = glob.glob(base + dstr)
             results = []
             for sockpath in sorted(potential_sockets):
                 try:
@@ -200,7 +208,7 @@ class DotXpra:
                     if matching_state and state!=matching_state:
                         debug("socket_details: '%s' state does not match (%s vs %s)", sockpath, state, matching_state)
                         continue
-                    local_display = ":"+sockpath[len(base):]
+                    local_display = DISPLAY_PREFIX+sockpath[len(base):]
                     results.append((state, local_display, sockpath))
             if results:
                 sd[d] = results
@@ -210,4 +218,5 @@ class DotXpra:
 #win32 re-defines DotXpra for namedpipes:
 platform_import(globals(), "dotxpra", False,
                 "DotXpra",
+                "DISPLAY_PREFIX",
                 "norm_makepath")

@@ -50,7 +50,7 @@ def main():
         from subprocess import getstatusoutput
         if getstatusoutput("pactl info")[0]!=0:
             return
-    unittest.main()
+        unittest.main()
 
 
 if __name__ == '__main__':

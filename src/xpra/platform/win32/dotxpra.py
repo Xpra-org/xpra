@@ -9,6 +9,8 @@ import os
 from xpra.os_util import get_util_logger, osexpand
 from xpra.platform.dotxpra_common import LIVE, DEAD, UNKNOWN, INACCESSIBLE
 
+DISPLAY_PREFIX = ""
+
 PIPE_PREFIX = "Xpra\\"
 PIPE_ROOT = "\\\\"
 PIPE_PATH = "%s.\\pipe\\" % PIPE_ROOT

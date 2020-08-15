@@ -259,7 +259,10 @@ class ProcessTestUtil(unittest.TestCase):
         X11_displays = cls.find_X11_displays()
         start = cls.display_start % 10000
         for i in range(start, 20000):
-            display = ":%i" % i
+            if POSIX:
+                display = ":%i" % i
+            else:
+                display = str(i)
             if display in exclude:
                 continue
             if display in X11_displays:
