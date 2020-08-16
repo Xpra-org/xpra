@@ -170,7 +170,7 @@ class ServerTestUtil(ProcessTestUtil):
             return
         for _ in range(10):
             displays = self.dotxpra.displays()
-            if display in displays:
+            if display not in displays:
                 return
             time.sleep(1)
         raise Exception("server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
