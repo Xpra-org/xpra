@@ -57,14 +57,17 @@ class QueueSchedulerTest(unittest.TestCase):
 
     def test_timer_repeat(self):
         times = list(range(10))
+        qs = QueueScheduler()
         def timer_fn():
             times.pop()
-            return len(times)>0
-        qs = QueueScheduler()
+            if not times:
+                qs.stop()
+                return False
+            return True
         qs.timeout_add(1, timer_fn)
-        qs.timeout_add(500, qs.stop)
+        qs.timeout_add(2000, qs.stop)
         qs.run()
-        assert not times
+        assert not times, "items remain in list: %s" % (times,)
 
 def main():
     unittest.main()
