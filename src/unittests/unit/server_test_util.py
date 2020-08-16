@@ -10,9 +10,9 @@ import subprocess
 
 from unit.process_test_util import ProcessTestUtil
 from xpra.util import envint
-from xpra.os_util import pollwait, bytestostr, POSIX, WIN32
+from xpra.os_util import pollwait, bytestostr, WIN32
 from xpra.exit_codes import EXIT_STR
-from xpra.platform.dotxpra import DotXpra
+from xpra.platform.dotxpra import DotXpra, DISPLAY_PREFIX
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
@@ -33,16 +33,12 @@ class ServerTestUtil(ProcessTestUtil):
 
     @classmethod
     def displays(cls):
-        if not POSIX:
-            return []
         return cls.dotxpra.displays()
 
     @classmethod
     def find_free_display(cls):
         dno = cls.find_free_display_no(cls.displays())
-        if POSIX:
-            return ":%i" % dno
-        return str(dno)
+        return "%s%i" % (DISPLAY_PREFIX, dno)
 
     @classmethod
     def setUpClass(cls):
@@ -170,5 +166,6 @@ class ServerTestUtil(ProcessTestUtil):
 
     def check_stop_server(self, server_proc, subcommand="stop", display=":99999"):
         self.stop_server(server_proc, subcommand, display)
-        if display and display in self.dotxpra.displays():
-            raise Exception("server socket for display %s should have been removed" % display)
+        displays = self.dotxpra.displays()
+        if display and display in displays:
+            raise Exception("server socket for display %s should have been removed, but it is still found in %s" % (display, displays))

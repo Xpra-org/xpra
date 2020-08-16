@@ -16,6 +16,7 @@ from xpra.os_util import (
     OSX, OSEnvContext, POSIX,
     pollwait, osexpand, bytestostr, monotonic_time,
     )
+from xpra.platform.dotxpra import DISPLAY_PREFIX
 from xpra.scripts.config import get_defaults
 
 from xpra.log import Logger
@@ -248,9 +249,7 @@ class ProcessTestUtil(unittest.TestCase):
 
     @classmethod
     def find_X11_displays(cls):
-        if not POSIX:
-            return []
-        return [":%i" % x for x in cls.find_X11_display_numbers()]
+        return ["%s%i" % (DISPLAY_PREFIX, x) for x in cls.find_X11_display_numbers()]
 
 
     @classmethod
@@ -259,10 +258,7 @@ class ProcessTestUtil(unittest.TestCase):
         X11_displays = cls.find_X11_displays()
         start = cls.display_start % 10000
         for i in range(start, 20000):
-            if POSIX:
-                display = ":%i" % i
-            else:
-                display = str(i)
+            display = "%s%s" % (DISPLAY_PREFIX, i)
             if display in exclude:
                 continue
             if display in X11_displays:
@@ -273,7 +269,7 @@ class ProcessTestUtil(unittest.TestCase):
 
     @classmethod
     def find_free_display(cls):
-        return ":%i" % cls.find_free_display_no()
+        return "%s%i" % (DISPLAY_PREFIX, cls.find_free_display_no())
 
 
     def start_Xvfb(self, display=None, screens=((1024,768),)):

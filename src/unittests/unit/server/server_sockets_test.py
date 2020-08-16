@@ -13,6 +13,7 @@ from xpra.util import repr_ellipsized, envint
 from xpra.os_util import load_binary_file, pollwait, monotonic_time, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.net.net_util import get_free_tcp_port
+from xpra.platform.dotxpra import DISPLAY_PREFIX
 from unit.server_test_util import ServerTestUtil, log, estr
 
 
@@ -34,7 +35,7 @@ class ServerSocketsTest(ServerTestUtil):
 			raise Exception("server failed to start with args=%s, returned %s" % (args, estr(r)))
 		return server_proc
 
-	def _test_connect(self, server_args=(), auth="none", client_args=(), password=None, uri_prefix=":", exit_code=0):
+	def _test_connect(self, server_args=(), auth="none", client_args=(), password=None, uri_prefix=DISPLAY_PREFIX, exit_code=0):
 		display_no = self.find_free_display_no()
 		display = ":%s" % display_no
 		log("starting test server on %s", display)
@@ -75,7 +76,7 @@ class ServerSocketsTest(ServerTestUtil):
 		pollwait(server, 10)
 
 	def test_default_socket(self):
-		self._test_connect([], "allow", [], b"hello", ":", EXIT_OK)
+		self._test_connect([], "allow", [], b"hello", DISPLAY_PREFIX, EXIT_OK)
 
 	def test_tcp_socket(self):
 		port = get_free_tcp_port()
@@ -183,15 +184,15 @@ class ServerSocketsTest(ServerTestUtil):
 			args = ["--socket-dir=%s" % tmpdir]
 			#tell the client about it, or don't - both cases should work:
 			#(it will also use the default socket dirs)
-			self._test_connect(args, "none", args, None, ":", EXIT_OK)
-			self._test_connect(args, "none", [], None, ":", EXIT_OK)
+			self._test_connect(args, "none", args, None, DISPLAY_PREFIX, EXIT_OK)
+			self._test_connect(args, "none", [], None, DISPLAY_PREFIX, EXIT_OK)
 			#now run with ONLY this socket dir:
 			ServerSocketsTest.default_xpra_args = [x for x in saved_default_xpra_args if not x.startswith("--socket-dir")]
 			args = ["--socket-dirs=%s" % tmpdir]
 			#tell the client:
-			self._test_connect(args, "none", args, None, ":", EXIT_OK)
+			self._test_connect(args, "none", args, None, DISPLAY_PREFIX, EXIT_OK)
 			#if the client doesn't know about the socket location, it should fail:
-			self._test_connect(args, "none", [], None, ":", EXIT_CONNECTION_FAILED)
+			self._test_connect(args, "none", [], None, DISPLAY_PREFIX, EXIT_CONNECTION_FAILED)
 			#use the exact path to the socket:
 			from xpra.platform.dotxpra_common import PREFIX
 			self._test_connect(args, "none", [], None, "socket:"+os.path.join(tmpdir, PREFIX))
