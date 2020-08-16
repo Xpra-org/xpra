@@ -166,6 +166,11 @@ class ServerTestUtil(ProcessTestUtil):
 
     def check_stop_server(self, server_proc, subcommand="stop", display=":99999"):
         self.stop_server(server_proc, subcommand, display)
-        displays = self.dotxpra.displays()
-        if display and display in displays:
-            raise Exception("server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
+        if not display:
+            return
+        for _ in range(10):
+            displays = self.dotxpra.displays()
+            if display in displays:
+                return
+            time.sleep(1)
+        raise Exception("server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
