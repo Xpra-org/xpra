@@ -16,6 +16,7 @@ from xpra.os_util import (
     OSX, OSEnvContext, POSIX,
     pollwait, osexpand, bytestostr, monotonic_time,
     )
+from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
 from xpra.scripts.config import get_defaults
 
@@ -207,6 +208,21 @@ class ProcessTestUtil(unittest.TestCase):
         log.warn("returncode=%s", proc.poll())
         self.show_proc_pipes(proc)
         raise Exception(msg+" command=%s" % proc.command)
+
+
+    @classmethod
+    def get_xpra_cmd(cls):
+        cmd = get_xpra_command()
+        if cmd==["xpra"]:
+            cmd = [bytestostr(cls.which("xpra"))]
+        pyexename = "python3"
+        exe = bytestostr(cmd[0])
+        if exe.endswith(".exe"):
+            exe = exe[:-4]
+        if not (exe.endswith("python") or exe.endswith(pyexename) or exe=="coverage"):
+            #prepend python / python3:
+            cmd = [pyexename] + cmd
+        return cmd
 
 
     def get_command_output(self, command, env=None, **kwargs):

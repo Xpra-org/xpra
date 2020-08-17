@@ -10,10 +10,9 @@ import subprocess
 
 from unit.process_test_util import ProcessTestUtil
 from xpra.util import envint
-from xpra.os_util import pollwait, bytestostr, WIN32
+from xpra.os_util import pollwait, WIN32
 from xpra.exit_codes import EXIT_STR
 from xpra.platform.dotxpra import DotXpra, DISPLAY_PREFIX
-from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
 log = Logger("test")
@@ -84,20 +83,10 @@ class ServerTestUtil(ProcessTestUtil):
         cmd = self.get_xpra_cmd()+list(xpra_args)
         return self.run_command(cmd, env, **kwargs)
 
+
     @classmethod
     def get_xpra_cmd(cls):
-        xpra_cmd = get_xpra_command()
-        if xpra_cmd==["xpra"]:
-            xpra_cmd = [bytestostr(cls.which("xpra"))]
-        cmd = xpra_cmd + cls.default_xpra_args
-        pyexename = "python3"
-        exe = bytestostr(xpra_cmd[0])
-        if exe.endswith(".exe"):
-            exe = exe[:-4]
-        if not (exe.endswith("python") or exe.endswith(pyexename) or exe=="coverage"):
-            #prepend python / python3:
-            cmd = [pyexename] + xpra_cmd + cls.default_xpra_args
-        return cmd
+        return ProcessTestUtil.get_xpra_cmd() + cls.default_xpra_args
 
 
     def run_server(self, *args):
