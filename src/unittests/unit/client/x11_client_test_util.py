@@ -9,9 +9,9 @@ import os
 from xpra.os_util import get_hex_uuid, osexpand
 from unit.server_test_util import ServerTestUtil, log
 
-uq = 0
-
 class X11ClientTestUtil(ServerTestUtil):
+
+	uq = 0
 
 	def run_client(self, *args):
 		client_display = self.find_free_display()
@@ -26,8 +26,7 @@ class X11ClientTestUtil(ServerTestUtil):
 		xauth_add(xauthority, client_display, xauth_data, os.getuid(), os.getgid())
 		env = self.get_run_env()
 		env["DISPLAY"] = client_display
-		global uq
-		env["XPRA_LOG_PREFIX"] = "client %i: " % uq
-		uq +=1
+		env["XPRA_LOG_PREFIX"] = "client %i: " % X11ClientTestUtil.uq
+		X11ClientTestUtil.uq +=1
 		log("starting test client on Xvfb %s", client_display)
 		return self.run_xpra(["attach"] + list(args) , env)
