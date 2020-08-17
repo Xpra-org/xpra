@@ -7,6 +7,7 @@ import sys
 from gi.repository import Gtk, Gdk, GLib, Pango
 
 from xpra import __version__
+from xpra.os_util import SIGNAMES
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
@@ -119,12 +120,13 @@ class SplashScreen(Gtk.Window):
         Gtk.main_quit()
 
 
-    def handle_signal(self, signum, _frame=None):
+    def handle_signal(self, signum, frame=None):
+        log("handle_signal(%s, %s)", SIGNAMES.get(signum, signum), frame)
         self.exit_code = 128-(signum or 0)
         GLib.idle_add(self.exit)
 
 
-def main(args):
+def main(_args):
     import os
     if os.environ.get("XPRA_HIDE_DOCK") is None:
         os.environ["XPRA_HIDE_DOCK"] = "1"
@@ -136,6 +138,5 @@ def main(args):
         return w.run()
 
 
-if __name__ == "__main__":
-    main(sys.argv)
-    sys.exit(0)
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main(sys.argv))
