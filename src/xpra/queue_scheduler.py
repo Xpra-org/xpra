@@ -61,7 +61,7 @@ class QueueScheduler:
         t.start()
 
     def queue_timeout_function(self, tid : int, timeout : int, fn : callable, fn_args, fn_kwargs):
-        if tid not in self.timers:
+        if tid not in self.timers:  # pragma: no cover
             return      #cancelled
         #add to run queue:
         mqargs = [tid, timeout, fn, fn_args, fn_kwargs]
@@ -69,7 +69,7 @@ class QueueScheduler:
 
     def timeout_repeat_call(self, tid : int, timeout : int, fn : callable, fn_args, fn_kwargs):
         #executes the function then re-schedules it (if it returns True)
-        if tid not in self.timers:
+        if tid not in self.timers:  # pragma: no cover
             return False    #cancelled
         v = fn(*fn_args, **fn_kwargs)
         if bool(v):
@@ -80,7 +80,7 @@ class QueueScheduler:
         else:
             try:
                 del self.timers[tid]
-            except KeyError:
+            except KeyError:    # pragma: no cover
                 pass
         #we do the scheduling via timers, so always return False here
         #so that the main queue won't re-schedule this function call itself:
