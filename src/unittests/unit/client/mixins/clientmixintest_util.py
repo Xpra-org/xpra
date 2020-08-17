@@ -81,7 +81,6 @@ class ClientMixinTest(unittest.TestCase):
 
 	def _test_mixin_class(self, mclass, opts, caps=None):
 		x = self.mixin = mclass()
-		assert x.get_info() is not None
 		x.quit = self.fake_quit
 		fake_protocol = AdHocStruct()
 		fake_protocol.get_info = lambda : {}
