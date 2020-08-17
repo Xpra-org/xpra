@@ -10,7 +10,7 @@ import unittest
 
 from xpra.sound.common import (
     sound_option_or_all,
-    VORBIS, OGG, LZ4,
+    VORBIS, OGG,
     )
 
 
