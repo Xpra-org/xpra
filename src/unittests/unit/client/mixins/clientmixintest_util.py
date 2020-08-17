@@ -81,6 +81,7 @@ class ClientMixinTest(unittest.TestCase):
 
 	def _test_mixin_class(self, mclass, opts, caps=None):
 		x = self.mixin = mclass()
+		assert x.get_info() is not None
 		x.quit = self.fake_quit
 		fake_protocol = AdHocStruct()
 		fake_protocol.get_info = lambda : {}
@@ -102,6 +103,7 @@ class ClientMixinTest(unittest.TestCase):
 		x.parse_server_capabilities(caps)
 		x.process_ui_capabilities(caps)
 		assert x.get_caps() is not None
+		assert x.get_info() is not None
 		return x
 
 	def make_caps(self, caps=None):
