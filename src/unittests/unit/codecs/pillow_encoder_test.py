@@ -26,6 +26,29 @@ class TestPillow(unittest.TestCase):
         assert get_type()=="pillow"
         assert get_info()
 
+    def test_resize(self):
+        W = 128
+        H = 128
+        for speed in (10, 30, 90, 100):
+            pixel_data = b"0"*128*128*4
+            Bpp = 4
+            image = ImageWrapper(0, 0, W, H, pixel_data, "BGRX", 32,
+                                 W*Bpp, Bpp, planes=ImageWrapper.PACKED,
+                                 thread_safe=True)
+            comp = encode("png", image, 50, speed, False, resize=(64, 64))
+            assert comp
+
+    def test_grayscale(self):
+        W = 128
+        H = 128
+        pixel_data = b"0"*128*128*4
+        Bpp = 4
+        image = ImageWrapper(0, 0, W, H, pixel_data, "BGRA", 32,
+                             W*Bpp, Bpp, planes=ImageWrapper.PACKED,
+                             thread_safe=True)
+        comp = encode("png", image, 50, 50, True, grayscale=True)
+        assert comp
+
     def test_encode_image_formats(self):
         for pixel_format, bpp in {
             "r210"      : 32,
