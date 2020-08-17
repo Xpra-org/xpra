@@ -22,12 +22,13 @@ class StubClientTest(ClientMixinTest):
 	def test_compressed_wrapper(self):
 		s = StubClientMixin()
 		s.compressed_wrapper("text", "foo", 1)
-		try:
-			s.compressed_wrapper("text", "bar", 0)
-		except Exception:
-			pass
-		else:
-			raise Exception("should have failed with level 0")
+		for level in (-1, -100):
+			try:
+				s.compressed_wrapper("text", "bar", level)
+			except Exception:
+				pass
+			else:
+				raise Exception("should have failed with invalid level %s" % level)
 
 
 def main():
