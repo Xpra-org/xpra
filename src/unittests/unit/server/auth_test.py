@@ -239,8 +239,26 @@ class TestAuth(unittest.TestCase):
     def test_multifile(self):
         def genfiledata(a):
             password = uuid.uuid4().hex
-            return password, "#comment\n%s|%s|||\notheruser|otherpassword" % (a.username, password)
+            lines = [
+                "#comment",
+                "%s|%s|||" % (a.username, password),
+                "incompleteline",
+                "duplicateentry|pass1",
+                "duplicateentry|pass2",
+                "user|pass",
+                "otheruser|otherpassword|1000|1000||env1=A,env2=B|compression=0", 
+                ]
+            return password, "\n".join(lines)
         self._test_file_auth("multifile", genfiledata, 1)
+        def nodata(_a):
+            return "abc", ""
+        try:
+            self._test_file_auth("multifile", nodata, 1)
+        except AssertionError:
+            pass
+        else:
+            raise Exception("authentication with no data should have failed")
+
 
     def test_sqlite(self):
         from xpra.server.auth.sqlite_auth import main as sqlite_main
