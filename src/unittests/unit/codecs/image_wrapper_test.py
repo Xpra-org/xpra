@@ -29,6 +29,7 @@ class TestImageWrapper(unittest.TestCase):
                     buf[y*(W*4) + x*4 + i] = (x+y) % 256
         img = ImageWrapper(X, Y, W, H, buf, "RGBX", D, W*4, planes=ImageWrapper.PACKED, thread_safe=True)
         #verify attributes:
+        assert repr(img)
         assert img.get_x()==X
         assert img.get_y()==Y
         assert img.get_target_x()==X
@@ -104,12 +105,12 @@ class TestImageWrapper(unittest.TestCase):
         img.set_planes(ImageWrapper.PLANAR_3)
         img.clone_pixel_data()
         assert img.may_restride() is False
-        img = ImageWrapper(0, 0, 1, 1, "0"*4, "BGRA", 24, 4, 4, planes=ImageWrapper.PACKED)
+        img = ImageWrapper(0, 0, 1, 1, memoryview(b"0"*4), "BGRA", 24, 4, 4, planes=ImageWrapper.PACKED)
+        img.clone_pixel_data()
         assert img.may_restride() is False
-        img = ImageWrapper(0, 0, 1, 1, "0"*10, "BGRA", 24, 10, 4, planes=ImageWrapper.PACKED)
-        assert img.may_restride() is True
+        img = ImageWrapper(0, 0, 10, 10, b"0"*40*10, "BGRA", 24, 40, 4, planes=ImageWrapper.PACKED)
         #restride bigger:
-        img.restride(20)
+        img.restride(80)
         #change more attributes:
         img.set_timestamp(img.get_timestamp()+1)
         img.set_pixel_format("RGBA")
