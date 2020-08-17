@@ -151,7 +151,7 @@ class GLXContext:
             display_mode.append("ALPHA")
         if getconfig(GLX.GLX_DOUBLEBUFFER):
             display_mode.append("DOUBLE")
-        else:
+        else:   # pragma: no cover
             display_mode.append("SINGLE")
         self.props["display_mode"] = display_mode
         self.context = GLX.glXCreateContext(self.xdisplay, xvinfo, None, True)
@@ -159,7 +159,7 @@ class GLXContext:
         def getstr(k):
             try:
                 return glGetString(k)
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 self.props["safe"] = False
                 result = getattr(e, "result", None)
                 if result and isinstance(result, str):
