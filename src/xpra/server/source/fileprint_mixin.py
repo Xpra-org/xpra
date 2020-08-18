@@ -34,12 +34,15 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
     def init_state(self):
         self.printers = {}
         self.printers_added = set()
+        #duplicated from clientinfo mixin
+        self.machine_id = ""
 
     def cleanup(self):
         self.remove_printers()
 
     def parse_client_caps(self, c : dict):
         FileTransferHandler.parse_file_transfer_caps(self, c)
+        self.machine_id = c.strget("machine_id")
 
     def get_info(self) -> dict:
         return {

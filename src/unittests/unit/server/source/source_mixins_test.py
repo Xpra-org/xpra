@@ -16,7 +16,16 @@ from xpra.os_util import POSIX, OSX, get_util_logger
 
 class SourceMixinsTest(unittest.TestCase):
 
-    def _test_mixin_class(self, mixin_class, server_props=None):
+    AUDIO_SERVER_PROPS = {
+                "sound_properties"      : {},
+                "sound_source_plugin"   : None,
+                "supports_microphone"   : True,
+                "microphone_codecs"     : (),
+                "supports_speaker"      : False,
+                "speaker_codecs"        : (),
+                }
+
+    def _test_mixin_class(self, mixin_class, server_props=None, client_caps=None):
         assert mixin_class.is_needed(typedict()) in (True, False)
         c = mixin_class()
         c.source_remove = GLib.source_remove
@@ -30,6 +39,11 @@ class SourceMixinsTest(unittest.TestCase):
                 setattr(server, k, v)
         c.init_from(None, server)
         assert not c.is_closed()
+        d = typedict()
+        if client_caps:
+            for k,v in client_caps.items():
+                d[k] = v
+        c.parse_client_caps(d)
         assert c.get_info() is not None
         assert c.get_caps() is not None
         assert not c.is_closed()
@@ -53,14 +67,9 @@ class SourceMixinsTest(unittest.TestCase):
     #The following tests are incomplete:
     def test_audio(self):
         from xpra.server.source.audio_mixin import AudioMixin
-        self._test_mixin_class(AudioMixin, {
-            "sound_properties"      : {},
-            "sound_source_plugin"   : None,
-            "supports_microphone"   : True,
-            "microphone_codecs"     : (),
-            "supports_speaker"      : False,
-            "speaker_codecs"        : (),
-            })
+        c = self._test_mixin_class(AudioMixin, SourceMixinsTest.AUDIO_SERVER_PROPS)
+        c.audio_loop_check()
+        c.cleanup()
 
     def test_clientconnection(self):
         from xpra.server.source.client_connection import ClientConnection
@@ -88,39 +97,48 @@ class SourceMixinsTest(unittest.TestCase):
             "default_min_quality"   : 10,
             "default_speed"     : 50,
             "default_min_speed"     : 10,
+            },
+        {
+            "encodings.core"     : ("rgb32", "rgb24"),
             })
 
     def test_fileprint(self):
         from xpra.server.source.fileprint_mixin import FilePrintMixin
         from xpra.net.file_transfer import FileTransferAttributes
-        self._test_mixin_class(FilePrintMixin, {
+        c = self._test_mixin_class(FilePrintMixin, {
             "file_transfer" : FileTransferAttributes(),
+            "machine_id"    : "123",
             })
+        c.cleanup()
 
     def test_idle(self):
         from xpra.server.source.idle_mixin import IdleMixin
-        self._test_mixin_class(IdleMixin, {
+        c = self._test_mixin_class(IdleMixin, {
             "idle_timeout"  : 1000,
             })
+        c.cleanup()
 
     def test_input(self):
         from xpra.server.source.input_mixin import InputMixin
-        self._test_mixin_class(InputMixin)
+        c = self._test_mixin_class(InputMixin)
+        c.cleanup()
 
     def test_mmap(self):
         from xpra.server.source.mmap_connection import MMAP_Connection
-        self._test_mixin_class(MMAP_Connection, {
+        c = self._test_mixin_class(MMAP_Connection, {
             "supports_mmap" : True,
             "mmap_filename" : "/tmp/fakefile",
             "min_mmap_size" : 128*1024,
             })
+        c.cleanup()
 
     def test_networkstate(self):
         from xpra.server.source.networkstate_mixin import NetworkStateMixin
-        x = self._test_mixin_class(NetworkStateMixin)
-        x.protocol = None
-        x.ping()
-        x.check_ping_echo_timeout(0, 0)
+        c = self._test_mixin_class(NetworkStateMixin)
+        c.protocol = None
+        c.ping()
+        c.check_ping_echo_timeout(0, 0)
+        c.cleanup()
 
     def Xtest_windows(self):
         from xpra.server.source.windows_mixin import WindowsMixin
@@ -132,7 +150,7 @@ class SourceMixinsTest(unittest.TestCase):
             return None
         def get_window_id(_w):
             return 0
-        self._test_mixin_class(WindowsMixin, {
+        c = self._test_mixin_class(WindowsMixin, {
             "get_transient_for" : get_transient_for,
             "get_focus"         : get_focus,
             "get_cursor_data"   : get_cursor_data,
@@ -140,6 +158,7 @@ class SourceMixinsTest(unittest.TestCase):
             "window_filters"    : (),
             "readonly"          : False,
             })
+        c.cleanup()
     #############################################################################
 
 
@@ -166,15 +185,9 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_clientdisplay(self):
         from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
-        self._test_mixin_class(ClientDisplayMixin)
-        x = ClientDisplayMixin()
-        x.init_state()
-        assert x.get_info()
-        c = typedict()
-        x.parse_client_caps(c)
+        x = self._test_mixin_class(ClientDisplayMixin)
         assert x.get_info()
         x.cleanup()
-        assert x.get_info()
 
     def test_webcam(self):
         if not POSIX or OSX:
@@ -240,10 +253,16 @@ class SourceMixinsTest(unittest.TestCase):
             wm.cleanup()
 
     def test_avsync(self):
+        #needs both mixins:
+        from xpra.server.source.audio_mixin import AudioMixin
         from xpra.server.source.avsync_mixin import AVSyncMixin
-        self._test_mixin_class(AVSyncMixin, {
+        mclass = type('AudioMixin', (AudioMixin, AVSyncMixin), {})
+        server_props = SourceMixinsTest.AUDIO_SERVER_PROPS.copy()
+        server_props.update({
             "av_sync" : True,
+            "sound_properties"  : {},
             })
+        self._test_mixin_class(mclass, server_props)
         #test disabled:
         #what the client sets doesn't matter:
         for e in (True, False):
