@@ -232,6 +232,11 @@ class ProcessTestUtil(unittest.TestCase):
     def show_proc_pipes(cls, proc):
         show_proc_pipes(proc)
 
+    @classmethod
+    def show_proc_error(cls, proc, msg):
+        show_proc_error(proc, msg)
+
+
     def get_command_output(self, command, env=None, **kwargs):
         proc = self.run_command(command, env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
         out = proc.communicate()[0]
