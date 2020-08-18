@@ -51,6 +51,10 @@ class WindowsMixin(StubSourceMixin):
         self.get_window_id = None
         self.window_filters = []
         self.readonly = False
+        #duplicated from encodings:
+        self.global_batch_config = None
+        #duplicated from clientconnection:
+        self.statistics = None
 
     def init_from(self, _protocol, server):
         self.get_transient_for  = server.get_transient_for
@@ -127,8 +131,7 @@ class WindowsMixin(StubSourceMixin):
 
 
     def parse_client_caps(self, c):
-        #self.ui_client = c.boolget("ui_client", True)
-        self.send_windows = self.ui_client and c.boolget("windows", True)
+        self.send_windows = c.boolget("ui_client", True) and c.boolget("windows", True)
         self.pointer_grabs = c.boolget("pointer.grabs")
         self.send_cursors = self.send_windows and c.boolget("cursors")
         self.cursor_encodings = c.strtupleget("encodings.cursor")
@@ -138,10 +141,8 @@ class WindowsMixin(StubSourceMixin):
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes", {}))
         self.window_min_size = c.inttupleget("window.min-size", (0, 0))
         self.window_max_size = c.inttupleget("window.max-size", (0, 0))
-        log("cursors=%s (encodings=%s), bell=%s, notifications=%s",
-            self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
-        log("client uuid %s", self.uuid)
-
+        log("cursors=%s (encodings=%s), bell=%s",
+            self.send_cursors, self.cursor_encodings, self.send_bell)
         #window filters:
         try:
             for object_name, property_name, operator, value in c.tupleget("window-filters"):
@@ -188,10 +189,13 @@ class WindowsMixin(StubSourceMixin):
                                "packet_queue"           : {"size" : {"current" : len(self.packet_queue)}},
                                "packet_queue_pixels"    : pqpi,
                                },
-                "batch"     : self.global_batch_config.get_info(),
-                }
-        info.update(self.statistics.get_info())
-
+            }
+        gbc = self.global_batch_config
+        if gbc:
+            info["batch"] = self.global_batch_config.get_info()
+        s = self.statistics
+        if s:
+            info.update(s.get_info())
         if self.window_sources:
             total_pixels = 0
             total_time = 0.0
@@ -234,8 +238,9 @@ class WindowsMixin(StubSourceMixin):
         if not self.send_cursors or self.suspended or not self.hello_sent:
             return
         #if not pending already, schedule it:
-        if not self.cursor_timer:
-            delay = max(10, int(self.global_batch_config.delay/4))
+        gbc = self.global_batch_config
+        if not self.cursor_timer and gbc:
+            delay = max(10, int(gbc.delay/4))
             self.cursor_timer = self.timeout_add(delay, self.do_send_cursor, delay)
 
     def cancel_cursor_timer(self):
@@ -563,7 +568,9 @@ class WindowsMixin(StubSourceMixin):
             damage_options = options.copy()
         else:
             damage_options = {}
-        self.statistics.damage_last_events.append((wid, monotonic_time(), w*h))
+        s = self.statistics
+        if s:
+            s.damage_last_events.append((wid, monotonic_time(), w*h))
         ws = self.make_window_source(wid, window)
         ws.damage(x, y, w, h, damage_options)
 
