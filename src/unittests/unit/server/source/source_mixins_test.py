@@ -94,7 +94,7 @@ class SourceMixinsTest(unittest.TestCase):
     #The following tests are incomplete:
     def test_audio(self):
         from xpra.server.source.audio_mixin import AudioMixin
-        def loop_check(c, m):
+        def loop_check(_c, m):
             m.audio_loop_check()
         self._test_mixin_class(AudioMixin, SourceMixinsTest.AUDIO_SERVER_PROPS, test_fn=loop_check)
 
@@ -168,11 +168,11 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_networkstate(self):
         from xpra.server.source.networkstate_mixin import NetworkStateMixin
-        def test_ping(c, m):
+        def test_ping(_c, m):
             m.ping()
             m.check_ping_echo_timeout(0, 0)
             m.cleanup()
-        c = self._test_mixin_class(NetworkStateMixin, test_fn=test_ping)
+        self._test_mixin_class(NetworkStateMixin, test_fn=test_ping)
 
     def _get_window_mixin_server_attributes(self):
         def get_transient_for(_w):
