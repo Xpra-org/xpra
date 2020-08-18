@@ -29,6 +29,31 @@ DELETE_TEMP_FILES = envbool("XPRA_DELETE_TEMP_FILES", True)
 SHOW_XORG_OUTPUT = envbool("XPRA_SHOW_XORG_OUTPUT", False)
 
 
+def show_proc_pipes(proc):
+    def showfile(fileobj, filetype="stdout"):
+        if fileobj and fileobj.name and os.path.exists(fileobj.name):
+            log.warn("contents of %s file '%s':", filetype, fileobj.name)
+            try:
+                with fileobj as f:
+                    f.seek(0)
+                    for line in f:
+                        log.warn(" %s", bytestostr(line.rstrip(b"\n\r")))
+            except Exception as e:
+                log.error("Error: failed to read '%s': %s", fileobj.name, e)
+        else:
+            log.warn("no %s file", filetype)
+    showfile(proc.stdout_file, "stdout")
+    showfile(proc.stderr_file, "stderr")
+
+def show_proc_error(proc, msg):
+    if not proc:
+        raise Exception("command failed to start: %s" % msg)
+    log.warn("%s failed:", proc.command)
+    log.warn("returncode=%s", proc.poll())
+    show_proc_pipes(proc)
+    raise Exception(msg+" command=%s" % proc.command)
+
+
 class DisplayContext(OSEnvContext):
 
     def __init__(self):
@@ -70,38 +95,33 @@ class ProcessTestUtil(unittest.TestCase):
         cls.xauthority_temp = None #tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
         #cls.xauthority_temp.close()
         #os.environ["XAUTHORITY"] = os.path.expanduser(cls.xauthority_temp.name)
-        os.environ["XPRA_LOG_DIR"] = find_log_dir()
-        os.environ["XPRA_NOTTY"] = "1"
-        os.environ["XPRA_WAIT_FOR_INPUT"] = "0"
-        os.environ["XPRA_FLATTEN_INFO"] = "0"
-        os.environ["XPRA_NOTTY"] = "1"
         cls.default_env = os.environ.copy()
+        cls.default_env.update({
+            "XPRA_LOG_DIR"  : find_log_dir(),
+            "XPRA_NOTTY"    : "1",
+            "XPRA_WAIT_FOR_INPUT"   : "0",
+            "XPRA_FLATTEN_INFO"     : "0",
+            })
         cls.default_config = get_defaults()
         cls.display_start = 100
+        cls.temp_files = []
+        cls.processes = []
 
     @classmethod
     def tearDownClass(cls):
         if cls.xauthority_temp:
             os.unlink(cls.xauthority_temp.name)
-
-
-    def setUp(self):
-        os.environ.clear()
-        os.environ.update(self.default_env)
-        self.temp_files = []
-        self.processes = []
-
-    def tearDown(self):
-        self.stop_commands()
+        cls.stop_commands()
         if DELETE_TEMP_FILES:
-            for x in self.temp_files:
+            for x in cls.temp_files:
                 try:
                     os.unlink(x)
                 except OSError:
                     pass
 
-    def stop_commands(self):
-        for x in self.processes:
+    @classmethod
+    def stop_commands(cls):
+        for x in cls.processes:
             try:
                 if x.poll() is None:
                     x.terminate()
@@ -120,7 +140,7 @@ class ProcessTestUtil(unittest.TestCase):
             except OSError:
                 log.error("failed to stop subprocess %s", x)
         def get_wait_for():
-            return tuple(proc for proc in self.processes if proc.poll() is None)
+            return tuple(proc for proc in cls.processes if proc.poll() is None)
         wait_for = get_wait_for()
         start = monotonic_time()
         while wait_for and monotonic_time()-start<5:
@@ -130,9 +150,14 @@ class ProcessTestUtil(unittest.TestCase):
                 time.sleep(1)
             wait_for = get_wait_for()
 
+    def setUp(self):
+        os.environ.clear()
+        os.environ.update(self.default_env)
 
-    def get_run_env(self):
-        env = dict((k,v) for k,v in self.default_env.items() if
+
+    @classmethod
+    def get_run_env(cls):
+        env = dict((k,v) for k,v in cls.default_env.items() if
                 k.startswith("XPRA") or k in (
                     "HOME", "HOSTNAME", "SHELL", "TERM",
                     "USER", "USERNAME", "PATH",
@@ -152,9 +177,10 @@ class ProcessTestUtil(unittest.TestCase):
             pass
         return cmd
 
-    def run_command(self, command, env=None, **kwargs):
+    @classmethod
+    def run_command(cls, command, env=None, **kwargs):
         if env is None:
-            env = kwargs.get("env") or self.get_run_env()
+            env = kwargs.get("env") or cls.get_run_env()
         kwargs["env"] = env
         stdout_file = stderr_file = None
         if isinstance(command, (list, tuple)):
@@ -167,11 +193,11 @@ class ProcessTestUtil(unittest.TestCase):
             log("************************")
         else:
             if "stdout" not in kwargs:
-                stdout_file = self._temp_file(prefix="xpra-stdout-")
+                stdout_file = cls._temp_file(prefix="xpra-stdout-")
                 kwargs["stdout"] = stdout_file
                 log("stdout: %s for %s", stdout_file.name, strcommand)
             if "stderr" not in kwargs:
-                stderr_file = self._temp_file(prefix="xpra-stderr-")
+                stderr_file = cls._temp_file(prefix="xpra-stderr-")
                 kwargs["stderr"] = stderr_file
                 log("stderr: %s for %s", stderr_file.name, strcommand)
         try:
@@ -182,32 +208,8 @@ class ProcessTestUtil(unittest.TestCase):
         except OSError as e:
             log.warn("run_command(%s, %s, %s) %s", command, env, kwargs, e)
             raise
-        self.processes.append(proc)
+        cls.processes.append(proc)
         return proc
-
-    def show_proc_pipes(self, proc):
-        def showfile(fileobj, filetype="stdout"):
-            if fileobj and fileobj.name and os.path.exists(fileobj.name):
-                log.warn("contents of %s file '%s':", filetype, fileobj.name)
-                try:
-                    with fileobj as f:
-                        f.seek(0)
-                        for line in f:
-                            log.warn(" %s", bytestostr(line.rstrip(b"\n\r")))
-                except Exception as e:
-                    log.error("Error: failed to read '%s': %s", fileobj.name, e)
-            else:
-                log.warn("no %s file", filetype)
-        showfile(proc.stdout_file, "stdout")
-        showfile(proc.stderr_file, "stderr")
-
-    def show_proc_error(self, proc, msg):
-        if not proc:
-            raise Exception("command failed to start: %s" % msg)
-        log.warn("%s failed:", proc.command)
-        log.warn("returncode=%s", proc.poll())
-        self.show_proc_pipes(proc)
-        raise Exception(msg+" command=%s" % proc.command)
 
 
     @classmethod
@@ -231,12 +233,13 @@ class ProcessTestUtil(unittest.TestCase):
         return out
 
 
-    def _temp_file(self, data=None, prefix="xpra-"):
+    @classmethod
+    def _temp_file(cls, data=None, prefix="xpra-"):
         f = tempfile.NamedTemporaryFile(prefix=prefix, delete=False)
         if data:
             f.file.write(data)
         f.file.flush()
-        self.temp_files.append(f.name)
+        cls.temp_files.append(f.name)
         return f
 
     def delete_temp_file(self, f):
@@ -288,10 +291,11 @@ class ProcessTestUtil(unittest.TestCase):
         return "%s%i" % (DISPLAY_PREFIX, cls.find_free_display_no())
 
 
-    def start_Xvfb(self, display=None, screens=((1024,768),)):
+    @classmethod
+    def start_Xvfb(cls, display=None, screens=((1024,768),)):
         assert POSIX
         if display is None:
-            display = self.find_free_display()
+            display = cls.find_free_display()
         env = {}
         for x in list(os.environ.keys()):
             if x in (
@@ -315,14 +319,14 @@ class ProcessTestUtil(unittest.TestCase):
             stdout = sys.stdout
             stderr = sys.stderr
         else:
-            stdout = self._temp_file(prefix="Xorg-stdout-")
+            stdout = cls._temp_file(prefix="Xorg-stdout-")
             log("stdout=%s for %s", stdout.name, cmd)
-            stderr = self._temp_file(prefix="Xorg-stderr-")
+            stderr = cls._temp_file(prefix="Xorg-stderr-")
             log("stderr=%s for %s", stderr.name, cmd)
-        xvfb = self.run_command(cmd_expanded, env=env, stdout=stdout, stderr=stderr)
+        xvfb = cls.run_command(cmd_expanded, env=env, stdout=stdout, stderr=stderr)
         xvfb.display = display
         time.sleep(1)
         log("xvfb(%s)=%s" % (cmdstr, xvfb))
         if pollwait(xvfb, XVFB_TIMEOUT) is not None:
-            self.show_proc_error(xvfb, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll()))
+            show_proc_error(xvfb, "xvfb command \"%s\" failed and returned %s" % (cmdstr, xvfb.poll()))
         return xvfb
