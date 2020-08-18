@@ -52,6 +52,7 @@ class SourceMixinsTest(unittest.TestCase):
         m.idle_add = GLib.idle_add
         m.timeout_add = GLib.timeout_add
         m.packet_queue = []
+        m.protocol = None
         def encode_queue_size():
             return 0
         m.encode_queue_size = encode_queue_size
@@ -168,7 +169,6 @@ class SourceMixinsTest(unittest.TestCase):
     def test_networkstate(self):
         from xpra.server.source.networkstate_mixin import NetworkStateMixin
         def test_ping(c, m):
-            m.protocol = None
             m.ping()
             m.check_ping_echo_timeout(0, 0)
             m.cleanup()
