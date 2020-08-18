@@ -26,6 +26,8 @@ class IdleMixin(StubSourceMixin):
         self.idle_timeout = 0
         #duplicated from clientconnection:
         self.notification_callbacks = {}
+        self.send_notifications = False
+        self.send_notifications_actions = False
 
     def init_from(self, _protocol, server):
         self.idle_timeout = server.idle_timeout
