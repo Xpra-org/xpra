@@ -201,6 +201,7 @@ class ProcessTestUtil(unittest.TestCase):
                 kwargs["stderr"] = stderr_file
                 log("stderr: %s for %s", stderr_file.name, strcommand)
         try:
+            log("run_command%s", (command, env, kwargs))
             proc = subprocess.Popen(args=command, **kwargs)
             proc.command = command
             proc.stdout_file = stdout_file
@@ -226,6 +227,10 @@ class ProcessTestUtil(unittest.TestCase):
             cmd = [pyexename] + cmd
         return cmd
 
+
+    @classmethod
+    def show_proc_pipes(cls, proc):
+        show_proc_pipes(proc)
 
     def get_command_output(self, command, env=None, **kwargs):
         proc = self.run_command(command, env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
