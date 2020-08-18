@@ -8,22 +8,36 @@ import sys
 import unittest
 from io import BytesIO
 
+from gi.repository import GLib
+
 from xpra.util import typedict, AdHocStruct
 from xpra.os_util import POSIX, OSX, get_util_logger
 
 
 class SourceMixinsTest(unittest.TestCase):
 
-    def _test_mixin_class(self, mixin_class):
+    def _test_mixin_class(self, mixin_class, server_props=None):
         assert mixin_class.is_needed(typedict()) in (True, False)
+        c = mixin_class()
+        c.source_remove = GLib.source_remove
+        c.idle_add = GLib.idle_add
+        c.timeout_add = GLib.timeout_add
+        #test the instance:
+        c.init_state()
+        server = AdHocStruct()
+        if server_props:
+            for k,v in server_props.items():
+                setattr(server, k, v)
+        c.init_from(None, server)
+        assert not c.is_closed()
+        assert c.get_info() is not None
+        assert c.get_caps() is not None
+        assert not c.is_closed()
+        return c
 
     def test_stub(self):
         from xpra.server.source.stub_source_mixin import StubSourceMixin
-        self._test_mixin_class(StubSourceMixin)
-        assert StubSourceMixin.is_needed(typedict())
-        s = StubSourceMixin()
-        s.init_state()
-        s.init_from(None, None)
+        s = self._test_mixin_class(StubSourceMixin)
         assert not s.is_closed()
         s.parse_client_caps(typedict())
         assert s.get_caps() is not None
@@ -39,11 +53,19 @@ class SourceMixinsTest(unittest.TestCase):
     #The following tests are incomplete:
     def test_audio(self):
         from xpra.server.source.audio_mixin import AudioMixin
-        self._test_mixin_class(AudioMixin)
+        self._test_mixin_class(AudioMixin, {
+            "sound_properties"      : {},
+            "sound_source_plugin"   : None,
+            "supports_microphone"   : True,
+            "microphone_codecs"     : (),
+            "supports_speaker"      : False,
+            "speaker_codecs"        : (),
+            })
 
     def test_clientconnection(self):
         from xpra.server.source.client_connection import ClientConnection
-        self._test_mixin_class(ClientConnection)
+        assert ClientConnection.is_needed(typedict()) is True
+        #self._test_mixin_class(ClientConnection)
 
     def test_clipboard(self):
         from xpra.server.source.clipboard_connection import ClipboardConnection
@@ -51,19 +73,35 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_dbus(self):
         from xpra.server.source.dbus_mixin import DBUS_Mixin
-        self._test_mixin_class(DBUS_Mixin)
+        self._test_mixin_class(DBUS_Mixin, {
+            "dbus_control"  : True,
+            })
 
     def test_encodings(self):
         from xpra.server.source.encodings_mixin import EncodingsMixin
-        self._test_mixin_class(EncodingsMixin)
+        self._test_mixin_class(EncodingsMixin, {
+            "core_encodings"    : ("rgb32", "rgb24", "png", ),
+            "encodings"         : ("rgb", "png", ),
+            "default_encoding"  : "auto",
+            "scaling_control"   : 50,
+            "default_quality"   : 50,
+            "default_min_quality"   : 10,
+            "default_speed"     : 50,
+            "default_min_speed"     : 10,
+            })
 
     def test_fileprint(self):
         from xpra.server.source.fileprint_mixin import FilePrintMixin
-        self._test_mixin_class(FilePrintMixin)
+        from xpra.net.file_transfer import FileTransferAttributes
+        self._test_mixin_class(FilePrintMixin, {
+            "file_transfer" : FileTransferAttributes(),
+            })
 
     def test_idle(self):
         from xpra.server.source.idle_mixin import IdleMixin
-        self._test_mixin_class(IdleMixin)
+        self._test_mixin_class(IdleMixin, {
+            "idle_timeout"  : 1000,
+            })
 
     def test_input(self):
         from xpra.server.source.input_mixin import InputMixin
@@ -71,21 +109,37 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_mmap(self):
         from xpra.server.source.mmap_connection import MMAP_Connection
-        self._test_mixin_class(MMAP_Connection)
+        self._test_mixin_class(MMAP_Connection, {
+            "supports_mmap" : True,
+            "mmap_filename" : "/tmp/fakefile",
+            "min_mmap_size" : 128*1024,
+            })
 
     def test_networkstate(self):
         from xpra.server.source.networkstate_mixin import NetworkStateMixin
-        self._test_mixin_class(NetworkStateMixin)
-        x = NetworkStateMixin()
-        x.init_from(None, None)
-        x.init_state()
+        x = self._test_mixin_class(NetworkStateMixin)
         x.protocol = None
-        #x.ping()
+        x.ping()
         x.check_ping_echo_timeout(0, 0)
 
-    def test_windows(self):
+    def Xtest_windows(self):
         from xpra.server.source.windows_mixin import WindowsMixin
-        self._test_mixin_class(WindowsMixin)
+        def get_transient_for(_w):
+            return None
+        def get_focus():
+            return 0
+        def get_cursor_data():
+            return None
+        def get_window_id(_w):
+            return 0
+        self._test_mixin_class(WindowsMixin, {
+            "get_transient_for" : get_transient_for,
+            "get_focus"         : get_focus,
+            "get_cursor_data"   : get_cursor_data,
+            "get_window_id"     : get_window_id,
+            "window_filters"    : (),
+            "readonly"          : False,
+            })
     #############################################################################
 
 
@@ -135,13 +189,11 @@ class SourceMixinsTest(unittest.TestCase):
             get_util_logger().info("webcam test skipped: no virtual video devices found")
             return
         from xpra.server.source.webcam_mixin import WebcamMixin
-        self._test_mixin_class(WebcamMixin)
-        server = AdHocStruct()
-        wm = WebcamMixin()
-        server.webcam_enabled     = True
-        server.webcam_device      = None
-        server.webcam_encodings   = ["png", "jpeg"]
-        wm.init_from(None, server)
+        wm = self._test_mixin_class(WebcamMixin, {
+                "webcam_enabled"    : True,
+                "webcam_device"     : None,
+                "webcam_encodings"  : ("png", "jpeg"),
+                })
         wm.init_state()
         wm.hello_sent = True
         packets = []
@@ -189,7 +241,9 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_avsync(self):
         from xpra.server.source.avsync_mixin import AVSyncMixin
-        self._test_mixin_class(AVSyncMixin)
+        self._test_mixin_class(AVSyncMixin, {
+            "av_sync" : True,
+            })
         #test disabled:
         #what the client sets doesn't matter:
         for e in (True, False):
