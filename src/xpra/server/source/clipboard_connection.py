@@ -37,6 +37,7 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_want_targets = False
         self.clipboard_client_selections = CLIPBOARDS
         self.clipboard_preferred_targets = ()
+        self.clipboard_contents_slice_fix = False
 
     def cleanup(self):
         self.cancel_clipboard_progress_timer()
