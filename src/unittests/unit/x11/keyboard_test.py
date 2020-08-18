@@ -13,20 +13,22 @@ from xpra.os_util import OSX, POSIX
 
 class TestX11Keyboard(ServerTestUtil):
 
-    def setUp(self):
-        ServerTestUtil.setUp(self)
-        display = self.find_free_display()
-        self.xvfb = self.start_Xvfb(display)
+    @classmethod
+    def setUpClass(cls):
+        ServerTestUtil.setUpClass()
+        display = cls.find_free_display()
+        cls.xvfb = cls.start_Xvfb(display)
         os.environ["DISPLAY"] = display
         os.environ["GDK_BACKEND"] = "x11"
         from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
-        self.display_ptr = init_posix_display_source()
+        cls.display_ptr = init_posix_display_source()
 
-    def tearDown(self):
-        ServerTestUtil.tearDown(self)
+    @classmethod
+    def tearDownClass(cls):
         from xpra.x11.bindings.posix_display_source import close_display_source         #@UnresolvedImport
-        close_display_source(self.display_ptr)
-        self.xvfb.terminate()
+        close_display_source(cls.display_ptr)
+        ServerTestUtil.tearDownClass()
+        cls.xvfb.terminate()
 
 
     def test_unicode(self):
