@@ -11,7 +11,7 @@ from xpra.client.mixins.encodings import Encodings
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
-class DisplayClientTest(ClientMixinTest):
+class EncodingClientTest(ClientMixinTest):
 
 	def test_encoding(self):
 		opts = AdHocStruct()
