@@ -13,7 +13,7 @@ from collections import deque, namedtuple
 from gi.repository import GObject, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
+from xpra.util import updict, rindex, envbool, envint, typedict, AdHocStruct, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.server import server_features
@@ -247,10 +247,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 with xsync:
                     self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                     if self.root_overlay:
-                        #ugly: API expects a window object with a ".xid"
-                        X11WindowModel = namedtuple("X11WindowModel", "xid")
-                        root_overlay = X11WindowModel(xid=self.root_overlay)
-                        prop_set(root_overlay, "WM_TITLE", "latin1", "RootOverlay")
+                        #ugly: API expects a window object with a ".get_xid()" method
+                        window = AdHocStruct()
+                        def get_xid():
+                            return self.root_overlay
+                        window.get_xid = root.get_xid
+                        prop_set(window, "WM_TITLE", "latin1", "RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:
                 log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
