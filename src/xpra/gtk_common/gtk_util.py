@@ -116,7 +116,7 @@ def set_visual(window, alpha : bool=True) -> bool:
     alphalog("set_visual(%s, %s) screen=%s, visual=%s", window, alpha, screen, visual)
     #we can't do alpha on win32 with plain GTK,
     #(though we handle it in the opengl backend)
-    if WIN32:
+    if WIN32 or not first_time("no-rgba"):
         l = alphalog
     else:
         l = alphalog.warn
