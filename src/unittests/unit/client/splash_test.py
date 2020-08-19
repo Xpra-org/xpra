@@ -68,6 +68,7 @@ class SplashTest(ProcessTestUtil):
 			env["DISPLAY"] = self.display
 		cmd = self.get_xpra_cmd()
 		cmd += ["splash"]
+		log("_run_splash() env=%s, cmd=%s", env, cmd)
 		self.splash = Popen(args=cmd, stdin=PIPE, env=env)
 		return self.splash
 
