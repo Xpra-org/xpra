@@ -165,7 +165,7 @@ class ProcessTestUtil(unittest.TestCase):
                     "XAUTHORITY", "PWD",
                     "PYTHONPATH", "SYSTEMROOT",
                     ))
-        log.warn("get_default_run_env() env(%s)=%s", cls.default_env, env)
+        log("get_default_run_env() env(%s)=%s", cls.default_env, env)
         env["NO_AT_BRIDGE"] = "1"
         return env
 
