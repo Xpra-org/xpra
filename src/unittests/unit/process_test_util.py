@@ -91,6 +91,9 @@ class ProcessTestUtil(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.display_start = 100
+        cls.temp_files = []
+        cls.processes = []
         from xpra.server.server_util import find_log_dir
         cls.xauthority_temp = None #tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
         #cls.xauthority_temp.close()
@@ -103,9 +106,7 @@ class ProcessTestUtil(unittest.TestCase):
             "XPRA_FLATTEN_INFO"     : "0",
             })
         cls.default_config = get_defaults()
-        cls.display_start = 100
-        cls.temp_files = []
-        cls.processes = []
+        log("setUpClass(%s) default_env=%s", cls, cls.default_env)
 
     @classmethod
     def tearDownClass(cls):
@@ -156,7 +157,7 @@ class ProcessTestUtil(unittest.TestCase):
 
 
     @classmethod
-    def get_run_env(cls):
+    def get_default_run_env(cls):
         env = dict((k,v) for k,v in cls.default_env.items() if
                 k.startswith("XPRA") or k in (
                     "HOME", "HOSTNAME", "SHELL", "TERM",
@@ -164,7 +165,13 @@ class ProcessTestUtil(unittest.TestCase):
                     "XAUTHORITY", "PWD",
                     "PYTHONPATH", "SYSTEMROOT",
                     ))
+        log.warn("get_default_run_env() env(%s)=%s", cls.default_env, env)
+        env["NO_AT_BRIDGE"] = "1"
         return env
+
+    def get_run_env(self):
+        return self.get_default_run_env()
+
 
     @classmethod
     def which(cls, cmd):
@@ -177,10 +184,13 @@ class ProcessTestUtil(unittest.TestCase):
             pass
         return cmd
 
+    def run_command(self, command, env=None, **kwargs):
+        return self.class_run_command(command, env, **kwargs)
+
     @classmethod
-    def run_command(cls, command, env=None, **kwargs):
+    def class_run_command(cls, command, env=None, **kwargs):
         if env is None:
-            env = kwargs.get("env") or cls.get_run_env()
+            env = kwargs.get("env") or cls.get_default_run_env()
         kwargs["env"] = env
         stdout_file = stderr_file = None
         if isinstance(command, (list, tuple)):
@@ -189,7 +199,7 @@ class ProcessTestUtil(unittest.TestCase):
             strcommand = command
         if XPRA_TEST_DEBUG:
             log("************************")
-            log("run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
+            log("class_run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
             log("************************")
         else:
             if "stdout" not in kwargs:
@@ -201,13 +211,13 @@ class ProcessTestUtil(unittest.TestCase):
                 kwargs["stderr"] = stderr_file
                 log("stderr: %s for %s", stderr_file.name, strcommand)
         try:
-            log("run_command%s", (command, env, kwargs))
+            log("class_run_command%s", (command, env, kwargs))
             proc = subprocess.Popen(args=command, **kwargs)
             proc.command = command
             proc.stdout_file = stdout_file
             proc.stderr_file = stderr_file
         except OSError as e:
-            log.warn("run_command(%s, %s, %s) %s", command, env, kwargs, e)
+            log.warn("class_run_command(%s, %s, %s) %s", command, env, kwargs, e)
             raise
         cls.processes.append(proc)
         return proc
@@ -333,7 +343,7 @@ class ProcessTestUtil(unittest.TestCase):
             log("stdout=%s for %s", stdout.name, cmd)
             stderr = cls._temp_file(prefix="Xorg-stderr-")
             log("stderr=%s for %s", stderr.name, cmd)
-        xvfb = cls.run_command(cmd_expanded, env=env, stdout=stdout, stderr=stderr)
+        xvfb = cls.class_run_command(cmd_expanded, env=env, stdout=stdout, stderr=stderr)
         xvfb.display = display
         time.sleep(1)
         log("xvfb(%s)=%s" % (cmdstr, xvfb))
