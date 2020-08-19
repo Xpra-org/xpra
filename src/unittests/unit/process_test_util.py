@@ -27,6 +27,7 @@ XPRA_TEST_DEBUG = envbool("XPRA_TEST_DEBUG", False)
 XVFB_TIMEOUT = envint("XPRA_TEST_XVFB_TIMEOUT", 8)
 DELETE_TEMP_FILES = envbool("XPRA_DELETE_TEMP_FILES", True)
 SHOW_XORG_OUTPUT = envbool("XPRA_SHOW_XORG_OUTPUT", False)
+TEST_XVFB_COMMAND = os.environ.get("XPRA_TEST_VFB_COMMAND", "Xvfb")
 
 
 def show_proc_pipes(proc):
@@ -312,7 +313,7 @@ class ProcessTestUtil(unittest.TestCase):
 
 
     @classmethod
-    def start_Xvfb(cls, display=None, screens=((1024,768),)):
+    def start_Xvfb(cls, display=None, screens=((1024,768),), depth=24, extensions=("Composite", )):
         assert POSIX
         if display is None:
             display = cls.find_free_display()
@@ -325,13 +326,29 @@ class ProcessTestUtil(unittest.TestCase):
 				):    #DBUS_SESSION_BUS_ADDRESS
                 #keep it
                 env[x] = os.environ.get(x)
-        cmd = ["Xvfb", "+extension", "Composite", "-nolisten", "tcp", "-noreset"]
-                #"-auth", self.default_env["XAUTHORITY"]]
-        for i, screen in enumerate(screens):
-            (w, h) = screen
-            cmd += ["-screen", "%i" % i, "%ix%ix24+32" % (w, h)]
+        real_display = os.environ.get("DISPLAY")
+        if TEST_XVFB_COMMAND.find("Xephyr")>=0 and (len(screens)>1 or not real_display):
+            #we can't use Xephyr for multi-screen
+            cmd = "Xvfb"
+        else:
+            env["DISPLAY"] = real_display
+            cmd = [TEST_XVFB_COMMAND]
+        for ext in extensions:
+            if ext.startswith("-"):
+                cmd += ["-extension", ext[1:]]
+            else:
+                cmd += ["+extension", ext]
+        cmd += ["-nolisten", "tcp", "-noreset"]
+        #"-auth", self.default_env["XAUTHORITY"]]
+        depth_str = "%i+%i" % (depth, 32)
+        if len(screens)==1:
+            w, h = screens[0]
+            cmd += ["-screen", "%ix%ix%s" % (w, h, depth_str)]
+        else:
+            for i, screen in enumerate(screens):
+                (w, h) = screen
+                cmd += ["-screen", "%i" % i, "%ix%ix%s" % (w, h, depth_str)]
         cmd.append(display)
-        env["DISPLAY"] = display
         env["XPRA_LOG_DIR"] = "/tmp"
         cmd_expanded = [osexpand(v) for v in cmd]
         cmdstr = " ".join("'%s'" % x for x in cmd_expanded)
