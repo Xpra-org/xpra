@@ -632,6 +632,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
+    if start_vfb and opts.xvfb.find("Xephyr")>=0 and opts.sync_xvfb<=0:
+        warn("Warning: using Xephyr as vfb")
+        warn(" you should also enable the sync-xvfb option")
+        warn(" to keep the Xephyr window updated")
+
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
     sockets = create_sockets(opts, error_cb)
 

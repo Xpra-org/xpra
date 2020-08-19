@@ -1294,10 +1294,14 @@ def do_parse_cmdline(cmdline, defaults):
                            "bug-report", "encoding", "gui-info")
     fixup_options(options, skip_encodings=len(args)==0 or args[0] not in NEED_ENCODING_MODES)
 
-    try:
-        options.dpi = int(options.dpi)
-    except Exception as e:
-        raise InitException("invalid dpi value '%s': %s" % (options.dpi, e)) from None
+    for x in ("dpi", "sync_xvfb"):
+        try:
+            s = getattr(options, x, None)
+            v = int(s)
+            setattr(options, x, v)
+        except Exception as e:
+            raise InitException("invalid value for %s: '%s': %s" % (x, s, e)) from None
+
     def parse_window_size(v, attribute="max-size"):
         try:
             #split on "," or "x":
