@@ -87,9 +87,6 @@ class ClientConnection(StubSourceMixin):
         self.server_bandwidth_limit = bandwidth_limit
         self.bandwidth_detection = bandwidth_detection
 
-        #these statistics are shared by all WindowSource instances:
-        self.statistics = GlobalPerformanceStatistics()
-
     def run(self):
         # ready for processing:
         self.queue_encode = self.start_queue_encode
@@ -121,6 +118,8 @@ class ClientConnection(StubSourceMixin):
         self.wants_display = True
         self.wants_events = False
         self.wants_default_cursor = False
+        #these statistics are shared by all WindowSource instances:
+        self.statistics = GlobalPerformanceStatistics()
 
 
     def is_closed(self) -> bool:
