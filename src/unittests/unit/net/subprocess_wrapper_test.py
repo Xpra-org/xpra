@@ -87,7 +87,7 @@ class SubprocessWrapperTest(unittest.TestCase):
         mainloop = GLib.MainLoop()
         lp = loopback_process()
         readback = []
-        def record_packet(self, *args):
+        def record_packet(_lp, *args):
             readback.append(args)
         lp.connect("foo", record_packet)
         def stop():

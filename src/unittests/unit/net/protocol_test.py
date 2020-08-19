@@ -82,7 +82,7 @@ def make_profiling_protocol_class(protocol_class):
 class ProtocolTest(unittest.TestCase):
     protocol_class = Protocol
 
-    def make_memory_protocol(self, data=[b""], read_buffer_size=1, hangup_delay=0, process_packet_cb=noop, get_packet_cb=nodata):
+    def make_memory_protocol(self, data=(b""), read_buffer_size=1, hangup_delay=0, process_packet_cb=noop, get_packet_cb=nodata):
         conn = FastMemoryConnection(data)
         if PROFILING:
             pc = make_profiling_protocol_class(self.protocol_class)

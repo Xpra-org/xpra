@@ -42,7 +42,8 @@ class TestMotion(unittest.TestCase):
 			line_defs = scrolls.get(distance)
 			assert line_defs, "distance %i not found in scroll data: %s for a1=%s, a2=%s" % (distance, scrolls, a1, a2)
 			linecount = sum(line_defs.values())
-			assert linecount==matches, "expected %i matches for distance=%i but got %i for a1=%s, a2=%s, result=%s" % (matches, distance, linecount, a1, a2, line_defs)
+			assert linecount==matches, "expected %i matches for distance=%i but got %i for a1=%s, a2=%s, result=%s" % (
+				matches, distance, linecount, a1, a2, line_defs)
 		for N in (motion.MIN_LINE_COUNT+1, 10, 100):
 			a = range(1, N+1)
 			t(a, a, 0, N)		#identity: all match
@@ -186,27 +187,28 @@ class TestMotion(unittest.TestCase):
 			17157005122993541799, 5218869126146608853, 13274228147453099388, 16342723934713827717, 2435034235422505275, 3689766606612767057, 13721141386368216492, 14859793948180065358,
 			]
 		#distances = motion.scroll_distances(a1[100:400], a2[100:400], 2, 1000)
-		sd = motion.ScrollData(0, 0, 1050, len(a1))
+		x, y, w = 0, 0, 1050
+		h = len(a1)
+		sd = motion.ScrollData(x, y, w, h)
 		sd.test_update(a1)
 		sd.test_update(a2)
 		sd.calculate(1000)
 		scroll, count = sd.get_best_match()
-		wh = len(a1)
 		log("best match: %s" % ((scroll, count),))
-		x, y, w, h = 0, 0, 1050, 1151
 		raw_scroll, non_scroll = sd.get_scroll_values()
 		assert len(non_scroll)>0
 		scrolls = []
 		def hexstr(v):
 			return hex(v).lstrip("0x").rstrip("L")
-		for i in range(wh):
+		for i in range(h):
 			log("%2i:	%16s	%16s" % (i, hexstr(a1[i]), hexstr(a2[i])))
 		for scroll, line_defs in raw_scroll.items():
 			if scroll==0:
 				continue
 			for line, count in line_defs.items():
 				assert y+line+scroll>=0, "cannot scroll rectangle by %i lines from %i+%i" % (scroll, y, line)
-				assert y+line+scroll<=wh, "cannot scroll rectangle %i high by %i lines from %i+%i (window height is %i)" % (count, scroll, y, line, wh)
+				assert y+line+scroll<=h, "cannot scroll rectangle %i high by %i lines from %i+%i (window height is %i)" % (
+					count, scroll, y, line, h)
 				scrolls.append((x, y+line, w, count, 0, scroll))
 
 

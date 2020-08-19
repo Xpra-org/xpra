@@ -85,7 +85,7 @@ class ClientMixinTest(unittest.TestCase):
 		fake_protocol = AdHocStruct()
 		fake_protocol.get_info = lambda : {}
 		fake_protocol.set_compression_level = lambda _x : None
-		x._protocol = fake_protocol
+		x._protocol = fake_protocol  #pylint: disable=protected-access
 		x.add_packet_handlers = self.add_packet_handlers
 		x.add_packet_handler = self.add_packet_handler
 		x.idle_add = self.glib.idle_add

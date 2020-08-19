@@ -12,7 +12,7 @@ from xpra.os_util import OSX, POSIX
 class OSXLikeClipboardTest(X11ClipboardTestUtil):
 
 	def get_run_env(self):
-		env = X11ClipboardTestUtil.get_run_env(self)
+		env = super().get_run_env()
 		env.update({
 					"XPRA_CLIPBOARD_WANT_TARGETS"	: "1",
 					"XPRA_CLIPBOARD_GREEDY"			: "1",
