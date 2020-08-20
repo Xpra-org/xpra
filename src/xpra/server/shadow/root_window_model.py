@@ -136,7 +136,7 @@ class RootWindowModel:
             if osn=="Linux":
                 try:
                     osn += "-"+get_linux_distribution()[0].replace(" ", "-")
-                except Exception:
+                except Exception:   # pragma: no cover
                     pass
             return ("xpra-%s" % osn.lower(), "Xpra %s" % osn.replace("-", " "))
         if prop=="icons":
