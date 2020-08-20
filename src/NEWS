@@ -1,3 +1,18 @@
+v4.0.4 (2020-08-20)
+======================
+	-- fix NVENC encoder (profile errors)
+	-- fix unmanaged X11 message call which could cause GTK to crash when it fails
+	-- fix 'sync-xvfb' option: setup error, non-standard bit depth support
+	-- fix missing system tray on Ubuntu 18.04
+	-- fix workspace spurious warnings on 64-bit X11 systems
+	-- fix event handler with 64-bit MS Windows builds
+	-- fix named-pipe server clash
+	-- fix error handing in MS Windows printer query API
+	-- switch to Xvfb on Debian and Ubuntu
+	-- workaround more pyxdg bugs
+	-- add missing DEB dependency
+
+
 v4.0.3 (2020-08-07)
 ======================
 	-- fix server crash caused by use after free in scrolling code
