@@ -551,8 +551,12 @@ def shellsub(s, subs=None):
     if subs:
         for var,value in subs.items():
             try:
-                s = s.replace("$%s" % var, str(value))
-                s = s.replace("${%s}" % var, str(value))
+                if isinstance(s, bytes):
+                    s = s.replace(("$%s" % var).encode(), str(value).encode())
+                    s = s.replace(("${%s}" % var).encode(), str(value).encode())
+                else:
+                    s = s.replace("$%s" % var, str(value))
+                    s = s.replace("${%s}" % var, str(value))
             except (TypeError, ValueError):
                 raise Exception("failed to substitute '%s' with value '%s' (%s) in '%s'" % (
                     var, value, type(value), s))
