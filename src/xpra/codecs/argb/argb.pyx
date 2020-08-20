@@ -469,6 +469,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
     cdef unsigned int w
     cdef unsigned int h
     if pixel_format=="r210":
+        assert rs%4==0, "invalid rowstride for r210 is not a multiple of 4"
         #r210 never contains any transparency at present
         #if supports_transparency and "RGBA" in rgb_formats:
         #    log("argb_swap: r210_to_rgba for %s on %s", pixel_format, type(pixels))
@@ -490,6 +491,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_rowstride(w*4)
             return True
     elif pixel_format=="BGR565":
+        assert rs%2==0, "invalid rowstride for BGR565 is not a multiple of 2"
         if "RGB" in rgb_formats:
             log("argb_swap: bgr565_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgr565_to_rgb(pixels))
@@ -503,6 +505,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_rowstride(rs*2)
             return True
     elif pixel_format in ("BGRX", "BGRA"):
+        assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
         if supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgba(pixels))
@@ -520,6 +523,7 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_pixel_format("RGBX")
             return True
     elif pixel_format in ("XRGB", "ARGB"):
+        assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
         if supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgba(pixels))
