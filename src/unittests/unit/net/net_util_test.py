@@ -26,12 +26,14 @@ class TestVersionUtilModule(unittest.TestCase):
             return
         for iface in ifaces:
             do_get_bind_ifacemask(iface)
-            try:
-                i = if_nametoindex(iface)
-            except Exception:
-                pass
-            else:
-                assert if_indextoname(i)==iface
+            if if_nametoindex:
+                try:
+                    i = if_nametoindex(iface)
+                except Exception:
+                    pass
+                else:
+                    if if_indextoname:
+                        assert if_indextoname(i)==iface
             get_iface(iface)
         ia = get_interfaces_addresses()
         assert ia
