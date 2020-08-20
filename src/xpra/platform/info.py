@@ -53,18 +53,18 @@ def _get_pwd():
         import pwd
         USER_ID = os.getuid()
         return pwd.getpwuid(USER_ID)
-    except KeyError:
+    except KeyError:    # pragma: no cover
         return None
 
 def get_username():
     p = _get_pwd()
-    if p is None:
+    if p is None:       # pragma: no cover
         return ""
     return p.pw_name
 
 def get_name():
     p = _get_pwd()
-    if p is None:
+    if p is None:       # pragma: no cover
         return ""
     return p.pw_gecos.replace(",", "")
 
