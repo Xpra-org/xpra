@@ -9,11 +9,11 @@
 import os
 import signal
 import math
-from collections import deque, namedtuple
-from gi.repository import GObject, Gtk, Gdk
+from collections import deque
+from gi.repository import GObject, Gtk, Gdk, GdkX11
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
+from xpra.util import updict, rindex, envbool, envint, typedict, AdHocStruct, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.server import server_features
@@ -244,10 +244,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 with xsync:
                     self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                     if self.root_overlay:
-                        #ugly: API expects a window object with a ".xid"
-                        X11WindowModel = namedtuple("X11WindowModel", "xid")
-                        root_overlay = X11WindowModel(xid=self.root_overlay)
-                        prop_set(root_overlay, "WM_TITLE", "latin1", "RootOverlay")
+                        #ugly: API expects a window object with a ".get_xid()" method
+                        window = AdHocStruct()
+                        def get_xid():
+                            return self.root_overlay
+                        window.get_xid = root.get_xid
+                        prop_set(window, "WM_TITLE", "latin1", "RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:
                 log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
@@ -1160,8 +1162,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
     #
 
     def update_root_overlay(self, window, x, y, image):
-        overlaywin = Gdk.window_foreign_new(self.root_overlay)
-        gc = overlaywin.new_gc()
+        display = Gdk.Display.get_default()
+        overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         wx, wy = window.get_property("geometry")[:2]
         #FIXME: we should paint the root overlay directly
         # either using XCopyArea or XShmPutImage,
@@ -1176,23 +1178,24 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 if image.get_pixel_format()=="BGRA":
                     img_data = unpremultiply_argb(img_data)
                 img_data = bgra_to_rgba(img_data)
-            except:
+            except Exception:
                 pass
         img_data = memoryview_to_bytes(img_data)
         has_alpha = image.get_pixel_format().find("A")>=0
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
+        from cairo import OPERATOR_OVER, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
         if has_alpha:
-            import cairo
-            pixbuf = get_pixbuf_from_data(img_data, True, width, height, rowstride)
-            cr = overlaywin.cairo_create()
-            cr.new_path()
-            cr.rectangle(wx+x, wy+y, width, height)
-            cr.clip()
-            cr.set_source_pixbuf(pixbuf, wx+x, wy+y)
-            cr.set_operator(cairo.OPERATOR_OVER)
-            cr.paint()
+            operator = OPERATOR_OVER
         else:
-            overlaywin.draw_rgb_32_image(gc, wx+x, wy+y, width, height, Gdk.RGB_DITHER_NONE, img_data, rowstride)
+            operator = OPERATOR_SOURCE
+        pixbuf = get_pixbuf_from_data(img_data, has_alpha, width, height, rowstride)
+        cr = overlaywin.cairo_create()
+        cr.new_path()
+        cr.rectangle(wx+x, wy+y, width, height)
+        cr.clip()
+        Gdk.cairo_set_source_pixbuf(cr, pixbuf, wx+x, wy+y)
+        cr.set_operator(operator)
+        cr.paint()
         image.free()
 
     def repaint_root_overlay(self):
@@ -1213,7 +1216,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def do_repaint_root_overlay(self):
         self.repaint_root_overlay_timer = None
         root_width, root_height = self.get_root_window_size()
-        overlaywin = Gdk.window_foreign_new(self.root_overlay)
+        display = Gdk.Display.get_default()
+        overlaywin = GdkX11.X11Window.foreign_new_for_display(display, self.root_overlay)
         log("overlaywin: %s", overlaywin.get_geometry())
         cr = overlaywin.cairo_create()
         def fill_grey_rect(shade, x, y, w, h):
