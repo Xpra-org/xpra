@@ -577,6 +577,9 @@ def scaled_image(pixbuf, icon_size=None) -> Gtk.Image:
 
 
 def get_icon_from_file(filename):
+    if not filename:
+        log("get_icon_from_file(%s)=None", filename)
+        return None
     try:
         if not os.path.exists(filename):
             log.warn("Warning: cannot load icon, '%s' does not exist", filename)
@@ -650,7 +653,7 @@ def get_icon_pixbuf(icon_name):
         return None
     from xpra.platform.paths import get_icon_filename
     icon_filename = get_icon_filename(icon_name)
-    if os.path.exists(icon_filename):
+    if icon_filename and os.path.exists(icon_filename):
         return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
     return None
 
