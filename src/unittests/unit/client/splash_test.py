@@ -51,14 +51,27 @@ class SplashTest(ProcessTestUtil):
 
 	def stop_splash(self):
 		s = self.splash
-		if s:
-			self.splash = None
+		if not s:
+			return
+		try:
+			self.do_feed_splash(s, [
+			"100:100",
+			], 5)
+			if pollwait(s, 5) is not None:
+				return
 			s.terminate()
-			pollwait(s, 5)
+			if pollwait(s, 5) is not None:
+				return
+			try:
+				s.kill()
+			except:
+				pass
+		finally:
 			try:
 				s.stdin.close()
 			except Exception:
 				pass
+			self.splash = None
 
 	def _run_splash(self):
 		env = self.get_run_env()
@@ -67,11 +80,14 @@ class SplashTest(ProcessTestUtil):
 		cmd = self.get_xpra_cmd()
 		cmd += ["splash"]
 		log("_run_splash() env=%s, cmd=%s", env, cmd)
-		self.splash = Popen(args=cmd, stdin=PIPE, env=env)
+		self.splash = Popen(args=cmd, stdin=PIPE, env=env, start_new_session=True)
 		return self.splash
 
-	def _feed_splash(self, lines=(), delay=1):
+	def _feed_splash(self, lines=None, delay=1):
 		proc = self._run_splash()
+		return self.do_feed_splash(proc, lines, delay)
+
+	def do_feed_splash(self, proc, lines=None, delay=1):
 		while lines and proc.poll() is None:
 			line = lines.pop(0)
 			log("sending '%s'", line)
@@ -81,7 +97,7 @@ class SplashTest(ProcessTestUtil):
 				break
 		return proc
 
-	def _test_invalid(self):
+	def test_invalid(self):
 		self._feed_splash([
 			"notanumber:ignoreit",
 			"50:50",
@@ -90,7 +106,7 @@ class SplashTest(ProcessTestUtil):
 		assert r is None, "splash screen should not have terminated"
 		self.stop_splash()
 
-	def _test_full(self):
+	def test_full(self):
 		self._feed_splash([
 			"10:10",
 			"100:100",
@@ -100,7 +116,7 @@ class SplashTest(ProcessTestUtil):
 		assert r==0, "exit code should be zero, but got %s" % r
 		self.stop_splash()
 
-	def _test_partial(self):
+	def test_partial(self):
 		self._feed_splash([
 			"10:10",
 			"20:20",
@@ -108,11 +124,6 @@ class SplashTest(ProcessTestUtil):
 			])
 		assert self.splash.poll() is None, "splash screen should still be running"
 		self.stop_splash()
-
-	def test_all(self):
-		self._test_full()
-		self._test_partial()
-		self._test_invalid()
 
 
 def main():
