@@ -13,8 +13,6 @@ from xpra.util import envbool
 from xpra.os_util import pollwait, POSIX, OSX
 from unit.process_test_util import ProcessTestUtil, log
 
-log.enable_debug()
-
 
 USE_DISPLAY = envbool("XPRA_TEST_USE_DISPLAY", False)
 
