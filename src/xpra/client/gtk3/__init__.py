@@ -14,7 +14,7 @@ if is_X11():
     try:
         from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
         init_gdk_display_source()
-    except ImportError:
+    except ImportError:     # pragma: no cover
         from xpra.log import Logger
         log = Logger("gtk", "client")
         log.warn("Warning: cannot import gtk3 x11 display source", exc_info=True)
