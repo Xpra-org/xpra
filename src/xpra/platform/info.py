@@ -53,7 +53,7 @@ def _get_pwd():
         import pwd
         USER_ID = os.getuid()
         return pwd.getpwuid(USER_ID)
-    except Exception:
+    except KeyError:
         return None
 
 def get_username():
