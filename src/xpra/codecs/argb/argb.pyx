@@ -298,6 +298,33 @@ def rgba_to_bgra(buf):
     return bgra_to_rgba(buf)
 
 
+def bgra_to_rgbx(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    # buf is a Python buffer object
+    cdef unsigned char * bgra_buf = NULL
+    cdef Py_ssize_t bgra_buf_len = 0
+    assert as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
+    return bgradata_to_rgbx(bgra_buf, bgra_buf_len)
+
+cdef bgradata_to_rgbx(const unsigned char* bgra, const int bgra_len):
+    if bgra_len <= 0:
+        return None
+    assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
+    #same number of bytes:
+    cdef MemBuf output_buf = getbuf(bgra_len)
+    cdef unsigned char* rgbx = <unsigned char*> output_buf.get_mem()
+    cdef int i = 0                      #@DuplicateSignature
+    while i < bgra_len:
+        rgbx[i]   = bgra[i+2]           #R
+        rgbx[i+1] = bgra[i+1]           #G
+        rgbx[i+2] = bgra[i]             #B
+        rgbx[i+3] = 0xff                #X
+        i += 4
+    return memoryview(output_buf)
+
+
+
+
 def premultiply_argb(buf):
     # b is a Python buffer object
     cdef unsigned int * argb = <unsigned int *> 0   #@DuplicateSignature
@@ -486,6 +513,11 @@ def argb_swap(image, rgb_formats, supports_transparency):
             image.set_pixels(bgra_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
+            return True
+        if "RGBX" in rgb_formats:
+            log("argb_swap: bgra_to_rgbx for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgra_to_rgbx(pixels))
+            image.set_pixel_format("RGBX")
             return True
     elif pixel_format in ("XRGB", "ARGB"):
         if supports_transparency and "RGBA" in rgb_formats:
