@@ -17,7 +17,7 @@ log = Logger("clipboard")
 SANITY_CHECKS = envbool("XPRA_CLIPBOARD_SANITY_CHECKS", True)
 
 def has_xclip():
-	return which("xclip")
+	return bool(which("xclip"))
 
 
 class X11ClipboardTestUtil(X11ClientTestUtil):
