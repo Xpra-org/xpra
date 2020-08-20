@@ -68,7 +68,7 @@ class DisplayContext(OSEnvContext):
             self.stu.setUp()
             self.xvfb_process = self.stu.start_Xvfb()
             os.environ["GDK_BACKEND"] = "x11"
-            os.environ["DISPLAY"] = self.xvfb_process.display
+            os.environ["DISPLAY"] = self.xvfb_process.display or ""
             from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
             init_gdk_display_source()
 
@@ -177,10 +177,10 @@ class ProcessTestUtil(unittest.TestCase):
     @classmethod
     def which(cls, cmd):
         try:
-            from xpra.os_util import get_status_output, strtobytes
+            from xpra.os_util import get_status_output
             code, out, _ = get_status_output(["which", cmd])
             if code==0:
-                return strtobytes(out.splitlines()[0])
+                return out.splitlines()[0]
         except OSError:
             pass
         return cmd
@@ -327,12 +327,14 @@ class ProcessTestUtil(unittest.TestCase):
                 #keep it
                 env[x] = os.environ.get(x)
         real_display = os.environ.get("DISPLAY")
-        if TEST_XVFB_COMMAND.find("Xephyr")>=0 and (len(screens)>1 or not real_display):
-            #we can't use Xephyr for multi-screen
-            cmd = "Xvfb"
-        else:
-            env["DISPLAY"] = real_display
-            cmd = [TEST_XVFB_COMMAND]
+        cmd = [cls.which(TEST_XVFB_COMMAND)]
+        is_xephyr = TEST_XVFB_COMMAND.find("Xephyr")>=0
+        if is_xephyr:
+            if len(screens)>1 or not real_display:
+                #we can't use Xephyr for multi-screen
+                cmd = [cls.which("Xvfb")]
+            elif real_display:
+                env["DISPLAY"] = real_display
         for ext in extensions:
             if ext.startswith("-"):
                 cmd += ["-extension", ext[1:]]
@@ -341,13 +343,12 @@ class ProcessTestUtil(unittest.TestCase):
         cmd += ["-nolisten", "tcp", "-noreset"]
         #"-auth", self.default_env["XAUTHORITY"]]
         depth_str = "%i+%i" % (depth, 32)
-        if len(screens)==1:
-            w, h = screens[0]
-            cmd += ["-screen", "%ix%ix%s" % (w, h, depth_str)]
-        else:
-            for i, screen in enumerate(screens):
-                (w, h) = screen
-                cmd += ["-screen", "%i" % i, "%ix%ix%s" % (w, h, depth_str)]
+        for i, screen in enumerate(screens):
+            (w, h) = screen
+            cmd += ["-screen"]
+            if not is_xephyr:
+                cmd += ["%i" % i]
+            cmd += ["%ix%ix%s" % (w, h, depth_str)]
         cmd.append(display)
         env["XPRA_LOG_DIR"] = "/tmp"
         cmd_expanded = [osexpand(v) for v in cmd]
