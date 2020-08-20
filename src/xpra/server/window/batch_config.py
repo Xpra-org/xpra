@@ -18,19 +18,26 @@ from xpra.os_util import monotonic_time
 NRECS = 100
 
 
+def warn(msg, *args):
+    from xpra.os_util import get_util_logger
+    log = get_util_logger()
+    log.warn(msg, *args)
+
 def ival(key, default, minv=0, maxv=None) -> int:
     try:
         v = os.environ.get("XPRA_BATCH_%s" % key)
         if v is None:
             return default
         iv = int(v)
-        assert minv is None or minv<=iv, "value for %s is too small: %s (minimum is %s)" % (key, iv, minv)
-        assert maxv is None or maxv>=iv, "value for %s is too high: %s (maximum is %s)" % (key, iv, maxv)
+        if minv is not None and iv<minv:
+            warn("value for %s is too small: %s (minimum is %s)", key, iv, minv)
+            return minv
+        if maxv is not None and iv>maxv:
+            warn("value for %s is too high: %s (maximum is %s)", key, iv, maxv)
+            return maxv
         return iv
     except Exception as e:
-        from xpra.os_util import get_util_logger
-        log = get_util_logger()
-        log.warn("failed to parse value '%s' for %s: %s", v, key, e)
+        warn("failed to parse value '%s' for %s: %s", v, key, e)
         return default
 
 
