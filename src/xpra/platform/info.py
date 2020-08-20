@@ -43,7 +43,7 @@ def get_posix_sys_info():
 def get_sys_info():
     if os.name=="posix":
         return get_posix_sys_info()
-    return {}
+    return {}           # pragma: no cover
 
 def get_version_info():
     return {}
