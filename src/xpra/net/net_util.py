@@ -155,7 +155,14 @@ def get_iface(ip) -> str:
     if not ip:
         return None
     if ip.find("%")>=0:
-        return ip.split("%", 1)[1]
+        iface = ip.split("%", 1)[1]
+        if if_nametoindex:
+            try:
+                if_nametoindex(iface)
+            except OSError:
+                return None
+            else:
+                return iface
     if ip.find(":")>=0:
         #ipv6?
         return None
