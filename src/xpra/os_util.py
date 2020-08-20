@@ -377,7 +377,8 @@ def getUbuntuVersion():
     return ()
 
 def is_unity():
-    return os.environ.get("XDG_CURRENT_DESKTOP", "").lower().find("unity")>=0
+    d = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+    return d.find("unity")>=0 or d.find("ubuntu")>=0
 
 def is_gnome():
     if os.environ.get("XDG_SESSION_DESKTOP", "").split("-", 1)[0] in ("i3", "ubuntu", ):
