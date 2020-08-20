@@ -191,7 +191,12 @@ class TestAuth(unittest.TestCase):
         assert a.get_challenge(get_digests())
         assert not a.get_challenge(get_digests())
         assert not a.get_challenge(get_digests())
-        for muck in (0, 1):
+        #muck:
+        # 0 - OK
+        # 1 - bad: with warning about newline
+        # 2 - verify bad passwords
+        # 3 - verify no password
+        for muck in (0, 1, 2, 3):
             with TempFileContext(prefix=mod_name) as context:
                 f = context.file
                 filename = context.filename
@@ -199,7 +204,10 @@ class TestAuth(unittest.TestCase):
                     a = self._init_auth(mod_name, filename=filename)
                     password, filedata = genauthdata(a)
                     #print("saving password file data='%s' to '%s'" % (filedata, filename))
-                    f.write(strtobytes(filedata))
+                    if muck!=3:
+                        f.write(strtobytes(filedata))
+                    if muck==1:
+                        f.write(b"\n")
                     f.flush()
                     assert a.requires_challenge()
                     salt, mac = a.get_challenge(get_digests())
@@ -225,7 +233,7 @@ class TestAuth(unittest.TestCase):
                         passwords = a.get_passwords()
                         assert len(passwords)==1, "expected just one password in file, got %i" % len(passwords)
                         assert password in passwords
-                    elif muck==1:
+                    else:
                         for verify in ("whatever", None, "bad"):
                             assert not a.authenticate(verify, client_salt)
         return a
