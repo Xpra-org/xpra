@@ -550,8 +550,12 @@ def shellsub(s, subs=None):
     """ shell style string substitution using the dictionary given """
     if subs:
         for var,value in subs.items():
-            s = s.replace("$%s" % var, str(value))
-            s = s.replace("${%s}" % var, str(value))
+            try:
+                s = s.replace("$%s" % var, str(value))
+                s = s.replace("${%s}" % var, str(value))
+            except (TypeError, ValueError):
+                raise Exception("failed to substitute '%s' with value '%s' (%s) in '%s'" % (
+                    var, value, type(value), s))
     return s
 
 
