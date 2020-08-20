@@ -35,7 +35,7 @@ def get_posix_sys_info():
                 if isinstance(value, float):
                     value = int(value)
                 minfo[var] = value
-    except Exception:
+    except Exception:   # pragma: no cover
         from xpra.os_util import get_util_logger
         get_util_logger().error("Error getting memory usage info", exc_info=True)
     return info
