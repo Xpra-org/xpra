@@ -36,6 +36,7 @@ class program_context:
         self.appname = appname
     def __enter__(self):
         init(self.prgname, self.appname)
+        return self
     def __exit__(self, *_args):
         clean()
     def __repr__(self):
