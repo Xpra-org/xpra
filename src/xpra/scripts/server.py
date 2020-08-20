@@ -654,7 +654,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         os.environ["DISPLAY"] = display_name
         if POSIX:
             os.environ["CKCON_X11_DISPLAY"] = display_name
-    else:
+    elif not start_vfb or opts.xvfb.find("Xephyr")<0:
         try:
             del os.environ["DISPLAY"]
         except KeyError:
