@@ -131,7 +131,7 @@ class StubServerMixin:
         #make sure we have it as a list:
         if isinstance(cmd, (list, tuple)):
             return cmd
-        if WIN32:
+        if WIN32:   #pragma: no cover
             return [cmd]
         return shlex.split(str(cmd))
 
