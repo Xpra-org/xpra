@@ -5,19 +5,25 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from xpra.codecs.nv_util import get_nvml_driver_version, get_proc_driver_version
 
 
 class TestNVUtil(unittest.TestCase):
 
     def test_nvutil(self):
+        from xpra.codecs.nv_util import get_nvml_driver_version, get_proc_driver_version
         v1 = get_nvml_driver_version()
         v2 = get_proc_driver_version()
         if v1 and v2:
             assert v1==v2
 
 def main():
-    unittest.main()
+    try:
+        from xpra.codecs import nv_util
+        assert nv_util
+    except ImportError:
+        print("nv_util codec not installed - test skipped")
+    else:
+        unittest.main()
 
 if __name__ == '__main__':
     main()
