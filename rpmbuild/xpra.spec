@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.11
+%define version 3.0.12
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -870,6 +870,22 @@ fi
 
 
 %changelog
+* Thu Aug 20 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1
+- fix NVENC encoder (profile errors, cleanup race condition)
+- fix unmanaged X11 message call which could cause GTK to crash when it fails
+- fix 'sync-xvfb' option: setup error, non-standard bit depth support
+- fix missing system tray on Ubuntu 18.04
+- fix workspace spurious warnings on 64-bit X11 systems
+- fix event handler with 64-bit MS Windows builds
+- fix named-pipe server clash
+- fix error handing in MS Windows printer query API
+- switch to Xvfb on Debian and Ubuntu
+- workaround more pyxdg bugs
+- ignore plink packaging errors with 32-bit MS Windows builds
+- disable swscale on 32-bit MS Windows builds (prevent crashes)
+- tabs mixed with spaces (potential for bug)
+- add missing DEB dependency
+
 * Fri Aug 07 2020 Antoine Martin <antoine@xpra.org> 3.0.11-10xpra1
 - fix encryption option overzealously enforced on all socket types
 - fix network layer compression errors that can cause connections to drop

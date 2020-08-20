@@ -1,3 +1,21 @@
+v3.0.12 (2020-08-20)
+======================
+	-- fix NVENC encoder (profile errors, cleanup race condition)
+	-- fix unmanaged X11 message call which could cause GTK to crash when it fails
+	-- fix 'sync-xvfb' option: setup error, non-standard bit depth support
+	-- fix missing system tray on Ubuntu 18.04
+	-- fix workspace spurious warnings on 64-bit X11 systems
+	-- fix event handler with 64-bit MS Windows builds
+	-- fix named-pipe server clash
+	-- fix error handing in MS Windows printer query API
+	-- switch to Xvfb on Debian and Ubuntu
+	-- workaround more pyxdg bugs
+	-- ignore plink packaging errors with 32-bit MS Windows builds
+	-- disable swscale on 32-bit MS Windows builds (prevent crashes)
+	-- tabs mixed with spaces (potential for bug)
+	-- add missing DEB dependency
+
+
 v3.0.11 (2020-08-07)
 ======================
 	-- fix encryption option overzealously enforced on all socket types
