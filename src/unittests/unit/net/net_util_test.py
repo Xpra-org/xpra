@@ -45,7 +45,8 @@ class TestVersionUtilModule(unittest.TestCase):
         get_ssl_info()
         get_info()
 
-        assert if_indextoname(-1) is None
+        if if_indextoname:
+            assert if_indextoname(-1) is None
 
         def invalid_iface(s):
             v = get_iface(s)
