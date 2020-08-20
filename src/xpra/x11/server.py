@@ -1210,7 +1210,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
         else:
             raise Exception("xync-xvfb root overlay paint code does not handle %s pixel format" % image.get_pixel_format())
         img_data = memoryview_to_bytes(img_data)
-        log.warn("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
+        log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
         from cairo import OPERATOR_OVER, OPERATOR_SOURCE
         if has_alpha:
             operator = OPERATOR_OVER
