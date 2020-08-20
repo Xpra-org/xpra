@@ -1172,23 +1172,32 @@ class XpraServer(GObject.GObject, X11ServerBase):
         height = image.get_height()
         rowstride = image.get_rowstride()
         img_data = image.get_pixels()
-        if image.get_pixel_format().startswith("BGR"):
-            try:
-                from xpra.codecs.argb.argb import unpremultiply_argb, bgra_to_rgba  #@UnresolvedImport
-                if image.get_pixel_format()=="BGRA":
-                    img_data = unpremultiply_argb(img_data)
-                img_data = bgra_to_rgba(img_data)
-            except Exception:
-                pass
-        img_data = memoryview_to_bytes(img_data)
-        has_alpha = image.get_pixel_format().find("A")>=0
-        log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
+        rgb_format = image.get_pixel_format()
+        from xpra.codecs.argb.argb import ( #@UnresolvedImport
+            unpremultiply_argb, bgra_to_rgba, bgra_to_rgbx, r210_to_rgbx, bgr565_to_rgbx  #@UnresolvedImport
+            )
         from cairo import OPERATOR_OVER, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
-        if has_alpha:
+        log("update_root_overlay%s rgb_format=%s, img_data=%i (%s)",
+                 (window, x, y, image), rgb_format, len(img_data), type(img_data))
+        operator = OPERATOR_SOURCE
+        if rgb_format=="BGRA":
+            img_data = unpremultiply_argb(img_data)
+            img_data = bgra_to_rgba(img_data)
             operator = OPERATOR_OVER
+        elif rgb_format=="BGRX":
+            img_data = bgra_to_rgbx(img_data)
+        elif rgb_format=="r210":
+            #lossy...
+            img_data = r210_to_rgbx(img_data, width, height, rowstride, width*4)
+            rowstride = width*4
+        elif rgb_format=="BGR565":
+            img_data = bgr565_to_rgbx(img_data)
+            rowstride *= 2
         else:
-            operator = OPERATOR_SOURCE
-        pixbuf = get_pixbuf_from_data(img_data, has_alpha, width, height, rowstride)
+            raise Exception("xync-xvfb root overlay paint code does not handle %s pixel format" % image.get_pixel_format())
+        img_data = memoryview_to_bytes(img_data)
+        log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx+x, wy+y, width, height))
+        pixbuf = get_pixbuf_from_data(img_data, True, width, height, rowstride)
         cr = overlaywin.cairo_create()
         cr.new_path()
         cr.rectangle(wx+x, wy+y, width, height)
