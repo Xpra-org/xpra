@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,13 +19,9 @@ class AutoPropGObjectMixin:
     Make sure this is the first entry on your parent list, so super().__init__
     will work right."""
     def __init__(self):
-        super().__init__()
         self._gproperties = {}
 
     def do_get_property(self, pspec):
-        getter = "do_get_property_" + pspec.name.replace("-", "_")
-        if hasattr(self, getter):
-            return getattr(self, getter)(pspec.name)
         return self._gproperties.get(pspec.name)
 
     def do_set_property(self, pspec, value):
