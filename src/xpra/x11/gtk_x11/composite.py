@@ -1,13 +1,13 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from gi.repository import GObject
 
 from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
-from xpra.gtk_common.gobject_util import one_arg_signal, AutoPropGObjectMixin
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,             #@UnresolvedImport
     remove_event_receiver,          #@UnresolvedImport
@@ -28,7 +28,7 @@ X11Window.ensure_XComposite_support()
 StructureNotifyMask = constants["StructureNotifyMask"]
 
 
-class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, GObject.GObject):
+class CompositeHelper(WindowDamageHandler, GObject.GObject):
 
     __gsignals__ = WindowDamageHandler.__common_gsignals__.copy()
     __gsignals__.update({
@@ -39,7 +39,6 @@ class CompositeHelper(WindowDamageHandler, AutoPropGObjectMixin, GObject.GObject
     # This may raise XError.
     def __init__(self, window):
         WindowDamageHandler.__init__(self, window)
-        AutoPropGObjectMixin.__init__(self)
         GObject.GObject.__init__(self)
         self._listening_to = None
 
