@@ -111,10 +111,16 @@ class SourceMixinsTest(unittest.TestCase):
                 })
 
     def test_dbus(self):
-        from xpra.server.source.dbus_mixin import DBUS_Mixin
-        self._test_mixin_class(DBUS_Mixin, {
-            "dbus_control"  : True,
-            })
+        try:
+            from xpra.server import dbus
+            assert dbus
+            from xpra.server.source.dbus_mixin import DBUS_Mixin
+        except ImportError:
+            pass
+        else:
+            self._test_mixin_class(DBUS_Mixin, {
+                "dbus_control"  : True,
+                })
 
     def test_encodings(self):
         from xpra.server.source.encodings_mixin import EncodingsMixin
