@@ -49,12 +49,6 @@ def get_log_packets(exclude=False):
             pt.append(x[int(exclude):])
     return tuple(pt)
 
-LOG_PACKETS = get_log_packets()
-NOLOG_PACKETS = get_log_packets(True)
-LOG_PACKET_TYPE = envbool("XPRA_LOG_PACKET_TYPE", False)
-
-PACKET_LOG_MAX_SIZE = envint("XPRA_PACKET_LOG_MAX_SIZE", 500)
-
 def _may_log_packet(sending, packet_type, packet):
     if LOG_PACKET_TYPE:
         log.info("%s %s (thread=%s)", "sending  " if sending else "receiving", packet_type, threading.current_thread())
@@ -70,7 +64,26 @@ def _may_log_packet(sending, packet_type, packet):
 def noop(*_args):
     pass
 
-if LOG_PACKETS or NOLOG_PACKETS or LOG_PACKET_TYPE:
-    may_log_packet = _may_log_packet
-else:
-    may_log_packet = noop
+
+LOG_PACKETS = None
+NOLOG_PACKETS = None
+LOG_PACKET_TYPE = False
+PACKET_LOG_MAX_SIZE = 500
+
+may_log_packet = noop
+
+def init():
+    global LOG_PACKETS, NOLOG_PACKETS, LOG_PACKET_TYPE, PACKET_LOG_MAX_SIZE
+    LOG_PACKETS = get_log_packets()
+    NOLOG_PACKETS = get_log_packets(True)
+    LOG_PACKET_TYPE = envbool("XPRA_LOG_PACKET_TYPE", False)
+
+    PACKET_LOG_MAX_SIZE = envint("XPRA_PACKET_LOG_MAX_SIZE", 500)
+
+    global may_log_packet
+    if LOG_PACKETS or NOLOG_PACKETS or LOG_PACKET_TYPE:
+        may_log_packet = _may_log_packet
+    else:
+        may_log_packet = noop
+
+init()
