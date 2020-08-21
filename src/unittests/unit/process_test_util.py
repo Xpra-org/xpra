@@ -248,7 +248,7 @@ class ProcessTestUtil(unittest.TestCase):
 
 
     def get_command_output(self, command, env=None, **kwargs):
-        proc = self.run_command(command, env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+        proc = self.run_command(command, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
         out = proc.communicate()[0]
         return out
 
