@@ -29,4 +29,4 @@ class X11ClientTestUtil(ServerTestUtil):
 		env["XPRA_LOG_PREFIX"] = "client %i: " % X11ClientTestUtil.uq
 		X11ClientTestUtil.uq +=1
 		log("starting test client on Xvfb %s", client_display)
-		return self.run_xpra(["attach"] + list(args) , env)
+		return self.run_xpra(["attach"] + list(args) , env=env)
