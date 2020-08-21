@@ -185,14 +185,13 @@ class ProcessTestUtil(unittest.TestCase):
             pass
         return cmd
 
-    def run_command(self, command, env=None, **kwargs):
-        return self.class_run_command(command, env, **kwargs)
+    def run_command(self, command, **kwargs):
+        return self.class_run_command(command, **kwargs)
 
     @classmethod
-    def class_run_command(cls, command, env=None, **kwargs):
-        if env is None:
-            env = kwargs.get("env") or cls.get_default_run_env()
-        kwargs["env"] = env
+    def class_run_command(cls, command, **kwargs):
+        if "env" not in kwargs:
+            kwargs["env"] = cls.get_default_run_env()
         stdout_file = stderr_file = None
         if isinstance(command, (list, tuple)):
             strcommand = " ".join("'%s'" % x for x in command)
@@ -200,7 +199,7 @@ class ProcessTestUtil(unittest.TestCase):
             strcommand = command
         if XPRA_TEST_DEBUG:
             log("************************")
-            log("class_run_command(%s, %s)", command, repr_ellipsized(str(env), 40))
+            log("class_run_command(%s, %s)", command, repr_ellipsized(str(kwargs), 80))
             log("************************")
         else:
             if "stdout" not in kwargs:
@@ -212,13 +211,13 @@ class ProcessTestUtil(unittest.TestCase):
                 kwargs["stderr"] = stderr_file
                 log("stderr: %s for %s", stderr_file.name, strcommand)
         try:
-            log("class_run_command%s", (command, env, kwargs))
+            log("class_run_command%s", (command, kwargs))
             proc = subprocess.Popen(args=command, **kwargs)
             proc.command = command
             proc.stdout_file = stdout_file
             proc.stderr_file = stderr_file
         except OSError as e:
-            log.warn("class_run_command(%s, %s, %s) %s", command, env, kwargs, e)
+            log.warn("class_run_command(%s, %s) %s", command, kwargs, e)
             raise
         cls.processes.append(proc)
         return proc

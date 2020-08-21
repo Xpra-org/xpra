@@ -79,9 +79,9 @@ class ServerTestUtil(ProcessTestUtil):
         assert pollwait(xpra_list, 15) is not None, "xpra list returned %s" % xpra_list.poll()
 
 
-    def run_xpra(self, xpra_args, env=None, **kwargs):
+    def run_xpra(self, xpra_args, **kwargs):
         cmd = self.get_xpra_cmd()+list(xpra_args)
-        return self.run_command(cmd, env, **kwargs)
+        return self.run_command(cmd, **kwargs)
 
 
     @classmethod
@@ -142,23 +142,26 @@ class ServerTestUtil(ProcessTestUtil):
         return server_proc
 
     def stop_server(self, server_proc, subcommand, *connect_args):
-        assert subcommand in ("stop", "exit")
+        assert subcommand in ("stop", "exit"), "invalid stop subcommand '%s'" % subcommand
         if server_proc.poll() is not None:
             raise Exception("cannot stop server, it has already exited, returncode=%i" % server_proc.poll())
         cmd = [subcommand]+list(connect_args)
         stopit = self.run_xpra(cmd)
+        log("stop_server%s stopit=%s", (server_proc, subcommand, connect_args), stopit)
         if pollwait(stopit, STOP_WAIT_TIMEOUT) is None:
-            log.warn("failed to stop server: %s", getattr(server_proc, "command", server_proc))
+            log("failed to '%s' server: %s", subcommand, getattr(server_proc, "command", server_proc))
             self.show_proc_pipes(server_proc)
-            self.show_proc_error(stopit, "stop server error")
-        assert pollwait(server_proc, STOP_WAIT_TIMEOUT) is not None, "server process %s failed to exit" % server_proc
+            self.show_proc_error(stopit, "%s server error" % subcommand)
+            raise Exception("server process %s failed to '%s'" % (server_proc, subcommand))
 
     def check_stop_server(self, server_proc, subcommand="stop", display=":99999"):
+        log("check_stop_server%s", (server_proc, subcommand, display))
         self.stop_server(server_proc, subcommand, display)
         if not display:
             return
         for _ in range(10):
             displays = self.dotxpra.displays()
+            log.warn("check_stop_server: display=%s, displays=%s", display, displays)
             if display not in displays:
                 return
             time.sleep(1)
