@@ -50,7 +50,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
         def invalid_iface(s):
             v = get_iface(s)
-            if v is not None:
+            if v:
                 raise Exception("invalid IP '%s' should not return interface '%s'" % (s, v))
         invalid_iface(None)
         invalid_iface("")
