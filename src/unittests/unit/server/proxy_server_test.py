@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from xpra.os_util import pollwait
+from xpra.os_util import pollwait, WIN32
 from unit.server_test_util import ServerTestUtil, log
 
 
@@ -25,8 +25,10 @@ class ProxyServerTest(ServerTestUtil):
 		assert display in displays, "proxy display '%s' not found in %s" % (display, displays)
 		self.check_stop_server(proxy, "stop", display)
 
-	@classmethod
-	def stop_server(cls, server_proc, subcommand, *connect_args):
+	def stop_server(self, server_proc, subcommand, *connect_args):
+		if WIN32:
+			super().stop_server(server_proc, subcommand, *connect_args)
+			return
 		log("stop_server%s", (server_proc, subcommand, connect_args))
 		if server_proc.poll() is not None:
 			return
