@@ -1463,7 +1463,7 @@ def run_send_file(extra_args):
         return EXIT_FAILURE
     return 0
 
-def get_sockpath(display_desc, error_cb):
+def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
     #if the path was specified, use that:
     sockpath = display_desc.get("socket_path")
     if not sockpath:
@@ -1481,7 +1481,7 @@ def get_sockpath(display_desc, error_cb):
         dir_servers = socket_details()
         if display and not dir_servers:
             state = dotxpra.get_display_state(display)
-            if state in (DotXpra.UNKNOWN, DotXpra.DEAD):
+            if state in (DotXpra.UNKNOWN, DotXpra.DEAD) and timeout>0:
                 #found the socket for this specific display in UNKNOWN state,
                 #or not found any sockets at all (DEAD),
                 #this could be a server starting up,
@@ -1491,9 +1491,9 @@ def get_sockpath(display_desc, error_cb):
                     log.info("server socket for display %s is in %s state", display, DotXpra.UNKNOWN)
                 else:
                     log.info("server socket for display %s not found", display)
-                log.info(" waiting up to %i seconds", CONNECT_TIMEOUT)
+                log.info(" waiting up to %i seconds", timeout)
                 start = monotonic_time()
-                while monotonic_time()-start<CONNECT_TIMEOUT:
+                while monotonic_time()-start<timeout:
                     state = dotxpra.get_display_state(display)
                     log("get_display_state(%s)=%s", display, state)
                     if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
@@ -2563,19 +2563,24 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         sockdir = display_desc.get("socket_dir", "")
         sockdirs = display_desc.get("socket_dirs", [])
         sockdir = DotXpra(sockdir, sockdirs)
-        sockfile = get_sockpath(display_desc, error_cb)
-        #first 5 seconds: just check if the socket still exists:
-        #without connecting (avoid warnings and log messages on server)
-        for _ in range(25):
-            if not os.path.exists(sockfile):
-                break
-            sleep(0.2)
-        #next 5 seconds: actually try to connect
-        for _ in range(5):
-            final_state = sockdir.get_server_state(sockfile, 1)
-            if final_state is DotXpra.DEAD:
-                break
-            sleep(1)
+        try:
+            sockfile = get_sockpath(display_desc, error_cb, 0)
+        except InitException:
+            #on win32, we can't find the path when it is gone
+            final_state = DotXpra.DEAD
+        else:
+            #first 5 seconds: just check if the socket still exists:
+            #without connecting (avoid warnings and log messages on server)
+            for _ in range(25):
+                if not os.path.exists(sockfile):
+                    break
+                sleep(0.2)
+            #next 5 seconds: actually try to connect
+            for _ in range(5):
+                final_state = sockdir.get_server_state(sockfile, 1)
+                if final_state is DotXpra.DEAD:
+                    break
+                sleep(1)
         if final_state is DotXpra.DEAD:
             print("xpra at %s has exited." % display)
             return 0
