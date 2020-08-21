@@ -32,7 +32,10 @@ class TestDisplayUtil(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    from xpra.os_util import POSIX, OSX
+    #can only work with an X11 server
+    if POSIX and not OSX:
+        unittest.main()
 
 if __name__ == '__main__':
     main()
