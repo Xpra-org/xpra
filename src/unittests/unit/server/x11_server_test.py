@@ -1,23 +1,29 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import time
 import unittest
-from xpra.os_util import pollwait, OSX, POSIX
+
+from xpra.util import typedict
+from xpra.os_util import pollwait, which, OSX, POSIX
 from unit.server_test_util import ServerTestUtil, log
 
 
 class X11ServerTest(ServerTestUtil):
 
-
-	def test_display_reuse(self):
+	def start_test_server(self, *args):
 		display = self.find_free_display()
 		log("starting test server on %s", display)
-		server = self.check_start_server(display)
+		server = self.check_start_server(display, *args)
 		assert display in self.find_X11_displays()
+		return display, server
+
+
+	def test_display_reuse(self):
+		display, server = self.start_test_server()
 		#make sure we cannot start another server on the same display:
 		saved_spe = self.show_proc_error
 		def raise_exception_no_log(*args):
@@ -60,6 +66,76 @@ class X11ServerTest(ServerTestUtil):
 		time.sleep(1)
 		assert pollwait(xvfb, 2) is None, "the Xvfb should not have been killed by xpra shutting down!"
 		xvfb.terminate()
+
+
+	def test_dbus(self):
+		dbus_send = which("dbus-send")
+		if not dbus_send:
+			print("Warning: dbus test skipped, 'dbus-send' not found")
+			return
+		display, server = self.start_test_server("--start=xterm", "--start=xterm", "-d", "dbus")	#2 windows
+		info = self.get_server_info(display)
+		assert info
+		tinfo = typedict(info)
+		dstr = display.lstrip(":")
+		env = self.get_run_env()
+		env["DISPLAY"] = display
+		#use the dbus environment from the server:
+		for k,v in tinfo.items():
+			if k.startswith("env.DBUS_"):
+				env[k[4:]] = v
+		#unchecked calls:
+		for args in (
+			("org.xpra.Server.Focus", "int32:1"),
+			#("org.xpra.Server.Suspend", ),
+			#("org.xpra.Server.Resume", ),
+			("org.xpra.Server.Ungrab", ),
+			("org.xpra.Server.Start", "string:xterm"),
+			("org.xpra.Server.StartChild", "string:xterm"),
+			("org.xpra.Server.KeyPress", "int32:36"),		#Return key with default layout?
+			("org.xpra.Server.KeyRelease", "int32:36"),		#Return key
+			#("org.xpra.Server.ListClients"),
+			#("org.xpra.Server.ListWindows"),
+			("org.xpra.Server.LockBatchDelay", "int32:1", "int32:10"),
+			("org.xpra.Server.UnlockBatchDelay", "int32:1"),
+			("org.xpra.Server.MovePointer", "int32:1", "int32:100", "int32:100"),
+			("org.xpra.Server.MouseClick", "int32:1", "boolean:true"),
+			("org.xpra.Server.MouseClick", "int32:1", "boolean:false"),
+			("org.xpra.Server.MoveWindowToWorkspace", "int32:1", "int32:2"),
+			("org.xpra.Server.RefreshAllWindows"),
+			("org.xpra.Server.RefreshWindow", "int32:1"),
+			("org.xpra.Server.RefreshWindows", "array:int32:1:2:3"),
+			("org.xpra.Server.ResetVideoRegion", "int32:1"),
+			("org.xpra.Server.ResetWindowFilters"),
+			("org.xpra.Server.ResetXSettings"),
+			("org.xpra.Server.SendNotification", "int32:1", "string:title", "string:message", "string:*"),
+			("org.xpra.Server.SendUIClientCommand", "array:string:test"),
+			("org.xpra.Server.SetClipboardProperties", "string:direction", "int32:1000", "int32:1000"),
+			("org.xpra.Server.SetLock", "string:true"),
+			("org.xpra.Server.SetLock", "string:false"),
+			("org.xpra.Server.SetLock", "string:auto"),
+			("org.xpra.Server.SetScreenSize", "int32:1024", "int32:768"),
+			("org.xpra.Server.SetUIDriver", "string:invalid"),
+			("org.xpra.Server.SetVideoRegion", "int32:1", "int32:10", "int32:10", "int32:100", "int32:100"),
+			("org.xpra.Server.SetVideoRegionDetection", "int32:1", "boolean:true"),
+			("org.xpra.Server.SetVideoRegionDetection", "int32:1", "boolean:false"),
+			("org.xpra.Server.SetVideoRegionEnabled", "int32:1", "boolean:true"),
+			("org.xpra.Server.SetVideoRegionEnabled", "int32:1", "boolean:false"),
+			#("org.xpra.Server.SetVideoRegionExclusionZones", ...
+			("org.xpra.Server.SetWindowEncoding", "int32:1", "string:png"),
+			("org.xpra.Server.SetWindowScaling", "int32:1", "string:200%"),
+			("org.xpra.Server.SetWindowScalingControl", "int32:1", "100"),
+			("org.xpra.Server.SetWorkarea", "int32:10", "int32:10", "int32:1000", "int32:740"),
+			("org.xpra.Server.ShowAllWindows"),
+			("org.xpra.Server.SyncXvfb"),
+			#("org.xpra.Server.ToggleFeature", "feature", "True"),
+			):
+			cmd = [dbus_send, "--session", "--type=method_call",
+					"--dest=org.xpra.Server%s" % dstr, "/org/xpra/Server"] + list(args)
+			proc = self.run_command(cmd, env=env)
+			assert pollwait(proc, 20) is not None, "dbus-send is taking too long: %s" % (cmd,)
+
+		self.check_stop_server(server, "stop", display)
 
 
 def main():
