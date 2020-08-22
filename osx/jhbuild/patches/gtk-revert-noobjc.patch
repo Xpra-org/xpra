@@ -194,11 +194,7 @@ index 46a4c811aa..81cd4632e8 100644
  GdkDisplay *_gdk_display = NULL;
  GdkScreen *_gdk_screen = NULL;
 diff --git a/gdk/quartz/gdkinternal-quartz.h b/gdk/quartz/gdkinternal-quartz.h
-deleted file mode 100644
-index 2f47e0a71f..0000000000
---- a/gdk/quartz/gdkinternal-quartz.h
-+++ /dev/null
-@@ -1,265 +0,0 @@
+@@ -1,288 +1 @@
 -/* gdkinternal-quartz.h
 - *
 - * Copyright (C) 2005-2007 Imendio AB
@@ -216,7 +212,7 @@ index 2f47e0a71f..0000000000
 - * You should have received a copy of the GNU Lesser General Public
 - * License along with this library. If not, see <http://www.gnu.org/licenses/>.
 - */
--
+ 
 -#ifndef __GDK_INTERNAL_QUARTZ_H__
 -#define __GDK_INTERNAL_QUARTZ_H__
 -
@@ -276,6 +272,16 @@ index 2f47e0a71f..0000000000
 -  GDK_QUARTZ_EVENT_SUBTYPE_EVENTLOOP
 -} GdkQuartzEventSubType;
 -
+-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 10130
+-#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSEventTypeTabletProximity
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSEventSubtypeTabletProximity
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSEventSubtypeTabletPoint
+-#else
+-#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSTabletProximity
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSTabletProximityEventSubtype
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSTabletPointEventSubtype
+-#endif
+-
 -void         _gdk_quartz_events_update_focus_window    (GdkWindow *new_window,
 -                                                        gboolean   got_focus);
 -void         _gdk_quartz_events_send_map_event         (GdkWindow *window);
@@ -284,6 +290,19 @@ index 2f47e0a71f..0000000000
 -GdkModifierType _gdk_quartz_events_get_current_mouse_modifiers    (void);
 -
 -void         _gdk_quartz_events_break_all_grabs         (guint32    time);
+-
+-/* Devices */
+-void       _gdk_quartz_device_core_set_active (GdkDevice  *device,
+-                                               gboolean    active,
+-                                               NSUInteger  device_id);
+-
+-gboolean   _gdk_quartz_device_core_is_active (GdkDevice  *device,
+-                                              NSUInteger  device_id);
+-
+-void       _gdk_quartz_device_core_set_unique (GdkDevice          *device,
+-                                               unsigned long long  unique_id);
+-
+-unsigned long long _gdk_quartz_device_core_get_unique (GdkDevice *device);
 -
 -/* Event loop */
 -gboolean   _gdk_quartz_event_loop_check_pending (void);
