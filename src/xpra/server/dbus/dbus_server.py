@@ -251,7 +251,7 @@ class DBUS_Server(DBUS_Server_Base):
     @dbus.service.method(INTERFACE, in_signature='is')
     def SetWindowEncoding(self, wid, encoding):
         wid, encoding = ni(wid), ns(encoding)
-        self.log(".SetWindowEncoding(%i, %i)", wid, encoding)
+        self.log(".SetWindowEncoding(%i, %s)", wid, encoding)
         self.server.control_command_encoding(encoding, wid)
 
     @dbus.service.method(INTERFACE, in_signature='i')
