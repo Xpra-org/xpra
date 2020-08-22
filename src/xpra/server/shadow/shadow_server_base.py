@@ -121,10 +121,12 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return {"shadow" : True}
 
     def get_info(self, _proto=None):
-        info = {
+        return {
             "notifications" : self.notifications,
+            "sharing"       : self.sharing,
+            "refresh-delay" : self.refresh_delay,
+            "pointer-last-position" : self.pointer_last_position,
             }
-        return info
 
 
     def get_window_position(self, _window):
