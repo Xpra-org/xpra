@@ -161,7 +161,7 @@ class ServerTestUtil(ProcessTestUtil):
             return
         for _ in range(10):
             displays = self.dotxpra.displays()
-            log.warn("check_stop_server: display=%s, displays=%s", display, displays)
+            log("check_stop_server: display=%s, displays=%s", display, displays)
             if display not in displays:
                 return
             time.sleep(1)
