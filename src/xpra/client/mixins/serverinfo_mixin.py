@@ -37,7 +37,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_version = c.strget("build.version", c.strget("version"))
         self._remote_revision = c.strget("build.revision", c.strget("revision"))
         mods = c.rawget("build.local_modifications")
-        if mods and str(mods).find("dfsg")>=0:
+        if mods and str(mods).find("dfsg")>=0:  # pragma: no cover
             get_util_logger().warn("Warning: the xpra server is running a buggy Debian version")
             get_util_logger().warn(" those are usually out of date and unstable")
         else:
