@@ -356,12 +356,12 @@ class Protocol:
         shm.set()
         #start the format thread:
         if not self._write_format_thread and not self._closed:
-            self._write_format_thread = make_thread(self._write_format_thread_loop, "format", daemon=True)
+            self._write_format_thread = make_thread(self.write_format_thread_loop, "format", daemon=True)
             self._write_format_thread.start()
         #from now on, take shortcut:
         self.source_has_more = self._source_has_more.set
 
-    def _write_format_thread_loop(self):
+    def write_format_thread_loop(self):
         log("write_format_thread_loop starting")
         try:
             while not self._closed:

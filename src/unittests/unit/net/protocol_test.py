@@ -68,9 +68,9 @@ def make_profiling_protocol_class(protocol_class):
             graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, monotonic_time()))
             return PyCallGraph(output=graphviz, config=config)
 
-        def _write_format_thread_loop(self):
+        def write_format_thread_loop(self):
             with self.profiling_context("%s-format-thread" % protocol_class.TYPE):
-                Protocol._write_format_thread_loop(self)
+                Protocol.write_format_thread_loop(self)
 
         def do_read_parse_thread_loop(self):
             with self.profiling_context("%s-read-parse-thread" % protocol_class.TYPE):
