@@ -35,19 +35,6 @@ class ShadowServerTest(ServerTestUtil):
 		_, xvfb, server = self.start_shadow_server()
 		self.stop_shadow_server(xvfb, server)
 
-	def get_server_info(self, display):
-		#wait for client to own the clipboard:
-		cmd = self.get_xpra_cmd()+["info", display]
-		out = self.get_command_output(cmd)
-		#print("info=%s" % (out,))
-		info = {}
-		for line in out.decode().splitlines():
-			if line.find("=")>0:
-				k,v = line.split("=", 1)
-				info[k] = v
-		#print("info=%s" % (info,))
-		return info
-
 	def test_dbus_interface(self):
 		if not POSIX or OSX:
 			return

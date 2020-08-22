@@ -23,7 +23,7 @@ def has_xclip():
 class X11ClipboardTestUtil(X11ClientTestUtil):
 
 	def get_clipboard_value(self, display, selection="clipboard"):
-		out = self.get_command_output("xclip -d %s -selection %s -o" % (display, selection), shell=True)
+		out = X11ClientTestUtil.get_command_output("xclip -d %s -selection %s -o" % (display, selection), shell=True)
 		return out.decode()
 
 	def set_clipboard_value(self, display, value, selection="clipboard"):
@@ -61,7 +61,7 @@ class X11ClipboardTestUtil(X11ClientTestUtil):
 		#wait for client to own the clipboard:
 		cmd = self.get_xpra_cmd()+["info", server_display]
 		for _ in range(10):
-			out = self.get_command_output(cmd)
+			out = X11ClientTestUtil.get_command_output(cmd)
 			if out.find(b"clipboard.client=")>0:
 				break
 			time.sleep(1)

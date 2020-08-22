@@ -166,3 +166,17 @@ class ServerTestUtil(ProcessTestUtil):
                 return
             time.sleep(1)
         raise Exception("server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
+
+    @classmethod
+    def get_server_info(cls, display):
+        #wait for client to own the clipboard:
+        cmd = cls.get_xpra_cmd()+["info", display]
+        out = cls.get_command_output(cmd)
+        #print("info=%s" % (out,))
+        info = {}
+        for line in out.decode().splitlines():
+            if line.find("=")>0:
+                k,v = line.split("=", 1)
+                info[k] = v
+        #print("info=%s" % (info,))
+        return info
