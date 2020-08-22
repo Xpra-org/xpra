@@ -122,7 +122,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def get_info(self, _proto=None):
         return {
-            "notifications" : self.notifications,
             "sharing"       : self.sharing,
             "refresh-delay" : self.refresh_delay,
             "pointer-last-position" : self.pointer_last_position,
