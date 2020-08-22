@@ -2,8 +2,8 @@
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     4.3
-Release:     2%{?dist}
+Version:     4.3.1
+Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -170,6 +170,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Aug 22 2020 Antoine Martin <antoine@xpra.org> 4.3.1-1
+- new upstream release
+
 * Mon Jul 06 2020 Antoine Martin <antoine@xpra.org> 4.3-2
 - rebuild against 10-bit x264
 - remove autoreq / autoprov
