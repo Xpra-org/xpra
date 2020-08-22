@@ -117,6 +117,7 @@ BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 %if 0%{?run_tests}
 BuildRequires:		dbus-x11
+BuildRequires:		dbus-tools
 BuildRequires:		tigervnc
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy

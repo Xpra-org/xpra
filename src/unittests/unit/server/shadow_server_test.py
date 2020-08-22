@@ -8,24 +8,77 @@ import time
 import socket
 import unittest
 
-from xpra.os_util import pollwait, OSX, POSIX
+from xpra.util import typedict
+from xpra.os_util import pollwait, which, OSX, POSIX
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.server.shadow.shadow_server_base import REFRESH_DELAY
 from unit.server_test_util import ServerTestUtil
 
 
 class ShadowServerTest(ServerTestUtil):
 
-	def test_shadow_start_stop(self):
+	def start_shadow_server(self, *args):
 		display = self.find_free_display()
 		xvfb = self.start_Xvfb(display)
-		time.sleep(1)
 		assert display in self.find_X11_displays()
 		#start server using this display:
-		server = self.check_server("shadow", display)
-		self.check_stop_server(server, "stop", display)
+		server = self.check_server("shadow", display, *args)
+		return display, xvfb, server
+
+	def stop_shadow_server(self, xvfb, server):
+		self.check_stop_server(server, "stop", xvfb.display)
 		time.sleep(1)
 		assert pollwait(xvfb, 2) is None, "the Xvfb should not have been killed by xpra shutting down!"
 		xvfb.terminate()
+
+	def test_shadow_start_stop(self):
+		_, xvfb, server = self.start_shadow_server()
+		self.stop_shadow_server(xvfb, server)
+
+	def get_server_info(self, display):
+		#wait for client to own the clipboard:
+		cmd = self.get_xpra_cmd()+["info", display]
+		out = self.get_command_output(cmd)
+		#print("info=%s" % (out,))
+		info = {}
+		for line in out.decode().splitlines():
+			if line.find("=")>0:
+				k,v = line.split("=", 1)
+				info[k] = v
+		#print("info=%s" % (info,))
+		return info
+
+	def test_dbus_interface(self):
+		if not POSIX or OSX:
+			return
+		dbus_send = which("dbus-send")
+		if not dbus_send:
+			print("Warning: dbus test skipped, 'dbus-send' not found")
+			return
+		display, xvfb, server = self.start_shadow_server("-d", "dbus")
+		info = self.get_server_info(xvfb.display)
+		assert info
+		tinfo = typedict(info)
+		assert tinfo.strget("server.display")==display
+		rd = tinfo.intget("refresh-delay", 0)
+		assert rd==REFRESH_DELAY, "expected refresh-delay=%i, got %i" % (REFRESH_DELAY, rd)
+		dstr = display.lstrip(":")
+		new_delay = 2
+		cmd = [dbus_send, "--session", "--type=method_call",
+				"--dest=org.xpra.Server%s" % dstr, "/org/xpra/Server",
+				"org.xpra.Server.SetRefreshDelay", "int32:%i" % new_delay]
+		env = self.get_run_env()
+		env["DISPLAY"] = display
+		self.run_command(cmd, env=env).wait(20)
+		#check that the value has changed:
+		info = self.get_server_info(display)
+		assert info
+		tinfo = typedict(info)
+		assert tinfo.strget("server.display")==display
+		rd = tinfo.intget("refresh-delay", 0)
+		assert rd==new_delay, "expected refresh-delay=%i, got %i" % (new_delay, rd)
+		self.stop_shadow_server(xvfb, server)
+
 
 	def test_root_window_model(self):
 		from xpra.server.shadow.root_window_model import RootWindowModel
