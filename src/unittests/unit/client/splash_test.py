@@ -6,6 +6,7 @@
 
 import os
 import time
+import signal
 import unittest
 from subprocess import Popen, PIPE
 
@@ -64,7 +65,7 @@ class SplashTest(ProcessTestUtil):
 				return
 			try:
 				s.kill()
-			except:
+			except Exception:
 				pass
 		finally:
 			try:
@@ -104,7 +105,11 @@ class SplashTest(ProcessTestUtil):
 			])
 		r = pollwait(self.splash, 5)
 		assert r is None, "splash screen should not have terminated"
-		self.stop_splash()
+		#try killing it with a signal:
+		self.splash.send_signal(signal.SIGINT)
+		r = pollwait(self.splash, 5)
+		e = 128-signal.SIGINT
+		assert r==e, "expected exit code %i but got %s" % (e, r)
 
 	def test_full(self):
 		self._feed_splash([
