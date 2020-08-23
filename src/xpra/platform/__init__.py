@@ -121,7 +121,7 @@ def do_get_username():
             return getpass.getuser()
         except Exception:
             pass
-    return ""
+        return ""
 
 
 def platform_import(where, pm, required, *imports):
