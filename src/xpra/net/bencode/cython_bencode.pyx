@@ -37,7 +37,7 @@ cdef decode_int(const unsigned char *x, unsigned int f, int l):
     f += 1
     cdef int newf = find(x, b'e', f, l)
     cdef object n
-    assert newf>=0, "end of int not found"
+    assert newf>(<int> f), "end of int not found"
     cdef unsigned int unewf = newf
     try:
         n = int(x[f:unewf])
@@ -53,7 +53,7 @@ cdef decode_int(const unsigned char *x, unsigned int f, int l):
 cdef decode_string(const unsigned char *x, unsigned int f, int l):
     cdef int colon = find(x, b':', f, l)
     cdef int slen
-    assert colon>=0, "colon not found in string size header"
+    assert colon>=(<int> f), "colon not found in string size header"
     lenstr = x[f:colon]
     cdef unsigned int ucolon = colon
     try:

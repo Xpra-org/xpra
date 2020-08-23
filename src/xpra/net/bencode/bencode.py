@@ -31,6 +31,7 @@ def b(x):
 def decode_int(x, f):
     f += 1
     newf = strindex(x, 'e', f)
+    assert newf>f
     n = int(x[f:newf])
     if x[f] == ord('-'):
         if x[f + 1] == ord('0'):
@@ -41,7 +42,7 @@ def decode_int(x, f):
 
 def decode_string(x, f):
     colon = strindex(x, ':', f)
-    assert colon>=0
+    assert colon>=f
     n = int(x[f:colon])
     if x[f] == ord('0') and colon != f+1:
         raise ValueError
