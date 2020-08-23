@@ -238,6 +238,13 @@ class TestBencoderFunctions:
             ]
         self.t(packet)
 
+    def test_decode_unicode(self):
+        #we never use this code,
+        #so we have to call it directly
+        be = self.decode(b"u3:abc")[0]
+        e = "abc"
+        assert be==e, "expected %s but got %s" % (e, be)
+
     def test_encoding_hello(self):
         self.t(hello)
 
@@ -253,6 +260,8 @@ class TestBencoderFunctions:
                 self.decode(v)
             except ValueError:
                 pass
+            except AssertionError:
+                pass
             else:
                 raise Exception("decode should have failed for '%s' (%s)" % (v, type(v)))
         f(b"")
@@ -262,6 +271,7 @@ class TestBencoderFunctions:
         f(b"di1eXXe")   #invalid value in dict
         f(b"dXXi2ee")   #invalid key in dict
         f(b"s")         #input too short
+        f(b"i1")        #no end marker
 
 
 class TestBencoder(unittest.TestCase, TestBencoderFunctions):
