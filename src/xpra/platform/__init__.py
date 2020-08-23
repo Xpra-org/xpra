@@ -153,10 +153,9 @@ def platform_import(where, pm, required, *imports):
         found = hasattr(platform_module, x)
         if not found:
             if required:
-                raise Exception("could not find %s in %s" % (x, module))
-            continue
-        v = getattr(platform_module, x)
-        where[x] = v
+                raise ImportError("could not find %s in %s" % (x, module))
+        else:
+            where[x] = getattr(platform_module, x)
 
 platform_import(globals(), None, True, "do_init", "do_clean")
 platform_import(globals(), None, False, "threaded_server_init",

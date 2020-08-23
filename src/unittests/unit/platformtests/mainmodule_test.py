@@ -18,6 +18,7 @@ from xpra.platform import (
     command_error, command_info,
     )
 from xpra.make_thread import start_thread
+from xpra.scripts import main as xpra_main
 from xpra.os_util import WIN32
 
 
@@ -40,7 +41,6 @@ class PlatformInfoTest(unittest.TestCase):
         calls = []
         def ccall(*args):
             calls.append(args)
-        from xpra.scripts import main as xpra_main
         xpra_main.error = ccall
         xpra_main.info = ccall
         command_error("error")
@@ -52,12 +52,21 @@ class PlatformInfoTest(unittest.TestCase):
     def test_fail_import(self):
         where = {}
         platform_import(where, "invalid name", False, "foo")
-        try:
-            platform_import(where, "invalid name", True, "bar")
-        except ImportError:
-            pass
-        else:
-            raise Exception("should have failed to import invalid name")
+        def f(*args):
+            try:
+                platform_import(where, *args)
+            except ImportError:
+                pass
+            else:
+                raise Exception("should have failed to import invalid name")
+        f("invalid name", True, "bar")
+        #test with some valid platform modules:
+        # - required import is missing:
+        f("paths", True, "this-function-does-not-exist")
+        where = {}
+        # - optional import is missing:
+        platform_import(where, "paths", False, "do_get_app_dir", "optional-function")
+        assert len(where)==1, "where=%s" % (where,)
 
 def main():
     unittest.main()
