@@ -103,13 +103,9 @@ class NetworkStateMixin(StubSourceMixin):
 
     def process_ping_echo(self, packet):
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
-        timer = self.check_ping_echo_timers.get(echoedtime)
+        timer = self.check_ping_echo_timers.pop(echoedtime, None)
         if timer:
-            try:
-                self.source_remove(timer)
-                del self.check_ping_echo_timers[echoedtime]
-            except KeyError:
-                pass
+            self.source_remove(timer)
         self.last_ping_echoed_time = echoedtime
         client_ping_latency = monotonic_time()-echoedtime/1000.0
         stats = getattr(self, "statistics", None)
