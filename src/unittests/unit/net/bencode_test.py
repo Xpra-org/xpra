@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #pylint: disable=line-too-long
 
+import os
+import sys
 import unittest
 import binascii
 
 from xpra.os_util import strtobytes, bytestostr
 from xpra.util import repr_ellipsized
-from xpra.net.bencode.bencode import bencode, bdecode
 from xpra.net.bencode import cython_bencode   #@UnresolvedImport
+from xpra.net import bencode
 
 
 #sample data to encode:
@@ -277,16 +279,41 @@ class TestBencoderFunctions:
 class TestBencoder(unittest.TestCase, TestBencoderFunctions):
 
     def setUp(self):
-        self.encode = bencode
-        self.decode = bdecode
+        bencode.init()
+        self.encode = bencode.bencode
+        self.decode = bencode.bdecode
         unittest.TestCase.setUp(self)
 
 class TestCythonBencoder(unittest.TestCase, TestBencoderFunctions):
 
     def setUp(self):
+        bencode.init()
         self.encode = cython_bencode.bencode    #@UndefinedVariable
         self.decode = cython_bencode.bdecode    #@UndefinedVariable
         unittest.TestCase.setUp(self)
+
+class TestCythonEnvBencoder(unittest.TestCase, TestBencoderFunctions):
+    def setUp(self):
+        os.environ["XPRA_USE_CYTHON_BENCODE"] = "1"
+        bencode.init()
+        self.encode = bencode.bencode
+        self.decode = bencode.bdecode
+
+class TestPythonEnvBencoder(unittest.TestCase, TestBencoderFunctions):
+    def setUp(self):
+        os.environ["XPRA_USE_CYTHON_BENCODE"] = "0"
+        bencode.init()
+        self.encode = bencode.bencode
+        self.decode = bencode.bdecode
+
+class TestFailCython(unittest.TestCase):
+    def test_fail_import(self):
+        try:
+            #backup = sys.modules.copy()
+            sys.modules["xpra.net.bencode.cython_bencode"] = None
+            bencode.init()
+        finally:
+            del sys.modules["xpra.net.bencode.cython_bencode"]
 
 
 def main():
