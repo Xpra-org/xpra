@@ -27,7 +27,7 @@ class DBUS_Server_Base(dbus.service.Object):
         try:
             log("calling %s", self.remove_from_connection)
             self.remove_from_connection()
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.error("Error removing the DBUS server:")
             log.error(" %s", e)
 
@@ -41,19 +41,19 @@ class DBUS_Server_Base(dbus.service.Object):
         self.log(".Event(%s, %s)", event, args)
 
 
-    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='s', out_signature='v')
-    def Get(self, property_name):
+    @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='ss', out_signature='v')
+    def Get(self, interface_name, property_name):
         conv = self._properties.get(property_name)
         if conv is None:
             raise dbus.exceptions.DBusException("invalid property")
         server_property_name, _ = conv
         v = getattr(self.server, server_property_name)
-        self.log(".Get(%s)=%s", property_name, v)
+        self.log(".Get(%s, %s)=%s", interface_name, property_name, v)
         return v
 
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
-        if interface_name==INTERFACE:
+        if interface_name==dbus.PROPERTIES_IFACE:
             v = dict((x, self.Get(x)) for x in self._properties.keys())
         else:
             v = {}
