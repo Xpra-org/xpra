@@ -40,14 +40,14 @@ class TestRFB(unittest.TestCase):
             s.send_cursor()
             s.send_server_event()
             s.update_mouse()
-            s.damage(1, window, 0, 0, 1024, 768, {"polling" : True})
-            s.damage(1, window, 0, 0, 2, 2)
+            s.damage(1, window, 0, 0, 1024, 768, {"polling" : protocol is None})
+            s.damage(1, window, 0, 0, 2, 2, {"polling" : protocol is None})
             s.send_clipboard("foo")
             s.bell()
             assert not s.is_closed()
             s.close()
             #noop:
-            s.damage(1, window, 0, 0, 2, 2)
+            s.damage(1, window, 0, 0, 2, 2, {"polling" : protocol is None})
             assert s.is_closed()
 
 
