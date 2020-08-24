@@ -109,7 +109,7 @@ class RFBServer:
         log("rfb handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
         if not accepted:
             return
-        source = RFBSource(proto, self._get_rfb_desktop_model(), proto.share)
+        source = RFBSource(proto, proto.share)
         if server_features.input_devices:
             source.keyboard_config = self.get_keyboard_config()
             self.set_keymap(source)

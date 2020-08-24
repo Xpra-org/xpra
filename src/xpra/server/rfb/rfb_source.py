@@ -19,9 +19,8 @@ counter = AtomicInteger()
 
 class RFBSource:
 
-    def __init__(self, protocol, desktop, share=False):
+    def __init__(self, protocol, share=False):
         self.protocol = protocol
-        self.desktop = desktop
         self.close_event = Event()
         self.log_disconnect = True
         self.ui_client = True
@@ -45,7 +44,7 @@ class RFBSource:
         return self.close_event.isSet()
 
     def close(self):
-        pass
+        self.close_event.set()
 
     def ping(self):
         pass
