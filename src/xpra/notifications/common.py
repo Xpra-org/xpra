@@ -18,13 +18,14 @@ def parse_image_data(data):
             width, height, rowstride, bool(has_alpha), bpp, channels, len(pixels))
         from PIL import Image
         if channels==4:
-            if has_alpha:
-                rgb_format = "RGBA"
-            else:
-                rgb_format = "RGBX"
+            rgb_format = "BGRA"
+            fmt = "RGBA"
         elif channels==3:
-            rgb_format = "RGB"
-        img = Image.frombuffer("RGBA", (width, height), pixels, "raw", rgb_format, rowstride)
+            rgb_format = "BGR"
+            fmt = "RGB"
+        img = Image.frombytes(fmt, (width, height), pixels, "raw", rgb_format, rowstride)
+        if channels==4 and not has_alpha:
+            img = img.convert("RGB")
         return image_data(img)
     except Exception as e:
         log("parse_image_data(%s)", data, exc_info=True)
