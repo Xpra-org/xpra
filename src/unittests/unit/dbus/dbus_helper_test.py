@@ -50,8 +50,12 @@ class TestDBUSHelper(unittest.TestCase):
     def test_unhandled_types(self):
         from xpra.dbus.helper import dbus_to_native, native_to_dbus
         o = AdHocStruct()
-        assert dbus_to_native(o)==o
-        assert native_to_dbus(o)==o
+        r = dbus_to_native(o)
+        assert r==o and type(r)==type(o), "%s (%s) got converted to %s (%s)" % (o, type(o), r, type(r))
+        r = native_to_dbus(o)
+        #we don't know what else to do,
+        #so we convert to a string:
+        assert r==str(o)
 
 
 def main():
