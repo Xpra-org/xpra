@@ -10,7 +10,7 @@ from xpra.platform import (
     platform_import,
     init, clean, threaded_server_init,
     program_context,
-    set_default_name,
+    set_default_name, set_prgname,
     #set_name, set_prgname, set_application_name,
     get_prgname,
     get_application_name,
@@ -47,6 +47,7 @@ class PlatformInfoTest(unittest.TestCase):
         command_info("info")
         assert len(calls)==2, "expected 2 messages but got: %s" % (calls,)
         assert get_username()
+        set_prgname(None)
         clean()
 
     def test_fail_import(self):
