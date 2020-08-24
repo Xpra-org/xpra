@@ -148,9 +148,27 @@ class X11ServerTest(ServerTestUtil):
 			("org.xpra.Server.SyncXvfb", ),
 			("org.xpra.Server.SetDPI", "int32:144", "int32:144"),
 			("org.xpra.Server.ToggleFeature", "string:bell", "string:off"),
+			#generic dbus server queries:
+			("org.xpra.Server.Get", "string:session_name"),
+			("org.xpra.Server.GetAll", ),
+			("org.xpra.Server.Set", "string:session_name", "string:foo"),
 			):
 			cmd = [dbus_send, "--session", "--type=method_call",
 					"--dest=org.xpra.Server%s" % dstr, "/org/xpra/Server"] + list(args)
+			proc = self.run_command(cmd, env=env)
+			assert pollwait(proc, 20) is not None, "dbus-send is taking too long: %s" % (cmd,)
+		#properties using interface org.freedesktop.DBus.Properties:
+		for args in (
+			("Get", "string:idle-timeout"),
+			("Get", "string:does-not-exist"),
+			("GetAll", ),
+			("Set", "string:idle-timeout", "int32:20"),
+			("Set", "string:does-not-exist", "string:irrelevant"),
+			):
+			cmd = [dbus_send, "--session", "--type=method_call", "--print-reply",
+					"--dest=org.xpra.Server%s" % dstr, "/org/xpra/Server",
+					"org.freedesktop.DBus.Properties.%s" % args[0], "string:org.xpra.Server%s" % dstr
+					] + list(args[1:])
 			proc = self.run_command(cmd, env=env)
 			assert pollwait(proc, 20) is not None, "dbus-send is taking too long: %s" % (cmd,)
 
