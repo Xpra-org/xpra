@@ -408,6 +408,8 @@ class typedict(dict):
 def parse_scaling_value(v):
     if not v:
         return None
+    if v.endswith("%"):
+        return int(v[:-1]), 100
     values = v.replace("/", ":").replace(",", ":").split(":", 1)
     values = [int(x) for x in values]
     for x in values:
