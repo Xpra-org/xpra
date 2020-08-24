@@ -16,6 +16,7 @@ from xpra.os_util import (
     strtobytes, bytestostr,
     monotonic_time,
     WIN32, OSX, POSIX,
+    get_hex_uuid,
     )
 from xpra.net.digest import get_digests, get_digest_module, gendigest
 
@@ -243,6 +244,22 @@ class TestAuth(unittest.TestCase):
             password = uuid.uuid4().hex
             return password, password
         self._test_file_auth("file", genfiledata)
+        #no digest -> no challenge
+        a = self._init_auth("file", filename="foo")
+        assert a.requires_challenge()
+        try:
+            a.get_challenge(["not-a-valid-digest"])
+        except ValueError:
+            pass
+        a.password_filename = "./this-path-should-not-exist"
+        assert a.load_password_file() is None
+        assert a.stat_password_filetime()==0
+        #inaccessible:
+        filename = "./test-file-auth-%s-%s" % (get_hex_uuid(), os.getpid())
+        with open(filename, 'wb') as f:
+            os.fchmod(f.fileno(), 0o200)    #write-only
+        a.password_filename = filename
+        a.load_password_file()
 
     def test_multifile(self):
         def genfiledata(a):
