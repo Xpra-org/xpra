@@ -228,6 +228,15 @@ class SourceMixinsTest(unittest.TestCase):
         from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
         self._test_mixin_class(ClientDisplayMixin)
 
+    def test_shell(self):
+        from xpra.server.source.shell_mixin import ShellMixin
+        m = self._test_mixin_class(ShellMixin)
+        def noop(*_args):
+            pass
+        m.send = noop
+        m.shell_exec("print('hello')")
+        m.shell_exec("--not-a-statement--")
+
     def test_webcam(self):
         if not POSIX or OSX:
             get_util_logger().info("webcam test skipped: %s not supported yet", sys.platform)
