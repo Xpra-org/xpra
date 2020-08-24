@@ -32,10 +32,6 @@ def nb(*args):
     return bool(n(*args))
 
 
-def stoms(v):
-    return int(v*1000.0)
-
-
 class DBUS_Server(DBUS_Server_Base):
 
     def __init__(self, server=None, extra=""):
@@ -104,7 +100,7 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".KeyRelease(%i)", k)
         self.server.control_command_key(str(k), press=False)
 
-    @dbus.service.method(INTERFACE)
+    @dbus.service.method(INTERFACE, in_signature='')
     def ClearKeysPressed(self):
         self.log(".ClearKeysPressed()")
         self.server.clear_keys_pressed()
@@ -192,7 +188,7 @@ class DBUS_Server(DBUS_Server_Base):
         for wid, window in self.server._id_to_window.items():
             try:
                 d[wid] = window.get_property("title")
-            except Exception:
+            except Exception:   # pragma: no cover
                 d[wid] = str(window)
         self.log(".ListWindows()=%s", d)
         return d
@@ -267,13 +263,13 @@ class DBUS_Server(DBUS_Server_Base):
         self.log(".RefreshWindows(%s)", wids)
         self.server.control_command_refresh(*wids)
 
-    @dbus.service.method(INTERFACE)
+    @dbus.service.method(INTERFACE, in_signature='')
     def RefreshAllWindows(self):
         self.log(".RefreshAllWindows()")
         self.server.control_command_refresh(*self.server._id_to_window.keys())
 
 
-    @dbus.service.method(INTERFACE)
+    @dbus.service.method(INTERFACE, in_signature='')
     def ResetWindowFilters(self):
         self.log(".ResetWindowFilters()")
         self.server.reset_window_filters()
@@ -361,7 +357,7 @@ class DBUS_Server(DBUS_Server_Base):
                 #v =  native_to_dbus(info)
                 log("native_to_dbus(..)=%s", v)
                 callback(v)
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 log("GetAllInfo:gotinfo", exc_info=True)
                 errback(str(e))
         v = self.server.get_all_info(gotinfo)
@@ -377,7 +373,7 @@ class DBUS_Server(DBUS_Server_Base):
                 v =  dbus.types.Dictionary((str(k), native_to_dbus(v)) for k,v in sub.items())
                 log("native_to_dbus(..)=%s", v)
                 callback(v)
-            except Exception as e:
+            except Exception as e:  # pragma: no cover
                 log("GetInfo:gotinfo", exc_info=True)
                 errback(str(e))
         v = self.server.get_all_info(gotinfo)
