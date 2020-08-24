@@ -31,9 +31,12 @@ class DBUSTest(unittest.TestCase):
             raise ImportError()
         def rfail():
             raise Exception("test")
+        def ok():
+            pass
         assert dbus_common.dbus_exception_wrap(r1)==1
-        assert dbus_common.dbus_exception_wrap(rimporterror)==None
-        assert dbus_common.dbus_exception_wrap(rfail)==None
+        assert dbus_common.dbus_exception_wrap(rimporterror) is None
+        assert dbus_common.dbus_exception_wrap(rfail) is None
+        assert dbus_common.dbus_exception_wrap(ok) is not None
 
 
     def test_start_dbus(self):
