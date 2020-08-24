@@ -24,15 +24,19 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
     """
     from gi.repository import Gdk
     display = Gdk.Display.get_default()
+    return do_get_gtk_keymap(display, ignore_keys)
+
+def do_get_gtk_keymap(display, ignore_keys):
     if not display:
         return ()
+    from gi.repository import Gdk
     keymap = Gdk.Keymap.get_for_display(display)
     log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
         display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
     keycodes=[]
     for i in range(0, 2**8):
         entries = keymap.get_entries_for_keycode(i)
-        if not entries:
+        if not entries: # pragma: no cover
             continue
         found, keys, keyvals = entries
         if not found:
@@ -54,7 +58,7 @@ def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")):
     return keycodes
 
 
-def main():
+def main(): # pragma: no cover
     import sys
     from xpra.platform import program_context
     from xpra.log import enable_color
