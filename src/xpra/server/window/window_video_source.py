@@ -69,10 +69,10 @@ def parse_scaling_options_str(scaling_options_str):
         try:
             if option.find("%")>0:
                 v = float(option[:option.find("%")])*100
-                vs_options.append(float.as_integer_ratio(v))
+                vs_options.append(v.as_integer_ratio())
             elif option.find("/")<0:
                 v = float(option)
-                vs_options.append(float.as_integer_ratio(v))
+                vs_options.append(v.as_integer_ratio())
             else:
                 num, den = option.strip().split("/")
                 vs_options.append((int(num), int(den)))
