@@ -1,4 +1,4 @@
-# This file is part of Xpra.
+XPRA_REPAINT_MAXIMIZED# This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
@@ -112,6 +112,7 @@ DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1
 HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX) and not is_gtk3()
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
+REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 500)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -866,6 +867,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.process_map_event()
         statelog("window_state_updated(..) state updates: %s, actual updates: %s, server updates: %s",
                  state_updates, actual_updates, server_updates)
+        if "maximized" in state_updates and REPAINT_MAXIMIZED>0:
+            def repaint_maximized():
+                if not self._backing:
+                    return
+                ww, wh = self.get_size()
+                log.warn("repaint_maximized()")
+                self.repaint(0, 0, ww, wh)
+            self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
+
         self._window_state.update(server_updates)
         self.emit("state-updated")
         #if we have state updates, send them back to the server using a configure window packet:
