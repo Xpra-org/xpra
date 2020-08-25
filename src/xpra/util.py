@@ -409,7 +409,7 @@ def parse_scaling_value(v):
     if not v:
         return None
     if v.endswith("%"):
-        return int(v[:-1]), 100
+        return float(v[:1]).as_integer_ratio()
     values = v.replace("/", ":").replace(",", ":").split(":", 1)
     values = [int(x) for x in values]
     for x in values:
