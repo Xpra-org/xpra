@@ -843,7 +843,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if not self._backing:
                     return
                 ww, wh = self.get_size()
-                log.warn("repaint_maximized()")
                 self.repaint(0, 0, ww, wh)
             self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
 
