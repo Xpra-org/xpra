@@ -1,4 +1,4 @@
-XPRA_REPAINT_MAXIMIZED# This file is part of Xpra.
+# This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
@@ -872,7 +872,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 if not self._backing:
                     return
                 ww, wh = self.get_size()
-                self.repaint(0, 0, ww, wh)
+                #this should work for the non-opengl case:
+                self.queue_draw_area(0, 0, ww, wh)
             self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
 
         self._window_state.update(server_updates)
