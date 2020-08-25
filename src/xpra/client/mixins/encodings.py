@@ -36,7 +36,6 @@ class Encodings(StubClientMixin):
     def __init__(self):
         StubClientMixin.__init__(self)
         self.allowed_encodings = []
-        self.core_encodings = None
         self.encoding = None
         self.quality = -1
         self.min_quality = 0
@@ -83,7 +82,7 @@ class Encodings(StubClientMixin):
     def cleanup(self):
         try:
             getVideoHelper().cleanup()
-        except Exception:
+        except Exception:   # pragma: no cover
             log.error("error on video cleanup", exc_info=True)
 
 
@@ -243,11 +242,6 @@ class Encodings(StubClientMixin):
             cenc.append("grayscale")
         return [x for x in PREFERRED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
 
-    def get_core_encodings(self):
-        if self.core_encodings is None:
-            self.core_encodings = self.do_get_core_encodings()
-        return self.core_encodings
-
     def get_cursor_encodings(self):
         e = ["raw"]
         if "png" in self.get_core_encodings():
@@ -260,7 +254,7 @@ class Encodings(StubClientMixin):
             e.append("png")
         return e
 
-    def do_get_core_encodings(self):
+    def get_core_encodings(self):
         """
             This method returns the actual encodings supported.
             ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
@@ -273,7 +267,9 @@ class Encodings(StubClientMixin):
         for codec in ("dec_pillow", "dec_webp", "dec_jpeg"):
             if has_codec(codec):
                 c = get_codec(codec)
-                for e in c.get_encodings():
+                encs = c.get_encodings()
+                log("%s.get_encodings()=%s", codec, encs)
+                for e in encs:
                     if e not in core_encodings:
                         core_encodings.append(e)
         if SCROLL_ENCODING:
