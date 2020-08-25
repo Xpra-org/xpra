@@ -829,10 +829,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                  state_updates, actual_updates, server_updates)
         if "maximized" in state_updates and REPAINT_MAXIMIZED>0:
             def repaint_maximized():
-                if not self._backing:
+                widget = self.drawing_area
+                if not self._backing or not widget:
                     return
                 ww, wh = self.get_size()
-                self.repaint(0, 0, ww, wh)
+                widget.queue_draw_area(0, 0, ww, wh)
             self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
 
         self._window_state.update(server_updates)
