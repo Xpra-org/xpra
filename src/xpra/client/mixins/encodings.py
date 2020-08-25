@@ -214,7 +214,7 @@ class Encodings(StubClientMixin):
             and the actual encoding used ("rgb24" or "rgb32") depends on the window's bit depth.
             ("rgb32" if there is an alpha channel, and if the client supports it)
         """
-        cenc = self.get_core_encodings()
+        cenc = list(self.get_core_encodings())
         if ("rgb24" in cenc or "rgb32" in cenc) and "rgb" not in cenc:
             cenc.append("rgb")
         return [x for x in PREFERED_ENCODING_ORDER if x in cenc and x not in ("rgb32", "rgb24")]
