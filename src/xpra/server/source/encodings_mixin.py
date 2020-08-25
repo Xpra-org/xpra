@@ -42,16 +42,6 @@ class EncodingsMixin(StubSourceMixin):
         self.wants_encodings = False
         self.wants_features = False
 
-        self.server_core_encodings = []
-        self.server_encodings = []
-        self.default_encoding = None
-        self.scaling_control = None
-
-        self.default_quality = 40       #default encoding quality for lossy encodings
-        self.default_min_quality = 10   #default minimum encoding quality
-        self.default_speed = 40         #encoding speed (only used by x264)
-        self.default_min_speed = 10     #default minimum encoding speed
-
         #contains default values, some of which may be supplied by the client:
         self.default_batch_config = DamageBatchConfig()
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
