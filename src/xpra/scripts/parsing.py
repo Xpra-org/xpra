@@ -15,7 +15,7 @@ from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CA
 from xpra.util import envbool, csv
 from xpra.os_util import getuid, WIN32, OSX, POSIX
 from xpra.scripts.config import (
-    OPTION_TYPES,
+    OPTION_TYPES, FALSE_OPTIONS,
     InitException, InitInfo, InitExit,
     fixup_debug_option, fixup_options,
     make_defaults_struct, parse_bool, print_number,
@@ -1297,7 +1297,10 @@ def do_parse_cmdline(cmdline, defaults):
     for x in ("dpi", "sync_xvfb"):
         try:
             s = getattr(options, x, None)
-            v = int(s)
+            if x=="sync_xvfb" and (s or "").lower() in FALSE_OPTIONS:
+                v = 0
+            else:
+                v = int(s)
             setattr(options, x, v)
         except Exception as e:
             raise InitException("invalid value for %s: '%s': %s" % (x, s, e)) from None
