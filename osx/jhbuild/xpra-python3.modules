@@ -439,9 +439,9 @@
 
 	<distutils id="python3-brotli" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/9b/2f/29ec65c7497e4d50f3cd60c336a526f1cf1fe71cbc66beb70a5a2f5b7f8b/Brotli-1.0.8.zip"
-			hash="sha256:6a0fd679b93252b96cde8a8b4449ae556840d855fea2276a03ea22e024940e9b"
-			version="1.0.8">
+			module="/packages/2a/18/70c32fe9357f3eea18598b23aa9ed29b1711c3001835f7cf99a9818985d0/Brotli-1.0.9.zip"
+			hash="sha256:4d1b810aa0ed773f81dceda2cc7b403d01057458730e309856356d4ef4188438"
+			version="1.0.9">
 		</branch>
 		<dependencies>
 			<dep package="python3"/>
