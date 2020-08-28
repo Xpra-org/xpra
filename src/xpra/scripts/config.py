@@ -1030,7 +1030,7 @@ def get_defaults():
                     "modal-windows"     : False,
                     "bandwidth-detection" : True,
                     "ssh-upgrade"       : True,
-                    "splash"            : True,
+                    "splash"            : None,
                     "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
                     "socket-dirs"       : get_socket_dirs(),
                     "client-socket-dirs" : get_client_socket_dirs(),

@@ -423,11 +423,11 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                         #if we had connected to the session,
                         #we can ignore more error codes:
                         NO_RETRY += [
-                                EXIT_CONNECTION_LOST,
-                                EXIT_REMOTE_ERROR,
-                                EXIT_INTERNAL_ERROR,
-                                EXIT_FILE_TOO_BIG,
-                                ]
+                            EXIT_CONNECTION_LOST,
+                            EXIT_REMOTE_ERROR,
+                            EXIT_INTERNAL_ERROR,
+                            EXIT_FILE_TOO_BIG,
+                            ]
                     if r in NO_RETRY:
                         return r
                     if r==EXIT_FAILURE:
@@ -450,6 +450,33 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                 os.execv(args[0], args)
                 #this code should be unreachable!
                 return 1
+        #show splash screen?
+        progress_cb = None
+        if options.splash is True or (
+            options.splash is not False and (
+                not POSIX or os.environ.get("DISPLAY") or os.environ.get("XDG_SESSION_DESKTOP")
+                )
+            ):
+            # use splash screen to show server startup progress:
+            progress = make_progress_process()
+            def show_progress(pct, text=""):
+                if progress.poll() is not None:
+                    return
+                noerr(progress.stdin.write, ("%i:%s\n" % (pct, text)).encode("latin1"))
+                noerr(progress.stdin.flush)
+                if pct==100:
+                    #it should exit on its own, but just in case:
+                    #kill it if it's still running after 2 seconds
+                    from gi.repository import GLib
+                    def stop_progress_process():
+                        if progress.poll() is not None:
+                            return
+                        try:
+                            progress.terminate()
+                        except Exception:
+                            pass
+                    GLib.timeout_add(2000, stop_progress_process)
+            progress_cb = show_progress
         current_display = nox()
         try:
             from xpra import server
@@ -457,6 +484,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
             from xpra.scripts.server import run_server, add_when_ready
         except ImportError as e:
             error_cb("Xpra server is not installed")
+        ######################################################################
         if options.attach is True:
             def attach_client():
                 from xpra.platform.paths import get_xpra_command
@@ -484,7 +512,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                 from xpra.child_reaper import getChildReaper
                 getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
             add_when_ready(attach_client)
-        return run_server(error_cb, options, mode, script_file, args, current_display)
+        return run_server(error_cb, options, mode, script_file, args, current_display, progress_cb)
     elif mode in (
         "attach", "listen", "detach",
         "screenshot", "version", "info", "id",
@@ -1861,7 +1889,7 @@ def run_opengl_probe():
 
 def make_client(error_cb, opts):
     progress_process = None
-    if opts.splash:
+    if opts.splash is not False:
         progress_process = make_progress_process()
 
     try:

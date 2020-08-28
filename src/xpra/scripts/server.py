@@ -337,11 +337,11 @@ def make_proxy_server():
     return ProxyServer()
 
 
-def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
+def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None, progress_cb=None):
     #add finally hook to ensure we will run the cleanups
     #even if we exit because of an exception:
     try:
-        return do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display)
+        return do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display, progress_cb)
     finally:
         run_cleanups()
         import gc
@@ -364,13 +364,18 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     log("GDK can access the display")
     return 0
 
-def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None):
+def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None, progress_cb=None):
     assert mode in (
         "start", "start-desktop",
         "upgrade", "upgrade-desktop",
         "shadow", "proxy",
         )
 
+    def progress(i, msg):
+        if progress_cb:
+            progress_cb(i, msg)
+
+    progress(10, "initializing environment")
     try:
         cwd = os.getcwd()
     except OSError:
@@ -678,8 +683,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if not display_name:
             use_display = False
         else:
+            progress(20, "connecting to display")
             start_vfb = verify_display(None, display_name, log_errors=False)!=0
     if start_vfb:
+        progress(30, "starting a virtual display")
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
         from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process, parse_resolution
@@ -839,6 +846,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         log("gui_init()")
         gui_init()
 
+    progress(50, "creating local sockets")
     #setup unix domain socket:
     netlog = get_network_logger()
     local_sockets = setup_local_sockets(opts.bind,
@@ -879,6 +887,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if uinput_uuid:
             save_uinput_id(uinput_uuid)
 
+    progress(60, "initializing server")
     if shadowing:
         app = make_shadow_server()
     elif proxying:
@@ -895,6 +904,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.exec_cwd = opts.chdir or cwd
         app.display_name = display_name
         app.init(opts)
+        progress(70, "initializing sockets")
         app.init_sockets(sockets)
         app.init_dbus(dbus_pid, dbus_env)
         if not shadowing and not proxying:
@@ -903,6 +913,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         del opts
         if not app.server_ready():
             return 1
+        progress(80, "finalizing")
         app.server_init()
         app.setup()
         app.init_when_ready(_when_ready)
@@ -924,6 +935,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         return 1
 
     try:
+        progress(100, "running")
         log("running %s", app.run)
         r = app.run()
         log("%s()=%s", app.run, r)
