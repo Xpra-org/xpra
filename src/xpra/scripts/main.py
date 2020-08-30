@@ -261,7 +261,7 @@ def configure_env(env_str):
         os.environ.update(env)
 
 
-def systemd_run_command(mode, systemd_run_args, user=True):
+def systemd_run_command(mode, systemd_run_args=None, user=True):
     cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope"]
     if user:
         cmd.append("--user")
@@ -271,7 +271,7 @@ def systemd_run_command(mode, systemd_run_args, user=True):
         cmd += shlex.split(systemd_run_args)
     return cmd
 
-def systemd_run_wrap(mode, args, systemd_run_args):
+def systemd_run_wrap(mode, args, systemd_run_args=None):
     cmd = systemd_run_command(mode, systemd_run_args)
     cmd += args
     cmd.append("--systemd-run=no")
