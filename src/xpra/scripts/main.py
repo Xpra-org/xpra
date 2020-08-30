@@ -155,7 +155,7 @@ def main(script_file, cmdline):
             if std:
                 try:
                     std.close()
-                except OSError:
+                except OSError: # pragma: no cover
                     pass
         closestd(sys.stdout)
         closestd(sys.stderr)
@@ -297,7 +297,7 @@ def isdisplaytype(args, *dtypes) -> bool:
 
 def check_display():
     from xpra.platform.gui import can_access_display
-    if not can_access_display():
+    if not can_access_display():    # pragma: no cover
         raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
 
 def use_systemd_run(s):
@@ -307,7 +307,7 @@ def use_systemd_run(s):
     if systemd_run in (True, False):
         return systemd_run
     #detect if we should use it:
-    if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")):
+    if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")): # pragma: no cover
         #would fail
         return False
     from xpra.os_util import is_systemd_pid1
