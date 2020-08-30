@@ -8,9 +8,10 @@
 import os
 import shlex
 import unittest
-from subprocess import Popen, DEVNULL
+from subprocess import Popen, DEVNULL, PIPE
 
 from xpra.os_util import OSEnvContext, pollwait
+from xpra.platform.paths import get_xpra_command
 from xpra.scripts.main import (
     nox,
     use_systemd_run, systemd_run_command, systemd_run_wrap,
@@ -28,13 +29,16 @@ class TestMain(unittest.TestCase):
             assert os.environ.get("DISPLAY") is None
 
     def test_systemd_run(self):
-        for s in ("yes", "no"):
+        for s in ("yes", "no", "auto"):
             if not use_systemd_run(s):
                 continue
             for user in (True, False):
                 for systemd_run_args in ("", "-d"):
                     assert systemd_run_command("mode", systemd_run_args, user=user)[0]=="systemd-run"
-            assert systemd_run_wrap("unused", ["xpra", "--version"])==0
+            for log_systemd_wrap in (True, False):
+                with OSEnvContext():
+                    os.environ["XPRA_LOG_SYSTEMD_WRAP"] = str(log_systemd_wrap)
+                    assert systemd_run_wrap("unused", ["xpra", "--version"])==0
 
     def test_display_type_check(self):
         for arg in ("ssh:host", "ssh/host", "tcp:IP", "ssl/host", "vsock:port"):
@@ -56,31 +60,65 @@ class TestMain(unittest.TestCase):
             pass
         else:
             raise Exception("got host string '%s' without specifying any display attributes!" % target)
-        d = {
-            }
         def t(d, e):
             s = get_host_target_string(d)
             assert s==e, "expected '%s' for %s but got '%s'" % (e, d, s)
         t({"type" : "ssh", "username" : "foo", "host" : "bar"}, "ssh://foo@bar/")
         t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : 2222}, "ssh://foo@bar:2222/")
 
+    def _test_subcommand(self, args, timeout=60, **kwargs):
+        proc = self._run_subcommand(args, timeout, **kwargs)
+        if proc.poll() is None:
+            proc.terminate()
+            raise Exception("%s did not terminate after %i seconds" % (args, timeout))
+
+    def _run_subcommand(self, args, wait=60, **kwargs):
+        cmd = get_xpra_command()+shlex.split(args)
+        if "stdout" not in kwargs:
+            kwargs["stdout"] = DEVNULL
+        if "stderr" not in kwargs:
+            kwargs["stderr"] = DEVNULL
+        try:
+            proc = Popen(cmd, **kwargs)
+            pollwait(proc, wait)
+            return proc
+        except Exception:
+            raise Exception("failed on %s" % (cmd,))
 
     def test_nongui_subcommands(self):
-        from xpra.platform.paths import get_xpra_command
         for args in (
+            "initenv",
             "list",
             "list-windows",
             "showconfig",
+            "showsetting xvfb",
+            "encoding",
+            "webcam",
+            "keyboard",
+            "keymap",
+            "gui-info",
+            "network-info",
+            "path-info",
+            "printing-info",
+            "version-info",
+            "gtk-info",
+            "opengl", "opengl-probe",
             ):
-            cmd = get_xpra_command()+shlex.split(args)
-            try:
-                proc = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
-                timeout = 60
-                if pollwait(proc, timeout) is None:
-                    proc.terminate()
-                    raise Exception("%s did not terminate after %i seconds" % (cmd, timeout))
-            except Exception:
-                raise Exception("failed on %s" % (cmd,))
+            self._test_subcommand(args)
+
+    def test_terminate_subcommands(self):
+        for args in (
+            "top",
+            ):
+            proc = self._run_subcommand(args, 10, stdout=PIPE, stderr=PIPE)
+            if proc.poll() is not None:
+                raise Exception("%s subcommand should not have terminated" % (args,))
+            proc.terminate()
+
+    def test_debug_option(self):
+        for debug in ("all", "util", "platform,-import"):
+            args = "version-info --debug %s" % debug
+            self._test_subcommand(args, 20)
 
 
 def main():
