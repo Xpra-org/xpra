@@ -1303,7 +1303,7 @@ def get_host_target_string(display_desc, port_key="port", prefix=""):
     host = display_desc[prefix+"host"]
     try:
         port = int(display_desc.get(prefix+port_key))
-        if port<0 or port>=2**16:
+        if not 0<port<2**16:
             port = 0
     except (ValueError, TypeError):
         port = 0
