@@ -184,7 +184,7 @@ def configure_logging(options, mode):
         #which we must use if we want to be able to write bytes:
         sbuf = getattr(s, "buffer", s)
         to = codecs.getwriter("utf-8")(sbuf, "replace")
-    except:
+    except Exception:   # pragma: no cover
         pass
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
