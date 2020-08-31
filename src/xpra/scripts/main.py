@@ -316,8 +316,8 @@ def use_systemd_run(s):
     #test it:
     cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
     proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
-    r = pollwait(proc, timeout=1)
-    if r is None:
+    r = pollwait(proc, timeout=2)
+    if r is None:   # pragma: no cover
         try:
             proc.terminate()
         except Exception:
@@ -349,7 +349,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         try:
             from xpra.sound.gstreamer_util import prevent_import
             prevent_import()
-        except ImportError:
+        except ImportError: # pragma: no cover
             pass
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
@@ -3028,7 +3028,7 @@ def run_showsetting(options, args):
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     code = main("xpra.exe", sys.argv)
     if not code:
         code = 0
