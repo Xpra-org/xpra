@@ -170,7 +170,7 @@ class Protocol:
         self.encoder = "none"
         self._encoder = self.noencode
         self.compressor = "none"
-        self._compress = compression.nocompress
+        self._compress = compression.get_compressor("none")
         self.compression_level = 0
         self.cipher_in = None
         self.cipher_in_name = None
@@ -952,6 +952,7 @@ class Protocol:
                 if compression_level>0:
                     try:
                         data = decompress(data, compression_level)
+                        print("decompress(..)=%s" % (hexstr(data,)))
                     except InvalidCompressionException as e:
                         self.invalid("invalid compression: %s" % e, data)
                         return

@@ -27,7 +27,7 @@ from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
-from xpra.net import compression
+from xpra.net.compression import use
 from xpra.log import Logger
 
 log = Logger("window", "encoding")
@@ -165,9 +165,9 @@ class WindowSource(WindowIconSource):
         self.core_encodings = core_encodings            #the core encodings supported by the client
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
-        self.rgb_zlib = compression.use_zlib and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression
-        self.rgb_lz4 = compression.use_lz4 and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
-        self.rgb_lzo = compression.use_lzo and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
+        self.rgb_zlib = use("zlib") and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression
+        self.rgb_lz4 = use("lz4") and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
+        self.rgb_lzo = use("lzo") and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
         self.client_render_size = encoding_options.get("render-size")
         self.client_bit_depth = encoding_options.intget("bit-depth", 24)
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")

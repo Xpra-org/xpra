@@ -371,9 +371,9 @@ class ProxyInstance:
                 packet[index] = strtobytes(data)
                 return
             #this is ugly and not generic!
-            zlib = compression.use_zlib and self.caps.boolget("zlib", True)
-            lz4 = compression.use_lz4 and self.caps.boolget("lz4", False)
-            lzo = compression.use_lzo and self.caps.boolget("lzo", False)
+            zlib = self.caps.boolget("zlib", True)
+            lz4 = self.caps.boolget("lz4", False)
+            lzo = self.caps.boolget("lzo", False)
             if zlib or lz4 or lzo:
                 packet[index] = compressed_wrapper(name, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
             else:

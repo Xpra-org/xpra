@@ -409,10 +409,10 @@ def has_stream_compressor(stream_compressor):
     if stream_compressor not in ("lz4", "lzo"):
         log.warn("Warning: invalid stream compressor '%s'", stream_compressor)
         return False
-    from xpra.net.compression import use_lz4, use_lzo
-    if stream_compressor=="lz4" and not use_lz4:
+    from xpra.net.compression import use
+    if stream_compressor=="lz4" and not use("lz4"):
         return False
-    if stream_compressor=="lzo" and not use_lzo:
+    if stream_compressor=="lzo" and not use("lzo"):
         return False
     return True
 

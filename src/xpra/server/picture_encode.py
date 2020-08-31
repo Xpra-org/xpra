@@ -91,20 +91,11 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             #and use a lower level (max=5)
             level = max(0, min(5, int(115-speed)//20))
     if level>0:
-        if rgb_lz4 and compression.use_lz4:
-            cwrapper = compression.compressed_wrapper(coding, pixels, lz4=True, level=level)
-            algo = "lz4"
-            level = 1
-        elif rgb_lzo and compression.use_lzo:
-            cwrapper = compression.compressed_wrapper(coding, pixels, lzo=True)
-            algo = "lzo"
-            level = 1
-        elif rgb_zlib and compression.use_zlib:
-            cwrapper = compression.compressed_wrapper(coding, pixels, zlib=True, level=level//2)
-            algo = "zlib"
-        else:
-            cwrapper = None
-        if cwrapper is None or len(cwrapper)>=(len(pixels)-32):
+        cwrapper = compression.compressed_wrapper(coding, pixels, level=level,
+                                                  zlib=rgb_zlib, lz4=rgb_lz4, lzo=rgb_lzo,
+                                                  brotli=False, none=True)
+        algo = cwrapper.algorithm
+        if algo=="none" or len(cwrapper)>=(len(pixels)-32):
             #no compression is enabled, or compressed is actually bigger!
             #(fall through to uncompressed)
             level = 0

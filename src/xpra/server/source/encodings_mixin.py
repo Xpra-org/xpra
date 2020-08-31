@@ -14,7 +14,7 @@ from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.server_core import ClientException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
-from xpra.net.compression import use_lz4, use_lzo, use_brotli
+from xpra.net.compression import use
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, typedict, envint
@@ -60,8 +60,8 @@ class EncodingsMixin(StubSourceMixin):
         self.auto_refresh_delay = 0
 
         self.zlib = True
-        self.lz4 = use_lz4
-        self.lzo = use_lzo
+        self.lz4 = use("lz4")
+        self.lzo = use("lzo")
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
@@ -247,9 +247,9 @@ class EncodingsMixin(StubSourceMixin):
 
         #general features:
         self.zlib = c.boolget("zlib", True)
-        self.lz4 = c.boolget("lz4", False) and use_lz4
-        self.lzo = c.boolget("lzo", False) and use_lzo
-        self.brotli = c.boolget("brotli", False) and use_brotli
+        self.lz4 = c.boolget("lz4", False) and use("lz4")
+        self.lzo = c.boolget("lzo", False) and use("lzo")
+        self.brotli = c.boolget("brotli", False) and use("brotli")
         log("compressors: zlib=%s, lz4=%s, lzo=%s, brotli=%s",
             self.zlib, self.lz4, self.lzo, self.brotli)
 

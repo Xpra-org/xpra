@@ -456,16 +456,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return capabilities
 
     def compressed_wrapper(self, datatype, data, level=5):
-        #ugly assumptions here, should pass by name
-        zlib = "zlib" in self.server_compressors and compression.use_zlib
-        lz4 = "lz4" in self.server_compressors and compression.use_lz4
-        lzo = "lzo" in self.server_compressors and compression.use_lzo
-        brotli = False
-        #never use brotli as a generic compressor
-        #brotli = "brotli" in self.server_compressors and compression.use_brotli
-        if level>0 and len(data)>=256 and (zlib or lz4 or lzo):
+        if level>0 and len(data)>=256:
+            #ugly assumptions here, should pass by name
+            zlib = "zlib" in self.server_compressors
+            lz4 = "lz4" in self.server_compressors
+            lzo = "lzo" in self.server_compressors
+            #never use brotli as a generic compressor
+            #brotli = "brotli" in self.server_compressors and compression.use_brotli
             cw = compression.compressed_wrapper(datatype, data, level=level,
-                                                zlib=zlib, lz4=lz4, lzo=lzo, brotli=brotli,
+                                                zlib=zlib, lz4=lz4, lzo=lzo,
+                                                brotli=False, none=True,
                                                 can_inline=False)
             if len(cw)<len(data):
                 #the compressed version is smaller, use it:
