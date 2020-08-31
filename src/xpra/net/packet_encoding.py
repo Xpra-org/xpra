@@ -39,10 +39,10 @@ def init_bencode():
 
 def init_yaml():
     #json messes with strings and unicode (makes it unusable for us)
-    from yaml import dump, load, __version__
+    from yaml import dump, safe_load, __version__
     def yaml_dump(v):
         return dump(v).encode("latin1"), FLAGS_YAML
-    return Encoding("yaml", FLAGS_YAML, __version__, yaml_dump, load)
+    return Encoding("yaml", FLAGS_YAML, __version__, yaml_dump, safe_load)
 
 def init_none():
     def encode(data):
@@ -111,15 +111,12 @@ class InvalidPacketEncodingException(Exception):
 
 
 def pack_one_packet(packet):
-    try:
-        from xpra.net.header import pack_header
-        ee = get_enabled_encoders()
-        if ee:
-            e = get_encoder(ee[0])
-            data, flags = e(packet)
-            return pack_header(flags, 0, 0, len(data))+data
-    except ImportError:
-        pass
+    from xpra.net.header import pack_header
+    ee = get_enabled_encoders()
+    if ee:
+        e = get_encoder(ee[0])
+        data, flags = e(packet)
+        return pack_header(flags, 0, 0, len(data))+data
     return str(packet)
 
 
@@ -134,12 +131,12 @@ def decode(data, protocol_flags):
     raise InvalidPacketEncodingException("%s decoder is not available" % ptype)
 
 
-def main():
+def main(): # pragma: no cover
     from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Packet Encoding", "Packet Encoding Info"):
         print_nested_dict(get_packet_encoding_caps())
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

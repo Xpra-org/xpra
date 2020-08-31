@@ -64,7 +64,7 @@ def init_brotli():
         else:
             level = min(11, level)
         if not isinstance(packet, bytes):
-            packet = bytes(packet, 'UTF-8')
+            packet = bytes(str(packet), 'UTF-8')
         return level | BROTLI_FLAG, compress(packet, quality=level)
     return Compression("brotli", None, __version__, brotli_compress, decompress)
 
@@ -75,7 +75,7 @@ def init_zlib():
         if isinstance(packet, memoryview):
             packet = packet.tobytes()
         elif not isinstance(packet, bytes):
-            packet = bytes(packet, 'UTF-8')
+            packet = bytes(str(packet), 'UTF-8')
         return level + ZLIB_FLAG, compress(packet, level)
     def zlib_decompress(data):
         if isinstance(data, memoryview):
@@ -86,7 +86,7 @@ def init_zlib():
 def init_none():
     def nocompress(packet, _level):
         if not isinstance(packet, bytes):
-            packet = bytes(packet, 'UTF-8')
+            packet = bytes(str(packet), 'UTF-8')
         return 0, packet
     def decompress(v):
         return v
@@ -239,30 +239,21 @@ def decompress(data, level):
         algo = "brotli"
     else:
         algo = "zlib"
+    return decompress_by_name(data, algo)
+
+def decompress_by_name(data, algo):
     c = COMPRESSION.get(algo)
     if c is None:
         raise InvalidCompressionException("%s is not available" % algo)
     return c.decompress(data)
 
-NAME_TO_FLAG = {
-    "lz4"   : LZ4_FLAG,
-    "zlib"  : 0,
-    "lzo"   : LZO_FLAG,
-    "brotli": BROTLI_FLAG,
-    }
 
-def decompress_by_name(data, algo):
-    assert algo in NAME_TO_FLAG, "invalid compression algorithm: %s" % algo
-    flag = NAME_TO_FLAG[algo]
-    return decompress(data, flag)
-
-
-def main():
+def main(): # pragma: no cover
     from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Compression", "Compression Info"):
         print_nested_dict(get_compression_caps())
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
