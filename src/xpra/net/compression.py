@@ -123,10 +123,10 @@ def get_compression_caps() -> dict:
         if c.version:
             ccaps["version"] = c.version
         if c.python_version:
-            ccaps["python-%s" % x] = {
-                ""  : True,
-                "version"   : c.python_version,
-                }
+            pcaps = ccaps.setdefault("python-%s" % x, {})
+            pcaps[""] = True
+            if c.python_version is not None:
+                pcaps["version"] = c.python_version
         #legacy format - only used for zlib:
         if x=="zlib":
             ccaps[""] = True
@@ -239,7 +239,6 @@ def decompress(data, level):
         algo = "brotli"
     else:
         algo = "zlib"
-    from xpra.os_util import hexstr
     c = COMPRESSION.get(algo)
     if c is None:
         raise InvalidCompressionException("%s is not available" % algo)
