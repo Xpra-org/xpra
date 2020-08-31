@@ -172,6 +172,19 @@ class InvalidPacketEncodingException(Exception):
     pass
 
 
+def pack_one_packet(packet):
+    try:
+        from xpra.net.header import pack_header
+        ee = get_enabled_encoders()
+        if ee:
+            e = get_encoder(ee[0])
+            data, flags = e(packet)
+            return pack_header(flags, 0, 0, len(data))+data
+    except ImportError:
+        pass
+    return str(packet)
+
+
 def decode(data, protocol_flags):
     if isinstance(data, memoryview):
         data = data.tobytes()

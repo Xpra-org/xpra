@@ -92,19 +92,6 @@ HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
 </body>
 """
 
-def pack_one_packet(packet):
-    try:
-        from xpra.net.packet_encoding import get_enabled_encoders, get_encoder
-        from xpra.net.header import pack_header
-        ee = get_enabled_encoders()
-        if ee:
-            e = get_encoder(ee[0])
-            data, flags = e(packet)
-            return pack_header(flags, 0, 0, len(data))+data
-    except ImportError:
-        pass
-    return None
-
 
 #class used to distinguish internal errors
 #which should not be shown to the client,
@@ -956,6 +943,7 @@ class ServerCore:
             packet_data = b"disconnect: connection failed, %s?\n" % strtobytes(msg)
             if network_protocol=="xpra":
                 #try xpra packet format:
+                from xpra.net.packet_encoding import pack_one_packet
                 packet_data = pack_one_packet(["disconnect", "invalid protocol for this port"]) or packet_data
             elif network_protocol=="HTTP":
                 #HTTP 400 error:
