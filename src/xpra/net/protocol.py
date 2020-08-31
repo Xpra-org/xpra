@@ -952,7 +952,6 @@ class Protocol:
                 if compression_level>0:
                     try:
                         data = decompress(data, compression_level)
-                        print("decompress(..)=%s" % (hexstr(data,)))
                     except InvalidCompressionException as e:
                         self.invalid("invalid compression: %s" % e, data)
                         return
