@@ -14,9 +14,9 @@ from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG, BROTLI_FLAG
 MAX_SIZE = 256*1024*1024
 
 #all the compressors we know about, in best compatibility order:
-ALL_COMPRESSORS = ("zlib", "lz4", "lzo", "brotli")
+ALL_COMPRESSORS = ("zlib", "lz4", "lzo", "brotli", "none")
 #order for performance:
-PERFORMANCE_ORDER = ("lz4", "lzo", "zlib", "brotli")
+PERFORMANCE_ORDER = ("none", "lz4", "lzo", "zlib", "brotli")
 
 
 Compression = namedtuple("Compression", ["name", "version", "python_version", "compress", "decompress"])
@@ -139,12 +139,6 @@ def get_compressor(name):
     c = COMPRESSION.get(name)
     assert c is not None, "'%s' compression is not supported" % name
     return c.compress
-
-def get_compressor_name(compress):
-    for c in COMPRESSION.values():
-        if compress==c.compress:
-            return c.name
-    raise Exception("invalid compression function %s" % (compress,))
 
 
 def sanity_checks():

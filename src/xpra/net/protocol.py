@@ -168,7 +168,7 @@ class Protocol:
         self._log_stats = None          #None here means auto-detect
         self._closed = False
         self.encoder = "none"
-        self._encoder = self.noencode
+        self._encoder = packet_encoding.get_encoder("none")
         self.compressor = "none"
         self._compress = compression.get_compressor("none")
         self.compression_level = 0
@@ -271,15 +271,12 @@ class Protocol:
             "max_packet_size"       : self.max_packet_size,
             "aliases"               : USE_ALIASES,
             }
-        c = self._compress
+        c = self.compressor
         if c:
-            info["compressor"] = compression.get_compressor_name(self._compress)
-        e = self._encoder
+            info["compressor"] = c
+        e = self.encoder
         if e:
-            if self._encoder==self.noencode:        #pylint: disable=comparison-with-callable
-                info["encoder"] = "noencode"
-            else:
-                info["encoder"] = packet_encoding.get_encoder_name(self._encoder)
+            info["encoder"] = e
         if alias_info:
             info["send_alias"] = self.send_aliases
             info["receive_alias"] = self.receive_aliases
@@ -506,16 +503,6 @@ class Protocol:
         self._compress = compression.get_compressor(compressor)
         self.compressor = compressor
         log("enable_compressor(%s): %s", compressor, self._compress)
-
-
-    def noencode(self, data):
-        #just send data as a string for clients that don't understand xpra packet format:
-        import codecs
-        def b(x):
-            if isinstance(x, bytes):
-                return x
-            return codecs.latin_1_encode(x)[0]
-        return b(": ".join(str(x) for x in data)+"\n"), FLAGS_NOHEADER
 
 
     def encode(self, packet_in):
@@ -985,7 +972,7 @@ class Protocol:
                     continue
                 #final packet (packet_index==0), decode it:
                 try:
-                    packet = decode(data, protocol_flags)
+                    packet = list(decode(data, protocol_flags))
                 except InvalidPacketEncodingException as e:
                     self.invalid("invalid packet encoding: %s" % e, data)
                     return
