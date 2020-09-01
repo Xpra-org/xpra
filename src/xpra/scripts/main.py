@@ -1180,7 +1180,7 @@ def pick_display(error_cb, opts, extra_args):
             "display"           : display,
             "display_name"      : display,
             }
-        if WIN32:
+        if WIN32:   # pragma: no cover
             desc.update({
                 "type"              : "named-pipe",
                 "named-pipe"        : sockpath,
@@ -1351,7 +1351,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         conn.target = target
         return conn
 
-    if dtype == "named-pipe":
+    if dtype == "named-pipe":   # pragma: no cover
         pipe_name = display_desc["named-pipe"]
         if not WIN32:
             raise InitException("named pipes are only supported on MS Windows")
