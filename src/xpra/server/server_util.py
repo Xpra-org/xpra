@@ -49,11 +49,6 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
         #XPRA_SOCKET_DIR is a special case, it is handled below
         if var==b"XPRA_SOCKET_DIR":
             continue
-        if var==b"XPRA_ALT_PYTHON_RETRY":
-            #the environment might have changed,
-            #and we may need to retry with a different interpreter
-            #different from the one that created this script
-            continue
         if var.startswith(b"BASH_FUNC"):
             #some versions of bash will apparently generate functions
             #that cannot be reloaded using this script

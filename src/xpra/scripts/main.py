@@ -81,7 +81,7 @@ def main(script_file, cmdline):
         from xpra.util import start_mem_watcher
         start_mem_watcher(ml)
 
-    if sys.flags.optimize>0:
+    if sys.flags.optimize>0:    # pragma: no cover
         sys.stderr.write("************************************************************\n")
         sys.stderr.write("Warning: the python optimize flag is set to %i\n" % sys.flags.optimize)
         sys.stderr.write(" xpra is very likely to crash\n")
@@ -91,10 +91,6 @@ def main(script_file, cmdline):
     from xpra.platform import clean as platform_clean, command_error, command_info
     if len(cmdline)==1:
         cmdline.append("gui")
-    #we may have needed this variable to get here,
-    #and we may need to use it again to launch new commands:
-    if "XPRA_ALT_PYTHON_RETRY" in os.environ:
-        del os.environ["XPRA_ALT_PYTHON_RETRY"]
 
     #turn off gdk scaling to make sure we get the actual window geometry:
     os.environ["GDK_SCALE"]="1"
