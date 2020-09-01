@@ -1279,6 +1279,7 @@ def socket_connect(dtype, host, port):
                 return sock
             except Exception as e:
                 log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
+            noerr(sock.close)
         if monotonic_time()-start>=CONNECT_TIMEOUT:
             break
         if retry==0:
@@ -1328,7 +1329,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         return ssh_exec_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
 
     if dtype == "unix-domain":
-        if not hasattr(socket, "AF_UNIX"):
+        if not hasattr(socket, "AF_UNIX"):  # pragma: no cover
             raise InitExit(EXIT_UNSUPPORTED, "unix domain sockets are not available on this operating system")
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(SOCKET_TIMEOUT)
@@ -1404,10 +1405,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             #mmap mode requires all packets to be received,
             #so we can free up the mmap chunks regularly
             opts.mmap = False
-        strict_host_check = display_desc.get("strict-host-check")
-        if strict_host_check is False:
-            opts.ssl_server_verify_mode = "none"
         if dtype in ("ssl", "wss"):
+            strict_host_check = display_desc.get("strict-host-check")
+            if strict_host_check is False:
+                opts.ssl_server_verify_mode = "none"
             from xpra.net.socket_util import ssl_wrap_socket, get_ssl_attributes
             kwargs = get_ssl_attributes(opts, server_side=False, overrides=display_desc)
             sock = ssl_wrap_socket(sock, **kwargs)
@@ -1422,7 +1423,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             #do the websocket upgrade and switch to binary
             try:
                 from xpra.net.websockets.common import client_upgrade
-            except ImportError as e:
+            except ImportError as e:    # pragma: no cover
                 raise InitExit(EXIT_UNSUPPORTED, "cannot handle websocket connection: %s" % e)
             else:
                 client_upgrade(conn.read, conn.write, host, port)
