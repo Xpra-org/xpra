@@ -10,7 +10,8 @@ import shlex
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
 
-from xpra.os_util import OSEnvContext, pollwait
+from xpra.os_util import OSEnvContext, pollwait, WIN32, POSIX, OSX
+from xpra.util import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.scripts.main import (
     nox,
@@ -18,6 +19,7 @@ from xpra.scripts.main import (
     isdisplaytype,
     check_display,
     get_host_target_string,
+    parse_display_name,
     )
 
 class TestMain(unittest.TestCase):
@@ -64,7 +66,16 @@ class TestMain(unittest.TestCase):
             s = get_host_target_string(d)
             assert s==e, "expected '%s' for %s but got '%s'" % (e, d, s)
         t({"type" : "ssh", "username" : "foo", "host" : "bar"}, "ssh://foo@bar/")
+        t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : -1}, "ssh://foo@bar/")
         t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : 2222}, "ssh://foo@bar:2222/")
+
+    def test_parse_display_name(self):
+        opts = AdHocStruct()
+        opts.socket_dirs = ["/tmp"]
+        if WIN32:
+            assert parse_display_name(None, opts, "named-pipe:///FOO")==parse_display_name(None, opts, "FOO")
+        else:
+            assert parse_display_name(None, opts, "socket:///FOO")==parse_display_name(None, opts, "/FOO")
 
     def _test_subcommand(self, args, timeout=60, **kwargs):
         proc = self._run_subcommand(args, timeout, **kwargs)
@@ -103,22 +114,54 @@ class TestMain(unittest.TestCase):
             "version-info",
             "gtk-info",
             "opengl", "opengl-probe",
+            "help",
+            "whatever --help",
+            "start --speaker-codec=help",
+            "start --microphone-codec=help",
+            "attach --speaker-codec=help",
+            "attach --microphone-codec=help",
+            "_sound_query",
+            "invalid-command",
             ):
             self._test_subcommand(args)
 
     def test_terminate_subcommands(self):
-        for args in (
-            "top",
-            ):
+        if POSIX and not OSX:
+            return
+        subcommands = [
+            "initenv",
+            "mdns-gui",
+            "sessions",
+            "launcher",
+            "gui",
+            "bug-report",
+            "_dialog",
+            "_pass",
+            "send-file",
+            #"splash", has its own test module
+            "clipboard-test",
+            "keyboard-test",
+            "toolbox",
+            "colors-test",
+            "colors-gradient-test",
+            "transparent-colors",
+            ]
+        for args in subcommands:
             proc = self._run_subcommand(args, 10, stdout=PIPE, stderr=PIPE)
-            if proc.poll() is not None:
+            r = proc.poll()
+            if r is not None:
                 raise Exception("%s subcommand should not have terminated" % (args,))
             proc.terminate()
 
     def test_debug_option(self):
-        for debug in ("all", "util", "platform,-import"):
+        for debug in ("all", "util", "platform,-import", "foo,,bar"):
             args = "version-info --debug %s" % debug
             self._test_subcommand(args, 20)
+
+    def test_misc_env_switches(self):
+        with OSEnvContext():
+            os.environ["XPRA_NOMD5"] = "1"
+            self._test_subcommand("version-info")
 
 
 def main():
