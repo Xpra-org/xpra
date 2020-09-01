@@ -10,7 +10,8 @@ import shlex
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
 
-from xpra.os_util import OSEnvContext, pollwait, WIN32, POSIX, OSX
+from xpra.log import add_debug_category, remove_debug_category
+from xpra.os_util import OSEnvContext, pollwait, nomodule_context, WIN32, POSIX, OSX
 from xpra.util import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.scripts.main import (
@@ -19,7 +20,8 @@ from xpra.scripts.main import (
     isdisplaytype,
     check_display,
     get_host_target_string,
-    parse_display_name,
+    parse_display_name, find_session_by_name,
+    parse_ssh_string, add_ssh_args, add_ssh_proxy_args, parse_proxy_attributes,
     )
 
 class TestMain(unittest.TestCase):
@@ -51,9 +53,6 @@ class TestMain(unittest.TestCase):
         #only implemented properly on MacOS
         check_display()
 
-    def test_ssh_parsing(self):
-        #parse_ssh_string
-        pass
 
     def test_host_parsing(self):
         try:
@@ -72,10 +71,92 @@ class TestMain(unittest.TestCase):
     def test_parse_display_name(self):
         opts = AdHocStruct()
         opts.socket_dirs = ["/tmp"]
+        opts.socket_dir = "/tmp"
         if WIN32:
             assert parse_display_name(None, opts, "named-pipe:///FOO")==parse_display_name(None, opts, "FOO")
         else:
             assert parse_display_name(None, opts, "socket:///FOO")==parse_display_name(None, opts, "/FOO")
+        def t(s, e):
+            r = parse_display_name(None, opts, s)
+            for k,v in e.items():
+                actual = r.get(k)
+                assert actual==v, "expected %s but got %s from parse_display_name(%s)=%s" % (v, actual, s, r)
+        def e(s):
+            try:
+                parse_display_name(None, opts, s)
+            except Exception:
+                pass
+            else:
+                raise Exception("parse_display_name should fail for %s" % s)
+        if POSIX:
+            e("ZZZZZZ")
+            t("10", {"display_name" : "10", "local" : True, "type" : "unix-domain"})
+            t("/tmp/thesocket", {"display_name" : "socket:///tmp/thesocket"})
+            t("socket:/tmp/thesocket", {"display_name" : "socket:/tmp/thesocket"})
+        e("tcp://host:NOTANUMBER/")
+        e("tcp://host:0/")
+        e("tcp://host:65536/")
+        t("tcp://username@host/", {"username" : "username", "password" : None})
+        for socktype in ("tcp", "udp", "ws", "wss", "ssl"):
+            t(socktype+"://username:password@host:10000/DISPLAY?key1=value1", {
+                "type"      : socktype,
+                "display"   : "DISPLAY",
+                "key1"      : "value1",
+                "username"  : "username",
+                "password"  : "password",
+                "port"      : 10000,
+                "host"      : "host",
+                "local"     : False,
+                })
+
+
+    def test_find_session_by_name(self):
+        opts = AdHocStruct()
+        opts.socket_dirs = ["/tmp"]
+        opts.socket_dir = "/tmp"
+        assert find_session_by_name(opts, "not-a-valid-session") is None
+
+
+    def test_ssh_parsing(self):
+        add_debug_category("ssh")
+        assert parse_ssh_string("auto")[0] in ("paramiko", "ssh")
+        remove_debug_category("ssh")
+        assert parse_ssh_string("ssh")==["ssh"]
+        assert parse_ssh_string("ssh -v")==["ssh", "-v"]
+        with nomodule_context("paramiko"):
+            add_debug_category("ssh")
+            assert parse_ssh_string("auto")[0]=="ssh"
+            remove_debug_category("ssh")
+        #args:
+        def targs(e, *args, **kwargs):
+            r = add_ssh_args(*args, **kwargs)
+            assert r==e, "expected %s but got %s" % (e, r)
+        targs([], None, None, None, None, None, is_paramiko=True)
+        targs(["-pw", "password", "-l", "username", "-P", "2222", "-T", "host"],
+              "username", "password", "host", 2222, None, is_putty=True)
+        if not WIN32:
+            targs(["-l", "username", "-p", "2222", "-T", "host", "-i", "/tmp/key"],
+                  "username", "password", "host", 2222, "/tmp/key")
+        #proxy:
+        def pargs(e, n, *args, **kwargs):
+            r = add_ssh_proxy_args(*args, **kwargs)[:n]
+            assert r==e, "expected %s but got %s" % (e, r)
+        pargs(["-o"], 1,
+            "username", "password", "host", 222, None, ["ssh"])
+        pargs(["-proxycmd"], 1,
+              "username", "password", "host", 222, None, ["putty.exe"], is_putty=True)
+        #proxy attributes:
+        assert parse_proxy_attributes("somedisplay")==("somedisplay", {})
+        attr = parse_proxy_attributes("10?proxy=username:password@host:222")[1]
+        assert attr=={"proxy_host" : "host", "proxy_port" : "222", "proxy_username" : "username", "proxy_password" : "password"}
+        def f(s):
+            v = parse_proxy_attributes(s)
+            assert v[1]=={}, "parse_proxy_attributes(%s) should fail" % s
+        f("somedisplay?proxy=")
+        f("somedisplay?proxy=:22")
+        f("somedisplay?proxy=:@host:22")
+        f("somedisplay?proxy=:password@host:22")
+
 
     def _test_subcommand(self, args, timeout=60, **kwargs):
         proc = self._run_subcommand(args, timeout, **kwargs)
@@ -96,7 +177,7 @@ class TestMain(unittest.TestCase):
         except Exception:
             raise Exception("failed on %s" % (cmd,))
 
-    def test_nongui_subcommands(self):
+    def Xtest_nongui_subcommands(self):
         for args in (
             "initenv",
             "list",

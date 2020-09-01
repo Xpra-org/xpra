@@ -277,11 +277,8 @@ def systemd_run_wrap(mode, args, systemd_run_args=None):
     cmd.append("--systemd-run=no")
     if LOG_SYSTEMD_WRAP:
         stderr = sys.stderr
-        try:
-            stderr.write("using systemd-run to wrap '%s' server command\n" % mode)
-            stderr.write("%s\n" % " ".join(["'%s'" % x for x in cmd]))
-        except IOError:
-            pass
+        noerr(stderr.write, "using systemd-run to wrap '%s' server command\n" % mode)
+        noerr(stderr.write, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
     try:
         p = Popen(cmd)
         return p.wait()
@@ -302,7 +299,7 @@ def check_display():
 
 def use_systemd_run(s):
     if not SYSTEMD_RUN or not POSIX:
-        return False
+        return False    # pragma: no cover
     systemd_run = parse_bool("systemd-run", s)
     if systemd_run in (True, False):
         return systemd_run
@@ -312,7 +309,7 @@ def use_systemd_run(s):
         return False
     from xpra.os_util import is_systemd_pid1
     if not is_systemd_pid1():
-        return False
+        return False    # pragma: no cover
     #test it:
     cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
     proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
@@ -762,7 +759,7 @@ def add_ssh_args(username, password, host, ssh_port, key, is_putty=False, is_par
             if WIN32 and is_putty:
                 # tortoise plink works with either slash, backslash needs too much escaping
                 # because of the weird way it's passed through as a ProxyCommand
-                key_path = "\"" + key.replace("\\", "/") + "\""
+                key_path = "\"" + key.replace("\\", "/") + "\""     # pragma: no cover
             args += ["-i", key_path]
     return args
 
@@ -832,7 +829,7 @@ def parse_proxy_attributes(display_name):
 
 def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     if WIN32:
-        from xpra.platform.win32.dotxpra import PIPE_PREFIX
+        from xpra.platform.win32.dotxpra import PIPE_PREFIX # pragma: no cover
     else:
         PIPE_PREFIX = None
     if display_name.startswith("/") and POSIX:
@@ -853,7 +850,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 match = True
             except ValueError:
                 pass
-        elif WIN32:
+        elif WIN32: # pragma: no cover
             display_name = "named-pipe://%s%s" % (PIPE_PREFIX, display_name)
             match = True
         if session_name_lookup and not match:
