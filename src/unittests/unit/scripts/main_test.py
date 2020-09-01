@@ -72,15 +72,19 @@ class TestMain(unittest.TestCase):
         opts = AdHocStruct()
         opts.socket_dirs = ["/tmp"]
         opts.socket_dir = "/tmp"
+        opts.exit_ssh = False
+        opts.ssh = "ssh -v "
+        opts.remote_xpra = "run-xpra"
         if WIN32:
             assert parse_display_name(None, opts, "named-pipe:///FOO")==parse_display_name(None, opts, "FOO")
         else:
             assert parse_display_name(None, opts, "socket:///FOO")==parse_display_name(None, opts, "/FOO")
         def t(s, e):
             r = parse_display_name(None, opts, s)
-            for k,v in e.items():
-                actual = r.get(k)
-                assert actual==v, "expected %s but got %s from parse_display_name(%s)=%s" % (v, actual, s, r)
+            if e:
+                for k,v in e.items():
+                    actual = r.get(k)
+                    assert actual==v, "expected %s but got %s from parse_display_name(%s)=%s" % (v, actual, s, r)
         def e(s):
             try:
                 parse_display_name(None, opts, s)
@@ -97,7 +101,8 @@ class TestMain(unittest.TestCase):
         e("tcp://host:0/")
         e("tcp://host:65536/")
         t("tcp://username@host/", {"username" : "username", "password" : None})
-        for socktype in ("tcp", "udp", "ws", "wss", "ssl"):
+        for socktype in ("tcp", "udp", "ws", "wss", "ssl", "ssh"):
+            #e(socktype+"://a/b/c/d")
             t(socktype+"://username:password@host:10000/DISPLAY?key1=value1", {
                 "type"      : socktype,
                 "display"   : "DISPLAY",
@@ -108,6 +113,17 @@ class TestMain(unittest.TestCase):
                 "host"      : "host",
                 "local"     : False,
                 })
+        t("tcp://fe80::c1:ac45:7351:ea69:14500", {"host" : "fe80::c1:ac45:7351:ea69", "port" : 14500})
+        t("tcp://fe80::c1:ac45:7351:ea69%eth1:14500", {"host" : "fe80::c1:ac45:7351:ea69%eth1", "port" : 14500})
+        t("tcp://[fe80::c1:ac45:7351:ea69]:14500", {"host" : "fe80::c1:ac45:7351:ea69", "port" : 14500})
+        t("tcp://host/100,key1=value1", {"key1" : "value1"})
+        t("tcp://host/key1=value1", {"key1" : "value1"})
+        try:
+            from xpra.net.vsock import CID_ANY, PORT_ANY    #@UnresolvedImport
+            t("vsock://any:any/", {"vsock" : (CID_ANY, PORT_ANY)})
+            t("vsock://10:2000/", {"vsock" : (10, 2000)})
+        except ImportError:
+            pass
 
 
     def test_find_session_by_name(self):
@@ -177,7 +193,7 @@ class TestMain(unittest.TestCase):
         except Exception:
             raise Exception("failed on %s" % (cmd,))
 
-    def Xtest_nongui_subcommands(self):
+    def test_nongui_subcommands(self):
         for args in (
             "initenv",
             "list",
