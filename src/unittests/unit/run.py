@@ -18,7 +18,7 @@ def main():
         #and to do that, we need the path to the module (weird):
         import xpra
         xpra_mod_dir = os.path.dirname(xpra.__file__)
-        run_cmd = ["coverage", "run", "-a", "--include=%s/*" % xpra_mod_dir]
+        run_cmd = ["coverage", "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
         #make sure we continue to use coverage to run sub-commands:
         def which(command):
             from distutils.spawn import find_executable
