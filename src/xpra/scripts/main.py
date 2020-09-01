@@ -936,7 +936,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 port_str = host[epos+1:]        #ie: ":22"
                 if port_str.startswith(":"):
                     port_str = port_str[1:]     #ie: "22"
-                host = host[:epos+1]            #ie: "[HOST]"
+                host = host[1:epos]            #ie: "[HOST]"
             else:
                 #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
                 devsep = host.split("%")
@@ -1136,7 +1136,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         return desc
     elif protocol=="vsock":
         #use the vsock specified:
-        cid, iport = parse_vsock(afterproto)
+        cid, iport = parse_vsock(parts[0])
         desc.update({
                 "type"          : "vsock",
                 "local"         : False,
@@ -1145,7 +1145,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 })
         opts.display = display_name
         return desc
-    elif WIN32 or display_name.startswith("named-pipe:"):
+    elif WIN32 or display_name.startswith("named-pipe:"):   # pragma: no cover
         if afterproto.find("@")>=0:
             parts = afterproto.split("@")
             parse_username_and_password("@".join(parts[:-1]))
