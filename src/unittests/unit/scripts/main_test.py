@@ -22,6 +22,7 @@ from xpra.scripts.main import (
     get_host_target_string,
     parse_display_name, find_session_by_name,
     parse_ssh_string, add_ssh_args, add_ssh_proxy_args, parse_proxy_attributes,
+    connect_to,
     )
 
 class TestMain(unittest.TestCase):
@@ -172,6 +173,43 @@ class TestMain(unittest.TestCase):
         f("somedisplay?proxy=:22")
         f("somedisplay?proxy=:@host:22")
         f("somedisplay?proxy=:password@host:22")
+
+    def test_connect_to(self):
+        def f(**kwargs):
+            fd(kwargs)
+        def fd(d):
+            opts = AdHocStruct()
+            try:
+                conn = connect_to(d, opts)
+            except Exception:
+                #from xpra.util import get_util_logger
+                #get_util_logger().error("connect_to(%s, %s)", d, opts, exc_info=True)
+                pass
+            else:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+                raise Exception("connect_to(%s) should have failed" % (d,))
+        #without extra arguments to specify the endpoint,
+        #all connections should fail, even if they have a valid type:
+        f(type="invalid", display_name="test")
+        f(type="vsock", display_name="test", vsock=(10, 1000))
+        fd({"type" : "named-pipe", "display_name" : "test", "named-pipe" : "TEST-INVALID"})
+        f(type="unix-domain", display_name=":100000", display="100000")
+        for socktype in ("tcp", "ssl", "ws", "wss", ):
+            f(type=socktype, display_name="test", host="localhost", port=100000)
+        for paramiko in (True, False):
+            f(type="ssh", display_name="test", host="localhost", port=100000, is_paramiko=paramiko)
+        fd({
+            "type"              : "ssl",
+            "display_name"      : "test",
+            "host"              : "localhost",
+            "port"              : 100000,
+            "strict-host-check" : False,
+            })
+        #udp never fails when opening the connection:
+        connect_to({"type" : "udp", "host" : "localhost", "port" : 20000, "display_name" : ":200"}, AdHocStruct())
 
 
     def _test_subcommand(self, args, timeout=60, **kwargs):
