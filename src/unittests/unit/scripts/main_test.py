@@ -7,6 +7,7 @@
 
 import os
 import shlex
+import signal
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
 
@@ -15,7 +16,7 @@ from xpra.os_util import OSEnvContext, pollwait, nomodule_context, WIN32, POSIX,
 from xpra.util import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.scripts.main import (
-    nox,
+    nox, noerr,
     use_systemd_run, systemd_run_command, systemd_run_wrap,
     isdisplaytype,
     check_display,
@@ -77,9 +78,12 @@ class TestMain(unittest.TestCase):
         opts.ssh = "ssh -v "
         opts.remote_xpra = "run-xpra"
         if WIN32:
-            assert parse_display_name(None, opts, "named-pipe:///FOO")==parse_display_name(None, opts, "FOO")
+            fd = parse_display_name(None, opts, "named-pipe://FOO")["named-pipe"]
+            sd = parse_display_name(None, opts, "FOO")["named-pipe"]
         else:
-            assert parse_display_name(None, opts, "socket:///FOO")==parse_display_name(None, opts, "/FOO")
+            fd = parse_display_name(None, opts, "socket:///FOO")
+            sd = parse_display_name(None, opts, "/FOO")
+        assert sd==fd, "expected %s but got %s" % (fd, sd)
         def t(s, e):
             r = parse_display_name(None, opts, s)
             if e:
@@ -142,7 +146,13 @@ class TestMain(unittest.TestCase):
         assert parse_ssh_string("ssh -v")==["ssh", "-v"]
         with nomodule_context("paramiko"):
             add_debug_category("ssh")
-            assert parse_ssh_string("auto")[0]=="ssh"
+            def pssh(s, e):
+                r = parse_ssh_string(s)[0]
+                assert r==e, "expected %s got %s" % (e, r)
+            if WIN32:
+                pssh("auto", "plink.exe")
+            else:
+                pssh("auto", "ssh")
             remove_debug_category("ssh")
         #args:
         def targs(e, *args, **kwargs):
@@ -209,7 +219,8 @@ class TestMain(unittest.TestCase):
             "strict-host-check" : False,
             })
         #udp never fails when opening the connection:
-        connect_to({"type" : "udp", "host" : "localhost", "port" : 20000, "display_name" : ":200"}, AdHocStruct())
+        conn = connect_to({"type" : "udp", "host" : "localhost", "port" : 20000, "display_name" : ":200"}, AdHocStruct())
+        conn.close()
 
 
     def _test_subcommand(self, args, timeout=60, **kwargs):
@@ -262,9 +273,9 @@ class TestMain(unittest.TestCase):
 
     def test_terminate_subcommands(self):
         if POSIX and not OSX:
+            #can't test commands that require a display yet
             return
         subcommands = [
-            "initenv",
             "mdns-gui",
             "sessions",
             "launcher",
@@ -272,7 +283,7 @@ class TestMain(unittest.TestCase):
             "bug-report",
             "_dialog",
             "_pass",
-            "send-file",
+            #"send-file", needs a server socket
             #"splash", has its own test module
             "clipboard-test",
             "keyboard-test",
@@ -286,7 +297,11 @@ class TestMain(unittest.TestCase):
             r = proc.poll()
             if r is not None:
                 raise Exception("%s subcommand should not have terminated" % (args,))
-            proc.terminate()
+            noerr(proc.send_signal, signal.SIGTERM)
+            if pollwait(proc, 2) is None:
+                noerr(proc.terminate)
+                if pollwait(proc, 2) is None:
+                    noerr(proc.kill)
 
     def test_debug_option(self):
         for debug in ("all", "util", "platform,-import", "foo,,bar"):
