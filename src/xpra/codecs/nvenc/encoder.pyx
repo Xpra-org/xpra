@@ -73,6 +73,9 @@ YUV444_CODEC_SUPPORT = {
     }
 LOSSLESS_CODEC_SUPPORT = {}
 
+#so we can warn just once per unknown preset:
+UNKNOWN_PRESETS = []
+
 
 cdef inline int MIN(int a, int b):
     if a<=b:
@@ -2636,7 +2639,10 @@ cdef class Encoder:
                     finally:
                         free(presetConfig)
                 if preset_name is None:
-                    unknowns.append(guidstr(preset_GUID))
+                    global UNKNOWN_PRESETS
+                    if preset_name not in UNKNOWN_PRESETS:
+                        UNKNOWN_PRESETS.append(guidstr(preset_GUID))
+                        unknowns.append(guidstr(preset_GUID))
                 else:
                     presets[preset_name] = guidstr(preset_GUID)
             if len(unknowns)>0:
