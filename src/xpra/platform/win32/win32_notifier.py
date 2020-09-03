@@ -10,7 +10,7 @@ from xpra.gtk_common import gtk_notifier
 
 try:
     from xpra.gtk_common.gtk_notifier import GTK_Notifier
-    GTK_NOTIFIER = envbool("XPRA_WIN32_GTK_NOTIFIER", True)
+    GTK_NOTIFIER = envbool("XPRA_WIN32_GTK_NOTIFIER", False)
 except ImportError:
     GTK_Notifier = None
     GTK_NOTIFIER = False
