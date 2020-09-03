@@ -385,10 +385,6 @@ def get_ssl_info(show_constants=False):
 
 
 def get_network_caps():
-    try:
-        from xpra.platform.features import MMAP_SUPPORTED
-    except ImportError:
-        MMAP_SUPPORTED = False
     from xpra.net.digest import get_digests
     from xpra.net.crypto import get_crypto_caps
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
@@ -401,7 +397,6 @@ def get_network_caps():
                 "salt-digest"           : salt_digests,
                 "compressors"           : get_enabled_compressors(),
                 "encoders"              : get_enabled_encoders(),
-                "mmap"                  : MMAP_SUPPORTED,
                }
     caps.update(get_crypto_caps())
     caps.update(get_compression_caps())

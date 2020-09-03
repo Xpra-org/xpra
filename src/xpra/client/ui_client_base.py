@@ -10,7 +10,6 @@ import sys
 from xpra.client.client_base import XpraClientBase
 from xpra.client.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
-from xpra.platform.features import MMAP_SUPPORTED
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.version_util import full_version_str
 from xpra.net import compression, packet_encoding
@@ -339,7 +338,7 @@ class UIXpraClient(ClientBaseClass):
         caps["session-type"] = get_session_type()
         #don't try to find the server uuid if this platform cannot run servers..
         #(doing so causes lockups on win32 and startup errors on osx)
-        if MMAP_SUPPORTED and POSIX and not is_Wayland():
+        if POSIX and not is_Wayland():
             #we may be running inside another server!
             try:
                 from xpra.server.server_uuid import get_uuid
