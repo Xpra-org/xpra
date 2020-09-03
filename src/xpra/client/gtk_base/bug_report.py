@@ -16,6 +16,7 @@ from xpra.gtk_common.gtk_util import (
     JUSTIFY_LEFT, WIN_POS_CENTER, FILE_CHOOSER_ACTION_SAVE,
     )
 from xpra.platform.gui import force_focus
+from xpra.platform.gui import force_focus
 from xpra.util import nonl, envint, repr_ellipsized
 from xpra.os_util import strtobytes, hexstr, PYTHON3
 from xpra.log import Logger
@@ -213,6 +214,7 @@ class BugReport(object):
             hbox.pack_start(btn)
             return btn
 
+        force_focus()
         btn("Copy to clipboard", "Copy all data to clipboard", self.copy_clicked, "clipboard.png")
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")
         btn("Cancel", "", self.close, "quit.png")
