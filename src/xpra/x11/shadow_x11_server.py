@@ -7,10 +7,11 @@
 
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time, _is_Wayland
-from xpra.util import envbool, envint
+from xpra.util import envbool, envint, merge_dicts
 from xpra.gtk_common.gtk_util import get_xwindow, is_gtk3
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
+from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.scripts.main import saved_env
@@ -166,6 +167,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def get_info(self, proto, *_args):
         info = X11ServerCore.get_info(self, proto)
+        merge_dicts(info, ShadowServerBase.get_info(self, proto))
         info.setdefault("features", {})["shadow"] = True
         info.setdefault("server", {})["type"] = "Python/gtk%i/x11-shadow" % (2+is_gtk3())
         return info
