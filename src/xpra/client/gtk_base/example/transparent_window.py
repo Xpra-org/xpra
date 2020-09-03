@@ -65,6 +65,9 @@ class TransparentWindow(gtk.Window):
         cr.stroke()
 
 def main():
+    from xpra.platform.gui import init, set_default_icon
+    set_default_icon("encoding.png")
+    init()
     import signal
     def signal_handler(*_args):
         gtk.main_quit()

@@ -8,6 +8,7 @@ import sys
 
 def main():
     from xpra.platform import program_context, command_error
+    from xpra.platform.gui import init, set_default_icon
     with program_context("Webcam", "Webcam"):
         from xpra.log import Logger, add_debug_category
         log = Logger("webcam")
@@ -16,6 +17,10 @@ def main():
                 sys.argv.remove(x)
                 add_debug_category("webcam")
                 log.enable_debug()
+
+        set_default_icon("webcam.png")
+        init()
+
         log("importing opencv")
         try:
             import cv2
