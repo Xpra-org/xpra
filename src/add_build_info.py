@@ -260,7 +260,7 @@ def record_build_info(is_build=True):
         #record pkg-config versions:
         PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
         for pkg in ("libc",
-                    "vpx", "vpx", "x264", "x265", "webp", "yuv", "nvenc", "nvfbc",
+                    "vpx", "x264", "x265", "webp", "yuv", "nvenc", "nvfbc",
                     "avcodec", "avutil", "swscale",
                     "nvenc",
                     "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
