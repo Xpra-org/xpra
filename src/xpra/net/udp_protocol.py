@@ -8,7 +8,7 @@ import struct
 import random
 
 from xpra.os_util import LINUX, monotonic_time, memoryview_to_bytes
-from xpra.util import envint, repr_ellipsized
+from xpra.util import envint, ellipsizer
 from xpra.make_thread import start_thread
 from xpra.net.protocol import Protocol, READ_BUFFER_SIZE
 from xpra.net.bytestreams import SocketConnection, can_retry
@@ -71,7 +71,7 @@ class UDPListener(object):
                 try:
                     buf, bfrom = self._socket.recvfrom(READ_BUFFER_SIZE)
                 except Exception as e:
-                    log("_read_thread_loop() buffer=%s, from=%s", repr_ellipsized(buf), bfrom, exc_info=True)
+                    log("_read_thread_loop() buffer=%s, from=%s", ellipsizer(buf), bfrom, exc_info=True)
                     if can_retry(e):
                         continue
                     raise
@@ -82,7 +82,7 @@ class UDPListener(object):
                 try:
                     self._process_packet_cb(self, *values)
                 except Exception as e:
-                    log("_read_thread_loop() buffer=%s, from=%s", repr_ellipsized(buf), bfrom, exc_info=True)
+                    log("_read_thread_loop() buffer=%s, from=%s", ellipsizer(buf), bfrom, exc_info=True)
                     if not self._closed:
                         log.error("Error: UDP packet processing error:")
                         log.error(" %s", e)
@@ -176,7 +176,7 @@ class UDPProtocol(Protocol):
             return False
         missing = self._get_missing()
         packet = ("udp-control", self.mtu, self.asynchronous_receive_enabled, self.last_sequence, self.highest_sequence, missing, tuple(self.cancel))
-        log("send_control() packet(%s)=%s", self.pending_packets, packet)
+        log("send_control() packet(%s)=%s", self.pending_packets, ellipsizer(packet))
         def send_control_failed():
             #resend a new one
             self.cancel_control_timer()
@@ -275,7 +275,7 @@ class UDPProtocol(Protocol):
                 missing_chunks = resend_cache.keys()
             if fail_cb_seq:
                 log("fail_cb[%i]=%s, missing_chunks=%s, len(resend_cache)=%i",
-                    seqno, repr_ellipsized(str(fail_cb_seq)), missing_chunks, len(resend_cache))
+                    seqno, ellipsizer(fail_cb_seq), missing_chunks, len(resend_cache))
                 #we have a fail callback for this packet,
                 #we have to decide if we send the missing chunks or use the callback,
                 #resend if the other end is missing less than 25% of the chunks:
@@ -295,7 +295,7 @@ class UDPProtocol(Protocol):
                     continue
             for c in missing_chunks:
                 data = resend_cache.get(c)
-                log("resend data[%i][%i]=%s", seqno, c, repr_ellipsized(str(data)))
+                log("resend data[%i][%i]=%s", seqno, c, ellipsizer(data))
                 if data is None:
                     log.error("Error: cannot resend chunk %i of packet sequence %i", c, seqno)
                     log.error(" data missing from packet resend cache")
@@ -449,7 +449,7 @@ class UDPProtocol(Protocol):
         if l % maxpayload > 0:
             chunks += 1
         log("UDP.write_buf(%s, %i bytes, %s, %s) seq=%i, mtu=%s, maxpayload=%i, chunks=%i, data=%s",
-            con, l, fail_cb, synchronous, seqno, mtu, maxpayload, chunks, repr_ellipsized(data))
+            con, l, fail_cb, synchronous, seqno, mtu, maxpayload, chunks, ellipsizer(data))
         chunk = 0
         offset = 0
         if fail_cb:
@@ -517,7 +517,7 @@ class UDPClientProtocol(UDPProtocol):
             Splits and parses the UDP frame header from the packet,
             then process the packed using process_udp_data
         """
-        #log.info("UDPClientProtocol.read_queue_put(%s)", repr_ellipsized(buf))
+        #log.info("UDPClientProtocol.read_queue_put(%s)", ellipsizer(buf))
         uuid, seqno, synchronous, chunk, chunks = _header_struct.unpack_from(buf[:_header_size])
         data = buf[_header_size:]
         bfrom = None        #not available here..

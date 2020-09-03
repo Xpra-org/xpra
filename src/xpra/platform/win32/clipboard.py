@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -198,7 +198,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             got_contents(target, 8, b"")
             return
         def got_text(text):
-            log("got_text(%s)", repr_ellipsized(bytestostr(text)))
+            log("got_text(%s)", ellipsizer(text))
             got_contents(target, 8, text)
         def errback(error_text=""):
             log.error("Error: failed to get clipboard data")
@@ -276,7 +276,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                         v = s.decode("utf8").replace("\r\n", "\n").encode("utf8")
                     else:
                         v = strtobytes(s)
-                    log("got %i bytes of data: %s", len(s), repr_ellipsized(str(s)))
+                    log("got %i bytes of data: %s", len(s), ellipsizer(s))
                     callback(v)
                 else:
                     errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -49,7 +49,7 @@ from xpra.make_thread import start_thread
 from xpra.util import (
     first_time,
     csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
-    repr_ellipsized, dump_all_frames, nonl, envint, envbool, envfloat,
+    ellipsizer, dump_all_frames, nonl, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
     )
@@ -1253,7 +1253,7 @@ class ServerCore(object):
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
-        netlog("may_wrap_socket(..) peek_data=%s from %s", repr_ellipsized(bytestostr(peek_data)), frominfo)
+        netlog("may_wrap_socket(..) peek_data=%s from %s", ellipsizer(peek_data), frominfo)
         try:
             first_char = ord(peek_data[0])
         except TypeError:
@@ -1305,7 +1305,7 @@ class ServerCore(object):
 
     def invalid_header(self, proto, data, msg=""):
         netlog("invalid_header(%s, %s bytes: '%s', %s)",
-               proto, len(data or ""), msg, repr_ellipsized(data))
+               proto, len(data or ""), msg, ellipsizer(data))
         netlog(" input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
                proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
         info = self.guess_header_protocol(data)[1]
@@ -1318,7 +1318,7 @@ class ServerCore(object):
         except TypeError:
             c = int(v[0])
         s = bytestostr(v)
-        netlog("guess_header_protocol(%r) first char=%#x", repr_ellipsized(s), c)
+        netlog("guess_header_protocol(%r) first char=%#x", ellipsizer(s), c)
         if c==0x16:
             return "ssl", "SSL packet?"
         if s[:4]=="SSH-":
@@ -1573,13 +1573,13 @@ class ServerCore(object):
     def _process_gibberish(self, proto, packet):
         message, data = packet[1:3]
         netlog("Received uninterpretable nonsense from %s: %s", proto, message)
-        netlog(" data: %s", repr_ellipsized(data))
+        netlog(" data: %s", ellipsizer(data))
         self.disconnect_client(proto, message)
 
     def _process_invalid(self, protocol, packet):
         message, data = packet[1:3]
         netlog("Received invalid packet: %s", message)
-        netlog(" data: %s", repr_ellipsized(data))
+        netlog(" data: %s", ellipsizer(data))
         self.disconnect_client(protocol, message)
 
 
@@ -1689,7 +1689,7 @@ class ServerCore(object):
             if padding not in ALL_PADDING_OPTIONS:
                 auth_failed("unsupported padding: %s" % padding)
                 return
-            authlog("set output cipher using encryption key '%s'", repr_ellipsized(encryption_key))
+            authlog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
             proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations, padding)
             #use the same cipher as used by the client:
             auth_caps = new_cipher_caps(proto, cipher, encryption_key, padding_options)
@@ -1822,7 +1822,7 @@ class ServerCore(object):
                 raise Exception("Simulating a server error")
             self.hello_oked(proto, packet, c, auth_caps)
         except ClientException as e:
-            log("call_hello_oked(%s, %s, %s, %s)", proto, packet, repr_ellipsized(str(c)), auth_caps, exc_info=True)
+            log("call_hello_oked(%s, %s, %s, %s)", proto, packet, ellipsizer(c), auth_caps, exc_info=True)
             log.error("Error setting up new connection for")
             log.error(" %s:", proto)
             log.error(" %s", e)

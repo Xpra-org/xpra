@@ -1,4 +1,4 @@
-# This file is part of Xpra.
+e This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
 # Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -658,17 +658,29 @@ def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
     print("%i %s%s" % (pid, prefix, mem))
 
 
+class ellipsizer:
+    def __init__(self, obj, limit=100):
+        self.obj = obj
+        self.limit = limit
+    def __str__(self):
+        return repr_ellipsized(self.obj, self.limit)
+    def __repr__(self):
+        return repr_ellipsized(self.obj, self.limit)
+
 def repr_ellipsized(obj, limit=100):
-    if isinstance(obj, (str, unicode)) and len(obj) > limit:
+    if isinstance(obj, str):
+        if len(obj)>limit>6:
+            return obj[:limit//2-2]+" .. "+obj[2-limit//2:]
+        return obj
+    if isinstance(obj, bytes):
         try:
             s = repr(obj)
-        except ValueError:
-            s = binascii.hexlify(obj)
-        if len(s)<=limit or limit<=6:
-            return s
-        return s[:limit//2-2]+" .. "+s[2-limit//2:]
-    return repr(obj)
-
+        except Exception:
+            s = binascii.hexlify(obj).decode()
+        if len(s)>limit>6:
+            return s[:limit//2-2]+" .. "+s[2-limit//2:]
+        return s
+    return repr_ellipsized(repr(obj), limit)
 
 def rindex(alist, avalue):
     return len(alist) - alist[::-1].index(avalue) - 1

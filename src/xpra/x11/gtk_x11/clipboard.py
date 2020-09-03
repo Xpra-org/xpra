@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -31,7 +31,7 @@ from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport
     )
 from xpra.os_util import bytestostr
-from xpra.util import csv, repr_ellipsized, first_time, envbool
+from xpra.util import csv, repr_ellipsized, ellipsizer, first_time, envbool
 from xpra.log import Logger
 
 gdk = import_gdk()
@@ -431,7 +431,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             dtype, dformat, data = target_data
             dtype = bytestostr(dtype)
             log("setting target data for '%s': %s, %s, %s (%s)",
-                target, dtype, dformat, repr_ellipsized(str(data)), type(data))
+                target, dtype, dformat, ellipsizer(data), type(data))
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, event.time)
             return
 
@@ -441,7 +441,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
 
     def set_selection_response(self, requestor, target, prop, dtype, dformat, data, time=0):
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
-            requestor, target, prop, dtype, dformat, repr_ellipsized(bytestostr(data)), time)
+            requestor, target, prop, dtype, dformat, ellipsizer(data), time)
         #answer the selection request:
         try:
             with xsync:
@@ -512,7 +512,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                 return
             target = targets[0]
             def got_text_target(dtype, dformat, data):
-                log("got_text_target(%s, %s, %s)", dtype, dformat, repr_ellipsized(str(data)))
+                log("got_text_target(%s, %s, %s)", dtype, dformat, ellipsizer(data))
                 if not (dtype and dformat and data):
                     send_token_with_targets()
                     return
@@ -654,7 +654,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         except PropertyError:
             log("do_property_notify() property '%s' is gone?", event.atom, exc_info=True)
             return
-        log("%s=%s (%s : %s)", event.atom, repr_ellipsized(bytestostr(data)), dtype, dformat)
+        log("%s=%s (%s : %s)", event.atom, ellipsizer(data), dtype, dformat)
         if target=="TARGETS":
             self.targets = xatoms_to_strings(data or b"")
         self.got_local_contents(target, dtype, dformat, data)
@@ -665,7 +665,7 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         for timer, got_contents, time in target_requests.values():
             if log.is_debug_enabled():
                 log("got_local_contents: calling %s%s, time=%i",
-                    got_contents, (dtype, dformat, repr_ellipsized(str(data))), time)
+                    got_contents, (dtype, dformat, ellipsizer(data)), time)
             glib.source_remove(timer)
             got_contents(dtype, dformat, data)
 

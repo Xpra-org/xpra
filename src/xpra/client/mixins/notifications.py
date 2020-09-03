@@ -138,7 +138,7 @@ class NotificationClient(StubClientMixin):
         #note: if the server doesn't support notification forwarding,
         #it can still send us the messages (via xpra control or the dbus interface)
         log("_process_notify_show(%s) notifier=%s, server_notifications=%s",
-            repr_ellipsized(str(packet)), self.notifier, self.server_notifications)
+            repr_ellipsized(packet), self.notifier, self.server_notifications)
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
         #this one of the few places where we actually do care about character encoding:

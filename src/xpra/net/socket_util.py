@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,13 +9,13 @@ from time import sleep
 
 from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.os_util import (
-    bytestostr, hexstr,
+    hexstr,
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
 from xpra.util import (
     envint, envbool, csv,
-    repr_ellipsized,
+    repr_ellipsized, ellipsizer,
     DEFAULT_PORT,
     )
 
@@ -187,9 +187,9 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS):
     log("socket %s peek: got %i bytes", conn, len(peek_data))
     if peek_data:
         line1 = peek_data.splitlines()[0]
-        log("socket peek=%s", repr_ellipsized(peek_data, limit=512))
+        log("socket peek=%s", ellipsizer(peek_data, limit=512))
         log("socket peek hex=%s", hexstr(peek_data[:128]))
-        log("socket peek line1=%s", repr_ellipsized(bytestostr(line1)))
+        log("socket peek line1=%s", ellipsizer(line1))
     return peek_data, line1
 
 
