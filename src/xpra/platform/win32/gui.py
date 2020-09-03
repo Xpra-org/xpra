@@ -14,6 +14,7 @@ from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT
 
 from xpra.client import mixin_features
+from xpra.exit_codes import EXIT_OK
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
 from xpra.platform.win32.window_hooks import Win32Hooks
 from xpra.platform.win32.win32_events import KNOWN_EVENTS, POWER_EVENTS
@@ -38,6 +39,7 @@ from xpra.util import AdHocStruct, csv, envint, envbool, typedict
 from xpra.os_util import PYTHON2, PYTHON3, get_util_logger, strtobytes
 
 from xpra.log import Logger
+from xpra.platform.win32.constants import ENDSESSION_LOGOFF
 
 log = Logger("win32")
 grablog = Logger("win32", "grab")
@@ -980,6 +982,7 @@ class ClientExtras(object):
                 el.add_event_callback(WM_WTSSESSION_CHANGE,         self.session_change_event)
                 el.add_event_callback(win32con.WM_INPUTLANGCHANGE,  self.inputlangchange)
                 el.add_event_callback(win32con.WM_WININICHANGE,     self.inichange)
+                el.add_event_callback(win32con.WM_ENDSESSION,       self.end_session)
         except Exception as e:
             log.error("Error: cannot register focus and power callbacks:")
             log.error(" %s", e)
@@ -1124,6 +1127,25 @@ class ClientExtras(object):
             #this is not really a screen size change event,
             #but we do want to process it as such (see window reinit code)
             c.screen_size_changed()
+
+    def end_session(self, wParam, lParam):
+        log("WM_ENDSESSION")
+        c = self.client
+        if not c:
+            return
+        ENDSESSION_CLOSEAPP = 0x1
+        ENDSESSION_CRITICAL = 0x40000000
+        ENDSESSION_LOGOFF   = 0x80000000
+        reason = None
+        if (wParam & ENDSESSION_CLOSEAPP) and wParam:
+            reason = "restart manager request"
+        elif wParam & ENDSESSION_CRITICAL:
+            reason = "application forced to shutdown"
+        elif wParam & ENDSESSION_LOGOFF:
+            reason = "logoff"
+        else:
+            return
+        c.disconnect_and_quit(EXIT_OK, reason)
 
     def session_change_event(self, event, session):
         event_name = WTS_SESSION_EVENTS.get(event, event)
