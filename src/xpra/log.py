@@ -423,3 +423,24 @@ class CaptureHandler(logging.Handler):
 
     def createLock(self):
         self.lock = None
+
+class SIGPIPEStreamHandler(logging.StreamHandler):
+    def flush(self):
+        try:
+            super().flush()
+        except BrokenPipeError:
+            pass
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            # issue 35046: merged two stream.writes into one.
+            stream.write(msg + self.terminator)
+            self.flush()
+        except RecursionError:  # See issue 36272
+            raise
+        except BrokenPipeError:
+            pass
+        except Exception:
+            self.handleError(record)
