@@ -13,6 +13,7 @@ from xpra.gtk_common.gobject_compat import (
     import_gtk, import_gdk, import_glib, import_pango,
     register_os_signals,
     )
+from xpra.util import envint
 from xpra.os_util import monotonic_time, bytestostr, get_util_logger, WIN32, OSX
 from xpra.child_reaper import getChildReaper
 from xpra.simple_stats import std_unit_dec
@@ -23,6 +24,8 @@ from xpra.gtk_common.gtk_util import (
 from xpra.platform.paths import get_icon_dir, get_download_dir
 
 log = get_util_logger()
+
+URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 320)
 
 gtk = import_gtk()
 gdk = import_gdk()
@@ -127,21 +130,32 @@ class OpenRequestsWindow(object):
         self.requests = [x for x in self.requests if x[-1]>now]
         self.expire_labels = {}
         tb = TableBuilder(rows=1, columns=4, row_spacings=15)
+        def l(s=""):
+            return gtk.Label(label=s)
         #generate a new table:
         self.table = tb.get_table()
         if not self.requests:
-            tb.add_row(gtk.Label("No requests pending"))
+            tb.add_row(l("No requests pending"))
         else:
-            headers = [gtk.Label("URL / Filename"), gtk.Label(""), gtk.Label("Expires in"), gtk.Label("Action")]
+            headers = [l("URL / Filename"), l(""), l("Expires in"), l("Action")]
             tb.add_row(*headers)
             for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
                 details = u""
                 if dtype==b"file" and filesize>0:
                     details = u"%sB" % std_unit_dec(filesize)
-                expires_label = gtk.Label()
+                expires_label = l()
                 self.expire_labels[expires_label] = expires
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
-                items = (gtk.Label(bytestostr(url)), gtk.Label(details), expires_label, buttons)
+                s = bytestostr(url)
+                main_label = l(s)
+                if dtype==b"url" and s.find("?")>0 and len(s)>48:
+                    parts = s.split("?", 1)
+                    main_label.set_label(parts[0]+"?..")
+                    main_label.set_tooltip_text(s)
+                main_label.set_line_wrap(True)
+                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                main_label.set_size_request(URI_MAX_WIDTH, -1)
+                items = (main_label, l(details), expires_label, buttons)
                 tb.add_row(*items)
             self.update_expires_label()
         self.alignment.add(self.table)
