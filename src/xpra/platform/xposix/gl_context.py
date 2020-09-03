@@ -98,7 +98,14 @@ class GLXWindowContext(object):
 class GLXContext(object):
 
     def __init__(self, alpha=False):
+        self.props = {}
+        self.xdisplay = None
+        self.context = None
+        self.bit_depth = 0
         display = display_get_default()
+        if not display:
+            log.warn("Warning: GLXContext: no default display")
+            return
         screen = display.get_default_screen()
         bpc = 8
         pyattrs = {
@@ -112,7 +119,6 @@ class GLXContext(object):
         if DOUBLE_BUFFERED:
             pyattrs[GLX.GLX_DOUBLEBUFFER] = None
         attrs = c_attrs(pyattrs)
-        self.props = {}
         self.xdisplay = get_xdisplay()
         xvinfo = GLX.glXChooseVisual(self.xdisplay, screen.get_number(), attrs)
         def getconfig(attrib):
@@ -165,6 +171,12 @@ class GLXContext(object):
 
     def check_support(self, force_enable=False):
         i = self.props
+        if not self.xdisplay:
+            return {
+                "success"   : False,
+                "safe"      : False,
+                "message"   : "cannot access X11 display",
+                }
         gtk = import_gtk()
         tmp = gtk.Window(WINDOW_TOPLEVEL)
         tmp.resize(1, 1)
