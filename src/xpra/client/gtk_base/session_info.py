@@ -123,11 +123,7 @@ class SessionInfo(gtk.Window):
         self.last_populate_statistics = 0
         self.is_closed = False
         self.get_pixbuf = get_pixbuf
-        if not self.session_name or self.session_name=="Xpra":
-            title = u"Session Info"
-        else:
-            title = u"%s: Session Info" % self.session_name
-        self.set_title(title)
+        self.set_title(self.get_window_title())
         self.set_destroy_with_parent(True)
         self.set_resizable(True)
         self.set_decorated(True)
@@ -484,6 +480,21 @@ class SessionInfo(gtk.Window):
             glib.timeout_add(100, self.populate_sound_stats)
         add_close_accel(self, self.destroy)
 
+
+    def get_window_title(self):
+        t = ["Session Info"]
+        c = self.client
+        if c:
+            if c.session_name or c.server_session_name:
+                t.append(c.session_name or c.server_session_name)
+            p = c._protocol
+            if p:
+                conn = getattr(p, "_conn", None)
+                if conn:
+                    cinfo = conn.get_info()
+                    t.append(cinfo.get("endpoint", bytestostr(conn.target)))
+        v = " - ".join(str(x) for x in t)
+        return v
 
     def table_tab(self, icon_filename, title, populate_cb):
         tb = TableBuilder()
