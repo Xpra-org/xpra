@@ -236,6 +236,7 @@ def get_usage():
                         "print DISPLAY filename",
                         "showconfig",
                         "list",
+                        "list-windows",
                         "sessions",
                         "launcher",
                       ]
