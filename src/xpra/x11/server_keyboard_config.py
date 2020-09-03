@@ -472,11 +472,18 @@ class KeyboardConfig(KeyboardConfigBase):
                         break
             level = int(shift) + int(mode)*2
             levels = []
+            #first, match with group if set:
             if group:
                 levels.append(level+4)
+            #then try exact match without group:
             levels.append(level)
-            for i in range(4):
+            #try default group:
+            for i in range(2):
                 level = int(shift) + i*2
+                if level not in levels:
+                    levels.append(level)
+            #catch all:
+            for level in range(8):
                 if level not in levels:
                     levels.append(level)
             for level in levels:
@@ -484,7 +491,24 @@ class KeyboardConfig(KeyboardConfigBase):
                 if keycode:
                     log("get_keycode(%s, %s, %s, %s)=%i (level=%i, shift=%s, mode=%i)",
                         client_keycode, keyname, modifiers, group, keycode, level, shift, mode)
+                    if (level & 1) ^ shift:
+                        #shift state does not match
+                        if "shift" in modifiers:
+                            modifiers.pop("shift")
+                        else:
+                            modifiers.append("shift")
+                    if (level & 2) ^ mode:
+                        #try to set / unset mode:
+                        for mod, keynames in self.keynames_for_mod.items():
+                            if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
+                                #found mode switch modified
+                                if mod in modifiers:
+                                    modifiers.remove(mod)
+                                else:
+                                    modifiers.append(mod)
+                                break
                     break
+            #this should not find anything new?:
             if keycode is None:
                 keycode = self.keycode_translation.get(keyname, -1)
                 log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
@@ -492,14 +516,6 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def do_get_keycode_new(self, client_keycode, keyname, pressed, modifiers, group):
         #non-native: try harder to find matching keysym
-        def kmlog(msg, *args):
-            if keyname in DEBUG_KEYSYMS:
-                l = log.info
-            else:
-                l = log
-            l(msg, *args)
-        def klog(msg, *args):
-            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
         #first, try to honour shift state:
         shift = ("shift" in modifiers) ^ ("lock" in modifiers)
         mode = 0
@@ -517,7 +533,6 @@ class KeyboardConfig(KeyboardConfigBase):
                 if name in ("ISO_Level3_Shift", "Mode_switch"):
                     mode = 1
                     break
-        level = int(shift) + int(mode)*2
         levels = []
         #try to preserve the mode (harder to toggle):
         for m in (int(bool(mode)), int(not mode)):
@@ -528,14 +543,11 @@ class KeyboardConfig(KeyboardConfigBase):
                     level = int(g)*4 + int(m)*2 + int(s)*1
                     levels.append(level)
         kmlog("will try levels: %s", levels)
-        rgroup = group
         for level in levels:
             keycode = self.keycode_translation.get((keyname, level))
             if keycode:
-                klog("=%i (level=%i, shift=%s, mode=%i)", keycode, level, shift, mode)
-                if self.xkbmap_raw:
-                    break
                 keysyms = self.keycode_mappings.get(keycode)
+                klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
                 level0 = levels[0]
                 if len(keysyms)>level0 and keysyms[level0]=="":
                     #if the keysym we would match for this keycode is 'NoSymbol',
@@ -576,7 +588,16 @@ class KeyboardConfig(KeyboardConfigBase):
         #this should not find anything new?:
         if keycode is None:
             keycode = self.keycode_translation.get(keyname, -1)
-            klog("=%i (keyname translation)", keycode)
+            klog("=%i, %i (keyname translation)", keycode, rgroup)
+        if keycode is None:
+            #last resort, find using the keyval:
+            display = Gdk.Display.get_default()
+            keymap = Gdk.Keymap.get_for_display(display)
+            b, entries = keymap.get_entries_for_keyval(keyval)
+            if b and entries:
+                for entry in entries:
+                    if entry.group==group:
+                        return entry.keycode, entry.group
         return keycode, rgroup
 
 

@@ -253,7 +253,7 @@ class InputServer(StubServerMixin):
             return
         wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
         keyname = bytestostr(keyname)
-        modifiers = tuple(bytestostr(x) for x in modifiers)
+        modifiers = list(bytestostr(x) for x in modifiers)
         group = 0
         if len(packet)>=7:
             group = packet[6]
