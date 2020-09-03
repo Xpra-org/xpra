@@ -722,6 +722,20 @@ def enable_focus_workaround():
     NSApp.activateIgnoringOtherApps_(True)
 
 
+def can_access_display() -> bool:
+    #see: https://stackoverflow.com/a/11511419/428751
+    d = Quartz.CGSessionCopyCurrentDictionary()
+    if not d:
+        return False
+    if d.get("kCGSSessionOnConsoleKey", 0)==0:
+        #GUI session doesn't own the console, or the console's screens are asleep
+        return False
+    if d.get("CGSSessionScreenIsLocked", 0):
+        #screen is locked
+        return False
+    return True
+
+
 class ClientExtras(object):
     def __init__(self, client=None, opts=None):
         if OSX_FOCUS_WORKAROUND and client:
@@ -798,17 +812,21 @@ class ClientExtras(object):
     def check_display(self):
         log("check_display()")
         try:
-            did = CG.CGMainDisplayID()
-            log("check_display() CGMainDisplayID()=%#x", did)
-            if did and self.client:
-                asleep = bool(CG.CGDisplayIsAsleep(did))
-                log("check_display() CGDisplayIsAsleep(%#x)=%s", did, asleep)
-                if self.display_is_asleep!=asleep:
-                    self.display_is_asleep = asleep
-                    if asleep:
-                        self.client.suspend()
-                    else:
-                        self.client.resume()
+            asleep = None
+            if not can_access_display():
+                asleep = True
+            else:
+                did = CG.CGMainDisplayID()
+                log("check_display() CGMainDisplayID()=%#x", did)
+                if did and self.client:
+                    asleep = bool(CG.CGDisplayIsAsleep(did))
+                    log("check_display() CGDisplayIsAsleep(%#x)=%s", did, asleep)
+            if asleep is not None and self.display_is_asleep!=asleep:
+                self.display_is_asleep = asleep
+                if asleep:
+                    self.client.suspend()
+                else:
+                    self.client.resume()
             return True
         except Exception:
             log.error("Error checking display sleep status", exc_info=True)

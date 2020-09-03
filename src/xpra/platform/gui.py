@@ -242,6 +242,10 @@ def get_wm_name():
     return None
 
 
+def can_access_display():
+    return True
+
+
 take_screenshot = None
 ClientExtras = None
 
@@ -284,6 +288,7 @@ def get_info_base():
             "icc"                           : get_icc_info(),
             "display-icc"                   : get_display_icc_info(),
             "window_frame"                  : get_window_frame_sizes(),
+            "can_access_display"            : can_access_display(),
             }
 
 get_info = get_info_base
@@ -315,6 +320,7 @@ platform_import(globals(), "gui", False,
                 "get_fixed_cursor_size", "get_cursor_size", "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
                 "system_bell",
+                "can_access_display",
                 "get_info")
 
 
