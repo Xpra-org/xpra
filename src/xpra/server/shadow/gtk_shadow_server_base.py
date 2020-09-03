@@ -14,6 +14,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
+from xpra.gtk_common.gtk_util import get_screen_sizes
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -68,6 +69,13 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not self.tray_icon:
             self.set_tray_icon("server-notconnected")
         GTKServerBase.last_client_exited(self)
+
+
+    def make_hello(self, source):
+        caps = super().make_hello(source)
+        if source.wants_features:
+            caps["screen_sizes"] = get_screen_sizes()
+        return caps
 
 
     def refresh(self):

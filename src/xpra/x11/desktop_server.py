@@ -431,6 +431,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 "configure.pointer"      : True,
                 "states"                 : ["iconified", "focused"],
                 })
+            capabilities["screen_sizes"] = get_screen_sizes()
         return capabilities
 
 
