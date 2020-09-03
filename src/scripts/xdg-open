@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,26 +15,24 @@ if os.environ.get("XPRA_XDG_OPEN"):
 socket_path = os.environ.get("XPRA_SERVER_SOCKET")
 display = os.environ.get("DISPLAY", "unknown")
 if socket_path and os.path.exists(socket_path):
-    #try to forward open commands:
-    #sys.stderr.write("xdg-open: forwarding request to xpra server at '%s'\n" % (socket_path,))
-    for x in sys.argv[1:]:
-        filename = os.path.abspath(x)
-        #sys.stderr.write("arg: '%s'\n" % x)
-        if x.find("://")>0:
-            proto, filename = x.split("://", 1)
-            if proto=="file":
-                control_command = ["send-file", filename, "open", "*"]
-            else:
-                control_command = ["open-url", x, "*"]
-        elif os.path.exists(x) and os.path.isfile(x):
-            control_command = ["send-file", filename, "open", "*"]
-        else:
-            sys.stderr.write("xdg-open: unrecognized argument form '%s'\n" % x)
-            break
+    if len(sys.argv)!=2:
+        sys.stderr.write("xdg-open: invalid number of arguments\n")
+        sys.stderr.write("Try `xdg-open --help' for more information.\n")
+    arg = sys.argv[1]
+    if arg in ("--help", "--manual"):
+        sys.stderr.write("xdg-open { file | URL }\n")
+        sys.stderr.flush()
+        sys.exit(0)
+    if arg=="--version":
+        from xpra import __version__
+        sys.stdout.write("xpra xdg-open %s\n" % __version__)
+        sys.exit(0)
+
+    def send_control_command(*control_command_args):
         from subprocess import Popen, PIPE
         try:
-            command = ["xpra", "control", "socket://%s" % socket_path] + control_command
-            proc = Popen(command, stdin=None, stdout=PIPE, stderr=PIPE, shell=False, close_fds=True)
+            command = ["xpra", "control", "socket://%s" % socket_path] + list(control_command_args)
+            proc = Popen(command, stdout=PIPE, stderr=PIPE)
             #sys.stderr.write("Popen(%s)=%s\n" % (command, proc))
             out, err = proc.communicate(None)
             if proc.returncode==0:
@@ -49,6 +47,26 @@ if socket_path and os.path.exists(socket_path):
         except Exception as e:
             sys.stderr.write("xdg-open: failed to forward to xpra server using socket '%s': %s\n" % (socket_path, e))
             sys.stderr.flush()
+        sys.exit(1)
+
+    #try to forward URI or file:
+    #sys.stderr.write("xdg-open: forwarding request to xpra server at '%s'\n" % (socket_path,))
+    filename = os.path.abspath(arg)
+    #sys.stderr.write("arg: '%s'\n" % x)
+    if arg.find("://")>0:
+        proto, filename = arg.split("://", 1)
+        if proto=="file":
+            send_control_command("send-file", filename, "open", "*")
+        else:
+            send_control_command("open-url", arg, "*")
+    elif os.path.exists(arg) and os.path.isfile(arg):
+        send_control_command("send-file", filename, "open", "*")
+    elif os.path.exists(arg) and not os.path.isfile(arg):
+        #fall-through to regular xdg-open:
+        pass
+    else:
+        sys.stderr.write("xdg-open: unrecognized argument form '%s'\n" % arg)
+        sys.exit(1)
 
 
 #fallback to the "real" xdg-open:
@@ -74,3 +92,4 @@ if real_xdg_open==this_file:
     sys.stderr.write("xdg-open: loop detected\n")
     sys.exit(1)
 os.execve(real_xdg_open, ["xdg-open"]+sys.argv[1:], env)
+
