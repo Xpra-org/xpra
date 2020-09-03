@@ -445,7 +445,5 @@ class SIGPIPEStreamHandler(logging.StreamHandler):
             self.flush()
         except RuntimeError:  # See issue 36272
             raise
-        except BrokenPipeError:
-            pass
         except Exception:
             self.handleError(record)
