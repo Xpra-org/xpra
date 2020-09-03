@@ -15,6 +15,8 @@ from xpra.os_util import bytestostr
 
 LOG_PREFIX = bytestostr(os.environ.get("XPRA_LOG_PREFIX", ""))
 LOG_FORMAT = bytestostr(os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s"))
+
+DEBUG_MODULES = os.environ.get("XPRA_DEBUG_MODULES", "").split(",")
 NOPREFIX_FORMAT = u"%(message)s"
 
 logging.basicConfig(format=LOG_FORMAT)
@@ -353,11 +355,14 @@ class Logger(object):
         self.logger.setLevel(default_level)
         disabled = False
         enabled = False
-        for cat in self.categories:
-            if cat in debug_disabled_categories:
-                disabled = True
-            if is_debug_enabled(cat):
-                enabled = True
+        if caller in DEBUG_MODULES:
+            enabled = True
+        else:
+            for cat in self.categories:
+                if cat in debug_disabled_categories:
+                    disabled = True
+                if is_debug_enabled(cat):
+                    enabled = True
         self.debug_enabled = enabled and not disabled
         #ready, keep track of it:
         add_logger(self.categories, self)
