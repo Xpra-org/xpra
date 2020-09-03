@@ -559,6 +559,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         # environment:
         write_runner_shell_scripts(script)
 
+    import datetime
+    extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     if start_vfb or opts.daemon:
         #we will probably need a log dir
         #either for the vfb, or for our own log file
@@ -574,7 +576,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
         if opts.daemon:
             from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
-            log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name), username, uid, gid)
+            log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
+                                     username, uid, gid, extra_expand)
             logfd = open_log_file(log_filename0)
             if ROOT and (uid>0 or gid>0):
                 try:
@@ -685,7 +688,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 fn(*args)
             except Exception:
                 pass
-        log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name), username, uid, gid)
+        log_filename1 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
+                                 username, uid, gid, extra_expand)
         if log_filename0 != log_filename1:
             # we now have the correct log filename, so use it:
             try:
