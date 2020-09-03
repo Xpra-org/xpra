@@ -6,6 +6,8 @@ import sys
 from collections import deque
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_glib
+from xpra.util import csv
+from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.platform.paths import get_icon
 
 gtk = import_gtk()
@@ -47,6 +49,11 @@ class KeyboardStateInfoWindow:
         glib.timeout_add(100, self.populate_modifiers)
 
         self.key_events = deque(maxlen=35)
+        display = Gdk.Display.get_default()
+        keymap = Gdk.Keymap.get_for_display(display)
+        self.keymap_change_timer = 0
+        keymap.connect("keys-changed", self.keymap_changed)
+        self.show_keymap("current keymap")
         self.window.connect("key-press-event", self.key_press)
         self.window.connect("key-release-event", self.key_release)
         if not is_gtk3():
@@ -96,6 +103,31 @@ class KeyboardStateInfoWindow:
                 names.append(name)
         return  names
 
+    def keymap_changed(self, *args):
+        print("keymap_changed%s" % (args,))
+        if not self.keymap_change_timer:
+            self.keymap_change_timer = GLib.timeout_add(500, self.show_keymap)
+
+    def show_keymap(self, msg="keymap changed:"):
+        self.keymap_change_timer = 0
+        from xpra.platform.keyboard import Keyboard
+        keyboard = Keyboard()      #pylint: disable=not-callable
+        layout, layouts, variant, variants, options = keyboard.get_layout_spec()
+        self.add_event_text(msg)
+        for k,v in {
+            "layout"    : layout,
+            "variant"   : variant,
+            "layouts"   : layouts,
+            "variants"  : variants,
+            "options"  : options,
+            }.items():
+            if v:
+                if isinstance(v, (list, tuple)):
+                    v = csv(bytestostr(x) for x in v)
+                self.add_event_text("%16s: %s" % (k, bytestostr(v)))
+        print("do_keymap_changed: %s" % (msg,))
+        print("do_keymap_changed: %s" % ((layout, layouts, variant, variants, options),))
+
     def key_press(self, _, event):
         self.add_key_event("down", event)
 
@@ -114,6 +146,9 @@ class KeyboardStateInfoWindow:
             if l>0:
                 s = s.ljust(l)
             text += s
+        self.add_event_text(text)
+
+    def add_event_text(self, text):
         self.key_events.append(text)
         self.keys.set_text("\n".join(self.key_events))
 
@@ -126,6 +161,9 @@ def main():
     from xpra.log import enable_color
     with program_context("Keyboard-Test", "Keyboard Test Tool"):
         enable_color()
+        if POSIX and not OSX:
+            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+            init_gdk_display_source()
         KeyboardStateInfoWindow()
         gtk.main()
     return 0
