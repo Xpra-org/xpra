@@ -14,6 +14,12 @@ log-file = $DISPLAY.log
 #start-via-proxy = auto
 start-via-proxy = no
 
+# Scripts that can modify the environment of the server:
+# source = /etc/xpra/server.env
+
+# Scripts that can modify the environment of the commands started by the server:
+# source-start = /etc/profile
+
 # Environment variables for children started
 # with 'start-child' or 'start':
 # (can be specified multiple times)
