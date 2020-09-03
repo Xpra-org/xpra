@@ -12,7 +12,7 @@ from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
 
-def source_env(source=()) -> dict:
+def source_env(source=()):
     log = get_util_logger()
     env = {}
     for f in source:

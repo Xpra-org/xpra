@@ -22,7 +22,6 @@ from xpra.util import csv, envbool, envint, unsetenv, repr_ellipsized, nonl, pve
 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_STR, EXIT_UNSUPPORTED
 from xpra.os_util import (
     get_util_logger, getuid, getgid, pollwait,
-    EXIT_NO_DISPLAY,
     monotonic_time, setsid, bytestostr, use_tty,
     WIN32, OSX, POSIX, PYTHON2, PYTHON3, SIGNAMES, is_Ubuntu, getUbuntuVersion,
     )
@@ -291,6 +290,7 @@ def isdisplaytype(args, dtype):
 def check_display():
     from xpra.platform.gui import can_access_display
     if not can_access_display():
+        from xpra.exit_codes import EXIT_NO_DISPLAY
         raise InitExit(EXIT_NO_DISPLAY, "cannot access display")
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
