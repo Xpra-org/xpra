@@ -4,21 +4,23 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
-import os.path
 import sys
+import os.path
+import subprocess
+
 
 from xpra.gtk_common.gobject_compat import (
     import_gtk, import_gdk, import_glib, import_pango,
     register_os_signals,
     )
-from xpra.os_util import monotonic_time, bytestostr, get_util_logger
+from xpra.os_util import monotonic_time, bytestostr, get_util_logger, WIN32, OSX
+from xpra.child_reaper import getChildReaper
 from xpra.simple_stats import std_unit_dec
 from xpra.gtk_common.gtk_util import (
     gtk_main, add_close_accel, scaled_image, pixbuf_new_from_file,
     TableBuilder, WIN_POS_CENTER, window_defaults,
     )
-from xpra.platform.paths import get_icon_dir
+from xpra.platform.paths import get_icon_dir, get_download_dir
 
 log = get_util_logger()
 
@@ -70,6 +72,9 @@ class OpenRequestsWindow(object):
         if self.show_file_upload_cb:
             btn("Upload", "", self.show_file_upload_cb, "upload.png")
         btn("Close", "", self.close, "quit.png")
+        downloads = get_download_dir()
+        if downloads:
+            btn("Show Downloads Folder", "", self.show_downloads, "browse.png")
 
         def accel_close(*_args):
             self.close()
@@ -208,6 +213,18 @@ class OpenRequestsWindow(object):
         if self.window:
             self.window.destroy()
             self.window = None
+
+    def show_downloads(self, _btn):
+        downloads = os.path.expanduser(get_download_dir())
+        if WIN32:
+            os.startfile(downloads) #@UndefinedVariable pylint: disable=no-member
+            return
+        if OSX:
+            cmd = ["open", downloads]
+        else:
+            cmd = ["xdg-open", downloads]
+        proc = subprocess.Popen(cmd)
+        getChildReaper().add_process(proc, "show-downloads", cmd, ignore=True, forget=True)
 
 
     def run(self):
