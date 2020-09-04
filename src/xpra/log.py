@@ -429,7 +429,8 @@ class CaptureHandler(logging.Handler):
     def createLock(self):
         self.lock = None
 
-class SIGPIPEStreamHandler(logging.StreamHandler):
+class SIGPIPEStreamHandler3(logging.StreamHandler):
+
     def flush(self):
         try:
             super().flush()
@@ -443,7 +444,45 @@ class SIGPIPEStreamHandler(logging.StreamHandler):
             # issue 35046: merged two stream.writes into one.
             stream.write(msg + self.terminator)
             self.flush()
-        except RuntimeError:  # See issue 36272
+        except RecursionError:  # See issue 36272
             raise
+        except BrokenPipeError:
+            pass
         except Exception:
             self.handleError(record)
+
+class SIGPIPEStreamHandler2(logging.StreamHandler):
+
+    def flush(self):
+        try:
+            logging.StreamHandler.flush(self)
+        except IOError:
+            pass
+
+    def emit2(self, record):
+        try:
+            msg = self.format(record)
+            stream = self.stream
+            fs = "%s\n"
+            try:
+                if (isinstance(msg, unicode) and
+                    getattr(stream, 'encoding', None)):
+                    ufs = u'%s\n'
+                    try:
+                        stream.write(ufs % msg)
+                    except UnicodeEncodeError:
+                        stream.write((ufs % msg).encode(stream.encoding))
+                else:
+                    stream.write(fs % msg)
+            except UnicodeError:
+                stream.write(fs % msg.encode("UTF-8"))
+            self.flush()
+        except RuntimeError:  # See issue 36272
+            pass
+        except Exception:
+            self.handleError(record)
+
+if sys.version_info[0]==2:
+   SIGPIPEStreamHandler = SIGPIPEStreamHandler2
+else:
+   SIGPIPEStreamHandler = SIGPIPEStreamHandler3
