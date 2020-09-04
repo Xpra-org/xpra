@@ -8,7 +8,7 @@ import os
 import socket
 
 from xpra.os_util import get_generic_os_name, load_binary_file, PYTHON3
-from xpra.util import updict, log_screen_sizes
+from xpra.util import updict, log_screen_sizes, envbool
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
