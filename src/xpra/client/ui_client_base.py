@@ -433,7 +433,7 @@ class UIXpraClient(ClientBaseClass):
             v = c.intpair("actual_desktop_size")
             if v:
                 w, h = v
-                ss = c.tupleget("screen_sizes")
+                ss = c.listget("screen_sizes")
                 if ss:
                     log.info(" remote desktop size is %sx%s with %s screen%s:", w, h, len(ss), engs(ss))
                     log_screen_sizes(w, h, ss)
