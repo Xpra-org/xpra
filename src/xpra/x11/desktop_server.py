@@ -341,6 +341,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             #can't be done with Python2?
             return
         modified = {}
+        from gi.repository import Gio
         schemas = Gio.Settings.list_schemas()
         for schema, attributes in defs.items():
             if schema not in schemas:
