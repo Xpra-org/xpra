@@ -31,6 +31,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         opts.start_child_on_last_client_exit = []
         opts.exec_wrapper = None
         opts.start_env = []
+        opts.source_start = []
         #pynotify can cause crashes,
         #probably due to threading issues?
         def noop():
