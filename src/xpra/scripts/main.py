@@ -1428,7 +1428,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
                 status = EXIT_SSL_FAILURE
                 SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
-                if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
+                if SSLCertVerificationError and isinstance(e, SSLCertVerificationError) or getattr(e, "reason", None)=="CERTIFICATE_VERIFY_FAILED":
                     try:
                         msg = e.args[1].split(":", 2)[2]
                     except:
