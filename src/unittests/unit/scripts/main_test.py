@@ -139,9 +139,7 @@ class TestMain(unittest.TestCase):
 
 
     def test_ssh_parsing(self):
-        add_debug_category("ssh")
         assert parse_ssh_string("auto")[0] in ("paramiko", "ssh")
-        remove_debug_category("ssh")
         assert parse_ssh_string("ssh")==["ssh"]
         assert parse_ssh_string("ssh -v")==["ssh", "-v"]
         with nomodule_context("paramiko"):
