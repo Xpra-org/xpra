@@ -356,6 +356,10 @@ class SourceMixinsTest(unittest.TestCase):
                 pass
             assert av.get_info().get("av-sync").get("delta")==100
 
+    def test_notification(self):
+        from xpra.server.source.notification_mixin import NotificationMixin
+        self._test_mixin_class(NotificationMixin)
+
 
 def main():
     unittest.main()

@@ -36,7 +36,7 @@ class NotificationMixin(StubSourceMixin):
     ######################################################################
     # notifications:
     # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid, summary, body, actions=(), hints=None, expire_timeout=10*1000,
+    def may_notify(self, nid=0, summary="", body="", actions=(), hints=None, expire_timeout=10*1000,
                    icon_name=None, user_callback=None):
         try:
             from xpra.platform.paths import get_icon_filename
