@@ -57,11 +57,11 @@ class GTKKeyboardHelper(KeyboardHelper):
 
     def update(self):
         old_hash = self.hash
-        self.query_xkbmap()
+        super().update()
         if is_X11():
             try:
                 self.keyboard.update_modifier_map(Gdk.Display.get_default(), self.xkbmap_mod_meanings)
-            except:
+            except Exception:
                 log.error("error querying modifier map", exc_info=True)
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash!=self.hash

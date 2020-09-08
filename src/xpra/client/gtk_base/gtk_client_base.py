@@ -37,6 +37,7 @@ from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.client.mixins.window_manager import WindowClient
 from xpra.platform.paths import get_icon_filename
+from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
     system_bell, get_wm_name, get_fixed_cursor_size,
@@ -81,6 +82,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
+        self.shortcuts_info = None
         self.session_info = None
         self.bug_report = None
         self.file_size_dialog = None
@@ -177,6 +179,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def cleanup(self):
         log("GTKXpraClient.cleanup()")
+        if self.shortcuts_info:
+            self.shortcuts_info.destroy()
+            self.shortcuts_info = None
         if self.session_info:
             self.session_info.destroy()
             self.session_info = None
@@ -532,12 +537,25 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def show_about(self, *_args):
         from xpra.gtk_common.about import about
+        force_focus()
         about()
+
+    def show_shortcuts(self, *_args):
+        if self.shortcuts_info and not self.shortcuts_info.is_closed:
+            force_focus()
+            self.shortcuts_info.present()
+            return
+        from xpra.client.gtk3.show_shortcuts import ShortcutInfo
+        kh = self.keyboard_helper
+        assert kh, "no keyboard helper"
+        self.shortcuts_info = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
+        self.shortcuts_info.show_all()
 
     def show_session_info(self, *args):
         if self.session_info and not self.session_info.is_closed:
             #exists already: just raise its window:
             self.session_info.set_args(*args)
+            force_focus()
             self.session_info.present()
             return
         pixbuf = self.get_pixbuf("statistics.png")
@@ -548,11 +566,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.client.gtk_base.session_info import SessionInfo
         self.session_info = SessionInfo(self, self.session_name, pixbuf, conn, self.get_pixbuf)
         self.session_info.set_args(*args)
+        force_focus()
         self.session_info.show_all()
 
     def show_bug_report(self, *_args):
         self.send_info_request()
         if self.bug_report:
+            force_focus()
             self.bug_report.show()
             return
         from xpra.client.gtk_base.bug_report import BugReport

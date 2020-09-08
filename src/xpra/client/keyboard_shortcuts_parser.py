@@ -12,16 +12,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-def parse_shortcuts(strs=(), shortcut_modifiers="", xkbmap_mod_meanings=None):
-    if not strs:
-        """ if none are defined, add this as default
-        it would be nicer to specify it via OptionParser in main
-        but then it would always have to be there with no way of removing it
-        whereas now it is enough to define one (any shortcut)
-        """
-        strs = ["meta+shift+F4:quit"]
-    log("parse_shortcuts(%s)" % str(strs))
-    shortcuts = {}
+def get_modifier_names(xkbmap_mod_meanings):
     #modifier names contains the internal modifiers list, ie: "mod1", "control", ...
     #but the user expects the name of the key to be used, ie: "alt" or "super"
     #whereas at best, we keep "Alt_L" : "mod1" mappings... (xposix)
@@ -44,10 +35,13 @@ def parse_shortcuts(strs=(), shortcut_modifiers="", xkbmap_mod_meanings=None):
             #alias "control" to "ctrl" as it is often used:
             modifier_names["ctrl"] = mod_name
     log("parse_shortcuts: modifier names=%s", modifier_names)
+    return modifier_names
 
+
+def parse_shortcut_modifiers(s, modifier_names=()):
     #figure out the default shortcut modifiers
     #accept "," or "+" as delimiter:
-    shortcut_modifiers = shortcut_modifiers.lower().replace(",", "+").split("+")
+    shortcut_modifiers = s.lower().replace(",", "+").split("+")
     def mod_defaults():
         mods = ["meta", "shift"]
         if POSIX:
@@ -74,7 +68,20 @@ def parse_shortcuts(strs=(), shortcut_modifiers="", xkbmap_mod_meanings=None):
         else:
             shortcut_modifiers = r
     log("shortcut modifiers=%s", shortcut_modifiers)
+    return shortcut_modifiers
 
+def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
+    if not strs:
+        """ if none are defined, add this as default
+        it would be nicer to specify it via OptionParser in main
+        but then it would always have to be there with no way of removing it
+        whereas now it is enough to define one (any shortcut)
+        """
+        strs = ["meta+shift+F4:quit"]
+    log("parse_shortcuts(%s)" % str(strs))
+    shortcuts = {}
+    #figure out the default shortcut modifiers
+    #accept "," or "+" as delimiter:
     for s in strs:
         #example for s: Control+F8:some_action()
         parts = s.split(":", 1)

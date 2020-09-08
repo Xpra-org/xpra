@@ -5,7 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.keyboard_shortcuts_parser import parse_shortcuts
+from xpra.client.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util import nonl, csv, std, envbool, ellipsizer
 from xpra.os_util import bytestostr
 from xpra.log import Logger
@@ -26,8 +26,10 @@ class KeyboardHelper:
         self.locked = False
         self.keyboard_sync = keyboard_sync
         self.shortcuts_enabled = True
-        self.shortcut_modifiers = shortcut_modifiers
-        self.key_shortcuts = self.parse_shortcuts(key_shortcuts)
+        self.shortcut_modifiers_str = shortcut_modifiers
+        self.shortcut_modifiers = ()
+        self.key_shortcuts_strs = key_shortcuts
+        self.key_shortcuts = {}
         #command line overrides:
         self.xkbmap_raw = raw
         self.layout_option = layout
@@ -85,8 +87,11 @@ class KeyboardHelper:
         pass
 
 
-    def parse_shortcuts(self, strs):
-        return parse_shortcuts(strs, self.shortcut_modifiers, self.xkbmap_mod_meanings)
+    def parse_shortcuts(self):
+        #parse shortcuts:
+        modifier_names = get_modifier_names(self.xkbmap_mod_meanings)
+        self.shortcut_modifiers = parse_shortcut_modifiers(self.shortcut_modifiers_str, modifier_names)
+        self.key_shortcuts = parse_shortcuts(self.key_shortcuts_strs, self.shortcut_modifiers, modifier_names)
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
         #find the shortcuts that may match this key:
@@ -255,6 +260,7 @@ class KeyboardHelper:
     def update(self):
         if not self.locked:
             self.query_xkbmap()
+            self.parse_shortcuts()
 
     def layout_str(self):
         return " / ".join([bytestostr(x) for x in (

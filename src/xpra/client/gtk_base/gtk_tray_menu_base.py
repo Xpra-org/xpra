@@ -640,6 +640,11 @@ class GTKTrayMenuBase(MenuHelper):
         self.keyboard_shortcuts_menuitem.connect("toggled", keyboard_shortcuts_toggled)
         return self.keyboard_shortcuts_menuitem
 
+    def make_viewshortcutsmenuitem(self):
+        def show_shortcuts(*_args):
+            self.client.show_shortcuts()
+        return self.menuitem("View Shortcuts", tooltip="Show all active keyboard shortcuts", cb=show_shortcuts)
+
 
     def make_openglmenuitem(self):
         gl = self.checkitem("OpenGL")
@@ -1216,6 +1221,7 @@ class GTKTrayMenuBase(MenuHelper):
         keyboard_menu_item.set_submenu(menu)
         menu.append(self.make_keyboardsyncmenuitem())
         menu.append(self.make_shortcutsmenuitem())
+        menu.append(self.make_viewshortcutsmenuitem())
         menu.append(self.make_layoutsmenuitem())
         keyboard_menu_item.show_all()
         return keyboard_menu_item

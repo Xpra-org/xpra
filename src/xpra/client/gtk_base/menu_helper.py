@@ -92,6 +92,9 @@ class MenuHelper:
                 log.error(" %s", e)
         return self.menu
 
+    def show_shortcuts(self, *args):
+        self.client.show_shorcuts(*args)
+
     def show_session_info(self, *args):
         self.client.show_session_info(*args)
 
