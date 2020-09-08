@@ -73,6 +73,8 @@ Depends: python3-xpra | python2-xpra,
 #        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
         ,xvfb
         ,keyboard-configuration
+# ssl (generate cert), wss:
+        ,openssl
 # fast JPEG client support:
 #xenial:         ,libturbojpeg
 #bionic:        ,libturbojpeg
