@@ -8,6 +8,7 @@ import io
 from contextlib import redirect_stdout, redirect_stderr
 
 from xpra.util import typedict
+from xpra.scripts.config import TRUE_OPTIONS
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -22,23 +23,31 @@ class ShellMixin(StubSourceMixin):
 
     def __init__(self, *_args):
         self._server = None
+        self.shell_enabled = False
         self.saved_logging_handler = None
         self.log_records = []
         self.log_thread = None
 
-    def init_from(self, _protocol, server):
+    def init_from(self, protocol, server):
         self._server = server
+        try:
+            options = protocol._conn.options
+            shell = options.get("shell", "")
+            self.shell_enabled = shell.lower() in TRUE_OPTIONS
+        except AttributeError:
+            self.shell_enabled = False
+        log("init_from(%s, %s) shell_enabled(%s)=%s", protocol, server, options, self.shell_enabled)
 
     def get_caps(self) -> dict:
-        return {"shell" : True}
+        return {"shell" : self.shell_enabled}
 
     def get_info(self) -> dict:
-        info = {"shell" : True}
-        return info
+        return {"shell" : self.shell_enabled}
 
     def shell_exec(self, code):
         log("shell_exec(%r)", code)
         try:
+            assert self.shell_enabled, "shell support is not available with this connection"
             _globals = {
                 "connection" : self,
                 "server"    : self._server,

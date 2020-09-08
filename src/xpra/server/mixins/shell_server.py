@@ -13,10 +13,9 @@ Mixin for adding shell support
 class ShellServer(StubServerMixin):
 
     def get_info(self, _source=None) -> dict:
-        info = {
+        return {
             "shell" : True,
             }
-        return info
 
     def get_server_features(self, _source) -> dict:
         return {
