@@ -269,7 +269,7 @@ class GTKTrayMenuBase(MenuHelper):
         menu.append(self.make_infomenuitem())
         menu.append(self.make_featuresmenuitem())
         if mixin_features.windows and self.client.keyboard_helper:
-            menu.append(self.make_layoutsmenuitem())
+            menu.append(self.make_keyboardmenuitem())
         if mixin_features.clipboard and SHOW_CLIPBOARD_MENU:
             menu.append(self.make_clipboardmenuitem())
         if mixin_features.windows:
@@ -329,9 +329,6 @@ class GTKTrayMenuBase(MenuHelper):
             menu.append(self.make_openglmenuitem())
         if mixin_features.windows:
             menu.append(self.make_modalwindowmenuitem())
-        if mixin_features.windows and self.client.keyboard_helper:
-            menu.append(self.make_keyboardsyncmenuitem())
-            menu.append(self.make_shortcutsmenuitem())
 
     def make_sharingmenuitem(self):
         def sharing_toggled(*args):
@@ -617,7 +614,7 @@ class GTKTrayMenuBase(MenuHelper):
                 log("keyboard_sync_toggled(%s) keyboard_sync=%s", args, ks)
                 set_keyboard_sync_tooltip()
                 self.client.send_keyboard_sync_enabled_status()
-        self.keyboard_sync_menuitem = self.checkitem("Keyboard Synchronization")
+        self.keyboard_sync_menuitem = self.checkitem("State Synchronization")
         set_sensitive(self.keyboard_sync_menuitem, False)
         def set_keyboard_sync_menuitem(*args):
             kh = self.client.keyboard_helper
@@ -633,7 +630,7 @@ class GTKTrayMenuBase(MenuHelper):
         return self.keyboard_sync_menuitem
 
     def make_shortcutsmenuitem(self):
-        self.keyboard_shortcuts_menuitem = self.checkitem("Keyboard Shortcuts")
+        self.keyboard_shortcuts_menuitem = self.checkitem("Intercept Shortcuts")
         kh = self.client.keyboard_helper
         self.keyboard_shortcuts_menuitem.set_active(kh and bool(kh.shortcuts_enabled))
         def keyboard_shortcuts_toggled(*args):
@@ -1212,8 +1209,19 @@ class GTKTrayMenuBase(MenuHelper):
         self.client.on_server_setting_changed("webcam", webcam_changed)
         return webcam
 
+
+    def make_keyboardmenuitem(self):
+        keyboard_menu_item = self.handshake_menuitem("Keyboard", "keyboard.png")
+        menu = Gtk.Menu()
+        keyboard_menu_item.set_submenu(menu)
+        menu.append(self.make_keyboardsyncmenuitem())
+        menu.append(self.make_shortcutsmenuitem())
+        menu.append(self.make_layoutsmenuitem())
+        keyboard_menu_item.show_all()
+        return keyboard_menu_item
+
     def make_layoutsmenuitem(self):
-        keyboard = self.menuitem("Keyboard", "keyboard.png", "Select your keyboard layout", None)
+        keyboard = self.menuitem("Layout", "keyboard.png", "Select your keyboard layout", None)
         set_sensitive(keyboard, False)
         self.layout_submenu = Gtk.Menu()
         keyboard.set_submenu(self.layout_submenu)
