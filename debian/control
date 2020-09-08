@@ -73,6 +73,8 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-lz4
 # clipboard packet compression:
         ,python3-brotli
+#ssl (generate cert), wss:
+        ,openssl
 #we need a vfb: either Xdummy or Xvfb
 #        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
         ,xvfb
@@ -100,8 +102,6 @@ Recommends: python3-dbus
         ,python3-gst-1.0
 #for printer forwarding:
         ,python3-cups
-#ssl, wss:
-        ,openssl
 #for ssh transport:
         ,python3-paramiko
         ,python3-dns
