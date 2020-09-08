@@ -52,7 +52,7 @@ class StubServerMixin:
 
     def threaded_setup(self):
         """
-        Prepare to run, this method runs in parallel to save startup time.
+        Prepare to run, this method runs in parallel to start faster.
         """
 
     def init_sockets(self, _sockets):
