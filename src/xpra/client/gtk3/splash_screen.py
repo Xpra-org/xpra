@@ -26,7 +26,7 @@ class SplashScreen(Gtk.Window):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("delete_event", self.exit)
         title = "Xpra %s" % __version__
-        self.set_title("Xpra")
+        self.set_title(title)
         self.set_size_request(320, 160)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
