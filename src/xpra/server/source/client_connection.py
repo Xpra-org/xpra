@@ -98,9 +98,6 @@ class ClientConnection(StubSourceMixin):
     def init_state(self):
         self.hello_sent = False
         self.info_namespace = False
-        self.send_notifications = False
-        self.send_notifications_actions = False
-        self.notification_callbacks = {}
         self.share = False
         self.lock = False
         self.control_commands = ()
@@ -190,9 +187,6 @@ class ClientConnection(StubSourceMixin):
     def parse_client_caps(self, c : typedict):
         #general features:
         self.info_namespace = c.boolget("info-namespace")
-        self.send_notifications = c.boolget("notifications")
-        self.send_notifications_actions = c.boolget("notifications.actions")
-        log("notifications=%s, actions=%s", self.send_notifications, self.send_notifications_actions)
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strtupleget("control_commands")
@@ -365,7 +359,6 @@ class ClientConnection(StubSourceMixin):
         info = {
             "lock"  : bool(self.lock),
             "share" : bool(self.share),
-            "notifications" : self.send_notifications,
             }
         return info
 
@@ -375,6 +368,7 @@ class ClientConnection(StubSourceMixin):
 
 
     def send_setting_change(self, setting, value):
+        #we always subclass InfoMixin which defines "client_setting_change":
         if self.client_setting_change:
             self.send_more("setting-change", setting, value)
 
@@ -382,56 +376,6 @@ class ClientConnection(StubSourceMixin):
     def send_server_event(self, *args):
         if self.wants_events:
             self.send_more("server-event", *args)
-
-
-    ######################################################################
-    # notifications:
-    # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid, summary, body, actions=(), hints=None, expire_timeout=10*1000,
-                   icon_name=None, user_callback=None):
-        try:
-            from xpra.platform.paths import get_icon_filename
-            from xpra.notifications.common import parse_image_path
-        except ImportError as e:
-            notifylog("not sending notification: %s", e)
-        else:
-            icon_filename = get_icon_filename(icon_name)
-            icon = parse_image_path(icon_filename) or ""
-            self.notify("", nid, "Xpra", 0, "",
-                        summary, body, actions, hints or {},
-                        expire_timeout, icon, user_callback)
-
-    def notify(self, dbus_id, nid, app_name, replaces_nid, app_icon,
-               summary, body, actions, hints, expire_timeout, icon, user_callback=None):
-        args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
-        notifylog("notify%s types=%s", args, tuple(type(x) for x in args))
-        if not self.send_notifications:
-            notifylog("client %s does not support notifications", self)
-            return False
-        if self.suspended:
-            notifylog("client %s is suspended, notification not sent", self)
-            return False
-        if user_callback:
-            self.notification_callbacks[nid] = user_callback
-        #this is one of the few places where we actually do care about character encoding:
-        try:
-            summary = summary.encode("utf8")
-        except UnicodeEncodeError:
-            summary = str(summary)
-        try:
-            body = body.encode("utf8")
-        except UnicodeEncodeError:
-            body = str(body)
-        if self.hello_sent:
-            #Warning: actions and hints are send last because they were added later (in version 2.3)
-            self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon,
-                            summary, body, expire_timeout, icon, actions, hints)
-        return True
-
-    def notify_close(self, nid : int):
-        if not self.send_notifications or self.suspended  or not self.hello_sent:
-            return
-        self.send_more("notify_close", nid)
 
 
     def set_deflate(self, level : int):
