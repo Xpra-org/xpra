@@ -43,6 +43,8 @@ class PyNotify_Notifier(NotifierBase):
 
 
 def main():
+    import gi
+    gi.require_version("Gtk", "3.0")
     from gi.repository import GLib, Gtk
     def show():
         n = PyNotify_Notifier()
