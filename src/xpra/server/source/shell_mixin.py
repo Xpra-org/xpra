@@ -35,6 +35,7 @@ class ShellMixin(StubSourceMixin):
             shell = options.get("shell", "")
             self.shell_enabled = shell.lower() in TRUE_OPTIONS
         except AttributeError:
+            options = {}
             self.shell_enabled = False
         log("init_from(%s, %s) shell_enabled(%s)=%s", protocol, server, options, self.shell_enabled)
 
