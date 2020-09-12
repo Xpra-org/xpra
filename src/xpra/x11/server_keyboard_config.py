@@ -515,6 +515,14 @@ class KeyboardConfig(KeyboardConfigBase):
         return keycode, group
 
     def do_get_keycode_new(self, client_keycode, keyname, pressed, modifiers, group):
+        def kmlog(msg, *args):
+            if keyname in DEBUG_KEYSYMS:
+                l = log.info
+            else:
+                l = log
+            l(msg, *args)
+        def klog(msg, *args):
+            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
         #non-native: try harder to find matching keysym
         #first, try to honour shift state:
         shift = ("shift" in modifiers) ^ ("lock" in modifiers)
