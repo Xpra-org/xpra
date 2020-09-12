@@ -15,13 +15,6 @@ from xpra.log import Logger
 log = Logger("paint", "mouse")
 
 
-def setup_cairo_context(context, ww : int, wh : int, w : int, h : int, offset_x : int=0, offset_y : int=0):
-    if w!=ww or h!=wh:
-        context.scale(ww/w, wh/h)
-    if offset_x!=0 or offset_y!=0:
-        context.translate(offset_x, offset_y)
-    context.set_operator(OPERATOR_SOURCE)
-
 def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_time):
     if not cursor_data:
         return

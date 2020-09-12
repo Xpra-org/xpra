@@ -14,7 +14,7 @@ from gi.repository import GLib, Gdk
 
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
-from xpra.client.gtk_base.cairo_paint_common import setup_cairo_context, cairo_paint_pointer_overlay
+from xpra.client.gtk_base.cairo_paint_common import cairo_paint_pointer_overlay
 from xpra.os_util import memoryview_to_bytes
 from xpra.util import envbool
 from xpra.log import Logger
@@ -236,9 +236,12 @@ class CairoBackingBase(WindowBackingBase):
         w, h = self.size
         if ww==0 or w==0 or wh==0 or h==0:
             return
+        if w!=ww or h!=wh:
+            context.scale(ww/w, wh/h)
         x, y = self.offsets[:2]
-
-        setup_cairo_context(context, ww, wh, w, h, x, y)
+        if x!=0 or y!=0:
+            context.translate(x, y)
+        context.set_operator(OPERATOR_SOURCE)
         context.set_source_surface(self._backing, 0, 0)
         context.paint()
         if self.pointer_overlay and self.cursor_data:
