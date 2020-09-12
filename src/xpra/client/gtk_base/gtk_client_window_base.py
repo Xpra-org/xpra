@@ -112,7 +112,8 @@ DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1
 HONOUR_SCREEN_MAPPING = envbool("XPRA_HONOUR_SCREEN_MAPPING", POSIX and not DISPLAY_HAS_SCREEN_INDEX) and not is_gtk3()
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
-REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 500)
+REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
+REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -867,15 +868,17 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 self.process_map_event()
         statelog("window_state_updated(..) state updates: %s, actual updates: %s, server updates: %s",
                  state_updates, actual_updates, server_updates)
-        if "maximized" in state_updates and REPAINT_MAXIMIZED>0:
-            def repaint_maximized():
-                if not self._backing:
-                    return
-                ww, wh = self.get_size()
-                #this should work for the non-opengl case:
-                self.queue_draw_area(0, 0, ww, wh)
-            self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
-
+        if "maximized" in state_updates:
+            if REPAINT_MAXIMIZED>0:
+                def repaint_maximized():
+                    if not self._backing:
+                        return
+                    ww, wh = self.get_size()
+                    #this should work for the non-opengl case:
+                    self.queue_draw_area(0, 0, ww, wh)
+                self.timeout_add(REPAINT_MAXIMIZED, repaint_maximized)
+            if REFRESH_MAXIMIZED:
+                self._client.send_refresh(self._id)
         self._window_state.update(server_updates)
         self.emit("state-updated")
         #if we have state updates, send them back to the server using a configure window packet:
