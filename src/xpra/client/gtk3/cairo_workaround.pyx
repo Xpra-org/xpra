@@ -94,6 +94,13 @@ cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stri
                 src += src_stride
                 dst += dst_stride
 
+CAIRO_FORMATS = {
+    CAIRO_FORMAT_RGB24  : ("RGB", "RGBX", "BGR", "BGRX"),
+    CAIRO_FORMAT_ARGB32 : ("BGRX", "BGRA"),
+    CAIRO_FORMAT_RGB16_565  : ("BGR565", ),
+    CAIRO_FORMAT_RGB30  : ("r210", ),
+    }
+
 def set_image_surface_data(object image_surface, rgb_format, object pixel_data, int width, int height, int stride):
     #convert pixel_data to a C buffer:
     cdef const unsigned char * cbuf = NULL

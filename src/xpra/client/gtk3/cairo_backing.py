@@ -15,13 +15,14 @@ from xpra.log import Logger
 log = Logger("paint", "cairo")
 
 try:
-    from xpra.client.gtk3.cairo_workaround import set_image_surface_data    #@UnresolvedImport
+    from xpra.client.gtk3.cairo_workaround import set_image_surface_data, CAIRO_FORMATS #@UnresolvedImport
 except ImportError as e:
     log.warn("Warning: failed to load the gtk3 cairo workaround:")
     log.warn(" %s", e)
     log.warn(" rendering will be slow!")
     del e
     set_image_surface_data = None
+    CAIRO_FORMATS = {}
 
 
 CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
@@ -53,14 +54,14 @@ class CairoBacking(CairoBackingBase):
             rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
         rgb_format = options.strget(b"rgb_format", "RGB")
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
-            if (cairo_format==cairo.FORMAT_RGB24 and rgb_format in ("RGB", "RGBX", "BGR", "BGRX")) or \
-                (cairo_format==cairo.FORMAT_ARGB32 and rgb_format in ("BGRX", "BGRA")) or \
-                (cairo_format==cairo.FORMAT_RGB16_565 and rgb_format in ("BGR565", )) or \
-                (cairo_format==cairo.FORMAT_RGB30 and rgb_format in ("r210", )):
+            rgb_formats = CAIRO_FORMATS.get(cairo_format)
+            if rgb_format in rgb_formats:
                 img_surface = cairo.ImageSurface(cairo_format, width, height)
                 set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
                 self.cairo_paint_surface(img_surface, x, y, render_width, render_height, options)
                 return True
+            log("cannot set image surface data for cairo format %s and rgb_format %s (rgb formats supported: %s)",
+                cairo_format, rgb_format, rgb_formats)
 
         if rgb_format in ("RGB", "RGBA", "RGBX"):
             data = GLib.Bytes(img_data)
