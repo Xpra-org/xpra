@@ -107,22 +107,19 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
     cdef cairo_surface_t * surface = (<PycairoImageSurface *> image_surface).surface
     cairo_surface_flush(surface)
     cdef unsigned char *cdata = cairo_image_surface_get_data(surface)
-    cdef unsigned long *idata = NULL
     #get surface attributes:
-    cdef cairo_format_t format = cairo_image_surface_get_format(surface)
+    cdef cairo_format_t cairo_format = cairo_image_surface_get_format(surface)
     cdef int istride    = cairo_image_surface_get_stride(surface)
     cdef int iwidth     = cairo_image_surface_get_width(surface)
     cdef int iheight    = cairo_image_surface_get_height(surface)
     assert iwidth>=width and iheight>=height, "invalid image surface: expected at least %sx%s but got %sx%s" % (width, height, iwidth, iheight)
-    BPP = 2 if format==CAIRO_FORMAT_RGB16_565 else 4
+    BPP = 2 if cairo_format==CAIRO_FORMAT_RGB16_565 else 4
     assert istride>=iwidth*BPP, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
     #log("set_image_surface_data%s pixel buffer=%#x, surface=%#x, data=%#x, stride=%i, width=%i, height=%i", (image_surface, rgb_format, pixel_data, width, height, stride), <uintptr_t> cbuf, <uintptr_t> surface, <uintptr_t> data, istride, iwidth, iheight)
     cdef int x, y
     cdef int srci, dsti
-    cdef uintptr_t src, dst
-    cdef unsigned int rgb30
     #just deal with the formats we care about:
-    if format==CAIRO_FORMAT_RGB24:
+    if cairo_format==CAIRO_FORMAT_RGB24:
         #cairo's RGB24 format is actually stored as BGR on little endian
         if rgb_format=="BGR":
             with nogil:
@@ -166,7 +163,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
                         cdata[dsti + 3] = 0                  #X
         else:
             raise ValueError("unhandled pixel format for RGB24: '%s'" % rgb_format)
-    elif format==CAIRO_FORMAT_ARGB32:
+    elif cairo_format==CAIRO_FORMAT_ARGB32:
         if rgb_format in ("RGBA", "RGBX"):
             with nogil:
                 for y in range(height):
@@ -179,7 +176,7 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
             simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
         else:
             raise ValueError("unhandled pixel format for ARGB32: '%s'" % rgb_format)
-    elif format==CAIRO_FORMAT_RGB30:
+    elif cairo_format==CAIRO_FORMAT_RGB30:
         if rgb_format in ("r210"):
             simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
         #UNTESTED!
@@ -198,13 +195,13 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
         #                dsti += 1
         else:
             raise ValueError("unhandled pixel format for RGB30 '%s'" % rgb_format)
-    elif format==CAIRO_FORMAT_RGB16_565:
+    elif cairo_format==CAIRO_FORMAT_RGB16_565:
         if rgb_format in ("BGR565"):
             simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
         else:
             raise ValueError("unhandled pixel format for RGB16_565 '%s'" % rgb_format)
     else:
-        raise ValueError("unhandled cairo format '%s'" % format)
+        raise ValueError("unhandled cairo format '%s'" % cairo_format)
     cairo_surface_mark_dirty(surface)
 
 
