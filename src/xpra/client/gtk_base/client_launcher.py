@@ -1141,6 +1141,8 @@ def do_main(argv):
             client = app.client
             if client:
                 client.cleanup()
+            else:
+                Gtk.main_quit()
             GLib.timeout_add(1000, app.set_info_text, "got signal %s" % SIGNAMES.get(signum, signum))
             GLib.timeout_add(1000, app.set_info_color, True)
         register_os_signals(handle_signal, "Client Launcher")
