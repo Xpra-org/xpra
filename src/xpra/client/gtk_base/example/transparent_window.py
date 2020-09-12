@@ -67,10 +67,10 @@ def main():
         set_default_icon("windows.png")
         init()
 
-        import signal
+        from xpra.gtk_common.gobject_compat import register_os_signals
         def signal_handler(*_args):
             Gtk.main_quit()
-        signal.signal(signal.SIGINT, signal_handler)
+        register_os_signals(signal_handler, "test window")
         w = TransparentWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)

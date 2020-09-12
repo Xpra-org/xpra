@@ -251,6 +251,11 @@ def main():
         set_default_icon("clipboard.png")
         init()
 
+        from xpra.gtk_common.gobject_compat import register_os_signals
+        def signal_handler(*_args):
+            Gtk.main_quit()
+        register_os_signals(signal_handler, "test window")
+
         w = ClipboardStateInfoWindow()
         GLib.idle_add(w.show_with_focus)
         Gtk.main()

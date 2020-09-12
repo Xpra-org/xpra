@@ -170,6 +170,11 @@ def main():
         set_default_icon("keyboard.png")
         init()
 
+        from xpra.gtk_common.gobject_compat import register_os_signals
+        def signal_handler(*_args):
+            Gtk.main_quit()
+        register_os_signals(signal_handler, "test window")
+
         if POSIX and not OSX:
             from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
             init_gdk_display_source()
