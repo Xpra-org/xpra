@@ -36,7 +36,6 @@ class KeyboardHelperTest(unittest.TestCase):
 		kh.cleanup()
 
 	def test_parse_shortcuts(self):
-		kh = KeyboardHelper(None)
 		shortcuts = [
 			'Control+Menu:toggle_keyboard_grab',
 			'Shift+Menu:toggle_pointer_grab',
@@ -61,13 +60,15 @@ class KeyboardHelperTest(unittest.TestCase):
 			'#+bar:scalereset',
 			'#+question:scalingoff',
 			]
-		parsed = kh.parse_shortcuts(shortcuts)
-		assert len(parsed)>10
+		kh = KeyboardHelper(None, key_shortcuts=shortcuts)
+		parsed = kh.parse_shortcuts()
+		assert kh.shortcut_modifiers, "no shortcut modifiers: %s" % (kh.shortcut_modifiers,)
+		assert len(parsed)>10, "not enough shortcuts parsed: %s" % (parsed,)
 		def noop():
 			pass
 		window = AdHocStruct()
 		window.quit = noop
-		assert kh.key_handled_as_shortcut(window, "F4", ("mod1", "shift"), True)
+		assert kh.key_handled_as_shortcut(window, "F4", list(kh.shortcut_modifiers), True)
 		assert not kh.key_handled_as_shortcut(window, "F1", (), True)
 		kh.cleanup()
 
