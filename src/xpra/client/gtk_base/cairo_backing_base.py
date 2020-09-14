@@ -8,14 +8,13 @@ import cairo
 from cairo import (  #pylint: disable=no-name-in-module
     Context, ImageSurface,
     FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,
-    OPERATOR_SOURCE, OPERATOR_CLEAR,
+    OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,
     )
 from gi.repository import GLib, Gdk
 
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
-from xpra.client.gtk_base.cairo_paint_common import cairo_paint_pointer_overlay
-from xpra.os_util import memoryview_to_bytes
+from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -25,6 +24,34 @@ FORMATS = {-1   : "INVALID"}
 for attr in dir(cairo):
     if attr.startswith("FORMAT_"):
         FORMATS[getattr(cairo, attr)] = attr.replace("FORMAT_", "")
+
+
+def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_time):
+    if not cursor_data:
+        return
+    elapsed = max(0, monotonic_time()-start_time)
+    if elapsed>6:
+        return
+    from xpra.gtk_common.gtk_util import get_pixbuf_from_data
+    from xpra.codecs.argb.argb import unpremultiply_argb    #@UnresolvedImport
+    cw = cursor_data[3]
+    ch = cursor_data[4]
+    xhot = cursor_data[5]
+    yhot = cursor_data[6]
+    pixels = cursor_data[8]
+    x = px-xhot
+    y = py-yhot
+    alpha = max(0, (5.0-elapsed)/5.0)
+    log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s",
+        (context, x, y, start_time), alpha)
+    context.translate(x, y)
+    context.rectangle(0, 0, cw, ch)
+    argb = unpremultiply_argb(pixels)
+    img_data = memoryview_to_bytes(argb)
+    pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw*4)
+    context.set_operator(OPERATOR_OVER)
+    Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
+    context.paint()
 
 
 class CairoBackingBase(WindowBackingBase):
