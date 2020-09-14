@@ -53,6 +53,7 @@ IGNORE_EVENTS = {
             WM_WTSSESSION_CHANGE            : "WM_WTSSESSION_CHANGE",
             WM_DWMNCRENDERINGCHANGED        : "WM_DWMNCRENDERINGCHANGED",
             800                             : "screen background changed",  #I can't find this definition anywhere
+            win32con.WM_SIZE                : "WM_SIZE: screen resized",    #we get a GTK signal for this
             }
 LOG_EVENTS = {
             win32con.WM_POWERBROADCAST      : "WM_POWERBROADCAST: power management event",
