@@ -373,9 +373,7 @@ class FileTransferHandler(FileTransferAttributes):
         elapsed = monotonic_time()-start_time
         mimetype = bytestostr(mimetype)
         filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, elapsed*1000)
-        t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False,
-                         args=(filename, mimetype, printit, openit, filesize, options))
-        filelog("started process-download thread: %s", t)
+        self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
     def accept_data(self, send_id, dtype, basefilename, printit, openit):
         #subclasses should check the flags,
@@ -481,7 +479,13 @@ class FileTransferHandler(FileTransferAttributes):
             os.write(fd, file_data)
         finally:
             os.close(fd)
-        self.do_process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
+        self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
+
+
+    def process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options):
+        t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False,
+                         args=(filename, mimetype, printit, openit, filesize, options))
+        filelog("started process-download thread: %s", t)
 
     def do_process_downloaded_file(self, filename, mimetype, printit, openit, filesize, options):
         filelog("do_process_downloaded_file%s", (filename, mimetype, printit, openit, filesize, options))
