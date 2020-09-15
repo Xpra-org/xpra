@@ -7,7 +7,7 @@
 from gi.repository import Gtk, GLib, GdkPixbuf
 
 from xpra.util import envbool
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX
 from xpra.gtk_common.gtk_util import menuitem
 from xpra.gtk_common.about import about, close_about
 from xpra.platform.gui import get_icon_size
