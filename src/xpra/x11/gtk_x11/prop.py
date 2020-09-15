@@ -129,6 +129,7 @@ def prop_type_get(target, key):
     try:
         return X11WindowBindings().GetWindowPropertyType(target.get_xid(), key)
     except XError:
+        log("prop_type_get%s", (target, key), exc_info=True)
         return None
 
 
