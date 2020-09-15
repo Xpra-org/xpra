@@ -397,6 +397,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_file(self, packet):
         #the remote end is sending us a file
+        start = monotonic_time()
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
         send_id = ""
         if len(packet)>=9:
@@ -479,6 +480,7 @@ class FileTransferHandler(FileTransferAttributes):
             os.write(fd, file_data)
         finally:
             os.close(fd)
+        self.transfer_progress_update(False, send_id, monotonic_time()-start, filesize, filesize, None)
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
 
