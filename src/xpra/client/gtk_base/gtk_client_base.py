@@ -396,8 +396,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.client.gtk_base.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout
         def rec_answer(accept, newopenit=openit):
-            if int(accept)==1:
-                #record our response, so we will accept the file
+            from xpra.net.file_transfer import ACCEPT
+            if int(accept)==ACCEPT:
+                #record our response, so we will actually accept the file when the packets arrive:
                 self.data_send_requests[send_id] = (dtype, url, printit, newopenit)
             cb_answer(accept)
         self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)

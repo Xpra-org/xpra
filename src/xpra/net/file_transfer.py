@@ -34,8 +34,8 @@ MIMETYPE_EXTS = {
                  }
 
 DENY = 0
-ACCEPT = 1
-OPEN = 2
+ACCEPT = 1      #the file / URL will be sent
+OPEN = 2        #don't send, open on sender
 
 def osclose(fd):
     try:
