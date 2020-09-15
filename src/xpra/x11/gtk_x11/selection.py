@@ -133,7 +133,7 @@ class ManagerSelection(GObject.GObject):
                     window.set_events(window.get_events() | Gdk.EventMask.STRUCTURE_MASK)
                 log("got window")
             except XError:
-                log("Previous owner is already gone, not blocking")
+                log("Previous owner is already gone? not blocking", exc_info=True)
             else:
                 log("Waiting for previous owner to exit...")
                 add_event_receiver(window, self)

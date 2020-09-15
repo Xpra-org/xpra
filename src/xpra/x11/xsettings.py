@@ -49,6 +49,7 @@ class XSettingsManager:
         try:
             prop_set(self._window, XSETTINGS, XSETTINGS_TYPE, settings)
         except XError as e:
+            log("set_settings(%s)", settings, exc_info=True)
             log.error("Error: XSettings not applied")
             log.error(" %s", e)
 
@@ -81,7 +82,7 @@ class XSettingsHelper:
         try:
             return prop_get(owner, XSETTINGS, XSETTINGS_TYPE)
         except XError:
-            log("X error while fetching XSettings data; ignored")
+            log("X error while fetching XSettings data; ignored", exc_info=True)
             return None
 
 

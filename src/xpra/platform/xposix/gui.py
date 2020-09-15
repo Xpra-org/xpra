@@ -469,7 +469,9 @@ def system_bell(window, device, percent, _pitch, _duration, bell_class, bell_id,
             x11_bell()
         return  True
     except XError as e:
-        log.error("error using device_bell: %s, switching native X11 bell support off", e)
+        log("x11_bell()", exc_info=True)
+        log.error("Error using device_bell: %s", e)
+        log.error(" switching native X11 bell support off")
         device_bell = False
         return False
 
@@ -935,7 +937,8 @@ class ClientExtras:
                     XI2.select_xi2_events()
             except XError:
                 self.xi_setup_failures += 1
-                xinputlog("select_xi2_events() failed, attempt %i", self.xi_setup_failures,exc_info=True)
+                xinputlog("select_xi2_events() failed, attempt %i",
+                          self.xi_setup_failures, exc_info=True)
                 return self.xi_setup_failures<10    #try again
             with xsync:
                 XI2.gdk_inject()

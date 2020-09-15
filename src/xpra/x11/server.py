@@ -24,9 +24,9 @@ from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.gdk_bindings import (
-   add_event_receiver,
-   get_children,
-   )
+    add_event_receiver,
+    get_children,
+    )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
@@ -1351,6 +1351,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 with xsync:
                     img = window.get_image(0, 0, w, h)
             except XError:
+                log("%s.get_image%s", window, (0, 0, w, h), exc_info=True)
                 log.warn("screenshot: window %s could not be captured", wid)
                 continue
             if img is None:

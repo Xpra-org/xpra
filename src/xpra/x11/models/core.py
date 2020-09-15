@@ -242,6 +242,7 @@ class CoreX11WindowModel(WindowModelStub):
                 self._internal_set_property("geometry", geom[:4])
                 self._read_initial_X11_properties()
         except XError as e:
+            log("failed to manage %#x", self.xid, exc_info=True)
             raise Unmanageable(e)
         add_event_receiver(self.client_window, self)
         # Keith Packard says that composite state is undefined following a
@@ -269,6 +270,7 @@ class CoreX11WindowModel(WindowModelStub):
             with xsync:
                 self.setup()
         except XError as e:
+            log("failed to setup %#x", self.xid, exc_info=True)
             try:
                 with xsync:
                     self.setup_failed(e)
@@ -377,6 +379,7 @@ class CoreX11WindowModel(WindowModelStub):
                 try:
                     handler(self)
                 except XError:
+                    log("handler %s failed", handler, exc_info=True)
                     #these will be caught in call_setup()
                     raise
                 except Exception:

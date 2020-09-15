@@ -561,6 +561,7 @@ class X11ServerCore(GTKServerBase):
                         time.sleep(0.5)
                         return v
             except XError as e:
+                screenlog("add_screen_size(%s, %s)", desired_w, desired_h, exc_info=True)
                 screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
                 screenlog.warn(" %s", e)
             #re-query:
