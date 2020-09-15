@@ -167,28 +167,29 @@ class OpenRequestsWindow:
             else:
                 self.populate_table()
                 self.window.resize(1, 1)
-        def ok(*_args):
-            remove_entry(False)
-            cb_answer(ACCEPT, False)
-        def okopen(*_args):
-            remove_entry(True)
-            cb_answer(ACCEPT, True)
-        def remote(*_args):
-            remove_entry(True)
-            cb_answer(OPEN)
         def cancel(*_args):
             remove_entry(True)
             cb_answer(DENY)
-        hbox.pack_start(self.btn("Cancel", None, cancel, "close.png"))
+        def accept(*_args):
+            remove_entry(False)
+            cb_answer(ACCEPT, True)
+        def download(*_args):
+            remove_entry(False)
+            cb_answer(ACCEPT, False)
+        def remote(*_args):
+            remove_entry(True)
+            cb_answer(OPEN)
+        cancel_btn = self.btn("Cancel", None, cancel, "close.png")
+        hbox.pack_start(cancel_btn)
         if bytestostr(dtype)=="url":
-            hbox.pack_start(self.btn("Open Locally", None, ok, "open.png"))
+            hbox.pack_start(self.btn("Open Locally", None, accept, "open.png"))
             hbox.pack_start(self.btn("Open on server", None, remote))
         elif printit:
-            hbox.pack_start(self.btn("Print", None, ok, "printer.png"))
+            hbox.pack_start(self.btn("Print", None, accept, "printer.png"))
         else:
-            hbox.pack_start(self.btn("Download", None, ok, "download.png"))
+            hbox.pack_start(self.btn("Download", None, download, "download.png"))
             if openit:
-                hbox.pack_start(self.btn("Download and Open", None, okopen, "open.png"))
+                hbox.pack_start(self.btn("Download and Open", None, accept, "open.png"))
                 hbox.pack_start(self.btn("Open on server", None, remote))
         return hbox
 
