@@ -197,7 +197,7 @@ class OpenRequestsWindow:
         def cancel(*_args):
             remove_entry(True)
             cb_answer(DENY)
-        def open(*_args):
+        def accept(*_args):
             remove_entry(False)
             cb_answer(ACCEPT, True)
         def remote(*_args):
@@ -206,20 +206,20 @@ class OpenRequestsWindow:
         def progress(*_args):
             cb_answer(ACCEPT, False)
             show_progressbar()
-        def progressopen(*_args):
+        def progressaccept(*_args):
             cb_answer(ACCEPT, True)
             show_progressbar()
         cancel_btn = self.btn("Cancel", None, cancel, "close.png")
         hbox.pack_start(cancel_btn)
         if bytestostr(dtype)=="url":
-            hbox.pack_start(self.btn("Open Locally", None, open, "open.png"))
+            hbox.pack_start(self.btn("Open Locally", None, accept, "open.png"))
             hbox.pack_start(self.btn("Open on server", None, remote))
         elif printit:
-            hbox.pack_start(self.btn("Print", None, progressopen, "printer.png"))
+            hbox.pack_start(self.btn("Print", None, progressaccept, "printer.png"))
         else:
             hbox.pack_start(self.btn("Download", None, progress, "download.png"))
             if openit:
-                hbox.pack_start(self.btn("Download and Open", None, progressopen, "open.png"))
+                hbox.pack_start(self.btn("Download and Open", None, progressaccept, "open.png"))
                 hbox.pack_start(self.btn("Open on server", None, remote))
         return hbox
 
