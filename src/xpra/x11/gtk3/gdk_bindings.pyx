@@ -1317,7 +1317,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             return None
     except XError as ex:
         log("XError: %s processing %s", ex, event_type, exc_info=True)
-        if ex.msg==BadWindow:
+        if ex.msg.startswith("BadWindow"):
             if etype==DestroyNotify:
                 #happens too often, don't bother with the debug message
                 pass

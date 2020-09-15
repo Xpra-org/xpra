@@ -31,7 +31,7 @@ import traceback
 from gi.repository import Gdk
 
 from xpra.util import envbool
-from xpra.os_util import bytestostr, is_main_thread
+from xpra.os_util import is_main_thread
 from xpra.log import Logger
 
 __all__ = ["XError", "trap", "xsync", "xswallow"]
@@ -61,10 +61,10 @@ else:
 class XError(Exception):
     def __init__(self, message):
         Exception.__init__(self)
-        self.msg = message
+        self.msg = get_X_error(message)
 
     def __str__(self):
-        return "XError: %s" % bytestostr(self.msg)
+        return "XError: %s" % self.msg
 
 
 xerror_to_name = None
@@ -87,12 +87,6 @@ def get_X_error(xerror):
     except Exception as e:
         log.error("get_X_error(%s) %s", xerror, e, exc_info=True)
     return xerror
-
-class XErrorInfo:
-    def __init__(self, xerror):
-        self.xerror = xerror
-    def __repr__(self):
-        return str(get_X_error(self.xerror))
 
 
 # gdk has its own depth tracking stuff, but we have to duplicate it here to
@@ -122,7 +116,7 @@ class _ErrorManager:
         # This is a Xlib error constant (Success == 0)
         error = Gdk.error_trap_pop()
         if error:
-            raise XError(get_X_error(error))
+            raise XError(error)
 
     def _call(self, need_sync, fun, args, kwargs):
         # Goal: call the function.  In all conditions, call _exit exactly once
@@ -139,7 +133,8 @@ class _ErrorManager:
             try:
                 self.Xexit(need_sync)
             except XError as ee:
-                log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
+                log("XError %s detected while already in unwind; discarding",
+                    ee, exc_info=True)
             raise
         self.Xexit(need_sync)
         return value
@@ -159,8 +154,9 @@ class _ErrorManager:
         try:
             self.call_unsynced(fun, *args, **kwargs)
             return True
-        except XError as e:
-            log("Ignoring X error: %s on %s", XErrorInfo(e.msg), fun)
+        except XError:
+            log("Ignoring X error on %s",
+                fun, exc_info=True)
             return False
 
     def swallow_synced(self, fun, *args, **kwargs):
@@ -168,7 +164,8 @@ class _ErrorManager:
             self.call_synced(fun, *args, **kwargs)
             return True
         except XError as e:
-            log("Ignoring X error: %s on %s", XErrorInfo(e.msg), fun)
+            log("Ignoring X error on %s",
+                fun, exc_info=True)
             return False
 
     if XPRA_SYNCHRONIZE:
@@ -195,7 +192,8 @@ class XSyncContext:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
                 raise
-            log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
+            log("XError detected while already in unwind; discarding",
+                exc_info=True)
         #raise the original exception:
         return False
 
@@ -212,8 +210,9 @@ class XSwallowContext:
             log("xswallow.exit%s", (e_typ, e_val, trcbak), exc_info=True)
         try:
             trap.Xexit()
-        except XError as ee:
-            log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
+        except XError:
+            log("XError detected while already in unwind; discarding",
+                exc_info=True)
         #don't raise exceptions:
         return True
 
@@ -227,11 +226,12 @@ class XLogContext:
 
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
-            log.error("XError: %s, %s", XErrorInfo(e_typ), e_val, exc_info=True)
+            log.error("XError: %s, %s", e_typ, e_val, exc_info=True)
         try:
             trap.Xexit()
-        except XError as ee:
-            log("XError %s detected while already in unwind; discarding", XErrorInfo(ee))
+        except XError:
+            log("XError detected while already in unwind; discarding",
+                exc_info=True)
         #don't raise exceptions:
         return True
 
