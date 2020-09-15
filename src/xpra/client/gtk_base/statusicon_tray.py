@@ -53,7 +53,7 @@ class GTKStatusIconTray(TrayBase):
         modifiers_mask = get_default_root_window().get_pointer()[-1]
         log("activate_menu(%s) modifiers_mask=%s", widget, modifiers_mask)
         if (modifiers_mask & Gdk.ModifierType.SHIFT_MASK) ^ OSX:
-            self.handle_click(2)
+            self.handle_click(3)
         else:
             self.handle_click(1)
 
