@@ -537,7 +537,8 @@ class KeyboardConfig(KeyboardConfigBase):
                     break
                 keysyms = self.keycode_mappings.get(keycode)
                 level0 = levels[0]
-                if len(keysyms)>level0 and keysyms[level0]=="":
+                uq_keysyms = set(keysyms)
+                if len(uq_keysyms)<=1 or (len(keysyms)>level0 and keysyms[level0]==""):
                     #if the keysym we would match for this keycode is 'NoSymbol',
                     #then we can probably ignore it ('NoSymbol' shows up as "")
                     kmlog("not toggling any modifiers state for keysyms=%s", keysyms)
