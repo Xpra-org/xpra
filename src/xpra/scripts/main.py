@@ -2552,6 +2552,7 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
                 setattr(opts, fn, v)
 
+            opts.splash = False
             proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
             if not socket_path:
                 #if we return non-zero, we will try the next run-xpra script in the list..
