@@ -775,23 +775,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         statelog("%s.window_state_updated(%s, %s) changed_mask=%s, new_window_state=%s",
                  self, widget, repr(event), event.changed_mask, event.new_window_state)
         state_updates = {}
-        if event.changed_mask & Gdk.WindowState.FULLSCREEN:
-            state_updates["fullscreen"] = bool(event.new_window_state & Gdk.WindowState.FULLSCREEN)
-        if event.changed_mask & Gdk.WindowState.ABOVE:
-            state_updates["above"] = bool(event.new_window_state & Gdk.WindowState.ABOVE)
-        if event.changed_mask & Gdk.WindowState.BELOW:
-            state_updates["below"] = bool(event.new_window_state & Gdk.WindowState.BELOW)
-        if event.changed_mask & Gdk.WindowState.STICKY:
-            state_updates["sticky"] = bool(event.new_window_state & Gdk.WindowState.STICKY)
-        if event.changed_mask & Gdk.WindowState.ICONIFIED:
-            state_updates["iconified"] = bool(event.new_window_state & Gdk.WindowState.ICONIFIED)
-        if event.changed_mask & Gdk.WindowState.MAXIMIZED:
-            #this may get sent now as part of map_event code below (and it is irrelevant for the unmap case),
-            #or when we get the configure event - which should come straight after
-            #if we're changing the maximized state
-            state_updates["maximized"] = bool(event.new_window_state & Gdk.WindowState.MAXIMIZED)
-        if event.changed_mask & Gdk.WindowState.FOCUSED:
-            state_updates["focused"] = bool(event.new_window_state & Gdk.WindowState.FOCUSED)
+        for flag in ("fullscreen", "above", "below", "sticky", "iconified", "maximized", "focused"):
+            wstate = getattr(Gdk.WindowState, flag.upper()) #ie: Gdk.WindowState.FULLSCREEN
+            if event.changed_mask & wstate:
+                state_updates[flag] = bool(event.new_window_state & wstate)
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates):
