@@ -499,9 +499,11 @@ class KeyboardConfig(KeyboardConfigBase):
                     if self.xkbmap_raw:
                         break
                     level0 = levels[0]
-                    if len(keysyms)>level0 and keysyms[level0]=="":
+                    uq_keysyms = set(keysyms)
+                    if len(uq_keysyms)<=1 or (len(keysyms)>level0 and keysyms[level0]==""):
                         #if the keysym we would match for this keycode is 'NoSymbol',
                         #then we can probably ignore it ('NoSymbol' shows up as "")
+                        #same if there's only one actual keysym for this keycode
                         kmlog("not toggling any modifiers state for keysyms=%s", keysyms)
                         break
                     def toggle_modifier(mod):
