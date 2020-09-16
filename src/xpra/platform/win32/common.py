@@ -17,7 +17,7 @@ from ctypes.wintypes import (
 from ctypes.wintypes import (
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
-    HINSTANCE, HMENU, ULONG,
+    HINSTANCE, HMENU, ULONG, HHOOK,
     )
 #imported from this module but not used here:
 assert GetLastError
@@ -240,7 +240,7 @@ UnregisterClassW.restype = BOOL
 UnregisterClassW.argtypes = [LPCWSTR, HINSTANCE]
 CreateWindowExA = user32.CreateWindowExA
 CreateWindowExA.restype = HWND
-#CreateWindowExA.argtypes = [DWORD, ATOM, LPCTSTR, DWORD, c_int, c_int, c_int, c_int, HWND, HMENU, HINSTANCE, LPVOID]
+CreateWindowExA.argtypes = [DWORD, ATOM, LPCWSTR, DWORD, c_int, c_int, c_int, c_int, HWND, HMENU, HINSTANCE, LPVOID]
 CreateWindowExW = user32.CreateWindowExW
 CreateWindowExW.restype = HWND
 CreateWindowExW.argtypes = [DWORD, ATOM, LPCWSTR, DWORD, c_int, c_int, c_int, c_int, HWND, HMENU, HINSTANCE, LPVOID]
@@ -291,6 +291,8 @@ GetMonitorInfoW.restype = BOOL
 UnhookWindowsHookEx = user32.UnhookWindowsHookEx
 CallNextHookEx = user32.CallNextHookEx
 SetWindowsHookExA = user32.SetWindowsHookExA
+SetWindowsHookExA.restype = HHOOK
+SetWindowsHookExA.argtypes = [INT, HANDLE, HINSTANCE, DWORD]
 GetMessageA = user32.GetMessageA
 TranslateMessage = user32.TranslateMessage
 DispatchMessageA = user32.DispatchMessageA
