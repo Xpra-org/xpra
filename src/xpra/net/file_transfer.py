@@ -267,7 +267,7 @@ class FileTransferHandler(FileTransferAttributes):
                 return
             chunk_state[-2] = 0     #this timer has been used
             if chunk_state[-1]==0:
-                filelog.error("Error: chunked file transfer timed out")
+                filelog.error("Error: chunked file transfer '%s' timed out", chunk_id)
                 self.receive_chunks_in_progress.pop(chunk_id, None)
 
     def cancel_download(self, send_id, message="Cancelled"):
@@ -857,7 +857,8 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state:
             chunk_state[3] = 0         #timer has fired
             if chunk_state[-1]==chunk_no:
-                filelog.error("Error: chunked file transfer timed out on chunk %i", chunk_no)
+                filelog.error("Error: chunked file transfer '%s' timed out", chunk_id)
+                filelog.error(" on chunk %i", chunk_no)
                 self.cancel_sending(chunk_id)
 
     def cancel_sending(self, chunk_id):
