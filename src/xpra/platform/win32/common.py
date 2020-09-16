@@ -15,7 +15,7 @@ from ctypes.wintypes import (
     SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE,
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
-    HINSTANCE, HMENU, ULONG,
+    HINSTANCE, HMENU, ULONG, HHOOK,
     )
 #imported from this module but not used here:
 assert GetLastError
@@ -316,6 +316,8 @@ GetMonitorInfoW.restype = BOOL
 UnhookWindowsHookEx = user32.UnhookWindowsHookEx
 CallNextHookEx = user32.CallNextHookEx
 SetWindowsHookExA = user32.SetWindowsHookExA
+SetWindowsHookExA.restype = HHOOK
+SetWindowsHookExA.argtypes = [INT, HANDLE, HINSTANCE, DWORD]
 GetMessageA = user32.GetMessageA
 TranslateMessage = user32.TranslateMessage
 DispatchMessageA = user32.DispatchMessageA
