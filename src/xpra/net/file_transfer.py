@@ -307,10 +307,11 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_file_chunk(self, packet):
         chunk_id, chunk, file_data, has_more = packet[1:5]
+        chunk_id = bytestostr(chunk_id)
         filelog("_process_send_file_chunk%s", (chunk_id, chunk, "%i bytes" % len(file_data), has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if not chunk_state:
-            filelog.error("Error: cannot find the file transfer id '%s'", nonl(bytestostr(chunk_id)))
+            filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
             self.cancel_file(chunk_id, "file transfer id %s not found" % chunk_id, chunk)
             return
         if chunk_state[-4]:
@@ -440,7 +441,6 @@ class FileTransferHandler(FileTransferAttributes):
             return
         self.file_descriptors.add(fd)
         if chunk_id:
-            chunk_id = strtobytes(chunk_id)
             l = len(self.receive_chunks_in_progress)
             if l>=MAX_CONCURRENT_FILES:
                 self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress: %i" % l, 0)
@@ -861,7 +861,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.cancel_sending(chunk_id)
 
     def cancel_sending(self, chunk_id):
-        chunk_state = self.send_chunks_in_progress.pop(bytestostr(chunk_id), None)
+        chunk_state = self.send_chunks_in_progress.pop(chunk_id, None)
         filelog("cancel_sending(%s) chunk state found: %s", chunk_id, bool(chunk_state))
         if chunk_state:
             timer = chunk_state[3]
@@ -874,12 +874,12 @@ class FileTransferHandler(FileTransferAttributes):
         #send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
         chunk_id, state, error_message, chunk = packet[1:5]
+        chunk_id = bytestostr(chunk_id)
         if not state:
             filelog.info("the remote end is cancelling the file transfer:")
             filelog.info(" %s", bytestostr(error_message))
             self.cancel_sending(chunk_id)
             return
-        chunk_id = bytestostr(chunk_id)
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
         if not chunk_state:
             filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
