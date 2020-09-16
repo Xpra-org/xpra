@@ -448,7 +448,10 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         progress_cb = None
         if options.splash is True or (
             options.splash is not False and (
-                not POSIX or os.environ.get("DISPLAY") or os.environ.get("XDG_SESSION_DESKTOP")
+                not POSIX or (
+                    (os.environ.get("DISPLAY") or os.environ.get("XDG_SESSION_DESKTOP")) and 
+                    not (os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"))
+                    )
                 )
             ):
             # use splash screen to show server startup progress:
