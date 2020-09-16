@@ -262,10 +262,11 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_file_chunk(self, packet):
         chunk_id, chunk, file_data, has_more = packet[1:5]
+        chunk_id = bytestostr(chunk_id)
         filelog("_process_send_file_chunk%s", (chunk_id, chunk, "%i bytes" % len(file_data), has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if not chunk_state:
-            filelog.error("Error: cannot find the file transfer id '%s'", nonl(bytestostr(chunk_id)))
+            filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
             self.send("ack-file-chunk", chunk_id, False, "file transfer id not found", chunk)
             return
         fd = chunk_state[1]
@@ -383,7 +384,6 @@ class FileTransferHandler(FileTransferAttributes):
             return
         self.file_descriptors.add(fd)
         if chunk_id:
-            chunk_id = strtobytes(chunk_id)
             l = len(self.receive_chunks_in_progress)
             if l>=MAX_CONCURRENT_FILES:
                 self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress: %i" % l, 0)
@@ -809,12 +809,12 @@ class FileTransferHandler(FileTransferAttributes):
         #send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
         chunk_id, state, error_message, chunk = packet[1:5]
+        chunk_id = bytestostr(chunk_id)
         if not state:
             filelog.error("Error: remote end is cancelling the file transfer:")
             filelog.error(" %s", error_message)
             del self.send_chunks_in_progress[chunk_id]
             return
-        chunk_id = bytestostr(chunk_id)
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
         if not chunk_state:
             filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
