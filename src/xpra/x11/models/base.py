@@ -624,7 +624,10 @@ class BaseWindowModel(CoreX11WindowModel):
             log("_NET_WM_MOVERESIZE: %s", event)
             self.emit("initiate-moveresize", event)
             return True
-        if event.message_type=="_NET_ACTIVE_WINDOW" and event.data[0] in (0, 1):
+        if event.message_type=="_NET_ACTIVE_WINDOW":
+            #to filter based on the source indication:
+            #ACTIVE_WINDOW_SOURCE = tuple(int(x) for x in os.environ.get("XPRA_ACTIVE_WINDOW_SOURCE", "0,1").split(","))
+            #if event.data[0] in ACTIVE_WINDOW_SOURCE:
             log("_NET_ACTIVE_WINDOW: %s", event)
             self.set_active()
             self.emit("raised", event)
