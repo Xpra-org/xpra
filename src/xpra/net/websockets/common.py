@@ -6,6 +6,7 @@
 import uuid
 from hashlib import sha1
 from base64 import b64encode
+from requests.structures import CaseInsensitiveDict
 
 from xpra.os_util import strtobytes, bytestostr, monotonic_time
 from xpra.log import Logger
@@ -49,7 +50,7 @@ def client_upgrade(read, write, host, port):
 
     now = monotonic_time()
     response = b""
-    while response.find(b"Sec-WebSocket-Protocol")<0 and monotonic_time()-now<MAX_READ_TIME:
+    while ("Sec-WebSocket-Protocol".lower() not in response.decode("utf-8").lower()) and monotonic_time()-now<MAX_READ_TIME:
         response += read(READ_CHUNK_SIZE)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)
@@ -70,6 +71,7 @@ def verify_response_headers(headers, key):
     log("verify_response_headers(%s)", headers)
     if not headers:
         raise Exception("no http headers found in response")
+    headers = CaseInsensitiveDict(headers)
     upgrade = headers.get(b"Upgrade", b"")
     if upgrade!=b"websocket":
         raise Exception("invalid http upgrade: '%s'" % upgrade)
