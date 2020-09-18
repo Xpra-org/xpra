@@ -32,7 +32,7 @@ from xpra.gtk_common.gtk_util import (
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.make_thread import start_thread
-from xpra.client.gtk_base.gtk_tray_menu_base import make_encodingsmenu
+from xpra.client.gtk_base.menu_helper import make_encodingsmenu
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
     connect_to, make_client, configure_network, is_local,
