@@ -1246,7 +1246,8 @@ when using the \fBrgb\fP encoding).
 \fB--quality\fP=\fIVALUE\fP
 This option sets a fixed image compression quality for lossy encodings
 (\fBjpeg\fP, \fBwebp\fP, \fBh264\fP/\fBh265\fP and \fBvp8\fP/\fBvp9\fP).
-First, one of those lossy encodings must be enabled with \fB--encoding\fP.
+First, one of those lossy encodings must be enabled with \fB--encoding\fP
+or when using the default \fIauto\fP mode.
 Values range from 1 (lowest quality, high compression - generally unusable)
 to 100 (highest quality, low compression).
 Specify a value of zero to let the system tune the quality dynamically
@@ -1255,22 +1256,24 @@ It is usually best not to use this option and use \fBmin-quality\fP instead.
 .TP
 \fB--min-quality\fP=\fIMIN-QUALITY\fP
 This option sets the minimum encoding quality allowed when the quality option is
-set to automatic mode.
+set to automatic mode. See \fIquality\fP above.
 .TP
 \fB--speed\fP=\fISPEED\fP
-This option sets the encoding speed.  Slower compresses more, faster
-will give better latency.
+This option sets the encoding speed, from 1 (slowest) to 100 (fastest).
+Slower compresses better and will use less bandwidth, faster will give
+better latency as long as there is sufficient bandwidth.
 The system normally uses a variable speed, this option forces
 a fixed speed setting to be used instead.
 It is usually best not to use this option and use \fBmin-speed\fP instead.
 .TP
 \fB--min-speed\fP=\fIMIN-SPEED\fP
 This option sets the minimum encoding speed allowed when the speed option is
-set to automatic mode.
+set to automatic mode. See \fIspeed\fP above.
 .TP
 \fB--auto-refresh-delay\fP=\fIDELAY\fP
 This option sets a delay after which the windows are automatically
-refreshed using a lossless frame.
+refreshed using a lossless frame if their contents had been updated using
+a lossy encoding previously.
 The delay is a floating-point number and is in seconds.
 This option is enabled by default with a delay of 0.25 seconds.
 This option is only relevant when using a lossy encoding.
