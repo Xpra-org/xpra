@@ -122,7 +122,6 @@ def pack_one_packet(packet):
 
 def decode(data, protocol_flags):
     if isinstance(data, memoryview):
-        #TODO really always needed?
         data = data.tobytes()
     ptype = get_packet_encoding_type(protocol_flags)
     e = ENCODERS.get(ptype)
