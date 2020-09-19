@@ -402,16 +402,15 @@ cdef class ColorspaceConverter:
         cdef double start = monotonic_time()
         iplanes = image.get_planes()
         assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
+        width = image.get_width()
+        height = image.get_height()
+        assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
+        assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
         if self.rgb_scaling:
             #first downscale:
             image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
             width = image.get_width()
             height = image.get_height()
-        else:
-            width = image.get_width()
-            height = image.get_height()
-            assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
-            assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
         stride = image.get_rowstride()
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
