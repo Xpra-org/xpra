@@ -8,7 +8,7 @@
 import math
 import os.path
 from urllib.parse import unquote
-import cairo
+from cairo import OPERATOR_OVER, LINE_CAP_ROUND #pylint: disable=no-name-in-module
 from gi.repository import Gtk, Gdk, Gio
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX
@@ -254,6 +254,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         widget.connect("draw", self.draw_widget)
 
     def draw_widget(self, widget, context):
+        raise NotImplementedError()
+
+    def get_drawing_area_geometry(self):
         raise NotImplementedError()
 
 
@@ -1651,7 +1654,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         w = c.cx(ww)
         h = c.cy(wh)
         #add grey semi-opaque layer on top:
-        context.set_operator(cairo.OPERATOR_OVER)
+        context.set_operator(OPERATOR_OVER)
         context.set_source_rgba(0.2, 0.2, 0.2, 0.4)
         #we can't use the area as rectangle with:
         #context.rectangle(area)
@@ -1662,7 +1665,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #add spinner:
         dim = min(w/3.0, h/3.0, 100.0)
         context.set_line_width(dim/10.0)
-        context.set_line_cap(cairo.LINE_CAP_ROUND)
+        context.set_line_cap(LINE_CAP_ROUND)
         context.translate(w/2, h/2)
         from xpra.client.spinner import cv
         count = int(monotonic_time()*4.0)
