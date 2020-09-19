@@ -683,7 +683,7 @@ class TableBuilder:
     def get_table(self):
         return self.table
 
-    def add_row(self, widget=None, *widgets, **kwargs):
+    def add_row(self, widget, *widgets, **kwargs):
         if widget:
             l_al = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
             l_al.add(widget)
