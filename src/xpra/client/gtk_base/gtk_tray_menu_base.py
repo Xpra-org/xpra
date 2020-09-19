@@ -6,7 +6,7 @@
 
 import os
 import re
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, Gtk, GdkPixbuf
 
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict, typedict
 from xpra.os_util import bytestostr, OSX, WIN32
@@ -1432,7 +1432,6 @@ class GTKTrayMenuBase(MenuHelper):
         if not pixbuf and icondata:
             #gtk pixbuf loader:
             try:
-                from gi.repository import GdkPixbuf
                 loader = GdkPixbuf.PixbufLoader()
                 loader.write(icondata)
                 loader.close()
