@@ -19,20 +19,6 @@ paintlog = Logger("paint")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
 
-GTK3_OR_TYPE_HINTS = (Gdk.WindowTypeHint.DIALOG,
-                      Gdk.WindowTypeHint.MENU,
-                      Gdk.WindowTypeHint.TOOLBAR,
-                      #Gdk.WindowTypeHint.SPLASHSCREEN,
-                      #Gdk.WindowTypeHint.UTILITY,
-                      #Gdk.WindowTypeHint.DOCK,
-                      #Gdk.WindowTypeHint.DESKTOP,
-                      Gdk.WindowTypeHint.DROPDOWN_MENU,
-                      Gdk.WindowTypeHint.POPUP_MENU,
-                      Gdk.WindowTypeHint.TOOLTIP,
-                      #Gdk.WindowTypeHint.NOTIFICATION,
-                      Gdk.WindowTypeHint.COMBO,
-                      Gdk.WindowTypeHint.DND)
-
 
 WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
 WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
@@ -44,7 +30,6 @@ GTK3 version of the ClientWindow class
 """
 class GTK3ClientWindow(GTKClientWindowBase):
 
-    OR_TYPE_HINTS       = GTK3_OR_TYPE_HINTS
     NAME_TO_HINT        = WINDOW_NAME_TO_HINT
 
     def init_window(self, metadata):

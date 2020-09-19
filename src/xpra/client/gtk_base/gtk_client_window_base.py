@@ -163,6 +163,22 @@ GDK_SCROLL_MAP = {
     Gdk.ScrollDirection.RIGHT    : 7,
     }
 
+OR_TYPE_HINTS = (
+    Gdk.WindowTypeHint.DIALOG,
+    Gdk.WindowTypeHint.MENU,
+    Gdk.WindowTypeHint.TOOLBAR,
+    #Gdk.WindowTypeHint.SPLASHSCREEN,
+    #Gdk.WindowTypeHint.UTILITY,
+    #Gdk.WindowTypeHint.DOCK,
+    #Gdk.WindowTypeHint.DESKTOP,
+    Gdk.WindowTypeHint.DROPDOWN_MENU,
+    Gdk.WindowTypeHint.POPUP_MENU,
+    Gdk.WindowTypeHint.TOOLTIP,
+    #Gdk.WindowTypeHint.NOTIFICATION,
+    Gdk.WindowTypeHint.COMBO,
+    Gdk.WindowTypeHint.DND,
+    )
+
 
 def wn(w):
     return WORKSPACE_NAMES.get(w, w)
