@@ -370,3 +370,7 @@ def selftest(full=False):
         mw, mh = get_csc_max_size(colorspace_converter, in_csc, out_csc, limit_w=32768, limit_h=32768)
         MAX_WIDTH = min(maxw, mw)
         MAX_HEIGHT = min(maxh, mh)
+        width = image.get_width()
+        height = image.get_height()
+        assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
+        assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
