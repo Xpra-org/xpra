@@ -163,7 +163,7 @@ class _ErrorManager:
         try:
             self.call_synced(fun, *args, **kwargs)
             return True
-        except XError as e:
+        except XError:
             log("Ignoring X error on %s",
                 fun, exc_info=True)
             return False
@@ -188,7 +188,7 @@ class XSyncContext:
         #log("xsync.exit%s", (e_typ, e_val, trcbak))
         try:
             trap.Xexit()
-        except XError as ee:
+        except XError:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
                 raise
