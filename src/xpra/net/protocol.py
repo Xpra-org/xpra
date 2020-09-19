@@ -454,6 +454,7 @@ class Protocol:
     def raw_write(self, packet_type, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
         """ Warning: this bypasses the compression and packet encoder! """
         if self._write_thread is None:
+            log("raw_write for %s, starting write thread", packet_type)
             self.start_write_thread()
         self._write_queue.put((items, start_cb, end_cb, fail_cb, synchronous, more))
 
