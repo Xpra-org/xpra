@@ -1233,7 +1233,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #which will look at the window metadata again
             workspacelog("workspace=%s will be set when the window is mapped", wn(workspace))
             return
-        workspace = workspace & 0xffffffff
+        workspace = workspace
+        if workspace is not None:
+            workspace = workspace & 0xffffffff
         desktop = self.get_desktop_workspace()
         ndesktops = self.get_workspace_count()
         current = self.get_window_workspace()
