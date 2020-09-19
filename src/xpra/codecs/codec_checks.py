@@ -260,11 +260,14 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 e.clean()
 
 
-def testcsc(csc_module, full, test_cs_in=None, test_cs_out=None):
-    W = 24
-    H = 16
+def testcsc(csc_module, scaling=True, full=False, test_cs_in=None, test_cs_out=None):
+    W = 48
+    H = 32
     log("test_csc(%s, %s, %s, %s)", csc_module, full, test_cs_in, test_cs_out)
-    return do_testcsc(csc_module, W, H, full, test_cs_in, test_cs_out)
+    do_testcsc(csc_module, W, H, W, H, full, test_cs_in, test_cs_out)
+    if scaling:
+        do_testcsc(csc_module, W, H, W*2, H*2, full, test_cs_in, test_cs_out)
+        do_testcsc(csc_module, W, H, W//2, H//2, full, test_cs_in, test_cs_out)
 
 def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
     #probe to find the max dimensions:
@@ -289,7 +292,7 @@ def get_csc_max_size(colorspace_converter, test_cs_in=None, test_cs_out=None, li
     return MAX_WIDTH, MAX_HEIGHT
 
 
-def do_testcsc(csc_module, W, H, full=False, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
+def do_testcsc(csc_module, iw, ih, ow, oh, full=False, test_cs_in=None, test_cs_out=None, limit_w=TEST_LIMIT_W, limit_h=TEST_LIMIT_H):
     log("do_testcsc%s", (csc_module, full, test_cs_in, test_cs_out, TEST_LIMIT_W, TEST_LIMIT_H))
     cs_in_list = test_cs_in
     if cs_in_list is None:
@@ -302,16 +305,15 @@ def do_testcsc(csc_module, W, H, full=False, test_cs_in=None, test_cs_out=None, 
             log("%s: testing %s / %s", csc_module.get_type(), cs_in, cs_out)
             e = csc_module.ColorspaceConverter()
             try:
-                #TODO: test scaling
-                e.init_context(W, H, cs_in, W, H, cs_out)
-                image = make_test_image(cs_in, W, H)
+                e.init_context(iw, ih, cs_in, ow, oh, cs_out)
+                image = make_test_image(cs_in, iw, ih)
                 out = e.convert_image(image)
                 #print("convert_image(%s)=%s" % (image, out))
-                assert out.get_width()==W, "expected image of width %s but got %s" % (W, out.get_width())
-                assert out.get_height()==H, "expected image of height %s but got %s" % (H, out.get_height())
+                assert out.get_width()==ow, "expected image of width %s but got %s" % (ow, out.get_width())
+                assert out.get_height()==oh, "expected image of height %s but got %s" % (oh, out.get_height())
                 assert out.get_pixel_format()==cs_out, "expected pixel format %s but got %s" % (cs_out, out.get_pixel_format())
                 if full:
-                    for w,h in ((W*2, H//2), (W//2, H**2)):
+                    for w,h in ((iw*2, ih//2), (iw//2, ih**2)):
                         if w>limit_w or h>limit_h:
                             continue
                         try:

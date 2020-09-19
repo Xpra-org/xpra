@@ -484,7 +484,7 @@ def selftest(full=False):
     maxw, maxh = MAX_WIDTH, MAX_HEIGHT
     in_csc = get_input_colorspaces()
     out_csc = get_output_colorspaces(in_csc[0])
-    testcsc(colorspace_converter, full, in_csc, out_csc)
+    testcsc(colorspace_converter, True, full, in_csc, out_csc)
     if full:
         mw, mh = get_csc_max_size(colorspace_converter, in_csc, out_csc, limit_w=32768, limit_h=32768)
         MAX_WIDTH = min(maxw, mw)
