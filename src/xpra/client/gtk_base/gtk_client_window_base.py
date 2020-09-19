@@ -92,6 +92,7 @@ if USE_X11_BINDINGS:
         log.error(" %s", e)
 
 
+AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
@@ -178,6 +179,23 @@ OR_TYPE_HINTS = (
     Gdk.WindowTypeHint.COMBO,
     Gdk.WindowTypeHint.DND,
     )
+
+WINDOW_NAME_TO_HINT = {
+    "NORMAL"        : Gdk.WindowTypeHint.NORMAL,
+    "DIALOG"        : Gdk.WindowTypeHint.DIALOG,
+    "MENU"          : Gdk.WindowTypeHint.MENU,
+    "TOOLBAR"       : Gdk.WindowTypeHint.TOOLBAR,
+    "SPLASH"        : Gdk.WindowTypeHint.SPLASHSCREEN,
+    "UTILITY"       : Gdk.WindowTypeHint.UTILITY,
+    "DOCK"          : Gdk.WindowTypeHint.DOCK,
+    "DESKTOP"       : Gdk.WindowTypeHint.DESKTOP,
+    "DROPDOWN_MENU" : Gdk.WindowTypeHint.DROPDOWN_MENU,
+    "POPUP_MENU"    : Gdk.WindowTypeHint.POPUP_MENU,
+    "TOOLTIP"       : Gdk.WindowTypeHint.TOOLTIP,
+    "NOTIFICATION"  : Gdk.WindowTypeHint.NOTIFICATION,
+    "COMBO"         : Gdk.WindowTypeHint.COMBO,
+    "DND"           : Gdk.WindowTypeHint.DND
+    }
 
 
 def wn(w):
@@ -1046,6 +1064,27 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             prop_set(self.get_window(), "_NET_WM_STRUT", ["u32"], values[:4])
         self.when_realized("strut", do_set_strut)
 
+
+    def set_window_type(self, window_types):
+        pass
+        hints = 0
+        for window_type in window_types:
+            #win32 workaround:
+            if AWT_DIALOG_WORKAROUND and window_type=="DIALOG" and self._metadata.boolget("skip-taskbar"):
+                wm_class = self._metadata.strtupleget("class-instance", (None, None), 2, 2)
+                if wm_class and len(wm_class)==2 and wm_class[0] and wm_class[0].startswith("sun-awt-X11"):
+                    #replace "DIALOG" with "NORMAL":
+                    if "NORMAL" in window_types:
+                        continue
+                    window_type = "NORMAL"
+            hint = WINDOW_NAME_TO_HINT.get(window_type, None)
+            if hint is not None:
+                hints |= hint
+            else:
+                log("ignoring unknown window type hint: %s", window_type)
+        log("set_window_type(%s) hints=%s", window_types, hints)
+        if hints:
+            self.set_type_hint(hints)
 
     def set_modal(self, modal):
         #with gtk2 setting the window as modal would prevent

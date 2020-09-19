@@ -9,7 +9,7 @@ from gi.repository import Gdk, Gtk, Gio, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
-from xpra.gtk_common.gtk_util import WINDOW_NAME_TO_HINT, scaled_image
+from xpra.gtk_common.gtk_util import scaled_image
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util import envbool, typedict
 from xpra.os_util import bytestostr, is_gnome
@@ -29,8 +29,6 @@ WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 GTK3 version of the ClientWindow class
 """
 class GTK3ClientWindow(GTKClientWindowBase):
-
-    NAME_TO_HINT        = WINDOW_NAME_TO_HINT
 
     def init_window(self, metadata):
         super().init_window(metadata)

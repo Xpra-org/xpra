@@ -28,16 +28,12 @@ alphalog = Logger("alpha")
 
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
-AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
 DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
 OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
 
 
 class ClientWindowBase(ClientWidgetBase):
-
-    #(overriden in subclasses)
-    NAME_TO_HINT = {}
 
     def __init__(self, client, group_leader, watcher_pid, wid,
                  wx, wy, ww, wh, bw, bh,
@@ -614,24 +610,7 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def set_window_type(self, window_types):
-        hints = 0
-        for window_type in window_types:
-            #win32 workaround:
-            if AWT_DIALOG_WORKAROUND and window_type=="DIALOG" and self._metadata.boolget("skip-taskbar"):
-                wm_class = self._metadata.strtupleget("class-instance", (None, None), 2, 2)
-                if wm_class and len(wm_class)==2 and wm_class[0] and wm_class[0].startswith("sun-awt-X11"):
-                    #replace "DIALOG" with "NORMAL":
-                    if "NORMAL" in window_types:
-                        continue
-                    window_type = "NORMAL"
-            hint = self.NAME_TO_HINT.get(window_type, None)
-            if hint is not None:
-                hints |= hint
-            else:
-                log("ignoring unknown window type hint: %s", window_type)
-        log("set_window_type(%s) hints=%s", window_types, hints)
-        if hints:
-            self.set_type_hint(hints)
+        pass
 
     def set_workspace(self, workspace):
         pass
