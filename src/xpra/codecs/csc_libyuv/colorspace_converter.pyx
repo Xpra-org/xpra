@@ -281,8 +281,14 @@ cdef class ColorspaceConverter:
         divs = get_subsampling_divs(self.dst_format)
         for i in range(self.planes):
             xdiv, ydiv = divs[i]
-            self.out_width[i]   = src_width // xdiv
-            self.out_height[i]  = src_height // ydiv
+            if self.rgb_scaling:
+                #we scale before csc to the dst size:
+                self.out_width[i]   = dst_width // xdiv
+                self.out_height[i]  = dst_height // ydiv
+            else:
+                #we don't scale, so the size is the src size:
+                self.out_width[i]   = src_width // xdiv
+                self.out_height[i]  = src_height // ydiv
             self.out_stride[i]  = roundup(self.out_width[i], MEMALIGN_ALIGNMENT)
             self.out_size[i]    = self.out_stride[i] * self.out_height[i]
             self.out_offsets[i] = self.out_buffer_size
