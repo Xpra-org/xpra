@@ -7,20 +7,25 @@
 import unittest
 import os
 
+from xpra.codecs import loader
+
 SUSPEND_CODEC_ERROR_LOGGING = os.environ.get("XPRA_SUSPEND_CODEC_ERROR_LOGGING", "1")=="1"
+TEST_CODECS = os.environ.get("XPRA_TEST_CODECS", "").split(",") or loader.ALL_CODECS
 
 
 class TestDecoders(unittest.TestCase):
 
     def test_all_codecs_found(self):
-        from xpra.codecs import loader
         #the self tests would swallow the exceptions and produce a warning:
         loader.RUN_SELF_TESTS = False
-        loader.load_codecs()
+        #loader.load_codecs()
         #test them all:
-        for codec_name in loader.ALL_CODECS:
+        print("testing: %s" % (TEST_CODECS,))
+        for codec_name in TEST_CODECS:
+            loader.load_codec(codec_name)
             codec = loader.get_codec(codec_name)
             if not codec:
+                print("WARNING: %s not found" % (codec_name,))
                 continue
             try:
                 #try to suspend error logging for full tests,
