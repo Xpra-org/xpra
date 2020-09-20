@@ -586,18 +586,37 @@ fi
 
 
 %changelog
-* Thu Aug 20 2020 Antoine Martin <antoine@xpra.org> 4.0.4-10
+* Sun Sep 20 2020 Antoine Martin <antoine@xpra.org> 4.0.4-10
 - fix NVENC encoder (profile errors)
 - fix unmanaged X11 message call which could cause GTK to crash when it fails
 - fix 'sync-xvfb' option: setup error, non-standard bit depth support
+- fix shadow server dbus SetRefreshDelay causing all further "xpra info" requests to fail
+- fix incomplete data in initial packets from shadow servers
+- fix error in dbus debug logging
+- fix client invalid list of encodings
 - fix missing system tray on Ubuntu 18.04
 - fix workspace spurious warnings on 64-bit X11 systems
 - fix event handler with 64-bit MS Windows builds
 - fix named-pipe server clash
 - fix error handing in MS Windows printer query API
+- fix missing 'openssl' dependency in DEB packages
+- fix syntax error in HTML5 client maximize toggle
+- fix keysym mapping with Xkb and some specific configurations
+- fix right click on systray using the gtk StatusIcon implementation
+- fix small file transfers not showing as completed
+- fix file-transfer UI for download vs download-and-open not being honoured
+- fix file-transfer identifiers getting lost
+- fix int overflow errors on some 64-bit mswindows installations
+- fix websocket compatibility with some client / middleware
+- fix missing windows due to an error in the named window icon handling
+- fix libyuv buffer overflow crash with rgb upscaling
+- allow 'pager' source indication value to activate window server-side
 - switch to Xvfb on Debian and Ubuntu
+- workaround corruption on some windows when maximized
 - workaround more pyxdg bugs
+- make OpenGL probe timeout configurable
 - add missing DEB dependency
+- MacOS and MS Windows: fix security issue in brotli decompression
 
 * Fri Aug 08 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix server crash caused by use after free in scrolling code
