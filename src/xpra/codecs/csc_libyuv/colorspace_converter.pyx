@@ -415,8 +415,8 @@ cdef class ColorspaceConverter:
         if self.rgb_scaling:
             #first downscale:
             image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
-            width = image.get_width()
-            height = image.get_height()
+            width = self.dst_width
+            height = self.dst_height
         stride = image.get_rowstride()
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
