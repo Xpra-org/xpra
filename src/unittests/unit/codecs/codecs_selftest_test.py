@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2015 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import unittest
 import os
+import logging
+import unittest
 
 from xpra.codecs import loader
 
@@ -31,8 +32,7 @@ class TestDecoders(unittest.TestCase):
                 #try to suspend error logging for full tests,
                 #as those may cause errors
                 log = getattr(codec, "log", None)
-                if SUSPEND_CODEC_ERROR_LOGGING and log:
-                    import logging
+                if SUSPEND_CODEC_ERROR_LOGGING and log and not log.is_debug_enabled():
                     log.logger.setLevel(logging.CRITICAL)
                 init_module = getattr(codec, "init_module", None)
                 #print("%s.init_module=%s" % (codec, init_module))
