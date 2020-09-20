@@ -265,7 +265,7 @@ def testcsc(csc_module, scaling=True, full=False, test_cs_in=None, test_cs_out=N
     H = 32
     log("test_csc(%s, %s, %s, %s)", csc_module, full, test_cs_in, test_cs_out)
     do_testcsc(csc_module, W, H, W, H, full, test_cs_in, test_cs_out)
-    if scaling:
+    if full and scaling:
         do_testcsc(csc_module, W, H, W*2, H*2, full, test_cs_in, test_cs_out)
         do_testcsc(csc_module, W, H, W//2, H//2, full, test_cs_in, test_cs_out)
 
