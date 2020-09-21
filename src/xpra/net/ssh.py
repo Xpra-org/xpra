@@ -28,7 +28,7 @@ from xpra.log import Logger, is_debug_enabled
 
 log = Logger("network", "ssh")
 
-INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "xpra initenv")
+INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "")    #"xpra initenv"
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
