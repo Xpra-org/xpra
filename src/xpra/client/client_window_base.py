@@ -743,9 +743,9 @@ class ClientWindowBase(ClientWidgetBase):
         self.pending_refresh = []
         for x, y, w, h in pr:
             rx, ry, rw, rh = self._client.srect(x, y, w, h)
-            #if self.window_offset:
-            #    rx -= self.window_offset[0]
-            #    ry -= self.window_offset[1]
+            if self.window_offset:
+                rx += self.window_offset[0]
+                ry += self.window_offset[1]
             self.idle_add(self.repaint, rx, ry, rw, rh)
 
     def eos(self):
