@@ -107,6 +107,9 @@ class WindowBackingBase:
         self.wid = wid
         self.size = 0, 0
         self.render_size = 0, 0
+        #padding between the window contents and where we actually draw the backing
+        #(ie: if the window is bigger than the backing,
+        # we may be rendering the backing in the center of the window)
         self.offsets = 0, 0, 0, 0       #top,left,bottom,right
         self.gravity = 0
         self._alpha_enabled = window_alpha
