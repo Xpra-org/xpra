@@ -7,7 +7,10 @@
 
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time, _is_Wayland, get_loaded_kernel_modules
-from xpra.util import envbool, envint, nonl, merge_dicts, XPRA_DISPLAY_NOTIFICATION_ID
+from xpra.util import (
+    envbool, envint, nonl, merge_dicts,
+    XPRA_DISPLAY_NOTIFICATION_ID, XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
+    )
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
@@ -153,6 +156,18 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def setup_capture(self):
         return setup_capture(self.root)
+
+
+    def client_startup_complete(self, ss):
+        super().client_startup_complete(ss)
+        log.warn("is_Wayland(%s)=%s", saved_env, _is_Wayland(saved_env))
+        if _is_Wayland(saved_env):
+            log.error("%s", ss.may_notify)
+            ss.may_notify(XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
+                          "Wayland Shadow Server",
+                          "This shadow session is running under wayland,\n"+
+                          "the screen scraping will probably come up empty",
+                          icon_name="unticked")
 
 
     def last_client_exited(self):
