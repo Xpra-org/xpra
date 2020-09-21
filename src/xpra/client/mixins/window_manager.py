@@ -1419,10 +1419,11 @@ class WindowClient(StubClientMixin):
                 window.eos()
             return
         x, y, width, height, coding, data, packet_sequence, rowstride = packet[2:10]
+        coding = bytestostr(coding)
         if not window:
             #window is gone
             def draw_cleanup():
-                if bytestostr(coding)=="mmap":
+                if coding=="mmap":
                     assert self.mmap_enabled
                     from xpra.net.mmap_pipe import int_from_buffer
                     #we need to ack the data to free the space!
@@ -1441,7 +1442,7 @@ class WindowClient(StubClientMixin):
         options = typedict(options)
         dtype = DRAW_TYPES.get(type(data), type(data))
         drawlog("process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i using %6s encoding with options=%s",
-                len(data), dtype, wid, packet_sequence, width, height, x, y, bytestostr(coding), options)
+                len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic_time()
         def record_decode_time(success, message=""):
             if success>0:
