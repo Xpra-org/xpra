@@ -76,10 +76,14 @@ class DBUS_Notifier(NotifierBase):
         try:
             icon_string = self.get_icon_string(nid, app_icon, icon)
             log("get_icon_string%s=%s", (nid, app_icon, ellipsizer(icon)), icon_string)
-            try:
-                app_str = self.app_name_format % app_name
-            except TypeError:
-                app_str = app_name or "Xpra"
+            if app_name=="Xpra":
+                #don't show "Xpra (via Xpra)"
+                app_str = "Xpra"
+            else:
+                try:
+                    app_str = self.app_name_format % app_name
+                except TypeError:
+                    app_str = app_name or "Xpra"
             self.last_notification = (
                 dbus_id, tray, nid, app_name, replaces_nid,
                 app_icon, summary, body, timeout, icon,
