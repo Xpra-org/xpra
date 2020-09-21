@@ -1422,7 +1422,7 @@ class WindowClient(StubClientMixin):
         if not window:
             #window is gone
             def draw_cleanup():
-                if bytestostr(coding)==b"mmap":
+                if bytestostr(coding)=="mmap":
                     assert self.mmap_enabled
                     from xpra.net.mmap_pipe import int_from_buffer
                     #we need to ack the data to free the space!
