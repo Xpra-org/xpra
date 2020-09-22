@@ -138,8 +138,8 @@ class WindowsMixin(StubSourceMixin):
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes", {}))
         self.window_min_size = c.inttupleget("window.min-size", (0, 0))
         self.window_max_size = c.inttupleget("window.max-size", (0, 0))
-        log("cursors=%s (encodings=%s), bell=%s, notifications=%s",
-            self.send_cursors, self.cursor_encodings, self.send_bell, self.send_notifications)
+        log("cursors=%s (encodings=%s)",
+            self.send_cursors, self.cursor_encodings)
         log("client uuid %s", self.uuid)
 
         #window filters:
