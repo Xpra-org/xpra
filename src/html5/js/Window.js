@@ -1324,7 +1324,11 @@ XpraWindow.prototype.do_paint = function paint(x, y, width, height, coding, img_
 	}
 
 	try {
-		if (coding=="rgb32" || coding=="rgb24") {
+		if (coding=="void") {
+			painted(true);
+			this.may_paint_now();
+		}
+		else if (coding=="rgb32" || coding=="rgb24") {
 			this._non_video_paint(coding);
 			//show("options="+(options).toSource());
 			if (options!=null && options["zlib"]>0) {
