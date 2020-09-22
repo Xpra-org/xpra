@@ -2365,7 +2365,7 @@ class WindowSource(WindowIconSource):
             ws = options.get("window-size")
             if ws:
                 client_options["window-size"] = ws
-        packet = ("draw", self.wid, x, y, outw, outh, strtobytes(coding), data, self._damage_packet_sequence, outstride, client_options)
+        packet = ("draw", self.wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
