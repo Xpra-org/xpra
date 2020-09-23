@@ -63,6 +63,7 @@ HAS_ALPHA = envbool("XPRA_ALPHA", True)
 FORCE_BATCH = envint("XPRA_FORCE_BATCH", True)
 STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE", False)
 MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
+DOWNSCALE_THRESHOLD = envint("XPRA_DOWNSCALE_THRESHOLD", 20)
 INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH", False)
 MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
 AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
@@ -678,7 +679,7 @@ class WindowSource(WindowIconSource):
         if self.enc_pillow and (self.client_render_size or grayscale):
             crsw, crsh = self.client_render_size
             ww, wh = self.window_dimensions
-            if grayscale or (crsw<ww and crsh<wh):
+            if grayscale or (ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD):
                 for x in self.enc_pillow.get_encodings():
                     if x in self.server_core_encodings:
                         self.add_encoder(x, self.pillow_encode)
@@ -2006,7 +2007,9 @@ class WindowSource(WindowIconSource):
             refresh_exclude = self.get_refresh_exclude()    #pylint: disable=assignment-from-none
             refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s",
                        1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
+            log.enable_debug()
             WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
+            log.disable_debug()
         return False
 
     def get_refresh_encoding(self, w, h, speed, quality, coding):
@@ -2423,7 +2426,7 @@ class WindowSource(WindowIconSource):
         if crs:
             crsw, crsh = crs
             #resize if the render size is smaller
-            if ww>crsw and wh>crsh:
+            if ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD:
                 #keep the same proportions:
                 resize = w*crsw//ww, h*crsh//wh
         return self.enc_pillow.encode(coding, image, q, s, transparency, grayscale, resize)
