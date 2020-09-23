@@ -622,7 +622,7 @@ class ServerCore:
 
     def process_control_command(self, *args):
         from xpra.server.control_command import ControlError
-        assert args
+        assert args, "control command must have arguments"
         name = args[0]
         try:
             command = self.control_commands.get(name)
