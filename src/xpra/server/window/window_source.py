@@ -936,13 +936,13 @@ class WindowSource(WindowIconSource):
         return self.get_auto_encoding(w, h, speed, quality)
 
     def get_auto_encoding(self, w, h, speed, quality, *_args):
-        if w*h<self._rgb_auto_threshold:
-            return "rgb24"
         co = self.common_encodings
         depth = self.image_depth
         if depth>24 and "rgb32" in co and self.client_bit_depth>24:
             #the only encoding that can do higher bit depth at present
             return "rgb32"
+        if w*h<self._rgb_auto_threshold:
+            return "rgb24"
         if depth in (24, 32) and "webp" in co and 16383>=w>=2 and 16383>=h>=2:
             return "webp"
         if "png" in co and ((quality>=80 and speed<80) or depth<=16):
