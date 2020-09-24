@@ -405,10 +405,11 @@ class WindowVideoSource(WindowSource):
         #encodings may have changed, so redo this:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
         self.non_video_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in nv_common]
-        try:
-            self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
-        except IndexError:
-            self.edge_encoding = None
+        if not VIDEO_SKIP_EDGE:
+            try:
+                self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
+            except IndexError:
+                self.edge_encoding = None
         log("do_set_client_properties(%s) full_csc_modes=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
             properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
@@ -922,7 +923,7 @@ class WindowVideoSource(WindowSource):
                 self.encode_queue.append(item)
                 self.schedule_encode_from_queue(av_delay)
         #now figure out if we need to send edges separately:
-        if video_mode and self.edge_encoding and not VIDEO_SKIP_EDGE:
+        if video_mode and self.edge_encoding:
             dw = w - (w & self.width_mask)
             dh = h - (h & self.height_mask)
             if dw>0 and h>0:
