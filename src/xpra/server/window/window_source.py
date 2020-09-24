@@ -1335,9 +1335,16 @@ class WindowSource(WindowIconSource):
 
     def do_damage(self, ww, wh, x, y, w, h, options):
         now = monotonic_time()
-        if self.refresh_timer and (w*h>=ww*wh//4 or w*h>=512*1024):
-            #large enough screen update: cancel refresh timer
-            self.cancel_refresh_timer()
+        if self.refresh_timer and options.get("quality", self._current_quality)<self.refresh_quality:
+            rr = tuple(self.refresh_regions)
+            if rr:
+                #does this screen update intersect with
+                #the areas that are due to be refreshed?
+                overlap = sum(rect.width*rect.height for rect in rr)
+                if overlap>0:
+                    pct = int(min(100, 100*overlap//(ww*wh)) * (1+self.global_statistics.congestion_value))
+                    sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct // 100))
+                    self.refresh_target_time = max(self.refresh_target_time, now + sched_delay/1000.0)
 
         delayed = self._damage_delayed
         if delayed:
