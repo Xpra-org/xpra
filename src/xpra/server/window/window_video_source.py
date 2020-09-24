@@ -580,6 +580,11 @@ class WindowVideoSource(WindowSource):
             damage_options["novideo"] = True
         WindowSource.full_quality_refresh(self, damage_options)
 
+    def timer_full_refresh(self):
+        self.free_scroll_data()
+        self.last_scroll_time = 0
+        super().timer_full_refresh()
+
 
     def quality_changed(self, window, *args):
         WindowSource.quality_changed(self, window, args)
@@ -596,7 +601,6 @@ class WindowVideoSource(WindowSource):
         #force batching when using video region
         #because the video region code is in the send_delayed path
         return self.video_subregion.rectangle is not None or WindowSource.must_batch(self, delay)
-
 
     def get_speed(self, encoding):
         s = WindowSource.get_speed(self, encoding)
