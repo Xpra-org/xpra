@@ -528,6 +528,8 @@ class WindowVideoSource(WindowSource):
         pixel_count = ww*wh
         if pixel_count<self._rgb_auto_threshold or self.is_tray or ww<=2 or wh<=2:
             #high speed and high quality, rgb is still good
+            if self.is_tray and "rgb32" in options:
+                return "rgb32"
             if "rgb24" in options:
                 return "rgb24"
             if "rgb32" in options:
