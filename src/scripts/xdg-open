@@ -14,7 +14,12 @@ if os.environ.get("XPRA_XDG_OPEN"):
 
 socket_path = os.environ.get("XPRA_SERVER_SOCKET")
 display = os.environ.get("DISPLAY", "unknown")
+server_path = None
 if socket_path and os.path.exists(socket_path):
+    server_path = "socket://%s" % socket_path
+elif display:
+    server_path = display
+if server_path:
     if len(sys.argv)!=2:
         sys.stderr.write("xdg-open: invalid number of arguments\n")
         sys.stderr.write("Try `xdg-open --help' for more information.\n")
@@ -31,7 +36,7 @@ if socket_path and os.path.exists(socket_path):
     def send_control_command(*control_command_args):
         from subprocess import Popen, PIPE
         try:
-            command = ["xpra", "control", "socket://%s" % socket_path] + list(control_command_args)
+            command = ["xpra", "control", server_path] + list(control_command_args)
             proc = Popen(command, stdout=PIPE, stderr=PIPE)
             #sys.stderr.write("Popen(%s)=%s\n" % (command, proc))
             out, err = proc.communicate(None)
@@ -45,12 +50,12 @@ if socket_path and os.path.exists(socket_path):
                     sys.stderr.write(err)
                     sys.stderr.flush()
         except Exception as e:
-            sys.stderr.write("xdg-open: failed to forward to xpra server using socket '%s': %s\n" % (socket_path, e))
+            sys.stderr.write("xdg-open: failed to forward to xpra server using '%s': %s\n" % (server_path, e))
             sys.stderr.flush()
         sys.exit(1)
 
     #try to forward URI or file:
-    #sys.stderr.write("xdg-open: forwarding request to xpra server at '%s'\n" % (socket_path,))
+    #sys.stderr.write("xdg-open: forwarding request to xpra server at '%s'\n" % (server_path,))
     filename = os.path.abspath(arg)
     #sys.stderr.write("arg: '%s'\n" % x)
     if arg.find("://")>0:
