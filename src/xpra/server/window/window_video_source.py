@@ -1806,6 +1806,7 @@ class WindowVideoSource(WindowSource):
         self.call_in_encode_thread(False, self.do_free_scroll_data)
 
     def do_free_scroll_data(self):
+        scrolllog("do_free_scroll_data()")
         sd = self.scroll_data
         if sd:
             self.scroll_data = None
