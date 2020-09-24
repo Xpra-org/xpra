@@ -16,10 +16,7 @@ class TestBatchConfig(unittest.TestCase):
     def test_ival(self):
         with OSEnvContext():
             for k in ("XYZ", "WHATEVER"):
-                try:
-                    del os.environ["XPRA_BATCH_%s" % k]
-                except KeyError:
-                    pass
+                os.environ.pop("XPRA_BATCH_%s" % k, None)
                 assert ival(k, 20, 0, 100)==20
                 os.environ["XPRA_BATCH_%s" % k] = "notanumber"
                 assert ival(k, 30, 0, 100)==30

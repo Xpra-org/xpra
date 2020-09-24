@@ -161,11 +161,8 @@ class NetworkListener(StubClientMixin):
         log("process_network_packet: %s", packet)
         packet_type = bytestostr(packet[0])
         def close():
-            try:
-                self._close_timers.pop(proto)
-            except KeyError:
-                pass
-            else:
+            t = self._close_timers.pop(proto, None)
+            if t:
                 proto.close()
             try:
                 self._potential_protocols.remove(proto)

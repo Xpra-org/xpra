@@ -1167,13 +1167,9 @@ class ServerCore:
         return False
 
     def cancel_upgrade_to_rfb_timer(self, protocol):
-        t = self.socket_rfb_upgrade_timer.get(protocol)
+        t = self.socket_rfb_upgrade_timer.pop(protocol, None)
         if t:
             self.source_remove(t)
-            try:
-                del self.socket_rfb_upgrade_timer[protocol]
-            except KeyError:
-                pass
 
 
     def make_protocol(self, socktype, conn, socket_options, protocol_class=Protocol):
@@ -1457,12 +1453,8 @@ class ServerCore:
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol):
-        t = self.socket_verify_timer.get(protocol)
+        t = self.socket_verify_timer.pop(protocol, None)
         if t:
-            try:
-                del self.socket_verify_timer[protocol]
-            except KeyError:
-                pass
             self.source_remove(t)
 
     def send_disconnect(self, proto, *reasons):

@@ -50,10 +50,7 @@ class DBUSTest(unittest.TestCase):
             r, d = start_dbus(v)
             assert r>0 and d, "dbus should have started for '%s'" % v
         def rm():
-            try:
-                del os.environ["DBUS_SESSION_BUS_ADDRESS"]
-            except KeyError:
-                pass
+            os.environ.pop("DBUS_SESSION_BUS_ADDRESS", None)
         with OSEnvContext():
             rm()
             f("no")

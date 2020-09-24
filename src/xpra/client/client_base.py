@@ -965,10 +965,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def remove_packet_handlers(self, *keys):
         for k in keys:
             for d in (self._packet_handlers, self._ui_packet_handlers):
-                try:
-                    del d[k]
-                except KeyError:
-                    pass
+                d.pop(k, None)
 
     def init_packet_handlers(self):
         self._packet_handlers = {}

@@ -1910,10 +1910,7 @@ class WindowVideoSource(WindowSource):
         #generate all the packets for this screen update
         #using 'scroll' encoding and picture encodings for the other regions
         start = monotonic_time()
-        try:
-            del options["av-sync"]
-        except KeyError:
-            pass
+        options.pop("av-sync", None)
         #tells make_data_packet not to invalidate the scroll data:
         ww, wh = self.window_dimensions
         scrolllog("encode_scrolling([], %s, %s, %i, %i) window-dimensions=%s",

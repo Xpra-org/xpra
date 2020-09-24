@@ -812,10 +812,7 @@ class X11ServerCore(GTKServerBase):
             return
         wid = 0
         if event.window!=get_default_root_window() and event.window_model is not None:
-            try:
-                wid = self._window_to_id[event.window_model]
-            except KeyError:
-                pass
+            wid = self._window_to_id.get(event.window_model, 0)
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         from xpra.server.source.windows_mixin import WindowsMixin
         for ss in self._server_sources.values():

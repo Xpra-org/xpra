@@ -708,10 +708,7 @@ class nomodule_context:
     def __exit__(self, *_args):
         if sys.modules.get(self.module_name) is None:
             if self.saved_module is None:
-                try:
-                    del sys.modules[self.module_name]
-                except KeyError:
-                    pass
+                sys.modules.pop(self.module_name, None)
             else:
                 sys.modules[self.module_name] = self.saved_module
     def __repr__(self):

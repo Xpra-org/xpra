@@ -977,14 +977,8 @@ class WindowClient(StubClientMixin):
             #(so it will reset the video encoders, etc)
             if not window.is_OR():
                 self.send("unmap-window", wid)
-            try:
-                del self._id_to_window[wid]
-            except KeyError:
-                pass
-            try:
-                del self._window_to_id[window]
-            except KeyError:
-                pass
+            self._id_to_window.pop(wid, None)
+            self._window_to_id.pop(window, None)
             #create the new window,
             #which should honour the new state of the opengl_enabled flag if that's what we changed,
             #or the new dimensions, etc
@@ -1187,13 +1181,8 @@ class WindowClient(StubClientMixin):
                 wids.remove(wid)
                 if not wids:
                     log("last window, removing watcher %s", signalwatcher)
-                    try:
-                        del self._signalwatcher_to_wids[signalwatcher]
-                    except KeyError:
-                        log("destroy_window(%i, %s) error killing signal watcher %s",
-                            wid, window, signalwatcher, exc_info=True)
-                    else:
-                        self.kill_signalwatcher(signalwatcher)
+                    self._signalwatcher_to_wids.pop(signalwatcher, None)
+                    self.kill_signalwatcher(signalwatcher)
                     #now remove any pids that use this watcher:
                     for pid, w in tuple(self._pid_to_signalwatcher.items()):
                         if w==signalwatcher:

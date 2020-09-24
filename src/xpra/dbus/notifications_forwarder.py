@@ -89,21 +89,15 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         hints = {}
         h = dbus_to_native(dbus_hints)
         for x in ("image-data", "icon_data"):
-            try:
-                data = h.pop(x)
-            except KeyError:
-                pass
-            else:
+            data = h.pop(x, None)
+            if data:
                 v = parse_image_data(data)
                 if v:
                     hints["image-data"] = v
                     break
         if "image-data" not in hints:
-            try:
-                image_path = h.pop("image-path")
-            except KeyError:
-                pass
-            else:
+            image_path = h.pop("image-path", None)
+            if image_path:
                 v = parse_image_path(image_path)
                 if v:
                     hints["image-data"] = v

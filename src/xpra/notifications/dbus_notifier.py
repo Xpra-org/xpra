@@ -150,10 +150,7 @@ class DBUS_Notifier(NotifierBase):
             }.get(int(reason), str(reason))
         log("NotificationClosed(%s, %s) nid=%s, reason=%s", actual_id, reason, nid, reason_str)
         if nid:
-            try:
-                self.actual_notification_id.pop(nid)
-            except KeyError:
-                pass
+            self.actual_notification_id.pop(nid, None)
             self.clean_notification(nid)
             if self.closed_cb:
                 self.closed_cb(nid, int(reason), reason_str)
@@ -202,10 +199,7 @@ class DBUS_Notifier(NotifierBase):
     def do_close(self, nid : int, actual_id : int):
         log("do_close_notify(%i)", actual_id)
         def CloseNotificationReply():
-            try:
-                self.actual_notification_id.pop(nid)
-            except KeyError:
-                pass
+            self.actual_notification_id.pop(nid, None)
         def CloseNotificationError(dbus_error, *_args):
             log.warn("Error: error closing notification:")
             log.warn(" %s", dbus_error)

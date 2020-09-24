@@ -745,10 +745,7 @@ class UIXpraClient(ClientBaseClass):
         metadata = typedict(metadata)
         if self.server_is_desktop and self.desktop_fullscreen:
             #force it fullscreen:
-            try:
-                del metadata["size-constraints"]
-            except KeyError:
-                pass
+            metadata.pop("size-constraints", None)
             metadata["fullscreen"] = True
             #FIXME: try to figure out the monitors we go fullscreen on for X11:
             #if POSIX:

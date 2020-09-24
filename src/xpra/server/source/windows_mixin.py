@@ -481,14 +481,10 @@ class WindowsMixin(StubSourceMixin):
         """ The given window is gone, ensure we free all the related resources """
         if not self.can_send_window(window):
             return
-        ws = self.window_sources.get(wid)
+        ws = self.window_sources.pop(wid, None)
         if ws:
-            del self.window_sources[wid]
             ws.cleanup()
-        try:
-            del self.calculate_window_pixels[wid]
-        except KeyError:
-            pass
+        self.calculate_window_pixels.pop(wid, None)
 
 
     def refresh(self, wid, window, opts):

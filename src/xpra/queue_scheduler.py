@@ -26,14 +26,9 @@ class QueueScheduler:
     def source_remove(self, tid : int):
         log("source_remove(%i)", tid)
         with self.timer_lock:
-            try:
-                timer = self.timers[tid]
-                if timer is not None:
-                    del self.timers[tid]
-                if timer:
-                    timer.cancel()
-            except KeyError:
-                pass
+            timer = self.timers.pop(tid, None)
+            if timer:
+                timer.cancel()
 
     def idle_add(self, fn : callable, *args, **kwargs) -> int:
         tid = self.timer_id.increase()
@@ -78,10 +73,7 @@ class QueueScheduler:
                 if tid in self.timers:
                     self.do_timeout_add(tid, timeout, fn, *fn_args, **fn_kwargs)
         else:
-            try:
-                del self.timers[tid]
-            except KeyError:    # pragma: no cover
-                pass
+            self.timers.pop(tid, None)
         #we do the scheduling via timers, so always return False here
         #so that the main queue won't re-schedule this function call itself:
         return False

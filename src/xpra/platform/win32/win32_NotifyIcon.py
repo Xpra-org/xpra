@@ -451,10 +451,7 @@ class win32NotifyIcon:
         except Exception:
             log.error("Error removing tray", exc_info=True)
         if hwnd:
-            try:
-                del win32NotifyIcon.instances[hwnd]
-            except KeyError:
-                pass
+            win32NotifyIcon.instances.pop(hwnd, None)
 
 
 WM_TRAY_EVENT = win32con.WM_MENUCOMMAND     #a message id we choose

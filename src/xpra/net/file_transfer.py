@@ -757,21 +757,14 @@ class FileTransferHandler(FileTransferAttributes):
     def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
-        timer = self.pending_send_data_timers.get(send_id)
+        timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
-            try:
-                del self.pending_send_data_timers[send_id]
-            except KeyError:
-                pass
             self.source_remove(timer)
         v = self.pending_send_data.get(bytestostr(send_id))
         if not v:
             filelog.warn("Warning: cannot find send-file entry")
             return
-        try:
-            del self.pending_send_data[send_id]
-        except KeyError:
-            pass
+        self.pending_send_data.pop(send_id, None)
         dtype = v[0]
         url = v[1]
         if accept==DENY:
@@ -798,10 +791,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def send_data_ask_timeout(self, send_id):
         v = self.pending_send_data.pop(send_id, None)
-        try:
-            del self.pending_send_data_timers[send_id]
-        except KeyError:
-            pass
+        self.pending_send_data_timers.pop(send_id, None)
         if not v:
             filelog.warn("Warning: send timeout, id '%s' not found!", send_id)
             return False

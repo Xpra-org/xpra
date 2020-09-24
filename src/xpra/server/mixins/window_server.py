@@ -195,10 +195,7 @@ class WindowServer(StubServerMixin):
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
                 ss.remove_window(wid, window)
-        try:
-            del self.client_properties[wid]
-        except KeyError:
-            pass
+        self.client_properties.pop(wid, None)
         return wid
 
     def _add_new_window_common(self, window):

@@ -191,10 +191,7 @@ class NetworkState(StubClientMixin):
         return self._server_ok
 
     def check_server_echo(self, ping_sent_time):
-        try:
-            del self.ping_echo_timers[ping_sent_time]
-        except KeyError:
-            pass
+        self.ping_echo_timers.pop(ping_sent_time, None)
         if self._protocol is None:
             #no longer connected!
             return False

@@ -505,14 +505,8 @@ def apply_maxsize_hints(window, hints):
     #remove them so GTK doesn't try to set attributes,
     #which would remove the maximize button:
     for x in ("min_width", "min_height", "max_width", "max_height"):
-        try:
-            del hints[x]
-        except KeyError:
-            pass
-        try:
-            del hints[strtobytes(x)]
-        except KeyError:
-            pass
+        hints.pop(x, None)
+        hints.pop(strtobytes(x), None]
     window_state_updated(window)
 
 def apply_geometry_hints(self, hints):

@@ -1053,26 +1053,19 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if timer:
             return  #we already have one pending
         def damage():
-            try:
-                del self.configure_damage_timers[wid]
-            except KeyError:
-                pass
+            self.configure_damage_timers.pop(wid, None)
             window = self._lookup_window(wid)
             if window and window.is_managed():
                 self.refresh_window(window)
         self.configure_damage_timers[wid] = self.timeout_add(CONFIGURE_DAMAGE_RATE, damage)
 
     def cancel_configure_damage(self, wid):
-        timer = self.configure_damage_timers.get(wid)
+        timer = self.configure_damage_timers.pop(wid, None)
         if timer:
-            try:
-                del self.configure_damage_timers[wid]
-            except KeyError:
-                pass
             self.source_remove(timer)
 
     def cancel_all_configure_damage(self):
-        timers = self.configure_damage_timers.values()
+        timers = tuple(self.configure_damage_timers.values())
         self.configure_damage_timers = {}
         for timer in timers:
             self.source_remove(timer)

@@ -150,15 +150,11 @@ class WebcamMixin(StubSourceMixin):
             self.stop_virtual_webcam(device_id)
 
     def stop_virtual_webcam(self, device_id, message=""):
-        webcam = self.webcam_forwarding_devices.get(device_id)
+        webcam = self.webcam_forwarding_devices.pop(device_id, None)
         log("stop_virtual_webcam(%s, %s) webcam=%s", device_id, message, webcam)
         if not webcam:
             log.warn("Warning: cannot stop webcam device %s: no such context!", device_id)
             return
-        try:
-            del self.webcam_forwarding_devices[device_id]
-        except KeyError:
-            pass
         try:
             webcam.clean()
         except Exception as e:

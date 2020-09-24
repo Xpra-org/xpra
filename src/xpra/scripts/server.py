@@ -628,10 +628,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         os.environ["XPRA_SERVER_LOG"] = log_filename0
     else:
         #server log does not exist:
-        try:
-            del os.environ["XPRA_SERVER_LOG"]
-        except KeyError:
-            pass
+        os.environ.pop("XPRA_SERVER_LOG", None)
 
     #warn early about this:
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
@@ -660,10 +657,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if POSIX:
             os.environ["CKCON_X11_DISPLAY"] = display_name
     elif not start_vfb or opts.xvfb.find("Xephyr")<0:
-        try:
-            del os.environ["DISPLAY"]
-        except KeyError:
-            pass
+        os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
     from xpra.log import Logger
     log = Logger("server")

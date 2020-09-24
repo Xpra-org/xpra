@@ -65,11 +65,7 @@ class IdleMixin(StubSourceMixin):
         self.schedule_idle_timeout()
         if self.idle:
             self.no_idle()
-        try:
-            self.notification_callbacks.pop(XPRA_IDLE_NOTIFICATION_ID)
-        except KeyError:
-            pass
-        else:
+        if self.notification_callbacks.pop(XPRA_IDLE_NOTIFICATION_ID, None):
             self.notify_close(XPRA_IDLE_NOTIFICATION_ID)
 
 

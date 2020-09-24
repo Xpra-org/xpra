@@ -264,10 +264,7 @@ def do_load_xdg_menu_data():
         #so try unsetting it if we can't load the menus with it:
         for cd in (False, True):
             if cd:
-                try:
-                    del os.environ["XDG_CONFIG_DIRS"]
-                except KeyError:
-                    continue
+                os.environ.pop("XDG_CONFIG_DIRS", None)
             #see ticket #2174,
             #things may break if the prefix is not set,
             #and it isn't set when logging in via ssh

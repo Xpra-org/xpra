@@ -17,10 +17,7 @@ class TestDisplayUtil(ServerTestUtil):
         from xpra.x11.gtk3.gdk_display_util import verify_gdk_display
         with OSEnvContext():
             os.environ["GDK_BACKEND"] = "x11"
-            try:
-                del os.environ["DISPLAY"]
-            except KeyError:
-                pass
+            os.environ.pop("DISPLAY", None)
             for d in (None, ""):
                 try:
                     verify_gdk_display(d)

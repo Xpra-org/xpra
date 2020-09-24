@@ -774,10 +774,7 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
             if nokey is not None:
                 sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, nokey)))
                 for x in ("", None):
-                    try:
-                        del v[x]
-                    except KeyError:
-                        pass
+                    v.pop(x, None)
             else:
                 sprint("%s%s %s" % (prefix, lchar, bytestostr(k)))
             print_nested_dict(v, prefix+"  ", "-", vformat=vformat, print_fn=print_fn,
@@ -853,10 +850,7 @@ def csv(v):
 
 def unsetenv(*varnames):
     for x in varnames:
-        try:
-            del os.environ[x]
-        except KeyError:
-            pass
+        os.environ.pop(x, None)
 
 def envint(name : str, d=0):
     try:

@@ -59,10 +59,7 @@ class TestLogPackets(unittest.TestCase):
 
     def test_default_nolog(self):
         with OSEnvContext():
-            try:
-                del os.environ["XPRA_LOG_PACKETS"]
-            except KeyError:
-                pass
+            os.environ.pop("XPRA_LOG_PACKETS", None)
             self.setup_log_intercept()
             for pt in common.PACKET_TYPES:
                 self.t(True, pt, (1, 2))

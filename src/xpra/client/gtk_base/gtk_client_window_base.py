@@ -844,11 +844,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 statelog("%s=%s (was %s)", var, value, cur)
         server_updates = dict((k,v) for k,v in actual_updates.items() if k in self._client.server_window_states)
         #iconification is handled a bit differently...
-        try:
-            iconified = server_updates.pop("iconified")
-        except KeyError:
-            iconified = None
-        else:
+        iconified = server_updates.pop("iconified", None)
+        if iconified is not None:
             statelog("iconified=%s", iconified)
             #handle iconification as map events:
             if iconified:
