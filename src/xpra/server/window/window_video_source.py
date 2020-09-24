@@ -598,6 +598,11 @@ class WindowVideoSource(WindowSource):
             damage_options["novideo"] = True
         super().full_quality_refresh(damage_options)
 
+    def timer_full_refresh(self):
+        self.free_scroll_data()
+        self.last_scroll_time = 0
+        super().timer_full_refresh()
+
 
     def quality_changed(self, window, *args):
         super().quality_changed(window, args)
