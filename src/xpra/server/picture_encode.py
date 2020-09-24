@@ -49,14 +49,11 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
     if pixel_format not in rgb_formats:
-        log("rgb_encode reformatting because %s not in %s", pixel_format, rgb_formats)
-        if coding=="rgb24":
-            fmts = tuple(x for x in rgb_formats if len(x)==3)
-        else:
-            fmts = tuple(x for x in rgb_formats if len(x)==4)
-        if not rgb_reformat(image, fmts, supports_transparency):
-            raise Exception("cannot find compatible rgb format to use for %s! (supported: %s, from: %s)" % (
-                pixel_format, fmts, rgb_formats))
+        log("rgb_encode reformatting because %s not in %s, supports_transparency=%s",
+            pixel_format, rgb_formats, supports_transparency)
+        if not rgb_reformat(image, rgb_formats, supports_transparency):
+            raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (
+                pixel_format, rgb_formats))
         #get the new format:
         pixel_format = bytestostr(image.get_pixel_format())
         #switch encoding if necessary:
