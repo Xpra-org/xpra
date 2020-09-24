@@ -2304,6 +2304,7 @@ class WindowSource(WindowIconSource):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
             return None
         if SCROLL_ALL and self.may_use_scrolling(image, options):
+            log("used scrolling, no packet")
             image.free()
             return None
         x = image.get_target_x()
@@ -2322,6 +2323,7 @@ class WindowSource(WindowIconSource):
         encoder = self._encoders.get(coding)
         if encoder is None:
             if self.is_cancelled(sequence):
+                log("make_data_packet: skipped, sequence no %i is cancelled", sequence)
                 return None
             raise Exception("BUG: no encoder not found for %s" % coding)
         ret = encoder(coding, image, options)
@@ -2336,7 +2338,7 @@ class WindowSource(WindowIconSource):
         #but always send mmap data so we can reclaim the space!
         if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
             log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
-            return  None
+            return None
         csize = len(data)
         if INTEGRITY_HASH and coding!="mmap":
             #could be a compressed wrapper or just raw bytes:
