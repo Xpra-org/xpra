@@ -28,9 +28,9 @@
 
 	<distutils id="python3-setuptools" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/68/75/d1d7b7340b9eb6e0388bf95729e63c410b381eb71fe8875cdfd949d8f9ce/setuptools-45.2.0.zip"
-			hash="sha256:89c6e6011ec2f6d57d43a3f9296c4ef022c2cbf49bab26b407fe67992ae3397f"
-			version="45.2.0"/>
+			module="/packages/7c/1b/9b68465658cda69f33c31c4dbd511ac5648835680ea8de87ce05c81f95bf/setuptools-50.3.0.zip"
+			hash="sha256:39060a59d91cf5cf403fa3bacbb52df4205a8c3585e0b9ba4b30e0e19d4c4b18"
+			version="50.3.0"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -104,9 +104,9 @@
 
 	<distutils id="python3-cparser" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/68/9e/49196946aee219aead1290e00d1e7fdeab8567783e83e1b9ab5585e6206a/pycparser-2.19.tar.gz"
-			hash="sha256:a988718abfad80b6b157acce7bf130a30876d27603738ac39f140993246b25b3"
-			version="2.19"/>
+			module="/packages/0f/86/e19659527668d70be91d0369aeaa055b4eb396b0f387a4f92293a20035bd/pycparser-2.20.tar.gz"
+			hash="sha256:2d475327684562c3a96cc71adf7dc8c4f0565175cf86b6d7a404ff4c771f15f0"
+			version="2.20"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -117,9 +117,9 @@
 
 	<distutils id="python3-cffi" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/05/54/3324b0c46340c31b909fcec598696aaec7ddc8c18a63f2db352562d3354c/cffi-1.14.0.tar.gz"
-			hash="sha256:2d384f4a127a15ba701207f7639d94106693b6cd64173d6c8988e2c25f3ac2b6"
-			version="1.14.0"/>
+			module="/packages/cb/ae/380e33d621ae301770358eb11a896a34c34f30db188847a561e8e39ee866/cffi-1.14.3.tar.gz"
+			hash="sha256:f92f789e4f9241cd262ad7a555ca2c648a98178a953af117ef7fad46aa1d5591"
+			version="1.14.3"/>
 		<dependencies>
 	        <dep package="libffi"/>
 			<dep package="python3"/>
@@ -134,9 +134,9 @@
 
 	<distutils id="python3-six" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/21/9f/b251f7f8a76dec1d6651be194dfba8fb8d7781d10ab3987190de8391d08e/six-1.14.0.tar.gz"
-			hash="sha256:236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a"
-			version="1.14.0"/>
+			module="/packages/6b/34/415834bfdafca3c5f451532e8a8d9ba89a21c9743a0c59fbd0205c7f9426/six-1.15.0.tar.gz"
+			hash="sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259"
+			version="1.15.0"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -160,9 +160,9 @@
 
 	<distutils id="python3-packaging" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/7b/d5/199f982ae38231995276421377b72f4a25d8251f4fa56f6be7cfcd9bb022/packaging-20.1.tar.gz"
-			hash="sha256:e665345f9eef0c621aa0bf2f8d78cf6d21904eef16a93f020240b704a57f1334"
-			version="20.1"/>
+			module="/packages/55/fd/fc1aca9cf51ed2f2c11748fa797370027babd82f87829c7a8e6dbe720145/packaging-20.4.tar.gz"
+			hash="sha256:4357f74f47b9c12db93624a82154e9b120fa8293699949152b22065d556079f8"
+			version="20.4"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -173,9 +173,9 @@
 
 	<distutils id="python3-asn1crypto" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/9f/3d/8beae739ed8c1c8f00ceac0ab6b0e97299b42da869e24cf82851b27a9123/asn1crypto-1.3.0.tar.gz"
-			hash="sha256:5a215cb8dc12f892244e3a113fe05397ee23c5c4ca7a69cd6e69811755efc42d"
-			version="1.3.0"/>
+			module="/packages/6b/b4/42f0e52ac2184a8abb31f0a6f98111ceee1aac0b473cee063882436e0e09/asn1crypto-1.4.0.tar.gz"
+			hash="sha256:f4f6e119474e58e04a2b1af817eb585b4fd72bdd89b998624712b5c99be7641c"
+			version="1.4.0"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -278,9 +278,9 @@
 
 	<distutils id="python3-bcrypt" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/fa/aa/025a3ab62469b5167bc397837c9ffc486c42a97ef12ceaa6699d8f5a5416/bcrypt-3.1.7.tar.gz"
-			hash="sha256:0b0069c752ec14172c5f78208f1863d7ad6755a6fae6fe76ec2c80d13be41e42"
-			version="3.1.7"/>
+			module="/packages/d8/ba/21c475ead997ee21502d30f76fd93ad8d5858d19a3fad7cd153de698c4dd/bcrypt-3.2.0.tar.gz"
+			hash="sha256:5b93c1726e50a93a033c36e5ca7fdcd29a5c7395af50a6892f5d9e7c6cfbfb29"
+			version="3.2.0"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -291,9 +291,9 @@
 
 	<distutils id="python3-nacl" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/61/ab/2ac6dea8489fa713e2b4c6c5b549cc962dd4a842b5998d9e80cf8440b7cd/PyNaCl-1.3.0.tar.gz"
-			hash="sha256:0c6100edd16fefd1557da078c7a31e7b7d7a52ce39fdca2bec29d4f7b6e7600c"
-			version="1.3.0"/>
+			module="/packages/cf/5a/25aeb636baeceab15c8e57e66b8aa930c011ec1c035f284170cacb05025e/PyNaCl-1.4.0.tar.gz"
+			hash="sha256:54e9a2c849c742006516ad56a88f5c74bf2ce92c9f67435187c3c5953b346505"
+			version="1.4.0"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
