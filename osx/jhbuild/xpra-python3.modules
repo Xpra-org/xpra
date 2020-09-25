@@ -346,9 +346,9 @@
 
 	<distutils id="python3-setuptools-scm" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/b2/f7/60a645aae001a2e06cf4b8db2fba9d9f36b8fd378f10647e3e218b61b74b/setuptools_scm-3.5.0.tar.gz"
-			hash="sha256:5bdf21a05792903cafe7ae0c9501182ab52497614fa6b1750d9dbae7b60c1a87"
-			version="3.5.0"/>
+			module="/packages/cd/66/fa77e809b7cb1c2e14b48c7fc8a8cd657a27f4f9abb848df0c967b6e4e11/setuptools_scm-4.1.2.tar.gz"
+			hash="sha256:a8994582e716ec690f33fec70cca0f85bd23ec974e3f783233e4879090a7faa8"
+			version="4.1.2"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -372,9 +372,9 @@
 
 	<distutils id="python3-deprecation" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/cd/94/8d9d6303f5ddcbf40959fc2b287479bd9a201ea9483373d9b0882ae7c3ad/deprecation-2.0.7.tar.gz"
-			hash="sha256:c0392f676a6146f0238db5744d73e786a43510d54033f80994ef2f4c9df192ed"
-			version="2.0.7"/>
+			module="/packages/5a/d3/8ae2869247df154b64c1884d7346d412fed0c49df84db635aab2d1c40e62/deprecation-2.1.0.tar.gz"
+			hash="sha256:72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff"
+			version="2.1.0"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -786,9 +786,9 @@
 
 	<distutils id="python3-idna" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/cb/19/57503b5de719ee45e83472f339f617b0c01ad75cba44aba1e4c97c2b0abd/idna-2.9.tar.gz"
-			hash="sha256:7588d1c14ae4c77d74036e8c22ff447b26d0fde8f007354fd48a7814db15b7cb"
-			version="2.9"/>
+			module="/packages/ea/b7/e0e3c1c467636186c39925827be42f16fee389dc404ac29e930e9136be70/idna-2.10.tar.gz"
+			hash="sha256:b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6"
+			version="2.10"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
