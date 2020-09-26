@@ -1,6 +1,11 @@
 xpra (4.0.4-1) UNRELEASED; urgency=low
+  * fix memory leak with 'scroll' encoding
   * fix NVENC encoder (profile errors)
   * fix unmanaged X11 message call which could cause GTK to crash when it fails
+  * fix missing auto-refresh leaving a blurry image
+  * fix incomplete repaints when window contents have padding
+  * fix missing pixels on the edge of video areas in 'auto' encoding mode
+  * fix connection errors with notifications disabled on the server
   * fix 'sync-xvfb' option: setup error, non-standard bit depth support
   * fix shadow server dbus SetRefreshDelay causing all further "xpra info" requests to fail
   * fix incomplete data in initial packets from shadow servers
@@ -22,6 +27,8 @@ xpra (4.0.4-1) UNRELEASED; urgency=low
   * fix websocket compatibility with some client / middleware
   * fix missing windows due to an error in the named window icon handling
   * fix libyuv buffer overflow crash with rgb upscaling
+  * fix hard to trigger mmap memory leak
+  * add support for sm86 architecture with CUDA 11.1
   * allow 'pager' source indication value to activate window server-side
   * switch to Xvfb on Debian and Ubuntu
   * workaround corruption on some windows when maximized
@@ -30,7 +37,7 @@ xpra (4.0.4-1) UNRELEASED; urgency=low
   * add missing DEB dependency
   * MacOS and MS Windows: fix security issue in brotli decompression
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 20 Sep 2020 13:57:05 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 26 Sep 2020 23:05:28 +0700
 
 xpra (4.0.3-1) UNRELEASED; urgency=low
   * fix server crash caused by use after free in scrolling code

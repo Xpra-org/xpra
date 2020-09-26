@@ -586,9 +586,14 @@ fi
 
 
 %changelog
-* Sun Sep 20 2020 Antoine Martin <antoine@xpra.org> 4.0.4-10
+* Sat Sep 26 2020 Antoine Martin <antoine@xpra.org> 4.0.4-10
+- fix memory leak with 'scroll' encoding
 - fix NVENC encoder (profile errors)
 - fix unmanaged X11 message call which could cause GTK to crash when it fails
+- fix missing auto-refresh leaving a blurry image
+- fix incomplete repaints when window contents have padding
+- fix missing pixels on the edge of video areas in 'auto' encoding mode
+- fix connection errors with notifications disabled on the server
 - fix 'sync-xvfb' option: setup error, non-standard bit depth support
 - fix shadow server dbus SetRefreshDelay causing all further "xpra info" requests to fail
 - fix incomplete data in initial packets from shadow servers
@@ -610,6 +615,8 @@ fi
 - fix websocket compatibility with some client / middleware
 - fix missing windows due to an error in the named window icon handling
 - fix libyuv buffer overflow crash with rgb upscaling
+- fix hard to trigger mmap memory leak
+- add support for sm86 architecture with CUDA 11.1
 - allow 'pager' source indication value to activate window server-side
 - switch to Xvfb on Debian and Ubuntu
 - workaround corruption on some windows when maximized
