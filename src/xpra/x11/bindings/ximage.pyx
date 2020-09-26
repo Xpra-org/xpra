@@ -459,6 +459,10 @@ cdef class XImageWrapper:
         if posix_memalign(<void **> &self.pixels, 64, buf_len):
             raise Exception("posix_memalign failed!")
         assert self.pixels!=NULL
+        #from now on, we own the buffer,
+        #so we're no longer a direct sub-image,
+        #and we must free the buffer later:
+        self.sub = False
         if self.image==NULL:
             self.thread_safe = 1
             #we can now mark this object as thread safe

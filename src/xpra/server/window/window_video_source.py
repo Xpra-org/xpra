@@ -1979,6 +1979,7 @@ class WindowVideoSource(WindowSource):
                 assert encoding, "no nonvideo encoding found for %ix%i screen update" % (w, sh)
                 encode_fn = self._encoders[encoding]
                 ret = encode_fn(encoding, sub, options)
+                self.free_image_wrapper(sub)
                 if not ret:
                     #cancelled?
                     return None
@@ -2010,6 +2011,7 @@ class WindowVideoSource(WindowSource):
         assert flush==0
         self.last_scroll_time = monotonic_time()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
+        self.free_image_wrapper(image)
 
 
     def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
