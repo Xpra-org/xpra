@@ -26,7 +26,6 @@ xpra (4.0.4-1) UNRELEASED; urgency=low
   * fix int overflow errors on some 64-bit mswindows installations
   * fix websocket compatibility with some client / middleware
   * fix missing windows due to an error in the named window icon handling
-  * fix libyuv buffer overflow crash with rgb upscaling
   * fix hard to trigger mmap memory leak
   * add support for sm86 architecture with CUDA 11.1
   * allow 'pager' source indication value to activate window server-side
