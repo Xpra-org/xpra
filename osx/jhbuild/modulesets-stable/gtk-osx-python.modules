@@ -96,8 +96,8 @@
   </autotools>
 
   <autotools id="python3" autogenargs="--enable-shared" autogen-sh="configure">
-    <branch repo="python" module="3.8.4/Python-3.8.4.tar.xz" version="3.8.4"
-            hash="sha256:5f41968a95afe9bc12192d7e6861aab31e80a46c46fa59d3d837def6a4cd4d37"
+    <branch repo="python" module="3.8.5/Python-3.8.5.tar.xz" version="3.8.5"
+            hash="sha256:e3003ed57db17e617acb382b0cade29a248c6026b1bd8aad1f976e9af66a83b0"
             />
     <dependencies>
       <dep package="gettext-runtime"/>
