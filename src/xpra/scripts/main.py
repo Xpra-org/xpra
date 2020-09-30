@@ -1834,7 +1834,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
     return app
 
 
-def make_progress_process(): 
+def make_progress_process():
     #start the splash subprocess
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command()+["splash"]
