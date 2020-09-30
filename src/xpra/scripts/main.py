@@ -449,7 +449,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         if options.splash is True or (
             options.splash is not False and (
                 not POSIX or (
-                    (os.environ.get("DISPLAY") or os.environ.get("XDG_SESSION_DESKTOP")) and 
+                    (os.environ.get("DISPLAY") or os.environ.get("XDG_SESSION_DESKTOP")) and
                     not (os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"))
                     )
                 )
