@@ -1415,6 +1415,10 @@ def ssl_wrap_socket_fn(opts, server_side=True):
         ssllog("ssl_wrap_socket_fn: load_default_certs(%s)", purpose)
         context.load_default_certs(purpose)
 
+            if not opts.ssl_server_hostname:
+                #if the server hostname was not specified explicitly,
+                #use the one from the connection string:
+                opts.ssl_server_hostname = host
         ssl_ca_certs = opts.ssl_ca_certs
         if not ssl_ca_certs or ssl_ca_certs.lower()=="default":
             ssllog("ssl_wrap_socket_fn: loading default verify paths")
