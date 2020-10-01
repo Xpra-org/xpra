@@ -763,7 +763,7 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                                     options, ciphers,
                                     server_side))
     import ssl
-    ssllog(" verify_mode(%s)=%s", server_side, verify_mode)
+    ssllog(" verify_mode for server_side=%s : %s", server_side, verify_mode)
     #ca-certs:
     if ca_certs=="default":
         ca_certs = None
@@ -826,6 +826,7 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
     ssllog(" cert=%s, key=%s", cert, key)
     if cert:
         SSL_KEY_PASSWORD = os.environ.get("XPRA_SSL_KEY_PASSWORD")
+        ssllog("context.load_cert_chain%s", (cert or None, key or None, SSL_KEY_PASSWORD))
         context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=SSL_KEY_PASSWORD)
     if ssl_cert_reqs!=ssl.CERT_NONE:
         if server_side:
