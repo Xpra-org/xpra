@@ -587,18 +587,18 @@ function fill_form(default_settings) {
 			if (req.readyState === 4) {
 				if (req.status === 200) {
 					const headers = Utilities.ParseResponseHeaders(req.getAllResponseHeaders());
-					console.debug("headers:", headers);
+					Utilities.debug("headers:", headers);
 					let lang = headers["Echo-Accept-Language"];
 					//ie: lang = "en-gb,en-us;q=0.8,en;q=0.6"
 					if (lang) {
 						//just the first option:
-						console.debug("accept-language:", lang);
+						Utilities.debug("accept-language:", lang);
 						lang = lang.split(",")[0];		//ie: lang="en-gb"
-						console.debug("first language:", lang);
+						Utilities.debug("first language:", lang);
 						let locale = lang.split("-")[1];
 						if (locale) {
 							locale = locale.toLowerCase();
-							console.debug("request locale:", locale);
+							Utilities.debug("request locale:", locale);
 							if (locale!=keyboard_layout) {
 								keyboard_layout = locale;
 								document.getElementById('keyboard_layout').value = keyboard_layout;
@@ -607,14 +607,14 @@ function fill_form(default_settings) {
 					}
 					//
 				} else {
-					console.error(req.statusText);
+					Utilities.error(req.statusText);
 				}
 			}
 		};
 		req.send(null);
 	}
 	catch (e) {
-		console.warn("Warning: failed to get HTTP header probe:", e);
+		Utilities.warn("Warning: failed to get HTTP header probe:", e);
 	}
 
 	const audio_codec = getparam("audio_codec") || "";

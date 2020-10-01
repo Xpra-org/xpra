@@ -15,36 +15,56 @@ const Utilities = {
 	LOCAL_MODIFICATIONS : "0",
 
 	exc : function() {
-		console.error.apply(console, arguments);
+		if (console) {
+			console.error.apply(console, arguments);
+		}
 	},
 	error : function() {
-		console.error.apply(console, arguments);
+		if (console) {
+			console.error.apply(console, arguments);
+		}
 	},
 	warn : function() {
-		console.log.apply(console, arguments);
+		if (console) {
+			console.log.apply(console, arguments);
+		}
 	},
 	log : function() {
-		console.log.apply(console, arguments);
+		if (console) {
+			console.log.apply(console, arguments);
+		}
 	},
 	debug : function() {
-		console.debug.apply(console, arguments);
+		if (console) {
+			console.debug.apply(console, arguments);
+		}
 	},
 
 	//these versions should not be redirected:
 	cexc : function() {
-		console.error.apply(console, arguments);
+		if (console) {
+			console.error.apply(console, arguments);
+		}
 	},
 	cerror : function() {
-		console.error.apply(console, arguments);
+		if (console) {
+			console.error.apply(console, arguments);
+		}
 	},
 	cwarn : function() {
-		console.log.apply(console, arguments);
+		if (console) {
+			console.log.apply(console, arguments);
+		}
 	},
 	clog : function() {
-		console.log.apply(console, arguments);
+		if (console) {
+			console.log.apply(console, arguments);
+		}
 	},
 	cdebug : function() {
-		console.debug.apply(console, arguments);
+		if (console) {
+			console.debug.apply(console, arguments);
+		}
 	},
 
 	getHexUUID: function() {
