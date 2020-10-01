@@ -311,25 +311,30 @@ function add_prop(prop, value, first) {
 function doConnect() {
 	let url = "./index.html" + add_prop("submit", true, true);
 
+	window.location = url + get_URL_action() + get_URL_props();
+}
+
+function get_URL_action() {
+	let url = "";
 	let start;
 	if (document.getElementById("action_connect").checked) {
-		add_prop("action", "connect");
+		url += add_prop("action", "connect");
 	}
 	else if (document.getElementById("action_start").checked) {
-		add_prop("action", "start");
+		url += add_prop("action", "start");
 		start = document.getElementById("start_command").value;
 	}
 	else if (document.getElementById("action_start_desktop").checked) {
-		add_prop("action", "start-desktop");
+		url += add_prop("action", "start-desktop");
 		start = document.getElementById("start_desktop_command").value;
 	}
 	else if (document.getElementById("action_shadow").checked) {
-		add_prop("action", "shadow");
+		url += add_prop("action", "shadow");
 	}
 	if(start) {
-		add_prop("start", start);
+		url += add_prop("start", start);
 	}
-	window.location = url + get_URL_props();
+	return url;
 }
 
 function get_URL_props() {
