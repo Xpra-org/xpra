@@ -1415,6 +1415,10 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             ssllog.debug("do_wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
+            if not opts.ssl_server_hostname:
+                #if the server hostname was not specified explicitly,
+                #use the one from the connection string:
+                opts.ssl_server_hostname = host
                 return None
             raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e))
         if not server_side:
