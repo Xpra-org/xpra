@@ -287,36 +287,29 @@
 
 <script type="text/javascript">
 
-function doConnect() {
-	// url to client
-	let url = "./index.html";
-	const has_session_storage = Utilities.hasSessionStorage();
+function add_prop(prop, value, first) {
+	if (Utilities.hasSessionStorage()) {
+		//we're using sessionStorage, no need for URL
+		if (value===null || value==="undefined") {
+			sessionStorage.removeItem(prop);
+		}
+		else {
+			sessionStorage.setItem(prop, value);
+		}
+		return "";
+	}
+	if (value===null || value==="undefined") {
+		value = "";
+	}
+	let sep = "&";
+	if (first) {
+		sep = "?";
+	}
+	return sep+prop+"="+encodeURIComponent(""+value);		//ie: "&port=10000"
+}
 
-	function add_prop(prop, value) {
-		if (has_session_storage) {
-			if (value===null || value==="undefined") {
-				sessionStorage.removeItem(prop);
-			}
-			else {
-				sessionStorage.setItem(prop, value);
-			}
-		} else {
-			if (value===null || value==="undefined") {
-				value = "";
-			}
-			url = url + "&"+prop+"="+encodeURIComponent(""+value);
-		}
-	}
-	add_prop("submit", true);
-	const val_props = ["server", "port", "path", "username", "password", "key",
-					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
-	for (let i = 0; i < val_props.length; i++) {
-		const prop = val_props[i];
-		const value = document.getElementById(prop).value;
-		if (value.length>0) {
-			add_prop(prop, value);
-		}
-	}
+function doConnect() {
+	let url = "./index.html" + add_prop("submit", true, true);
 
 	let start;
 	if (document.getElementById("action_connect").checked) {
@@ -336,7 +329,18 @@ function doConnect() {
 	if(start) {
 		add_prop("start", start);
 	}
+	window.location = url + get_URL_props();
+}
 
+function get_URL_props() {
+	let url = "";
+	const val_props = ["server", "port", "path", "username", "password", "key",
+					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
+	for (let i = 0; i < val_props.length; i++) {
+		const prop = val_props[i];
+		const value = document.getElementById(prop).value;
+		url += add_prop(prop, value);
+	}
 	const bool_props = ["clipboard", "printing", "file_transfer",
 		"sound", "ignore_audio_blacklist",
 		"exit_with_children", "exit_with_client",
@@ -349,10 +353,11 @@ function doConnect() {
 	];
 	for (let i = 0; i < bool_props.length; i++) {
 		const prop = bool_props[i];
-		add_prop(prop, document.getElementById(prop).checked);
+		url += add_prop(prop, document.getElementById(prop).checked);
 	}
-	window.location = url;
+	return url;
 }
+
 
 function fill_form(default_settings) {
 	const getparam = function(prop) {
