@@ -364,6 +364,14 @@ function downloadConnectionFile() {
 		const prop = FILE_PROPERTIES[i];
 		const prop_name = FILE_TRANSLATION[prop] || prop;
 		const value = document.getElementById(prop).value;
+		if (prop=="port" && !value) {
+			if (ssl) {
+				port = "443";
+			}
+			else {
+				port = "80";
+			}
+		}
 		if (value!=="") {
 			data += prop_name+"="+value+"\n";
 		}
