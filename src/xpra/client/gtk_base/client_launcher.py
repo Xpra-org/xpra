@@ -806,8 +806,14 @@ class ApplicationWindow:
         def raise_exception(*args):
             raise Exception(*args)
         self.client = make_client(raise_exception, self.config)
+        self.client.show_progress(30, "client configuration")
         self.client.init(self.config)
+        self.client.show_progress(40, "loading user interface")
+        self.client.init_ui(self.config)
         self.client.username = username
+        def handshake_complete(*_args):
+            self.client.show_progress(100, "connection established")
+        self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
         start_thread(self.do_connect_builtin, "connect", daemon=True, args=(params,))
 
