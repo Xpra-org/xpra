@@ -82,6 +82,7 @@
 
 		  <div class="form-group">
 		  	<a class="btn btn-lg btn-success" role="button" onclick="doConnect();">Connect</a>
+		  	<a class="btn btn-lg btn-success" role="button" onclick="doConnectURI();">Launch Native Client</a>
 		  </div>
 
 		  <div class="panel-group" role="tablist">
@@ -309,9 +310,24 @@ function add_prop(prop, value, first) {
 }
 
 function doConnect() {
-	let url = "./index.html" + add_prop("submit", true, true);
+	let url = "./index.html" + add_prop("submit", true, true) + get_URL_action() + get_URL_props();
+	window.location = url;
+}
 
-	window.location = url + get_URL_action() + get_URL_props();
+function doConnectURI() {
+	let url = "xpraws://";
+	const ssl = document.getElementById("ssl").checked;
+	if (ssl) {
+		url = "xprawss://";
+	}
+	const username = document.getElementById("username").value;
+	if (username) {
+		url += username+"@";
+	}
+	url += document.getElementById("server").value;
+	url += ":"+document.getElementById("port").value+"/";
+	url += get_URL_action() + get_URL_props();
+	window.location = url;
 }
 
 function get_URL_action() {

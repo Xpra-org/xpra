@@ -1270,11 +1270,17 @@ def do_parse_cmdline(cmdline, defaults):
             "xpra"      : "tcp",
             "xpras"     : "ssl",
             "xpra+tcp"  : "tcp",
+            "xpratcp"   : "tcp",
             "xpra+tls"  : "ssl",
+            "xpratls"   : "ssl",
             "xpra+ssl"  : "ssl",
+            "xprassl"   : "ssl",
             "xpra+ssh"  : "ssh",
+            "xprassh"   : "ssh",
             "xpra+ws"   : "ws",
+            "xpraws"    : "ws",
             "xpra+wss"  : "wss",
+            "xprawss"   : "wss",
             }
         for prefix, mode in URL_MODES.items():
             url = args[1]
