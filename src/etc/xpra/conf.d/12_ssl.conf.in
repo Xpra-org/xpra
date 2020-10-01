@@ -39,7 +39,7 @@ ssl-server-verify-mode = required
 ssl-check-hostname = off
 
 # Server hostname to check for:
-ssl-server-hostname = localhost
+#ssl-server-hostname = localhost
 
 
 # The following options require Python 2.7.9 or later:
