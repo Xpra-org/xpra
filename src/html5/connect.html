@@ -82,7 +82,8 @@
 
 		  <div class="form-group">
 		  	<a class="btn btn-lg btn-success" role="button" onclick="doConnect();">Connect</a>
-		  	<a class="btn btn-lg btn-success" role="button" onclick="doConnectURI();">Launch Native Client</a>
+		  	<a class="btn btn-lg btn-success" role="button" onclick="doConnectURI();">Client URI</a>
+		  	<a class="btn btn-lg btn-success" role="button" onclick="downloadConnectionFile();">Connection File</a>
 		  </div>
 
 		  <div class="panel-group" role="tablist">
@@ -288,6 +289,24 @@
 
 <script type="text/javascript">
 
+const VALUE_PROPERTIES = ["server", "port", "path", "username", "password", "key",
+					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
+const BOOLEAN_PROPERTIES = ["clipboard", "printing", "file_transfer",
+		"sound", "ignore_audio_blacklist",
+		"exit_with_children", "exit_with_client",
+		"sharing", "steal", "reconnect", "swap_keys",
+		"scroll_reverse_x", "scroll_reverse_y",
+		"video", "mediasource_video",
+		"ssl", "insecure", "encryption",
+		"floating_menu", "autohide", "clock",
+		"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
+	];
+const FILE_PROPERTIES = ["server", "port", "username", "password",
+		"exit_with_children", "exit_with_client",
+		"sharing", "swap_keys"];
+const FILE_TRANSLATION = {"server" : "host"};
+
+
 function add_prop(prop, value, first) {
 	if (Utilities.hasSessionStorage()) {
 		//we're using sessionStorage, no need for URL
@@ -330,6 +349,48 @@ function doConnectURI() {
 	window.location = url;
 }
 
+function downloadConnectionFile() {
+	const filename = document.getElementById("server").value+".xpra";
+	let data = "autoconnect=true\n";
+	//set a mode:
+	const ssl = document.getElementById("ssl").checked;
+	if (ssl) {
+		data += "mode=wss\n";
+	}
+	else {
+		data += "mode=ws\n";
+	}
+	for (let i = 0; i < FILE_PROPERTIES.length; i++) {
+		const prop = FILE_PROPERTIES[i];
+		const prop_name = FILE_TRANSLATION[prop] || prop;
+		const value = document.getElementById(prop).value;
+		if (value!=="") {
+			data += prop_name+"="+value+"\n";
+		}
+	}
+	//convert debug switches to a list of debug categories:
+	let debug = "";
+	const DEBUG_CATEGORIES = ["main", "keyboard", "geometry", "mouse", "clipboard", "draw", "audio", "network"];
+	for (let i = 0; i < DEBUG_CATEGORIES.length; i++) {
+		let category = DEBUG_CATEGORIES[i];
+		const el = document.getElementById("debug_"+category);
+		if (el && el.checked) {
+			//"main" enables "client" debugging:
+			let s = ((category=="main") ? 'client' : category);;
+			if (debug) {
+				debug += ","+category;
+			}
+			else {
+				debug = category;
+			}
+		}
+	}
+	if (debug) {
+		data += "debug="+debug+"\n";
+	}
+	Utilities.saveFile(filename, data, {type : "text/plain"});
+}
+
 function get_URL_action() {
 	let url = "";
 	let start;
@@ -355,25 +416,13 @@ function get_URL_action() {
 
 function get_URL_props() {
 	let url = "";
-	const val_props = ["server", "port", "path", "username", "password", "key",
-					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
-	for (let i = 0; i < val_props.length; i++) {
-		const prop = val_props[i];
+	for (let i = 0; i < VALUE_PROPERTIES.length; i++) {
+		const prop = VALUE_PROPERTIES[i];
 		const value = document.getElementById(prop).value;
 		url += add_prop(prop, value);
 	}
-	const bool_props = ["clipboard", "printing", "file_transfer",
-		"sound", "ignore_audio_blacklist",
-		"exit_with_children", "exit_with_client",
-		"sharing", "steal", "reconnect", "swap_keys",
-		"scroll_reverse_x", "scroll_reverse_y",
-		"video", "mediasource_video",
-		"ssl", "insecure", "encryption",
-		"floating_menu", "autohide", "clock",
-		"debug_main", "debug_keyboard", "debug_geometry", "debug_mouse", "debug_clipboard", "debug_draw", "debug_audio", "debug_network",
-	];
-	for (let i = 0; i < bool_props.length; i++) {
-		const prop = bool_props[i];
+	for (let i = 0; i < BOOLEAN_PROPERTIES.length; i++) {
+		const prop = BOOLEAN_PROPERTIES[i];
 		url += add_prop(prop, document.getElementById(prop).checked);
 	}
 	return url;
