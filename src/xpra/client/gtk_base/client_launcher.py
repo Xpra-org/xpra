@@ -907,12 +907,17 @@ class ApplicationWindow:
             self.set_info_text("Running")
             self.window.hide()
         self.client.connect("first-ui-received", first_ui_received)
+        if Gtk.main_level()>0:
+            #no need to start a new main loop:
+            self.client.gtk_main = noop
         try:
             self.client.run()
             log("client.run() returned")
         except Exception as e:
             log.error("client error", exc_info=True)
             self.handle_exception(e)
+        if self.client.gtk_main==noop:
+            return
         log("exit_launcher=%s", self.exit_launcher)
         #if we're using "autoconnect",
         #the main loop was running from here,
