@@ -968,7 +968,7 @@ def get_defaults():
                     "ssl-server-verify-mode"   : "required",
                     "ssl-verify-flags"  : "X509_STRICT",
                     "ssl-check-hostname": False,
-                    "ssl-server-hostname": "localhost",
+                    "ssl-server-hostname": "",
                     "ssl-options"       : "ALL,NO_COMPRESSION",
                     "quality"           : 0,
                     "min-quality"       : 30,

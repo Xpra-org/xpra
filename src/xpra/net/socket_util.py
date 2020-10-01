@@ -834,7 +834,7 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
         else:
             purpose = ssl.Purpose.SERVER_AUTH   #@UndefinedVariable
             context.check_hostname = check_hostname
-            ssllog(" check_hostname=%s", check_hostname)
+            ssllog(" check_hostname=%s, server_hostname=%s", check_hostname, server_hostname)
             if context.check_hostname:
                 if not server_hostname:
                     raise InitException("ssl error: check-hostname is set but server-hostname is not")
@@ -843,8 +843,8 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
         context.load_default_certs(purpose)
 
         if not ca_certs or ca_certs.lower()=="default":
-            ssllog(" loading default verify paths")
-            context.set_default_verify_paths()
+            ssllog(" using default certs")
+            #load_default_certs already calls set_default_verify_paths()
         elif not os.path.exists(ca_certs):
             raise InitException("invalid ssl-ca-certs file or directory: %s" % ca_certs)
         elif os.path.isdir(ca_certs):

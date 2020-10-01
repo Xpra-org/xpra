@@ -1415,6 +1415,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             if strict_host_check is False:
                 opts.ssl_server_verify_mode = "none"
             from xpra.net.socket_util import ssl_wrap_socket, get_ssl_attributes
+            if not opts.ssl_server_hostname:
+                #if the server hostname was not specified explicitly,
+                #use the one from the connection string:
+                opts.ssl_server_hostname = host
             kwargs = get_ssl_attributes(opts, server_side=False, overrides=display_desc)
             sock = ssl_wrap_socket(sock, **kwargs)
             assert sock, "failed to wrap socket %s" % sock
