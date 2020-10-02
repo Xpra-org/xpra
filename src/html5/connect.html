@@ -364,14 +364,6 @@ function downloadConnectionFile() {
 		const prop = FILE_PROPERTIES[i];
 		const prop_name = FILE_TRANSLATION[prop] || prop;
 		const value = document.getElementById(prop).value;
-		if (prop=="port" && !value) {
-			if (ssl) {
-				port = "443";
-			}
-			else {
-				port = "80";
-			}
-		}
 		if (value!=="") {
 			data += prop_name+"="+value+"\n";
 		}
@@ -477,11 +469,16 @@ function fill_form(default_settings) {
 	if (path && path.endsWith("/index.html")) {
 		path = path.substr(0, path.lastIndexOf("/"));
 	}
+	const https = document.location.protocol=="https:";
+	var protocol_port=80;
+	if(https){
+		protocol_port=443;
+	}
 	document.getElementById("server").value = getparam("server") || link.hostname;
-	document.getElementById("port").value = getparam("port") || link.port;
+	document.getElementById("port").value = getparam("port") || link.port || protocol_port;
 	document.getElementById("path").value = path || pathname;
 	document.getElementById("username").value = getparam("username") || "";
-	const https = document.location.protocol=="https:";
+
 	const ssl = getboolparam("ssl", https);
 	const insecure = getboolparam("insecure", false);
 	$('input#ssl').prop("checked", ssl);
