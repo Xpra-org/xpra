@@ -5,6 +5,7 @@
 
 import sys
 import os
+import shlex
 import socket
 import signal
 from subprocess import PIPE, Popen
@@ -44,6 +45,7 @@ KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
 PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 assert PASSWORD_RETRY>=0
+MAGIC_QUOTES = envbool("XPRA_MAGIC_QUOTES", True)
 
 
 def keymd5(k) -> str:
@@ -804,7 +806,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         ssh_fail_cb = ssh_connect_failed
     sshpass_command = None
     try:
-        cmd = display_desc["full_ssh"]
+        cmd = list(display_desc["full_ssh"])
         kwargs = {}
         env = display_desc.get("env")
         kwargs["stderr"] = sys.stderr
@@ -842,8 +844,15 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
         if INITENV_COMMAND:
             remote_cmd = INITENV_COMMAND + ";" + remote_cmd
-        #this gives us better compatibility with weird login shells:
-        cmd.append("sh -c '%s'" % remote_cmd)
+        #how many times we need to escape the remote command string
+        #depends on how many times the ssh command is parsed
+        if MAGIC_QUOTES:
+            nssh = sum(int(x=="ssh") for x in cmd)
+            for _ in range(nssh):
+                remote_cmd = shlex.quote(remote_cmd)
+        else:
+            remote_cmd = "'%s'" % remote_cmd
+        cmd.append("sh -c %s" % remote_cmd)
         if debug_cb:
             debug_cb("starting %s tunnel" % str(cmd[0]))
         #non-string arguments can make Popen choke,
