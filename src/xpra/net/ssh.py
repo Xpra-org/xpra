@@ -45,7 +45,7 @@ KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
 PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 assert PASSWORD_RETRY>=0
-MAGIC_QUOTES = envbool("XPRA_MAGIC_QUOTES", True)
+MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 
 
 def keymd5(k) -> str:
