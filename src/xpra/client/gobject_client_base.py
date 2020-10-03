@@ -484,6 +484,7 @@ class VersionXpraClient(HelloRequestClient):
             self.warn_and_quit(EXIT_FAILURE, "server did not provide the version information")
         else:
             sys.stdout.write("%s\n" % (v,))
+            sys.stdout.flush()
             self.quit(EXIT_OK)
 
 
