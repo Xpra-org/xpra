@@ -18,7 +18,7 @@ from time import sleep, time
 
 from xpra.version_util import (
     XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full,
-    get_platform_info, get_host_info, noerr,
+    get_platform_info, get_host_info,
     )
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
@@ -48,7 +48,7 @@ from xpra.os_util import (
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.make_thread import start_thread
 from xpra.util import (
-    first_time,
+    first_time, noerr,
     csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
     ellipsizer, dump_all_frames, nonl, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
