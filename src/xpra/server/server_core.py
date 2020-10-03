@@ -373,7 +373,7 @@ class ServerCore:
 
     def server_is_ready(self):
         log.info("xpra is ready.")
-        sys.stdout.flush()
+        noerr(sys.stdout.flush)
 
     def do_run(self):
         raise NotImplementedError()
