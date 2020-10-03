@@ -129,7 +129,7 @@ class ProxyServer(ServerCore):
 
     def _process_proxy_shutdown_server(self, proto, _packet):
         assert proto in self._requests
-        self.quit(False)
+        self.clean_quit(False)
 
 
     def print_screen_info(self):
