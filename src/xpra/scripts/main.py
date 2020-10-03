@@ -456,6 +456,13 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
             ):
             # use splash screen to show server startup progress:
             progress = make_progress_process()
+            def stop_progress_process():
+                if progress.poll() is not None:
+                    return
+                try:
+                    progress.terminate()
+                except Exception:
+                    pass
             def show_progress(pct, text=""):
                 if progress.poll() is not None:
                     return
@@ -465,15 +472,10 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                     #it should exit on its own, but just in case:
                     #kill it if it's still running after 2 seconds
                     from gi.repository import GLib
-                    def stop_progress_process():
-                        if progress.poll() is not None:
-                            return
-                        try:
-                            progress.terminate()
-                        except Exception:
-                            pass
                     GLib.timeout_add(2000, stop_progress_process)
             progress_cb = show_progress
+            from xpra.scripts.server import add_cleanup
+            add_cleanup(stop_progress_process)
         current_display = nox()
         try:
             from xpra import server
