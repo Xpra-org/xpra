@@ -48,7 +48,7 @@ from xpra.os_util import (
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.make_thread import start_thread
 from xpra.util import (
-    first_time,
+    first_time, noerr,
     csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
     ellipsizer, dump_all_frames, nonl, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
@@ -398,7 +398,7 @@ class ServerCore:
         log("quit(%s)", upgrading)
         self._upgrading = upgrading
         self.closing()
-        sys.stdout.flush()
+        noerr(sys.stdout.flush)
         self.do_quit()
         log("quit(%s) do_quit done!", upgrading)
         dump_all_frames()
@@ -440,7 +440,7 @@ class ServerCore:
 
     def server_is_ready(self):
         log.info("xpra is ready.")
-        sys.stdout.flush()
+        noerr(sys.stdout.flush)
 
     def do_run(self):
         raise NotImplementedError()
