@@ -339,7 +339,10 @@ class ServerCore:
     def closing(self):
         if not self._closing:
             self._closing = True
-            log.info("xpra %s server is %s", self.get_server_mode(), ["terminating", "exiting"][bool(self._upgrading)])
+            self.log_closing_message()
+
+    def log_closing_message(self):
+        log.info("xpra %s server is %s", self.get_server_mode(), ["terminating", "exiting"][bool(self._upgrading)])
 
     def do_quit(self):
         raise NotImplementedError()

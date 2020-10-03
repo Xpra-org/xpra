@@ -193,7 +193,7 @@ class ProxyServer(ServerCore):
 
     def cleanup(self):
         self.stop_all_proxies()
-        ServerCore.cleanup(self)
+        super().cleanup()
         start = monotonic_time()
         live = True
         log("cleanup() proxy instances: %s", self.instances)
@@ -211,10 +211,12 @@ class ProxyServer(ServerCore):
 
     def do_quit(self):
         self.main_loop.quit()
-        log.info("Proxy Server process ended")
         #from now on, we can't rely on the main loop:
         from xpra.os_util import register_SIGUSR_signals
         register_SIGUSR_signals()
+
+    def log_closing_message(self):
+        log.info("Proxy Server process ended")
 
 
     def verify_connection_accepted(self, protocol):
