@@ -18,7 +18,7 @@ from time import sleep, time
 
 from xpra.version_util import (
     XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full,
-    get_platform_info, get_host_info,
+    get_platform_info, get_host_info, noerr,
     )
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
@@ -331,7 +331,7 @@ class ServerCore:
         log("quit(%s)", upgrading)
         self._upgrading = upgrading
         self.closing()
-        sys.stdout.flush()
+        noerr(sys.stdout.flush)
         self.do_quit()
         log("quit(%s) do_quit done!", upgrading)
         dump_all_frames()
