@@ -243,7 +243,12 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     def control_socket_loop(self):
         while not self.exit:
             log("waiting for connection on %s", self.control_socket_path)
-            sock, address = self.control_socket.accept()
+            try:
+                sock, address = self.control_socket.accept()
+            except OSError as e:
+                log("control_socket=%s", self.control_socket, exc_info=True)
+                log.error("Error accepting socket connection on %s", self.control_socket)
+                log.error(" %s", e)
             self.new_control_connection(sock, address)
 
     def new_control_connection(self, sock, address):
