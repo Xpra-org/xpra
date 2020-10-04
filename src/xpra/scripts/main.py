@@ -1260,6 +1260,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         if strict_host_check is False:
             opts.ssl_server_verify_mode = "none"
         if dtype in ("ssl", "wss"):
+            if not opts.ssl_server_hostname:
+                #if the server hostname was not specified explicitly,
+                #use the one from the connection string:
+                opts.ssl_server_hostname = host
             wrap_socket = ssl_wrap_socket_fn(opts, server_side=False)
             sock = wrap_socket(sock)
             assert sock, "failed to wrap socket %s" % sock
@@ -1415,10 +1419,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             ssllog.debug("do_wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
-            if not opts.ssl_server_hostname:
-                #if the server hostname was not specified explicitly,
-                #use the one from the connection string:
-                opts.ssl_server_hostname = host
                 return None
             raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e))
         if not server_side:
