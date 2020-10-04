@@ -870,17 +870,45 @@ fi
 
 
 %changelog
-* Thu Aug 20 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1
+* Sun Oct 04 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1
+- fix memory leak with 'scroll' encoding
+- fix proxy control socket becoming unresponsive after errors
+- fix proxy shutdown
+- fix shadow server dbus call causing all further "xpra info" requests to fail
+- fix error in dbus debug logging
+- fix client using an invalid list of encodings
 - fix NVENC encoder (profile errors, cleanup race condition)
 - fix unmanaged X11 message call which could cause GTK to crash when it fails
+- fix missing auto-refresh leaving a blurry image
+- fix missing pixels on the edge of video areas in 'auto' encoding mode
+- fix connection errors with notifications disabled on the server
 - fix 'sync-xvfb' option: setup error, non-standard bit depth support
+- fix incomplete repaints when window contents have padding
 - fix missing system tray on Ubuntu 18.04
 - fix workspace spurious warnings on 64-bit X11 systems
 - fix event handler with 64-bit MS Windows builds
 - fix named-pipe server clash
 - fix error handing in MS Windows printer query API
+- fix ssl server hostname verification errors
+- fix ssl certificate verification error detection with python2 builds
+- fix missing 'openssl' dependency in DEB packages
+- fix syntax errors when using connections using nested ssh tunnels
+- fix syntax error in HTML5 client maximize toggle
+- fix HTML5 client keyboard layout detection with Internet Explorer
+- fix window re-initialization errors
+- fix keysym mapping with Xkb and some specific configurations
+- fix right click on systray using the gtk StatusIcon implementation
+- fix small file transfers not showing as completed
+- fix file-transfer identifiers getting lost
+- fix int overflow errors on some 64-bit mswindows installations
+- fix hard to trigger mmap memory leak
+- add support for sm86 architecture with CUDA 11.1
+- allow 'pager' source indication value to activate window server-side
+- fix websocket compatibility with some client / middleware
 - switch to Xvfb on Debian and Ubuntu
+- workaround corruption on some windows when maximized
 - workaround more pyxdg bugs
+- MacOS and MS Windows: fix security issue in brotli decompression
 - ignore plink packaging errors with 32-bit MS Windows builds
 - disable swscale on 32-bit MS Windows builds (prevent crashes)
 - tabs mixed with spaces (potential for bug)
