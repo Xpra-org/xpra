@@ -1,3 +1,13 @@
+v4.0.5 (2020-10-04)
+======================
+	-- fix ssl server hostname verification errors
+	-- fix HTML5 client keyboard layout detection with Internet Explorer
+	-- fix syntax errors when using connections using nested ssh tunnels
+	-- fix proxy control socket becoming unresponsive after errors
+	-- fix proxy shutdown
+	-- fix stdout errors causing server startup or shutdown problems
+
+
 v4.0.4 (2020-09-26)
 ======================
 	-- fix memory leak with 'scroll' encoding

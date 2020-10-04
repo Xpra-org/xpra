@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 4.0.4
+%define version 4.0.5
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -586,6 +586,14 @@ fi
 
 
 %changelog
+* Sun Oct 04 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
+- fix ssl server hostname verification errors
+- fix HTML5 client keyboard layout detection with Internet Explorer
+- fix syntax errors when using connections using nested ssh tunnels
+- fix proxy control socket becoming unresponsive after errors
+- fix proxy shutdown
+- fix stdout errors causing server startup or shutdown problems
+
 * Sat Sep 26 2020 Antoine Martin <antoine@xpra.org> 4.0.4-10
 - fix memory leak with 'scroll' encoding
 - fix NVENC encoder (profile errors)
