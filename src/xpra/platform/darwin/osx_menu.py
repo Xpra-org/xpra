@@ -9,7 +9,7 @@ from xpra.util import envbool, csv
 from xpra.gtk_common.gtk_util import scaled_image
 from xpra.gtk_common.about import about
 from xpra.client.gtk_base.gtk_tray_menu_base import (
-    GTKTrayMenuBase, populate_encodingsmenu,
+    GTKTrayMenuBase,
     CLIPBOARD_LABEL_TO_NAME, CLIPBOARD_NAME_TO_LABEL, CLIPBOARD_LABELS,
     CLIPBOARD_DIRECTION_LABELS, CLIPBOARD_DIRECTION_NAME_TO_LABEL,
     SHOW_UPLOAD, SHOW_VERSION_CHECK, RUNCOMMAND_MENU, SHOW_SERVER_COMMANDS, SHOW_SHUTDOWN,
@@ -226,6 +226,7 @@ class OSXMenuHelper(GTKTrayMenuBase):
                 encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
                 encodings.insert(0, "auto")
                 server_encodings.insert(0, "auto")
+                from xpra.client.gtk_base.menu_helper import populate_encodingsmenu
                 populate_encodingsmenu(encodings_menu, self.get_current_encoding, self.set_current_encoding, encodings, server_encodings)
             self.client.after_handshake(set_encodings_menu)
             menus.append(("Encoding", encodings_menu))
