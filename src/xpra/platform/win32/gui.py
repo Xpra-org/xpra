@@ -1104,15 +1104,17 @@ class ClientExtras:
         msg = MSG()
         lpmsg = byref(msg)
         while not self._exit:
-            ret = GetMessageA(lpmsg, None, 0, 0)
-            keylog("init_keyboard_listener: GetMessage()=%s", ret)
+            ret = GetMessageA(lpmsg, 0, 0, 0)
+            keylog("keyboard listener: GetMessage()=%s", ret)
             if ret==-1:
                 raise ctypes.WinError(ctypes.get_last_error())
             if ret==0:
                 keylog("GetMessage()=0, exiting loop")
                 return
-            TranslateMessage(lpmsg)
-            DispatchMessageA(lpmsg)
+            r = TranslateMessage(lpmsg)
+            keylog("TranslateMessage(%#x)=%s", lpmsg, r)
+            r = DispatchMessageA(lpmsg)
+            keylog("DispatchMessageA(%#x)=%s", lpmsg, r)
 
 
     def wm_move(self, wParam, lParam):

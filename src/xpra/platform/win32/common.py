@@ -15,7 +15,7 @@ from ctypes.wintypes import (
     SHORT, ATOM, RECT, POINT, MAX_PATH, WCHAR, BYTE,
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
-    HINSTANCE, HMENU, ULONG, HHOOK,
+    HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
     )
 #imported from this module but not used here:
 assert GetLastError
@@ -319,8 +319,14 @@ SetWindowsHookExA = user32.SetWindowsHookExA
 SetWindowsHookExA.restype = HHOOK
 SetWindowsHookExA.argtypes = [INT, HANDLE, HINSTANCE, DWORD]
 GetMessageA = user32.GetMessageA
+GetMessageA.restype = BOOL
+GetMessageA.argtypes = [LPMSG, HWND, UINT, UINT]
 TranslateMessage = user32.TranslateMessage
+TranslateMessage.restype = BOOL
+TranslateMessage.argtypes = [LPMSG]
 DispatchMessageA = user32.DispatchMessageA
+DispatchMessageA.restype = LRESULT
+DispatchMessageA.argtypes = [LPMSG]
 MapVirtualKeyW = user32.MapVirtualKeyW
 GetKeyboardState = user32.GetKeyboardState
 GetKeyboardState.argtypes = [PBYTE]
