@@ -1105,8 +1105,8 @@ class ClientExtras(object):
         msg = MSG()
         lpmsg = byref(msg)
         while not self._exit:
-            ret = GetMessageA(lpmsg, None, 0, 0)
-            keylog("init_keyboard_listener: GetMessage()=%s", ret)
+            ret = GetMessageA(lpmsg, 0, 0, 0)
+            keylog("keyboard listener: GetMessage()=%s", ret)
             if ret==-1:
                 raise ctypes.WinError(ctypes.get_last_error())
             elif ret==0:
