@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import uuid
 from hashlib import sha1
 from base64 import b64encode
@@ -17,12 +18,7 @@ MAX_WRITE_TIME = 5
 MAX_READ_TIME = 5
 READ_CHUNK_SIZE = 4096
 
-HEADERS = {
-    b"Connection"               : b"Upgrade",
-    b"Upgrade"                  : b"websocket",
-    b"Sec-WebSocket-Version"    : b"13",
-    b"Sec-WebSocket-Protocol"   : b"binary",
-    }
+HEADERS_MODULES = os.environ.get("XPRA_WEBSOCKET_HEADERS_MODULES", "default").split(",")
 
 
 def make_websocket_accept_hash(key):
@@ -30,13 +26,30 @@ def make_websocket_accept_hash(key):
     accept = sha1(strtobytes(key) + GUID).digest()
     return b64encode(accept)
 
+def get_headers(host, port):
+    headers = {}
+    for mod_name in HEADERS_MODULES:
+        try:
+            header_module = __import__("xpra.net.websockets.headers.%s" % mod_name, {}, {}, ["get_headers"])
+            v = header_module.get_headers(host, port)
+            log("%s.get_headers(%s, %s)=%s", mod_name, host, port, v)
+            headers.update(v)
+        except ImportError as e:
+            log("import %s", mod_name, exc_info=True)
+            log.error("Error: websocket header module %s not available", mod_name)
+            log.error(" %s", e)
+        except Exception as e:
+            log("get_headers %s", mod_name, exc_info=True)
+            log.error("Error: cannot get headers from '%s'", mod_name)
+            log.error(" %s", e)
+    return headers
+
+
 def client_upgrade(read, write, host, port):
     lines = [b"GET / HTTP/1.1"]
     key = b64encode(uuid.uuid4().bytes)
-    headers = HEADERS.copy()
+    headers = get_headers(host, port)
     headers[b"Sec-WebSocket-Key"] = key
-    if host:
-        headers[b"Host"] = strtobytes("%s:%s" % (host, port))
     for k,v in headers.items():
         lines.append(b"%s: %s" % (k, v))
     lines.append(b"")
@@ -50,7 +63,7 @@ def client_upgrade(read, write, host, port):
 
     now = monotonic_time()
     response = b""
-    while ("Sec-WebSocket-Protocol".lower() not in response.decode("utf-8").lower()) and monotonic_time()-now<MAX_READ_TIME:
+    while ("sec-websocket-protocol" not in response.decode("utf-8").lower()) and monotonic_time()-now<MAX_READ_TIME:
         response += read(READ_CHUNK_SIZE)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)
