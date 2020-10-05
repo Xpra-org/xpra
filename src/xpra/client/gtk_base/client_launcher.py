@@ -35,8 +35,9 @@ from xpra.make_thread import start_thread
 from xpra.client.gtk_base.menu_helper import make_encodingsmenu
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
-    connect_to, make_client, configure_network, is_local,
+    connect_to, make_client, is_local,
     add_ssh_args, parse_ssh_string, add_ssh_proxy_args,
+    configure_network, configure_env, configure_logging,
     )
 from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
@@ -805,6 +806,9 @@ class ApplicationWindow:
         #so update the client now:
         def raise_exception(*args):
             raise Exception(*args)
+        configure_env(self.config.env)
+        configure_logging(self.config, "attach")
+        configure_network(self.config)
         self.client = make_client(raise_exception, self.config)
         self.client.show_progress(30, "client configuration")
         self.client.init(self.config)
