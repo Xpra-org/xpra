@@ -889,32 +889,38 @@
 				}
 				wait_for_time();
 			}
-			
+
 			function toggle_fullscreen() {
-				var f_el = document.fullscreenElement || document.mozFullScreen || document.webkitIsFullScreen || document.msFullscreenElement;
-					if (!f_el) {
-						var elem = document.getElementById("fullscreen_button");
-						var req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+				const f_el = document.hasOwnProperty("requestFullScreen") || document.hasOwnProperty("webkitRequestFullScreen") || document.hasOwnProperty("mozRequestFullScreen") || document.hasOwnProperty("msRequestFullscreen");
+				if (!f_el) {
+					const elem = document.getElementById("fullscreen_button");
+					var is_fullscreen = document.fullScreen || document.mozFullScreen || document.webkitIsFullScreen;
+					if (!is_fullscreen) {
+						const req = elem.requestFullScreen || elem.webkitRequestFullScreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
 						if (req) {
 							req.call(document.body);
+							$('#fullscreen').attr('src', './icons/unfullscreen.png');
+							elem.title = "Exit Fullscreen";
+							$('#fullscreen_button').attr('data-icon', 'fullscreen_exit');
 						}
-
-						$('#fullscreen').attr('src', './icons/unfullscreen.png');
-						$('#fullscreen_button').attr('data-icon', 'fullscreen_exit');
-
 					} else {
 						if (document.exitFullscreen) {
 							document.exitFullscreen();
 						} else if (document.webkitExitFullscreen) {
 							document.webkitExitFullscreen();
-						} else if (document.mozCancelFullScreen) {
+						} else if (document.hasOwnProperty("mozCancelFullScreen")) {
 							document.mozCancelFullScreen();
-						} else if (document.msExitFullscreen) {
+						} else if (document.hasOwnProperty("msExitFullscreen")) {
 							document.msExitFullscreen();
 						}
+
+						$('#fullscreen').attr('src', './icons/fullscreen.png');
+						elem.title = "Fullscreen";
+						$('#fullscreen_button').attr('data-icon', 'fullscreen');
 					}
+				}
 			}
-			
+
 			function expand_float_menu(){
 				var expanded_width = (float_menu_item_size*4);
 				document.getElementById('float_menu').style.width = expanded_width +'px';
