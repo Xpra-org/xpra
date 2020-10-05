@@ -497,7 +497,10 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             from xpra.platform.win32.namedpipes.listener import NamedPipeListener
             for sockpath, options in sockpaths.items():
                 npl = NamedPipeListener(sockpath)
-                log.info("created named pipe '%s'", sockpath)
+                ppath = sockpath
+                if ppath.startswith(dotxpra.PIPE_PATH):
+                    ppath = ppath[len(dotxpra.PIPE_PATH):]
+                log.info("created named pipe '%s'", ppath)
                 defs[("named-pipe", npl, sockpath, npl.stop)] = options
         else:
             def checkstate(sockpath, state):
