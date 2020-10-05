@@ -1272,6 +1272,7 @@ if WIN32:
             external_includes += ["multiprocessing", "setproctitle"]
 
         external_includes += ["encodings"]
+        external_includes += ["mimetypes"]
         if client_ENABLED:
             #for parsing "open-command":
             external_includes += ["shlex"]
@@ -1640,6 +1641,7 @@ else:
             modules.append("UserString")
         #to support GStreamer 1.x we need this:
         modules.append("importlib")
+        modules.append("mimetypes")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
