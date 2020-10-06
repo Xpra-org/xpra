@@ -248,7 +248,7 @@ class DisplayClient(StubClientMixin):
             if self.server_is_desktop and not self.desktop_fullscreen:
                 #don't honour auto mode in this case
                 if self.desktop_scaling=="auto":
-                    log.info(" not scaling a shadow server")
+                    log.info(" not scaling a %s server", c.strget("type", "shadow"))
                     skip_vfb_size_check = self.xscale>1 or self.yscale>1
                     self.scale_change_embargo = 0
                     self.scalingoff()
