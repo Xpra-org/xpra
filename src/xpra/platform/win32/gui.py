@@ -1029,6 +1029,7 @@ class ClientExtras:
                           win32con.WM_SYSKEYUP      : "SYSKEYUP",
                           }
         def low_level_keyboard_handler(nCode, wParam, lParam):
+            log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
             try:
                 scan_code = lParam.contents.scan_code
                 vk_code = lParam.contents.vk_code
@@ -1092,7 +1093,7 @@ class ClientExtras:
             except Exception as e:
                 keylog.error("Error: low level keyboard hook failed")
                 keylog.error(" %s", e)
-            return CallNextHookEx(keyboard_hook_id, nCode, wParam, lParam)
+            return CallNextHookEx(0, nCode, wParam, lParam)
         # Our low level handler signature.
         CMPFUNC = CFUNCTYPE(c_int, WPARAM, LPARAM, POINTER(KBDLLHOOKSTRUCT))
         # Convert the Python handler into C pointer.
