@@ -1412,10 +1412,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             purpose = ssl.Purpose.SERVER_AUTH   #@UndefinedVariable
             context.check_hostname = opts.ssl_check_hostname
             ssllog("ssl_wrap_socket_fn: check_hostname=%s", opts.ssl_check_hostname)
-            if context.check_hostname:
-                if not opts.ssl_server_hostname:
-                    raise InitException("ssl error: check-hostname is set but server-hostname is not")
-                kwargs["server_hostname"] = opts.ssl_server_hostname
         ssllog("ssl_wrap_socket_fn: load_default_certs(%s)", purpose)
         context.load_default_certs(purpose)
 
