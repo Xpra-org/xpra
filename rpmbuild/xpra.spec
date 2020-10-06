@@ -870,7 +870,7 @@ fi
 
 
 %changelog
-* Sun Oct 04 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1
+* Tue Oct 06 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1
 - fix memory leak with 'scroll' encoding
 - fix proxy control socket becoming unresponsive after errors
 - fix proxy shutdown
@@ -889,12 +889,15 @@ fi
 - fix event handler with 64-bit MS Windows builds
 - fix named-pipe server clash
 - fix error handing in MS Windows printer query API
+- fix keyboard overflow error on MS Windows
 - fix ssl server hostname verification errors
 - fix ssl certificate verification error detection with python2 builds
 - fix missing 'openssl' dependency in DEB packages
 - fix syntax errors when using connections using nested ssh tunnels
 - fix syntax error in HTML5 client maximize toggle
 - fix HTML5 client keyboard layout detection with Internet Explorer
+- fix HTML5 audio forwarding compatibility with Safari
+- fix HTML5 (un)fullscreen
 - fix window re-initialization errors
 - fix keysym mapping with Xkb and some specific configurations
 - fix right click on systray using the gtk StatusIcon implementation
@@ -909,6 +912,7 @@ fi
 - workaround corruption on some windows when maximized
 - workaround more pyxdg bugs
 - MacOS and MS Windows: fix security issue in brotli decompression
+- bundle mimetypes module (MacOS and MS Windows)
 - ignore plink packaging errors with 32-bit MS Windows builds
 - disable swscale on 32-bit MS Windows builds (prevent crashes)
 - tabs mixed with spaces (potential for bug)

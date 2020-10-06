@@ -17,12 +17,15 @@ xpra (3.0.12-1) UNRELEASED; urgency=low
   * fix event handler with 64-bit MS Windows builds
   * fix named-pipe server clash
   * fix error handing in MS Windows printer query API
+  * fix keyboard overflow error on MS Windows
   * fix ssl server hostname verification errors
   * fix ssl certificate verification error detection with python2 builds
   * fix missing 'openssl' dependency in DEB packages
   * fix syntax errors when using connections using nested ssh tunnels
   * fix syntax error in HTML5 client maximize toggle
   * fix HTML5 client keyboard layout detection with Internet Explorer
+  * fix HTML5 audio forwarding compatibility with Safari
+  * fix HTML5 (un)fullscreen
   * fix window re-initialization errors
   * fix keysym mapping with Xkb and some specific configurations
   * fix right click on systray using the gtk StatusIcon implementation
@@ -37,12 +40,13 @@ xpra (3.0.12-1) UNRELEASED; urgency=low
   * workaround corruption on some windows when maximized
   * workaround more pyxdg bugs
   * MacOS and MS Windows: fix security issue in brotli decompression
+  * bundle mimetypes module (MacOS and MS Windows)
   * ignore plink packaging errors with 32-bit MS Windows builds
   * disable swscale on 32-bit MS Windows builds (prevent crashes)
   * tabs mixed with spaces (potential for bug)
   * add missing DEB dependency
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 04 Oct 2020 19:30:23 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Oct 2020 16:15:50 +0700
 
 xpra (3.0.11-1) UNRELEASED; urgency=low
   * fix encryption option overzealously enforced on all socket types
