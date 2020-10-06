@@ -846,8 +846,8 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             remote_cmd = INITENV_COMMAND + ";" + remote_cmd
         #how many times we need to escape the remote command string
         #depends on how many times the ssh command is parsed
-        if MAGIC_QUOTES:
-            nssh = sum(int(x=="ssh") for x in cmd)
+        nssh = sum(int(x=="ssh") for x in cmd)
+        if nssh>=2 and MAGIC_QUOTES:
             for _ in range(nssh):
                 remote_cmd = shlex.quote(remote_cmd)
         else:
