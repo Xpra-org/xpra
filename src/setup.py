@@ -382,7 +382,7 @@ if not PYTHON3:
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
 if not html5_ENABLED:
-    external_excludes += ["BaseHTTPServer", "mimetypes"]
+    external_excludes += ["BaseHTTPServer"]
 if not html5_ENABLED and not client_ENABLED:
     external_excludes += ["mimetools"]
 
