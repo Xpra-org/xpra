@@ -17,7 +17,7 @@ from ctypes.wintypes import (
 from ctypes.wintypes import (
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
-    HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
+    HINSTANCE, HMENU, ULONG, HHOOK, MSG,
     )
 #imported from this module but not used here:
 assert GetLastError
@@ -31,6 +31,7 @@ PBYTE = POINTER(BYTE)
 HCURSOR = HANDLE
 HICON = HANDLE
 HBRUSH = HANDLE
+LPMSG = POINTER(MSG)
 
 class CURSORINFO(Structure):
     _fields_ = [
