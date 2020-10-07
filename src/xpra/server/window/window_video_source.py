@@ -556,7 +556,7 @@ class WindowVideoSource(WindowSource):
         vsr = self.video_subregion
         if vsr:
             vsr.cancel_refresh_timer()
-        self.scroll_data = None
+        self.free_scroll_data()
         self.last_scroll_time = 0
         WindowSource.cancel_damage(self)
         #we must clean the video encoder to ensure
@@ -573,7 +573,7 @@ class WindowVideoSource(WindowSource):
             else:
                 #keep the region, but cancel the refresh:
                 vs.cancel_refresh_timer()
-        self.scroll_data = None
+        self.free_scroll_data()
         self.last_scroll_time = 0
         if self.non_video_encodings:
             #refresh the whole window in one go:
@@ -584,6 +584,16 @@ class WindowVideoSource(WindowSource):
         self.free_scroll_data()
         self.last_scroll_time = 0
         super().timer_full_refresh()
+
+    def free_scroll_data(self):
+        self.call_in_encode_thread(False, self.do_free_scroll_data)
+
+    def do_free_scroll_data(self):
+        scrolllog("do_free_scroll_data()")
+        sd = self.scroll_data
+        if sd:
+            self.scroll_data = None
+            sd.free()
 
 
     def quality_changed(self, window, *args):
