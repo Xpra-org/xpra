@@ -583,7 +583,7 @@ class WindowVideoSource(WindowSource):
     def timer_full_refresh(self):
         self.free_scroll_data()
         self.last_scroll_time = 0
-        super().timer_full_refresh()
+        WindowSource.timer_full_refresh(self)
 
     def free_scroll_data(self):
         self.call_in_encode_thread(False, self.do_free_scroll_data)
