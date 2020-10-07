@@ -764,7 +764,8 @@ cdef class ColorspaceConverter:
         cdef unsigned int i
         for i in range(3):
             assert object_as_buffer(pixels[i], <const void**> &gbrp10[i], &pic_buf_len[i])==0
-            assert pic_buf_len[i]>=src_stride*h, "input plane '%s' is too small: %i bytes" % ("GBR"[i], pic_buf_len[i])
+            assert pic_buf_len[i]>0, "invalid pixel buffer size: %i" % (pic_buf_len[i])
+            assert (<unsigned long> pic_buf_len[i])>=src_stride*h, "input plane '%s' is too small: %i bytes" % ("GBR"[i], pic_buf_len[i])
 
         #allocate output buffer:
         cdef unsigned int *r210 = <unsigned int*> memalign(self.dst_sizes[0])
