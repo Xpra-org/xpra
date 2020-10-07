@@ -6,7 +6,10 @@
 import uuid
 from hashlib import sha1
 from base64 import b64encode
-from requests.structures import CaseInsensitiveDict
+try:
+    from requests.structures import CaseInsensitiveDict
+except ImportError:
+    CaseInsensitiveDict = dict
 
 from xpra.os_util import strtobytes, bytestostr, monotonic_time
 from xpra.log import Logger
