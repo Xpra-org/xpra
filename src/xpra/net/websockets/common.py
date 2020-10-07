@@ -7,7 +7,6 @@ import os
 import uuid
 from hashlib import sha1
 from base64 import b64encode
-from requests.structures import CaseInsensitiveDict
 
 from xpra.os_util import strtobytes, bytestostr, monotonic_time
 from xpra.log import Logger
@@ -77,21 +76,20 @@ def parse_response_header(response):
     for line in lines:
         parts = line.split(b": ", 1)
         if len(parts)==2:
-            headers[parts[0]] = parts[1]
+            headers[parts[0].lower()] = parts[1]
     return headers
 
 def verify_response_headers(headers, key):
     log("verify_response_headers(%s)", headers)
     if not headers:
         raise Exception("no http headers found in response")
-    headers = CaseInsensitiveDict(headers)
-    upgrade = headers.get(b"Upgrade", b"")
+    upgrade = headers.get(b"upgrade", b"")
     if upgrade!=b"websocket":
         raise Exception("invalid http upgrade: '%s'" % upgrade)
-    protocol = headers.get(b"Sec-WebSocket-Protocol", b"")
+    protocol = headers.get(b"sec-websocket-protocol", b"")
     if protocol!=b"binary":
         raise Exception("invalid websocket protocol: '%s'" % protocol)
-    accept_key = headers.get(b"Sec-WebSocket-Accept", b"")
+    accept_key = headers.get(b"sec-websocket-accept", b"")
     if not accept_key:
         raise Exception("websocket accept key is missing")
     expected_key = make_websocket_accept_hash(key)
