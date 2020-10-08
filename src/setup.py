@@ -1251,7 +1251,7 @@ if WIN32:
                                   ]
             external_includes += ["urllib", "http.cookiejar", "http.client"]
             #for websocket browser cookie
-            #external_includes += ["browser_cookie3", "pyaes", "pbkdf2", "keyring"]
+            external_includes += ["browser_cookie3", "pyaes", "pbkdf2", "keyring"]
 
         if dec_avcodec2_ENABLED:
             #why isn't this one picked up automatically?
