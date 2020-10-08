@@ -1040,6 +1040,8 @@ class ServerCore(object):
                 return None
             ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype)
             ssllog("ssl_wrap()=%s", ssl_conn)
+                    if conn is None:
+                        return
             return ssl_conn
 
         if socktype in ("ssl", "wss"):
