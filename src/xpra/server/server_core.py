@@ -1040,6 +1040,8 @@ class ServerCore:
                         return
                     ssllog("ws socket receiving ssl, upgrading")
                     conn = ssl_wrap()
+                    if conn is None:
+                        return
                 elif len(peek_data)>=2 and peek_data[0]==ord("P") and peek_data[1]==0:
                     self.new_conn_err(conn, sock, socktype, socket_info, "xpra",
                                       "packet looks like a plain xpra packet")
