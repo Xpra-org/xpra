@@ -555,7 +555,6 @@ class BaseWindowModel(CoreX11WindowModel):
         #   _NET_CURRENT_DESKTOP
         #   _NET_WM_PING responses
         # and maybe:
-        #   _NET_RESTACK_WINDOW
         #   _NET_WM_STATE (more fully)
 
         if event.message_type=="_NET_WM_STATE":
@@ -665,8 +664,10 @@ class BaseWindowModel(CoreX11WindowModel):
         if event.message_type=="_NET_RESTACK_WINDOW":
             source = {1 : "application", 2 : "pager"}.get(event.data[0], "default (%s)" % event.data[0])
             sibling_window = event.data[1]
-            log.info("%s not handled yet, sent to window %#x for sibling %#x from %s",
-                     event.message_type, event.window, sibling_window, source)
+            log("%s sent to window %#x for sibling %#x from %s",
+                event.message_type, event.window, sibling_window, source)
+            if event.detail==0: #Above=0
+                self.emit("raised", event)
             return True
         #TODO: maybe we should process _NET_MOVERESIZE_WINDOW here?
         # it may make sense to apply it to the client_window

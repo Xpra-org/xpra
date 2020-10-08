@@ -137,8 +137,7 @@ DEFAULT_NET_SUPPORTED = [
         "_MOTIF_WM_INFO",
 
         "_NET_REQUEST_FRAME_EXTENTS",
-        # Not at all yet:
-        #"_NET_RESTACK_WINDOW",
+        "_NET_RESTACK_WINDOW",
         ]
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 if FRAME_EXTENTS:
@@ -369,7 +368,6 @@ class Wm(GObject.GObject):
         #   _NET_CURRENT_DESKTOP
         #   _NET_WM_PING responses
         # and maybe:
-        #   _NET_RESTACK_WINDOW
         #   _NET_WM_STATE
         log("do_xpra_client_message_event(%s)", event)
         if event.message_type=="_NET_SHOWING_DESKTOP":
