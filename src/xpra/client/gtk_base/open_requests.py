@@ -30,6 +30,7 @@ from xpra.log import Logger
 log = Logger("gtk", "file")
 
 URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 320)
+REMOVE_ENTRY_DELAY = envint("XPRA_FILE_REMOVE_ENTRY_DELAY", 5)
 
 
 _instance = None
@@ -244,7 +245,7 @@ class OpenRequestsWindow:
         if error:
             stop_btn.hide()
             pb.set_text("Error: %s, file transfer aborted" % error)
-            GLib.timeout_add(5000, self.remove_entry, transfer_id)
+            GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
             return
         if pb:
             pb.set_fraction(position/total)
@@ -254,7 +255,7 @@ class OpenRequestsWindow:
             stop_btn.hide()
             pb.set_text("Complete: %sB" % std_unit(total))
             pb.set_show_text(True)
-            GLib.timeout_add(5000, self.remove_entry, transfer_id)
+            GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
 
 
     def show(self):
