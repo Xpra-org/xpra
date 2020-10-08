@@ -1122,7 +1122,7 @@ class ServerCore:
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
         socktype = conn.socktype_wrapped
         none_auth = not self.auth_classes[socktype]
-        sshlog("handle_ssh_connection(%s) socktype wrapped=%s", conn, socktype)
+        sshlog("handle_ssh_connection(%s, %s) socktype wrapped=%s", conn, socket_options, socktype)
         def ssh_password_authenticate(username, password):
             if not POSIX or getuid()!=0:
                 import getpass
