@@ -327,6 +327,7 @@ class WindowClient(StubClientMixin):
             #implemented in the gtk client:
             "min-size"                  : self.min_window_size,
             "max-size"                  : self.max_window_size,
+            "restack"                   : True,
             }
 
 
@@ -1077,7 +1078,11 @@ class WindowClient(StubClientMixin):
             window.resize(aw, ah, resize_counter)
 
     def _process_raise_window(self, packet):
-        #only implemented in gtk2 for now
+        #implemented in gtk subclass
+        pass
+
+    def _process_restack_window(self, packet):
+        #implemented in gtk subclass
         pass
 
 
@@ -1524,6 +1529,7 @@ class WindowClient(StubClientMixin):
             "new-override-redirect":self._process_new_override_redirect,
             "new-tray":             self._process_new_tray,
             "raise-window":         self._process_raise_window,
+            "restack-window":       self._process_restack_window,
             "initiate-moveresize":  self._process_initiate_moveresize,
             "window-move-resize":   self._process_window_move_resize,
             "window-resized":       self._process_window_resized,

@@ -11,7 +11,7 @@ from gi.repository import GObject, Gdk, GLib
 from xpra.util import envbool, first_time
 from xpra.os_util import bytestostr
 from xpra.x11.common import Unmanageable
-from xpra.gtk_common.gobject_util import one_arg_signal
+from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
 from xpra.x11.models.model_stub import WindowModelStub
@@ -37,6 +37,19 @@ FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
 
+# Re-stacking:
+Above = 0
+Below = 1
+TopIf = 2
+BottomIf = 3
+Opposite = 4
+RESTACKING_STR = {
+    Above : "Above",
+    Below : "Below",
+    TopIf : "TopIf",
+    BottomIf : "BottomIf",
+    Opposite : "Opposite",
+    }
 
 # grab stuff:
 NotifyNormal        = constants["NotifyNormal"]
@@ -156,7 +169,7 @@ class CoreX11WindowModel(WindowModelStub):
     __common_signals__ = {
         #signals we emit:
         "unmanaged"                     : one_arg_signal,
-        "raised"                        : one_arg_signal,
+        "restack"                       : two_arg_signal,
         "initiate-moveresize"           : one_arg_signal,
         "grab"                          : one_arg_signal,
         "ungrab"                        : one_arg_signal,
@@ -701,7 +714,7 @@ class CoreX11WindowModel(WindowModelStub):
         grablog("focus_in_event(%s) mode=%s, detail=%s",
             event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
         if event.mode==NotifyNormal and event.detail==NotifyNonlinearVirtual:
-            self.emit("raised", event)
+            self.emit("restack", Above, None)
         else:
             self.may_emit_grab(event)
 

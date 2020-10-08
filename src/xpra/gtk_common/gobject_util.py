@@ -11,6 +11,7 @@ def n_arg_signal(n):
     return (SIGNAL_RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_PYOBJECT,) * n)
 no_arg_signal = n_arg_signal(0)
 one_arg_signal = n_arg_signal(1)
+two_arg_signal = n_arg_signal(2)
 
 
 class AutoPropGObjectMixin:

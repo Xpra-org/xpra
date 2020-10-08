@@ -16,6 +16,7 @@ from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPR
 from xpra.log import Logger
 
 log = Logger("server")
+focuslog = Logger("focus")
 cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 bandwidthlog = Logger("bandwidth")
@@ -77,6 +78,7 @@ class WindowsMixin(StubSourceMixin):
         self.pointer_grabs = False
         self.window_min_size = 0, 0
         self.window_max_size = 0, 0
+        self.window_restack = False
         self.system_tray = False
         self.metadata_supported = ()
 
@@ -141,6 +143,7 @@ class WindowsMixin(StubSourceMixin):
         self.window_frame_sizes = typedict(c.dictget("window.frame_sizes", {}))
         self.window_min_size = c.inttupleget("window.min-size", (0, 0))
         self.window_max_size = c.inttupleget("window.max-size", (0, 0))
+        self.window_restack = c.boolget("window.restack", False)
         log("cursors=%s (encodings=%s), bell=%s",
             self.send_cursors, self.cursor_encodings, self.send_bell)
         #window filters:
@@ -471,6 +474,20 @@ class WindowsMixin(StubSourceMixin):
         if ws:
             ws.unmap()
 
+    def restack_window(self, wid, window, detail, sibling):
+        focuslog("restack_window%s", (wid, window, detail, sibling))
+        if not self.can_send_window(window):
+            return
+        if not self.window_restack:
+            #older clients can only handle "raise-window"
+            if detail!=0:
+                return
+            self.send_async("raise-window", wid)
+            return
+        sibling_wid = 0
+        if sibling:
+            sibling_wid = self.get_window_id(sibling)
+        self.send_async("restack-window", wid, detail, sibling_wid)
 
     def raise_window(self, wid, window):
         if not self.can_send_window(window):

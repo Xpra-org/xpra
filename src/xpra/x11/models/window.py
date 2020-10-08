@@ -590,8 +590,8 @@ class WindowModel(BaseWindowModel):
         if event.value_mask & CWWidth or event.value_mask & CWHeight:
             self._updateprop("requested-size", (rw, rh))
 
-        if event.value_mask & CWStackMode and event.detail==0:  #Above=0
-            self.emit("raised", event)
+        if event.value_mask & CWStackMode:
+            self.emit("restack", event.detail, event.above)
 
         if VALIDATE_CONFIGURE_REQUEST:
             w, h = self.calc_constrained_size(w, h, hints)

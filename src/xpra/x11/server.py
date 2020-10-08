@@ -551,7 +551,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         window.managed_connect("motion", self._motion_signaled)
         window.managed_connect("x11-property-changed", self._x11_property_changed)
         if not window.is_tray():
-            window.managed_connect("raised", self._raised_window)
+            window.managed_connect("restack", self._restack_window)
             window.managed_connect("initiate-moveresize", self._initiate_moveresize)
         window_prop_set = getattr(window, "prop_set", None)
         if window_prop_set:
@@ -836,16 +836,17 @@ class XpraServer(GObject.GObject, X11ServerBase):
         wsources[0].initiate_moveresize(wid, window, *event.data)
 
 
-    def _raised_window(self, window, event):
+    def _restack_window(self, window, detail, sibling):
         wid = self._window_to_id[window]
-        windowlog("raised window: %s (%s) wid=%s, current focus=%s", window, event, wid, self._has_focus)
+        focuslog("restack window(%s) wid=%s, current focus=%s", (window, detail, sibling), wid, self._has_focus)
         if self.last_raised!=wid:
+            #ensure we will raise the window for the next pointer event
             self.last_raised = None
-        if self._has_focus==wid:
+        if detail==0 and self._has_focus==wid:  #Above=0
             return
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
-                ss.raise_window(wid, window)
+                ss.restack_window(wid, window, detail, sibling)
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):

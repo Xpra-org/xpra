@@ -53,6 +53,7 @@ filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
 notifylog = Logger("gtk", "notify")
 grablog = Logger("client", "grab")
+focuslog = Logger("client", "focus")
 
 missing_cursor_names = set()
 
@@ -991,13 +992,22 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def _process_raise_window(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
-        log("going to raise window %s - %s", wid, window)
+        focuslog("going to raise window %s - %s", wid, window)
         if window:
             if window.has_toplevel_focus():
                 log("window already has top level focus")
                 return
             window.present()
 
+    def _process_restack_window(self, packet):
+        wid, detail, other_wid = packet[1:4]
+        above = bool(detail==0)
+        window = self._id_to_window.get(wid)
+        other_window = self._id_to_window.get(other_wid)
+        focuslog("restack window %s - %s %s %s",
+            wid, window, ["below", "above"][above], other_window)
+        if window:
+            window.get_window().restack(other_window, above)  #Above=0
 
     def opengl_setup_failure(self, summary = "Xpra OpenGL Acceleration Failure", body=""):
         def delayed_notify():

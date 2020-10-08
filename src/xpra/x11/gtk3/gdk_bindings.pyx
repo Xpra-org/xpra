@@ -1157,7 +1157,6 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
                 pyev.above = _gw(d, e.xconfigurerequest.above)
             except XError:
                 pyev.above = None
-            pyev.above = e.xconfigurerequest.above
             pyev.detail = e.xconfigurerequest.detail
             pyev.value_mask = e.xconfigurerequest.value_mask
         elif etype == SelectionRequest:

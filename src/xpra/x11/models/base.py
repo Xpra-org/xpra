@@ -7,7 +7,7 @@
 from gi.repository import GObject
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL
-from xpra.x11.models.core import CoreX11WindowModel, xswallow
+from xpra.x11.models.core import CoreX11WindowModel, xswallow, Above, RESTACKING_STR
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.x11.gtk_x11.gdk_bindings import get_pywindow, get_pyatom              #@UnresolvedImport
@@ -30,20 +30,22 @@ _NET_WM_STATE_REMOVE = 0
 _NET_WM_STATE_ADD    = 1
 _NET_WM_STATE_TOGGLE = 2
 STATE_STRING = {
-            _NET_WM_STATE_REMOVE    : "REMOVE",
-            _NET_WM_STATE_ADD       : "ADD",
-            _NET_WM_STATE_TOGGLE    : "TOGGLE",
-                }
+    _NET_WM_STATE_REMOVE    : "REMOVE",
+    _NET_WM_STATE_ADD       : "ADD",
+    _NET_WM_STATE_TOGGLE    : "TOGGLE",
+    }
 IconicState = constants["IconicState"]
 NormalState = constants["NormalState"]
 ICONIC_STATE_STRING = {
-                       IconicState  : "Iconic",
-                       NormalState  : "Normal",
-                       }
+    IconicState  : "Iconic",
+    NormalState  : "Normal",
+    }
 
 #add user friendly workspace logging:
-WORKSPACE_STR = {WORKSPACE_UNSET    : "UNSET",
-                 WORKSPACE_ALL      : "ALL"}
+WORKSPACE_STR = {
+    WORKSPACE_UNSET    : "UNSET",
+    WORKSPACE_ALL      : "ALL",
+    }
 def workspacestr(w):
     return WORKSPACE_STR.get(w, w)
 
@@ -629,7 +631,7 @@ class BaseWindowModel(CoreX11WindowModel):
             #if event.data[0] in ACTIVE_WINDOW_SOURCE:
             log("_NET_ACTIVE_WINDOW: %s", event)
             self.set_active()
-            self.emit("raised", event)
+            self.emit("restack", Above, None)
             return True
         if event.message_type=="_NET_WM_DESKTOP":
             workspace = int(event.data[0])
@@ -664,10 +666,9 @@ class BaseWindowModel(CoreX11WindowModel):
         if event.message_type=="_NET_RESTACK_WINDOW":
             source = {1 : "application", 2 : "pager"}.get(event.data[0], "default (%s)" % event.data[0])
             sibling_window = event.data[1]
-            log("%s sent to window %#x for sibling %#x from %s",
-                event.message_type, event.window, sibling_window, source)
-            if event.detail==0: #Above=0
-                self.emit("raised", event)
+            log("%s sent to window %#x for sibling %#x from %s with detail=%s",
+                event.message_type, event.window, sibling_window, source, RESTACKING_STR.get(event.detail, event.detail))
+            self.emit("restack", event.detail, sibling_window)
             return True
         #TODO: maybe we should process _NET_MOVERESIZE_WINDOW here?
         # it may make sense to apply it to the client_window

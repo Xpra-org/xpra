@@ -29,6 +29,26 @@ def make_window():
 	if icon:
 		window.set_icon(icon)
 	vbox = Gtk.VBox()
+	hbox = Gtk.HBox()
+	def add_btn(label, cb):
+		b = Gtk.Button(label=label)
+		def bcb(*_args):
+			cb()
+		b.connect('clicked', bcb)
+		hbox.add(b)
+	def restack_above():
+		window.get_window().restack(None, True)
+	add_btn("Restack Above", restack_above)
+	def restack_below():
+		window.get_window().restack(None, False)
+	add_btn("Restack Below", restack_below)
+	def _raise():
+		window.get_window().raise_()
+	add_btn("Raise", _raise)
+	def _lower():
+		window.get_window().lower()
+	add_btn("Lower", _lower)
+	vbox.add(hbox)
 	N = 8
 	labels = []
 	font = Pango.FontDescription("sans 12")
