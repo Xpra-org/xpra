@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import os
 from weakref import WeakSet
 
 from xpra.os_util import WIN32
-from xpra.util import csv, roundup
+from xpra.util import csv, roundup, envbool
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvfbc.cuda_image_wrapper import CUDAImageWrapper
 from xpra.codecs.nv_util import get_nvidia_module_version, get_cards, get_license_keys, parse_nvfbc_hex_key
@@ -38,6 +38,7 @@ from xpra.buffers.membuf cimport padbuf, MemBuf
 SYS_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_SYS_PIXEL_FORMAT", "BGRX")
 CUDA_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_CUDA_PIXEL_FORMAT", "BGRX")
 CLIENT_KEYS_STRS = get_license_keys(basefilename="nvfbc")
+PUSH = envbool("XPRA_NVFBC_PUSH", True)
 
 
 ctypedef uintptr_t CUdeviceptr
@@ -149,6 +150,9 @@ cdef extern from "NvFBC.h":
         NVFBC_SIZE frameSize                #[in] Desired size of the captured frame
         NVFBC_BOOL bWithCursor              #[in] Whether the mouse cursor should be composited to the frame
         NVFBC_BOOL bDisableAutoModesetRecovery  #[in] Whether NvFBC should not attempt to recover from modesets
+        uint32_t dwSamplingRateMs           #[in] Rate in ms at which the display server generates new frames
+        NVFBC_BOOL bPushModel               #[in] Enable push model for frame capture
+        
     uint32_t NVFBC_CREATE_CAPTURE_SESSION_PARAMS_VER
 
     ctypedef struct NVFBC_DESTROY_CAPTURE_SESSION_PARAMS:
@@ -168,6 +172,9 @@ cdef extern from "NvFBC.h":
     NVFBC_TOSYS_GRAB_FLAGS NVFBC_TOSYS_GRAB_FLAGS_NOFLAGS   #Default, capturing waits for a new frame or mouse move
     NVFBC_TOSYS_GRAB_FLAGS NVFBC_TOSYS_GRAB_FLAGS_NOWAIT    #Capturing does not wait for a new frame nor a mouse move
     NVFBC_TOSYS_GRAB_FLAGS NVFBC_TOSYS_GRAB_FLAGS_FORCE_REFRESH #Forces the destination buffer to be refreshed even if the frame has not changed since previous capture.
+    NVFBC_TOSYS_GRAB_FLAGS NVFBC_TOSYS_GRAB_FLAGS_NOWAIT_IF_NEW_FRAME_READY #Similar to NVFBC_TOCUDA_GRAB_FLAGS_NOFLAGS, except that the capture will
+        #not wait if there is already a frame available that the client has
+        #never seen yet
 
     ctypedef struct NVFBC_TOSYS_SETUP_PARAMS:
         uint32_t dwVersion          #[in] Must be set to NVFBC_TOSYS_SETUP_PARAMS_VER
@@ -429,6 +436,7 @@ cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE cap
         create.frameSize.h = h
     create.bWithCursor = <NVFBC_BOOL> False
     create.bDisableAutoModesetRecovery = <NVFBC_BOOL> False
+    create.bPushModel = <NVFBC_BOOL> PUSH
     cdef NVFBCSTATUS ret = function_list.nvFBCCreateCaptureSession(context, &create)
     raiseNvFBC(context, ret, "NvFBCCreateCaptureSession")
     log("NvFBCCreateCaptureSession() success")
@@ -531,7 +539,10 @@ cdef class NvFBC_SysCapture:
         memset(&self.grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
         memset(&self.grab, 0, sizeof(NVFBC_TOSYS_GRAB_FRAME_PARAMS))
         self.grab.dwVersion = NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER
-        self.grab.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOWAIT
+        if PUSH:
+            self.grab.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOWAIT_IF_NEW_FRAME_READY
+        else:
+            self.grab.dwFlags = NVFBC_TOSYS_GRAB_FLAGS_NOWAIT
         self.grab.pFrameGrabInfo = &self.grab_info
         cdef NVFBCSTATUS ret
         with nogil:
