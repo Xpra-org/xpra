@@ -345,4 +345,4 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
         close()
         return None
     log("client authenticated, channel=%s", chan)
-    return SSHSocketConnection(ssh_server.proxy_channel, sock, conn.local, conn.endpoint, conn.target)
+    return SSHSocketConnection(ssh_server.proxy_channel, sock, conn.local, conn.endpoint, conn.target, socket_options=socket_options)
