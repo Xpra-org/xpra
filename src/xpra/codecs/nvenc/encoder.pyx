@@ -1235,6 +1235,14 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID)            : "lossless",
     guidstr(NV_ENC_PRESET_LOSSLESS_HP_GUID)                 : "lossless-hp",
     "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
+    #SDK 10 presets:
+    "FC0A8D3E-45F8-4CF8-80C7-298871590EBF"                  : "P1",
+    "F581CFB8-88D6-4381-93F0-DF13F9C27DAB"                  : "P2",
+    "36850110-3A07-441F-94D5-3670631F91F6"                  : "P3",
+    "90A7B826-DF06-4862-B9D2-CD6D73A08681"                  : "P4",
+    "21C6E6B4-297A-4CBA-998F-B6CBDE72ADE3"                  : "P5",
+    "8E75C279-6299-4AB6-8302-0B215A335CF5"                  : "P6",
+    "84848C12-6F71-4C13-931B-53E283F57974"                  : "P7",
     }
 
 YUV444_PRESETS = ("high-444", "lossless", "lossless-hp",)
