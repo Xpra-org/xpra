@@ -276,6 +276,7 @@ STRUCT_KNOWN_FILTERS = {
                 "udp"           : "UDP",
                 "crypto"        : "Encryption",
                 "auth"          : "Authentication",
+                "upnp"           : "UPnP",
                 },
     "Server" : {
                 #Server:
