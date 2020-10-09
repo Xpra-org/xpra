@@ -24,7 +24,7 @@ from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.os_util import monotonic_time, strtobytes
-from xpra.util import typedict, iround, envbool, XPRA_DPI_NOTIFICATION_ID
+from xpra.util import typedict, iround, envbool, first_time, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -731,7 +731,9 @@ class X11ServerCore(GTKServerBase):
     def notify_dpi_warning(self, body):
         sources = tuple(self._server_sources.values())
         if len(sources)==1:
-            sources[0].may_notify(XPRA_DPI_NOTIFICATION_ID, "DPI Issue", body, icon_name="font")
+            ss = sources[0]
+            if first_time("DPI-warning-%s" % ss.uuid):
+                sources[0].may_notify(XPRA_DPI_NOTIFICATION_ID, "DPI Issue", body, icon_name="font")
 
 
     def _process_server_settings(self, _proto, packet):
