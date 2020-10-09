@@ -161,7 +161,7 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
 def upnp_add(socktype, info, options):
     from xpra.log import Logger
     log = Logger("network", "upnp")
-    log.warn("upnp_add%s", (socktype, info, options))
+    log("upnp_add%s", (socktype, info, options))
     def err(*msgs):
         log("pnp_add%s", (info, options), exc_info=True)
         log.error("Error: cannot add UPnP port mapping")
@@ -190,7 +190,7 @@ def upnp_add(socktype, info, options):
         log("upnp=%s", upnp)
         #find the device to use:
         devices = upnp.discover()
-        d = options.get("device", "igd")
+        d = options.get("upnp-device", "igd")
         if d=="igd":
             try:
                 device = upnp.get_igd()
@@ -277,7 +277,7 @@ def upnp_add(socktype, info, options):
         if not services:
             return err("device %s does not have any services" % device)
         log("services=%s", csv(services))
-        s = options.get("service", "")
+        s = options.get("upnp-service", "")
         if s:
             try:
                 #the service could be given as an index:
