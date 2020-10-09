@@ -114,9 +114,10 @@ def hosts(host_str):
         return ["0.0.0.0", "::"]
     return [host_str]
 
-def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connection_cb=None):
+def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connection_cb=None, options=None):
     log = get_network_logger()
-    log("add_listen_socket(%s, %s, %s, %s, %s)", socktype, sock, info, new_connection_cb, new_udp_connection_cb)
+    log("add_listen_socket(%s, %s, %s, %s, %s, %s)",
+        socktype, sock, info, new_connection_cb, new_udp_connection_cb, options)
     try:
         #ugly that we have different ways of starting sockets,
         #TODO: abstract this into the socket class

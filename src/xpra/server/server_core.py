@@ -811,7 +811,7 @@ class ServerCore:
             netlog("init_sockets(%s) will add %s socket %s (%s)", self._socket_info, socktype, sock, info)
             self.socket_info[sock] = info
             self.socket_options[sock] = options
-            self.idle_add(self.add_listen_socket, socktype, sock)
+            self.idle_add(self.add_listen_socket, socktype, sock, options)
             if socktype=="unix-domain" and info:
                 try:
                     p = os.path.abspath(info)
@@ -885,10 +885,10 @@ class ServerCore:
             else:
                 self.disconnect_protocol(protocol, reason)
 
-    def add_listen_socket(self, socktype, sock):
+    def add_listen_socket(self, socktype, sock, options):
         info = self.socket_info.get(sock)
-        netlog("add_listen_socket(%s, %s) info=%s", socktype, sock, info)
-        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, self._new_udp_connection)
+        netlog("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
+        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, self._new_udp_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
