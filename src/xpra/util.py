@@ -155,9 +155,9 @@ def dump_exc():
 
 def noerr(fn, *args):
     try:
-        fn(*args)
+        return fn(*args)
     except Exception:
-        pass
+        return None
 
 
 # A simple little class whose instances we can stick random bags of attributes
