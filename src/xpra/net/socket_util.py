@@ -352,11 +352,12 @@ def upnp_add(socktype, info, options):
                     }
                 log("%s%s", delete, kwargs)
                 delete(**kwargs)
-            except Exception:
+            except Exception as e:
                 log("%s", delete, exc_info=True)
                 log.error("Error removing port UPnP port mapping")
-                log.error(" for external port %i", external_port)
-                log.error(" and internal port %i (%s)", internal_port, socktype)
+                log.error(" for external port %i,", external_port)
+                log.error(" internal port %i (%s):", internal_port, socktype)
+                log.error(" %s", e)
         return cleanup
     except Exception as e:
         return err(e)
