@@ -318,79 +318,12 @@ class MenuHelper:
 
 
     def make_qrmenuitem(self):
-        qrencode_fn = None
-        try:
-            from PIL import Image
-            from qrencode import encode
-            def _qrencode_fn(s):
-                return encode(s)[2]
-            qrencode_fn = _qrencode_fn
-        except ImportError:
-            try:
-                from PIL import Image
-                from ctypes import (
-                    Structure, POINTER,
-                    cdll, create_string_buffer, c_int, c_char_p,
-                    )
-                from ctypes.util import find_library
-                class QRCode(Structure):
-                    _fields_ = (
-                        ("version", c_int),
-                        ("width", c_int),
-                        ("data", c_char_p),
-                        )
-                PQRCode = POINTER(QRCode)
-                lib_file = find_library("libqrencode")
-                if lib_file:
-                    libqrencode = cdll.LoadLibrary(lib_file)
-                    encodeString8bit = libqrencode.QRcode_encodeString8bit
-                    encodeString8bit.argtypes = (c_char_p, c_int, c_int)
-                    encodeString8bit.restype = PQRCode
-                    QRcode_free = libqrencode.QRcode_free
-                    QRcode_free.argtypes = (PQRCode,)
-                    def qrencode_ctypes_fn(s):
-                        data = create_string_buffer(s.encode("latin1"))
-                        qrcode = encodeString8bit(data, 0, 0).contents
-                        try:
-                            size = qrcode.width
-                            pixels = bytearray(size*size)
-                            pdata = qrcode.data
-                            for i in range(size*size):
-                                pixels[i] = 0 if (pdata[i] & 0x1) else 255
-                            return Image.frombytes('L', (size, size), bytes(pixels))
-                        finally:
-                            QRcode_free(qrcode)
-                    qrencode_fn = qrencode_ctypes_fn
-            except Exception:
-                log.error("failed to load qrencode via ctypes", exc_info=True)
-
-        def show_qr(*_args):
+        from xpra.net.qrcode import show_qr, get_qrencode_fn
+        def show(*_args):
             uri = self.client.display_desc.get("display_name")
-            #support old-style URIs, ie: tcp:host:port
-            if uri.find(":")!=uri.find("://"):
-                uri = uri.replace(":", "://", 1)
-            parts = uri.split(":", 1)
-            if parts[0] in ("tcp", "ws"):
-                uri = "http:"+parts[1]
-            else:
-                uri = "https:"+parts[1]
-            img = qrencode_fn(uri)
-            W = H = 640
-            img = img.convert("RGB")
-            img = img.resize((W, H), Image.NEAREST)
-            data = img.tobytes()
-            w, h = img.size
-            data = GLib.Bytes.new(data)
-            pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
-                                                     False, 8, w, h, w * 3)
-            image = Gtk.Image().new_from_pixbuf(pixbuf)
-            window = Gtk.Window(modal=True, title="QR Code")
-            window.set_position(Gtk.WindowPosition.CENTER)
-            window.add(image)
-            window.set_size_request(W, H)
-            window.set_resizable(False)
-            window.show_all()
-        self.qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show_qr)
+            show_qr(uri)
+        self.qr_menuitem = self.menuitem("Show QR connection string", "qr.png", None, show)
+        qrencode_fn = get_qrencode_fn()
         log("make_qrmenuitem() qrencode_fn=%s", qrencode_fn)
         if qrencode_fn:
             def with_connection(*_args):
