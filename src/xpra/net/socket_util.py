@@ -259,11 +259,13 @@ def upnp_add(socktype, info, options):
             #     10: [{'addr': 'fe80::1944:64a7:ab7b:9d67%wlan0', 'netmask': 'ffff:ffff:ffff:ffff::/64'}]}
             def get_interface_address():
                 for name, v in INET.items():
-                    inet = addrs.get(v) #ie: [{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}]
+                    #ie: inet=[{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}]
+                    inet = addrs.get(v)
                     log("addresses[%s]=%s", name, inet)
                     if not inet:
                         continue
-                    for a in inet:      #ie: {'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}
+                    for a in inet:
+                        #ie: host = {'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}
                         host = a.get("addr")
                         if host:
                             return host
@@ -767,7 +769,6 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
             log("sockets in unknown state: %s", unknown)
             if unknown:
                 #re-probe them using threads so we can do them in parallel:
-                from xpra.make_thread import start_thread
                 threads = []
                 def timeout_probe(sockpath):
                     #we need a loop because "DEAD" sockets may return immediately
