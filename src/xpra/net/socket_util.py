@@ -189,7 +189,11 @@ def upnp_add(socktype, info, options):
         upnp = upnpy.UPnP()
         log("upnp=%s", upnp)
         #find the device to use:
-        devices = upnp.discover()
+        try:
+            devices = upnp.discover()
+        except Exception as e:
+            log("discover()", exc_info=True)
+            return err("error discovering devices", e)
         d = options.get("upnp-device", "igd")
         if d=="igd":
             try:
