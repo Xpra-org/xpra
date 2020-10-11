@@ -347,7 +347,7 @@ def upnp_add(socktype, info, options):
                 reply = getip()
                 ip = (reply or {}).get("NewExternalIPAddress")
                 if ip:
-                    log.info(" UPnP port mapping added for %s:%s", ip, external_port)
+                    log.info("UPnP port mapping added for %s:%s", ip, external_port)
                     options["upnp-address"] = (ip, external_port)
             except Exception as e:
                 log("%s", getip, exc_info=True)
@@ -360,6 +360,7 @@ def upnp_add(socktype, info, options):
                     }
                 log("%s%s", delete, kwargs)
                 delete(**kwargs)
+                log.info("UPnP port mapping removed for %s:%s", ip, external_port)
             except Exception as e:
                 log("%s", delete, exc_info=True)
                 log.error("Error removing port UPnP port mapping")
