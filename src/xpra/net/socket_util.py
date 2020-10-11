@@ -194,7 +194,7 @@ def upnp_add(socktype, info, options):
         if d=="igd":
             try:
                 device = upnp.get_igd()
-                log("using igd device %s", device)
+                log("using IGD device %s", device)
             except Exception as e:
                 dstr = ()
                 if devices:
@@ -242,7 +242,8 @@ def upnp_add(socktype, info, options):
                         if inet and len(inet)>=2:
                             return inet[1]
                 for v in INET.values():
-                    gws = gateways.get(v)               #ie: [('192.168.3.1', 'eth0', True), ('192.168.0.1', 'wlan0', False)]}
+                    #ie: gws = [('192.168.3.1', 'eth0', True), ('192.168.0.1', 'wlan0', False)]}
+                    gws = gateways.get(v)
                     if not gws:
                         continue
                     for inet in gws:
