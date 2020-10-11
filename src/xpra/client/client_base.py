@@ -575,6 +575,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         register_SIGUSR_signals(GLib.idle_add)
 
     def run(self):
+        self.start_protocol()
+
+    def start_protocol(self):
         #protocol may be None in "listen" mode
         if self._protocol:
             self._protocol.start()

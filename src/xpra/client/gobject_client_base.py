@@ -106,8 +106,10 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         if self.exit_code is None:
             self.exit_code = exit_code
         self.cleanup()
-        GLib.timeout_add(50, self.glib_mainloop.quit)
+        GLib.timeout_add(50, self.exit_loop)
 
+    def exit_loop(self):
+        self.glib_mainloop.quit()
 
 
 class CommandConnectClient(GObjectXpraClient):
@@ -124,6 +126,7 @@ class CommandConnectClient(GObjectXpraClient):
         #so don't try probing for printers, etc
         self.file_transfer = False
         self.printing = False
+        self.command_timeout = None
         #don't bother with many of these things for one-off commands:
         for x in ("ui_client", "wants_aliases", "wants_encodings",
                   "wants_versions", "wants_features", "wants_sound", "windows",
@@ -134,12 +137,17 @@ class CommandConnectClient(GObjectXpraClient):
     def setup_connection(self, conn):
         protocol = super().setup_connection(conn)
         if conn.timeout>0:
-            GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
+            self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         return protocol
 
     def timeout(self, *_args):
         log.warn("timeout!")    # pragma: no cover
 
+    def cancel_command_timeout(self):
+        ct = self.command_timeout
+        if ct:
+            self.command_timeout = None
+            GLib.source_remove(ct)
 
     def _process_connection_lost(self, _packet):
         #override so we don't log a warning
@@ -156,6 +164,7 @@ class CommandConnectClient(GObjectXpraClient):
         #* we don't care about sending anything back after hello
         log("server_capabilities: %s", ellipsizer(caps))
         log("protocol state: %s", self._protocol.save_state())
+        self.cancel_command_timeout()
         self.do_command(caps)
         return True
 
