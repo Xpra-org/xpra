@@ -343,6 +343,7 @@ def upnp_add(socktype, info, options):
                 ip = (reply or {}).get("NewExternalIPAddress")
                 if ip:
                     log.info(" UPnP port mapping added for %s:%s", ip, external_port)
+                    options["upnp-address"] = (ip, external_port)
             except Exception as e:
                 log("%s", getip, exc_info=True)
         def cleanup():

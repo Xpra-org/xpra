@@ -2051,7 +2051,8 @@ class ServerCore:
         def add_address(socktype, address, port):
             si.setdefault(socktype, {}).setdefault("addresses", []).append((address, port))
         netifaces = import_netifaces()
-        for socktype, _, info, _ in self._socket_info:
+        for sock_details, options in self._socket_info.items():
+            socktype, _, info, _ = sock_details
             if not info:
                 continue
             add_listener(socktype, info)
@@ -2060,6 +2061,9 @@ class ServerCore:
             if socktype not in ("tcp", "ssl", "ws", "wss", "ssh", "udp"):
                 #we expose addresses only for TCP and UDP sockets
                 continue
+            upnp_address = options.get("upnp-address")
+            if upnp_address:
+                add_address(socktype, *upnp_address)
             if len(info)!=2 or not isinstance(info[0], str) or not isinstance(info[1], int):
                 #unsupported listener info format
                 continue
