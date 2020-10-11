@@ -162,7 +162,7 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
-        "splash",
+        "splash", "qrcode",
         "opengl", "opengl-probe", "opengl-test",
         "test-connect",
         "encoding", "webcam", "clipboard-test",
@@ -516,6 +516,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         "attach", "listen", "detach",
         "screenshot", "version", "info", "id",
         "control", "_monitor", "shell", "print",
+        "qrcode",
         "connect-test", "request-start", "request-start-desktop", "request-shadow",
         ):
         return run_client(error_cb, options, args, mode)
@@ -1676,6 +1677,9 @@ def get_client_app(error_cb, opts, extra_args, mode):
         extra_args = extra_args[:1]
         app = PrintClient(opts)
         app.set_command_args(args)
+    elif mode=="qrcode":
+        from xpra.client.gtk3.qrcode_client import QRCodeClient
+        app = QRCodeClient(opts)
     elif mode=="version":
         from xpra.client.gobject_client_base import VersionXpraClient
         app = VersionXpraClient(opts)
@@ -2158,6 +2162,10 @@ def no_gtk():
         return
     raise Exception("the Gtk module is already loaded: %s" % Gtk)
 
+
+def run_qrcode(args):
+    from xpra.client.gtk3 import qrcode_client
+    return qrcode_client.main(args)
 
 def run_splash(args) -> int:
     from xpra.client.gtk3 import splash_screen

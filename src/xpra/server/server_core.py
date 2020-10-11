@@ -2049,7 +2049,19 @@ class ServerCore:
         def add_listener(socktype, info):
             si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
         def add_address(socktype, address, port):
-            si.setdefault(socktype, {}).setdefault("addresses", []).append((address, port))
+            addresses = si.setdefault(socktype, {}).setdefault("addresses", [])
+            if (address, port) not in addresses:
+                addresses.append((address, port))
+            if socktype=="tcp":
+                if self._html:
+                    add_address("ws", address, port)
+                if self._ssl_attributes:
+                    add_address("ssl", address, port)
+                if self.ssh_upgrade:
+                    add_address("ssh", address, port)
+            if socktype=="ws":
+                if self._ssl_attributes:
+                    add_address("wss", address, port)
         netifaces = import_netifaces()
         for sock_details, options in self._socket_info.items():
             socktype, _, info, _ = sock_details

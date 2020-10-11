@@ -78,7 +78,6 @@ def qrencode(s):
     return None
 
 def show_qr(uri, width=640, height=640):
-    from PIL import Image
     #support old-style URIs, ie: tcp:host:port
     if uri.find(":")!=uri.find("://"):
         uri = uri.replace(":", "://", 1)
@@ -87,16 +86,9 @@ def show_qr(uri, width=640, height=640):
         uri = "http:"+parts[1]
     else:
         uri = "https:"+parts[1]
-    img = qrencode(uri)
-    if not img:
+    pixbuf = qr_pixbuf(uri, width, height)
+    if not pixbuf:
         return
-    img = img.convert("RGB")
-    img = img.resize((width, height), Image.NEAREST)
-    data = img.tobytes()
-    w, h = img.size
-    data = GLib.Bytes.new(data)
-    pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
-                                             False, 8, w, h, w * 3)
     image = Gtk.Image().new_from_pixbuf(pixbuf)
     window = Gtk.Window(modal=True, title="QR Code")
     window.set_position(Gtk.WindowPosition.CENTER)
@@ -107,3 +99,17 @@ def show_qr(uri, width=640, height=640):
         window.destroy()
     add_close_accel(window, close)
     window.show_all()
+
+def qr_pixbuf(uri, width=640, height=640):
+    img = qrencode(uri)
+    if not img:
+        return  None
+    from PIL import Image
+    img = img.convert("RGB")
+    img = img.resize((width, height), Image.NEAREST)
+    data = img.tobytes()
+    w, h = img.size
+    data = GLib.Bytes.new(data)
+    pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
+                                             False, 8, w, h, w * 3)
+    return pixbuf
