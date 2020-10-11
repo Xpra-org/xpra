@@ -32,7 +32,10 @@ from xpra.net.bytestreams import (
     SocketConnection, SSLSocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT,
     )
-from xpra.net.net_util import get_network_caps, get_info as get_net_info
+from xpra.net.net_util import (
+    get_network_caps, get_info as get_net_info,
+    import_netifaces, get_interfaces_addresses,
+    )
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name
@@ -76,6 +79,7 @@ SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", "0.1")
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", True)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", True)
+SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 
 ENCRYPTED_SOCKET_TYPES = os.environ.get("XPRA_ENCRYPTED_SOCKET_TYPES", "tcp,ws")
 
@@ -2042,9 +2046,51 @@ class ServerCore:
 
     def get_socket_info(self) -> dict:
         si = {}
+        def add_listener(socktype, info):
+            si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
+        def add_address(socktype, address, port):
+            si.setdefault(socktype, {}).setdefault("addresses", []).append((address, port))
+        netifaces = import_netifaces()
         for socktype, _, info, _ in self._socket_info:
-            if info:
-                si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
+            if not info:
+                continue
+            add_listener(socktype, info)
+            if not SHOW_NETWORK_ADDRESSES:
+                continue
+            if socktype not in ("tcp", "ssl", "ws", "wss", "ssh", "udp"):
+                #we expose addresses only for TCP and UDP sockets
+                continue
+            if len(info)!=2 or not isinstance(info[0], str) or not isinstance(info[1], int):
+                #unsupported listener info format
+                continue
+            address, port = info
+            if address not in ("0.0.0.0", "::/0", "::"):
+                #not a wildcard address, use it as-is:
+                add_address(socktype, address, port)
+                continue
+            if not netifaces:
+                if first_time("netifaces-socket-address"):
+                    netlog.warn("Warning: netifaces is missing")
+                    netlog.warn(" socket addresses cannot be queried")
+                continue
+            ips = []
+            for inet in get_interfaces_addresses().values():
+                #ie: inet = {
+                #    18: [{'addr': ''}],
+                #    2: [{'peer': '127.0.0.1', 'netmask': '255.0.0.0', 'addr': '127.0.0.1'}],
+                #    30: [{'peer': '::1', 'netmask': 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', 'addr': '::1'},
+                #         {'peer': '', 'netmask': 'ffff:ffff:ffff:ffff::', 'addr': 'fe80::1%lo0'}]
+                #    }
+                for v in (socket.AF_INET, socket.AF_INET6):
+                    addresses = inet.get(v, ())
+                    for addr in addresses:
+                        #ie: addr = {'peer': '127.0.0.1', 'netmask': '255.0.0.0', 'addr': '127.0.0.1'}]
+                        ip = addr.get("addr")
+                        if ip and ip not in ips:
+                            ips.append(ip)
+            for ip in ips:
+                add_address(socktype, ip, port)
+
         for socktype, auth_classes in self.auth_classes.items():
             if auth_classes:
                 authenticators = si.setdefault(socktype, {}).setdefault("authenticator", {})
