@@ -200,7 +200,7 @@ class AudioMixin(StubSourceMixin):
     def sound_source_error(self, source, message):
         #this should be printed to stderr by the sound process already
         if source==self.sound_source:
-            log("sound source error: %s", message)
+            log("audio capture error: %s", message)
 
     def sound_source_exit(self, source, *args):
         log("sound_source_exit(%s, %s)", source, args)
@@ -383,7 +383,7 @@ class AudioMixin(StubSourceMixin):
         return msg
 
     def sound_control_fadeout(self, delay_str=""):
-        assert self.sound_source, "no active sound source"
+        assert self.sound_source, "no active audio capture"
         delay = 1000
         if delay_str:
             delay = max(1, min(10*1000, int(delay_str)))

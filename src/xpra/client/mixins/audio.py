@@ -338,7 +338,7 @@ class AudioClient(StubClientMixin):
             self.emit("microphone-changed")
         self.sound_source = None
         if ss is None:
-            log.warn("Warning: cannot stop sound source which has not been started")
+            log.warn("Warning: cannot stop audio capture which has not been started")
             return
         #tell the server to stop:
         self.send("sound-data", ss.codec or "", "", {

@@ -1246,9 +1246,9 @@ def do_parse_cmdline(cmdline, defaults):
         except Exception as e:
             raise InitInfo(e) from None
         if source_plugins:
-            raise InitInfo("The following sound source plugins may be used (default: %s):\n" % source_default+
+            raise InitInfo("The following audio capture plugins may be used (default: %s):\n" % source_default+
                            "\n".join([" * "+p.ljust(16)+NAME_TO_INFO_PLUGIN.get(p, "") for p in source_plugins]))
-        raise InitInfo("No sound source plugins found!")
+        raise InitInfo("No audio capture plugins found!")
 
     #only use the default bind option if the user hasn't specified one on the command line:
     if not options.bind:
