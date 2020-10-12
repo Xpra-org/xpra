@@ -933,12 +933,14 @@ class ServerCore:
             netlog.error(" this packet looks like a '%s' packet", packet_type)
         else:
             netlog.error(" invalid packet format, not an xpra client?")
+        packet_data = b"disconnect: connection setup failed"
         if msg:
             netlog.error(" %s", msg)
+            packet_data += b", %s?" % strtobytes(msg)
+        packet_data += b"\n"
         try:
-            sock.settimeout(1)
             #default to plain text:
-            packet_data = b"disconnect: connection failed, %s?\n" % strtobytes(msg)
+            sock.settimeout(1)
             if packet_type=="xpra":
                 #try xpra packet format:
                 from xpra.net.packet_encoding import pack_one_packet
@@ -949,7 +951,7 @@ class ServerCore:
             conn.write(packet_data)
             self.timeout_add(500, self.force_close_connection, conn)
         except Exception as e:
-            netlog("error sending '%s': %s", nonl(msg), e)
+            netlog("error sending '%s': %s", nonl(packet_data), e)
 
     def force_close_connection(self, conn):
         try:
