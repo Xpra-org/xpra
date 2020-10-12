@@ -22,11 +22,11 @@ from xpra.version_util import (
     )
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
-from xpra.scripts.config import InitException, parse_bool, parse_with_unit, FALSE_OPTIONS, TRUE_OPTIONS
+from xpra.scripts.config import InitException, parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES
 from xpra.net.socket_util import (
-    hosts, mdns_publish, peek_connection, guess_header_protocol,
-    add_listen_socket, accept_connection,
+    hosts, mdns_publish, peek_connection, PEEK_TIMEOUT_MS,
+    add_listen_socket, accept_connection, guess_packet_type,
     )
 from xpra.net.bytestreams import (
     SocketConnection, SSLSocketConnection,
@@ -247,21 +247,8 @@ class ServerCore:
 
     def init_ssl(self, opts):
         self.ssl_mode = opts.ssl
-        if self.ssl_mode.lower() in FALSE_OPTIONS:
-            return
-        need_ssl = False
-        if self.ssl_mode in TRUE_OPTIONS or opts.bind_ssl or opts.bind_wss:
-            need_ssl = True
-        elif opts.bind_tcp or opts.bind_ws:
-            if self.ssl_mode=="auto":
-                need_ssl = True
-            elif self.ssl_mode=="tcp" and opts.bind_tcp:
-                need_ssl = True
-            elif self.ssl_mode=="www":
-                need_ssl = True
-        if need_ssl:
-            from xpra.net.socket_util import get_ssl_attributes
-            self._ssl_attributes = get_ssl_attributes(opts, True)
+        from xpra.net.socket_util import get_ssl_attributes
+        self._ssl_attributes = get_ssl_attributes(opts, True)
         netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 
     def server_ready(self):
@@ -935,24 +922,28 @@ class ServerCore:
                      args=(conn, socket_info, socket_options))
         return True
 
-    def new_conn_err(self, conn, sock, socktype, socket_info, network_protocol,
-                     msg="invalid packet format, not an xpra client?"):
+    def new_conn_err(self, conn, sock, socktype, socket_info, packet_type, msg=None):
         #not an xpra client
         netlog.error("Error: %s connection failed:", socktype)
         if conn.remote:
             netlog.error(" packet from %s", pretty_socket(conn.remote))
         if socket_info:
             netlog.error(" received on %s", pretty_socket(socket_info))
-        netlog.error(" %s", msg)
+        if packet_type:
+            netlog.error(" this packet looks like a '%s' packet", packet_type)
+        else:
+            netlog.error(" invalid packet format, not an xpra client?")
+        if msg:
+            netlog.error(" %s", msg)
         try:
             sock.settimeout(1)
             #default to plain text:
             packet_data = b"disconnect: connection failed, %s?\n" % strtobytes(msg)
-            if network_protocol=="xpra":
+            if packet_type=="xpra":
                 #try xpra packet format:
                 from xpra.net.packet_encoding import pack_one_packet
                 packet_data = pack_one_packet(["disconnect", "invalid protocol for this port"]) or packet_data
-            elif network_protocol=="HTTP":
+            elif packet_type=="http":
                 #HTTP 400 error:
                 packet_data = HTTP_UNSUPORTED
             conn.write(packet_data)
@@ -983,15 +974,21 @@ class ServerCore:
         netlog("handle_new_connection%s sockname=%s, target=%s",
                (conn, socket_info, socket_options), sockname, target)
         #peek so we can detect invalid clients early,
-        #or handle non-xpra traffic:
-        peek_data, line1 = None, None
-        #rfb does not send any data, waits for a server packet
-        if socktype!="rfb":
-            peek_data, line1 = peek_connection(conn)
+        #or handle non-xpra / wrapped traffic:
+        timeout = PEEK_TIMEOUT_MS
+        if socktype=="rfb":
+            #rfb does not send any data, waits for a server packet
+            #so don't bother waiting for something that should never come:
+            timeout = 0
+        peek_data = peek_connection(conn, timeout)
+        line1 = peek_data.split(b"\n")[0]
+        log("socket peek=%s", ellipsizer(peek_data, limit=512))
+        log("socket peek hex=%s", hexstr(peek_data[:128]))
+        log("socket peek line1=%s", ellipsizer(line1))
+        packet_type = guess_packet_type(peek_data)
+        log("guess_packet_type(..)=%s", packet_type)
 
         def ssl_wrap():
-            if not self._ssl_attributes:
-                raise Exception("no ssl support")
             ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
@@ -1002,33 +999,43 @@ class ServerCore:
 
         if socktype in ("ssl", "wss"):
             #verify that this isn't plain HTTP / xpra:
-            if peek_data:
-                packet_type = None
-                if peek_data[0]==ord("P"):
-                    packet_type = "xpra"
-                elif line1.find(b"HTTP/")>0:
-                    packet_type = "HTTP"
-                if packet_type:
-                    self.new_conn_err(conn, sock, socktype, socket_info, packet_type,
-                                      "packet looks like a plain %s packet" % packet_type)
-                    return
+            if packet_type not in ("ssl", None):
+                self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+                return
             #always start by wrapping with SSL:
-            assert self._ssl_attributes
             ssl_conn = ssl_wrap()
             if not ssl_conn:
                 return
-            http = False
-            if socktype=="wss" or self.ssl_mode=="www":
+            if socktype=="wss":
                 http = True
-            elif self.ssl_mode=="auto" or self.ssl_mode in TRUE_OPTIONS:
+            else:
+                assert socktype=="ssl"
+                wss = socket_options.get("wss", "").lower()
+                if wss is not None:
+                    if wss=="auto":
+                        http = None
+                    else:
+                        http = wss in TRUE_OPTIONS
+                else:
+                    #no "wss" option, fallback to "ssl_mode" option:
+                    if self.ssl_mode.lower()=="auto":
+                        http = None
+                    else:
+                        http = self.ssl_mode.lower()=="wss"
+            if http is None:
                 #look for HTTPS request to handle:
-                if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
+                if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/")>0:
                     http = True
                 else:
                     ssl_conn.enable_peek()
-                    peek_data, line1 = peek_connection(ssl_conn)
+                    peek_data = peek_connection(ssl_conn)
+                    line1 = peek_data.split(b"\n")[0]
                     http = line1.find(b"HTTP/")>0
-            if http and self._html:
+            if http:
+                if not self._html:
+                    self.new_conn_err(conn, sock, socktype, socket_info, packet_type,
+                                      "the builtin http server is not enabled")
+                    return
                 self.start_http_socket(socktype, ssl_conn, socket_options, True, peek_data)
             else:
                 ssl_conn._socket.settimeout(self._socket_timeout)
@@ -1038,22 +1045,27 @@ class ServerCore:
 
         if socktype=="ws":
             if peek_data:
-                if (self.ssl_mode not in FALSE_OPTIONS) and peek_data[0] in ("\x16", 0x16):
-                    if not self._ssl_attributes:
-                        netlog.warn("Warning: cannot upgrade to SSL socket")
-                        return
-                    ssllog("ws socket receiving ssl, upgrading")
+                #honour socket option, fallback to "ssl_mode" attribute:
+                wss = socket_options.get("wss", "").lower()
+                if wss:
+                    wss_upgrade = wss in TRUE_OPTIONS
+                else:
+                    wss_upgrade = self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode.lower() in ("auto", "wss")
+                if wss_upgrade and packet_type=="ssl":
+                    ssllog("ws socket receiving ssl, upgrading to wss")
                     conn = ssl_wrap()
                     if conn is None:
                         return
-                elif len(peek_data)>=2 and peek_data[0]==ord("P") and peek_data[1]==0:
-                    self.new_conn_err(conn, sock, socktype, socket_info, "xpra",
-                                      "packet looks like a plain xpra packet")
+                elif packet_type not in (None, "http"):
+                    self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
                     return
             self.start_http_socket(socktype, conn, socket_options, False, peek_data)
             return
 
-        if socktype=="rfb" and not peek_data:
+        if socktype=="rfb":
+            if peek_data:
+                self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+                return
             self.handle_rfb_connection(conn)
             return
 
@@ -1061,25 +1073,24 @@ class ServerCore:
             conn = self.handle_ssh_connection(conn, socket_options)
             if not conn:
                 return
-            peek_data = None
+            peek_data, line1, packet_type = b"", b"", None
 
-        if (socktype=="tcp" and (self._tcp_proxy or self._ssl_attributes or self.ssh_upgrade)) or \
-            (socktype in ("tcp", "unix-domain", "named-pipe") and self._html):
+        if socktype in ("tcp", "unix-domain", "named-pipe") and peek_data:
             #see if the packet data is actually xpra or something else
             #that we need to handle via a tcp proxy, ssl wrapper or the websocket adapter:
             try:
-                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_options, peek_data, line1)
+                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_info, socket_options, peek_data)
                 netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, peek_data)
                 if not cont:
                     return
+                packet_type = guess_packet_type(peek_data)
             except IOError as e:
                 netlog("socket wrapping failed", exc_info=True)
                 self.new_conn_err(conn, sock, socktype, socket_info, None, str(e))
                 return
 
-        if peek_data and (socktype=="rfb" or (peek_data[0] not in ("P", ord("P")))):
-            network_protocol, msg = guess_header_protocol(peek_data)
-            self.new_conn_err(conn, sock, socktype, socket_info, network_protocol, "invalid packet header, %s" % msg)
+        if packet_type not in ("xpra", None):
+            self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
             return
 
         #get the new socket object as we may have wrapped it with ssl:
@@ -1230,7 +1241,7 @@ class ServerCore:
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype, socket_options, peek_data=b"", line1=b""):
+    def may_wrap_socket(self, conn, socktype, socket_info, socket_options, peek_data=b""):
         """
             Returns:
             * a flag indicating if we should continue processing this connection
@@ -1241,23 +1252,30 @@ class ServerCore:
         if not peek_data:
             netlog("may_wrap_socket: no data, not wrapping")
             return True, conn, peek_data
-        if peek_data[0]==ord("P") and peek_data[:5]!=b"POST ":
+        line1 = peek_data.split(b"\n")[0]
+        packet_type = guess_packet_type(peek_data)
+        if packet_type=="xpra":
             netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", peek_data[0])
             #xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
         netlog("may_wrap_socket(..) peek_data=%s from %s", ellipsizer(peek_data), frominfo)
-        try:
-            first_char = ord(peek_data[0])
-        except TypeError:
-            first_char = peek_data[0]
-        netlog("may_wrap_socket(..) first char=%#x / %r", first_char, chr(first_char))
-        netlog("may_wrap_socket(..) upgrade options: ssh=%s, ssl=%s, http/ws=%s, tcp proxy=%s",
-               self.ssh_upgrade, bool(self._ssl_attributes), self._html, bool(self._tcp_proxy))
-        if self.ssh_upgrade and peek_data[:4]==b"SSH-":
+        netlog("may_wrap_socket(..) packet_type=%s", packet_type)
+        def conn_err(msg):
+            self.new_conn_err(conn, conn._socket, socktype, socket_info, packet_type, msg)
+            return False, None, None
+        if packet_type=="ssh":
+            ssh_upgrade = socket_options.get("ssh", self.ssh_upgrade) in TRUE_OPTIONS
+            if not ssh_upgrade:
+                conn_err("ssh upgrades are not enabled")
+                return False, None, None
             conn = self.handle_ssh_connection(conn, socket_options)
             return conn is not None, conn, None
-        if self._ssl_attributes and first_char==0x16:
+        if packet_type=="ssl":
+            ssl_mode = socket_options.get("ssl", self.ssl_mode)
+            if ssl_mode in FALSE_OPTIONS:
+                conn_err("ssl upgrades are not enabled")
+                return False, None, None
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
             sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             if sock is None:
@@ -1265,29 +1283,35 @@ class ServerCore:
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl")
             conn.socktype_wrapped = socktype
             #we cannot peek on SSL sockets, just clear the unencrypted data:
-            ssllog("may_wrap_socket SSL: %s, ssl mode=%s", conn, self.ssl_mode)
             http = False
-            if self.ssl_mode=="tcp":
+            if ssl_mode=="tcp":
                 http = False
-            elif self.ssl_mode=="www":
+            elif ssl_mode=="www":
                 http = True
-            elif self.ssl_mode=="auto" or self.ssl_mode in TRUE_OPTIONS:
+            elif ssl_mode=="auto" or ssl_mode in TRUE_OPTIONS:
                 http = False
                 #use the header to guess:
                 if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/1.1")>0:
                     http = True
                 else:
                     conn.enable_peek()
-                    peek_data, line1 = peek_connection(conn)
+                    peek_data = peek_connection(conn)
+                    line1 = peek_data.split(b"\n")[0]
                     http = line1.find(b"HTTP/")>0
+            ssllog("may_wrap_socket SSL: %s, ssl mode=%s, http=%s", conn, ssl_mode, http)
             is_ssl = True
         else:
             http = line1.find(b"HTTP/")>0
             is_ssl = False
-        if http and self._html:
+        if http:
+            http_protocol = "https" if is_ssl else "http"
+            http_upgrade = socket_options.get(http_protocol, self._html) not in FALSE_OPTIONS
+            if not http_upgrade:
+                conn_err("%s upgrades are not enabled" % http_protocol)
+                return False, None, None
             self.start_http_socket(socktype, conn, socket_options, is_ssl, peek_data)
             return False, conn, None
-        if self._tcp_proxy:
+        if self._tcp_proxy and not is_ssl:
             netlog.info("New tcp proxy connection received from %s", frominfo)
             t = start_thread(self.start_tcp_proxy, "tcp-proxy-for-%s" % frominfo, daemon=True, args=(conn, conn.remote))
             netlog("may_wrap_socket handling via tcp proxy thread %s", t)
@@ -1309,9 +1333,7 @@ class ServerCore:
 
     def start_http_socket(self, socktype, conn, socket_options, is_ssl=False, peek_data=""):
         frominfo = pretty_socket(conn.remote)
-        line1 = b""
-        if peek_data:
-            line1 = peek_data.splitlines()[0]
+        line1 = peek_data.split(b"\n")[0]
         http_proto = "http"+["","s"][int(is_ssl)]
         netlog("start_http_socket(%s, %s, %s, %s, ..) http proto=%s, line1=%r",
                socktype, conn, socket_options, is_ssl, http_proto, bytestostr(line1))

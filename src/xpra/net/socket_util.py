@@ -14,13 +14,12 @@ from xpra.exit_codes import (
     EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
     )
 from xpra.os_util import (
-    hexstr, bytestostr,
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
 from xpra.util import (
     envint, envbool, csv, parse_simple_dict,
-    ellipsizer, repr_ellipsized,
+    ellipsizer,
     DEFAULT_PORT,
     )
 from xpra.make_thread import start_thread
@@ -419,14 +418,23 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
         sleep(timeout/4000.0)
         elapsed = int(1000*(monotonic_time()-start))
         log("peek: elapsed=%s, timeout=%s", elapsed, timeout)
-    line1 = b""
     log("socket %s peek: got %i bytes", conn, len(peek_data))
-    if peek_data:
-        line1 = peek_data.splitlines()[0]
-        log("socket peek=%s", ellipsizer(peek_data, limit=512))
-        log("socket peek hex=%s", hexstr(peek_data[:128]))
-        log("socket peek line1=%s", ellipsizer(line1))
-    return peek_data, line1
+    return peek_data
+
+
+def guess_packet_type(data):
+    if not data:
+        return None
+    if data[0]==ord("P") and data[1]==0:
+        return "xpra"
+    if data[:4]==b"SSH-":
+        return "ssh"
+    if data[0]==0x16:
+        return "ssl"
+    line1 = data.splitlines()[0]
+    if line1.find(b"HTTP/")>0 or line1.split(b" ")[0] in (b"GET", b"POST"):
+        return "http"
+    return None
 
 
 def create_sockets(opts, error_cb):
@@ -878,19 +886,6 @@ def handle_socket_error(sockpath, sperms, e):
         log.error(" %s", e)
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
                        "failed to create socket %s" % sockpath)
-
-
-def guess_header_protocol(v):
-    c = int(v[0])
-    s = bytestostr(v)
-    get_network_logger().debug("guess_header_protocol(%r) first char=%#x", repr_ellipsized(s), c)
-    if c==0x16:
-        return "ssl", "SSL packet?"
-    if s[:4]=="SSH-":
-        return "ssh", "SSH packet"
-    if len(s)>=3 and s.split(" ")[0] in ("GET", "POST"):
-        return "HTTP", "HTTP %s request" % s.split(" ")[0]
-    return None, "character %#x, not an xpra client?" % c
 
 
 #warn just once:

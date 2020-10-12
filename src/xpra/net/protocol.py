@@ -24,7 +24,7 @@ from xpra.net.compression import (
     InvalidCompressionException, Compressed, LevelCompressed, Compressible, LargeStructure,
     )
 from xpra.net import packet_encoding
-from xpra.net.socket_util import guess_header_protocol
+from xpra.net.socket_util import guess_packet_type
 from xpra.net.packet_encoding import (
     decode, sanity_checks as packet_encoding_sanity_checks,
     InvalidPacketEncodingException,
@@ -753,9 +753,9 @@ class Protocol:
     def _invalid_header(self, proto, data, msg=""):
         log("invalid_header(%s, %s bytes: '%s', %s)",
                proto, len(data or ""), msg, ellipsizer(data))
-        guess = guess_header_protocol(data)
-        if guess[0]:
-            err = "invalid packet format, %s" % guess[1]
+        guess = guess_packet_type(data)
+        if guess:
+            err = "invalid packet format: %s" % guess
         else:
             err = "%s: '%s'" % (msg, hexstr(data[:HEADER_SIZE]))
             if len(data)>1:

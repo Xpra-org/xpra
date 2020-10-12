@@ -141,7 +141,7 @@ class Connection:
 
     def peek(self, _n : int):
         #not implemented
-        return None
+        return b""
 
     def _write(self, *args):
         """ wraps do_write with packet accounting """
