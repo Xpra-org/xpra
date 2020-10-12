@@ -1452,6 +1452,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
         if not WIN32 or not PYTHON3:
             tcp_socket.setblocking(True)
+        from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
         try:
             ssl_sock = wrap_socket(tcp_socket, **kwargs)
         except Exception as e:
@@ -1468,7 +1469,6 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 SSLEOFError = getattr(ssl, "SSLEOFError", None)
                 if SSLEOFError and isinstance(e, SSLEOFError):
                     return None
-                from xpra.exit_codes import EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
                 status = EXIT_SSL_FAILURE
                 SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
                 if SSLCertVerificationError and isinstance(e, SSLCertVerificationError) or getattr(e, "reason", None)=="CERTIFICATE_VERIFY_FAILED":
