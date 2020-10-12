@@ -1376,7 +1376,7 @@ class ServerCore:
             err = e.args[0]
             if err==1 and line1 and line1[0]==0x16:
                 l = httplog
-            elif err==errno.EPIPE:
+            elif err in (errno.EPIPE, errno.ECONNRESET):
                 l = httplog
             else:
                 l = httplog.error
