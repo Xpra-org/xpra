@@ -13,6 +13,7 @@ from xpra.exit_codes import (
     EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
     EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
     )
+from xpra.net.bytestreams import set_socket_timeout
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
@@ -185,6 +186,7 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
     peek_data = b""
     start = monotonic_time()
     elapsed = 0
+    set_socket_timeout(conn, PEEK_TIMEOUT_MS*1000)
     while elapsed<=timeout:
         try:
             peek_data = conn.peek(size)
