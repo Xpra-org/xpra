@@ -13,7 +13,7 @@ from socket import error as socket_error
 from threading import Lock, Event
 from queue import Queue
 
-from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
+from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr, monotonic_time
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict, nonl
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException,may_log_packet    #@UndefinedVariable (pydev false positive)
@@ -132,6 +132,7 @@ class Protocol:
         """
         assert scheduler is not None
         assert conn is not None
+        self.start_time = monotonic_time()
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
         self.source_remove = scheduler.source_remove

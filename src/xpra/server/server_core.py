@@ -1481,8 +1481,22 @@ class ServerCore:
     def verify_connection_accepted(self, protocol):
         self.cancel_verify_connection_accepted(protocol)
         if self.is_timedout(protocol):
-            info = getattr(protocol, "_conn", protocol)
-            log.error("Error: connection timed out: %s", info)
+            conn = getattr(protocol, "_conn", None)
+            log.error("Error: connection timed out: %s", conn or protocol)
+            elapsed = monotonic_time()-protocol.start_time
+            log.error(" after %i seconds", elapsed)
+            if conn:
+                log.error(" received %i bytes", conn.input_bytecount)
+                if conn.input_bytecount==0:
+                    try:
+                        data = conn.peek(200)
+                    except Exception:
+                        data = b""
+                    if data:
+                        log.error(" read buffer=%r", data)
+                        packet_type = guess_packet_type(data)
+                        if packet_type:
+                            log.error(" looks like '%s' ", packet_type)
             self.send_disconnect(protocol, LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol):
