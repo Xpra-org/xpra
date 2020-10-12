@@ -13,6 +13,7 @@ from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
     )
+from xpra.net.bytestreams import set_socket_timeout
 from xpra.util import (
     envint, envbool, csv,
     repr_ellipsized, ellipsizer,
@@ -185,6 +186,7 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS):
             sleep(timeout/4000.0)
     line1 = b""
     log("socket %s peek: got %i bytes", conn, len(peek_data))
+    set_socket_timeout(conn, PEEK_TIMEOUT_MS*1000)
     if peek_data:
         line1 = peek_data.splitlines()[0]
         log("socket peek=%s", ellipsizer(peek_data, limit=512))
