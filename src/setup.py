@@ -2120,7 +2120,9 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
 
 if nvenc_ENABLED:
     nvencmodule = "nvenc"
-    nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
+    nvenc_pkgconfig = pkgconfig("nvenc10", ignored_flags=["-l", "-L"])
+    #make it possible to build against SDK v10
+    add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     #don't link against libnvidia-encode, we load it dynamically:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
