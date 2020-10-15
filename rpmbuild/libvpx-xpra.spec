@@ -1,5 +1,5 @@
 Name:	     libvpx-xpra
-Version:     1.8.2
+Version:     1.9.0
 Release:     1%{?dist}
 Summary:     vpx library for xpra
 
@@ -85,6 +85,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Oct 15 2020 Antoine Martin <antoine@xpra.org> 1.9.0-1
+- new upstream release
+
 * Mon Feb 03 2020 Antoine Martin <antoine@xpra.org> 1.8.2-1
 - new upstream release
 
