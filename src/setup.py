@@ -198,7 +198,7 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
-nvenc_ENABLED = DEFAULT and BITS==64 and pkg_config_version("7", "nvenc")
+nvenc_ENABLED = DEFAULT and BITS==64 and pkg_config_version("10", "nvenc")
 nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT
 cuda_rebuild_ENABLED    = DEFAULT
