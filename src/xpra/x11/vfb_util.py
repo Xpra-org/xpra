@@ -408,12 +408,12 @@ def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0):
     log.error("")
     return False
 
-def verify_display_ready(xvfb, display_name, shadowing_check=True, log_errors=True):
+def verify_display_ready(xvfb, display_name, shadowing_check=True, log_errors=True, timeout=VFB_WAIT):
     from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
-        wait_for_x_server(strtobytes(display_name), VFB_WAIT)
+        wait_for_x_server(strtobytes(display_name), timeout)
     except Exception as e:
         log = get_vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)

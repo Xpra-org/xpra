@@ -67,6 +67,7 @@ class SplashScreen(Gtk.Window):
         self.add(vbox)
         install_signal_handlers(None, self.handle_signal)
         self.opacity = 100
+        self.pct = 0
 
 
     def run(self):
@@ -102,6 +103,7 @@ class SplashScreen(Gtk.Window):
 
     def handle_stdin_line(self, line):
         parts = line.rstrip("\n\r").split(":")
+        pct = self.pct
         if parts[0]:
             try:
                 pct = int(parts[0])
@@ -110,9 +112,11 @@ class SplashScreen(Gtk.Window):
             else:
                 self.show_progress_value(pct)
         if len(parts)>=2:
-            for i in range(len(self.labels)-1):
-                self.labels[i].set_label(self.labels[i+1].get_label())
+            if self.pct!=pct:
+                for i in range(len(self.labels)-1):
+                    self.labels[i].set_label(self.labels[i+1].get_label())
             self.labels[-1].set_label(parts[1])
+        self.pct = pct
 
     def show_progress_value(self, pct):
         self.cancel_progress_timer()

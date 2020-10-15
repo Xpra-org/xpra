@@ -348,10 +348,12 @@ def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None
         gc.collect()
 
 
-def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True):
+def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None):
     #check that we can access the X11 display:
-    from xpra.x11.vfb_util import verify_display_ready
-    if not verify_display_ready(xvfb, display_name, shadowing, log_errors):
+    from xpra.x11.vfb_util import verify_display_ready, VFB_WAIT
+    if timeout is None:
+        timeout = VFB_WAIT
+    if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
         return 1
     from xpra.log import Logger
     log = Logger("screen", "x11")
@@ -677,10 +679,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if not display_name:
             use_display = False
         else:
-            progress(20, "connecting to display")
-            start_vfb = verify_display(None, display_name, log_errors=False)!=0
+            progress(20, "connecting to the display")
+            start_vfb = verify_display(None, display_name, log_errors=False, timeout=1)!=0
     if start_vfb:
-        progress(30, "starting a virtual display")
+        progress(20, "starting a virtual display")
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
         from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process, parse_resolution
