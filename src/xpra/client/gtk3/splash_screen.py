@@ -50,10 +50,16 @@ class SplashScreen(Gtk.Window):
         label.modify_font(Pango.FontDescription("sans 18"))
         hbox.pack_start(label, True, True, 20)
         vbox.add(hbox)
+        self.labels = []
+        N = 3
+        for i in range(N):
+            l = Gtk.Label()
+            l.set_opacity((i+1)/N)
+            self.labels.append(l)
+            vbox.add(l)
         self.progress_bar = Gtk.ProgressBar()
         self.progress_bar.set_size_request(320, 30)
-        self.progress_bar.set_text(" ")
-        self.progress_bar.set_show_text(True)
+        self.progress_bar.set_show_text(False)
         self.progress_bar.set_fraction(0)
         self.progress_timer = 0
         vbox.add(self.progress_bar)
@@ -104,8 +110,9 @@ class SplashScreen(Gtk.Window):
             else:
                 self.show_progress_value(pct)
         if len(parts)>=2:
-            self.progress_bar.set_text(parts[1])
-            self.progress_bar.set_show_text(True)
+            for i in range(len(self.labels)-1):
+                self.labels[i].set_label(self.labels[i+1].get_label())
+            self.labels[-1].set_label(parts[1])
 
     def show_progress_value(self, pct):
         self.cancel_progress_timer()
