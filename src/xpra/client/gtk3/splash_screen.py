@@ -102,7 +102,7 @@ class SplashScreen(Gtk.Window):
             self.handle_stdin_line(line)
 
     def handle_stdin_line(self, line):
-        parts = line.rstrip("\n\r").split(":")
+        parts = line.rstrip("\n\r").split(":", 1)
         pct = self.pct
         if parts[0]:
             try:

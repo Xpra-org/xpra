@@ -1947,8 +1947,10 @@ def make_client(error_cb, opts):
             if os.environ.get("XDG_SESSION_TYPE")=="wayland":
                 opts.opengl = "no"
             else:
-                app.show_progress(20, "validing OpenGL renderer")
+                app.show_progress(20, "Validating OpenGL configuration")
                 opts.opengl = run_opengl_probe()
+                r = opts.opengl.replace("probe-", "")   #ie: "probe-success" -> "success"
+                app.show_progress(20, "Validating OpenGL: %s" % r)
     except Exception:
         if progress_process:
             try:
