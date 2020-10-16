@@ -26,6 +26,7 @@ if SOCKET_CORK:
         log.warn(" %s", cork_e)
         SOCKET_CORK = False
 SOCKET_NODELAY = envbool("XPRA_SOCKET_NODELAY", None)
+SOCKET_KEEPALIVE = envbool("XPRA_SOCKET_KEEPALIVE", True)
 VSOCK_TIMEOUT = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT = envint("XPRA_SOCKET_TIMEOUT", 20)
 #this is more proper but would break the proxy server:
@@ -262,6 +263,11 @@ class SocketConnection(Connection):
             log("%s options: cork=%s, nodelay=%s", self.socktype_wrapped, self.cork, self.nodelay)
             if self.nodelay:
                 self.do_set_nodelay(self.nodelay)
+            keepalive = boolget("keepalive", SOCKET_KEEPALIVE)
+            try:
+                self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, int(keepalive))
+            except OSError:
+                log("cannot set KEEPALIVE", exc_info=True)
         else:
             self.cork = False
             self.nodelay = False
