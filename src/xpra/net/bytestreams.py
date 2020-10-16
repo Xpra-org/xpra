@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,7 +11,7 @@ import socket
 
 from xpra.net.common import ConnectionClosedException
 from xpra.util import envint, envbool, csv
-from xpra.os_util import POSIX, LINUX
+from xpra.os_util import POSIX, LINUX, WIN32, OSX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 from xpra.log import Logger
 
@@ -266,6 +266,19 @@ class SocketConnection(Connection):
             keepalive = boolget("keepalive", SOCKET_KEEPALIVE)
             try:
                 self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, int(keepalive))
+                if keepalive:
+                    idletime = 10
+                    interval = 3
+                    kmax = 5
+                    if WIN32:
+                        sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime*1000, interval*1000))  #@UndefinedVariable pylint: disable=no-member
+                    elif OSX:
+                        TCP_KEEPALIVE = 0x10
+                        sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, interval)
+                    elif LINUX:
+                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idletime)
+                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, kmax)
             except OSError:
                 log("cannot set KEEPALIVE", exc_info=True)
         else:
