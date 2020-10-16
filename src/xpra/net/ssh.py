@@ -817,10 +817,12 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             startupinfo = STARTUPINFO()
             startupinfo.dwFlags |= STARTF_USESHOWWINDOW
             startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
-            kwargs["startupinfo"] = startupinfo
             flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
-            kwargs["creationflags"] = flags
-            kwargs["stderr"] = PIPE
+            kwargs.update({
+                "startupinfo"   : startupinfo,
+                "creationflags" : flags,
+                "stderr"        : PIPE,
+                })
         elif not display_desc.get("exit_ssh", False) and not OSX:
             kwargs["start_new_session"] = True
         remote_xpra = display_desc["remote_xpra"]
