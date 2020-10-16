@@ -32,6 +32,9 @@ class WebSocketRequestHandler(HTTPRequestHandler):
     def handle_websocket(self):
         log("handle_websocket() calling %s, request=%s (%s)",
             self.new_websocket_client, self.request, type(self.request))
+        log("headers:")
+        for k,v in self.headers.items():
+            log(" %s=%s", k, v)
         ver = self.headers.get('Sec-WebSocket-Version')
         if ver is None:
             raise Exception("Missing Sec-WebSocket-Version header")
