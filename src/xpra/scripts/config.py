@@ -690,10 +690,10 @@ START_COMMAND_OPTIONS = [
     ]
 BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb"]
 
-#keep track of the options added since v1,
+#keep track of the options added since v3,
 #so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V3 = [
-    "source", "source-start",
+    "source", "source-start", "headerbar",
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
