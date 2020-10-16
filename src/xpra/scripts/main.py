@@ -71,6 +71,11 @@ def nox():
     warnings.filterwarnings("error", "could not open display")
     return DISPLAY
 
+def werr(*msg):
+    for x in msg:
+        noerr(sys.stderr.write, "%s\n" % (x,))
+    noerr(sys.stderr.flush)
+
 
 saved_env = {}
 
@@ -1290,8 +1295,7 @@ def socket_connect(dtype, host, port):
         if monotonic_time()-start>=CONNECT_TIMEOUT:
             break
         if retry==0:
-            log = Logger("network")
-            log.info("failed to connect to %s:%s, retrying for %i seconds", host, port, CONNECT_TIMEOUT)
+            werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, CONNECT_TIMEOUT))
         retry += 1
         import time
         time.sleep(1)
@@ -1520,13 +1524,13 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
                 #or not found any sockets at all (DEAD),
                 #this could be a server starting up,
                 #so give it a bit of time:
-                log = Logger("network")
                 if state==DotXpra.UNKNOWN:
-                    log.info("server socket for display %s is in %s state", display, DotXpra.UNKNOWN)
+                    werr("server socket for display %s is in %s state" % (display, DotXpra.UNKNOWN))
                 else:
-                    log.info("server socket for display %s not found", display)
-                log.info(" waiting up to %i seconds", timeout)
+                    werr("server socket for display %s not found" % display)
+                werr(" waiting up to %i seconds" % timeout)
                 start = monotonic_time()
+                log = Logger("network")
                 while monotonic_time()-start<timeout:
                     state = dotxpra.get_display_state(display)
                     log("get_display_state(%s)=%s", display, state)
@@ -1595,23 +1599,19 @@ def connect_to_server(app, display_desc, opts):
             protocol.start()
         except InitInfo as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            log.info("failed to connect:")
-            log.info(" %s", e)
+            werr("failed to connect:", " %s" % e)
             GLib.idle_add(app.quit, EXIT_OK)
         except InitExit as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            log.warn("Warning: failed to connect:")
-            log.warn(" %s", e)
+            werr("Warning: failed to connect:", " %s" % e)
             GLib.idle_add(app.quit, e.status)
         except InitException as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            log.warn("Warning: failed to connect:")
-            log.warn(" %s", e)
+            werr("Warning: failed to connect:", " %s" % e)
             GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
         except Exception as e:
             log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            log.error("Error: failed to connect:")
-            log.error(" %s", e)
+            werr("Error: failed to connect:", " %s", e)
             GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
     def setup_connection():
         log("setup_connection() starting setup-connection thread")
