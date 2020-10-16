@@ -15,6 +15,7 @@ from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform import get_username
 from xpra.scripts.config import parse_bool
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
+from xpra.make_thread import start_thread
 from xpra.exit_codes import (
     EXIT_SSH_KEY_FAILURE, EXIT_SSH_FAILURE,
     EXIT_CONNECTION_FAILED,
@@ -154,7 +155,6 @@ class SSHSocketConnection(SocketConnection):
         self._raw_socket = sock
 
     def start_stderr_reader(self):
-        from xpra.make_thread import start_thread
         start_thread(self._stderr_reader, "ssh-stderr-reader", daemon=True)
 
     def _stderr_reader(self):
@@ -166,8 +166,10 @@ class SSHSocketConnection(SocketConnection):
             v = stderr.readline()
             if not v:
                 log("SSH EOF on stderr of %s", chan.get_name())
-                return
-            errs.append(bytestostr(v.rstrip(b"\n\r")))
+                break
+            s = bytestostr(v.rstrip(b"\n\r"))
+            if s:
+                errs.append(s)
         if errs:
             log.warn("remote SSH stderr:")
             for e in errs:
@@ -964,4 +966,20 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
     conn.endpoint = host_target_string("ssh", username, host, port, display)
     conn.timeout = 0            #taken care of by abort_test
     conn.process = (child, "ssh", cmd)
+    if kwargs.get("stderr")==PIPE:
+        def stderr_reader():
+            errs = []
+            while not abort_test():
+                v = child.stderr.readline()
+                if not v:
+                    log("SSH EOF on stderr of %s", cmd)
+                    break
+                s = bytestostr(v.rstrip(b"\n\r"))
+                if s:
+                    errs.append(s)
+            if errs:
+                log.warn("remote SSH stderr:")
+                for e in errs:
+                    log.warn(" %s", e)
+        start_thread(stderr_reader, "ssh-stderr-reader", daemon=True)
     return conn
