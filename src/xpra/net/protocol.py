@@ -284,9 +284,9 @@ class Protocol:
         c = self._conn
         if c:
             try:
-                info.update(self._conn.get_info())
+                info.update(c.get_info())
             except Exception:
-                log.error("error collecting connection information on %s", self._conn, exc_info=True)
+                log.error("error collecting connection information on %s", c, exc_info=True)
         #add stats to connection info:
         info.setdefault("input", {}).update({
                        "buffer-size"            : self.read_buffer_size,
