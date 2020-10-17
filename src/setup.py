@@ -739,7 +739,7 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
             #ie: "/build/xpra/pkg/xpra/etc" -> "etc"
             i = dirs.index("pkg")
             while i>=0 and len(dirs)>i+1:
-                if dirs[i+1] == "xpra":
+                if dirs[i+1] in ("xpra", "xpra-svn"):
                     dirs = dirs[i+2:]
                 try:
                     i = dirs.index("pkg")
@@ -769,7 +769,8 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
 
 def get_conf_dir(install_dir, stripbuildroot=True):
     dirs = get_base_conf_dir(install_dir, stripbuildroot)
-    dirs.append("etc")
+    if "etc" not in dirs:
+        dirs.append("etc")
     dirs.append("xpra")
     return os.path.join(*dirs)
 
