@@ -88,12 +88,7 @@ if SAVE_BUFFERS not in ("png", "jpeg", None):
     SAVE_BUFFERS = None
 if SAVE_BUFFERS:
     from OpenGL.GL import glGetTexImage     #pylint: disable=ungrouped-imports
-    try:
-        import numpy
-        from PIL import Image, ImageOps
-    except ImportError:
-        log.warn("Warning: cannot save buffers, numpy is not installed")
-        SAVE_BUFFERS = False
+    from PIL import Image, ImageOps
 
 
 PIXEL_FORMAT_TO_CONSTANT = {
