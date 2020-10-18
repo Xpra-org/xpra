@@ -817,6 +817,8 @@ class GLWindowBackingBase(WindowBackingBase):
         img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
         img = ImageOps.flip(img)
         kwargs = {}
+        if not self._alpha_enabled or SAVE_BUFFERS=="jpeg":
+            img = img.convert("RGB")
         if SAVE_BUFFERS=="jpeg":
             kwargs = {
                       "quality"     : 0,
