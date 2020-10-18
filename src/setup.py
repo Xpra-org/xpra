@@ -737,14 +737,10 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
         elif "pkg" in dirs:
             #archlinux
             #ie: "/build/xpra/pkg/xpra/etc" -> "etc"
-            i = dirs.index("pkg")
-            while i>=0 and len(dirs)>i+1:
-                if dirs[i+1] in ("xpra", "xpra-svn"):
-                    dirs = dirs[i+2:]
-                try:
-                    i = dirs.index("pkg")
-                except ValueError:
-                    break
+            #find the last 'pkg' from the list of directories:
+            i = max(loc for loc, val in enumerate(dirs) if val == "pkg")
+            if len(dirs)>i+1 and dirs[i+1] in ("xpra", "xpra-svn"):
+                dirs = dirs[i+2:]
         elif pkgdir and install_dir.startswith(pkgdir):
             #arch build dir:
             dirs = install_dir.lstrip(pkgdir).split(os.path.sep)
