@@ -51,6 +51,29 @@ def get_interface_info(_fd, iface):
                 log.info(" %s", e)
         return {}
 
+def get_tcp_info(sock):  #pylint: disable=unused-argument
+    """
+    #not implemented yet!
+    #the functions below would require administrator privileges:
+    from ctypes import WinDLL, POINTER, c_void_p, c_ubyte
+    from ctypes.wintypes import ULONG, UINT
+    PUCHAR = POINTER(c_ubyte)
+    iphlpapi = WinDLL("Iphlpapi", use_last_error=True)
+    TCP_ESTATS_TYPE = UINT
+    PMIB_TCPROW = c_void_p
+    SetPerTcpConnectionEStats = iphlpapi.SetPerTcpConnectionEStats
+    SetPerTcpConnectionEStats.restype = ULONG
+    SetPerTcpConnectionEStats.argtypes = (PMIB_TCPROW, TCP_ESTATS_TYPE,
+                                          PUCHAR, ULONG, ULONG, ULONG)
+    GetPerTcpConnectionEStats = iphlpapi.GetPerTcpConnectionEStats
+    GetPerTcpConnectionEStats.restype = ULONG
+    GetPerTcpConnectionEStats.argtypes = (PMIB_TCPROW, TCP_ESTATS_TYPE,
+                                          PUCHAR, ULONG, ULONG,
+                                          PUCHAR, ULONG, ULONG,
+                                          PUCHAR, ULONG, ULONG)
+    """
+    return {}
+
 
 def main():
     from xpra.platform import program_context

@@ -1,16 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: language_level=3
 
 import os
+import socket
 
-from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t  #pylint: disable=syntax-error
+from libc.stdint cimport uint32_t, uint16_t, uint8_t  #pylint: disable=syntax-error
 
-from xpra.util import first_time
-from xpra.os_util import strtobytes, bytestostr
+from xpra.util import first_time, csv
+from xpra.os_util import strtobytes, bytestostr, LINUX
 from xpra.log import Logger
 
 log = Logger("util", "network")
@@ -125,3 +126,91 @@ def get_interface_info(int sockfd, ifname):
     else:
         log.info("no driver information for %s", ifname)
     return info
+
+
+def get_socket_tcp_info(sock):
+    if not LINUX:
+        #should be added for BSDs
+        return {}
+    from ctypes import c_uint8, c_uint32, c_uint64
+    ALL_FIELDS = (
+        ("state",           c_uint8),
+        ("ca_state",        c_uint8),
+        ("retransmits",     c_uint8),
+        ("probes",          c_uint8),
+        ("backoff",         c_uint8),
+        ("options",         c_uint8),
+        ("snd_wscale",      c_uint8, 4),
+        ("rcv_wscale",      c_uint8, 4),
+        ("rto",             c_uint32),
+        ("ato",             c_uint32),
+        ("snd_mss",         c_uint32),
+        ("rcv_mss",         c_uint32),
+        ("unacked",         c_uint32),
+        ("sacked",          c_uint32),
+        ("lost",            c_uint32),
+        ("retrans",         c_uint32),
+        ("fackets",         c_uint32),
+        ("last_data_sent",  c_uint32),
+        ("last_ack_sent",   c_uint32),
+        ("last_data_recv",  c_uint32),
+        ("last_ack_recv",   c_uint32),
+        ("pmtu",            c_uint32),
+        ("rcv_ssthresh",    c_uint32),
+        ("rtt",             c_uint32),
+        ("rttvar",          c_uint32),
+        ("snd_ssthresh",    c_uint32),
+        ("snd_cwnd",        c_uint32),
+        ("advmss",          c_uint32),
+        ("reordering",      c_uint32),
+        ("rcv_rtt",         c_uint32),
+        ("rcv_space",       c_uint32),
+        ("total_retrans",   c_uint32),
+        ("pacing_rate",     c_uint64),
+        ("max_pacing_rate", c_uint64),
+        ("bytes_acked",     c_uint64),
+        ("bytes_received",  c_uint64),
+        ("segs_out",        c_uint32),
+        ("segs_in",         c_uint32),
+        ("notsent_bytes",   c_uint32),
+        ("min_rtt",         c_uint32),
+        ("data_segs_in",    c_uint32),
+        ("data_segs_out",   c_uint32),
+        ("delivery_rate",   c_uint64),
+        ("busy_time",       c_uint64),
+        ("rwnd_limited",    c_uint64),
+        ("sndbuf_limited",  c_uint64),
+        ("delivered",       c_uint32),
+        ("delivered_ce",    c_uint32),
+        ("bytes_sent",      c_uint64),
+        ("bytes_retrans",   c_uint64),
+        ("dsack_dups",      c_uint32),
+        ("reord_seen",      c_uint32),
+        ("rcv_ooopack",     c_uint32),
+        ("snd_wnd",         c_uint32),
+        )
+    from xpra.net.socket_util import get_sockopt_tcp_info
+    return get_sockopt_tcp_info(sock, socket.TCP_INFO, ALL_FIELDS)
+
+def get_send_buffer_info(sock):
+    import fcntl
+    import struct
+    send_buffer_size = sock.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF)
+    info = {
+        "sndbuf_size"   : send_buffer_size,
+        }
+    #SIOCINQ = 0x541B
+    SIOCOUTQ = 0x5411
+    unacked = struct.unpack("I", fcntl.ioctl(sock.fileno(), SIOCOUTQ, b'\0\0\0\0'))[0]
+    info["sndbuf_unacked"] = unacked
+    SIOCOUTQNSD = 0x894B
+    bytes_in_queue = struct.unpack("I", fcntl.ioctl(sock.fileno(), SIOCOUTQ, b'\0\0\0\0'))[0]
+    info["sndbuf_bytes"] = bytes_in_queue
+    return info
+
+def get_tcp_info(sock):
+    tcpi = get_socket_tcp_info(sock)
+    bi = get_send_buffer_info(sock)
+    log("get_send_buffer_status(%s)=%s", sock, bi)
+    tcpi.update(bi)
+    return tcpi

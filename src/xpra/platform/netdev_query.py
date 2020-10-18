@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,9 +7,13 @@
 def get_interface_info(*_args):
     return {}
 
+def get_tcp_info(sock):  #pylint: disable=unused-argument
+    return {}
+
 
 from xpra.platform import platform_import
 platform_import(globals(), "netdev_query", False,
+                "get_tcp_info",
                 "get_interface_info",
                 )
 

@@ -6,6 +6,7 @@
 import os.path
 import socket
 from time import sleep
+from ctypes import Structure, c_uint8, c_uint32, c_uint64, sizeof
 
 from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.scripts.main import InitExit
@@ -202,6 +203,49 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
         log("peek: elapsed=%s, timeout=%s", elapsed, timeout)
     log("socket %s peek: got %i bytes", conn, len(peek_data))
     return peek_data
+
+
+POSIX_TCP_INFO = ( 
+        ("state",           c_uint8),
+        )
+def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
+    #calculate full structure size with all the fields defined:
+    tcpinfo_size = 0
+    for fdef in attributes:
+        ftype = fdef[1]
+        count = 1
+        if len(fdef)>2:
+            count = fdef[2]
+        tcpinfo_size += sizeof(ftype)*count
+    data = sock.getsockopt(socket.SOL_TCP, TCP_INFO, tcpinfo_size)
+    data_size = len(data)
+    #but only define fields in the ctypes.Structure
+    #if they are actually present in the returned data:
+    size = 0
+    fields = []
+    for fdef in attributes:
+        ftype = fdef[1]
+        count = 1
+        if len(fdef)>2:
+            count = fdef[2]
+        fsize = sizeof(ftype)*count
+        if size+fsize>data_size:
+            break
+        fields.append(fdef)
+        size += fsize
+    class TCPInfo(Structure):
+        _fields_ = tuple(fields)
+        def __repr__(self):
+            return "TCPInfo(%s)" % self.getdict()
+        def getdict(self):
+            return {k[0] : getattr(self, k[0]) for k in self._fields_}
+    #log("total size=%i for fields: %s", size, csv(fdef[0] for fdef in fields))
+    tcpinfo = TCPInfo.from_buffer_copy(data[:size])
+    d = tcpinfo.getdict()
+    log = get_network_logger()
+    log("getsockopt(SOL_TCP, TCP_INFO, %i)=%s", tcpinfo_size, d)
+    return d
+
 
 
 def guess_packet_type(data):
