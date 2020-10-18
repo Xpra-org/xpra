@@ -812,9 +812,11 @@ class GLWindowBackingBase(WindowBackingBase):
         glReadBuffer(GL_COLOR_ATTACHMENT0)
         glViewport(0, 0, bw, bh)
         size = bw*bh*4
-        data = numpy.empty(size)
-        img_data = glGetTexImage(target, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
-        img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
+        from xpra.buffers.membuf import get_membuf  #@UnresolvedImport
+        membuf = get_membuf(size)
+        glGetTexImage(target, 0, GL_BGRA, GL_UNSIGNED_BYTE, membuf.get_mem_ptr())
+        pixels = memoryview(membuf).tobytes()
+        img = Image.frombuffer("RGBA", (bw, bh), pixels, "raw", "BGRA", bw*4)
         img = ImageOps.flip(img)
         kwargs = {}
         if not self._alpha_enabled or SAVE_BUFFERS=="jpeg":
