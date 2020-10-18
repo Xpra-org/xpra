@@ -263,19 +263,6 @@
 		</after>
 	</distutils>
 
-	<distutils id="python3-numpy" python3="1">
-		<branch repo="files.pythonhosted.org"
-			module="/packages/2c/2f/7b4d0b639a42636362827e611cfeba67975ec875ae036dd846d459d52652/numpy-1.19.1.zip"
-			version="1.19.1"
-			hash="sha256:b8456987b637232602ceb4d663cb34106f7eb780e247d51a260b84760fd8f491"/>
-		<dependencies>
-			<dep package="python"/>
-		</dependencies>
-		<after>
-			<dep package="python"/>
-		</after>
-	</distutils>
-
 	<distutils id="python3-bcrypt" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/d8/ba/21c475ead997ee21502d30f76fd93ad8d5858d19a3fad7cd153de698c4dd/bcrypt-3.2.0.tar.gz"
@@ -809,7 +796,6 @@
 		  <dep package="python3-pillow"/>
 		  <dep package="python3-py2app"/>
 		  <dep package="python3-cython"/>
-		  <dep package="python3-numpy"/>
 		  <dep package="python3-pycups"/>
 		  <dep package="python3-bcrypt"/>
 		  <dep package="python3-paramiko"/>
