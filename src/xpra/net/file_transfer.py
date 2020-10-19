@@ -365,7 +365,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error("Error: expected a file of %i bytes, got %i", filesize, written)
             progress(-1, "file size mismatch")
             return
-        expected_digest = options.get("sha1")
+        expected_digest = options.strget("sha1")
         if expected_digest and digest.hexdigest()!=expected_digest:
             progress(-1, "checksum mismatch")
             self.digest_mismatch(filename, digest, expected_digest, "sha1")
