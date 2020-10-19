@@ -314,7 +314,7 @@ class FilePrintServer(StubServerMixin):
                                icon_name="file")
                 return
         data = load_binary_file(filename)
-        ss.send_file(filename, "", data, len(data), openit=openit)
+        ss.send_file(filename, "", data, len(data), openit=openit, options={"request-file" : (argf, openit)})
 
 
     def init_packet_handlers(self):

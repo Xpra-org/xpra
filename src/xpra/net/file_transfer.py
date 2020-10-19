@@ -127,6 +127,8 @@ class FileTransferAttributes:
         self.open_url = oua or pbool("open-url", open_url)
         self.file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.open_command = open_command
+        self.files_requested = {}
+        self.files_accepted = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> dict:
@@ -386,6 +388,9 @@ class FileTransferHandler(FileTransferAttributes):
                 self.file_transfer, self.file_transfer_ask)
         filelog("accept_data: open-files=%s, open-files-ask=%s",
                 self.open_files, self.open_files_ask)
+        req = self.files_accepted.pop(send_id, None)
+        if req is not None:
+            return (False, req)
         if not self.file_transfer or self.file_transfer_ask:
             return None
         if printit and (not self.printing or self.printing_ask):
@@ -628,6 +633,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def send_request_file(self, filename, openit=True):
         self.send("request-file", filename, openit)
+        self.files_requested[filename] = openit
 
 
     def _process_open_url(self, packet):
@@ -709,16 +715,34 @@ class FileTransferHandler(FileTransferAttributes):
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog("sending data request for %s '%s' with send-id=%s",
                 bytestostr(dtype), url, send_id)
-        self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit)
+        self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
 
     def _process_send_data_request(self, packet):
         dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
-        filelog("process send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", send_id, url, printit, openit)
+        options = {}
+        if len(packet)>=9:
+            options = packet[8]
+        self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
+
+
+    def do_process_send_data_request(self, dtype, send_id, url, _, filesize, printit, openit, options):
+        filelog("do_process_send_data_request: send_id=%s, url=%s, printit=%s, openit=%s, options=%s",
+                send_id, url, printit, openit, options)
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, accept)
+        #could be a request we made:
+        #(in which case we can just accept it without prompt)
+        rf = options.tupleget("request-file")
+        if rf and len(rf)>=2:
+            argf, openit = rf[:2]
+            openit = self.files_requested.pop(bytestostr(argf), None)
+            if openit is not None:
+                self.files_accepted[send_id] = openit
+                cb_answer(True)
+                return
         if dtype==b"file":
             if not self.file_transfer:
                 cb_answer(False)
