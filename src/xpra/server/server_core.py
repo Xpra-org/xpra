@@ -1927,6 +1927,7 @@ class ServerCore:
             capabilities.update({
                 "readonly-server"   : True,
                 "readonly"          : self.readonly,
+                "server-log"        : os.environ.get("XPRA_SERVER_LOG", ""),
                 })
         if source is None or source.wants_versions:
             capabilities["uuid"] = get_user_uuid()

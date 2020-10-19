@@ -1325,9 +1325,11 @@ class GTKTrayMenuBase(MenuHelper):
         self.download_log = self.menuitem("Download Server Log", "list.png", cb=download_server_log)
         def enable_download(*args):
             log("enable_download%s server_file_transfer=%s", args, self.client.remote_file_transfer)
-            set_sensitive(self.download_log, self.client.remote_file_transfer)
+            set_sensitive(self.download_log, self.client.remote_file_transfer and bool(self.client._remote_server_log))
             if not self.client.remote_file_transfer:
                 self.download_log.set_tooltip_text("Not supported by the server")
+            elif not self.client._remote_server_log:
+                self.download_log.set_tooltip_text("Server does not expose its log-file")
             else:
                 self.download_log.set_tooltip_text("Download the server log")
         self.client.after_handshake(enable_download)
