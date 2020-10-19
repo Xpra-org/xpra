@@ -373,9 +373,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         "shadow", "proxy",
         )
 
-    def progress(i, msg):
+    def _progress(i, msg):
         if progress_cb:
             progress_cb(i, msg)
+    progress = _progress
 
     progress(10, "initializing environment")
     try:
@@ -505,6 +506,12 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
             opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
+        #close the splash screen
+        #because daemonizing will close the file descriptors
+        progress(100, "daemonizing")
+        def noprogress(*_args):
+            pass
+        progress = noprogress
         from xpra.server.server_util import daemonize
         daemonize()
 
