@@ -278,7 +278,7 @@ class BugReport:
                     value = e
                     dtype = "txt"
             if value is None:
-                value = "not available"
+                s = "not available"
             elif isinstance(value, dict):
                 s = os.linesep.join("%s : %s" % (k.ljust(32), nonl(str(v))) for k,v in sorted(value.items()))
             elif isinstance(value, (list, tuple)):
