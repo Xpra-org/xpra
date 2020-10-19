@@ -1320,7 +1320,9 @@ class GTKTrayMenuBase(MenuHelper):
 
 
     def make_serverlogmenuitem(self):
-        self.download_log = self.menuitem("Download Server Log", "list.png", cb=self.client.download_server_log)
+        def download_server_log(*_args):
+            self.client.download_server_log()
+        self.download_log = self.menuitem("Download Server Log", "list.png", cb=download_server_log)
         def enable_download(*args):
             log("enable_download%s server_file_transfer=%s", args, self.client.remote_file_transfer)
             set_sensitive(self.download_log, self.client.remote_file_transfer)

@@ -16,7 +16,7 @@ from xpra.util import (
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
-    bytestostr, strtobytes, hexstr, monotonic_time,
+    bytestostr, strtobytes, hexstr, monotonic_time, load_binary_file,
     WIN32, OSX, POSIX, is_Wayland,
     )
 from xpra.simple_stats import std_unit
@@ -470,8 +470,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_size_dialog = None
             fsd.destroy()
 
-    def download_server_log(self, *_args):
-        self.send_request_file("${XPRA_SERVER_LOG}", self.open_files)
+    def download_server_log(self, callback=None):
+        filename = "${XPRA_SERVER_LOG}"
+        if callback:
+            self.file_request_callback[filename] = callback
+        self.send_request_file(filename, self.open_files)
 
     def send_download_request(self, *_args):
         command = ["xpra", "send-file"]
@@ -594,6 +597,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.bug_report.show()
         #gives the server time to send an info response..
         #(by the time the user clicks on copy, it should have arrived, we hope!)
+        def got_server_log(filename, filesize):
+            log("got_server_log(%s, %s)", filename, filesize)
+            filedata = load_binary_file(filename)
+            self.bug_report.set_server_log_data(filedata)
+        self.download_server_log(got_server_log)
         self.timeout_add(200, init_bug_report)
 
 

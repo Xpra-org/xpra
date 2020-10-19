@@ -27,6 +27,10 @@ OBFUSCATE = envbool("XPRA_OBFUSCATE_BUG_REPORT", True)
 
 class BugReport:
 
+    def __init__(self):
+        self.checkboxes = {}
+        self.server_log = None
+
     def init(self, show_about=True, get_server_info=None, opengl_info=None, includes=None):
         self.show_about = show_about
         self.get_server_info = get_server_info
@@ -159,31 +163,36 @@ class BugReport:
                 #take_screenshot() returns: w, h, "png", rowstride, data
                 return take_screenshot_fn()[4]
             get_screenshot = _get_screenshot
+        def get_server_log():
+            return self.server_log
         self.toggles = (
-                   ("system",       "txt",  "System",           get_sys_info,
-                    "Xpra version, platform and host information - including hostname and account information"),
-                   ("network",      "txt",  "Network",          get_net_info,
-                    "Compression, packet encoding and encryption"),
-                   ("encoding",     "txt",  "Encodings",        codec_versions,
-                    "Picture encodings supported"),
-                   ("opengl",       "txt",  "OpenGL",           get_gl_info,
-                    "OpenGL driver and features"),
-                   ("sound",        "txt",  "Sound",            get_sound_info,
-                    "Sound codecs and GStreamer version information"),
-                   ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap,
-                    "Keyboard layout and key mapping"),
-                   ("xpra-info",    "txt",  "Server Info",      self.get_server_info,
-                    "Full server information from 'xpra info'"),
-                   ("screenshot",   "png",  "Screenshot",       get_screenshot,
-                    ""),
-                   )
-        for name, _, title, value_cb, tooltip in self.toggles:
+            ("system",       "txt",  "System",           get_sys_info,   True,
+             "Xpra version, platform and host information - including hostname and account information"),
+            ("server-log",   "txt",  "Server Log",       get_server_log, bool(self.server_log),
+             "Xpra version, platform and host information - including hostname and account information"),
+            ("network",      "txt",  "Network",          get_net_info,   True,
+             "Compression, packet encoding and encryption"),
+            ("encoding",     "txt",  "Encodings",        codec_versions, bool(codec_versions),
+             "Picture encodings supported"),
+            ("opengl",       "txt",  "OpenGL",           get_gl_info,    bool(self.opengl_info),
+             "OpenGL driver and features"),
+            ("sound",        "txt",  "Sound",            get_sound_info, bool(get_sound_info),
+             "Sound codecs and GStreamer version information"),
+            ("keyboard",     "txt",  "Keyboard Mapping", get_gtk_keymap, True,
+             "Keyboard layout and key mapping"),
+            ("xpra-info",    "txt",  "Server Info",      self.get_server_info,   bool(self.get_server_info),
+             "Full server information from 'xpra info'"),
+            ("screenshot",   "png",  "Screenshot",       get_screenshot, bool(get_screenshot),
+             ""),
+            )
+        self.checkboxes = {}
+        for name, _, title, value_cb, sensitive, tooltip in self.toggles:
             cb = Gtk.CheckButton(title+[" (not available)", ""][bool(value_cb)])
             cb.set_active(self.includes.get(name, True))
-            cb.set_sensitive(bool(value_cb))
+            cb.set_sensitive(sensitive)
             cb.set_tooltip_text(tooltip)
             ibox.pack_start(cb)
-            setattr(self, name, cb)
+            self.checkboxes[name] = cb
 
         # Buttons:
         hbox = Gtk.HBox(False, 20)
@@ -209,6 +218,14 @@ class BugReport:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
+
+
+    def set_server_log_data(self, filedata):
+        self.server_log = filedata
+        cb = self.checkboxes.get("server-log")
+        log("set_server_log_data(%i bytes) cb=%s", len(filedata or b""), cb)
+        if cb:
+            cb.set_sensitive(bool(filedata))
 
 
     def show(self):
@@ -256,10 +273,10 @@ class BugReport:
         buf = tb.get_text(*tb.get_bounds(), include_hidden_chars=False)
         if buf:
             data.append(("Description", "", "txt", buf))
-        for name, dtype, title, value_cb, tooltip in self.toggles:
+        for name, dtype, title, value_cb, _, tooltip in self.toggles:
             if not bool(value_cb):
                 continue
-            cb = getattr(self, name)
+            cb = self.checkboxes.get(name)
             assert cb is not None
             if not cb.get_active():
                 continue
@@ -329,7 +346,7 @@ class BugReport:
                     try:
                         try:
                             import tempfile
-                            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".screenshot", delete=False)
+                            temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".%s" % dtype, delete=False)
                             with temp:
                                 temp.write(s)
                                 temp.flush()
@@ -337,7 +354,7 @@ class BugReport:
                             log.error("Error: cannot create mmap file:")
                             log.error(" %s", e)
                         else:
-                            zf.write(temp.name, cfile, zipfile.ZIP_STORED)
+                            zf.write(temp.name, cfile, zipfile.ZIP_STORED if dtype=="png" else zipfile.ZIP_DEFLATED)
                     finally:
                         if temp:
                             os.unlink(temp.name)

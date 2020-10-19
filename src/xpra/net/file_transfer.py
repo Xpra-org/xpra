@@ -129,6 +129,7 @@ class FileTransferAttributes:
         self.open_command = open_command
         self.files_requested = {}
         self.files_accepted = {}
+        self.file_request_callback = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> dict:
@@ -493,6 +494,15 @@ class FileTransferHandler(FileTransferAttributes):
         filelog.info("downloaded %s bytes to %s file%s:",
                      filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
         filelog.info(" '%s'", filename)
+        #some file requests may have a custom callback
+        #(ie: bug report tool will just include the file)
+        rf = options.tupleget("request-file")
+        if rf and len(rf)>=2:
+            argf = rf[0]
+            cb = self.file_request_callback.pop(bytestostr(argf), None)
+            if cb:
+                cb(filename, filesize)
+                return
         if printit or openit:
             t = start_thread(self.do_process_downloaded_file, "process-download", daemon=False,
                              args=(filename, mimetype, printit, openit, filesize, options))
