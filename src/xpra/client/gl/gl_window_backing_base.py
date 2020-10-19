@@ -88,12 +88,7 @@ if SAVE_BUFFERS not in ("png", "jpeg", None):
     SAVE_BUFFERS = None
 if SAVE_BUFFERS:
     from OpenGL.GL import glGetTexImage     #pylint: disable=ungrouped-imports
-    try:
-        import numpy
-        from PIL import Image, ImageOps
-    except ImportError:
-        log.warn("Warning: cannot save buffers, numpy is not installed")
-        SAVE_BUFFERS = False
+    from PIL import Image, ImageOps
 
 
 PIXEL_FORMAT_TO_CONSTANT = {
@@ -784,9 +779,11 @@ class GLWindowBackingBase(WindowBackingBase):
         glReadBuffer(GL_COLOR_ATTACHMENT0)
         glViewport(0, 0, bw, bh)
         size = bw*bh*4
-        data = numpy.empty(size)
-        img_data = glGetTexImage(target, 0, GL_BGRA, GL_UNSIGNED_BYTE, data)
-        img = Image.frombuffer("RGBA", (bw, bh), img_data, "raw", "BGRA", bw*4)
+        from xpra.buffers.membuf import get_membuf  #@UnresolvedImport
+        membuf = get_membuf(size)
+        glGetTexImage(target, 0, GL_BGRA, GL_UNSIGNED_BYTE, membuf.get_mem_ptr())
+        pixels = memoryview(membuf).tobytes()
+        img = Image.frombuffer("RGBA", (bw, bh), pixels, "raw", "BGRA", bw*4)
         img = ImageOps.flip(img)
         kwargs = {}
         if SAVE_BUFFERS=="jpeg":
