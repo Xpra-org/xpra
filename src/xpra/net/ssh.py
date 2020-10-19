@@ -971,8 +971,12 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
     if kwargs.get("stderr")==PIPE:
         def stderr_reader():
             errs = []
-            while not abort_test():
-                v = child.stderr.readline()
+            while child.poll() is None:
+                try:
+                    v = child.stderr.readline()
+                except OSError:
+                    log("stderr_reader()", exc_info=True)
+                    break
                 if not v:
                     log("SSH EOF on stderr of %s", cmd)
                     break
