@@ -363,7 +363,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef double yFactor = 1                 #no interlace (0.5) or doublescan (2)
 
         from xpra.util import roundup
-        w = roundup(w, 4)
         name = self.get_mode_name(w, h)
         bname = strtobytes(name)
         new_mode = XRRAllocModeInfo(bname, len(bname))

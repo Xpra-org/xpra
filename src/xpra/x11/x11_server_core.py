@@ -91,6 +91,7 @@ class X11ServerCore(GTKServerBase):
         self.libfakeXinerama_so = None
         self.initial_resolution = None
         self.x11_filter = False
+        self.randr_sizes_added = []
         GTKServerBase.__init__(self)
         log("XShape=%s", X11Window.displayHasXShape())
 
@@ -322,7 +323,7 @@ class X11ServerCore(GTKServerBase):
                     "touchpad-device"              : bool(self.touchpad_device),
                     })
             if self.randr:
-                sizes = RandR.get_xrr_screen_sizes()
+                sizes = self.get_all_screen_sizes()
                 if len(sizes)>1:
                     capabilities["screen-sizes"] = sizes
             if self.default_cursor_image and source.wants_default_cursor:
@@ -371,7 +372,7 @@ class X11ServerCore(GTKServerBase):
         #randr:
         if self.randr:
             with xlog:
-                sizes = RandR.get_xrr_screen_sizes()
+                sizes = self.get_all_screen_sizes()
                 if len(sizes)>=0:
                     sinfo["randr"] = {
                         ""          : True,
@@ -484,10 +485,19 @@ class X11ServerCore(GTKServerBase):
         return (cursor_image, cursor_sizes)
 
 
+    def get_all_screen_sizes(self):
+        #workaround for #2910: the resolutions we add are not seen by XRRSizes!
+        # so we keep track of the ones we have added ourselves:
+        sizes = list(RandR.get_xrr_screen_sizes())
+        for w, h in self.randr_sizes_added:
+            if (w, h) not in sizes:
+                sizes.append((w, h))
+        return tuple(sizes)
+
     def get_max_screen_size(self):
         max_w, max_h = self.root_window.get_geometry()[2:4]
         if self.randr:
-            sizes = RandR.get_xrr_screen_sizes()
+            sizes = self.get_all_screen_sizes()
             if len(sizes)>=1:
                 for w,h in sizes:
                     max_w = max(max_w, w)
@@ -546,7 +556,7 @@ class X11ServerCore(GTKServerBase):
     def do_get_best_screen_size(self, desired_w, desired_h, bigger=True):
         if not self.randr:
             return desired_w, desired_h
-        screen_sizes = RandR.get_xrr_screen_sizes()
+        screen_sizes = self.get_all_screen_sizes()
         if (desired_w, desired_h) in screen_sizes:
             return desired_w, desired_h
         if self.randr_exact_size:
@@ -557,6 +567,7 @@ class X11ServerCore(GTKServerBase):
                         #we have to wait a little bit
                         #to make sure that everything sees the new resolution
                         #(ideally this method would be split in two and this would be a callback)
+                        self.randr_sizes_added.append(v)
                         import time
                         time.sleep(0.5)
                         return v
@@ -565,7 +576,7 @@ class X11ServerCore(GTKServerBase):
                 screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
                 screenlog.warn(" %s", e)
             #re-query:
-            screen_sizes = RandR.get_xrr_screen_sizes()
+            screen_sizes = self.get_all_screen_sizes()
         #try to find the best screen size to resize to:
         new_size = None
         closest = {}
@@ -659,7 +670,7 @@ class X11ServerCore(GTKServerBase):
                 #the change! (ugly! but this works)
                 with xsync:
                     temp = {}
-                    for tw,th in RandR.get_xrr_screen_sizes():
+                    for tw,th in self.get_all_screen_sizes():
                         if tw!=w or th!=h:
                             #use the number of extra pixels as key:
                             #(so we can choose the closest resolution)
