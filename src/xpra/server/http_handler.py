@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
 
-from xpra.util import envbool, std, csv, AdHocStruct
+from xpra.util import envbool, std, csv, AdHocStruct, repr_ellipsized
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
 
@@ -103,9 +103,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             log.error(fmt, *args)
 
     def log_message(self, fmt, *args):
-        #print("log_message(%r, %r)" % (fmt, args))
-        if args and len(args)==3 and args[0]=='"%s" %s %s' and args[1]=="400":
+        if args and len(args)==3 and fmt=='"%s" %s %s' and args[1]=="400":
             fmt = '"%r" %s %s'
+            args = list(args)
+            args[0] = repr_ellipsized(args[0])
         log(fmt, *args)
 
 
