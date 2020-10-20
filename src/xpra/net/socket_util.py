@@ -251,8 +251,31 @@ def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
 def guess_packet_type(data):
     if not data:
         return None
-    if data[0]==ord("P") and data[1]==0:
-        return "xpra"
+    if data[0]==ord("P"):
+        from xpra.net.header import (
+            unpack_header, HEADER_SIZE,
+            FLAGS_RENCODE, FLAGS_YAML,
+            LZ4_FLAG, LZO_FLAG, BROTLI_FLAG,
+            )
+        header = data.ljust(HEADER_SIZE, b"\0")
+        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
+        #this normally used on the first packet, so the packet index should be 0
+        #and I don't think we can make packets smaller than 8 bytes,
+        #even with packet name aliases and rencode
+        #(and aliases should not be defined for the initial packet anyway)
+        if packet_index==0 and 8<data_size<256*1024*1024:
+            rencode = bool(protocol_flags & FLAGS_RENCODE)
+            yaml = bool(protocol_flags & FLAGS_YAML)
+            lz4 = bool(protocol_flags & LZ4_FLAG)
+            lzo = bool(protocol_flags & LZO_FLAG)
+            brotli = bool(protocol_flags & BROTLI_FLAG)
+            #rencode and yaml are mutually exclusive,
+            #so are the compressors
+            compressors = sum((lz4, lzo, brotli))
+            if not (rencode and yaml) and not compressors>1:
+                #if compression is enabled, the compression level must be set:
+                if not compressors or compression_level>0:
+                    return "xpra"
     if data[:4]==b"SSH-":
         return "ssh"
     if data[0]==0x16:
