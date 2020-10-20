@@ -103,6 +103,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             log.error(fmt, *args)
 
     def log_message(self, fmt, *args):
+        #print("log_message(%r, %r)" % (fmt, args))
+        if args and len(args)==3 and args[0]=='"%s" %s %s' and args[1]=="400":
+            fmt = '"%r" %s %s'
         log(fmt, *args)
 
 
