@@ -824,7 +824,7 @@ class Protocol:
                     #try to handle the first buffer:
                     buf = read_buffers[0]
                     if not header and buf[0]!=ord("P"):
-                        self.invalid_header(self, buf, "invalid packet header byte %s" % nonl(bytestostr(buf)))
+                        self.invalid_header(self, buf, "invalid packet header byte %s" % nonl(repr_ellipsized(buf)))
                         return
                     #how much to we need to slice off to complete the header:
                     read = min(len(buf), HEADER_SIZE-len(header))

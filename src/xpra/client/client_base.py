@@ -950,7 +950,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log("process_gibberish(%s)", ellipsizer(packet))
         message, data = packet[1:3]
         p = self._protocol
-        show_as_text = p and p.input_packetcount==0 and all(c in string.printable for c in bytestostr(data))
+        show_as_text = p and p.input_packetcount==0 and len(data)<128 and all(c in string.printable for c in bytestostr(data))
         if show_as_text:
             #looks like the first packet back is just text, print it:
             data = bytestostr(data)
@@ -961,7 +961,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 netlog.error("Error: failed to connect, received")
                 netlog.error(" %s", repr_ellipsized(data))
         else:
-            netlog.error("Error: received uninterpretable nonsense: %s", message)
+            from xpra.net.socket_util import guess_packet_type
+            packet_type = guess_packet_type(data)
+            log("guess_packet_type(%r)=%s", data, packet_type)
+            if packet_type and packet_type!="xpra":
+                netlog.error("Error: received a %s packet", packet_type)
+                netlog.error(" this is not an xpra server?")
+            else:
+                netlog.error("Error: received uninterpretable nonsense: %s", message)
             if p:
                 netlog.error(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
             else:

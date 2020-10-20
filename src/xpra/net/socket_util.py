@@ -283,6 +283,8 @@ def guess_packet_type(data):
     line1 = data.splitlines()[0]
     if line1.find(b"HTTP/")>0 or line1.split(b" ")[0] in (b"GET", b"POST"):
         return "http"
+    if line1.lower().startswith(b"<!doctype html") or line1.lower().startswith(b"<html"):
+        return "http"
     return None
 
 
