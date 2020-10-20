@@ -99,6 +99,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.exit_on_signal = False
         self.display_desc = {}
         self.progress_process = None
+        self.progress_timer = None
         #connection attributes:
         self.hello_extra = {}
         self.compression_level = 0
@@ -167,7 +168,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if pct==100:
             #it should exit on its own, but just in case:
             #kill it if it's still running after 2 seconds
-            self.timeout_add(2000, self.stop_progress_process)
+            self.cancel_progress_timer()
+            self.progress_timer = self.timeout_add(2000, self.stop_progress_process)
+
+    def cancel_progress_timer(self):
+        pt = self.progress_timer
+        if pt:
+            self.progress_timer = None
+            self.source_remove(pt)
 
 
     def init_challenge_handlers(self, challenge_handlers):
@@ -552,6 +560,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             pass
 
     def cleanup(self):
+        self.cancel_progress_timer()
         self.stop_progress_process()
         reaper_cleanup()
         try:
