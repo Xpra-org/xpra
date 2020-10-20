@@ -151,4 +151,4 @@ class WebSocketProtocol(Protocol):
             reason = memoryview_to_bytes(payload[2:]).decode("utf8")
         except UnicodeDecodeError:
             reason = str(reason)
-        self._connection_lost("code %i: %s" % (code, reason))
+        self._connection_lost("code %i: %r" % (code, reason))

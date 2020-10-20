@@ -1354,7 +1354,7 @@ class ServerCore:
                      daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
     def start_http(self, socktype, conn, socket_options, is_ssl, req_info, line1, frominfo):
-        httplog("start_http(%s, %s, %s, %s, %s, %s, %s) www dir=%s, headers dir=%s",
+        httplog("start_http(%s, %s, %s, %s, %s, %r, %s) www dir=%s, headers dir=%s",
                 socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
                 self._www_dir, self._http_headers_dir)
         try:
