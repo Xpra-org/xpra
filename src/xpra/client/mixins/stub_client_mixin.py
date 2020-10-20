@@ -108,3 +108,6 @@ class StubClientMixin:
 
     def add_packet_handlers(self, defs, main_thread=True):  # pragma: no cover
         raise NotImplementedError()
+
+    def show_progress(self, pct, text=""):
+        pass

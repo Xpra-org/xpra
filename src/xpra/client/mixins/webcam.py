@@ -108,6 +108,7 @@ class WebcamForwarder(StubClientMixin):
             self.do_start_sending_webcam(self.webcam_option)
 
     def do_start_sending_webcam(self, device_str):
+        self.show_progress(100, "forwarding webcam")
         assert self.server_webcam
         device = 0
         virt_devices, all_video_devices, non_virtual = {}, {}, {}

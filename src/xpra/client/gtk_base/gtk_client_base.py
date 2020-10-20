@@ -175,6 +175,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         force_quit()
 
     def exit(self):
+        self.show_progress(100, "terminating")
         log("GTKXpraClient.exit() calling %s", Gtk.main_quit)
         Gtk.main_quit()
 

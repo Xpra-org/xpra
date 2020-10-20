@@ -169,7 +169,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             #it should exit on its own, but just in case:
             #kill it if it's still running after 2 seconds
             self.cancel_progress_timer()
-            self.progress_timer = self.timeout_add(2000, self.stop_progress_process)
+            def stop_progress():
+                self.progress_timer = None
+                self.stop_progress_process()
+            self.progress_timer = self.timeout_add(2000, stop_progress)
 
     def cancel_progress_timer(self):
         pt = self.progress_timer
