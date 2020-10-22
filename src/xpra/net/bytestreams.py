@@ -266,20 +266,21 @@ class SocketConnection(Connection):
                 self.do_set_nodelay(self.nodelay)
             keepalive = boolget("keepalive", SOCKET_KEEPALIVE)
             try:
-                self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, int(keepalive))
+                self._setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, int(keepalive))
                 if keepalive:
                     idletime = 10
                     interval = 3
                     kmax = 5
                     if WIN32:
+                        sock = self.get_raw_socket()
                         sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idletime*1000, interval*1000))  #@UndefinedVariable pylint: disable=no-member
                     elif OSX:
                         TCP_KEEPALIVE = 0x10
-                        sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, interval)
+                        self._setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE, interval)
                     elif LINUX:
-                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idletime)
-                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
-                        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, kmax)
+                        self._setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idletime)
+                        self._setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+                        self._setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, kmax)
             except OSError:
                 log("cannot set KEEPALIVE", exc_info=True)
         else:
@@ -290,18 +291,27 @@ class SocketConnection(Connection):
         if isinstance(remote, str):
             self.filename = remote
 
+    def get_raw_socket(self):
+        return self._socket
+
+    def _setsockopt(self, *args):
+        if self.active:
+            sock = self.get_raw_socket()
+            assert sock, "no raw socket on %s" % self
+            sock.setsockopt(*args)
+
     def set_nodelay(self, nodelay : bool):
         if self.nodelay is None and self.nodelay_value!=nodelay:
             self.do_set_nodelay(nodelay)
 
     def do_set_nodelay(self, nodelay : bool):
-        self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
+        self._setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, nodelay)
         self.nodelay_value = nodelay
         log("changed %s socket to nodelay=%s", self.socktype, nodelay)
 
     def set_cork(self, cork : bool):
         if self.cork and self.cork_value!=cork:
-            self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)  #@UndefinedVariable
+            self._setsockopt(socket.IPPROTO_TCP, socket.TCP_CORK, cork)  #@UndefinedVariable
             self.cork_value = cork
             log("changed %s socket to cork=%s", self.socktype, cork)
 

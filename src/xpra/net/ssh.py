@@ -151,8 +151,11 @@ def input_pass(prompt) -> str:
 class SSHSocketConnection(SocketConnection):
 
     def __init__(self, ssh_channel, sock, sockname, peername, target, info=None, socket_options=None):
-        super().__init__(ssh_channel, sockname, peername, target, "ssh", info, socket_options)
         self._raw_socket = sock
+        super().__init__(ssh_channel, sockname, peername, target, "ssh", info, socket_options)
+
+    def get_raw_socket(self):
+        return self._raw_socket
 
     def start_stderr_reader(self):
         start_thread(self._stderr_reader, "ssh-stderr-reader", daemon=True)
