@@ -792,14 +792,14 @@ class FileTransferHandler(FileTransferAttributes):
     def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
+        send_id = bytestostr(send_id)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
             self.source_remove(timer)
-        v = self.pending_send_data.get(bytestostr(send_id))
-        if not v:
+        v = self.pending_send_data.pop(send_id, None)
+        if v is None:
             filelog.warn("Warning: cannot find send-file entry")
             return
-        self.pending_send_data.pop(send_id, None)
         dtype = v[0]
         url = v[1]
         if accept==DENY:
