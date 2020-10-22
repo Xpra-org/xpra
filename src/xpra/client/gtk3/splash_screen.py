@@ -80,7 +80,7 @@ class SplashScreen(Gtk.Window):
         install_signal_handlers(None, self.handle_signal)
         SIGPIPE = getattr(signal, "SIGPIPE", None)
         if SIGPIPE: #ie: POSIX
-            register_os_signals(self.handle_signal, None, (SIGPIPE, ))
+            signal.signal(SIGPIPE, self.handle_signal)
         self.opacity = 100
         self.pct = 0
 
