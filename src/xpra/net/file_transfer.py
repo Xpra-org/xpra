@@ -421,7 +421,6 @@ class FileTransferHandler(FileTransferAttributes):
             os.write(fd, file_data)
         finally:
             os.close(fd)
-        self.transfer_progress_update(False, send_id, monotonic_time()-start, filesize, filesize, None)
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
 
