@@ -131,7 +131,7 @@ class OpenRequestsWindow(object):
         self.expire_labels = {}
         tb = TableBuilder(rows=1, columns=4, row_spacings=15)
         def l(s=""):
-            return gtk.Label(label=s)
+            return gtk.Label(s)
         #generate a new table:
         self.table = tb.get_table()
         if not self.requests:
@@ -153,7 +153,10 @@ class OpenRequestsWindow(object):
                     main_label.set_label(parts[0]+"?..")
                     main_label.set_tooltip_text(s)
                 main_label.set_line_wrap(True)
-                main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+                try:
+                    main_label.set_line_wrap_mode(pango.WrapMode.WORD_CHAR)
+                except AttributeError:
+                    main_label.set_line_wrap_mode(pango.WRAP_WORD_CHAR)
                 main_label.set_size_request(URI_MAX_WIDTH, -1)
                 items = (main_label, l(details), expires_label, buttons)
                 tb.add_row(*items)
