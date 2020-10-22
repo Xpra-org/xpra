@@ -57,7 +57,7 @@ class DisplayManager(StubServerMixin):
     def query_opengl(self):
         props = {}
         if self.opengl.lower()=="noprobe" or self.opengl.lower() in FALSE_OPTIONS:
-            gllog("query_opengl() skipped: %s", self.opengl)
+            gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
         try:
             from subprocess import Popen, PIPE
