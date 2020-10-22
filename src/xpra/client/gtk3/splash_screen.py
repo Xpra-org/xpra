@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+import signal
 from gi.repository import Gtk, Gdk, GLib, Pango
 
 from xpra import __version__
@@ -11,7 +12,7 @@ from xpra.util import envint
 from xpra.os_util import SIGNAMES
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
-from xpra.gtk_common.gobject_compat import install_signal_handlers
+from xpra.gtk_common.gobject_compat import install_signal_handlers, register_os_signals
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.platform.gui import force_focus
 from xpra.log import Logger
@@ -77,6 +78,9 @@ class SplashScreen(Gtk.Window):
         self.current_label_text = None
         self.add(vbox)
         install_signal_handlers(None, self.handle_signal)
+        SIGPIPE = getattr(signal, "SIGPIPE", None)
+        if SIGPIPE: #ie: POSIX
+            register_os_signals(self.handle_signal, None, (SIGPIPE, ))
         self.opacity = 100
         self.pct = 0
 
