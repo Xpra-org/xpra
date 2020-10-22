@@ -1040,8 +1040,6 @@ class ServerCore(object):
                 return None
             ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype)
             ssllog("ssl_wrap()=%s", ssl_conn)
-                    if conn is None:
-                        return
             return ssl_conn
 
         if socktype in ("ssl", "wss"):
@@ -1087,6 +1085,8 @@ class ServerCore(object):
                         return
                     ssllog("ws socket receiving ssl, upgrading")
                     conn = ssl_wrap()
+                    if conn is None:
+                        return
                 elif len(peek_data)>=2 and peek_data[0] in ("P", ord("P") and peek_data[1] in ("\x00", 0)):
                     self.new_conn_err(conn, sock, socktype, socket_info, "xpra",
                                       "packet looks like a plain xpra packet")
