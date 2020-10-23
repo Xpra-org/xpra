@@ -609,7 +609,7 @@ fi
 - don't let bad http requests mess up the server log
 - prevent peek data or exception message from corrupting the log / stdout
 - remove dependency on "requests" package introduced in 4.0.4
-- remove "numpy" dependency for builds without NVENC / NVFBC
+- remove "numpy" dependency for builds without NVENC / NVFBC (fixes MacOS installation problems)
 - add new NVENC presets from SDK v10, workaround deprecation warnings
 - add correct packaging for Debian Bullseye and Debian Groovy Gorilla
 
