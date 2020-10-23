@@ -15,6 +15,10 @@ class ConnectionClosedException(Exception):
 
 SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "udp")
 
+IP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh", "udp")
+TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
+
+
 #this is used for generating aliases:
 PACKET_TYPES = [
     "hello", "info",

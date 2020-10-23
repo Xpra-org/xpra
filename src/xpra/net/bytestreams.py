@@ -9,7 +9,7 @@ import os
 import errno
 import socket
 
-from xpra.net.common import ConnectionClosedException
+from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util import envint, envbool, csv
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
@@ -239,8 +239,6 @@ class TwoFileConnection(Connection):
         return d
 
 
-IP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh", "udp")
-TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
 
 class SocketConnection(Connection):
     def __init__(self, sock, local, remote, target, socktype, info=None, socket_options=None):
