@@ -103,6 +103,7 @@ Recommends: python3-dbus
 # x264:
 #bionic:        ,libx264-152
 #disco:        ,libx264-155
+#focal:        ,libx264-155
 #buster:        ,libx264-155
 #bullseye:        ,libx264-160
 # we use dbus for many things - this provides "dbus-launch":
