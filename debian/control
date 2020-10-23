@@ -11,11 +11,7 @@ Build-Depends: debhelper (>= 8)
               ,libxtst-dev
               ,libxkbfile-dev
               ,libx264-dev
-#buster:              ,uglifyjs
-#xenial:              ,uglifyjs
-#bionic:              ,uglifyjs
-#eoan:              ,uglifyjs
-#focal:              ,uglifyjs
+              ,uglifyjs
               ,brotli
               ,libjs-jquery
               ,libjs-jquery-ui
@@ -25,23 +21,9 @@ Build-Depends: debhelper (>= 8)
               ,python3-cairo-dev
               ,python-gi-dev
               ,cython3
-#xenial:              ,ffmpeg-xpra
-#bionic:              ,libavcodec-dev
-#bionic:              ,libavformat-dev
-#bionic:              ,libswscale-dev
-#disco:              ,libavcodec-dev
-#disco:              ,libavformat-dev
-#disco:              ,libswscale-dev
-#eoan:              ,libavcodec-dev
-#eoan:              ,libavformat-dev
-#eoan:              ,libswscale-dev
-#focal:              ,libavcodec-dev
-#focal:              ,libavformat-dev
-#focal:              ,libswscale-dev
-#stretch:              ,ffmpeg-xpra
-#buster:              ,libavcodec-dev
-#buster:              ,libavformat-dev
-#buster:              ,libswscale-dev
+              ,libavcodec-dev
+              ,libavformat-dev
+              ,libswscale-dev
               ,dh-python
               ,dh-systemd
               ,libsystemd-dev
@@ -80,10 +62,8 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,xvfb
         ,keyboard-configuration
 # fast JPEG client support:
-#xenial:         ,libturbojpeg
 #bionic:        ,libturbojpeg
 #disco:        ,libturbojpeg
-#eoan:        ,libturbojpeg
 #focal:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
@@ -110,37 +90,24 @@ Recommends: python3-dbus
 #hope that this will allow our status icon to be shown:
         ,gir1.2-appindicator3-0.1
 # ffmpeg based codecs:
-#stretch:        ,ffmpeg-xpra
-#xenial:        ,ffmpeg-xpra
 #bionic:        ,libavcodec57
 #bionic:        ,libswscale4
 #disco:        ,libavcodec58
 #disco:        ,libswscale5
-#eoan:        ,libavcodec58
-#eoan:        ,libswscale5
 #focal:        ,libavcodec58
 #focal:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
 # x264:
-#stretch:        ,libx264-148
-#xenial:        ,libx264-148
 #bionic:        ,libx264-152
 #disco:        ,libx264-155
-#eoan:        ,libx264-155
 #buster:        ,libx264-155
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 # AES encryption:
         ,python3-cryptography
 #webp
-#stretch:        ,libwebp6
-#xenial:        ,libwebp5
-#bionic:        ,libwebp6
-#disco:        ,libwebp6
-#eoan:        ,libwebp6
-#focal:        ,libwebp6
-#buster:        ,libwebp6
+        ,libwebp6
 # audio-related:
         ,gstreamer1.0-pulseaudio
         ,gstreamer1.0-alsa
@@ -160,11 +127,7 @@ Recommends: python3-dbus
 #for using SSH passwords from the GUI launcher:
         ,sshpass
 # to make the system tray work again with gnome-shell:
-#buster:		,gnome-shell-extension-appindicator | plasma-desktop
-#bionic:		,gnome-shell-extension-appindicator | plasma-desktop
-#disco:        ,gnome-shell-extension-appindicator | plasma-desktop
-#eoan:        ,gnome-shell-extension-appindicator | plasma-desktop
-#focal:        ,gnome-shell-extension-appindicator | plasma-desktop
+		,gnome-shell-extension-appindicator | plasma-desktop
 #most of the examples use an xterm:
         ,xterm
 Suggests: openssh-server
@@ -178,12 +141,7 @@ Suggests: openssh-server
 # for CPU percentage in "top"
         ,python-psutil
 # to make the system tray work again with gnome-shell:
-#stretch:        ,gnome-shell-extension-top-icons-plus
-#buster:        ,gnome-shell-extension-top-icons-plus
-#bionic:        ,gnome-shell-extension-top-icons-plus
-#disco:        ,gnome-shell-extension-top-icons-plus
-#eoan:        ,gnome-shell-extension-top-icons-plus
-#focal:        ,gnome-shell-extension-top-icons-plus
+        ,gnome-shell-extension-top-icons-plus
 # for webcam support:
         ,python3-pyinotify
         ,python3-opencv
