@@ -240,9 +240,16 @@ def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
         def getdict(self):
             return {k[0] : getattr(self, k[0]) for k in self._fields_}
     #log("total size=%i for fields: %s", size, csv(fdef[0] for fdef in fields))
-    tcpinfo = TCPInfo.from_buffer_copy(data[:size])
-    d = tcpinfo.getdict()
     log = get_network_logger()
+    try:
+        tcpinfo = TCPInfo.from_buffer_copy(data[:size])
+    except ValueError as e:
+        log("getsockopt(SOL_TCP, TCP_INFO, %i)", tcpinfo_size, exc_info=True)
+        log("TCPInfo fields=%s", csv(fields))
+        log.warn("Warning: failed to get TCP_INFO for %s", sock)
+        log.warn(" %s", e)
+        return {}
+    d = tcpinfo.getdict()
     log("getsockopt(SOL_TCP, TCP_INFO, %i)=%s", tcpinfo_size, d)
     return d
 
@@ -275,7 +282,7 @@ def guess_packet_type(data):
             if not (rencode and yaml) and not compressors>1:
                 #if compression is enabled, the compression level must be set:
                 if not compressors or compression_level>0:
-                    return "xpra"
+                    pass #return "xpra"
     if data[:4]==b"SSH-":
         return "ssh"
     if data[0]==0x16:
