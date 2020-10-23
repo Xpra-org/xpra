@@ -13,7 +13,7 @@ from xpra.log import Logger
 
 from libc.stdint cimport uint64_t, uint16_t  #pylint: disable=syntax-error
 
-log = Logger("util")
+log = Logger("util", "network")
 
 
 DEF SD_LISTEN_FDS_START=3
@@ -51,6 +51,16 @@ def get_sd_listen_sockets():
     log("get_sd_listen_sockets()=%s", sockets)
     return sockets
 
+def get_sd_socket_type(fd):
+    from xpra.net.common import TCP_SOCKTYPES
+    socktype = os.environ.get("XPRA_SD%i_SOCKET_TYPE" % fd)
+    if not socktype:
+        socktype = os.environ.get("XPRA_SD_SOCKET_TYPE", "tcp")
+    if socktype not in TCP_SOCKTYPES:
+        log.warning("Warning: invalid sd socket type '%s', using 'tcp'", socktype)
+        socktype = "tcp"
+    return socktype
+
 def get_sd_listen_socket(int fd):
     #re-wrapping the socket gives us a more proper socket object,
     #so we can then wrap it with ssl
@@ -65,6 +75,7 @@ def get_sd_listen_socket(int fd):
         if sd_is_socket_inet(fd, family, socket.SOCK_STREAM, 1, 0)>0:
             sock = fromfd(family, socket.SOCK_STREAM)
             host, port = sock.getsockname()[:2]
-            return "tcp", sock, (host, port)
+            socktype = get_sd_socket_type(fd)
+            return socktype, sock, (host, port)
     #TODO: handle vsock
     return None
