@@ -209,43 +209,36 @@ POSIX_TCP_INFO = (
         ("state",           c_uint8),
         )
 def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
+    def get_tcpinfo_class(fields):
+        class TCPInfo(Structure):
+            _fields_ = tuple(fields)
+            def __repr__(self):
+                return "TCPInfo(%s)" % self.getdict()
+            def getdict(self):
+                return {k[0] : getattr(self, k[0]) for k in self._fields_}
+        return TCPInfo
     #calculate full structure size with all the fields defined:
-    tcpinfo_size = 0
-    for fdef in attributes:
-        ftype = fdef[1]
-        count = 1
-        if len(fdef)>2:
-            count = fdef[2]
-        tcpinfo_size += sizeof(ftype)*count
+    tcpinfo_class = get_tcpinfo_class(attributes)
+    tcpinfo_size = sizeof(tcpinfo_class)
     data = sock.getsockopt(socket.SOL_TCP, TCP_INFO, tcpinfo_size)
     data_size = len(data)
     #but only define fields in the ctypes.Structure
     #if they are actually present in the returned data:
-    size = 0
-    fields = []
-    for fdef in attributes:
-        ftype = fdef[1]
-        count = 1
-        if len(fdef)>2:
-            count = fdef[2]
-        fsize = sizeof(ftype)*count
-        if size+fsize>data_size:
-            break
-        fields.append(fdef)
-        size += fsize
-    class TCPInfo(Structure):
-        _fields_ = tuple(fields)
-        def __repr__(self):
-            return "TCPInfo(%s)" % self.getdict()
-        def getdict(self):
-            return {k[0] : getattr(self, k[0]) for k in self._fields_}
-    #log("total size=%i for fields: %s", size, csv(fdef[0] for fdef in fields))
+    while tcpinfo_size>data_size:
+        #trim it down:
+        attributes = attributes[:-1]
+        tcpinfo_class = get_tcpinfo_class(attributes)
+        tcpinfo_size = sizeof(tcpinfo_class)
     log = get_network_logger()
+    if tcpinfo_size==0:
+        log("getsockopt(SOL_TCP, TCP_INFO, %i) no data", tcpinfo_size)
+        return {}
+    #log("total size=%i for fields: %s", size, csv(fdef[0] for fdef in fields))
     try:
-        tcpinfo = TCPInfo.from_buffer_copy(data[:size])
+        tcpinfo = tcpinfo_class.from_buffer_copy(data[:tcpinfo_size])
     except ValueError as e:
         log("getsockopt(SOL_TCP, TCP_INFO, %i)", tcpinfo_size, exc_info=True)
-        log("TCPInfo fields=%s", csv(fields))
+        log("TCPInfo fields=%s", csv(tcpinfo_class._fields_))
         log.warn("Warning: failed to get TCP_INFO for %s", sock)
         log.warn(" %s", e)
         return {}
