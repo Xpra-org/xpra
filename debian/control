@@ -98,10 +98,13 @@ Recommends: python3-dbus
 #focal:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
+#bullseye:        ,libavcodec58
+#bullseye:        ,libswscale5
 # x264:
 #bionic:        ,libx264-152
 #disco:        ,libx264-155
 #buster:        ,libx264-155
+#bullseye:        ,libx264-160
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 # AES encryption:
