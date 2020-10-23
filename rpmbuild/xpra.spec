@@ -586,13 +586,32 @@ fi
 
 
 %changelog
-* Sun Oct 04 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
-- fix ssl server hostname verification errors
+* Fri Oct 23 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
 - fix HTML5 client keyboard layout detection with Internet Explorer
+- fix HTML5 audio forwarding with some versions of Safari
+- fix HTML5 (un)fullscreen
+- fix ssl server hostname verification errors
 - fix syntax errors when using connections using nested ssh tunnels
+- fix http / websocket and ssl socket upgrade failures
+- fix server errors when ws sockets cannot be upgrade to wss
 - fix proxy control socket becoming unresponsive after errors
 - fix proxy shutdown
 - fix stdout errors causing server startup or shutdown problems
+- fix MS Windows client keyboard unresponsive issues
+- fix MS Windows and MacOS websocket servers missing mimetypes module
+- fix archlinux build path stripping
+- fix opengl debug option for saving buffers as jpeg
+- fix spurious "missing resolution" errors (often with HTML5 client resizing)
+- fix duplicated data in bug reports
+- fix download checksum verification (was not verified with python3 builds)
+- fix spurious file transfer errors with python3 builds
+- avoid starting new threads for file transfers that don't need one
+- don't let bad http requests mess up the server log
+- prevent peek data or exception message from corrupting the log / stdout
+- remove dependency on "requests" package introduced in 4.0.4
+- remove "numpy" dependency for builds without NVENC / NVFBC
+- add new NVENC presets from SDK v10, workaround deprecation warnings
+- add correct packaging for Debian Bullseye and Debian Groovy Gorilla
 
 * Sat Sep 26 2020 Antoine Martin <antoine@xpra.org> 4.0.4-10
 - fix memory leak with 'scroll' encoding
