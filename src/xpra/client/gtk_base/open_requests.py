@@ -210,6 +210,15 @@ class OpenRequestsWindow:
         def progressaccept(*_args):
             cb_answer(ACCEPT, True)
             show_progressbar()
+        pb_stop = self.progress_bars.get(send_id)
+        if pb_stop:
+            #we already accepted this one, show stop + progressbar
+            pb, stop_btn = pb_stop
+            if stop_btn:
+                hbox.pack_start(stop_btn)
+            hbox.set_spacing(20)
+            hbox.pack_start(pb)
+            return hbox
         cancel_btn = self.btn("Cancel", None, cancel, "close.png")
         hbox.pack_start(cancel_btn)
         if bytestostr(dtype)=="url":
@@ -243,6 +252,7 @@ class OpenRequestsWindow:
         pb, stop_btn = buttons
         log("transfer_progress_update%s pb=%s", (send, transfer_id, elapsed, position, total, error), pb)
         if error:
+            self.progress_bars[transfer_id] = (pb, None)
             stop_btn.hide()
             pb.set_text("Error: %s, file transfer aborted" % error)
             GLib.timeout_add(REMOVE_ENTRY_DELAY*1000, self.remove_entry, transfer_id)
@@ -252,6 +262,7 @@ class OpenRequestsWindow:
             pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
             pb.set_show_text(True)
         if position==total:
+            self.progress_bars[transfer_id] = (pb, None)
             stop_btn.hide()
             pb.set_text("Complete: %sB" % std_unit(total))
             pb.set_show_text(True)
