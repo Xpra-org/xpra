@@ -62,7 +62,7 @@ class AuthHandlersTest(unittest.TestCase):
 			self._test_handler(True, "password2", Handler, name="XPRA_PASSWORD2")
 		with OSEnvContext():
 			name = "XPRA_TEST_VARIABLE_DOES_NOT_EXIST"
-            os.environ.pop(name, None)
+			os.environ.pop(name, None)
 			self._test_handler(False, None, Handler, name=name)
 
 	def test_file_handler(self):
