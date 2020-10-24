@@ -506,12 +506,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
             opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
-        #close the splash screen
-        #because daemonizing will close the file descriptors
-        progress(100, "daemonizing")
-        def noprogress(*_args):
-            pass
-        progress = noprogress
         from xpra.server.server_util import daemonize
         daemonize()
 
@@ -648,6 +642,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         warn(" you should also enable the sync-xvfb option")
         warn(" to keep the Xephyr window updated")
 
+    progress(10, "creating sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
     sockets = create_sockets(opts, error_cb)
 
