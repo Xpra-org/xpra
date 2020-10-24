@@ -1153,8 +1153,6 @@ class WindowClient(StubClientMixin):
             del self._id_to_window[wid]
             del self._window_to_id[window]
             self.destroy_window(wid, window)
-        if not self._id_to_window:
-            log("last window gone, clearing key repeat")
         self.set_tray_icon()
 
     def may_reenable_modal_windows(self, window):
