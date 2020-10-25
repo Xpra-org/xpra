@@ -249,7 +249,7 @@ def load_xdg_menu_data(force_reload=False):
 
 def do_load_xdg_menu_data():
     try:
-        from xdg.Menu import parse, Menu, ParsingError
+        from xdg.Menu import parse, Menu
     except ImportError:
         log("do_load_xdg_menu_data()", exc_info=True)
         if first_time("no-python-xdg"):
