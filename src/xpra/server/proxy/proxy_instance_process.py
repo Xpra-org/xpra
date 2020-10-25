@@ -172,7 +172,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         start_thread(self.server_message_queue, "server message queue")
 
         if not self.create_control_socket():
-            #TODO: should send a message to the client
+            self.stop(None, "cannot create the proxy control socket")
             return
         self.control_socket_thread = start_thread(self.control_socket_loop, "control")
 
