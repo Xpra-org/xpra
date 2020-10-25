@@ -6,7 +6,7 @@
 import os.path
 import socket
 from time import sleep
-from ctypes import Structure, c_uint8, c_uint32, c_uint64, sizeof
+from ctypes import Structure, c_uint8, sizeof
 
 from xpra.scripts.config import InitException, TRUE_OPTIONS
 from xpra.scripts.main import InitExit
