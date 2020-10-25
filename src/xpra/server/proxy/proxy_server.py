@@ -16,8 +16,8 @@ from xpra.util import (
     )
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
-    getuid, getgid, WIN32, POSIX,
-    monotonic_time,
+    getuid, getgid, WIN32, POSIX, OSX,
+    monotonic_time, umask_context,
     )
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -104,6 +104,32 @@ class ProxyServer(ServerCore):
         from xpra.version_util import get_platform_info
         get_platform_info()
         self.child_reaper = getChildReaper()
+        self.create_system_dir(opts.system_proxy_socket)
+
+    def create_system_dir(self, sps):
+        if not POSIX or OSX or not sps:
+            return
+        MODE = 0o775
+        if sps.startswith("/run/xpra") or sps.startswith("/var/run/xpra"):
+            #create the directory and verify its permissions
+            #which should have been set correctly by tmpfiles.d,
+            #but may have been set wrong if created by systemd's socket activation instead
+            d = sps.split("/xpra")[0]
+            try:
+                if os.path.exists(d):
+                    mode = os.stat(d).st_mode
+                    if (mode & MODE)!=MODE:
+                        log.warn("Warning: invalid permissions on '%s' : %s", d, oct(mode))
+                        mode = mode | MODE
+                        log.warn(" changing to %s", oct(mode))
+                        os.chmod(d, mode)
+                else:
+                    with umask_context(0):
+                        os.mkdir(d, 0o775)
+            except OSError as e:
+                log("create_system_dir()", exc_info=True)
+                log.error("Error: failed to create or change the permissions on '%s':", d)
+                log.error(" %s", e)
 
     def init_control_commands(self):
         ServerCore.init_control_commands(self)
