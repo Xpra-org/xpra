@@ -55,7 +55,9 @@ class DotXpra:
         return "DotXpra(%s, %s - %i:%i - %s)" % (self._sockdir, self._sockdirs, self.uid, self.gid, self.username)
 
     def mksockdir(self, d, mode=0o700, uid=None, gid=None):
-        if d and not os.path.exists(d):
+        if not d:
+            return
+        if not os.path.exists(d):
             if uid is None:
                 uid = self.uid
             if gid is None:
@@ -64,6 +66,15 @@ class DotXpra:
                 os.mkdir(d, mode)
             if uid!=os.getuid() or gid!=os.getgid():
                 os.lchown(d, uid, gid)
+        else:
+            try:
+                st_mode = os.stat(d).st_mode
+                if st_mode&0o777!=mode:
+                    log = get_util_logger()
+                    log.warn("Warning: socket directory '%s'", d)
+                    log.warn(" expected permissions %s but found %s", oct(mode), oct(st_mode&0o777))
+            except OSError:
+                get_util_logger().log("mksockdir%s", (d, mode, uid, gid), exc_info=True)
 
     def socket_expand(self, path):
         return osexpand(path, self.username, uid=self.uid, gid=self.gid)
