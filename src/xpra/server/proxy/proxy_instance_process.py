@@ -173,7 +173,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         start_thread(self.server_message_queue, "server message queue")
 
         if not self.create_control_socket():
-            self.stop(None, "cannot create the proxy control socket")
             return
         self.control_socket_thread = start_thread(self.control_socket_loop, "control")
 
@@ -198,6 +197,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     # control socket:
     def create_control_socket(self):
         assert self.socket_dir
+        def stop(msg):
+            self.stop(None, "cannot create the proxy control socket: %s" % msg)
         username = get_username_for_uid(self.uid)
         dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
         sockname = ":proxy-%s" % os.getpid()
@@ -208,6 +209,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN, DotXpra.INACCESSIBLE):
             log.error("Error: you already have a proxy server running at '%s'", sockpath)
             log.error(" the control socket will not be created")
+            stop("socket already exists")
             return False
         d = os.path.dirname(sockpath)
         try:
@@ -222,6 +224,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             log("create_unix_domain_socket failed for '%s'", sockpath, exc_info=True)
             log.error("Error: failed to setup control socket '%s':", sockpath)
             log.error(" %s", e)
+            stop(e)
             return False
         self.control_socket = sock
         self.control_socket_path = sockpath
