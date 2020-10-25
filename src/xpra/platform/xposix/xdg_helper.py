@@ -244,7 +244,7 @@ def load_xdg_menu_data(force_reload=False):
                 log.warn("Warning: found %i large icon%s:", len(large_icons), engs(large_icons))
                 for filename, size in large_icons:
                     log.warn(" '%s' (%i KB)", filename, size//1024)
-                log.warn(" more bandwidth will used by the start menu data")
+                log.warn(" more bandwidth will be used by the start menu data")
     return xdg_menu_data
 
 def do_load_xdg_menu_data():
