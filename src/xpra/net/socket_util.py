@@ -14,7 +14,7 @@ from xpra.exit_codes import (
     EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
     EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
     )
-from xpra.net.bytestreams import set_socket_timeout
+from xpra.net.bytestreams import set_socket_timeout, pretty_socket
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
@@ -499,7 +499,7 @@ def parse_bind_vsock(bind_vsock):
 def setup_sd_listen_socket(stype, sock, addr):
     log = get_network_logger()
     def cleanup_sd_listen_socket():
-        log.info("closing sd listen socket %s", addr)
+        log.info("closing sd listen socket %s", pretty_socket(addr))
         try:
             sock.close()
         except OSError:
