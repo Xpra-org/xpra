@@ -13,6 +13,7 @@ from xpra.server.proxy.proxy_instance import ProxyInstance
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol import Protocol
+from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.os_util import (
     SIGNAMES, POSIX,
     bytestostr,
@@ -213,7 +214,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             return False
         d = os.path.dirname(sockpath)
         try:
-            dotxpra.mksockdir(d)
+            dotxpra.mksockdir(d, SOCKET_DIR_MODE)
         except Exception as e:
             log.warn("Warning: failed to create socket directory '%s'", d)
             log.warn(" %s", e)

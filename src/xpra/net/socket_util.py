@@ -33,6 +33,9 @@ PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
 PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
 
+SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
+SOCKET_GROUP = os.environ.get("XPRA_SOCKET_GROUP", "xpra")
+
 
 network_logger = None
 def get_network_logger():
@@ -582,6 +585,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 continue
             tmp[sockpath] = options
         sockpaths = tmp
+        log("sockpaths=%s", sockpaths)
         #create listeners:
         if WIN32:
             from xpra.platform.win32.namedpipes.listener import NamedPipeListener
@@ -621,7 +625,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                     if getuid()==0 and (d=="/var/run/xpra" or d=="/run/xpra"):
                         #this is normally done by tmpfiles.d,
                         #but we may need to do it ourselves in some cases:
-                        kwargs["mode"] = 0o775
+                        kwargs["mode"] = SOCKET_DIR_MODE
                         xpra_gid = get_group_id("xpra")
                         if xpra_gid>0:
                             kwargs["gid"] = xpra_gid
