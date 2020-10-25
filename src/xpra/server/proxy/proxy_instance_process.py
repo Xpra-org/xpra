@@ -112,6 +112,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 set_blocking(self.server_conn)
             else:
                 log.error("unexpected proxy server message: %s", m)
+                log.warn("Warning: unexpected proxy server message:")
+                log.warn(" '%s'", m)
 
     def signal_quit(self, signum, _frame=None):
         log.info("")
@@ -122,7 +124,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(None, SIGNAMES.get(signum, signum))
         #from now on, we can't rely on the main loop:
-        from xpra.os_util import register_SIGUSR_signals
         register_SIGUSR_signals()
         #log.info("instance frames:")
         #from xpra.util import dump_all_frames
