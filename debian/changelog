@@ -5,14 +5,14 @@ xpra (4.1-1) UNRELEASED; urgency=low
 
 xpra (4.0-1) UNRELEASED; urgency=low
   * Drop support for:
-	- Python 2, GTK2
-	- legacy versions (pre 1.0)
-	- weak authentication
+    - Python 2, GTK2
+    - legacy versions (pre 1.0)
+    - weak authentication
   * Network, per socket options:
-	- authentication and encryption
-	- ssl
-	- ssh
-	- bind options for client
+    - authentication and encryption
+    - ssl
+    - ssh
+    - bind options for client
   * make it easier to send files from the server
   * xpra toolbox subcommand
   * xpra help subcommand
@@ -21,11 +21,11 @@ xpra (4.0-1) UNRELEASED; urgency=low
   * signal handling fixes
   * smoother window resizing
   * refactoring and testing
-	- unit tests coverage and fixes
-	- completely skip loading unused features at runtime
-	- get rid of capabilities data after parsing it
-	- better module dependency separation
-	- don't convert to a string before we need it
+    - unit tests coverage and fixes
+    - completely skip loading unused features at runtime
+    - get rid of capabilities data after parsing it
+    - better module dependency separation
+    - don't convert to a string before we need it
   * more useful window and tray title
   * make it easier to source environment
   * disable desktop animations in desktop mode
@@ -1234,7 +1234,7 @@ xpra (0.6.1-1) UNRELEASED; urgency=low
 
 xpra (0.6.0-5) UNRELEASED; urgency=low
   * fix launcher: don't block the UI whilst connecting, and use a lower timeout,
-  	fix icon lookup on *nix
+    fix icon lookup on *nix
   * fix clipboard contents too big (was causing connection drops):
     try to compress them and just drop them if they are still too big
   * x264 or vpx are now the default encodings (if available)
@@ -1495,14 +1495,14 @@ xpra (0.1.0-1) UNRELEASED; urgency=low
   * detect and discard broken windows with invalid atoms, avoids vfb + xpra crash
   * unpress keys all keys on start (if any)
   * fix screen size check: also check vertical size is sufficient
-  *	fix for invisible 0 by 0 windows: restore a minimum size
+  * fix for invisible 0 by 0 windows: restore a minimum size
   * fix for window dimensions causing enless resizing or missing window contents
-  *	toggle cursors, bell and notifications by telling the server not to bother sending them, saves bandwidth
-  *	build/deploy: don't modify file in source tree, generate it at build time only
-  *	add missing GPL2 license file to show in about dialog
-  *	Python 2.5: workarounds to restore support
-  *	turn off compression over local connections (when mmap is enabled)
-  *	clients can specify maximum refresh rate and screen update batching options
+  * toggle cursors, bell and notifications by telling the server not to bother sending them, saves bandwidth
+  * build/deploy: don't modify file in source tree, generate it at build time only
+  * add missing GPL2 license file to show in about dialog
+  * Python 2.5: workarounds to restore support
+  * turn off compression over local connections (when mmap is enabled)
+  * clients can specify maximum refresh rate and screen update batching options
 
  -- Antoine Martin <antoine@xpra.org>  Thu, 21 Mar 2012 18:03:38 +0700
 
