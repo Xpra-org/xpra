@@ -195,7 +195,7 @@ class SplashScreen(Gtk.Window):
         self.cancel_progress_timer()
         GLib.idle_add(self.progress_bar.set_fraction, (pct+inc)/100.0)
         if inc<max_increase:
-            self.progress_timer = GLib.timeout_add(40+(2+inc)**2, self.increase_fraction, pct, inc+1, max_increase)
+            self.progress_timer = GLib.timeout_add(40+20*(2+inc)**2, self.increase_fraction, pct, inc+1, max_increase)
         return False
 
 
