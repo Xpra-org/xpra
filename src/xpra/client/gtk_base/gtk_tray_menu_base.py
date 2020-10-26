@@ -8,7 +8,11 @@ import os
 import re
 from gi.repository import GLib, Gtk, GdkPixbuf
 
-from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict, typedict
+from xpra.util import (
+    CLIENT_EXIT,
+    iround, envbool,
+    ellipsizer, repr_ellipsized, reverse_dict, typedict,
+    )
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.gtk_common.gtk_util import (
     get_pixbuf_from_data, scaled_image,
@@ -1407,7 +1411,7 @@ class GTKTrayMenuBase(MenuHelper):
                 execlog("category properties is not a dict: %s", type(category_props))
                 continue
             cp = typedict(category_props)
-            execlog("  category_props(%s)=%s", category, category_props)
+            execlog("  category_props(%s)=%s", category, ellipsizer(category_props))
             entries = cp.dictget("Entries")
             if not entries:
                 execlog("  no entries for category '%s'", category)
