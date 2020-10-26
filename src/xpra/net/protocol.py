@@ -16,7 +16,7 @@ from queue import Queue
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr, monotonic_time
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict, nonl
 from xpra.make_thread import make_thread, start_thread
-from xpra.net.common import ConnectionClosedException,may_log_packet    #@UndefinedVariable (pydev false positive)
+from xpra.net.common import ConnectionClosedException, may_log_packet, MAX_PACKET_SIZE    #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (
@@ -161,7 +161,7 @@ class Protocol:
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
-        self.max_packet_size = 16*1024*1024
+        self.max_packet_size = MAX_PACKET_SIZE
         self.abs_max_packet_size = 256*1024*1024
         self.large_packets = [b"hello", b"window-metadata", b"sound-data", b"notify_show", b"setting-change", b"shell-reply"]
         self.send_aliases = {}

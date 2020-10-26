@@ -13,6 +13,7 @@ from xpra.platform.gui import (
     )
 from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
+from xpra.net.common import MAX_PACKET_SIZE
 from xpra.os_util import monotonic_time
 from xpra.util import (
     iround, envint, envfloat, envbool, log_screen_sizes, engs, flatten_dict, typedict,
@@ -292,7 +293,7 @@ class DisplayClient(StubClientMixin):
         p = self._protocol
         if p:
             #we can't assume to have a real ClientConnection object:
-            p.max_packet_size = max(16*1024*1024, maxw*maxh*4 + 4*1024)
+            p.max_packet_size = max(MAX_PACKET_SIZE, maxw*maxh*4 + 4*1024)
             p.abs_max_packet_size = maxw*maxh*4*4 + 4*1024
             log("maximum packet size set to %i", p.max_packet_size)
 

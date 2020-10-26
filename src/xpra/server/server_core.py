@@ -23,7 +23,7 @@ from xpra.version_util import (
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import InitException, parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.net.common import may_log_packet, SOCKET_TYPES
+from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection, PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
@@ -1885,7 +1885,7 @@ class ServerCore:
         #max packet size from client (the biggest we can get are clipboard packets)
         netlog("accept_client(%s, %s)", proto, c)
         #note: when uploading files, we send them in chunks smaller than this size
-        proto.max_packet_size = 16*1024*1024  #16MB
+        proto.max_packet_size = MAX_PACKET_SIZE
         proto.parse_remote_caps(c)
         self.accept_protocol(proto)
 
