@@ -115,7 +115,10 @@ class SplashScreen(Gtk.Window):
             GLib.source_remove(tt)
 
     def pulse(self):
-        pulse_char = PULSE_CHARS[self.pulse_counter % len(PULSE_CHARS)]
+        if self.pct<100:
+            pulse_char = PULSE_CHARS[self.pulse_counter % len(PULSE_CHARS)]
+        else:
+            pulse_char = DONE_CHAR
         label = "  %s %s" % (pulse_char, self.current_label_text)
         self.labels[-1].set_label(label)
         self.pulse_counter += 1
