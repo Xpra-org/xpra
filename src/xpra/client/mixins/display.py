@@ -292,7 +292,7 @@ class DisplayClient(StubClientMixin):
         p = self._protocol
         if p:
             #we can't assume to have a real ClientConnection object:
-            p.max_packet_size = maxw*maxh*4 + 4*1024
+            p.max_packet_size = max(16*1024*1024, maxw*maxh*4 + 4*1024)
             p.abs_max_packet_size = maxw*maxh*4*4 + 4*1024
             log("maximum packet size set to %i", p.max_packet_size)
 

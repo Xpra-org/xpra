@@ -161,7 +161,7 @@ class Protocol:
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
         #initial value which may get increased by client/server after handshake:
-        self.max_packet_size = 4*1024*1024
+        self.max_packet_size = 16*1024*1024
         self.abs_max_packet_size = 256*1024*1024
         self.large_packets = [b"hello", b"window-metadata", b"sound-data", b"notify_show", b"setting-change", b"shell-reply"]
         self.send_aliases = {}

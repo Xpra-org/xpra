@@ -1885,7 +1885,7 @@ class ServerCore:
         #max packet size from client (the biggest we can get are clipboard packets)
         netlog("accept_client(%s, %s)", proto, c)
         #note: when uploading files, we send them in chunks smaller than this size
-        proto.max_packet_size = 1024*1024  #1MB
+        proto.max_packet_size = 16*1024*1024  #16MB
         proto.parse_remote_caps(c)
         self.accept_protocol(proto)
 
