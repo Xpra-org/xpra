@@ -150,8 +150,8 @@ class SplashScreen(Gtk.Window):
                         next = next.replace(c, DONE_CHAR)
                     self.labels[i].set_label(next)
             self.pulse_counter = 0
-            self.pulse()
         self.pct = pct
+        self.pulse()
 
     def show_progress_value(self, pct):
         self.cancel_progress_timer()
