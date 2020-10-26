@@ -1402,7 +1402,7 @@ class GTKTrayMenuBase(MenuHelper):
     def build_start_menu(self):
         menu = Gtk.Menu()
         execlog("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
-        execlog("self.client.server_xdg_menu=%s", self.client.server_xdg_menu)
+        execlog("self.client.server_xdg_menu=%s", ellipsizer(self.client.server_xdg_menu))
         for cat, category_props in sorted(self.client.server_xdg_menu.items()):
             category = cat.decode("utf-8")
             execlog(" * category: %s", category)
