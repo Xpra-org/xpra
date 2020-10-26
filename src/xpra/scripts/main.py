@@ -395,12 +395,6 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
 
     if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
         (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
-        try:
-            cwd = os.getcwd()
-        except OSError:
-            os.chdir("/")
-            cwd = "/"
-        env = os.environ.copy()
         start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
         if start_via_proxy is not False and (not POSIX or getuid()!=0) and options.daemon:
             try:
@@ -482,6 +476,12 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
             progress_cb = show_progress
             from xpra.scripts.server import add_cleanup
             add_cleanup(stop_progress_process)
+        try:
+            cwd = os.getcwd()
+        except OSError:
+            os.chdir("/")
+            cwd = "/"
+        env = os.environ.copy()
         current_display = nox()
         try:
             from xpra import server
