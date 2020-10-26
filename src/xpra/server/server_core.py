@@ -431,6 +431,9 @@ class ServerCore:
             return
         try:
             os.kill(self.dbus_pid, signal.SIGINT)
+        except ProcessLookupError as e:
+            dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
+            dbuslog.warn("Warning: dbus process not found (pid=%i)", self.dbus_pid)
         except Exception as e:
             dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
             dbuslog.warn("Warning: error trying to stop dbus with pid %i:", self.dbus_pid)
