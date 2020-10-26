@@ -622,7 +622,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 d = os.path.dirname(sockpath)
                 try:
                     kwargs = {}
-                    if getuid()==0 and (d=="/var/run/xpra" or d=="/run/xpra"):
+                    if d in ("/var/run/xpra", "/run/xpra"):
                         #this is normally done by tmpfiles.d,
                         #but we may need to do it ourselves in some cases:
                         kwargs["mode"] = SOCKET_DIR_MODE
