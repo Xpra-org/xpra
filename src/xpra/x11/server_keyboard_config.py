@@ -446,7 +446,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 l = log
             l(msg, *args)
         def klog(msg, *args):
-            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, keyval, group), *args)
+            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), *args)
         keycode = None
         rgroup = group
         if self.xkbmap_query:
