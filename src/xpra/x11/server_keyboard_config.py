@@ -31,6 +31,7 @@ log = Logger("keyboard")
 X11Keyboard = X11KeyboardBindings()
 
 MAP_MISSING_MODIFIERS = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
+SHIFT_LOCK = envbool("XPRA_SHIFT_LOCK", False)
 
 ALL_X11_MODIFIERS = {
                     "shift"     : 0,
@@ -431,7 +432,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycode_mappings = get_keycode_mappings()
 
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keystr, group):
         if not self.enabled:
             log("ignoring keycode since keyboard is turned off")
             return -1, group
@@ -465,7 +466,8 @@ class KeyboardConfig(KeyboardConfigBase):
             """
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
-            shift = ("shift" in modifiers) ^ ("lock" in modifiers)
+            lock = ("lock" in modifiers) and (SHIFT_LOCK or (keystr and keystr.isalpha()))
+            shift = ("shift" in modifiers) ^ lock
             mode = 0
             numlock = 0
             numlock_modifier = None
