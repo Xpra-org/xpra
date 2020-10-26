@@ -322,10 +322,10 @@ class ChildCommandServer(StubServerMixin):
             self.idle_add(self.guess_session_name, procs)
 
     def start_command(self, name, child_cmd, ignore=False, callback=None, use_wrapper=True, shell=False, **kwargs):
-        log("start_command%s exec_wrapper=%s",
-            (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper)
         from subprocess import Popen
         env = self.get_child_env()
+        log("start_command%s exec_wrapper=%s, exec_cwd=%s",
+            (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper, self.exec_cwd)
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
