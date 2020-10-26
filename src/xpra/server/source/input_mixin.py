@@ -116,12 +116,12 @@ class InputMixin(StubSourceMixin):
                 self.keyboard_config = current_keyboard_config
 
 
-    def get_keycode(self, client_keycode, keyname, pressed, modifiers, group):
+    def get_keycode(self, client_keycode, keyname, pressed, modifiers, keystr, group):
         kc = self.keyboard_config
         if kc is None:
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
             return -1
-        return kc.get_keycode(client_keycode, keyname, pressed, modifiers, group)
+        return kc.get_keycode(client_keycode, keyname, pressed, modifiers, keystr, group)
 
 
     def update_mouse(self, wid, x, y, rx, ry):
