@@ -91,10 +91,13 @@ class ProxyInstance:
     def is_alive(self):
         return not self.exit
 
-    def run(self):
+    def log_start(self):
+        assert self.client_protocol and self.server_protocol
         log.info("started %s", self)
         log.info(" for client %s", self.client_protocol._conn)
         log.info(" and server %s", self.server_protocol._conn)
+
+    def run(self):
         self.video_init()
 
         #setup protocol wrappers:

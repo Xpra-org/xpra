@@ -135,9 +135,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def run(self):
         register_SIGUSR_signals(self.idle_add)
-        log.info("started %s", self)
-        log.info(" for client %s", self.client_conn)
-        log.info(" and server %s", self.server_conn)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
         self.client_protocol = client_protocol_class(self, self.client_conn,
@@ -145,6 +142,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.client_protocol.restore_state(self.client_state)
         self.server_protocol = server_protocol_class(self, self.server_conn,
                                                      self.process_server_packet, self.get_server_packet)
+        self.log_start()
 
         log("ProxyProcessProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
         set_proc_title("Xpra Proxy Instance for %s" % self.server_conn)
