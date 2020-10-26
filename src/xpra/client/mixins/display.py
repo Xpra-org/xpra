@@ -294,7 +294,7 @@ class DisplayClient(StubClientMixin):
         if p:
             #we can't assume to have a real ClientConnection object:
             file_size_limit = getattr(self, "file_size_limit", 0)
-            p.max_packet_size = max(maxw*maxh*4, file_size_limit*1024*1024) + 4*1024
+            p.max_packet_size = max(16*1024*1024, maxw*maxh*4, file_size_limit*1024*1024) + 4*1024
             p.abs_max_packet_size = max(maxw*maxh*4 * 4, file_size_limit*1024*1024) + 4*1024
             log("maximum packet size set to %i", p.max_packet_size)
 
