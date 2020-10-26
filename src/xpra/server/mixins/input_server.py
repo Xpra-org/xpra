@@ -149,14 +149,18 @@ class InputServer(StubServerMixin):
     def _process_key_action(self, proto, packet):
         if self.readonly:
             return
-        wid, keyname, pressed, modifiers, keyval, _, client_keycode, group = packet[1:9]
+        wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]
         ss = self.get_server_source(proto)
         if ss is None:
             return
         keyname = bytestostr(keyname)
+        try:
+            keystr = keystr.decode("utf8")
+        except Exception:
+            keystr = bytestostr(keystr)
         modifiers = list(bytestostr(x) for x in modifiers)
         self.set_ui_driver(ss)
-        keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, group)
+        keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keystr, group)
         keylog("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
         if group>=0:
             self.set_keyboard_layout_group(group)
@@ -176,8 +180,8 @@ class InputServer(StubServerMixin):
                 keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 
-    def get_keycode(self, ss, client_keycode, keyname, pressed, modifiers, group):
-        return ss.get_keycode(client_keycode, keyname, pressed, modifiers, group)
+    def get_keycode(self, ss, client_keycode, keyname, pressed, modifiers, keystr, group):
+        return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keystr, group)
 
     def fake_key(self, keycode, press):
         pass
@@ -257,7 +261,8 @@ class InputServer(StubServerMixin):
         group = 0
         if len(packet)>=7:
             group = packet[6]
-        keycode, group = ss.get_keycode(client_keycode, keyname, modifiers, group)
+        keystr = ""
+        keycode, group = ss.get_keycode(client_keycode, keyname, modifiers, keystr, group)
         if group>=0:
             self.set_keyboard_layout_group(group)
         #key repeat uses modifiers from a pointer event, so ignore mod_pointermissing:
