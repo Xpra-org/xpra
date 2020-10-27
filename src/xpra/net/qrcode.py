@@ -18,6 +18,7 @@ def get_qrencode_fn():
     global _qrencode_fn
     if _qrencode_fn is None:
         _qrencode_fn = _get_qrencode_fn() or False
+        log("get_qrencode_fn()=%s", _qrencode_fn)
     return _qrencode_fn
 
 def _get_qrencode_fn():
