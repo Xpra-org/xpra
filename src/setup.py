@@ -1203,6 +1203,9 @@ if WIN32:
             #svg pixbuf loader:
             add_DLLs("rsvg", "croco")
 
+        if client_ENABLED or server_ENABLED:
+            add_DLLs("qrencode")
+
         if sound_ENABLED:
             add_dir("share", ["gst-plugins-base", "gstreamer-1.0"])
             add_gi("Gst-1.0", "GstAllocators-1.0", "GstAudio-1.0", "GstBase-1.0",
