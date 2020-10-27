@@ -12,7 +12,7 @@ import stat
 import socket
 from time import sleep
 import logging
-from subprocess import Popen, PIPE, DEVNULL
+from subprocess import Popen, PIPE, DEVNULL, TimeoutExpired
 import signal
 import shlex
 import traceback
@@ -1862,7 +1862,7 @@ def make_progress_process():
 def run_opengl_probe():
     from xpra.platform.paths import get_nodock_command
     log = Logger("opengl")
-    cmd = get_nodock_command()+["opengl-probe"]
+    cmd = get_nodock_command()+["opengl"]
     env = os.environ.copy()
     if is_debug_enabled("opengl"):
         cmd += ["-d", "opengl"]
@@ -1871,31 +1871,47 @@ def run_opengl_probe():
     env["XPRA_HIDE_DOCK"] = "1"
     start = monotonic_time()
     try:
-        proc = Popen(cmd, stderr=DEVNULL, env=env)
+        proc = Popen(cmd, stdout=PIPE, stderr=DEVNULL, env=env)
     except Exception as e:
         log.warn("Warning: failed to execute OpenGL probe command")
         log.warn(" %s", e)
         return "probe-failed:%s" % e
-    r = pollwait(proc, OPENGL_PROBE_TIMEOUT)
+    try:
+        stdout, stderr = proc.communicate(timeout=OPENGL_PROBE_TIMEOUT)
+        r = proc.returncode
+    except TimeoutExpired:
+        proc.kill()
+        stdout, stderr = proc.communicate()
+        r = None
+    log("xpra opengl stdout=%s", stdout)
+    log("xpra opengl stderr=%s", stderr)
     log("OpenGL probe command returned %s for command=%s", r, cmd)
     end = monotonic_time()
     log("probe took %ims", 1000*(end-start))
-    if r==0:
-        return "probe-success"
-    if r==1:
-        return "probe-crash"
-    if r==2:
-        return "probe-warning"
-    if r==3:
-        return "probe-error"
-    if r is None:
-        msg = "timeout"
-    elif r>128:
-        msg = SIGNAMES.get(r-128)
-    else:
-        msg = SIGNAMES.get(0-r, 0-r)
-    log.warn("Warning: OpenGL probe failed: %s", msg)
-    return "probe-failed:%s" % msg
+    props = {}
+    for line in stdout.decode().splitlines():
+        parts = line.split("=", 1)
+        if len(parts)==2:
+            props[parts[0]] = parts[1]
+    def probe_message():
+        err = props.get("error")
+        if err:
+            return "error"
+        if r==1:
+            return "crash"
+        if r is None:
+            return "timeout"
+        if r>128:
+            return "failed:%s" % SIGNAMES.get(r-128)
+        if r!=0:
+            return "failed:%s" % SIGNAMES.get(0-r, 0-r)
+        if not props.get("success", False):
+            return "error"
+        if not props.get("safe", False):
+            return "warning"
+        return "success"
+    #log.warn("Warning: OpenGL probe failed: %s", msg)
+    return probe_message(), props
 
 def make_client(error_cb, opts):
     progress_process = None
@@ -1948,10 +1964,15 @@ def make_client(error_cb, opts):
             if os.environ.get("XDG_SESSION_TYPE")=="wayland":
                 opts.opengl = "no"
             else:
-                app.show_progress(20, "Validating OpenGL configuration")
-                opts.opengl = run_opengl_probe()
-                r = opts.opengl.replace("probe-", "")   #ie: "probe-success" -> "success"
-                app.show_progress(20, "Validating OpenGL: %s" % r)
+                app.show_progress(20, "validating OpenGL configuration")
+                probe, info = run_opengl_probe()
+                opts.opengl = "probe-%s" % probe
+                r = probe   #ie: "success"
+                if info:
+                    renderer = info.get("renderer")
+                    if renderer:
+                        r += " (%s)" % renderer
+                app.show_progress(20, "validating OpenGL: %s" % r)
     except Exception:
         if progress_process:
             try:
@@ -2240,13 +2261,14 @@ def run_glcheck(opts):
         v = props[k]
         #skip not human readable:
         if k not in ("extensions", "glconfig", "GLU.extensions", ):
+            vstr = str(v)
             try:
                 if k.endswith("dims"):
                     vstr = csv(v)
                 else:
                     vstr = pver(v)
             except ValueError:
-                vstr = str(v)
+                pass
             sys.stdout.write("%s=%s\n" % (str(k), vstr))
     return 0
 
