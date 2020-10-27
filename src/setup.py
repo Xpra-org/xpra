@@ -1204,6 +1204,7 @@ if WIN32:
             add_DLLs("rsvg", "croco")
 
         if client_ENABLED or server_ENABLED:
+            packages.append("qrencode")
             add_DLLs("qrencode")
 
         if sound_ENABLED:

@@ -50,7 +50,7 @@ ln -sf /mingw64/lib/sqlite3*/sqlite3*.dll sqlite3.dll
 popd
 
 #this needs to be converted to a PKGBUILD:
-pip3 install yuicompressor browser-cookie3
+pip3 install yuicompressor browser-cookie3 qrencode
 
 #for webcam support:
 #$PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
