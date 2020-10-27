@@ -613,6 +613,20 @@
 	</distutils>
 
 
+	<distutils id="python3-qrencode" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/0e/ef/0acbb4ac130dd5d9395370af72b6a551a887b27cd7efbbeac424e72707bb/qrencode-1.2.tar.gz"
+			hash="sha256:10942f76641e989d429e53e6b590f50420f883ded034f1fac767f55229678c6c"
+			version="1.2.0"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
+
 	<distutils id="python3-pyobjc-core" python3="1">
 		<branch repo="files.pythonhosted.org"
 			module="/packages/47/da/8739c856f27d98b546e2e52b053931686b81e8a37aabedd182ec4a460982/pyobjc-core-6.2.2.tar.gz"
@@ -826,6 +840,7 @@
 		  <dep package="python3-altgraph"/>
 		  <dep package="python3-pyopengl"/>
 		  <dep package="python3-pyopengl-accelerate"/>
+		  <dep package="python3-qrencode"/>
 		  <dep package="python3-pyobjc-core"/>
 		  <dep package="python3-pyobjc-framework-cocoa"/>
 		  <dep package="python3-pyobjc-framework-quartz"/>
