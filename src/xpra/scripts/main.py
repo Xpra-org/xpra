@@ -41,7 +41,7 @@ from xpra.scripts.parsing import (
     supports_shadow, supports_server, supports_proxy, supports_mdns,
     )
 from xpra.scripts.config import (
-    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS,
+    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS,
     CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V3, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
@@ -1927,7 +1927,6 @@ def make_client(error_cb, opts):
         from xpra.platform.gui import init as gui_init
         gui_init()
 
-        from xpra.scripts.config import FALSE_OPTIONS, OFF_OPTIONS
         def b(v):
             return str(v).lower() not in FALSE_OPTIONS
         def bo(v):
