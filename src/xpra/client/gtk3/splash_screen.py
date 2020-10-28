@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -32,6 +33,8 @@ if OSX:
 else:
     DONE_CHAR = "⬤"
 
+W = 400
+
 
 class SplashScreen(Gtk.Window):
 
@@ -41,7 +44,7 @@ class SplashScreen(Gtk.Window):
         self.connect("delete_event", self.exit)
         title = "Xpra %s" % __version__
         self.set_title(title)
-        self.set_size_request(320, 40+40*LINES)
+        self.set_size_request(W, 40+40*LINES)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
         self.set_opacity(0.8)
@@ -62,8 +65,9 @@ class SplashScreen(Gtk.Window):
         vbox.add(hbox)
         self.labels = []
         for i in range(LINES):
-            l = Gtk.Label()
+            l = Gtk.Label(label=" ")
             l.set_opacity((i+1)/LINES)
+            #l.set_line_wrap(True)
             self.labels.append(l)
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0, yscale=0)
             al.add(l)
@@ -145,10 +149,10 @@ class SplashScreen(Gtk.Window):
             self.current_label_text = parts[1]
             if self.pct!=pct:
                 for i in range(len(self.labels)-1):
-                    next = self.labels[i+1].get_label()
+                    next_line = self.labels[i+1].get_label()
                     for c in PULSE_CHARS:
-                        next = next.replace(c, DONE_CHAR)
-                    self.labels[i].set_label(next)
+                        next_line = next_line.replace(c, DONE_CHAR)
+                    self.labels[i].set_label(next_line)
             self.pulse_counter = 0
         self.pct = pct
         self.pulse()
@@ -162,10 +166,10 @@ class SplashScreen(Gtk.Window):
             self.opacity = 100
             self.fade_out_timer = GLib.timeout_add(EXIT_DELAY*1000//100, self.fade_out)
             self.cancel_exit_timer()
-            def exit():
+            def exit_splash():
                 self.exit_timer = None
                 self.exit()
-            self.exit_timer = GLib.timeout_add(EXIT_DELAY*1000, exit)
+            self.exit_timer = GLib.timeout_add(EXIT_DELAY*1000, exit_splash)
         else:
             self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
 
