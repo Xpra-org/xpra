@@ -12,7 +12,7 @@ import stat
 import socket
 from time import sleep
 import logging
-from subprocess import Popen, PIPE, DEVNULL, TimeoutExpired
+from subprocess import Popen, PIPE, TimeoutExpired
 import signal
 import shlex
 import traceback
@@ -41,7 +41,8 @@ from xpra.scripts.parsing import (
     supports_shadow, supports_server, supports_proxy, supports_mdns,
     )
 from xpra.scripts.config import (
-    OPTION_TYPES, TRUE_OPTIONS, CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
+    OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS,
+    CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V3, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
     fixup_options, dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
@@ -168,7 +169,7 @@ def configure_logging(options, mode):
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "splash", "qrcode",
-        "opengl", "opengl-probe", "opengl-test",
+        "opengl-test",
         "test-connect",
         "encoding", "webcam", "clipboard-test",
         "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
@@ -1869,22 +1870,24 @@ def run_opengl_probe():
     else:
         env["NOTTY"] = "1"
     env["XPRA_HIDE_DOCK"] = "1"
+    env["XPRA_REDIRECT_OUTPUT"] = "0"
     start = monotonic_time()
     try:
-        proc = Popen(cmd, stdout=PIPE, stderr=DEVNULL, env=env)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
     except Exception as e:
         log.warn("Warning: failed to execute OpenGL probe command")
         log.warn(" %s", e)
-        return "probe-failed:%s" % e
+        return "failed", {"message" : str(e).replace("\n", " ")}
     try:
         stdout, stderr = proc.communicate(timeout=OPENGL_PROBE_TIMEOUT)
         r = proc.returncode
     except TimeoutExpired:
+        log("opengl probe command timed out")
         proc.kill()
         stdout, stderr = proc.communicate()
         r = None
-    log("xpra opengl stdout=%s", stdout)
-    log("xpra opengl stderr=%s", stderr)
+    log("xpra opengl stdout=%s", nonl(stdout))
+    log("xpra opengl stderr=%s", nonl(stderr))
     log("OpenGL probe command returned %s for command=%s", r, cmd)
     end = monotonic_time()
     log("probe took %ims", 1000*(end-start))
@@ -1905,9 +1908,9 @@ def run_opengl_probe():
             return "failed:%s" % SIGNAMES.get(r-128)
         if r!=0:
             return "failed:%s" % SIGNAMES.get(0-r, 0-r)
-        if not props.get("success", False):
+        if props.get("success", "False").lower() in FALSE_OPTIONS:
             return "error"
-        if not props.get("safe", False):
+        if props.get("safe", "False").lower() in FALSE_OPTIONS:
             return "warning"
         return "success"
     #log.warn("Warning: OpenGL probe failed: %s", msg)
@@ -1973,6 +1976,10 @@ def make_client(error_cb, opts):
                     if renderer:
                         r += " (%s)" % renderer
                 app.show_progress(20, "validating OpenGL: %s" % r)
+                if probe=="error":
+                    message = info.get("message")
+                    if message:
+                        app.show_progress(21, " %s" % message)
     except Exception:
         if progress_process:
             try:
@@ -2240,9 +2247,8 @@ def do_run_glcheck(opts, show=False) -> dict:
         if is_debug_enabled("opengl"):
             log("do_run_glcheck(..)", exc_info=True)
         if use_tty():
-            sys.stderr.write("error:\n")
-            sys.stderr.write("%s\n" % e)
-            sys.stderr.flush()
+            noerr(sys.stderr.write, "error=%s\n" % nonl(e))
+            noerr(sys.stderr.flush)
         return {
             "success"   : False,
             "message"   : str(e).replace("\n", " "),
@@ -2255,8 +2261,10 @@ def run_glcheck(opts):
     try:
         props = do_run_glcheck(opts)
     except Exception as e:
-        sys.stdout.write("error=%s\n" % nonl(e))
+        noerr(sys.stdout.write, "error=%s\n" % str(e).replace("\n", " "))
         return 1
+    log = Logger("opengl")
+    log("run_glcheck(..) props=%s", props)
     for k in sorted(props.keys()):
         v = props[k]
         #skip not human readable:
@@ -2269,7 +2277,8 @@ def run_glcheck(opts):
                     vstr = pver(v)
             except ValueError:
                 pass
-            sys.stdout.write("%s=%s\n" % (str(k), vstr))
+            sys.stdout.write("%s=%s\n" % (k, vstr))
+    sys.stdout.flush()
     return 0
 
 
