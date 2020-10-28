@@ -35,3 +35,7 @@ CLOBBER_USE_DISPLAY = 0x2
 #you will need to change those values, but some broken toolkits
 #will then misbehave (they use signed shorts instead of signed ints..)
 MAX_WINDOW_SIZE = 2**15-2**13
+
+
+from xpra.util import envint
+SPLASH_EXIT_DELAY = envint("XPRA_SPLASH_EXIT_DELAY", 4)

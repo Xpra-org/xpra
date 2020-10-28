@@ -13,6 +13,7 @@ import string
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
+from xpra.common import SPLASH_EXIT_DELAY
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import may_log_packet, PACKET_TYPES
@@ -172,7 +173,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             def stop_progress():
                 self.progress_timer = None
                 self.stop_progress_process()
-            self.progress_timer = self.timeout_add(2000, stop_progress)
+            self.progress_timer = self.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress)
 
     def cancel_progress_timer(self):
         pt = self.progress_timer

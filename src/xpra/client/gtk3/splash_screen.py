@@ -12,6 +12,7 @@ from xpra import __version__
 from xpra.util import envint
 from xpra.os_util import SIGNAMES, OSX
 from xpra.exit_codes import EXIT_TIMEOUT
+from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
@@ -23,7 +24,6 @@ log = Logger("client", "util")
 inject_css_overrides()
 
 TIMEOUT = envint("XPRA_SPLASH_TIMEOUT", 60)
-EXIT_DELAY = envint("XPRA_SPLASH_EXIT_DELAY", 3)
 LINES = envint("XPRA_SPLASH_LINES", 4)
 
 #PULSE_CHARS = "▁▂▃▄▅▆▇█▇▆▅▄▃▁"
@@ -164,12 +164,12 @@ class SplashScreen(Gtk.Window):
             self.cancel_pulse_timer()
             self.cancel_fade_out_timer()
             self.opacity = 100
-            self.fade_out_timer = GLib.timeout_add(EXIT_DELAY*1000//100, self.fade_out)
+            self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY*1000//100, self.fade_out)
             self.cancel_exit_timer()
             def exit_splash():
                 self.exit_timer = None
                 self.exit()
-            self.exit_timer = GLib.timeout_add(EXIT_DELAY*1000, exit_splash)
+            self.exit_timer = GLib.timeout_add(SPLASH_EXIT_DELAY*1000, exit_splash)
         else:
             self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
 

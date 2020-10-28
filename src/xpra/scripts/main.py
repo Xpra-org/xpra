@@ -474,9 +474,9 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                 noerr(progress.stdin.flush)
                 if pct==100:
                     #it should exit on its own, but just in case:
-                    EXIT_DELAY = envint("XPRA_SPLASH_EXIT_DELAY", 3)
+                    from xpra.common import SPLASH_EXIT_DELAY
                     from gi.repository import GLib
-                    GLib.timeout_add(EXIT_DELAY*1000+500, stop_progress_process)
+                    GLib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
             progress_cb = show_progress
             from xpra.scripts.server import add_cleanup
             add_cleanup(stop_progress_process)
