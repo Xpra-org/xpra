@@ -378,7 +378,7 @@ class ClientWindowBase(ClientWidgetBase):
                     #win32 without opengl can't do transparency,
                     #so it triggers too many warnings
                     l = log.warn
-                l("Warning: window %s changed its transparency attribute", self._id)
+                l("Warning: window %#x changed its transparency attribute", self._id)
                 l(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
                 self._has_alpha = new_alpha
 
