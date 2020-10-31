@@ -68,14 +68,18 @@
 
 			<div class="panel-group">
 			  <ul class="list-style-none action">
-				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked"> Connect</li>
+				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked"> Connect
+					 <input title="display" type="text" class="form-control command" id="display" placeholder="Display (optional)" size="20" maxlength="256">
+				</li>
 				<li><input type="radio" name="action" class="radiobox" value="start" id="action_start" checked="checked"> Start Command:
-					 <input title="command" type="text" class="form-control command" id="start_command" placeholder="Command" size="16" maxlength="256">
+					 <input title="command" type="text" class="form-control command" id="start_command" placeholder="Command" size="20" maxlength="256">
 				</li>
 				<li><input type="radio" name="action" class="radiobox" value="start-desktop" id="action_start_desktop" checked="checked"> Start Desktop:
-					 <input title="desktop command" type="text" class="form-control command" id="start_desktop_command" placeholder="Desktop Command" size="16" maxlength="256">
+					 <input title="desktop command" type="text" class="form-control command" id="start_desktop_command" placeholder="Desktop Command" size="20" maxlength="256">
 				</li>
-				<li><input type="radio" name="action" class="radiobox" value="shadow" id="action_shadow" checked="checked"> Shadow</li>
+				<li><input type="radio" name="action" class="radiobox" value="shadow" id="action_shadow" checked="checked"> Shadow
+					 <input title="display" type="text" class="form-control command" id="shadow_display" placeholder="Display (optional)" size="20" maxlength="256">
+				</li>
 			  </ul>
 			</div>
 		  </div>
@@ -290,7 +294,9 @@
 <script type="text/javascript">
 
 const VALUE_PROPERTIES = ["server", "port", "path", "username", "password", "key",
-					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position"];
+					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position",
+					"display", "shadow_display",
+					];
 const BOOLEAN_PROPERTIES = ["clipboard", "printing", "file_transfer",
 		"sound", "ignore_audio_blacklist",
 		"exit_with_children", "exit_with_client",
@@ -393,9 +399,11 @@ function downloadConnectionFile() {
 
 function get_URL_action() {
 	let url = "";
-	let start;
+	let start = "";
+	let display = "";
 	if (document.getElementById("action_connect").checked) {
 		url += add_prop("action", "connect");
+		display = document.getElementById("display").value;
 	}
 	else if (document.getElementById("action_start").checked) {
 		url += add_prop("action", "start");
@@ -407,6 +415,7 @@ function get_URL_action() {
 	}
 	else if (document.getElementById("action_shadow").checked) {
 		url += add_prop("action", "shadow");
+		display = document.getElementById("shadow_display").value;
 	}
 	if(start) {
 		url += add_prop("start", start);
