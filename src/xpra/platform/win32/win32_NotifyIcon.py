@@ -253,9 +253,11 @@ class win32NotifyIcon:
     def create_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         window_name = "%s StatusIcon Window" % bytestostr(self.title)
-        self.hwnd = CreateWindowExA(0, NIclassAtom, window_name, style,
+        args = (0, NIclassAtom, window_name, style,
             win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0, \
             0, 0, NIwc.hInstance, None)
+        log("CreateWindowExA%s", args)
+        self.hwnd = CreateWindowExA(*args)
         log("create_window() hwnd=%#x", self.hwnd or 0)
         if not self.hwnd:
             raise ctypes.WinError(ctypes.get_last_error())
