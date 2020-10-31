@@ -140,6 +140,21 @@ class AudioClient(StubClientMixin):
             self.stop_receiving_sound()
 
 
+    def get_info(self) -> dict:
+        info = {
+            "speaker" : self.speaker_enabled,
+            "microphone" : self.microphone_enabled,
+            "properties" : dict(self.sound_properties),
+            }
+        ss = self.sound_source
+        if ss:
+            info["src"] = ss.get_info()
+        ss = self.sound_sink
+        if ss:
+            info["sink"] = ss.get_info()
+        return {"audio" : info}
+
+
     def get_caps(self) -> dict:
         d = {}
         updict(d, "av-sync", self.get_avsync_capabilities())
