@@ -154,6 +154,7 @@ class SoundSink(SoundPipeline):
                 self.queue.connect("underrun", self.queue_underrun)
                 self.queue.connect("running", self.queue_running)
                 self.queue.connect("pushing", self.queue_pushing)
+        self.init_file(codec)
 
     def __repr__(self):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
@@ -402,6 +403,7 @@ class SoundSink(SoundPipeline):
     def do_add_data(self, data, metadata=None):
         #having a timestamp causes problems with the queue and overruns:
         log("do_add_data(%s bytes, %s) queue_state=%s", len(data), metadata, self.queue_state)
+        self.save_to_file(data)
         buf = gst.Buffer.new_allocate(None, len(data), None)
         buf.fill(0, data)
         if metadata:

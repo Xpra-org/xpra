@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from queue import Queue
 from gi.repository import GObject
 
 from xpra.os_util import SIGNAMES, monotonic_time
-from xpra.util import csv, envint, envbool, envfloat, AtomicInteger
+from xpra.util import csv, envint, envbool, envfloat
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal
 from xpra.sound.gstreamer_util import (
@@ -37,12 +37,9 @@ BUFFER_TIME = envint("XPRA_SOUND_SOURCE_BUFFER_TIME", 0)    #ie: 64
 LATENCY_TIME = envint("XPRA_SOUND_SOURCE_LATENCY_TIME", 0)  #ie: 32
 BUNDLE_METADATA = envbool("XPRA_SOUND_BUNDLE_METADATA", True)
 LOG_CUTTER = envbool("XPRA_SOUND_LOG_CUTTER", False)
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 CUTTER_THRESHOLD = envfloat("XPRA_CUTTER_THRESHOLD", "0.0001")
 CUTTER_PRE_LENGTH = envint("XPRA_CUTTER_PRE_LENGTH", 100)
 CUTTER_RUN_LENGTH = envint("XPRA_CUTTER_RUN_LENGTH", 1000)
-
-generation = AtomicInteger()
 
 
 class SoundSource(SoundPipeline):
@@ -95,7 +92,6 @@ class SoundSource(SoundPipeline):
         self.pending_metadata = []
         self.buffer_latency = True
         self.jitter_queue = None
-        self.file = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
         self.stream_compressor = stream_compressor
         if src_options is None:
@@ -178,15 +174,7 @@ class SoundSource(SoundPipeline):
                         log.warn("source %s does not support '%s': %s", self.src_type, attr, e)
                 settime("buffer-time", BUFFER_TIME)
                 settime("latency-time", LATENCY_TIME)
-        gen = generation.increase()
-        if SAVE_TO_FILE is not None:
-            parts = codec.split("+")
-            if len(parts)>1:
-                filename = SAVE_TO_FILE+str(gen)+"-"+parts[0]+".%s" % parts[1]
-            else:
-                filename = SAVE_TO_FILE+str(gen)+".%s" % codec
-            self.file = open(filename, 'wb')
-            log.info("saving %s stream to %s", codec, filename)
+        self.init_file(codec)
 
 
     def __repr__(self):
@@ -197,10 +185,6 @@ class SoundSource(SoundPipeline):
         self.src_type = ""
         self.sink = None
         self.caps = None
-        f = self.file
-        if f:
-            self.file = None
-            f.close()
 
     def get_info(self) -> dict:
         info = SoundPipeline.get_info(self)
@@ -288,13 +272,6 @@ class SoundSource(SoundPipeline):
             else:
                 log("skipped inefficient %s stream compression: %i bytes down to %i bytes",
                     self.stream_compressor, len(data), len(cdata))
-        f = self.file
-        if f:
-            for x in self.pending_metadata:
-                self.file.write(x)
-            if data:
-                self.file.write(data)
-            self.file.flush()
         if self.state=="stopped":
             #don't bother
             return GST_FLOW_OK
@@ -348,6 +325,7 @@ class SoundSource(SoundPipeline):
             self.inc_buffer_count()
             self.inc_byte_count(len(x))
         metadata["time"] = int(monotonic_time()*1000)
+        self.save_to_file(*(self.pending_metadata+[data]))
         self.idle_emit("new-buffer", data, metadata, self.pending_metadata)
         self.pending_metadata = []
         self.emit_info()

@@ -5,11 +5,14 @@
 
 #must be done before importing gobject!
 #pylint: disable=wrong-import-position
+
+import os
+
 from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
 gst = import_gst()
 from gi.repository import GLib, GObject
 
-from xpra.util import envint
+from xpra.util import envint, AtomicInteger, noerr
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.log import Logger
@@ -25,6 +28,8 @@ KNOWN_TAGS = set((
     ))
 
 FAULT_RATE = envint("XPRA_SOUND_FAULT_INJECTION_RATE")
+SAVE_AUDIO = os.environ.get("XPRA_SAVE_AUDIO")
+
 _counter = 0
 def inject_fault():
     global FAULT_RATE
@@ -36,6 +41,8 @@ def inject_fault():
 
 
 class SoundPipeline(GObject.GObject):
+
+    generation = AtomicInteger()
 
     __generic_signals__ = {
         "state-changed"     : one_arg_signal,
@@ -69,6 +76,28 @@ class SoundPipeline(GObject.GObject):
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add
         self.source_remove = GLib.source_remove
+        self.file = None
+
+    def init_file(self, codec):
+        gen = self.generation.increase()
+        if SAVE_AUDIO is not None:
+            parts = codec.split("+")
+            if len(parts)>1:
+                filename = SAVE_AUDIO+str(gen)+"-"+parts[0]+".%s" % parts[1]
+            else:
+                filename = SAVE_AUDIO+str(gen)+".%s" % codec
+            self.file = open(filename, 'wb')
+            log.info("saving %s stream to %s", codec, filename)
+
+    def save_to_file(self, *buffers):
+        log.info("save_to_file(%r)", buffers)
+        f = self.file
+        if f and buffers:
+            for x in buffers:
+                log.info("x=%r (%s)", x, type(x))
+                self.file.write(x)
+            self.file.flush()
+
 
     def idle_emit(self, sig, *args):
         self.idle_add(self.emit, sig, *args)
@@ -229,6 +258,10 @@ class SoundPipeline(GObject.GObject):
         self.state = None
         self.volume = None
         self.info = {}
+        f = self.file
+        if f:
+            self.file = None
+            noerr(f.close)
         log("SoundPipeline.cleanup() done")
 
 
