@@ -90,11 +90,9 @@ class SoundPipeline(GObject.GObject):
             log.info("saving %s stream to %s", codec, filename)
 
     def save_to_file(self, *buffers):
-        log.info("save_to_file(%r)", buffers)
         f = self.file
         if f and buffers:
             for x in buffers:
-                log.info("x=%r (%s)", x, type(x))
                 self.file.write(x)
             self.file.flush()
 
