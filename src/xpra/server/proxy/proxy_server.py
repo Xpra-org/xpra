@@ -408,12 +408,15 @@ class ProxyServer(ServerCore):
             authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s",
                     proxy_virtual_display, display, displays)
             if display==proxy_virtual_display:
-                disconnect(SESSION_NOT_FOUND, "invalid display")
+                disconnect(SESSION_NOT_FOUND, "invalid display: proxy display")
                 return
             if display:
                 if display not in displays:
-                    disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
-                    return
+                    if (":%s" % display) in displays:
+                        display = ":%s" % display
+                    else:
+                        disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
+                        return
             else:
                 if len(displays)!=1:
                     disconnect(SESSION_NOT_FOUND,
