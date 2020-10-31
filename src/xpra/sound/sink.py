@@ -88,6 +88,7 @@ class SoundSink(SoundPipeline):
         self.levels = deque(maxlen=100)
         self.volume = None
         self.src    = None
+        self.sink   = None
         self.queue  = None
         self.normal_volume = volume
         self.target_volume = volume
@@ -145,12 +146,14 @@ class SoundSink(SoundPipeline):
             sink_attributes.update(v)
         if sink_options:
             sink_attributes.update(sink_options)
+        sink_attributes["name"] = "sink"
         sink_str = plugin_str(sink_type, sink_attributes)
         pipeline_els.append(sink_str)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
         self.volume = self.pipeline.get_by_name("volume")
         self.src    = self.pipeline.get_by_name("src")
+        self.sink   = self.pipeline.get_by_name("sink")
         self.queue  = self.pipeline.get_by_name("queue")
         if self.queue:
             if QUEUE_SILENT:
@@ -363,6 +366,23 @@ class SoundSink(SoundPipeline):
                              "underruns"    : self.underruns,
                              "state"        : self.queue_state,
                              }
+        sink_info = info.setdefault("sink", {})
+        for x in (
+            "buffer-time", "latency-time",
+            #"next_sample", "eos_rendering",
+            "async", "blocksize",
+            "enable-last-sample",
+            "max-bitrate", "max-lateness", "processing-deadline",
+            "qos", "render-delay", "sync",
+            "throttle-time", "ts-offset",
+            
+            ):
+            try:
+                v = self.sink.get_property(x)
+                if v>=0:
+                    sink_info[x] = v
+            except Exception as e:
+                log.warn("Warning: %s", e)
         return info
 
     def can_push_buffer(self):
