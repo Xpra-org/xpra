@@ -198,6 +198,18 @@ class SoundSource(SoundPipeline):
                 v = self.src.get_property(x)
                 if v>=0:
                     info[x] = v
+        sink_info = info.setdefault("sink", {})
+        for attr in ("alignment-threshold", "buffer-time",
+                     "can-activate-pull", "discont-wait", "drift-tolerance",
+                     "latency-time", "provide-clock", "slave-method"):
+            try:
+                meth = getattr(self.sink, "get_%s" % attr.replace("-", "_"), None)
+                if meth is not None:
+                    v = meth()
+            except Exception as e:
+                log.warn("Warning: %s", e)
+            else:
+                sink_info[attr] = v
         return info
 
 
