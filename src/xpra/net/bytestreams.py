@@ -200,6 +200,14 @@ class TwoFileConnection(Connection):
         if self._abort_test:
             self._abort_test(action)
 
+    def flush(self):
+        r = self._readable
+        if r:
+            r.flush()
+        w = self._writeable
+        if w:
+            w.flush()
+
     def read(self, n):
         self.may_abort("read")
         return self._read(os.read, self._read_fd, n)

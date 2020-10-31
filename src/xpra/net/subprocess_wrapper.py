@@ -43,6 +43,8 @@ LOCAL_ALIASES = envbool("XPRA_LOCAL_ALIASES", False)
 LOCAL_SEND_ALIASES = dict((v, i) for i,v in enumerate(PACKET_TYPES))
 LOCAL_RECEIVE_ALIASES = dict(enumerate(PACKET_TYPES))
 
+FLUSH = envbool("XPRA_SUBPROCESS_FLUSH", False)
+
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
 def noop(_p):
@@ -448,6 +450,10 @@ class subprocess_caller:
         p = self.protocol
         if p:
             p.source_has_more()
+            if FLUSH:
+                conn = p._conn
+                if conn and conn.is_active():
+                    conn.flush()
         INJECT_FAULT(p)
 
     def process_packet(self, proto, packet):
