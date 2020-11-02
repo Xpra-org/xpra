@@ -99,6 +99,9 @@ class PyNOTIFYICONDATA:
             raise NameError(name)
         self.__dict__[name] = value
 
+    def __repr__(self):
+        return "PyNOTIFYICONDATA(%s)" % self.__dict__
+
 
 def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
     nid = PyNOTIFYICONDATA()
@@ -137,6 +140,7 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
         else:
             nid.dwInfoFlags = NIIF_USER
     Shell_NotifyIcon = windll.shell32.Shell_NotifyIcon
+    log("packing %s", nid)
     Shell_NotifyIcon(NIM_MODIFY, nid.pack())
     log("notify using %s", Shell_NotifyIcon)
 
