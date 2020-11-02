@@ -10,7 +10,7 @@
 import os
 import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
-from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD, HMODULE
 
 from xpra.util import typedict, csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
@@ -29,7 +29,7 @@ from xpra.platform.win32.common import (
     CreateBitmap, CreateDIBSection,
     UpdateWindow, DestroyWindow,
     PostQuitMessage,
-    GetModuleHandleA,
+    GetModuleHandleExA,
     GetStockObject, DeleteObject,
     )
 from xpra.log import Logger
@@ -254,8 +254,8 @@ class win32NotifyIcon:
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         window_name = "%s StatusIcon Window" % bytestostr(self.title)
         args = (0, NIclassAtom, window_name, style,
-            win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0, \
-            0, 0, NIwc.hInstance, None)
+            win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0,
+            0, 0, NIwc.hInstance, 0)
         log("CreateWindowExA%s", args)
         self.hwnd = CreateWindowExA(*args)
         log("create_window() hwnd=%#x", self.hwnd or 0)
@@ -379,7 +379,7 @@ class win32NotifyIcon:
             iconPathName = iconPathName.replace("/", "\\")
         icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
         try:
-            assert os.path.exists(iconPathName)
+            assert os.path.exists(iconPathName), "icon '%s' not found" % iconPathName
             img_type = win32con.IMAGE_ICON
             if iconPathName.lower().split(".")[-1] in ("png", "bmp"):
                 img_type = win32con.IMAGE_BITMAP
@@ -478,11 +478,15 @@ def NotifyIconWndProc(hwnd, msg, wParam, lParam):
         return fn(instance, hwnd, msg, wParam, lParam) or 0
     return DefWindowProcA(hwnd, msg, wParam, lParam)
 
+mod = HMODULE(0)
+assert GetModuleHandleExA(0, None, byref(mod))
+log("GetModuleHandleExA(..)=%#x", int(mod.value))
+
 NIwc = WNDCLASSEX()
 NIwc.cbSize = sizeof(WNDCLASSEX)
 NIwc.style = win32con.CS_HREDRAW | win32con.CS_VREDRAW
 NIwc.lpfnWndProc = WNDPROC(NotifyIconWndProc)
-NIwc.hInstance = GetModuleHandleA(0)
+NIwc.hInstance = mod
 NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
 NIwc.lpszClassName = "win32NotifyIcon"
 
