@@ -134,11 +134,13 @@ class UI_thread_watcher:
                 wdelta = monotonic_time() - wstart
                 log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
                 if wdelta>(wait_time+1):
-                    #this can be caused by an ntp update?
-                    #or just by suspend + resume
-                    log.warn("Warning: long timer waiting time,")
-                    log.warn(" UI thread polling waited %.1f seconds longer than intended (%.1f vs %.1f)",
-                             wdelta-wait_time, wdelta, wait_time)
+                    #this can be caused by suspend + resume
+                    if wdelta>60 and not self.UI_blocked:
+                        log.info("no service for %i seconds", wdelta)
+                    else:
+                        log.warn("Warning: long timer waiting time,")
+                        log.warn(" UI thread polling waited %.1f seconds longer than intended (%.1f vs %.1f)",
+                                 wdelta-wait_time, wdelta, wait_time)
                     #force run resume (even if we never fired the fail callbacks)
                     self.UI_blocked = False
                     self.UI_thread_wakeup()
