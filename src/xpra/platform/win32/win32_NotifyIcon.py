@@ -253,9 +253,10 @@ class win32NotifyIcon:
     def create_window(self):
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
         window_name = "%s StatusIcon Window" % bytestostr(self.title)
-        args = (0, NIclassAtom, window_name, style,
+        niwc = get_notifyicon_wnd_class()
+        args = (0, niwc.NIclassAtom, window_name, style,
             win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0,
-            0, 0, NIwc.hInstance, 0)
+            0, 0, niwc.hInstance, 0)
         log("CreateWindowExA%s", args)
         self.hwnd = CreateWindowExA(*args)
         log("create_window() hwnd=%#x", self.hwnd or 0)
@@ -389,7 +390,8 @@ class win32NotifyIcon:
                                             win32con.IMAGE_ICON    : "ICON",
                                             win32con.IMAGE_BITMAP  : "BITMAP",
                                          }.get(img_type))
-            v = LoadImageW(NIwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
+            niwc = get_notifyicon_wnd_class()
+            v = LoadImageW(niwc.hInstance, iconPathName, img_type, 0, 0, icon_flags)
             assert v is not None
         except Exception:
             log.error("Error: failed to load icon '%s'", iconPathName, exc_info=True)
@@ -478,22 +480,30 @@ def NotifyIconWndProc(hwnd, msg, wParam, lParam):
         return fn(instance, hwnd, msg, wParam, lParam) or 0
     return DefWindowProcA(hwnd, msg, wParam, lParam)
 
-mod = HMODULE(0)
-assert GetModuleHandleExA(0, None, byref(mod))
-log("GetModuleHandleExA(..)=%#x", int(mod.value))
 
-NIwc = WNDCLASSEX()
-NIwc.cbSize = sizeof(WNDCLASSEX)
-NIwc.style = win32con.CS_HREDRAW | win32con.CS_VREDRAW
-NIwc.lpfnWndProc = WNDPROC(NotifyIconWndProc)
-NIwc.hInstance = mod
-NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
-NIwc.lpszClassName = "win32NotifyIcon"
+_notifyicon_wnd_class = None
+def get_notifyicon_wnd_class():
+    global _notifyicon_wnd_class
+    if _notifyicon_wnd_class is None:
+        hmodule = HMODULE(0)
+        assert GetModuleHandleExA(0, None, byref(hmodule))
+        log("GetModuleHandleExA(..)=%#x", int(hmodule.value))
 
-NIclassAtom = RegisterClassExA(byref(NIwc))
-log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
-if NIclassAtom==0:
-    raise ctypes.WinError(ctypes.get_last_error())
+        NIwc = WNDCLASSEX()
+        NIwc.cbSize = sizeof(WNDCLASSEX)
+        NIwc.style = win32con.CS_HREDRAW | win32con.CS_VREDRAW
+        NIwc.lpfnWndProc = WNDPROC(NotifyIconWndProc)
+        NIwc.hInstance = hmodule
+        NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
+        NIwc.lpszClassName = "win32NotifyIcon"
+        
+        NIclassAtom = RegisterClassExA(byref(NIwc))
+        log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
+        if NIclassAtom==0:
+            raise ctypes.WinError(ctypes.get_last_error())
+        NIwc.NIclassAtom = NIclassAtom
+        _notifyicon_wnd_class = NIwc
+    return _notifyicon_wnd_class
 
 
 def main():
