@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 import struct
-from ctypes import windll
+from ctypes import windll, c_void_p
+from ctypes.wintypes import BOOL, DWORD
 
 from xpra.os_util import strtobytes
 from xpra.util import XPRA_GUID_BYTES
@@ -103,6 +104,11 @@ class PyNOTIFYICONDATA:
         return "PyNOTIFYICONDATA(%s)" % self.__dict__
 
 
+Shell_NotifyIcon = windll.shell32.Shell_NotifyIcon
+Shell_NotifyIcon.restype = BOOL
+Shell_NotifyIcon.argtypes = [DWORD, c_void_p]
+
+
 def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
     nid = PyNOTIFYICONDATA()
     nid.hWnd = hwnd
@@ -139,7 +145,6 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
             log.error(" %s", e)
         else:
             nid.dwInfoFlags = NIIF_USER
-    Shell_NotifyIcon = windll.shell32.Shell_NotifyIcon
     log("packing %s", nid)
     Shell_NotifyIcon(NIM_MODIFY, nid.pack())
     log("notify using %s", Shell_NotifyIcon)
