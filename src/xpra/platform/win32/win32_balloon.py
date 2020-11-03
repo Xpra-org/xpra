@@ -110,6 +110,7 @@ Shell_NotifyIcon.argtypes = [DWORD, c_void_p]
 
 
 def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
+    log("notify%s", (hwnd, app_id, title, message, timeout, icon))
     nid = PyNOTIFYICONDATA()
     nid.hWnd = hwnd
     nid.uID = app_id
