@@ -31,7 +31,7 @@ def chop_string(command, max_len=100, no_nl=True):
     command = strtobytes(command)
     if no_nl:
         command = command.replace(b"\n", b"").replace(b"\r", b"")
-    if len(command) < max_len:
+    if len(command) <= max_len:
         return command
     return command[:max_len-3] + b"..."
 
