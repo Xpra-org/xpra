@@ -323,7 +323,7 @@ for d in STRUCT_KNOWN_FILTERS.values():
 
 
 def isenvdebug(category : str) -> bool:
-    return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_"), "0")=="1"
+    return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0")=="1"
 
 # A wrapper around 'logging' with some convenience stuff.  In particular:
 #    -- You initialize it with a list of categories
@@ -363,6 +363,16 @@ class Logger:
                     disabled = True
                 if is_debug_enabled(cat):
                     enabled = True
+            if len(categories)>1:
+                #try all string permutations of those categories:
+                # "keyboard", "events" -> "keyboard+events" or "events+keyboard"
+                import itertools
+                for cats in itertools.permutations(categories):
+                    cstr = "+".join(cats)
+                    if cstr in debug_disabled_categories:
+                        disabled = True
+                    if is_debug_enabled(cstr):
+                        enabled = True
         self.debug_enabled = enabled and not disabled
         #ready, keep track of it:
         add_logger(self.categories, self)

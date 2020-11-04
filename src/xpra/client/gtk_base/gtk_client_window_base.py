@@ -39,6 +39,7 @@ focuslog = Logger("focus", "grab")
 workspacelog = Logger("workspace")
 log = Logger("window")
 keylog = Logger("keyboard")
+keyeventlog = Logger("keyboard", "events")
 iconlog = Logger("icon")
 metalog = Logger("metadata")
 statelog = Logger("state")
@@ -2079,7 +2080,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 keylog.warn(" %s", e)
             key_event.string = ""
         key_event.pressed = pressed
-        keylog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
+        keyeventlog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
 
     def do_key_press_event(self, event):
