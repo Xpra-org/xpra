@@ -40,14 +40,14 @@ class SplashScreen(Gtk.Window):
 
     def __init__(self):
         self.exit_code = None
-        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        super().__init__(type=Gtk.WindowType.POPUP)
         self.connect("delete_event", self.exit)
         title = "Xpra %s" % __version__
         self.set_title(title)
         self.set_size_request(W, 40+40*LINES)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
-        self.set_opacity(0.8)
+        self.set_opacity(0.9)
         self.set_accept_focus(False)
         self.set_focus_on_map(False)
         self.set_skip_pager_hint(True)
