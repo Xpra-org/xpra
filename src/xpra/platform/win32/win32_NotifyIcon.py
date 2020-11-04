@@ -10,7 +10,7 @@
 import os
 import ctypes
 from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
-from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD, HMODULE
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE
 
 from xpra.util import typedict, csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
@@ -50,20 +50,11 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
     log("GetProductInfo(%i, %i, %i, %i)=%i product_type=%s",
         dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion, v, hex(product_type.value))
     return bool(v)
-#win7 is actually 6.1:
-try:
-    ISWIN7ORHIGHER = GetProductInfo(6, 1)
-except AttributeError as e:
-    #likely running on win XP:
-    log("cannot query GetProductInfo", exc_info=True)
-    raise ImportError("cannot query GetProductInfo: %s" % e) from None
 
-if ISWIN7ORHIGHER:
-    MAX_TIP_SIZE = 128
-else:
-    MAX_TIP_SIZE = 64
+#MAX_TIP_SIZE = 128
+MAX_TIP_SIZE = 64
 
-class NOTIFYICONDATA(Structure):
+class NOTIFYICONDATAA(Structure):
     _fields_ = [
         ("cbSize",              DWORD),
         ("hWnd",                HWND),
@@ -71,7 +62,25 @@ class NOTIFYICONDATA(Structure):
         ("uFlags",              UINT),
         ("uCallbackMessage",    UINT),
         ("hIcon",               HICON),
-        ("szTip",               WCHAR * 64),
+        ("szTip",               CHAR * MAX_TIP_SIZE),
+        ("dwState",             DWORD),
+        ("dwStateMask",         DWORD),
+        ("szInfo",              CHAR * 256),
+        ("uVersion",            UINT),
+        ("szInfoTitle",         CHAR * 64),
+        ("dwInfoFlags",         DWORD),
+        ("guidItem",            GUID),
+        ("hBalloonIcon",        HICON),
+    ]
+class NOTIFYICONDATAW(Structure):
+    _fields_ = [
+        ("cbSize",              DWORD),
+        ("hWnd",                HWND),
+        ("uID",                 UINT),
+        ("uFlags",              UINT),
+        ("uCallbackMessage",    UINT),
+        ("hIcon",               HICON),
+        ("szTip",               WCHAR * MAX_TIP_SIZE),
         ("dwState",             DWORD),
         ("dwStateMask",         DWORD),
         ("szInfo",              WCHAR * 256),
@@ -83,9 +92,12 @@ class NOTIFYICONDATA(Structure):
     ]
 
 shell32 = WinDLL("shell32", use_last_error=True)
+Shell_NotifyIconA = shell32.Shell_NotifyIconA
+Shell_NotifyIconA.restype = BOOL
+Shell_NotifyIconA.argtypes = [DWORD, POINTER(NOTIFYICONDATAA)]
 Shell_NotifyIconW = shell32.Shell_NotifyIconW
 Shell_NotifyIconW.restype = BOOL
-Shell_NotifyIconW.argtypes = [DWORD, POINTER(NOTIFYICONDATA)]
+Shell_NotifyIconW.argtypes = [DWORD, POINTER(NOTIFYICONDATAW)]
 
 BI_RGB = 0
 BI_BITFIELDS = 0x00000003
@@ -274,8 +286,8 @@ class win32NotifyIcon:
 
     def make_nid(self, flags):
         assert self.hwnd
-        nid = NOTIFYICONDATA()
-        nid.cbSize = sizeof(NOTIFYICONDATA)
+        nid = NOTIFYICONDATAW()
+        nid.cbSize = sizeof(NOTIFYICONDATAW)
         nid.hWnd = self.hwnd
         nid.uCallbackMessage = win32con.WM_MENUCOMMAND
         nid.hIcon = self.current_icon
