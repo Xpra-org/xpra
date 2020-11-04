@@ -99,6 +99,9 @@ Shell_NotifyIconW = shell32.Shell_NotifyIconW
 Shell_NotifyIconW.restype = BOOL
 Shell_NotifyIconW.argtypes = [DWORD, POINTER(NOTIFYICONDATAW)]
 
+Shell_NotifyIcon = Shell_NotifyIconW
+NOTIFYICONDATA = NOTIFYICONDATAW
+
 BI_RGB = 0
 BI_BITFIELDS = 0x00000003
 
@@ -279,21 +282,24 @@ class win32NotifyIcon:
         win32NotifyIcon.instances[self.hwnd] = self
 
     def register_tray(self):
-        r = Shell_NotifyIconW(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
-        log("Shell_NotifyIconW ADD=%i", r)
+        r = Shell_NotifyIcon(NIM_ADD, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
+        log("Shell_NotifyIcon ADD=%i", r)
         if not r:
-            raise Exception("Shell_NotifyIconW failed to ADD")
+            raise Exception("Shell_NotifyIcon failed to ADD")
 
     def make_nid(self, flags):
         assert self.hwnd
-        nid = NOTIFYICONDATAW()
-        nid.cbSize = sizeof(NOTIFYICONDATAW)
+        nid = NOTIFYICONDATA()
+        nid.cbSize = sizeof(NOTIFYICONDATA)
         nid.hWnd = self.hwnd
         nid.uCallbackMessage = win32con.WM_MENUCOMMAND
         nid.hIcon = self.current_icon
         #don't ask why we have to use sprintf to get what we want:
         title = bytestostr(self.title[:MAX_TIP_SIZE-1])
-        nid.szTip = title
+        try:
+            nid.szTip = title
+        except:
+            nid.szTip = title.encode()
         nid.dwState = 0
         nid.dwStateMask = 0
         nid.guidItem = XPRA_GUID
@@ -317,8 +323,8 @@ class win32NotifyIcon:
             return
         try:
             nid = self.make_nid(0)
-            log("delete_tray_window(..) calling Shell_NotifyIconW(NIM_DELETE, %s)", nid)
-            if not Shell_NotifyIconW(NIM_DELETE, nid):
+            log("delete_tray_window(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
+            if not Shell_NotifyIcon(NIM_DELETE, nid):
                 log.warn("Warning: failed to remove system tray")
             else:
                 self.hwnd = 0
@@ -335,20 +341,20 @@ class win32NotifyIcon:
     def set_tooltip(self, tooltip):
         log("set_tooltip(%s)", nonl(tooltip))
         self.title = tooltip
-        Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
+        Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP))
 
 
     def set_icon(self, iconPathName):
         log("set_icon(%s)", iconPathName)
         hicon = self.LoadImage(iconPathName) or FALLBACK_ICON
         self.do_set_icon(hicon)
-        Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON))
+        Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
         self.reset_function = (self.set_icon, iconPathName)
 
     def do_set_icon(self, hicon):
         log("do_set_icon(%#x)", hicon)
         self.current_icon = hicon
-        Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON))
+        Shell_NotifyIcon(NIM_MODIFY, self.make_nid(NIF_ICON))
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
         #this is convoluted but it works..
