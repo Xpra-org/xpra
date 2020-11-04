@@ -429,6 +429,8 @@
 				const encoding = getparam("encoding") || null;
 				const bandwidth_limit = getparam("bandwidth_limit") || 0;
 				const action = getparam("action") || "connect";
+				const display = getparam("display") || "";
+				const shadow_display = getparam("shadow_display") || "";
 				const submit = getboolparam("submit", true);
 				const server = getparam("server") || window.location.hostname;
 				const port = getparam("port") || window.location.port;
@@ -609,6 +611,12 @@
 				if(password) {
 					client.password = password;
 				}
+				if (action=="connect") {
+					client.server_display = display;
+				}
+				else if (action=="shadow") {
+					client.server_display = shadow_display;
+				}
 
 				// check for encryption parameters
 				if(encryption) {
@@ -662,6 +670,8 @@
 									"sharing"			: sharing,
 									"steal"				: steal,
 									"video"				: video,
+									"display"			: display,
+									"shadow_display"	: shadow_display,
 									"mediasource_video"	: mediasource_video,
 									"remote_logging"	: remote_logging,
 									"ignore_audio_blacklist" : ignore_audio_blacklist,

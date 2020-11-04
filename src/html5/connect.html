@@ -65,14 +65,18 @@
 
 			<div class="panel-group">
 			  <ul class="list-style-none action">
-				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked"> Connect</li>
+				<li><input type="radio" name="action" class="radiobox" value="connect" id="action_connect" checked="checked"> Connect
+					 <input title="display" type="text" class="form-control command" id="display" placeholder="Display (optional)" size="20" maxlength="256">
+				</li>
 				<li><input type="radio" name="action" class="radiobox" value="start" id="action_start" checked="checked"> Start Command:
-					 <input title="command" type="text" class="form-control command" id="start_command" placeholder="Command" size="16" maxlength="256">
+					 <input title="command" type="text" class="form-control command" id="start_command" placeholder="Command" size="20" maxlength="256">
 				</li>
 				<li><input type="radio" name="action" class="radiobox" value="start-desktop" id="action_start_desktop" checked="checked"> Start Desktop:
-					 <input title="desktop command" type="text" class="form-control command" id="start_desktop_command" placeholder="Desktop Command" size="16" maxlength="256">
+					 <input title="desktop command" type="text" class="form-control command" id="start_desktop_command" placeholder="Desktop Command" size="20" maxlength="256">
 				</li>
-				<li><input type="radio" name="action" class="radiobox" value="shadow" id="action_shadow" checked="checked"> Shadow</li>
+				<li><input type="radio" name="action" class="radiobox" value="shadow" id="action_shadow" checked="checked"> Shadow
+					 <input title="display" type="text" class="form-control command" id="shadow_display" placeholder="Display (optional)" size="20" maxlength="256">
+				</li>
 			  </ul>
 			</div>
 		  </div>
@@ -404,6 +408,7 @@ function fill_form(default_settings) {
 	}
 	else {
 		//local storage makes this secure
+		display = document.getElementById("shadow_display").value;
 	   	$('span#insecure-span').hide();
 	}
 	$('input#password').prop("disabled", !has_session_storage && !ssl_input.checked && !insecure_input.checked);
