@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import pynotify                 #@UnresolvedImport
 
 from xpra.notifications.notifier_base import NotifierBase
@@ -11,14 +12,16 @@ from xpra.notifications.notifier_base import NotifierBase
 
 class PyNotify_Notifier(NotifierBase):
 
-    def show_notify(self, dbus_id, _tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid,
+                    app_name, replaces_nid, app_icon,
+                    summary, body, actions, hints, timeout, icon):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
         pynotify.init(app_name or "Xpra")
         n = pynotify.Notification(summary, body, icon_string)
         n.set_urgency(pynotify.URGENCY_LOW)
-        n.set_timeout(expire_timeout)
+        n.set_timeout(timeout)
         if actions and False:
             while len(actions)>=2:
                 action_id, action_label = actions[:2]
@@ -54,4 +57,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
