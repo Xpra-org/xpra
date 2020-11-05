@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 import struct
-from ctypes import windll
+from ctypes import windll, c_void_p, sizeof, byref, addressof
+from ctypes.wintypes import BOOL, DWORD
 
 from xpra.os_util import strtobytes
 from xpra.util import XPRA_GUID_BYTES
@@ -30,7 +31,7 @@ def chop_string(command, max_len=100, no_nl=True):
     command = strtobytes(command)
     if no_nl:
         command = command.replace(b"\n", b"").replace(b"\r", b"")
-    if len(command) < max_len:
+    if len(command) <= max_len:
         return command
     return command[:max_len-3] + b"..."
 
@@ -99,21 +100,22 @@ class PyNOTIFYICONDATA:
             raise NameError(name)
         self.__dict__[name] = value
 
+    def __repr__(self):
+        return "PyNOTIFYICONDATA(%s)" % self.__dict__
+
+
+Shell_NotifyIcon = windll.shell32.Shell_NotifyIconA
+Shell_NotifyIcon.restype = BOOL
+Shell_NotifyIcon.argtypes = [DWORD, c_void_p]
+
 
 def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
-    nid = PyNOTIFYICONDATA()
-    nid.hWnd = hwnd
-    nid.uID = app_id
-    nid.uFlags = NIF_INFO
-    nid.guidItem = XPRA_GUID_BYTES
-    nid.szInfo = chop_string(message, 255, False)        #prevent overflow
-    nid.szInfoTitle = chop_string(title, 63)
+    log("notify%s", (hwnd, app_id, title, message, timeout, icon))
     if timeout<=0:
         timeout = 5000
-    nid.uTimeoutOrVersion = timeout
-    #if no icon is supplied, we can use:
-    # NIIF_INFO, NIIF_WARNING or NIIF_ERROR
-    nid.dwInfoFlags = NIIF_INFO
+    szInfo = chop_string(message, 255, False)    #prevent overflow
+    szInfoTitle = chop_string(title, 63)
+    hicon = 0
     if icon:
         try:
             from PIL import Image
@@ -128,17 +130,36 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
                 log("notification icon resized to %s", img.size)
             hicon = image_to_ICONINFO(img)
             log("notify: image_to_ICONINFO(%s)=%#x", img, hicon)
-            nid.hIcon = hicon
-            nid.hBalloonIcon = hicon
         except Exception as e:
             log("notify%s", (hwnd, app_id, title, message, timeout, icon), exc_info=True)
             log.error("Error: failed to set notification icon:")
             log.error(" %s", e)
-        else:
-            nid.dwInfoFlags = NIIF_USER
-    Shell_NotifyIcon = windll.shell32.Shell_NotifyIcon
-    Shell_NotifyIcon(NIM_MODIFY, nid.pack())
-    log("notify using %s", Shell_NotifyIcon)
+
+    from xpra.platform.win32.win32_NotifyIcon import Shell_NotifyIconA, XPRA_GUID, getNOTIFYICONDATAClass
+
+    nc = getNOTIFYICONDATAClass(tip_size=128)
+    nid = nc()
+    nid.cbSize = sizeof(nc)
+    nid.hWnd = hwnd
+    nid.uID = app_id
+    nid.uFlags = NIF_INFO
+    nid.guidItem = XPRA_GUID
+    try:
+        nid.szInfo = szInfo
+    except:
+        nid.szInfo = szInfo.decode()
+    v = chop_string(title, 63)
+    try:
+        nid.szInfoTitle = szInfoTitle
+    except:
+        nid.szInfoTitle = szInfoTitle.decode()
+    nid.uVersion = timeout
+    nid.dwInfoFlags = NIIF_INFO
+    if hicon:
+        nid.hIcon = nid.hBalloonIcon = hicon
+        nid.dwInfoFlags = NIIF_USER
+    Shell_NotifyIconA(NIM_MODIFY, byref(nid))
+    log("notify using %s", Shell_NotifyIconA)
 
 def main():
     from xpra.platform.win32.win32_NotifyIcon import main
