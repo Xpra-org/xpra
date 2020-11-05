@@ -49,10 +49,10 @@ def main(args):
     from gi.repository import GLib, Gtk
     summary = "Summary"
     body = "Body..."
-    if len(sys.argv)>1:
-        summary = sys.argv[1]
-    if len(sys.argv)>2:
-        body = sys.argv[2]
+    if len(args)>1:
+        summary = args[1]
+    if len(args)>2:
+        body = args[2]
     def show():
         n = PyNotify_Notifier()
         n.show_notify("", None, 0, "Test", 0, "", summary, body, ["0", "Hello", "1", "Bye"], {}, 0, "")
