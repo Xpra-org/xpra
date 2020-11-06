@@ -15,6 +15,7 @@ class KeyboardBase:
     def __init__(self):
         self.modifier_mappings = {}
         self.modifier_keys = {}
+        self.modifier_names = {}
         self.modifier_keycodes = {}
         #FIXME: this only allows a single modifier per mask
         #and in some cases we want to allow other modifier names
@@ -51,6 +52,7 @@ class KeyboardBase:
     def _do_add_modifier_mapping(self, keynames, keycode, modifier):
         for keyname in keynames:
             self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
+            self.modifier_names[bytestostr(modifier)] = bytestostr(keyname)
             if keycode:
                 keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
                 if keycode not in keycodes:
@@ -60,11 +62,13 @@ class KeyboardBase:
         log("set_modifier_mappings(%s)", mappings)
         self.modifier_mappings = mappings
         self.modifier_keys = {}
+        self.modifier_names = {}
         self.modifier_keycodes = {}
         for modifier, keys in mappings.items():
             for a, b in keys:
                 self._add_modifier_mapping(a, b, modifier)
         log("modifier_keys=%s", self.modifier_keys)
+        log("modifier_names=%s", self.modifier_names)
         log("modifier_keycodes=%s", self.modifier_keycodes)
 
     def mask_to_names(self, mask):

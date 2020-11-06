@@ -5,6 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from xpra.client.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util import nonl, csv, std, envbool, ellipsizer
 from xpra.os_util import bytestostr
@@ -13,6 +15,7 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 LAYOUT_GROUPS = envbool("XPRA_LAYOUT_GROUPS", True)
+DEBUG_KEY_EVENTS = tuple(x.lower() for x in os.environ.get("XPRA_DEBUG_KEY_EVENTS", "").split(","))
 
 
 class KeyboardHelper:
@@ -175,11 +178,36 @@ class KeyboardHelper:
             self.keyboard.process_key_event(self.send_key_action, wid, key_event)
         return False
 
+
+    def debug_key_event(self, wid, key_event):
+        if not DEBUG_KEY_EVENTS:
+            return
+        def keyname(v):
+            if v.endswith("_L") or v.endswith("_R"):
+                return v[:-2].lower()
+            return v.lower()
+        debug = ("all" in DEBUG_KEY_EVENTS) or (keyname(key_event.keyname) in DEBUG_KEY_EVENTS) or (key_event.string in DEBUG_KEY_EVENTS) 
+        modifiers = key_event.modifiers
+        if not debug and modifiers:
+            #see if one of the modifier matches:
+            #either the raw name (ie: "mod2") or its actual meaning (ie: "NumLock")
+            for m in modifiers:
+                if m in DEBUG_KEY_EVENTS:
+                    debug = True
+                    break
+                name = keyname(self.keyboard.modifier_names.get(m) or "")
+                if name and name in DEBUG_KEY_EVENTS:
+                    debug = True
+                    break
+        if debug:
+            log.info("key event %s on window %i", key_event, wid)
+
     def send_key_action(self, wid, key_event):
         log("send_key_action(%s, %s)", wid, key_event)
         packet = ["key-action", wid]
         for x in ("keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"):
             packet.append(getattr(key_event, x))
+        self.debug_key_event(wid, key_event)
         self.send(*packet)
 
 
