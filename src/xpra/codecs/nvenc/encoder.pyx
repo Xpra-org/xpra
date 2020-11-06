@@ -632,6 +632,14 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved[278]       #[in]: Reserved and must be set to 0
         void        *reserved2[64]      #[in]: Reserved and must be set to NULL
 
+    ctypedef enum NV_ENC_TUNING_INFO:
+        NV_ENC_TUNING_INFO_UNDEFINED            #Undefined tuningInfo. Invalid value for encoding
+        NV_ENC_TUNING_INFO_HIGH_QUALITY         #Tune presets for latency tolerant encoding
+        NV_ENC_TUNING_INFO_LOW_LATENCY          #Tune presets for low latency streaming
+        NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY    #Tune presets for ultra low latency streaming
+        NV_ENC_TUNING_INFO_LOSSLESS             #Tune presets for lossless encoding
+        NV_ENC_TUNING_INFO_COUNT                #Count number of tuningInfos. Invalid value
+
 
     ctypedef struct NVENC_EXTERNAL_ME_HINT_COUNTS_PER_BLOCKTYPE:
         uint32_t    numCandsPerBlk16x16 #[in]: Specifies the number of candidates per 16x16 block.
@@ -842,6 +850,7 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCOUNT)      (void* encoder, GUID encodeGUID, uint32_t* encodePresetGUIDCount) nogil
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETGUIDS)      (void* encoder, GUID encodeGUID, GUID* presetGUIDs, uint32_t guidArraySize, uint32_t* encodePresetGUIDCount) nogil
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCONFIG)     (void* encoder, GUID encodeGUID, GUID  presetGUID, NV_ENC_PRESET_CONFIG* presetConfig) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCONFIGEX)   (void* encoder, GUID encodeGUID, GUID  presetGUID, NV_ENC_TUNING_INFO tuningInfo, NV_ENC_PRESET_CONFIG* presetConfig)
     ctypedef NVENCSTATUS (*PNVENCINITIALIZEENCODER)         (void* encoder, NV_ENC_INITIALIZE_PARAMS* createEncodeParams) nogil
     ctypedef NVENCSTATUS (*PNVENCCREATEINPUTBUFFER)         (void* encoder, NV_ENC_CREATE_INPUT_BUFFER* createInputBufferParams) nogil
     ctypedef NVENCSTATUS (*PNVENCDESTROYINPUTBUFFER)        (void* encoder, NV_ENC_INPUT_PTR inputBuffer) nogil
@@ -879,6 +888,7 @@ cdef extern from "nvEncodeAPI.h":
         PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount
         PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs
         PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig
+        PNVENCGETENCODEPRESETCONFIGEX   nvEncGetEncodePresetConfigEx
         PNVENCINITIALIZEENCODER         nvEncInitializeEncoder
         PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer
         PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer
@@ -2632,12 +2642,14 @@ cdef class Encoder:
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         if DEBUG_API:
             log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
+        
         r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
+        if r!=0 and len(name)==2 and name[0]=="P":
+            log("new style preset without a config: %s", name)
+            tuning = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY
+            r = self.functionList.nvEncGetEncodePresetConfigEx(self.context, encode_GUID, preset_GUID, tuning, presetConfig)
         if r!=0:
-            if len(name)==2 and name[0]=="P":
-                log.error("new style preset without a config: %s", name)
-            else:
-                log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
+            log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
             return NULL
         return presetConfig
 
