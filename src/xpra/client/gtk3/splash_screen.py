@@ -40,7 +40,7 @@ class SplashScreen(Gtk.Window):
 
     def __init__(self):
         self.exit_code = None
-        super().__init__(type=Gtk.WindowType.POPUP)
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("delete_event", self.exit)
         title = "Xpra %s" % __version__
         self.set_title(title)
