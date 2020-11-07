@@ -1085,6 +1085,14 @@ PIC_TYPES = {
              NV_ENC_PIC_TYPE_UNKNOWN        : "UNKNOWN",
             }
 
+TUNING_STR = {
+        NV_ENC_TUNING_INFO_UNDEFINED            : "undefined",
+        NV_ENC_TUNING_INFO_HIGH_QUALITY         : "high-quality",
+        NV_ENC_TUNING_INFO_LOW_LATENCY          : "low-latency",
+        NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY    : "ultra-low-latency",
+        NV_ENC_TUNING_INFO_LOSSLESS             : "lossless",
+        }
+
 NvEncodeAPICreateInstance = None
 cuCtxGetCurrent = None
 
@@ -1651,7 +1659,8 @@ cdef class Encoder:
             csc_mode = "YUV444P10"
 
         #use the environment as default if present:
-        profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, "")
+        profile = os.environ.get("XPRA_NVENC_PROFILE", "")
+        profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, profile)
         #now see if the client has requested a different value:
         profile = options.strget("h264.%s.profile" % csc_mode, profile)
         return profile
@@ -2661,6 +2670,7 @@ cdef class Encoder:
         
         if len(name)==2 and name[0]=="P":
             tuning = self.get_tuning()
+            log("tuning=%s (%i)", TUNING_STR.get(tuning, "unknown"), tuning)
             r = self.functionList.nvEncGetEncodePresetConfigEx(self.context, encode_GUID, preset_GUID, tuning, presetConfig)
         else:
             r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
