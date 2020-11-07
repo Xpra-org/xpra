@@ -1952,12 +1952,15 @@ cdef class Encoder:
         cdef NV_ENC_CONFIG *config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
         assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
         free(presetConfig)
+        config.profileGUID = profile
+        self.tune_preset(config)
         params.encodeConfig = config
 
+
+    cdef tune_preset(self, NV_ENC_CONFIG *config):
         #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
         #config.rcParams.enableMinQP = 1
         #config.rcParams.enableMaxQP = 1
-        config.profileGUID = profile
         config.gopLength = NVENC_INFINITE_GOPLENGTH
         config.frameIntervalP = 1
         #0=max quality, 63 lowest quality
