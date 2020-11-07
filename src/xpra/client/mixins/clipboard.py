@@ -299,7 +299,7 @@ class ClipboardClient(StubClientMixin):
                 log("compress_clipboard() compressing %s, server compressors=%s",
                                   compressible, self.server_compressors)
                 from xpra.net import compression
-                if "brotli" in self.server_compressors and compression.use_brotli:
+                if "brotli" in self.server_compressors and compression.use("brotli"):
                     return compression.compressed_wrapper(compressible.datatype, compressible.data,
                                                         level=9, brotli=True, can_inline=False)
                 return self.compressed_wrapper(compressible.datatype, compressible.data)
