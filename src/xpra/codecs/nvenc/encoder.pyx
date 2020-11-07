@@ -1903,8 +1903,6 @@ cdef class Encoder:
     cdef init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
         #caller must free the config!
         cdef GUID preset
-        cdef NV_ENC_CONFIG *config = NULL
-        cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
         assert self.context, "context is not initialized"
         preset = self.get_preset(self.codec)
         self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
@@ -1925,13 +1923,6 @@ cdef class Encoder:
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
 
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
-        config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
-
-        presetConfig = self.get_preset_config(self.preset_name, codec, preset)
-        assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
-        assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
-        free(presetConfig)
-
         params.version = NV_ENC_INITIALIZE_PARAMS_VER
         params.encodeGUID = codec
         params.presetGUID = preset
@@ -1942,12 +1933,16 @@ cdef class Encoder:
         params.darWidth = self.encoder_width
         params.darHeight = self.encoder_height
         params.enableEncodeAsync = 0            #not supported on Linux
-        #params.enablePTD = 1                    #not supported in sync mode!?
-        params.reportSliceOffsets = 0
-        params.enableSubFrameWrite = 0
-
+        params.enablePTD = 1                    #not supported in sync mode!?
         params.frameRateNum = 30
         params.frameRateDen = 1
+
+        #apply preset:
+        cdef NV_ENC_PRESET_CONFIG *presetConfig = self.get_preset_config(self.preset_name, codec, preset)
+        assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
+        cdef NV_ENC_CONFIG *config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
+        assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
+        free(presetConfig)
         params.encodeConfig = config
 
         #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
@@ -1968,7 +1963,6 @@ cdef class Encoder:
                 qp = 0
             else:
                 qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
-            qp = 20
             config.rcParams.constQP.qpInterP = qp
             config.rcParams.constQP.qpInterB = qp
             config.rcParams.constQP.qpIntra = qp
