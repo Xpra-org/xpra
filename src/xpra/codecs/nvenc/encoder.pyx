@@ -391,7 +391,7 @@ cdef extern from "nvEncodeAPI.h":
     GUID NV_ENC_H264_PROFILE_HIGH_GUID
     GUID NV_ENC_H264_PROFILE_HIGH_444_GUID
     GUID NV_ENC_H264_PROFILE_STEREO_GUID
-    GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
+    #GUID NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY
     GUID NV_ENC_H264_PROFILE_PROGRESSIVE_HIGH_GUID
     GUID NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID
 
@@ -1226,13 +1226,14 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_MAIN_GUID)              : "main",
         guidstr(NV_ENC_H264_PROFILE_HIGH_GUID)              : "high",
         guidstr(NV_ENC_H264_PROFILE_STEREO_GUID)            : "stereo",
-        guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
+        #guidstr(NV_ENC_H264_PROFILE_SVC_TEMPORAL_SCALABILTY): "temporal",
         guidstr(NV_ENC_H264_PROFILE_PROGRESSIVE_HIGH_GUID)  : "progressive-high",
         guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
         #new in SDK v4:
         guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)          : "high-444",
         },
     guidstr(NV_ENC_CODEC_HEVC_GUID) : {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN_GUID)              : "main",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN10_GUID)            : "main10",
         guidstr(NV_ENC_HEVC_PROFILE_FREXT_GUID)             : "frext",
@@ -1303,6 +1304,13 @@ PRESET_QUALITY = {
     "low-latency"   : 20,
     "low-latency-hp": 0,
     "streaming"     : -1000,    #disabled for now
+    "P1"            : 10,
+    "P2"            : 25,
+    "P3"            : 40,
+    "P4"            : 55,
+    "P5"            : 70,
+    "P6"            : 85,
+    "P7"            : 100,
     }
 
 
@@ -1552,23 +1560,39 @@ cdef class Encoder:
         #if a preset was specified, give it the best score possible (-1):
         if DESIRED_PRESET:
             options[-1] = DESIRED_PRESET
-        #add all presets ranked by how far they are from the target speed and quality:
-        log("presets for %s: %s (pixel format=%s)", guidstr(codec), csv(presets.keys()), self.pixel_format)
-        for name, x in presets.items():
-            preset_speed = PRESET_SPEED.get(name, 50)
-            preset_quality = PRESET_QUALITY.get(name, 50)
-            is_lossless = name in LOSSLESS_PRESETS
-            log("preset %16s: speed=%5i, quality=%5i (lossless=%s - want lossless=%s)", name, preset_speed, preset_quality, is_lossless, bool(self.lossless))
-            if is_lossless and self.pixel_format!="YUV444P":
+        #for new style presets (P1 - P7),
+        #we only care about the quality here,
+        #the speed is set using the "tuning"
+        for i in range(1, 8):
+            name = "P%i" % i
+            guid = presets.get(name)
+            if not guid:
                 continue
-            if preset_speed>=0 and preset_quality>=0:
-                #quality (3) weighs more than speed (2):
-                v = 2 * abs(preset_speed-self.speed) + 3 * abs(preset_quality-self.quality)
-                if self.lossless!=is_lossless:
-                    v -= 100
-                l = options.setdefault(v, [])
-                if x not in l:
-                    l.append((name, x))
+            preset_quality = PRESET_QUALITY.get(name, 50)
+            distance = abs(self.quality-preset_quality)
+            l = options.setdefault(distance, []).append((name, guid))
+        #TODO: figure out why the new-style presets fail
+        options = {}
+        #no new-style presets found,
+        #fallback to older lookup code:
+        if not options:
+            #add all presets ranked by how far they are from the target speed and quality:
+            log("presets for %s: %s (pixel format=%s)", guidstr(codec), csv(presets.keys()), self.pixel_format)
+            for name, x in presets.items():
+                preset_speed = PRESET_SPEED.get(name, 50)
+                preset_quality = PRESET_QUALITY.get(name, 50)
+                is_lossless = name in LOSSLESS_PRESETS
+                log("preset %16s: speed=%5i, quality=%5i (lossless=%s - want lossless=%s)", name, preset_speed, preset_quality, is_lossless, bool(self.lossless))
+                if is_lossless and self.pixel_format!="YUV444P":
+                    continue
+                if preset_speed>=0 and preset_quality>=0:
+                    #quality (3) weighs more than speed (2):
+                    v = 2 * abs(preset_speed-self.speed) + 3 * abs(preset_quality-self.quality)
+                    if self.lossless!=is_lossless:
+                        v -= 100
+                    l = options.setdefault(v, [])
+                    if x not in l:
+                        l.append((name, x))
         log("get_preset(%s) speed=%s, quality=%s, lossless=%s, pixel_format=%s, options=%s", codecstr(codec), self.speed, self.quality, bool(self.lossless), self.pixel_format, options)
         for score in sorted(options.keys()):
             for preset, preset_guid in options.get(score):
@@ -1905,92 +1929,90 @@ cdef class Encoder:
 
         presetConfig = self.get_preset_config(self.preset_name, codec, preset)
         assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
-        try:
-            assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
+        assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
+        free(presetConfig)
 
-            params.version = NV_ENC_INITIALIZE_PARAMS_VER
-            params.encodeGUID = codec
-            params.presetGUID = preset
-            params.encodeWidth = self.encoder_width
-            params.encodeHeight = self.encoder_height
-            params.maxEncodeWidth = self.encoder_width
-            params.maxEncodeHeight = self.encoder_height
-            params.darWidth = self.encoder_width
-            params.darHeight = self.encoder_height
-            params.enableEncodeAsync = 0            #not supported on Linux
-            params.enablePTD = 1                    #not supported in sync mode!?
-            params.reportSliceOffsets = 0
-            params.enableSubFrameWrite = 0
+        params.version = NV_ENC_INITIALIZE_PARAMS_VER
+        params.encodeGUID = codec
+        params.presetGUID = preset
+        params.encodeWidth = self.encoder_width
+        params.encodeHeight = self.encoder_height
+        params.maxEncodeWidth = self.encoder_width
+        params.maxEncodeHeight = self.encoder_height
+        params.darWidth = self.encoder_width
+        params.darHeight = self.encoder_height
+        params.enableEncodeAsync = 0            #not supported on Linux
+        #params.enablePTD = 1                    #not supported in sync mode!?
+        params.reportSliceOffsets = 0
+        params.enableSubFrameWrite = 0
 
-            params.frameRateNum = 30
-            params.frameRateDen = 1
-            params.encodeConfig = config
+        params.frameRateNum = 30
+        params.frameRateDen = 1
+        params.encodeConfig = config
 
-            #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
-            #config.rcParams.enableMinQP = 1
-            #config.rcParams.enableMaxQP = 1
-            config.profileGUID = profile
-            config.gopLength = NVENC_INFINITE_GOPLENGTH
-            config.frameIntervalP = 1
-            #0=max quality, 63 lowest quality
-            qpmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality)//100))
-            qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
-            config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
-            #config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
-            if True:
-                #const QP:
-                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
-                if self.preset_name.find("lossless")>=0:
-                    qp = 0
-                else:
-                    qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
-                config.rcParams.constQP.qpInterP = qp
-                config.rcParams.constQP.qpInterB = qp
-                config.rcParams.constQP.qpIntra = qp
+        #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
+        #config.rcParams.enableMinQP = 1
+        #config.rcParams.enableMaxQP = 1
+        config.profileGUID = profile
+        config.gopLength = NVENC_INFINITE_GOPLENGTH
+        config.frameIntervalP = 1
+        #0=max quality, 63 lowest quality
+        qpmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality)//100))
+        qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
+        config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
+        #config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
+        if True:
+            #const QP:
+            config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
+            if self.lossless:
+                qp = 0
             else:
-                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR
-                config.rcParams.averageBitRate = 500000
-                config.rcParams.maxBitRate = 600000
-                #config.rcParams.vbvBufferSize = 0
-                #config.rcParams.vbvInitialDelay = 0
-                #config.rcParams.enableInitialRCQP = 1
-                #config.rcParams.initialRCQP.qpInterP  = qpmin
-                #config.rcParams.initialRCQP.qpIntra = qpmin
-                #config.rcParams.initialRCQP.qpInterB = qpmin
+                qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
+            qp = 20
+            config.rcParams.constQP.qpInterP = qp
+            config.rcParams.constQP.qpInterB = qp
+            config.rcParams.constQP.qpIntra = qp
+        else:
+            config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR
+            config.rcParams.averageBitRate = 500000
+            config.rcParams.maxBitRate = 600000
+            #config.rcParams.vbvBufferSize = 0
+            #config.rcParams.vbvInitialDelay = 0
+            #config.rcParams.enableInitialRCQP = 1
+            #config.rcParams.initialRCQP.qpInterP  = qpmin
+            #config.rcParams.initialRCQP.qpIntra = qpmin
+            #config.rcParams.initialRCQP.qpInterB = qpmin
 
-            if self.pixel_format=="BGRX":
-                chromaFormatIDC = 3
-            elif self.pixel_format=="r210":
-                chromaFormatIDC = 3
-            elif self.pixel_format=="NV12":
-                chromaFormatIDC = 1
-            elif self.pixel_format=="YUV444P":
-                chromaFormatIDC = 3
-            else:
-                raise Exception("unknown pixel format %s" % self.pixel_format)
+        if self.pixel_format=="BGRX":
+            chromaFormatIDC = 3
+        elif self.pixel_format=="r210":
+            chromaFormatIDC = 3
+        elif self.pixel_format=="NV12":
+            chromaFormatIDC = 1
+        elif self.pixel_format=="YUV444P":
+            chromaFormatIDC = 3
+        else:
+            raise Exception("unknown pixel format %s" % self.pixel_format)
 
-            if self.codec_name=="H264":
-                config.encodeCodecConfig.h264Config.chromaFormatIDC = chromaFormatIDC
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
-                config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
-                config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
-                #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
-            else:
-                assert self.codec_name=="H265"
-                config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
-                #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
-                config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
-                config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
-                #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
-                #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
-        finally:
-            if presetConfig!=NULL:
-                free(presetConfig)
+        if self.codec_name=="H264":
+            config.encodeCodecConfig.h264Config.chromaFormatIDC = chromaFormatIDC
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
+            config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
+            config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
+            #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
+        else:
+            assert self.codec_name=="H265"
+            config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
+            #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
+            config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
+            config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
+            #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
+            #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
 
     def init_buffers(self):
         cdef NV_ENC_REGISTER_RESOURCE registerResource
@@ -2643,15 +2665,24 @@ cdef class Encoder:
         if DEBUG_API:
             log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
         
-        r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
-        if r!=0 and len(name)==2 and name[0]=="P":
-            log("new style preset without a config: %s", name)
-            tuning = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY
+        if len(name)==2 and name[0]=="P":
+            tuning = self.get_tuning()
             r = self.functionList.nvEncGetEncodePresetConfigEx(self.context, encode_GUID, preset_GUID, tuning, presetConfig)
+        else:
+            r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if r!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
             return NULL
         return presetConfig
+
+    def get_tuning(self):
+        if self.lossless:
+            return NV_ENC_TUNING_INFO_LOSSLESS
+        if self.speed>80:
+            return NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY
+        if self.speed>50:
+            return NV_ENC_TUNING_INFO_LOW_LATENCY
+        return NV_ENC_TUNING_INFO_HIGH_QUALITY
 
     cdef object query_presets(self, GUID encode_GUID):
         cdef uint32_t presetCount
