@@ -1978,6 +1978,7 @@ cdef class Encoder:
             config.rcParams.constQP.qpInterP = qp
             config.rcParams.constQP.qpInterB = qp
             config.rcParams.constQP.qpIntra = qp
+            log("constQP: %i", qp)
         else:
             config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR
             config.rcParams.averageBitRate = 500000
@@ -1999,6 +2000,7 @@ cdef class Encoder:
             chromaFormatIDC = 3
         else:
             raise Exception("unknown pixel format %s" % self.pixel_format)
+        log("chromaFormatIDC(%s)=%s", self.pixel_format, chromaFormatIDC)
 
         if self.codec_name=="H264":
             config.encodeCodecConfig.h264Config.chromaFormatIDC = chromaFormatIDC
@@ -2017,6 +2019,7 @@ cdef class Encoder:
             #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
             config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
             config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
+            #config.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
             #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
             #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
 
