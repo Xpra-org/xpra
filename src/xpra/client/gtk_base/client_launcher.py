@@ -124,9 +124,7 @@ class ApplicationWindow:
     def __init__(self):
         # Default connection options
         self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS, extras_types=LAUNCHER_OPTION_TYPES, extras_validation=self.get_launcher_validation())
-        ssh_cmd = parse_ssh_string(self.config.ssh)[0].strip().lower()
-        self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-        self.is_paramiko = ssh_cmd.startswith("paramiko")
+        self.parse_ssh()
         #TODO: the fixup does not belong here?
         from xpra.scripts.main import fixup_options
         fixup_options(self.config)
@@ -136,6 +134,11 @@ class ApplicationWindow:
         self.exit_launcher = False
         self.exit_code = None
         self.current_error = None
+
+    def parse_ssh(self):
+        ssh_cmd = parse_ssh_string(self.config.ssh)[0].strip().lower()
+        self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
+        self.is_paramiko = ssh_cmd.startswith("paramiko")
 
     def get_connection_modes(self):
         modes = ["ssh"]
@@ -1074,6 +1077,7 @@ class ApplicationWindow:
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
         self.config_keys = self.config_keys.union(set(props.keys()))
+        self.parse_ssh()
         log("_apply_props(%s) populated config with keys '%s', ssh=%s", props, options.keys(), self.config.ssh)
 
     def choose_session_file(self, title, action, action_button, callback):
