@@ -818,7 +818,7 @@ class SessionInfo(Gtk.Window):
 
         from xpra.net.compression import get_enabled_compressors
         self.client_packet_compressors_label.set_text(csv(get_enabled_compressors()))
-        self.server_packet_compressors_label.set_text(csv(self.client.server_packet_compressors))
+        self.server_packet_compressors_label.set_text(csv(self.client.server_compressors))
         return False
 
     def populate_connection(self):
