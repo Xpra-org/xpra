@@ -43,7 +43,7 @@ This package contains the development files for %{name}.
 
 
 %prep
-%setup -q -n x264-snapshot-%{version}-2245
+%setup -q -n x264-snapshot-%{version}-2245-stable
 
 
 %build
