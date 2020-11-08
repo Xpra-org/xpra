@@ -89,7 +89,7 @@ rm -rf %{buildroot}
 * Sun Nov 08 2020 Antoine Martin <antoine@xpra.org> 20191217-1
 - use the last official snapshot
 
-* Mon May 11 2017 Antoine Martin <antoine@xpra.org> 20200510-1
+* Thu May 11 2017 Antoine Martin <antoine@xpra.org> 20200510-1
 - use a newer snapshot
 
 * Sat Dec 23 2017 Antoine Martin <antoine@xpra.org> 20171222-1
