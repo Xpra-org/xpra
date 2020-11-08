@@ -12,7 +12,7 @@ Summary:     x264 library for xpra
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.videolan.org/developers/x264.html
-Source0:     http://download.videolan.org/pub/x264/snapshots/x264-%{version}.tar.bz2
+Source0:     http://download.videolan.org/pub/x264/snapshots/x264-snapshot-%{version}-2245-stable.tar.bz2
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 
@@ -43,7 +43,7 @@ This package contains the development files for %{name}.
 
 
 %prep
-%setup -q -n x264-master
+%setup -q -n x264-snapshot-%{version}-2245
 
 
 %build
