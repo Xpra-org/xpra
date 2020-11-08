@@ -136,6 +136,8 @@ class AudioServer(StubServerMixin):
             if not rd or not os.path.exists(rd) or not os.path.isdir(rd):
                 log.warn("Warning: the runtime directory '%s' does not exist,", rd)
                 log.warn(" cannot start a private pulseaudio server")
+            elif rd=="/tmp":
+                log.warn("Warning: cannot start a private pulseaudio server in /tmp")
             else:
                 xpra_rd = _get_xpra_runtime_dir()
                 assert xpra_rd, "bug: no xpra runtime dir"
