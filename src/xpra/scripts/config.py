@@ -106,7 +106,7 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/e
           ]
     return cmd
 
-def get_Xvfb_command(width=5760, height=2560, dpi=96):
+def get_Xvfb_command(width=8192, height=4096, dpi=96):
     cmd = ["Xvfb",
            "+extension", "GLX",
            "+extension", "Composite",
