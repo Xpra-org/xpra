@@ -244,7 +244,7 @@ Recommends:         python3-qrencode
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
-%if 0%{?fedora}>=29
+%if 0%{?fedora}
 Recommends:			libappindicator-gtk3
 %endif
 Suggests:			sshpass
