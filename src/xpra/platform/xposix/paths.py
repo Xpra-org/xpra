@@ -114,19 +114,12 @@ def do_get_user_conf_dirs(uid):
 
 def get_runtime_dir():
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
-    if runtime_dir:
-        #replace uid with the string "$UID"
-        head, tail = os.path.split(runtime_dir)
-        try:
-            assert int(tail)>=0
-            runtime_dir = os.path.join(head, "$UID")
-        except (ValueError, AssertionError):
-            pass
-    else:
-        for d in ("/run/user", "/var/run/user"):
-            if os.path.exists(d) and os.path.isdir(d):
-                runtime_dir = d+"/$UID"
-                break
+    if runtime_dir or sys.platform.startswith("linux"):
+        return "$XDG_RUNTIME_DIR"
+    for d in ("/run/user", "/var/run/user"):
+        if os.path.exists(d) and os.path.isdir(d):
+            runtime_dir = d+"/$UID"
+            break
     return runtime_dir
 
 def _get_xpra_runtime_dir():
@@ -139,7 +132,8 @@ def do_get_socket_dirs():
     SOCKET_DIRS = []
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
-        #private, per user: /run/user/1000/xpra
+        #private, per user: XDG_RUNTIME_DIR/xpra
+        # (ie: "/run/user/1000/xpra")
         SOCKET_DIRS.append(runtime_dir)
     #for shared sockets (the 'xpra' group should own this directory):
     if os.path.exists("/run"):

@@ -31,7 +31,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, pollwait,
-    monotonic_time, bytestostr, use_tty,
+    monotonic_time, bytestostr, use_tty, osexpand,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
@@ -315,9 +315,12 @@ def use_systemd_run(s):
         return False    # pragma: no cover
     #test it:
     cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
-    proc = Popen(cmd, stdin=None, stdout=None, stderr=None, shell=False)
-    r = pollwait(proc, timeout=2)
-    if r is None:   # pragma: no cover
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
+    try:
+        r = proc.wait(timeout=2)
+    except TimeoutExpired:  # pragma: no cover
+        r = None
+    if r is None:
         try:
             proc.terminate()
         except Exception:
@@ -339,10 +342,19 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
             if argv[0].find("python")<0:
                 argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
             return systemd_run_wrap(mode, argv, options.systemd_run_args)
-
     configure_env(options.env)
     configure_logging(options, mode)
     configure_network(options)
+
+    if mode!="showconfig" and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
+        from xpra.platform.xposix.paths import get_runtime_dir
+        xrd = osexpand(get_runtime_dir())
+        if not os.path.exists(xrd):
+            warn("Warning: XDG_RUNTIME_DIR does not exist")
+            if os.path.exists("/tmp") and os.path.isdir("/tmp"):
+                xrd = "/tmp"
+                warn(" using '%s'" % xrd)
+                os.environ["XDG_RUNTIME_DIR"] = xrd
 
     if not mode.startswith("_sound_"):
         #only the sound subcommands should ever actually import GStreamer:
