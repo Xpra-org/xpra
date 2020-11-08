@@ -337,17 +337,6 @@ def make_proxy_server():
     return ProxyServer()
 
 
-def run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=None, progress_cb=None):
-    #add finally hook to ensure we will run the cleanups
-    #even if we exit because of an exception:
-    try:
-        return do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display, progress_cb)
-    finally:
-        run_cleanups()
-        import gc
-        gc.collect()
-
-
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None):
     #check that we can access the X11 display:
     from xpra.x11.vfb_util import verify_display_ready, VFB_WAIT
