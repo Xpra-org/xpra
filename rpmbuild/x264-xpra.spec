@@ -1,7 +1,7 @@
 %define _build_id_links none
 
 Name:	     x264-xpra
-Version:     20200706
+Version:     20191217
 %if 0%{?beta} < 1
 Release:     1%{?dist}
 %else
@@ -86,9 +86,8 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
-* Mon Jul 06 2020 Antoine Martin <antoine@xpra.org> 20200706-1
-- use a newer snapshot
-- remove autoreq / autoprov
+* Sun Nov 08 2020 Antoine Martin <antoine@xpra.org> 20191217-1
+- use the last official snapshot
 
 * Mon May 11 2017 Antoine Martin <antoine@xpra.org> 20200510-1
 - use a newer snapshot
