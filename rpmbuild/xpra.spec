@@ -29,7 +29,7 @@
 %define selinux_modules cups_xpra xpra_socketactivation
 #we never want to depend on proprietary nvidia bits:
 %global __requires_exclude ^libnvidia-.*\\.so.*$
-%define __provides_exclude_from ^%{python3_sitearch}/xpra/codecs/*/*.so$ 
+%define __requires_exclude_from ^%{python3_sitearch}/xpra/codecs/*/*.so$
 
 # no support for centos / rhel 7:
 %if 0%{?el7}
