@@ -34,8 +34,9 @@
 %define selinux_modules cups_xpra xpra_socketactivation
 %define Suggests Suggests
 %define Recommends Recommends
-#we never want to depend on proprietary nvidia bits:
-%global __requires_exclude ^libnvidia-.*\\.so.*$
+#we never want to depend on proprietary nvidia bits,
+#and we manage the codecs with a private library:
+%global __requires_exclude ^(libnvidia-|libavcodec|libavformat|libavutil|libswscale|libx264).*\\.so.*$
 
 # Python permits the !/usr/bin/python shebang for scripts that are cross
 # compatible between python2 and python3, but Fedora 28 does not.  Fedora
