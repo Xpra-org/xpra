@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import browser_cookie3
+import browser_cookie3  # @UnresolvedImport
 
 from xpra.os_util import strtobytes
 
