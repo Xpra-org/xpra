@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 
 import sys
 
@@ -34,9 +35,9 @@ def main():
                 device = int(sys.argv[1])
             except ValueError:
                 command_error("Warning: failed to parse value as a device number: '%s'" % sys.argv[1])
-        log("opening %s with device=%s", cv2.VideoCapture, device)
+        log("opening %s with device=%s", cv2.VideoCapture, device)  # @UndefinedVariable
         try:
-            cap = cv2.VideoCapture(device)
+            cap = cv2.VideoCapture(device)  # @UndefinedVariable
         except Exception as e:
             command_error("Error: failed to capture video using device %s:\n%s" % (device, e))
             return 1
@@ -46,11 +47,11 @@ def main():
             if not ret:
                 command_error("Error: frame capture failed using device %s" % device)
                 return 1
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(10) & 0xFF in (ord('q'), 27):
+            cv2.imshow('frame', frame)  # @UndefinedVariable
+            if cv2.waitKey(10) & 0xFF in (ord('q'), 27):    # @UndefinedVariable
                 break
         cap.release()
-        cv2.destroyAllWindows()
+        cv2.destroyAllWindows() # @UndefinedVariable
     return 0
 
 if __name__ == "__main__":
