@@ -6,7 +6,6 @@
 
 from xpra.log import Logger
 from xpra.util import csv, engs
-from xpra.os_util import bytestostr
 
 log = Logger("util", "command")
 
