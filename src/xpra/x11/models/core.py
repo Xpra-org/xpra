@@ -432,7 +432,7 @@ class CoreX11WindowModel(WindowModelStub):
              "Bounding.extents" : bextents,
              "Clip.extents"     : cextents,
              }
-        for kind, kind_name in SHAPE_KIND.items():
+        for kind, kind_name in SHAPE_KIND.items():  # @UndefinedVariable
             rectangles = X11Window.XShapeGetRectangles(self.xid, kind)
             v[kind_name+".rectangles"] = rectangles
         shapelog("_read_shape()=%s", v)
