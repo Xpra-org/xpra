@@ -8,7 +8,7 @@ from gi.repository import Gtk, GLib
 
 from xpra.util import typedict, noerr, envbool
 from xpra.os_util import SIGNAMES, bytestostr
-from xpra.exit_codes import EXIT_PACKET_FAILURE, EXIT_OK, EXIT_CONNECTION_LOST
+from xpra.exit_codes import EXIT_PACKET_FAILURE, EXIT_OK
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
 from xpra.client.client_base import XpraClientBase
