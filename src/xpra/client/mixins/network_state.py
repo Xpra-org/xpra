@@ -12,7 +12,6 @@ from xpra.os_util import monotonic_time, POSIX
 from xpra.util import envint, envbool, csv, typedict
 from xpra.exit_codes import EXIT_TIMEOUT
 from xpra.net.packet_encoding import ALL_ENCODERS
-from xpra.net.compression import ALL_COMPRESSORS
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.log import Logger

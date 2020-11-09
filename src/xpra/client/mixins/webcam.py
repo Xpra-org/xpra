@@ -10,7 +10,7 @@ from threading import RLock
 from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
-from xpra.os_util import OSEnvContext, monotonic_time, WIN32, BITS
+from xpra.os_util import OSEnvContext, monotonic_time, WIN32
 from xpra.util import envint, envbool, csv, typedict, XPRA_WEBCAM_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
