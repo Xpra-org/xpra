@@ -958,7 +958,7 @@ class WindowClient(StubClientMixin):
         override_redirect = window._override_redirect
         backing = window._backing
         current_icon = window._current_icon
-        delta_pixel_data, video_decoder, csc_decoder, decoder_lock = None, None, None, None
+        video_decoder, csc_decoder, decoder_lock = None, None, None
         try:
             if backing:
                 video_decoder = backing._video_decoder
