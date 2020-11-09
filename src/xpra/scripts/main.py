@@ -1507,7 +1507,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
     try:
         from xpra import client
         assert client
-    except ImportError as e:
+    except ImportError:
         error_cb("Xpra client is not installed")
 
     if opts.compression_level < 0 or opts.compression_level > 9:
