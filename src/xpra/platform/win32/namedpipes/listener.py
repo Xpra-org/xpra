@@ -199,7 +199,7 @@ class NamedPipeListener(Thread):
         data_size = DWORD()
         if not GetTokenInformation(self.token_process, token_type, 0, 0, byref(data_size)):
             if GetLastError()!=ERROR_INSUFFICIENT_BUFFER:
-                raise WindowsError()
+                raise WindowsError()  # @UndefinedVariable
         log("GetTokenInformation data size %#x", data_size.value)
         token_data = create_string_buffer(data_size.value)
         self.tokens.append(token_data)
@@ -221,13 +221,13 @@ class NamedPipeListener(Thread):
         self.security_descriptor = SD
         log("SECURITY_DESCRIPTOR=%s", SD)
         if not InitializeSecurityDescriptor(byref(SD), SECURITY_DESCRIPTOR.REVISION):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         log("InitializeSecurityDescriptor: %s", SD)
         if not SetSecurityDescriptorOwner(byref(SD), user.SID, False):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         log("SetSecurityDescriptorOwner: %s", SD)
         if not SetSecurityDescriptorGroup(byref(SD), group.PrimaryGroup, False):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         log("SetSecurityDescriptorGroup: %s", SD)
         SA = SECURITY_ATTRIBUTES()
         log("CreatePipeSecurityObject() SECURITY_ATTRIBUTES=%s", SA)
@@ -236,9 +236,9 @@ class NamedPipeListener(Thread):
             SA.bInheritHandle = False
             return SA
         if not SetSecurityDescriptorSacl(byref(SD), False, None, False):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         if not SetSecurityDescriptorDacl(byref(SD), True, None, False):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         #this doesn't work - and I don't know why:
         #SECURITY_NT_AUTHORITY = 5
         #sia_anonymous = SID_IDENTIFIER_AUTHORITY((0, 0, 0, 0, 0, SECURITY_NT_AUTHORITY))
@@ -258,7 +258,7 @@ class NamedPipeListener(Thread):
         assert sizeof(SID)>=SECURITY_MAX_SID_SIZE
         if not CreateWellKnownSid(sid_type, None, byref(sid_allow), byref(sid_size)):
             log.error("error=%s", GetLastError())
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         assert sid_size.value<=SECURITY_MAX_SID_SIZE
         log("CreateWellKnownSid(..) sid_allow=%s, sid_size=%s", sid_allow, sid_size)
 
@@ -271,7 +271,7 @@ class NamedPipeListener(Thread):
         acl = cast(acl_data, POINTER(ACL)).contents
         log("acl_size=%s, acl_data=%s, acl=%s", acl_size, acl_data, acl)
         if not InitializeAcl(byref(acl), acl_size, ACL_REVISION):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         log("InitializeAcl(..) acl=%s", acl)
 
         rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
@@ -280,7 +280,7 @@ class NamedPipeListener(Thread):
         if r==0:
             err = GetLastError()
             log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
 
         rights = STANDARD_RIGHTS_ALL | SPECIFIC_RIGHTS_ALL
         add_sid = byref(sid_allow)
@@ -288,9 +288,9 @@ class NamedPipeListener(Thread):
         if r==0:
             err = GetLastError()
             log("AddAccessAllowedAce(..)=%s", ACL_ERRORS.get(err, err))
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         if not SetSecurityDescriptorDacl(byref(SD), True, byref(acl), False):
-            raise WindowsError()
+            raise WindowsError()    #@UndefinedVariable
         SA.nLength = sizeof(SECURITY_ATTRIBUTES)
         SA.lpSecurityDescriptor = cast(pointer(SD), c_void_p)
         SA.bInheritHandle = True
