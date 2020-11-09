@@ -411,7 +411,6 @@ class ShellXpraClient(SendCommandConnectClient):
         self.install_signal_handlers()
         stdin = sys.stdin
         fileno = stdin.fileno()
-        import os
         import fcntl
         fl = fcntl.fcntl(fileno, fcntl.F_GETFL)
         fcntl.fcntl(fileno, fcntl.F_SETFL, fl | os.O_NONBLOCK)
