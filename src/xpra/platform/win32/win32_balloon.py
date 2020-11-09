@@ -7,11 +7,10 @@
 # Support for "balloon" notifications on MS Windows
 # Based on code from winswitch, itself based on "win32gui_taskbar demo"
 import struct
-from ctypes import windll, c_void_p, sizeof, byref, addressof
+from ctypes import windll, c_void_p, sizeof, byref
 from ctypes.wintypes import BOOL, DWORD
 
 from xpra.os_util import strtobytes
-from xpra.util import XPRA_GUID_BYTES
 from xpra.platform.win32.constants import SM_CXSMICON, SM_CYSMICON
 from xpra.platform.win32.common import GetSystemMetrics
 from xpra.log import Logger
@@ -148,7 +147,6 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
         nid.szInfo = szInfo
     except:
         nid.szInfo = szInfo.decode()
-    v = chop_string(title, 63)
     try:
         nid.szInfoTitle = szInfoTitle
     except:
