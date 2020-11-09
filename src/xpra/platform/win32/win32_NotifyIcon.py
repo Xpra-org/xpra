@@ -9,7 +9,7 @@
 
 import os
 import ctypes
-from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
+from ctypes import Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE
 
 from xpra.util import typedict, csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
