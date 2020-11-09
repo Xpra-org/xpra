@@ -587,7 +587,8 @@ fi
 
 
 %changelog
-* Fri Oct 23 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
+* Mon Nov 11 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
+- fix caps lock wrongly applied to numeric keys
 - fix HTML5 client keyboard layout detection with Internet Explorer
 - fix HTML5 audio forwarding with some versions of Safari
 - fix HTML5 (un)fullscreen
@@ -595,18 +596,24 @@ fi
 - fix syntax errors when using connections using nested ssh tunnels
 - fix http / websocket and ssl socket upgrade failures
 - fix server errors when ws sockets cannot be upgrade to wss
+- fix ssh command option not being honourd with the client launcher
 - fix proxy control socket becoming unresponsive after errors
 - fix proxy shutdown
+- fix proxy instance zombies on server start failures
 - fix stdout errors causing server startup or shutdown problems
+- fix MS Windows bubble notifications not showing on some systems
 - fix MS Windows client keyboard unresponsive issues
 - fix MS Windows and MacOS websocket servers missing mimetypes module
 - fix archlinux build path stripping
+- fix Fedora 33 package dependency issues
 - fix opengl debug option for saving buffers as jpeg
 - fix spurious "missing resolution" errors (often with HTML5 client resizing)
 - fix duplicated data in bug reports
 - fix download checksum verification (was not verified with python3 builds)
 - fix spurious file transfer errors with python3 builds
+- HTML5 connect page can now specify the display to connect to
 - avoid starting new threads for file transfers that don't need one
+- raise default maximum packet size to prevent connection errors with large xdg menu data
 - don't let bad http requests mess up the server log
 - prevent peek data or exception message from corrupting the log / stdout
 - remove dependency on "requests" package introduced in 4.0.4

@@ -1,4 +1,5 @@
 xpra (4.0.5-1) UNRELEASED; urgency=low
+  * fix caps lock wrongly applied to numeric keys
   * fix HTML5 client keyboard layout detection with Internet Explorer
   * fix HTML5 audio forwarding with some versions of Safari
   * fix HTML5 (un)fullscreen
@@ -6,26 +7,31 @@ xpra (4.0.5-1) UNRELEASED; urgency=low
   * fix syntax errors when using connections using nested ssh tunnels
   * fix http / websocket and ssl socket upgrade failures
   * fix server errors when ws sockets cannot be upgrade to wss
+  * fix ssh command option not being honourd with the client launcher
   * fix proxy control socket becoming unresponsive after errors
   * fix proxy shutdown
+  * fix proxy instance zombies on server start failures
   * fix stdout errors causing server startup or shutdown problems
+  * fix MS Windows bubble notifications not showing on some systems
   * fix MS Windows client keyboard unresponsive issues
   * fix MS Windows and MacOS websocket servers missing mimetypes module
   * fix archlinux build path stripping
+  * fix Fedora 33 package dependency issues
   * fix opengl debug option for saving buffers as jpeg
   * fix spurious "missing resolution" errors (often with HTML5 client resizing)
   * fix duplicated data in bug reports
   * fix download checksum verification (was not verified with python3 builds)
   * fix spurious file transfer errors with python3 builds
+  * HTML5 connect page can now specify the display to connect to
   * avoid starting new threads for file transfers that don't need one
+  * raise default maximum packet size to prevent connection errors with large xdg menu data
   * don't let bad http requests mess up the server log
   * prevent peek data or exception message from corrupting the log / stdout
   * remove dependency on "requests" package introduced in 4.0.4
   * remove "numpy" dependency for builds without NVENC / NVFBC (fixes MacOS installation problems)
   * add new NVENC presets from SDK v10, workaround deprecation warnings
-  * add correct packaging for Debian Bullseye and Debian Groovy Gorilla
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 23 Oct 2020 19:24:20 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 09 Nov 2020 10:24:58 +0700
 
 xpra (4.0.4-1) UNRELEASED; urgency=low
   * fix memory leak with 'scroll' encoding
