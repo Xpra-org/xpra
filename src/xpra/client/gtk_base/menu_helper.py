@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk, GLib, GdkPixbuf
+from gi.repository import Gtk
 
 from xpra.util import envbool
 from xpra.os_util import OSX
