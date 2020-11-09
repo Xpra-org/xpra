@@ -18,7 +18,7 @@ from gi.repository import GLib, Gdk, Gtk
 
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time
-from xpra.gtk_common.gobject_compat import register_os_signals, register_SIGUSR_signals
+from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
 from xpra.gtk_common.gtk_util import (
@@ -60,6 +60,7 @@ class GTKServerBase(ServerBase):
     def install_signal_handlers(self, callback):
         sstr = "%s server" % self.get_server_mode()
         register_os_signals(callback, sstr)
+        from xpra.gtk_common.gobject_compat import register_SIGUSR_signals
         register_SIGUSR_signals(sstr)
 
     def do_quit(self):
