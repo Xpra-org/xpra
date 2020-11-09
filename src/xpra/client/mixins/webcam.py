@@ -263,7 +263,7 @@ class WebcamForwarder(StubClientMixin):
             assert frame.ndim==3, "invalid frame data"
             h, w, Bpp = frame.shape
             assert Bpp==3 and frame.size==w*h*Bpp
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # @UndefinedVariable
             end = monotonic_time()
             log("webcam frame capture took %ims", (end-start)*1000)
             start = monotonic_time()
