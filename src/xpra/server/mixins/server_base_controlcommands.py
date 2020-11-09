@@ -605,7 +605,6 @@ class ServerBaseControlCommands(StubServerMixin):
         window = self._id_to_window.get(wid)
         if not window:
             raise ControlError("window %s does not exist" % wid)
-        x, y = window.get_geometry()[:2]
         count = 0
         for source in tuple(self._server_sources.values()):
             resize_window = getattr(source, "resize_window", None)
