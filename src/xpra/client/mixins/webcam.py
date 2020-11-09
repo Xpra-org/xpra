@@ -151,7 +151,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_frame_no = 0
         try:
             #test capture:
-            webcam_device = cv2.VideoCapture(device)        #0 -> /dev/video0
+            webcam_device = cv2.VideoCapture(device)        #0 -> /dev/video0 @UndefinedVariable
             ret, frame = webcam_device.read()
             log("test capture using %s: %s, %s", webcam_device, ret, frame is not None)
             assert ret, "no device or permission"
