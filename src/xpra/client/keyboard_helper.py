@@ -186,7 +186,9 @@ class KeyboardHelper:
             if v.endswith("_L") or v.endswith("_R"):
                 return v[:-2].lower()
             return v.lower()
-        debug = ("all" in DEBUG_KEY_EVENTS) or (keyname(key_event.keyname) in DEBUG_KEY_EVENTS) or (key_event.string in DEBUG_KEY_EVENTS) 
+        def dbg(v):
+            return v and keyname(v) in DEBUG_KEY_EVENTS
+        debug = ("all" in DEBUG_KEY_EVENTS) or dbg(key_event.keyname) or dbg(key_event.string) 
         modifiers = key_event.modifiers
         if not debug and modifiers:
             #see if one of the modifier matches:
