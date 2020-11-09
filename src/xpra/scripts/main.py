@@ -30,7 +30,7 @@ from xpra.exit_codes import (
     EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
     )
 from xpra.os_util import (
-    get_util_logger, getuid, getgid, pollwait,
+    get_util_logger, getuid, getgid,
     monotonic_time, bytestostr, use_tty, osexpand,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
