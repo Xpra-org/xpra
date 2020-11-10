@@ -1769,7 +1769,7 @@ def run_opengl_probe():
     def probe_message():
         err = props.get("error")
         if err:
-            return "error"
+            return "error:%s" % err
         if r==1:
             return "crash"
         if r is None:
