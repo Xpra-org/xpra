@@ -3,7 +3,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.3.1
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -31,6 +31,7 @@ Group:     Development/libraries
 Requires:  %{name} = %{version}-%{release}
 Requires:  pkgconfig
 Requires:  ffmpeg-xpra = %{version}
+Requires:  libva
 AutoReq:   0
 
 %description devel
@@ -170,6 +171,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Nov 10 2020 Antoine Martin <antoine@xpra.org> 4.3.1-2
+- add dependency on libva
+
 * Sat Aug 22 2020 Antoine Martin <antoine@xpra.org> 4.3.1-1
 - new upstream release
 
