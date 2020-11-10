@@ -134,6 +134,8 @@ Recommends: python3-dbus
 		,gnome-shell-extension-appindicator | plasma-desktop
 #most of the examples use an xterm:
         ,xterm
+#ability to generate qr codes:
+        ,python3-qrencode
 Suggests: openssh-server
 # to make the system tray work again (sigh):
 		,gnome-shell-extension-top-icons-plus
