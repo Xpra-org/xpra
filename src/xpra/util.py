@@ -467,7 +467,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
     def dpi(size_pixels, size_mm):
         if size_mm==0:
             return 0
-        return int(size_pixels * 254 / size_mm / 10)
+        return iround(size_pixels * 254 / size_mm / 10)
     def add_workarea(info, wx, wy, ww, wh):
         info.append("workarea: %ix%i" % (ww, wh))
         if wx!=0 or wy!=0:
