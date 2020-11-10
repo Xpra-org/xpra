@@ -548,7 +548,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
     defs = {}
     try:
         sockpaths = {}
-        log("setup_local_sockets: bind=%s", bind)
+        log("setup_local_sockets: bind=%s, dotxpra=%s", bind, dotxpra)
         for b in bind:
             if b in ("none", ""):
                 continue
