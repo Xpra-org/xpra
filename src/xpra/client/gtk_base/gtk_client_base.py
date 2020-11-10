@@ -1037,9 +1037,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #ie: "on:native,gtk", "auto", "no"
         #ie: "probe-failed:SIGSEGV"
         #ie: "probe-success"
-        enable_opengl = (enable_opengl or "").lower()
+        enable_opengl = (enable_opengl or "")
         parts = enable_opengl.split(":", 1)
-        enable_option = parts[0]            #ie: "on"
+        enable_option = parts[0].lower()        #ie: "on"
         opengllog("init_opengl: enable_option=%s", enable_option)
         if enable_option in ("probe-failed", "probe-error", "probe-crash"):
             msg = enable_option.replace("-", " ")
