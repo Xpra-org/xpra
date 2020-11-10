@@ -296,9 +296,9 @@ def get_screen_sizes(xscale=1, yscale=1):
         xdpi = dpi(sw, wmm)
         ydpi = dpi(sh, hmm)
         if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
-            warn = first_time("invalid-screen-size-%ix%i" % (wmm, hmm))
-            if warn:
-                log.warn("Warning: ignoring invalid screen size %ix%imm", wmm, hmm)
+            log("ignoring invalid screen size %ix%imm", wmm, hmm)
+            if os.environ.get("WAYLAND_DISPLAY"):
+                log(" (wayland display?)")
             if n_monitors>0:
                 wmm = sum(display.get_monitor(i).get_width_mm() for i in range(n_monitors))
                 hmm = sum(display.get_monitor(i).get_height_mm() for i in range(n_monitors))
@@ -308,8 +308,7 @@ def get_screen_sizes(xscale=1, yscale=1):
                 #still invalid, generate one from DPI=96
                 wmm = iround(sw*25.4/96)
                 hmm = iround(sh*25.4/96)
-            if warn:
-                log.warn(" using %ix%i mm", wmm, hmm)
+            log(" using %ix%i mm", wmm, hmm)
         item = (screen.make_display_name(), xs(sw), ys(sh),
                     wmm, hmm,
                     monitors,
