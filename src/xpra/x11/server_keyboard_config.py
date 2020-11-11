@@ -466,7 +466,7 @@ class KeyboardConfig(KeyboardConfigBase):
             """
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
-            lock = ("lock" in modifiers) and (SHIFT_LOCK or (keystr and keystr.isalpha()))
+            lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
             shift = ("shift" in modifiers) ^ lock
             mode = 0
             numlock = 0
