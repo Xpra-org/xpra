@@ -295,6 +295,16 @@ def isdisplaytype(args, *dtypes) -> bool:
     d = args[0]
     return any((d.startswith("%s/" % dtype) or d.startswith("%s:" % dtype) for dtype in dtypes))
 
+def check_gtk():
+    import gi
+    gi.require_version("Gtk", "3.0")
+    from gi.repository import Gtk
+    assert Gtk
+    r = Gtk.init_check(None)
+    if not r[0]:
+        raise InitExit(EXIT_NO_DISPLAY, "failed to initialize Gtk, no display?")
+    check_display()
+
 def check_display():
     from xpra.platform.gui import can_access_display
     if not can_access_display():    # pragma: no cover
@@ -428,21 +438,21 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "list-mdns" and supports_mdns:
         return run_list_mdns(error_cb, args)
     elif mode == "mdns-gui" and supports_mdns:
-        check_display()
+        check_gtk()
         return run_mdns_gui(error_cb, options)
     elif mode == "sessions":
-        check_display()
+        check_gtk()
         return run_sessions_gui(error_cb, options)
     elif mode == "launcher":
-        check_display()
+        check_gtk()
         from xpra.client.gtk_base.client_launcher import main as launcher_main
         return launcher_main(["xpra"]+args)
     elif mode == "gui":
-        check_display()
+        check_gtk()
         from xpra.gtk_common.gui import main as gui_main        #@Reimport
         return gui_main()
     elif mode == "bug-report":
-        check_display()
+        check_gtk()
         from xpra.scripts.bug_report import main as bug_main    #@Reimport
         bug_main(["xpra"]+args)
     elif (
@@ -456,52 +466,54 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         from xpra.sound.wrapper import run_sound
         return run_sound(mode, error_cb, options, args)
     elif mode=="_dialog":
-        check_display()
+        check_gtk()
         return run_dialog(args)
     elif mode=="_pass":
-        check_display()
+        check_gtk()
         return run_pass(args)
     elif mode=="send-file":
-        check_display()
+        check_gtk()
         return run_send_file(args)
     elif mode=="splash":
+        check_gtk()
         return run_splash(args)
     elif mode=="opengl":
-        check_display()
+        check_gtk()
         return run_glcheck(options)
     elif mode=="opengl-probe":
-        check_display()
+        check_gtk()
         return run_glprobe(options)
     elif mode=="opengl-test":
-        check_display()
+        check_gtk()
         return run_glprobe(options, True)
     elif mode=="encoding":
         from xpra.codecs import loader
         return loader.main()
     elif mode=="webcam":
-        check_display()
+        check_gtk()
         from xpra.scripts import show_webcam
         return show_webcam.main()
     elif mode=="clipboard-test":
-        check_display()
+        check_gtk()
         from xpra.gtk_common import gtk_view_clipboard
         return gtk_view_clipboard.main()
     elif mode=="keyboard":
         from xpra.platform import keyboard
         return keyboard.main()
     elif mode=="keyboard-test":
-        check_display()
+        check_gtk()
         from xpra.gtk_common import gtk_view_keyboard
         return gtk_view_keyboard.main()
     elif mode=="keymap":
+        check_gtk()
         from xpra.gtk_common import keymap
         return keymap.main()
     elif mode=="gtk-info":
-        check_display()
+        check_gtk()
         from xpra.scripts import gtk_info
         return gtk_info.main()
     elif mode=="gui-info":
-        check_display()
+        check_gtk()
         from xpra.platform import gui
         return gui.main()
     elif mode=="network-info":
@@ -517,23 +529,23 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         from xpra.scripts import version
         return version.main()
     elif mode=="toolbox":
-        check_display()
+        check_gtk()
         from xpra.client.gtk_base import toolbox
         return toolbox.main()
     elif mode=="colors-test":
-        check_display()
+        check_gtk()
         from xpra.client.gtk_base.example import colors
         return colors.main()
     elif mode=="colors-gradient-test":
-        check_display()
+        check_gtk()
         from xpra.client.gtk_base.example import colors_gradient
         return colors_gradient.main()
     elif mode=="transparent-colors":
-        check_display()
+        check_gtk()
         from xpra.client.gtk_base.example import transparent_colors
         return transparent_colors.main()
     elif mode=="transparent-window":
-        check_display()
+        check_gtk()
         from xpra.client.gtk_base.example import transparent_window
         return transparent_window.main()
     elif mode == "initenv":
@@ -1417,6 +1429,8 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
     return sockpath
 
 def run_client(error_cb, opts, extra_args, mode):
+    if mode=="attach":
+        check_gtk()
     if mode in ("attach", "detach") and len(extra_args)==1 and extra_args[0]=="all":
         #run this command for each display:
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
@@ -1550,6 +1564,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
         app = PrintClient(opts)
         app.set_command_args(args)
     elif mode=="qrcode":
+        check_gtk()
         from xpra.client.gtk3.qrcode_client import QRCodeClient
         app = QRCodeClient(opts)
     elif mode=="version":
@@ -1579,6 +1594,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
 
 
 def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
+    check_gtk()
     try:
         app = make_client(error_cb, opts)
     except RuntimeError as e:
@@ -1909,6 +1925,7 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 def run_server(script_file, error_cb, options, args, mode, defaults):
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
+        check_gtk()
         assert not display_is_remote
         #maybe the server is already running
         #and we don't need to bother trying to start it:
