@@ -150,7 +150,8 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: no clipboard support")
                 if os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE", "")=="wayland":
                     log.warn(" (wayland display)")
-            ch.set_clipboard_contents_slice_fix(self.server_clipboard_contents_slice_fix)
+            else:
+                ch.set_clipboard_contents_slice_fix(self.server_clipboard_contents_slice_fix)
             self.clipboard_helper = ch
             self.clipboard_enabled = ch is not None
             log("clipboard helper=%s", ch)
