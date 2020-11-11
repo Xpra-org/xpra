@@ -262,7 +262,8 @@ def load_xdg_menu_data(force_reload=False):
             xdg_menu_data = do_load_xdg_menu_data()
             if xdg_menu_data:
                 l = sum(len(x) for x in xdg_menu_data.values())
-                log.info("loaded %i start menu entries from %i sub-menus", l, len(xdg_menu_data))
+                log.info("%s %i start menu entries from %i sub-menus",
+                         "reloaded" if force_reload else "loaded", l, len(xdg_menu_data))
             if large_icons:
                 log.warn("Warning: found %i large icon%s:", len(large_icons), engs(large_icons))
                 for filename, size in large_icons:
