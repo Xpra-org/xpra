@@ -4,14 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.gui import get_clipboard_native_class
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util import flatten_dict, typedict
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, is_Wayland
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -148,7 +146,7 @@ class ClipboardClient(StubClientMixin):
             ch = self.make_clipboard_helper()
             if not ch:
                 log.warn("Warning: no clipboard support")
-                if os.environ.get("WAYLAND_DISPLAY") or os.environ.get("XDG_SESSION_TYPE", "")=="wayland":
+                if is_Wayland():
                     log.warn(" (wayland display)")
             else:
                 ch.set_clipboard_contents_slice_fix(self.server_clipboard_contents_slice_fix)
