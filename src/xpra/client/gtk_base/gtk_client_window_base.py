@@ -19,7 +19,7 @@ from xpra.util import (
     MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
     MOVERESIZE_SIZE_RIGHT,
     MOVERESIZE_SIZE_BOTTOMRIGHT,  MOVERESIZE_SIZE_BOTTOM, MOVERESIZE_SIZE_BOTTOMLEFT,
-    MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE,
+    MOVERESIZE_SIZE_LEFT, MOVERESIZE_MOVE, MOVERESIZE_MOVE_KEYBOARD,
     )
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
 from xpra.gtk_common.gtk_util import (
@@ -96,6 +96,7 @@ if USE_X11_BINDINGS:
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
+MOVERESIZE_GDK = envbool("XPRA_MOVERESIZE_GDK", True)
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".")>=0
 DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
@@ -1616,17 +1617,41 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def initiate_moveresize(self, x_root, y_root, direction, button, source_indication):
-        statelog("initiate_moveresize%s",
+        geomlog("initiate_moveresize%s",
                  (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
                   button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
+        #the values we get are bogus!
+        #x, y = x_root, y_root
+        #use the current position instead:
+        p = self.get_root_window().get_pointer()[-3:-1]
+        x, y = p[0], p[1]
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
-            self.initiate_moveresize_X11(x_root, y_root, direction, button, source_indication)
+            self.initiate_moveresize_X11(x, y, direction, button, source_indication)
             return
         if direction==MOVERESIZE_CANCEL:
             self.moveresize_event = None
             self.moveresize_data = None
             self.cancel_moveresize_timer()
+        elif MOVERESIZE_GDK:
+            if direction in (MOVERESIZE_MOVE, MOVERESIZE_MOVE_KEYBOARD):
+                self.begin_move_drag(button, x, y, 0)
+            else:
+                edge = {
+                    MOVERESIZE_SIZE_TOPLEFT     : Gdk.WindowEdge.NORTH_WEST,
+                    MOVERESIZE_SIZE_TOP         : Gdk.WindowEdge.NORTH,
+                    MOVERESIZE_SIZE_TOPRIGHT    : Gdk.WindowEdge.NORTH_EAST,
+                    MOVERESIZE_SIZE_RIGHT       : Gdk.WindowEdge.EAST,
+                    MOVERESIZE_SIZE_BOTTOMRIGHT : Gdk.WindowEdge.SOUTH_EAST,
+                    MOVERESIZE_SIZE_BOTTOM      : Gdk.WindowEdge.SOUTH,
+                    MOVERESIZE_SIZE_BOTTOMLEFT  : Gdk.WindowEdge.SOUTH_WEST,
+                    MOVERESIZE_SIZE_LEFT        : Gdk.WindowEdge.WEST,
+                    #MOVERESIZE_SIZE_KEYBOARD,
+                    }.get(direction)
+                geomlog("edge(%s)=%s", MOVERESIZE_DIRECTION_STRING.get(direction), edge)
+                if direction is not None:
+                    self.begin_resize_drag(edge, button, x, y, 0)
         else:
+            #handle it ourselves:
             #use window coordinates (which include decorations)
             wx, wy = self.get_window().get_root_origin()
             ww, wh = self.get_size()
