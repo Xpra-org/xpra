@@ -78,11 +78,7 @@ def werr(*msg):
     noerr(sys.stderr.flush)
 
 
-saved_env = {}
-
 def main(script_file, cmdline):
-    global saved_env
-    saved_env = os.environ.copy()
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml>0:
         from xpra.util import start_mem_watcher

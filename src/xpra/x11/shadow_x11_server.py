@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.x11_server_core import X11ServerCore
-from xpra.os_util import monotonic_time, _is_Wayland, get_loaded_kernel_modules
+from xpra.os_util import monotonic_time, is_Wayland, get_loaded_kernel_modules
 from xpra.util import (
     envbool, envint, nonl, merge_dicts,
     XPRA_DISPLAY_NOTIFICATION_ID, XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
@@ -16,7 +16,6 @@ from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
-from xpra.scripts.main import saved_env
 from xpra.log import Logger
 
 log = Logger("x11", "shadow")
@@ -43,7 +42,7 @@ class XImageCapture:
         self.xshm = None
         self.xwindow = xwindow
         assert USE_XSHM and XImage.has_XShm(), "no XShm support"
-        if _is_Wayland(saved_env):
+        if is_Wayland():
             log.warn("Warning: shadow servers do not support Wayland")
             log.warn(" switch to X11")
 
@@ -160,9 +159,8 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def client_startup_complete(self, ss):
         super().client_startup_complete(ss)
-        log.warn("is_Wayland(%s)=%s", saved_env, _is_Wayland(saved_env))
-        if _is_Wayland(saved_env):
-            log.error("%s", ss.may_notify)
+        log("is_Wayland()=%s", is_Wayland())
+        if is_Wayland():
             ss.may_notify(XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
                           "Wayland Shadow Server",
                           "This shadow session is running under wayland,\n"+
@@ -194,7 +192,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
             title = body = ""
             if any(b!=0 for b in bdata):
                 log("verify_capture(%s) succeeded", ss)
-                if _is_Wayland(saved_env):
+                if is_Wayland():
                     title = "Wayland Session Warning"
                     body = "Wayland sessions are not supported,\n"+\
                             "the screen capture is likely to be empty"
