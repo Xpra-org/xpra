@@ -263,8 +263,9 @@ def is_X11():
         get_util_logger().debug("failed to load x11 bindings", exc_info=True)
         return True
 
+saved_env = os.environ.copy()
 def is_Wayland():
-    return _is_Wayland(os.environ)
+    return _is_Wayland(saved_env)
 
 def _is_Wayland(env):
     backend = env.get("GDK_BACKEND", "")
