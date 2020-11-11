@@ -1,25 +1,30 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 import os
 import sys
 import signal
 
-def cb(*_args):
+def cb(signame):
     sys.stdout.write("%s\n" % signame)
     sys.stdout.flush()
+
 def addsignalhandler(signame, cb):
     sigval = getattr(signal, signame, None)
     if not sigval:
         return
-    signal.signal(sigval, cb)
+    def scb(*args):
+        cb(signame)
+    signal.signal(sigval, scb)
 
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS",
                                 "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 for x in WINDOW_SIGNALS:
     addsignalhandler(x, cb)
-def sigpipe(*_args):
-	sys.exit(1)
-addsignalhandler("SIGPIPE", sigpipe)
-addsignalhandler("SIGHUP", sigpipe)
+def sig_exit(signame):
+    cb(signame)
+    sys.exit(1)
+addsignalhandler("SIGPIPE", sig_exit)
+addsignalhandler("SIGHUP", sig_exit)
 
 sys.stdin.readline()
+
