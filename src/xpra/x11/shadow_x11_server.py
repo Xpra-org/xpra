@@ -44,7 +44,7 @@ class XImageCapture:
         assert USE_XSHM and XImage.has_XShm(), "no XShm support"
         if is_Wayland():
             log.warn("Warning: shadow servers do not support Wayland")
-            log.warn(" switch to X11")
+            log.warn(" please switch to X11 for shadow support")
 
     def __repr__(self):
         return "XImageCapture(%#x)" % self.xwindow
