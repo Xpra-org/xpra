@@ -431,6 +431,8 @@
 				var remote_logging = getboolparam("remote_logging", true);
 				var insecure = getboolparam("insecure", false);
 				var ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
+				const display = getparam("display") || "";
+				const shadow_display = getparam("shadow_display") || "";
 				var clipboard = getboolparam("clipboard", true);
 				var printing = getboolparam("printing", true);
 				var file_transfer = getboolparam("file_transfer", true);
@@ -588,6 +590,12 @@
 				if(password) {
 					client.password = password;
 				}
+				if (action=="connect") {
+					client.server_display = display;
+				}
+				else if (action=="shadow") {
+					client.server_display = shadow_display;
+				}
 
 				// check for encryption parameters
 				if(encryption) {
@@ -641,6 +649,8 @@
 									"sharing"			: sharing,
 									"steal"				: steal,
 									"video"				: video,
+									"display"			: display,
+									"shadow_display"	: shadow_display,
 									"mediasource_video"	: mediasource_video,
 									"remote_logging"	: remote_logging,
 									"insecure"			: insecure,

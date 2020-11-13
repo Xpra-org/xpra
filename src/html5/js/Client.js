@@ -1039,6 +1039,7 @@ XpraClient.prototype._make_hello_base = function() {
 		"xdg-menu-update"			: true,
 		"setting-change"			: true,
 		"username" 					: this.username,
+		"display"					: this.server_display || "",
 		"uuid"						: this.uuid,
 		"argv" 						: [window.location.href],
 		"digest" 					: digests,
