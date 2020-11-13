@@ -36,7 +36,10 @@ class Keyboard(KeyboardBase):
 
     def do_get_keymap_modifiers(self):
         if not self.keyboard_bindings:
-            log.warn("keyboard bindings are not available, expect keyboard mapping problems")
+            log.warn("keyboard bindings are not available")
+            log.warn(" expect keyboard mapping problems")
+            if is_Wayland():
+                log.warn(" (incomplete wayland support)")
             return {}, [], []
         try:
             from xpra.gtk_common.error import xsync
