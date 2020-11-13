@@ -963,7 +963,7 @@ def get_defaults():
                     "ssl-client-verify-mode"   : "optional",
                     "ssl-server-verify-mode"   : "required",
                     "ssl-verify-flags"  : "X509_STRICT",
-                    "ssl-check-hostname": False,
+                    "ssl-check-hostname": True,
                     "ssl-server-hostname": "",
                     "ssl-options"       : "ALL,NO_COMPRESSION",
                     "quality"           : 0,
