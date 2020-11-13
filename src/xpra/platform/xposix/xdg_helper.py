@@ -106,6 +106,29 @@ def load_icon_from_file(filename):
     icondata = load_binary_file(filename)
     if not icondata:
         return None
+    if filename.endswith("svg") and len(icondata)>MAX_ICON_SIZE//2:
+        #try to resize it
+        try:
+            size = len(icondata)
+            import cairo
+            import gi
+            gi.require_version('Rsvg', '2.0')
+            from gi.repository import Rsvg
+            img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
+            ctx = cairo.Context(img)
+            handle = Rsvg.Handle.new_from_data(icondata)
+            handle.render_cairo(ctx)
+            buf = BytesIO()
+            img.write_to_png(buf)
+            icondata = buf.getvalue()
+            buf.close()
+            log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
+                     filename, size, len(icondata))
+            filename = filename[:-3]+"png"
+        except ImportError:
+            log("cannot convert svg", exc_info=True)
+        except Exception:
+            log.error("Error: failed to convert svg icon", exc_info=True)
     log("got icon data from '%s': %i bytes", filename, len(icondata))
     if len(icondata)>MAX_ICON_SIZE and first_time("icon-size-warning-%s" % filename):
         log.warn("Warning: icon is quite large (%i KB):", len(icondata)//1024)
