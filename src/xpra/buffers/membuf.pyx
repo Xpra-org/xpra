@@ -70,6 +70,10 @@ cdef int object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_
     return _object_as_write_buffer(obj, buffer, buffer_len)
 
 
+def get_membuf(size_t l):
+    return getbuf(l)
+
+
 cdef class MemBuf:
 
     def __len__(self):
@@ -80,6 +84,9 @@ cdef class MemBuf:
 
     cdef const void *get_mem(self):
         return self.p
+
+    def get_mem_ptr(self):
+        return <uintptr_t> self.p
 
     def __getbuffer__(self, Py_buffer *view, int flags):
         PyBuffer_FillInfo(view, self, <void *>self.p, self.l, 1, flags)

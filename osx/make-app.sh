@@ -10,7 +10,6 @@ STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
-STRIP_NUMPY="${STRIP_NUMPY:=$STRIP_DEFAULT}"
 ZIP_MODULES="${ZIP_MODULES:=1}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
 
@@ -278,6 +277,8 @@ if [ "$STRIP_OPENGL" == "1" ]; then
 	done
 	popd
 fi
+echo " * remove numpy"
+rm -fr $LIBDIR/python/numpy
 if [ "${ZIP_MODULES}" == "1" ]; then
 	pushd $LIBDIR/python
 	zip --move -ur site-packages.zip OpenGL
@@ -294,15 +295,6 @@ fi
 for t in ${GI_MODULES}; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
 done
-if [ "$STRIP_NUMPY" == "1" ]; then
-	echo " * trim numpy"
-	pushd $LIBDIR/python/numpy
-	rm -fr ./f2py/docs ./tests ./doc
-	for x in core distutils f2py lib linalg ma matrixlib oldnumeric polynomial random testing compat fft; do
-		rm -fr ./$x/tests
-	done
-	popd
-fi
 #unused py2app scripts:
 rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh ${RSCDIR}/client_launcher.py
 

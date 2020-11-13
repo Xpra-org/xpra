@@ -1302,7 +1302,7 @@ if WIN32:
                             "bin_excludes"      : bin_excludes,
                             }
         #cx_Freeze v5 workarounds:
-        if opengl_ENABLED or nvenc_ENABLED or nvfbc_ENABLED:
+        if nvenc_ENABLED or nvfbc_ENABLED:
             add_packages("numpy.core._methods", "numpy.lib.format")
 
         setup_options["options"] = {"build_exe" : cx_freeze_options}
@@ -1447,8 +1447,7 @@ if WIN32:
     else:
         remove_packages("cv2")
 
-    if opengl_ENABLED or nvenc_ENABLED or nvfbc_ENABLED:
-        #we need numpy for opengl or as a fallback for the Cython xor module
+    if nvenc_ENABLED or nvfbc_ENABLED:
         external_includes.append("numpy")
     else:
         remove_packages("unittest", "difflib",  #avoid numpy warning (not an error)
@@ -1638,6 +1637,7 @@ else:
         #to support GStreamer 1.x we need this:
         modules.append("importlib")
         modules.append("mimetypes")
+        external_excludes.append("numpy")
     else:
         PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
@@ -1734,7 +1734,6 @@ if data_ENABLED:
 
 if html5_ENABLED:
     if WIN32 or OSX:
-        external_includes.append("numpy")
         external_includes.append("ssl")
         external_includes.append("_ssl")
         if not PYTHON3:

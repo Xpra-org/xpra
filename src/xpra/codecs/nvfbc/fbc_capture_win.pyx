@@ -21,7 +21,6 @@ from xpra.log import Logger
 log = Logger("encoder", "nvfbc")
 
 try:
-    import numpy
     from pycuda import driver
     from xpra.codecs.cuda_common.cuda_context import CUDA_ERRORS_INFO, select_device, device_info
 except ImportError:
