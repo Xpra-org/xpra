@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from gi.repository import GObject, Gdk               #@UnresolvedImport
 
 from xpra.os_util import OSX, POSIX, is_Wayland
@@ -23,9 +25,13 @@ class XpraClient(GTKXpraClient):
 
     def client_toolkit(self) -> str:
         if POSIX and not OSX:
-            if is_Wayland():
-                return "GTK3 Wayland"
-            return "GTK3 X11"
+            backend = os.environ.get("GDK_BACKEND", "")
+            if not backend and is_Wayland():
+                backend = "Wayland"
+            if backend:
+                #capitalize, ie: "x11" -> "X11"
+                backend = backend[0].upper()+backend[1:]
+                return "GTK3 %s" % backend
         return "GTK3"
 
 
