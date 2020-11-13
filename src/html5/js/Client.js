@@ -1533,13 +1533,23 @@ XpraClient.prototype._process_error = function(packet, ctx) {
 	if (ctx.reconnect_in_progress) {
 		return;
 	}
-	if (!ctx.disconnect_reason && packet[1]) {
-		ctx.disconnect_reason = packet[1];
-	}
+	ctx.packet_disconnect_reason(packet);
 	ctx.close_audio();
 	if (!ctx.reconnect || ctx.reconnect_attempt>=ctx.reconnect_count) {
 		// call the client's close callback
 		ctx.callback_close(ctx.disconnect_reason);
+	}
+}
+
+
+XpraClient.prototype.packet_disconnect_reason = function(packet) {
+	if (!this.disconnect_reason && packet[1]) {
+		this.disconnect_reason = packet[1];
+		let i = 2;
+		while (packet.length>i && packet[i]) {
+			this.disconnect_reason += "\n"+packet[i];
+			i++;
+		}
 	}
 }
 
@@ -1577,9 +1587,7 @@ XpraClient.prototype._process_close = function(packet, ctx) {
 	if (ctx.reconnect_in_progress) {
 		return;
 	}
-	if (!ctx.disconnect_reason && packet[1]) {
-		ctx.disconnect_reason = packet[1];
-	}
+	ctx.packet_disconnect_reason(packet);
 	if (ctx.reconnect && ctx.reconnect_attempt<ctx.reconnect_count) {
 		ctx.emit_connection_lost();
 		ctx.reconnect_attempt++;
@@ -1601,16 +1609,13 @@ XpraClient.prototype.close = function() {
 }
 
 XpraClient.prototype._process_disconnect = function(packet, ctx) {
-	// save the disconnect reason
-	var reason = packet[1];
-	ctx.debug("main", "disconnect reason:", reason);
 	if (ctx.reconnect_in_progress) {
 		return;
 	}
-	ctx.disconnect_reason = reason;
+	ctx.packet_disconnect_reason(packet);
 	ctx.close();
 	// call the client's close callback
-	ctx.callback_close(reason);
+	ctx.callback_close(ctx.disconnect_reason);
 }
 
 XpraClient.prototype._process_startup_complete = function(packet, ctx) {
