@@ -379,7 +379,7 @@ cdef class Decoder:
         self.frames = 0
         #to keep track of images not freed yet:
         #(we want a weakref.WeakSet() but this is python2.7+ only..)
-        self.weakref_images = []
+        self.weakref_images = weakref.WeakSet()
         #register this decoder in the global dictionary:
         log("dec_avcodec.Decoder.init_context(%s, %s, %s) self=%s", width, height, colorspace, self.get_info())
         return True
@@ -390,7 +390,7 @@ cdef class Decoder:
         self.pix_fmt = 0
         self.actual_pix_fmt = 0
         self.colorspace = ""
-        self.weakref_images = []
+        self.weakref_images = weakref.WeakSet()
         self.frames = 0
         self.width = 0
         self.height = 0
@@ -405,8 +405,8 @@ cdef class Decoder:
         #as this requires the context to still be valid!
         #copying the pixels should ensure we free the AVFrameWrapper associated with it:
         if self.weakref_images:
-            images = tuple(y for y in [x() for x in self.weakref_images] if y is not None)
-            self.weakref_images = []
+            images = tuple(self.weakref_images)
+            self.weakref_images = weakref.WeakSet()
             log("clean_decoder() cloning pixels for images still in use: %s", images)
             for img in images:
                 if not img.freed:
@@ -602,9 +602,7 @@ cdef class Decoder:
         img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
         img.av_frame = framewrapper
         self.frames += 1
-        #add to weakref list after cleaning it up:
-        self.weakref_images = [x for x in self.weakref_images if x() is not None]
-        self.weakref_images.append(weakref.ref(img))
+        self.weakref_images.add(img)
         log("%s:", self)
         log("decompress_image(%s:%s, %s)=%s", type(input), buf_len, options, img)
         return img
