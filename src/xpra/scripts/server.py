@@ -395,6 +395,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     if not proxying and POSIX and not OSX:
         #we don't support wayland servers,
         #so make sure GDK will use the X11 backend:
+        from xpra.os_util import saved_env
+        saved_env["GDK_BACKEND"] = "x11"
         os.environ["GDK_BACKEND"] = "x11"
 
     if proxying or upgrading or upgrading_desktop:
