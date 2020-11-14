@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,6 +22,8 @@ class TestX11Keyboard(ServerTestUtil):
         os.environ["GDK_BACKEND"] = "x11"
         from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
         cls.display_ptr = init_posix_display_source()
+        from xpra.x11.gtk3.gdk_display_util import verify_gdk_display
+        verify_gdk_display(display)
 
     @classmethod
     def tearDownClass(cls):
