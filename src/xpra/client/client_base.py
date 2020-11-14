@@ -186,12 +186,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         #register the authentication challenge handlers:
         authlog("init_challenge_handlers(%s)", challenge_handlers)
         ch = tuple(x.strip() for x in (challenge_handlers or "".split(",")))
-        ALL_AUTH_HANDLERS = ("uri", "file", "env", "kerberos", "gss", "u2f", "prompt")
         for ch_name in ch:
             if ch_name=="none":
                 continue
             if ch_name=="all":
-                items = ALL_AUTH_HANDLERS
+                items = (
+                    "uri", "file", "env",
+                    "kerberos", "gss",
+                    "u2f",
+                    "prompt", "prompt", "prompt", "prompt",
+                    )
                 ierror = authlog
             else:
                 items = (ch_name, )
