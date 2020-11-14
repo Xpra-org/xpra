@@ -838,7 +838,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def get_encryption(self):
-        conn = self._protocol._conn
+        p = self._protocol
+        if not p:
+            return None
+        conn = p._conn
         #prefer the socket option, fallback to "--encryption=" option:
         encryption = conn.options.get("encryption", self.encryption)
         cryptolog("get_encryption() connection options encryption=%s", encryption)
