@@ -181,8 +181,10 @@ class UIXpraClient(ClientBaseClass):
             overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
                 "layout", "layouts", "variant", "variants", "options",
                 )]
+            def send_keyboard(*parts):
+                self.after_handshake(self.send, *parts)
             try:
-                self.keyboard_helper = self.keyboard_helper_class(self.send, opts.keyboard_sync,
+                self.keyboard_helper = self.keyboard_helper_class(send_keyboard, opts.keyboard_sync,
                                                                   opts.shortcut_modifiers,
                                                                   opts.key_shortcut,
                                                                   opts.keyboard_raw, *overrides)
