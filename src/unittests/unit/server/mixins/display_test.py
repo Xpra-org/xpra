@@ -10,14 +10,29 @@ import unittest
 from xpra.util import AdHocStruct
 from xpra.os_util import POSIX, OSX
 from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server_test_util import ServerTestUtil
 
 
-class DisplayMixinTest(ServerMixinTest):
+class DisplayMixinTest(ServerMixinTest, ServerTestUtil):
 
     def test_display(self):
-        if os.environ.get("DISPLAY") and POSIX and not OSX and os.environ.get("GDK_BACKEND", "x11")=="x11":
-            from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-            init_gdk_display_source()
+        xvfb = None
+        try:
+            if POSIX and not OSX:
+                display = self.find_free_display()
+                xvfb = self.start_Xvfb(display)
+                os.environ["DISPLAY"] = display
+                os.environ["GDK_BACKEND"] = "x11"
+                from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+                init_posix_display_source()
+                from xpra.x11.gtk3.gdk_display_util import verify_gdk_display
+                verify_gdk_display(display)
+            self.do_test_display()
+        finally:
+            if xvfb:
+                xvfb.terminate()
+
+    def do_test_display(self):
         from xpra.server.mixins.display_manager import DisplayManager
         from xpra.server.source.clientdisplay_mixin import ClientDisplayMixin
         opts = AdHocStruct()
