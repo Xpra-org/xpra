@@ -67,49 +67,49 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
         "BGR"   : "RGB",
         }.get(pixel_format, pixel_format)
     bpp = 32
+    pixels = image.get_pixels()
+    assert pixels, "failed to get pixels from %s" % image
     #remove transparency if it cannot be handled,
     #and deal with non 24-bit formats:
-    try:
-        pixels = image.get_pixels()
-        assert pixels, "failed to get pixels from %s" % image
-        if pixel_format=="r210":
-            stride = image.get_rowstride()
-            from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport
-            if supports_transparency:
-                pixels = r210_to_rgba(pixels, w, h, stride, w*4)
-                pixel_format = "RGBA"
-                rgb = "RGBA"
-            else:
-                image.set_rowstride(image.get_rowstride()*3//4)
-                pixels = r210_to_rgb(pixels, w, h, stride, w*3)
-                pixel_format = "RGB"
-                rgb = "RGB"
-                bpp = 24
-        elif pixel_format=="BGR565":
-            from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport
-            if supports_transparency:
-                image.set_rowstride(image.get_rowstride()*2)
-                pixels = bgr565_to_rgbx(pixels)
-                pixel_format = "RGBA"
-                rgb = "RGBA"
-            else:
-                image.set_rowstride(image.get_rowstride()*3//2)
-                pixels = bgr565_to_rgb(pixels)
-                pixel_format = "RGB"
-                rgb = "RGB"
-                bpp = 24
-        elif pixel_format=="RLE8":
-            pixel_format = "P"
-            palette = []
-            #pillow requires 8 bit palette values,
-            #but we get 16-bit values from the image wrapper (X11 palettes are 16-bit):
-            for r, g, b in image.get_palette():
-                palette.append((r>>8) & 0xFF)
-                palette.append((g>>8) & 0xFF)
-                palette.append((b>>8) & 0xFF)
-            bpp = 8
+    if pixel_format=="r210":
+        stride = image.get_rowstride()
+        from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport
+        if supports_transparency:
+            pixels = r210_to_rgba(pixels, w, h, stride, w*4)
+            pixel_format = "RGBA"
+            rgb = "RGBA"
         else:
-            assert pixel_format in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"), "invalid pixel format '%s'" % pixel_format
+            image.set_rowstride(image.get_rowstride()*3//4)
+            pixels = r210_to_rgb(pixels, w, h, stride, w*3)
+            pixel_format = "RGB"
+            rgb = "RGB"
+            bpp = 24
+    elif pixel_format=="BGR565":
+        from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport
+        if supports_transparency:
+            image.set_rowstride(image.get_rowstride()*2)
+            pixels = bgr565_to_rgbx(pixels)
+            pixel_format = "RGBA"
+            rgb = "RGBA"
+        else:
+            image.set_rowstride(image.get_rowstride()*3//2)
+            pixels = bgr565_to_rgb(pixels)
+            pixel_format = "RGB"
+            rgb = "RGB"
+            bpp = 24
+    elif pixel_format=="RLE8":
+        pixel_format = "P"
+        palette = []
+        #pillow requires 8 bit palette values,
+        #but we get 16-bit values from the image wrapper (X11 palettes are 16-bit):
+        for r, g, b in image.get_palette():
+            palette.append((r>>8) & 0xFF)
+            palette.append((g>>8) & 0xFF)
+            palette.append((b>>8) & 0xFF)
+        bpp = 8
+    else:
+        assert pixel_format in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"), "invalid pixel format '%s'" % pixel_format
+    try:
         #PIL cannot use the memoryview directly:
         if isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
