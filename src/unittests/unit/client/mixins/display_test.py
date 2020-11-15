@@ -7,6 +7,7 @@
 import unittest
 
 from xpra.util import AdHocStruct
+from unit.test_util import silence_info
 from unit.process_test_util import DisplayContext
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
@@ -15,7 +16,7 @@ class DisplayClientTest(ClientMixinTest):
 
 	def test_display(self):
 		with DisplayContext():
-			from xpra.client.mixins.display import DisplayClient
+			from xpra.client.mixins.display import DisplayClient, log
 			def _DisplayClient():
 				dc = DisplayClient()
 				def get_root_size():
@@ -29,13 +30,14 @@ class DisplayClientTest(ClientMixinTest):
 			opts.desktop_fullscreen = False
 			opts.desktop_scaling = False
 			opts.dpi = 144
-			self._test_mixin_class(_DisplayClient, opts, {
-				"display" : ":999",
-				"desktop_size" : (1024, 768),
-				"max_desktop_size" : (3840, 2160),
-				"actual_desktop_size" : (1024, 768),
-				"resize_screen" : True,
-				})
+			with silence_info(log):
+				self._test_mixin_class(_DisplayClient, opts, {
+					"display" : ":999",
+					"desktop_size" : (1024, 768),
+					"max_desktop_size" : (3840, 2160),
+					"actual_desktop_size" : (1024, 768),
+					"resize_screen" : True,
+					})
 
 def main():
 	unittest.main()

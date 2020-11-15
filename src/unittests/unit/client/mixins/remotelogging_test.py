@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.client.mixins.remote_logging import RemoteLogging
+from xpra.client.mixins.remote_logging import RemoteLogging, log
+from unit.test_util import silence_info
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
@@ -22,13 +23,14 @@ class MixinsTest(ClientMixinTest):
 				return
 		opts = AdHocStruct()
 		opts.remote_logging = "yes"
-		self._test_mixin_class(RemoteLogging, opts, {
-			"remote-logging"	: True,
-			})
+		with silence_info(log):
+			self._test_mixin_class(RemoteLogging, opts, {
+				"remote-logging"	: True,
+				})
 		assert len(self.packets)==0
-		log = Logger("util")
+		logger = Logger("util")
 		message = b"hello"
-		log.info(message)
+		logger.info(message)
 		assert len(self.packets)==1
 		packet = self.packets[0]
 		assert packet[0]=="logging", "expected logging packet but got '%s'" % (packet[0],)
@@ -37,7 +39,8 @@ class MixinsTest(ClientMixinTest):
 		#after cleanup, log messages should not be intercepted:
 		self.packets = []
 		self.mixin.cleanup()
-		log.info("foo")
+		with silence_info(log):
+			logger.info("foo")
 		assert len(self.packets)==0
 
 def main():

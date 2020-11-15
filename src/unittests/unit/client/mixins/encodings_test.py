@@ -7,7 +7,8 @@
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.client.mixins.encodings import Encodings
+from xpra.client.mixins.encodings import Encodings, log
+from unit.test_util import silence_error
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
@@ -43,7 +44,8 @@ class EncodingClientTest(ClientMixinTest):
 			m.set_encoding("invalid")
 		f(set_invalid_encoding, "should not be able to set encoding 'invalid'")
 		#this will trigger a warning:
-		m.set_encoding("jpeg")
+		with silence_error(log):
+			m.set_encoding("jpeg")
 		#quality:
 		for q in (-1, 0, 1, 99, 100):
 			m.quality = q
