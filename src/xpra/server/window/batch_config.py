@@ -11,6 +11,7 @@ import os
 from collections import deque
 from xpra.simple_stats import get_list_stats
 from xpra.os_util import monotonic_time
+from xpra.log import Logger
 
 #how many historical records to keep
 #for the various statistics we collect:
@@ -18,10 +19,7 @@ from xpra.os_util import monotonic_time
 NRECS = 100
 
 
-def warn(msg, *args):
-    from xpra.os_util import get_util_logger
-    log = get_util_logger()
-    log.warn(msg, *args)
+log = Logger("damage")
 
 def ival(key, default, minv=0, maxv=None) -> int:
     try:
@@ -30,14 +28,14 @@ def ival(key, default, minv=0, maxv=None) -> int:
             return default
         iv = int(v)
         if minv is not None and iv<minv:
-            warn("value for %s is too small: %s (minimum is %s)", key, iv, minv)
+            log.warn("value for %s is too small: %s (minimum is %s)", key, iv, minv)
             return minv
         if maxv is not None and iv>maxv:
-            warn("value for %s is too high: %s (maximum is %s)", key, iv, maxv)
+            log.warn("value for %s is too high: %s (maximum is %s)", key, iv, maxv)
             return maxv
         return iv
     except Exception as e:
-        warn("failed to parse value '%s' for %s: %s", v, key, e)
+        log.warn("failed to parse value '%s' for %s: %s", v, key, e)
         return default
 
 

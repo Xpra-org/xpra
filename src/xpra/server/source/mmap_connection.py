@@ -7,6 +7,9 @@
 from xpra.util import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 
+from xpra.log import Logger
+log = Logger("mmap")
+
 
 class MMAP_Connection(StubSourceMixin):
 
@@ -49,8 +52,6 @@ class MMAP_Connection(StubSourceMixin):
     def parse_client_caps(self, c : typedict):
         import os
         from xpra.os_util import WIN32
-        from xpra.log import Logger
-        log = Logger("mmap")
         self.mmap_client_namespace = c.boolget("mmap.namespace", False)
         sep = "." if self.mmap_client_namespace else "_"
         def mmapattr(k):

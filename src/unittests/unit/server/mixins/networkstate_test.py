@@ -18,7 +18,7 @@ class NetworkStateMixinTest(ServerMixinTest):
     def test_networkstate(self):
         with OSEnvContext():
             os.environ["XPRA_PING_TIMEOUT"] = "1"
-            from xpra.server.mixins.networkstate_server import NetworkStateServer, MAX_BANDWIDTH_LIMIT, log
+            from xpra.server.mixins.networkstate_server import NetworkStateServer, MAX_BANDWIDTH_LIMIT, log, bandwidthlog
             from xpra.server.source.networkstate_mixin import NetworkStateMixin
             assert NetworkStateMixin.is_needed(typedict())
             opts = AdHocStruct()
@@ -26,7 +26,8 @@ class NetworkStateMixinTest(ServerMixinTest):
             opts.bandwidth_limit = "1Gbps"
             #the limit for all clients:
             capped_at = 1*1000*1000*1000    #=="1Gbps"
-            self._test_mixin_class(NetworkStateServer, opts, {}, NetworkStateMixin)
+            with silence_info(log):
+                self._test_mixin_class(NetworkStateServer, opts, {}, NetworkStateMixin)
             self.assertEqual(capped_at, self.mixin.get_info().get("bandwidth-limit"))
             self.handle_packet(("ping", 10))
             self.handle_packet(("ping", -1000))
@@ -46,12 +47,12 @@ class NetworkStateMixinTest(ServerMixinTest):
                     pass
                 else:
                     raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))
-            with silence_info(log):
+            with silence_info(bandwidthlog):
                 self.handle_packet(("bandwidth-limit", 10*1024*1024))
             def get_limit():
                 return self.source.get_info().get("bandwidth-limit", {}).get("setting", 0)
             self.assertEqual(10*1024*1024, get_limit())
-            with silence_info(log):
+            with silence_info(bandwidthlog):
                 self.handle_packet(("bandwidth-limit", MAX_BANDWIDTH_LIMIT+1))
             self.assertEqual(min(capped_at, MAX_BANDWIDTH_LIMIT), get_limit())
             #test source:

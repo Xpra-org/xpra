@@ -7,7 +7,7 @@
 import time
 import unittest
 
-from unit.test_util import silence_error, silence_warn
+from unit.test_util import silence_error, LoggerSilencer
 from xpra.server.background_worker import get_worker, add_work_item, stop_worker, Worker_Thread, log
 
 
@@ -30,7 +30,7 @@ class BackgroundWorkerTest(unittest.TestCase):
         w.add(nodupe, False)
         w.add(nodupe, False)
         time.sleep(1)
-        with silence_warn(log):
+        with LoggerSilencer(log, ("warn", "info")):
             #trigger the warning with more than 10 items:
             def slow_item():
                 time.sleep(1)

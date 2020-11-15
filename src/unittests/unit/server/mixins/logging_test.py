@@ -7,9 +7,10 @@
 import time
 import unittest
 
+from unit.test_util import silence_error
 from xpra.util import AdHocStruct
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.server.mixins.logging_server import LoggingServer
+from xpra.server.mixins.logging_server import LoggingServer, log
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
@@ -41,7 +42,8 @@ class InputMixinTest(ServerMixinTest):
         #multi-part:
         self.handle_packet(("logging", 20, ["multi", "messages"], time.time()))
         #invalid:
-        self.handle_packet(("logging", 20, nostr(), time.time()))
+        with silence_error(log):
+            self.handle_packet(("logging", 20, nostr(), time.time()))
 
 
     def test_invalid(self):

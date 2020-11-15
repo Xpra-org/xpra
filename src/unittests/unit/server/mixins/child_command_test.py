@@ -8,15 +8,25 @@ import os
 import time
 import unittest
 
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, DummyContextManager
 from xpra.util import AdHocStruct
+from unit.test_util import silence_info
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
 class ChildCommandMixinTest(ServerMixinTest):
 
     def test_command_server(self):
-        from xpra.server.mixins.child_command_server import ChildCommandServer
+        try:
+            from xpra.platform.xposix.xdg_helper import log
+            c = silence_info(log)
+        except ImportError:
+            c = DummyContextManager()
+        with c:
+            self.do_test_command_server()
+
+    def do_test_command_server(self):
+        from xpra.server.mixins.child_command_server import ChildCommandServer, log
         opts = AdHocStruct()
         opts.exit_with_children = True
         opts.terminate_children = True
@@ -72,7 +82,8 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert proc_info.get("name")=="sleep"
         assert proc_info.get("dead") is False
         #send it a SIGINT:
-        self.handle_packet(("command-signal", pid, "SIGINT"))
+        with silence_info(log):
+            self.handle_packet(("command-signal", pid, "SIGINT"))
         time.sleep(1)
         self.mixin.child_reaper.poll()
         info = self.mixin.get_info(self.protocol)

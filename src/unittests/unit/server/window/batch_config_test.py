@@ -7,25 +7,27 @@
 import os
 import unittest
 
+from unit.test_util import silence_warn
 from xpra.os_util import OSEnvContext, monotonic_time
-from xpra.server.window.batch_config import DamageBatchConfig, ival
+from xpra.server.window.batch_config import DamageBatchConfig, ival, log
 
 
 class TestBatchConfig(unittest.TestCase):
 
     def test_ival(self):
         with OSEnvContext():
-            for k in ("XYZ", "WHATEVER"):
-                os.environ.pop("XPRA_BATCH_%s" % k, None)
-                assert ival(k, 20, 0, 100)==20
-                os.environ["XPRA_BATCH_%s" % k] = "notanumber"
-                assert ival(k, 30, 0, 100)==30
-                os.environ["XPRA_BATCH_%s" % k] = "50"
-                assert ival(k, 0, 0, 100)==50
-                os.environ["XPRA_BATCH_%s" % k] = "120"
-                assert ival(k, 0, 0, 100)==100
-                os.environ["XPRA_BATCH_%s" % k] = "10"
-                assert ival(k, 0, 20, 100)==20
+            with silence_warn(log):
+                for k in ("XYZ", "WHATEVER"):
+                    os.environ.pop("XPRA_BATCH_%s" % k, None)
+                    assert ival(k, 20, 0, 100)==20
+                    os.environ["XPRA_BATCH_%s" % k] = "notanumber"
+                    assert ival(k, 30, 0, 100)==30
+                    os.environ["XPRA_BATCH_%s" % k] = "50"
+                    assert ival(k, 0, 0, 100)==50
+                    os.environ["XPRA_BATCH_%s" % k] = "120"
+                    assert ival(k, 0, 0, 100)==100
+                    os.environ["XPRA_BATCH_%s" % k] = "10"
+                    assert ival(k, 0, 20, 100)==20
 
     def test_batch_config(self):
         now = monotonic_time()
