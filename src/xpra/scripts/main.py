@@ -324,6 +324,7 @@ def use_systemd_run(s):
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
     try:
         proc.communicate(timeout=2)
+        r = proc.returncode
     except TimeoutExpired:  # pragma: no cover
         r = None
     if r is None:
