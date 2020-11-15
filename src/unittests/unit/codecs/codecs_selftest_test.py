@@ -11,7 +11,10 @@ import unittest
 from xpra.codecs import loader
 
 SUSPEND_CODEC_ERROR_LOGGING = os.environ.get("XPRA_SUSPEND_CODEC_ERROR_LOGGING", "1")=="1"
-TEST_CODECS = os.environ.get("XPRA_TEST_CODECS", "").split(",") or loader.ALL_CODECS
+try:
+    TEST_CODECS = os.environ.get("XPRA_TEST_CODECS").split(",")
+except AttributeError:
+    TEST_CODECS = loader.ALL_CODECS
 
 
 class TestDecoders(unittest.TestCase):
