@@ -29,6 +29,13 @@ class RGBTransformTest(unittest.TestCase):
         save_PIL_conv = rgb_transform.PIL_conv
         save_PIL_conv_noalpha = rgb_transform.PIL_conv_noalpha
         buf = bytearray(W*H*4)
+        #silence warnings:
+        rgb_transform.log.warn = rgb_transform.log.debug
+        try:
+            from xpra.codecs.argb.argb import log
+            log.warn = log.debug
+        except ImportError:
+            pass
         for from_fmt, to_fmts in {
             "BGRA"  : ("RGB", "RGBX", "RGBA"),
             "BGRX"  : ("RGB", "RGBX",),
