@@ -65,6 +65,6 @@ class ShellMixin(StubSourceMixin):
             self.send("shell-reply", 2, stderr.getvalue().encode("utf8"))
         except Exception as e:
             log("shell_exec(..)", exc_info=True)
-            log.error("Error running '%r':", code)
+            log.error("Error running %r:", code)
             log.error(" %s", e)
             self.send("shell-reply", 1, str(e))
