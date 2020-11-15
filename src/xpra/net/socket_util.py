@@ -7,8 +7,7 @@ import os.path
 import socket
 from time import sleep
 
-from xpra.scripts.config import InitException, TRUE_OPTIONS
-from xpra.scripts.main import InitExit
+from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import (
     EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
     EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
