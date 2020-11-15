@@ -76,6 +76,8 @@ def save_fakeXinerama_config(supported=True, source="", ss=()):
     #display_name, width, height, width_mm, height_mm, \
     #monitors, work_x, work_y, work_width, work_height = s[:11]
     monitors = display_info[5]
+    if len(monitors)==0:
+        return delfile("cannot save fake xinerama settings: no monitors!")
     if len(monitors)>=10:
         return delfile("cannot save fake xinerama settings: too many monitors! (%s)" % len(monitors))
     #generate the file data:
@@ -86,7 +88,7 @@ def save_fakeXinerama_config(supported=True, source="", ss=()):
     config = [len(monitors)]
     for i, m in enumerate(monitors):
         if len(m)<7:
-            return delfile("cannot save fake xinerama settings: incomplete monitor data for monitor: %s" % m)
+            return delfile("cannot save fake xinerama settings: incomplete monitor data for monitor: %s" % (m, ))
         plug_name, x, y, width, height, wmm, hmm = m[:7]
         data.append("# %s (%smm x %smm)" % (prettify_plug_name(plug_name, "monitor %s" % i), wmm, hmm))
         data.append("%s %s %s %s" % (x, y, width, height))
