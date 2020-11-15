@@ -61,7 +61,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
             return True
         warning_key = "rgb_reformat(%s, %s, %s)" % (pixel_format, rgb_formats, supports_transparency)
         if first_time(warning_key):
-            log.warn("Warning: cannot convert %s to one of: %s" % (pixel_format, rgb_formats))
+            log.warn("Warning: cannot convert '%s' to one of: %s" % (pixel_format, rgb_formats))
         return False
     input_format, target_format = target_rgb[0]
     start = monotonic_time()
