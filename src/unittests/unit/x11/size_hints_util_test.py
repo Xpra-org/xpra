@@ -12,7 +12,9 @@ from xpra.os_util import OSX, POSIX
 class TestX11Keyboard(unittest.TestCase):
 
     def test_sanitize(self):
-        from xpra.x11.models.size_hints_util import sanitize_size_hints, MAX_ASPECT
+        from xpra.x11.models.size_hints_util import sanitize_size_hints, MAX_ASPECT, log
+        #silence warnings:
+        log.warn = log.debug
         INTPAIRS = (0, "foo", (1,))
         sanitize_size_hints(None)
         for attr, values in {

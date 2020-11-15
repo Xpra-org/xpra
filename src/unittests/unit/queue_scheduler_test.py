@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.queue_scheduler import QueueScheduler
+from xpra.queue_scheduler import QueueScheduler, log
 
 
 class QueueSchedulerTest(unittest.TestCase):
@@ -89,9 +89,15 @@ class QueueSchedulerTest(unittest.TestCase):
         qs = QueueScheduler()
         def raise_exception():
             raise Exception("test scheduler error handling")
-        qs.idle_add(raise_exception)
-        qs.timeout_add(500, qs.stop)
-        qs.run()
+        #suspend error logging:
+        try:
+            saved = log.error
+            log.error = log.debug
+            qs.idle_add(raise_exception)
+            qs.timeout_add(500, qs.stop)
+            qs.run()
+        finally:
+            log.error = saved
 
     def test_stop_queue(self):
         qs = QueueScheduler()
