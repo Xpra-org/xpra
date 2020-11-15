@@ -16,7 +16,7 @@ assert init and log #tests will disable logging from here
 class Authenticator(SQLAuthenticator):
 
     def __init__(self, username, filename="sqlite.sdb", **kwargs):
-        SQLAuthenticator.__init__(self, username)
+        SQLAuthenticator.__init__(self, username, **kwargs)
         if filename and not os.path.isabs(filename):
             exec_cwd = kwargs.get("exec_cwd", os.getcwd())
             filename = os.path.join(exec_cwd, filename)
