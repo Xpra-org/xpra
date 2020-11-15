@@ -11,6 +11,7 @@ import unittest
 from xpra.sound.common import (
     sound_option_or_all,
     VORBIS, OGG,
+    log,
     )
 
 
@@ -22,8 +23,14 @@ class TestCommon(unittest.TestCase):
         assert sound_option_or_all("unspecified", (), ONE_OPTION)==ONE_OPTION
 
         assert sound_option_or_all("valid", ONE_OPTION, ONE_OPTION)==ONE_OPTION
-        assert sound_option_or_all("invalid options", (VORBIS, OGG, ), ONE_OPTION)==ONE_OPTION
-        assert sound_option_or_all("no valid options", (VORBIS, OGG, ), ())==[]
+        #suspend error logging:
+        try:
+            saved = log.error
+            log.warn = log.debug
+            assert sound_option_or_all("invalid options", (VORBIS, OGG, ), ONE_OPTION)==ONE_OPTION
+            assert sound_option_or_all("no valid options", (VORBIS, OGG, ), ())==[]
+        finally:
+            log.error = saved
 
 
 def main():
