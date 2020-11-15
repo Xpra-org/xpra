@@ -20,7 +20,10 @@ class XSettingsTest(unittest.TestCase):
             get_settings, set_settings,
             get_local_byteorder,
             XSettingsTypeInteger, XSettingsTypeString, XSettingsTypeColor,
+            log,
             )
+        #silence warnings:
+        log.error = log.warn = log.debug
         disp = AdHocStruct()
         for DEBUG_XSETTINGS in (True, False):
             with OSEnvContext():
