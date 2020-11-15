@@ -21,12 +21,11 @@ class TestDecoders(unittest.TestCase):
         loader.RUN_SELF_TESTS = False
         #loader.load_codecs()
         #test them all:
-        print("testing: %s" % (TEST_CODECS,))
         for codec_name in TEST_CODECS:
             loader.load_codec(codec_name)
             codec = loader.get_codec(codec_name)
             if not codec:
-                print("WARNING: %s not found" % (codec_name,))
+                print("WARNING: codec '%s' not found" % (codec_name,))
                 continue
             try:
                 #try to suspend error logging for full tests,
