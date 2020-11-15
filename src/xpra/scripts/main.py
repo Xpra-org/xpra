@@ -323,7 +323,7 @@ def use_systemd_run(s):
     cmd = ["systemd-run", "--quiet", "--user", "--scope", "--", "true"]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
     try:
-        r = proc.wait(timeout=2)
+        proc.communicate(timeout=2)
     except TimeoutExpired:  # pragma: no cover
         r = None
     if r is None:
@@ -331,6 +331,10 @@ def use_systemd_run(s):
             proc.terminate()
         except Exception:
             pass
+        try:
+            proc.communicate(timeout=1)
+        except TimeoutExpired:  # pragma: no cover
+            r = None
     return r==0
 
 
