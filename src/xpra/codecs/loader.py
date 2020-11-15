@@ -177,6 +177,7 @@ def load_codec(name):
         description, top_module, class_module = option[:3]
         classnames = option[3:]
     except KeyError:
+        log("load_codec(%s)", name, exc_info=True)
         log.error("Error: invalid codec name '%s'", name)
     else:
         xpra_codec_import(name, description, top_module, class_module, classnames)
