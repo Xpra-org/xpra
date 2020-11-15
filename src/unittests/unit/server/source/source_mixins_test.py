@@ -10,6 +10,7 @@ from io import BytesIO
 
 from gi.repository import GLib
 
+from unit.test_util import LoggerSilencer
 from xpra.util import typedict, AdHocStruct
 from xpra.os_util import POSIX, OSX, get_util_logger
 
@@ -162,7 +163,7 @@ class SourceMixinsTest(unittest.TestCase):
         self._test_mixin_class(InputMixin)
 
     def test_mmap(self):
-        from xpra.server.source.mmap_connection import MMAP_Connection
+        from xpra.server.source.mmap_connection import MMAP_Connection, log
         import tempfile
         file = tempfile.NamedTemporaryFile(prefix="xpra-mmap-test")
         file.write(b"0"*1024*1024)
@@ -176,11 +177,12 @@ class SourceMixinsTest(unittest.TestCase):
                     if has_file:
                         caps["mmap.file"] = file.name
                         caps["mmap_file"] = file.name
-                    self._test_mixin_class(MMAP_Connection, {
-                        "mmap_filename" : server_mmap_filename,
-                        "supports_mmap" : supports_mmap,
-                        "min_mmap_size" : 10000,
-                        }, caps)
+                    with LoggerSilencer(log, ("error", "warn")):
+                        self._test_mixin_class(MMAP_Connection, {
+                            "mmap_filename" : server_mmap_filename,
+                            "supports_mmap" : supports_mmap,
+                            "min_mmap_size" : 10000,
+                            }, caps)
 
     def test_networkstate(self):
         from xpra.server.source.networkstate_mixin import NetworkStateMixin

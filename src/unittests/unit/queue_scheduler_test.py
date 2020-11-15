@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
+from unit.test_util import silence_error
 from xpra.queue_scheduler import QueueScheduler, log
 
 
@@ -89,15 +90,10 @@ class QueueSchedulerTest(unittest.TestCase):
         qs = QueueScheduler()
         def raise_exception():
             raise Exception("test scheduler error handling")
-        #suspend error logging:
-        try:
-            saved = log.error
-            log.error = log.debug
+        with silence_error(log):
             qs.idle_add(raise_exception)
             qs.timeout_add(500, qs.stop)
             qs.run()
-        finally:
-            log.error = saved
 
     def test_stop_queue(self):
         qs = QueueScheduler()

@@ -8,6 +8,7 @@
 
 import unittest
 
+from unit.test_util import LoggerSilencer
 from xpra.sound.common import (
     sound_option_or_all,
     VORBIS, OGG,
@@ -23,14 +24,9 @@ class TestCommon(unittest.TestCase):
         assert sound_option_or_all("unspecified", (), ONE_OPTION)==ONE_OPTION
 
         assert sound_option_or_all("valid", ONE_OPTION, ONE_OPTION)==ONE_OPTION
-        #suspend error logging:
-        try:
-            saved = log.error
-            log.warn = log.debug
+        with LoggerSilencer(log, ("error", "warn")):
             assert sound_option_or_all("invalid options", (VORBIS, OGG, ), ONE_OPTION)==ONE_OPTION
             assert sound_option_or_all("no valid options", (VORBIS, OGG, ), ())==[]
-        finally:
-            log.error = saved
 
 
 def main():
