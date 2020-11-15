@@ -207,7 +207,7 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
     return peek_data
 
 
-POSIX_TCP_INFO = ( 
+POSIX_TCP_INFO = (
         ("state",           c_uint8),
         )
 def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
