@@ -356,7 +356,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
     configure_logging(options, mode)
     configure_network(options)
 
-    if mode!="showconfig" and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
+    if mode not in ("showconfig", "splash") and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
         from xpra.platform.xposix.paths import get_runtime_dir
         xrd = osexpand(get_runtime_dir())
         if not os.path.exists(xrd):
