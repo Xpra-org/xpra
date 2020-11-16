@@ -165,8 +165,11 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
     try:
         bytes_per_pixel = len(rgb_format)
         bitmap = rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h)
+        log("rgb_to_bitmap(%i bytes, %i, %i, %i)=%s", len(rgb_data), bytes_per_pixel, w, h, bitmap)
         mask = CreateBitmap(w, h, 1, 1, None)
-
+        log("CreateBitmap(%i, %i, 1, 1, None)=%#x", w, h, mask or 0)
+        if not mask:
+            raise ctypes.WinError(ctypes.get_last_error())
         iconinfo = ICONINFO()
         iconinfo.fIcon = True
         iconinfo.hbmMask = mask
