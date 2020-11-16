@@ -8,15 +8,17 @@ import time
 import unittest
 
 from xpra.util import AdHocStruct
+
+from unit.test_util import silence_info
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
 class AudioMixinTest(ServerMixinTest):
 
     def test_audio(self):
-        from xpra.server.mixins.audio_server import AudioServer
+        from xpra.server.mixins.audio_server import AudioServer, soundlog
         from xpra.server.source.audio_mixin import AudioMixin
-        from xpra.sound.gstreamer_util import CODEC_ORDER
+        from xpra.sound.gstreamer_util import CODEC_ORDER, log
         opts = AdHocStruct()
         opts.sound_source = ""
         opts.speaker = "on"
@@ -27,15 +29,19 @@ class AudioMixinTest(ServerMixinTest):
         opts.pulseaudio_command = "/bin/true"
         opts.pulseaudio_configure_commands = []
         opts.av_sync = True
-        self._test_mixin_class(AudioServer, opts, {
-            "sound.receive" : True,
-            "sound.decoders" : CODEC_ORDER,
-            }, AudioMixin)
+        with silence_info(soundlog):
+            self._test_mixin_class(AudioServer, opts, {
+                "sound.receive" : True,
+                "sound.decoders" : CODEC_ORDER,
+                }, AudioMixin)
+            #init runs in a thread, give it time:
+            time.sleep(2)
         if not self.mixin.speaker_codecs:
             print("no speaker codecs available, test skipped")
             return
         codec = self.mixin.speaker_codecs[0]
-        self.handle_packet(("sound-control", "start", codec))
+        with silence_info(log):
+            self.handle_packet(("sound-control", "start", codec))
         time.sleep(1)
         self.handle_packet(("sound-control", "fadeout"))
         time.sleep(1)
