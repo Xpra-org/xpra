@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,8 @@ from io import BytesIO
 
 from gi.repository import GLib
 
-from unit.test_util import LoggerSilencer
+from unit.test_util import LoggerSilencer, silence_error, silence_info
+
 from xpra.util import typedict, AdHocStruct
 from xpra.os_util import POSIX, OSX, get_util_logger
 
@@ -231,7 +232,7 @@ class SourceMixinsTest(unittest.TestCase):
         self._test_mixin_class(ClientDisplayMixin)
 
     def test_shell(self):
-        from xpra.server.source.shell_mixin import ShellMixin
+        from xpra.server.source.shell_mixin import ShellMixin, log
         protocol = AdHocStruct()
         protocol._conn = AdHocStruct()
         protocol._conn.options = {"shell" : "yes"}
@@ -242,7 +243,8 @@ class SourceMixinsTest(unittest.TestCase):
         out,err = m.shell_exec("print('hello')")
         assert out==b"hello\n", "expected 'hello' but got '%s'" % out
         assert not err
-        out,err = m.shell_exec("--not-a-statement--")
+        with silence_error(log):
+            out,err = m.shell_exec("--not-a-statement--")
         assert not out
         assert err
 
@@ -259,7 +261,7 @@ class SourceMixinsTest(unittest.TestCase):
             get_util_logger().info("webcam test skipped: no virtual video devices found")
             return
         for need in (False, True):
-            from xpra.server.source.webcam_mixin import WebcamMixin
+            from xpra.server.source.webcam_mixin import WebcamMixin, log
             for enabled in (False, True):
                 wm = self._test_mixin_class(WebcamMixin, {
                     "webcam"            : need,
@@ -278,7 +280,8 @@ class SourceMixinsTest(unittest.TestCase):
             assert wm.get_info()
             device_id = 0
             w, h = 640, 480
-            assert wm.start_virtual_webcam(device_id, w, h)
+            with silence_info(log):
+                assert wm.start_virtual_webcam(device_id, w, h)
             assert wm.get_info().get("webcam", {}).get("active-devices", 0)==1
             assert len(packets)==1    #ack sent
             assert packets[0][0]=="webcam-ack"
