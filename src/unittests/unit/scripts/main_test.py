@@ -41,10 +41,9 @@ class TestMain(unittest.TestCase):
             for user in (True, False):
                 for systemd_run_args in ("", "-d"):
                     assert systemd_run_command("mode", systemd_run_args, user=user)[0]=="systemd-run"
-            for log_systemd_wrap in (True, False):
-                with OSEnvContext():
-                    os.environ["XPRA_LOG_SYSTEMD_WRAP"] = str(log_systemd_wrap)
-                    assert systemd_run_wrap("unused", ["xpra", "--version"])==0
+            with OSEnvContext():
+                os.environ["XPRA_LOG_SYSTEMD_WRAP"] = "0"
+                assert systemd_run_wrap("unused", ["xpra", "--version"], stdout=DEVNULL, stderr=DEVNULL)==0
 
     def test_display_type_check(self):
         for arg in ("ssh:host", "ssh/host", "tcp:IP", "ssl/host", "vsock:port"):
@@ -188,7 +187,17 @@ class TestMain(unittest.TestCase):
         def fd(d):
             opts = AdHocStruct()
             try:
-                conn = connect_to(d, opts)
+                #silence errors since we're expecting them:
+                from xpra.scripts import main as xpra_main
+                try:
+                    saved_timeout = xpra_main.CONNECT_TIMEOUT
+                    xpra_main.CONNECT_TIMEOUT = 5
+                    saved_werr = xpra_main.werr
+                    xpra_main.werr = main.noop
+                    conn = connect_to(d, opts)
+                finally:
+                    xpra_main.werr = saved_werr
+                    xpra_main.CONNECT_TIMEOUT = saved_timeout
             except Exception:
                 #from xpra.util import get_util_logger
                 #get_util_logger().error("connect_to(%s, %s)", d, opts, exc_info=True)

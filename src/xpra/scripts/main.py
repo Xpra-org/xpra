@@ -57,7 +57,6 @@ WAIT_SERVER_TIMEOUT = envint("WAIT_SERVER_TIMEOUT", 90)
 CONNECT_TIMEOUT = envint("XPRA_CONNECT_TIMEOUT", 20)
 OPENGL_PROBE_TIMEOUT = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
-LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
 VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 
@@ -264,22 +263,24 @@ def systemd_run_command(mode, systemd_run_args=None, user=True):
     cmd = ["systemd-run", "--description" , "xpra-%s" % mode, "--scope"]
     if user:
         cmd.append("--user")
+    LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
     if not LOG_SYSTEMD_WRAP:
         cmd.append("--quiet")
     if systemd_run_args:
         cmd += shlex.split(systemd_run_args)
     return cmd
 
-def systemd_run_wrap(mode, args, systemd_run_args=None):
+def systemd_run_wrap(mode, args, systemd_run_args=None, **kwargs):
     cmd = systemd_run_command(mode, systemd_run_args)
     cmd += args
     cmd.append("--systemd-run=no")
+    LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
     if LOG_SYSTEMD_WRAP:
         stderr = sys.stderr
         noerr(stderr.write, "using systemd-run to wrap '%s' server command\n" % mode)
         noerr(stderr.write, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
     try:
-        p = Popen(cmd)
+        p = Popen(cmd, **kwargs)
         return p.wait()
     except KeyboardInterrupt:
         return 128+signal.SIGINT
@@ -613,8 +614,6 @@ def find_session_by_name(opts, session_name):
     return "socket://%s" % tuple(session_uuid_to_path.values())[0]
 
 def parse_ssh_string(ssh_setting):
-    if is_debug_enabled("ssh"):
-        Logger("ssh").debug("parse_ssh_string(%s)", ssh_setting)
     ssh_cmd = shlex.split(ssh_setting)
     if ssh_cmd[0]=="auto":
         #try paramiko:
