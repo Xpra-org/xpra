@@ -12,11 +12,12 @@ import sys
 import unittest
 import binascii
 
-from xpra.os_util import strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr, get_util_logger
 from xpra.util import repr_ellipsized
 from xpra.net.bencode import cython_bencode   #@UnresolvedImport
 from xpra.net import bencode
 
+from unit.test_util import silence_warn
 
 #sample data to encode:
 hello = ["hello", {
@@ -311,7 +312,8 @@ class TestFailCython(unittest.TestCase):
         try:
             #backup = sys.modules.copy()
             sys.modules["xpra.net.bencode.cython_bencode"] = None
-            bencode.init()
+            with silence_warn(get_util_logger()):
+                bencode.init()
         finally:
             del sys.modules["xpra.net.bencode.cython_bencode"]
 

@@ -11,15 +11,16 @@ from gi.repository import GLib
 
 from xpra.util import csv, envint, envbool
 from xpra.os_util import monotonic_time
-from xpra.net.protocol import Protocol, verify_packet
+from xpra.net.protocol import Protocol, verify_packet, log
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
-log = Logger("network")
+from unit.test_util import silence_error
 
 TIMEOUT = envint("XPRA_PROTOCOL_TEST_TIMEOUT", 20)
 PROFILING = envbool("XPRA_PROTOCOL_PROFILING", False)
+SHOW_PERF = envbool("XPRA_SHOW_PERF", False)
 
 
 class FastMemoryConnection(Connection):
@@ -35,7 +36,8 @@ class FastMemoryConnection(Connection):
                 time.sleep(0.1)
             return None
         if not self.read_buffers:
-            log("read(%i) EOF", n)
+            logger = Logger("network")
+            logger("read(%i) EOF", n)
             return None
         b = self.read_buffers[0]
         if len(b)<=n:
@@ -102,11 +104,12 @@ class ProtocolTest(unittest.TestCase):
         for x in (True, 1, "hello", {}, None):
             assert verify_packet(x) is False
         assert verify_packet(["foo", 1]) is True
-        assert verify_packet(["no-floats test", 1.1]) is False, "floats are not allowed"
         assert verify_packet(["foo", [1,2,3], {1:2}]) is True
-        assert verify_packet(["foo", [None], {1:2}]) is False, "no None values"
-        assert verify_packet(["foo", [1,2,3], {object() : 2}]) is False
-        assert verify_packet(["foo", [1,2,3], {1 : 2.2}]) is False
+        with silence_error(log):
+            assert verify_packet(["no-floats test", 1.1]) is False, "floats are not allowed"
+            assert verify_packet(["foo", [None], {1:2}]) is False, "no None values"
+            assert verify_packet(["foo", [1,2,3], {object() : 2}]) is False
+            assert verify_packet(["foo", [1,2,3], {1 : 2.2}]) is False
 
     def test_invalid_data(self):
         self.do_test_invalid_data([b"\0"*1])
@@ -141,7 +144,8 @@ class ProtocolTest(unittest.TestCase):
                 assert items
 
     def test_read_speed(self):
-        print("\n")
+        if not SHOW_PERF:
+            return
         total_size = 0
         total_elapsed = 0
         n_packets = 0
@@ -212,7 +216,6 @@ class ProtocolTest(unittest.TestCase):
         return l
 
     def test_format_thread(self):
-        print("\n")
         packets = self.make_test_packets()
         N = 1000
         many = self.repeat_list(packets, N)
@@ -244,9 +247,11 @@ class ProtocolTest(unittest.TestCase):
         total_size = sum(len(packet) for packet in conn.write_data)
         elapsed = end-start
         log("bytes=%s, elapsed=%s", total_size, elapsed)
-        print("%-9s format thread:\t\t\t%iMB/s" % (protocol.TYPE, int(total_size/elapsed//1024//1024)))
-        n_packets = len(packets)*N
-        print("%-9s packets formatted per second:\t\t%i" % (protocol.TYPE, int(n_packets/elapsed)))
+        if SHOW_PERF:
+            print("\n")
+            print("%-9s format thread:\t\t\t%iMB/s" % (protocol.TYPE, int(total_size/elapsed//1024//1024)))
+            n_packets = len(packets)*N
+            print("%-9s packets formatted per second:\t\t%i" % (protocol.TYPE, int(n_packets/elapsed)))
         assert conn.write_data
 
 
