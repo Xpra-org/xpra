@@ -1408,6 +1408,10 @@ def ssl_wrap_socket_fn(opts, server_side=True):
             purpose = ssl.Purpose.SERVER_AUTH   #@UndefinedVariable
             context.check_hostname = opts.ssl_check_hostname
             ssllog("ssl_wrap_socket_fn: check_hostname=%s", opts.ssl_check_hostname)
+            if context.check_hostname:
+                if not opts.ssl_server_hostname:
+                    raise InitException("ssl error: check-hostname is set but server-hostname is not")
+                kwargs["server_hostname"] = opts.ssl_server_hostname
         ssllog("ssl_wrap_socket_fn: load_default_certs(%s)", purpose)
         context.load_default_certs(purpose)
 
@@ -1436,7 +1440,7 @@ def ssl_wrap_socket_fn(opts, server_side=True):
                 f.file.flush()
                 context.load_verify_locations(cafile=f.name)
     elif opts.ssl_check_hostname and not server_side:
-        raise InitException("cannot check hostname with verify mode %s" % verify_mode)
+        ssllog("cannot check hostname client side with verify mode %s", verify_mode)
     wrap_socket = context.wrap_socket
     del opts
     def do_wrap_socket(tcp_socket):
