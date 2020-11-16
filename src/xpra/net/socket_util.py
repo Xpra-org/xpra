@@ -950,6 +950,8 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                 f.file.write(ca_data)
                 f.file.flush()
                 context.load_verify_locations(cafile=f.name)
+    elif check_hostname and not server_side:
+        ssllog("cannot check hostname client side with verify mode %s", verify_mode)
     wrap_socket = context.wrap_socket
     def do_wrap_socket(tcp_socket):
         assert tcp_socket
