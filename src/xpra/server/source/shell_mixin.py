@@ -46,6 +46,16 @@ class ShellMixin(StubSourceMixin):
         return {"shell" : self.shell_enabled}
 
     def shell_exec(self, code):
+        stdout, stderr = self.do_shell_exec(code)
+        log("shell_exec(%s) stdout=%r", code, stdout)
+        log("shell_exec(%s) stderr=%r", code, stderr)
+        if stdout is not None:
+            self.send("shell-reply", 1, stdout)
+        if stderr:
+            self.send("shell-reply", 2, stderr)
+        return stdout, stderr
+
+    def do_shell_exec(self, code):
         log("shell_exec(%r)", code)
         try:
             assert self.shell_enabled, "shell support is not available with this connection"
@@ -59,12 +69,9 @@ class ShellMixin(StubSourceMixin):
             with redirect_stdout(stdout):
                 with redirect_stderr(stderr):
                     exec(code, _globals, {})
-            log("stdout=%r", stdout.getvalue())
-            log("stderr=%r", stderr.getvalue())
-            self.send("shell-reply", 1, stdout.getvalue().encode("utf8"))
-            self.send("shell-reply", 2, stderr.getvalue().encode("utf8"))
+            return stdout.getvalue().encode("utf8"), stderr.getvalue().encode("utf8")
         except Exception as e:
             log("shell_exec(..)", exc_info=True)
             log.error("Error running %r:", code)
             log.error(" %s", e)
-            self.send("shell-reply", 1, str(e))
+            return None, str(e)
