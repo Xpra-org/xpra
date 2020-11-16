@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import unittest
 
+from xpra.os_util import DummyContextManager
 from xpra.util import AdHocStruct
-from xpra.client.mixins.mmap import MmapClient
+from xpra.client.mixins.mmap import MmapClient, log
+
+from unit.test_util import silence_info, silence_error
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
@@ -18,16 +21,19 @@ class MixinsTest(ClientMixinTest):
 		class badfile:
 			def close(self):
 				raise Exception("test close failure handling")
-		for mmap in ("off", "on",
-					"/tmp/xpra-mmap-test-file-%i" % os.getpid(),
-					"/tmp/xpra-fail-mmap-test-file-%i" % os.getpid(),
-					):
+		for mmap, ctx in {
+			"off" : DummyContextManager(),
+			"on"  : silence_info(log),
+			"/tmp/xpra-mmap-test-file-%i" % os.getpid() : silence_info(log),
+			"/tmp/xpra-fail-mmap-test-file-%i" % os.getpid() : silence_error(log),
+			}.items():
 			opts = AdHocStruct()
 			opts.mmap = mmap
 			opts.mmap_group = False
-			m = self._test_mixin_class(MmapClient, opts, {
-				"mmap.enabled"		: True,
-				})
+			with ctx:
+				m = self._test_mixin_class(MmapClient, opts, {
+					"mmap.enabled"		: True,
+					})
 			fail = bool(m.mmap_filename) and m.mmap_filename.find("fail")>=0
 			assert m.mmap_enabled == (mmap!="off" and not fail)
 			assert len(self.exit_codes)==int(fail)

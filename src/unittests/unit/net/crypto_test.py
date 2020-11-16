@@ -14,7 +14,7 @@ from xpra.net.crypto import (
     validate_backend,
     )
 
-SHOW_PERF = envbool("XPRA_SHOW_PERF", True)
+SHOW_PERF = envbool("XPRA_SHOW_PERF", False)
 
 
 def log(_message):

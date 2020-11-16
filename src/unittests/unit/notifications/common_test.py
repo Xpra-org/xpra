@@ -8,15 +8,18 @@ import os
 import tempfile
 import unittest
 
-from xpra.notifications.common import parse_image_data, parse_image_path
+from xpra.notifications.common import parse_image_data, parse_image_path, log
+
+from unit.test_util import silence_error
 
 
 class TestCommon(unittest.TestCase):
 
     def test_parse_image_data(self):
-        assert parse_image_data(None) is None
-        assert parse_image_data((1, 2, 3)) is None
-        assert parse_image_data((1, 2, 3, 4, 5, 6, 7)) is None
+        with silence_error(log):
+            assert parse_image_data(None) is None
+            assert parse_image_data((1, 2, 3)) is None
+            assert parse_image_data((1, 2, 3, 4, 5, 6, 7)) is None
         assert parse_image_data((10, 10, 40, True, 32, 4, b"0"*40*10)) is not None
         assert parse_image_data((10, 10, 40, False, 24, 4, b"0"*40*10)) is not None
         assert parse_image_data((10, 10, 30, False, 24, 3, b"0"*30*10)) is not None
@@ -31,7 +34,8 @@ class TestCommon(unittest.TestCase):
             f.file.flush()
             f.close()
             for x in ("", None, "/invalid-path", f.name):
-                assert parse_image_path(x) is None
+                with silence_error(log):
+                    assert parse_image_path(x) is None
         finally:
             os.unlink(f.name)
 

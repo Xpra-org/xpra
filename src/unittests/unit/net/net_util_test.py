@@ -12,7 +12,9 @@ from xpra.net.net_util import (
     get_ssl_info, get_interface,
     if_nametoindex, if_indextoname, get_iface,
     get_free_tcp_port,
+    log
     )
+from unit.test_util import silence_error
 
 
 class TestVersionUtilModule(unittest.TestCase):
@@ -25,7 +27,9 @@ class TestVersionUtilModule(unittest.TestCase):
         if not ifaces:
             return
         for iface in ifaces:
-            do_get_bind_ifacemask(iface)
+            ipmasks = do_get_bind_ifacemask(iface)
+            for ip, _ in ipmasks:
+                assert get_iface(ip)==iface
             if if_nametoindex:
                 try:
                     i = if_nametoindex(iface)
@@ -34,7 +38,6 @@ class TestVersionUtilModule(unittest.TestCase):
                 else:
                     if if_indextoname:
                         assert if_indextoname(i)==iface
-            get_iface(iface)
         ia = get_interfaces_addresses()
         assert ia
         #for iface, address in ia.items():
@@ -56,7 +59,8 @@ class TestVersionUtilModule(unittest.TestCase):
         invalid_iface("")
         invalid_iface("%")
         invalid_iface(":")
-        invalid_iface("INVALIDHOSTNAME")
+        with silence_error(log):
+            invalid_iface("INVALIDHOSTNAME")
         invalid_iface("10.0.0")
         get_iface("localhost")
 

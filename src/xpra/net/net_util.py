@@ -172,6 +172,7 @@ def get_iface(ip) -> str:
             v = socket.getaddrinfo(ip, None)
             assert len(v)>0
         except Exception as e:
+            log("socket.getaddrinfo(%s, None)", ip, exc_info=True)
             log.error("Error: cannot revolve '%s'", ip)
             return None
         for i, x in enumerate(v):
