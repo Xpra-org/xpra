@@ -587,25 +587,32 @@ fi
 
 
 %changelog
-* Mon Nov 11 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
+* Mon Nov 16 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
 - fix caps lock wrongly applied to numeric keys
 - fix HTML5 client keyboard layout detection with Internet Explorer
 - fix HTML5 audio forwarding with some versions of Safari
 - fix HTML5 (un)fullscreen
 - fix ssl server hostname verification errors
 - fix syntax errors when using connections using nested ssh tunnels
+- fix socket_util import errors with some subcommands
 - fix http / websocket and ssl socket upgrade failures
 - fix server errors when ws sockets cannot be upgrade to wss
 - fix ssh command option not being honourd with the client launcher
 - fix proxy control socket becoming unresponsive after errors
 - fix proxy shutdown
 - fix proxy instance zombies on server start failures
+- fix sqlite authentication module not handling configuration options
 - fix stdout errors causing server startup or shutdown problems
 - fix MS Windows bubble notifications not showing on some systems
 - fix MS Windows client keyboard unresponsive issues
 - fix MS Windows and MacOS websocket servers missing mimetypes module
 - fix archlinux build path stripping
 - fix Fedora 33 package dependency issues
+- fix Wayland detection and workarounds
+- fix clipboard errors under Wayland
+- fix client signal listener not forwarding signal messages
+- fix client failing to connect due to keymap changes (ie: Wayland)
+- fix client not showing authentication prompt only once per connection
 - fix opengl debug option for saving buffers as jpeg
 - fix spurious "missing resolution" errors (often with HTML5 client resizing)
 - fix duplicated data in bug reports
@@ -620,6 +627,7 @@ fi
 - remove "numpy" dependency for builds without NVENC / NVFBC (fixes MacOS installation problems)
 - add new NVENC presets from SDK v10, workaround deprecation warnings
 - add correct packaging for Debian Bullseye and Debian Groovy Gorilla
+- make it possible to override the Xorg binary path detection
 
 * Sat Sep 26 2020 Antoine Martin <antoine@xpra.org> 4.0.4-10
 - fix memory leak with 'scroll' encoding
