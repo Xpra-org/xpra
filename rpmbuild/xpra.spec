@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.12
+%define version 3.0.13
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -871,6 +871,28 @@ fi
 
 
 %changelog
+* Mon Nov 16 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+- fix caps lock wrongly applied to numeric keys
+- fix proxy instance zombies on server start failures
+- fix MS Windows bubble notifications not showing on some systems
+- fix http / websocket and ssl socket upgrade failures
+- fix ssh command option not being honourd with the client launcher
+- fix sqlite authentication module not handling configuration options
+- fix opengl debug option for saving buffers as jpeg
+- fix archlinux build path stripping
+- fix spurious "missing resolution" errors (often with HTML5 client resizing)
+- fix duplicated data in bug reports
+- fix handling of invalid clipboard requests
+- fix clipboard errors under Wayland
+- fix Wayland detection and workarounds
+- fix client failing to connect due to keymap changes (ie: Wayland)
+- fix client signal listener not forwarding signal messages
+- fix client not showing authentication prompt only once per connection
+- fix file transfer errors with python3 builds
+- fix Fedora 33 package dependency issues
+- add new NVENC presets from SDK v10, workaround deprecation warnings
+- make it possible to override the Xorg binary path detection
+
 * Tue Oct 06 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1
 - fix memory leak with 'scroll' encoding
 - fix proxy control socket becoming unresponsive after errors

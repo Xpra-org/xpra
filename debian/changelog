@@ -1,3 +1,27 @@
+xpra (3.0.13-1) UNRELEASED; urgency=low
+  * fix caps lock wrongly applied to numeric keys
+  * fix proxy instance zombies on server start failures
+  * fix MS Windows bubble notifications not showing on some systems
+  * fix http / websocket and ssl socket upgrade failures
+  * fix ssh command option not being honourd with the client launcher
+  * fix sqlite authentication module not handling configuration options
+  * fix opengl debug option for saving buffers as jpeg
+  * fix archlinux build path stripping
+  * fix spurious "missing resolution" errors (often with HTML5 client resizing)
+  * fix duplicated data in bug reports
+  * fix handling of invalid clipboard requests
+  * fix clipboard errors under Wayland
+  * fix Wayland detection and workarounds
+  * fix client failing to connect due to keymap changes (ie: Wayland)
+  * fix client signal listener not forwarding signal messages
+  * fix client not showing authentication prompt only once per connection
+  * fix file transfer errors with python3 builds
+  * fix Fedora 33 package dependency issues
+  * add new NVENC presets from SDK v10, workaround deprecation warnings
+  * make it possible to override the Xorg binary path detection
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 16 Nov 2020 16:12:13 +0700
+
 xpra (3.0.12-1) UNRELEASED; urgency=low
   * fix memory leak with 'scroll' encoding
   * fix proxy control socket becoming unresponsive after errors

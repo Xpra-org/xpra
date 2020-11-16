@@ -13,7 +13,7 @@ SRC_DIR=`dirname $UNITTESTS_DIR`
 
 INSTALL_ROOT="$SRC_DIR/dist/python3"
 pushd $SRC_DIR
-python3 ./setup.py install --with-scripts --home=$INSTALL_ROOT || die "failed to build"
+python3 ./setup.py install --without-nvenc --with-scripts --home=$INSTALL_ROOT || die "failed to build"
 popd
 
 export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
