@@ -26,10 +26,10 @@ class SourceMixinsTest(unittest.TestCase):
                 "speaker_codecs"        : (),
                 }
 
-    def _test_mixin_class(self, mixin_class, server_props=None, client_caps=None, test_fn=None):
-        return self._test_mixin_classes((mixin_class, ), server_props, client_caps, test_fn)
+    def _test_mixin_class(self, mixin_class, server_props=None, client_caps=None, protocol=None, test_fn=None):
+        return self._test_mixin_classes((mixin_class, ), server_props, client_caps, protocol, test_fn)
 
-    def _test_mixin_classes(self, mixin_classes, server_props=None, client_caps=None, test_fn=None):
+    def _test_mixin_classes(self, mixin_classes, server_props=None, client_caps=None, protocol=None, test_fn=None):
         assert mixin_classes
         for mixin_class in mixin_classes:
             assert mixin_class.is_needed(typedict(client_caps or {})) in (True, False)
@@ -53,7 +53,7 @@ class SourceMixinsTest(unittest.TestCase):
         m.idle_add = GLib.idle_add
         m.timeout_add = GLib.timeout_add
         m.packet_queue = []
-        m.protocol = None
+        m.protocol = protocol
         def encode_queue_size():
             return 0
         m.encode_queue_size = encode_queue_size
@@ -61,7 +61,7 @@ class SourceMixinsTest(unittest.TestCase):
             c.__init__(m)
         for c in mixin_classes:
             try:
-                c.init_from(m, None, server)
+                c.init_from(m, m.protocol, server)
             except Exception:
                 print("failed to initialize from %s" % (server,))
                 raise
@@ -232,12 +232,19 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_shell(self):
         from xpra.server.source.shell_mixin import ShellMixin
-        m = self._test_mixin_class(ShellMixin)
+        protocol = AdHocStruct()
+        protocol._conn = AdHocStruct()
+        protocol._conn.options = {"shell" : "yes"}
+        m = self._test_mixin_class(ShellMixin, protocol=protocol)
         def noop(*_args):
             pass
         m.send = noop
-        m.shell_exec("print('hello')")
-        m.shell_exec("--not-a-statement--")
+        out,err = m.shell_exec("print('hello')")
+        assert out==b"hello\n", "expected 'hello' but got '%s'" % out
+        assert not err
+        out,err = m.shell_exec("--not-a-statement--")
+        assert not out
+        assert err
 
     def test_webcam(self):
         if not POSIX or OSX:
