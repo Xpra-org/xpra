@@ -46,6 +46,7 @@ def get_network_logger():
 
 
 def create_unix_domain_socket(sockpath, socket_permissions=0o600):
+    assert POSIX
     #convert this to a umask!
     umask = (0o777-socket_permissions) & 0o777
     listener = socket.socket(socket.AF_UNIX)
@@ -83,7 +84,7 @@ def create_unix_domain_socket(sockpath, socket_permissions=0o600):
         delpath = sockpath
         log("cleanup_socket '%s', original inode=%s, new inode=%s", sockpath, inode, cur_inode)
         if cur_inode==inode:
-            log.info("removing socket '%s'", delpath)
+            log.info("removing unix domain socket '%s'", delpath)
             try:
                 os.unlink(delpath)
             except OSError:
