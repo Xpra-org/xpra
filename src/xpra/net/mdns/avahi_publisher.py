@@ -175,7 +175,8 @@ class AvahiPublisher:
             if val is not None and val==state:
                 state_str = const
                 break
-        log.warn("Warning: server state changed to '%s'", state_str)
+        log.warn("Warning: mdns server state changed to '%s'", state_str)
+        log.warn(" for name '%s' and port %i on %s", self.name, self.port, self.iface())
         return False
 
     def add_service(self):
