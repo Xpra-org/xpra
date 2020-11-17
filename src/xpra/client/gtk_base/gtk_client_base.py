@@ -954,7 +954,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         except RuntimeError as e:
             log.error("Error: failed to create cursor:")
             log.error(" %s", e)
-            log.error(" using %s of size %ix%i with hotspot at %ix%i", cursor_pixbuf, w, h, x, y)
+            log.error(" Gdk.Cursor.new_from_pixbuf%s", (display, cursor_pixbuf, x, y))
+            log.error(" using size %ix%i with hotspot at %ix%i", w, h, x, y)
             c = None
         return c
 
