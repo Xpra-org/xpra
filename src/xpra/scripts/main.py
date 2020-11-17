@@ -1809,8 +1809,6 @@ def make_client(error_cb, opts):
         progress_process = make_progress_process()
 
     try:
-        if POSIX and os.environ.get("GDK_BACKEND") is None and not OSX:
-            os.environ["GDK_BACKEND"] = "x11"
         from xpra.platform.gui import init as gui_init
         gui_init()
 
