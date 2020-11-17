@@ -132,12 +132,13 @@ class AvahiPublisher:
         self.server = None
         self.group = None
 
+    def iface(self):
+        if self.interface>0:
+            return "interface %i" % self.interface
+        return "all interfaces"
+
     def get_info(self) -> dict:
-        def iface():
-            if self.interface>0:
-                return "interface %i" % self.interface
-            return "all interfaces"
-        return "%s %s:%s on %s" % (self.name, self.host, self.port, iface())
+        return "%s %s:%s on %s" % (self.name, self.host, self.port, self.iface())
 
     def __repr__(self):
         return "AvahiPublisher(%s)" % self.get_info()
@@ -162,6 +163,7 @@ class AvahiPublisher:
             log.error("Error: mdns server name collision")
             if error:
                 log.error(" %s", error)
+            log.error(" for name '%s' and port %i on %s", self.name, self.port, self.iface())
             self.stop()
             return False
         if state == avahi.SERVER_RUNNING:
