@@ -14,6 +14,7 @@ xpra (4.0.5-1) UNRELEASED; urgency=low
   * fix proxy instance zombies on server start failures
   * fix sqlite authentication module not handling configuration options
   * fix stdout errors causing server startup or shutdown problems
+  * fix MS Windows resource leak in system tray forwarding
   * fix MS Windows bubble notifications not showing on some systems
   * fix MS Windows client keyboard unresponsive issues
   * fix MS Windows and MacOS websocket servers missing mimetypes module
@@ -40,7 +41,7 @@ xpra (4.0.5-1) UNRELEASED; urgency=low
   * add correct packaging for Debian Bullseye and Debian Groovy Gorilla
   * make it possible to override the Xorg binary path detection
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 16 Nov 2020 15:58:10 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 17 Nov 2020 19:07:53 +0700
 
 xpra (4.0.4-1) UNRELEASED; urgency=low
   * fix memory leak with 'scroll' encoding

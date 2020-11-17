@@ -587,7 +587,7 @@ fi
 
 
 %changelog
-* Mon Nov 16 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
+* Tue Nov 17 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
 - fix caps lock wrongly applied to numeric keys
 - fix HTML5 client keyboard layout detection with Internet Explorer
 - fix HTML5 audio forwarding with some versions of Safari
@@ -603,6 +603,7 @@ fi
 - fix proxy instance zombies on server start failures
 - fix sqlite authentication module not handling configuration options
 - fix stdout errors causing server startup or shutdown problems
+- fix MS Windows resource leak in system tray forwarding
 - fix MS Windows bubble notifications not showing on some systems
 - fix MS Windows client keyboard unresponsive issues
 - fix MS Windows and MacOS websocket servers missing mimetypes module

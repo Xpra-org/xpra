@@ -1,4 +1,4 @@
-v4.0.5 (2020-11-16)
+v4.0.5 (2020-11-17)
 ======================
 	-- fix caps lock wrongly applied to numeric keys
 	-- fix HTML5 client keyboard layout detection with Internet Explorer
@@ -15,6 +15,7 @@ v4.0.5 (2020-11-16)
 	-- fix proxy instance zombies on server start failures
 	-- fix sqlite authentication module not handling configuration options
 	-- fix stdout errors causing server startup or shutdown problems
+	-- fix MS Windows resource leak in system tray forwarding
 	-- fix MS Windows bubble notifications not showing on some systems
 	-- fix MS Windows client keyboard unresponsive issues
 	-- fix MS Windows and MacOS websocket servers missing mimetypes module
