@@ -248,7 +248,7 @@ class SoundSink(SoundPipeline):
             minl = min(filtered)
             #range of the levels recorded:
             return maxl-minl
-        return GST_FLOW_OK
+        return 0
 
     def queue_overrun(self, *_args):
         now = monotonic_time()
