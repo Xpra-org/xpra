@@ -24,7 +24,7 @@ from xpra.platform.win32.common import (
     LoadIconA,
     DefWindowProcA, RegisterWindowMessageA, RegisterClassExA,
     ICONINFO, BITMAPV5HEADER,
-    LoadImageW, CreateIconIndirect,
+    LoadImageW, CreateIconIndirect, DestroyIcon,
     GetDC, ReleaseDC,
     CreateBitmap, CreateDIBSection,
     UpdateWindow, DestroyWindow,
@@ -319,6 +319,10 @@ class win32NotifyIcon:
                 log.warn("Warning: failed to remove system tray")
             else:
                 self.hwnd = 0
+            ci = self.current_icon
+            if ci:
+                self.current_icon = None
+                DestroyIcon(ci)
         except Exception as e:
             log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
@@ -346,6 +350,10 @@ class win32NotifyIcon:
 
     def do_set_icon(self, hicon):
         log("do_set_icon(%#x)", hicon)
+        ci = self.current_icon
+        if ci:
+            self.current_icon = None
+            DestroyIcon(ci)
         self.current_icon = hicon
         nid = self.make_nid(NIF_ICON)
         Shell_NotifyIcon(NIM_MODIFY, byref(nid))
