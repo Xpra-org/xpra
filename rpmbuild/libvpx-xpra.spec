@@ -47,6 +47,9 @@ This package contains the development files for %{name}.
 %if 0%{?el6}
     --disable-libyuv \
 %endif
+%if 0%{?el6}%{?el7}
+    --disable-unit-tests \
+%endif
     --disable-install-docs \
     --disable-install-bins \
     --enable-shared \
