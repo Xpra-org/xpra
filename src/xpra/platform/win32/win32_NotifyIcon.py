@@ -351,7 +351,7 @@ class win32NotifyIcon:
     def do_set_icon(self, hicon):
         log("do_set_icon(%#x)", hicon)
         ci = self.current_icon
-        if ci:
+        if ci and hicon!=ci:
             self.current_icon = None
             DestroyIcon(ci)
         self.current_icon = hicon
