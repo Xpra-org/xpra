@@ -587,7 +587,7 @@ fi
 
 
 %changelog
-* Tue Nov 17 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
+* Wed Nov 18 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
 - fix caps lock wrongly applied to numeric keys
 - fix HTML5 client keyboard layout detection with Internet Explorer
 - fix HTML5 audio forwarding with some versions of Safari
@@ -619,14 +619,15 @@ fi
 - fix duplicated data in bug reports
 - fix download checksum verification (was not verified with python3 builds)
 - fix spurious file transfer errors with python3 builds
+- fix NVENC session leak due to flushing errors, support building with SDK10
+- remove "numpy" dependency for builds without NVENC / NVFBC (fixes MacOS installation problems)
+- add new NVENC presets from SDK v10, workaround deprecation warnings
 - HTML5 connect page can now specify the display to connect to
 - avoid starting new threads for file transfers that don't need one
 - raise default maximum packet size to prevent connection errors with large xdg menu data
 - don't let bad http requests mess up the server log
 - prevent peek data or exception message from corrupting the log / stdout
 - remove dependency on "requests" package introduced in 4.0.4
-- remove "numpy" dependency for builds without NVENC / NVFBC (fixes MacOS installation problems)
-- add new NVENC presets from SDK v10, workaround deprecation warnings
 - add correct packaging for Debian Bullseye and Debian Groovy Gorilla
 - make it possible to override the Xorg binary path detection
 
