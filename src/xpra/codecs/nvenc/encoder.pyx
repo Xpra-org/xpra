@@ -2328,7 +2328,6 @@ cdef class Encoder:
     cdef flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS picParams
         cdef NVENCSTATUS r                          #@DuplicatedSignature
-        assert not self.closed, "encoder context is closed"
         assert self.context, "context is not initialized"
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
         picParams.version = NV_ENC_PIC_PARAMS_VER
@@ -2340,7 +2339,7 @@ cdef class Encoder:
         raiseNVENC(r, "flushing encoder buffer")
 
     def compress_image(self, image, int quality=-1, int speed=-1, options={}, int retry=0):
-        assert not self.closed, "encoder context is closed"
+        assert self.context, "context is not initialized"
         self.cuda_context.push()
         try:
             try:
