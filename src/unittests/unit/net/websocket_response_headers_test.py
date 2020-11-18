@@ -23,23 +23,23 @@ class WebsocketHeaderTest(unittest.TestCase):
             else:
                 raise Exception("bad header should have failed")
         f(None)
-        f({b"Upgrade" : b"not-websocket"})
-        f({b"Upgrade" : b"websocket",
-           b"Sec-WebSocket-Protocol" : b"not-binary",
+        f({b"upgrade" : b"not-websocket"})
+        f({b"upgrade" : b"websocket",
+           b"sec-websocket-protocol" : b"not-binary",
            })
-        f({b"Upgrade" : b"websocket",
-           b"Sec-WebSocket-Protocol" : b"binary",
-           b"Sec-WebSocket-Accept" : b"",
+        f({b"upgrade" : b"websocket",
+           b"sec-websocket-protocol" : b"binary",
+           b"sec-websocket-accept" : b"",
            })
-        f({b"Upgrade" : b"websocket",
-           b"Sec-WebSocket-Protocol" : b"binary",
-           b"Sec-WebSocket-Accept" : b"key",
+        f({b"upgrade" : b"websocket",
+           b"sec-websocket-protocol" : b"binary",
+           b"sec-websocket-accept" : b"key",
            })
         key = b"somekey"
         verify_response_headers({
-            b"Upgrade" : b"websocket",
-            b"Sec-WebSocket-Protocol" : b"binary",
-            b"Sec-WebSocket-Accept" : make_websocket_accept_hash(key),
+            b"upgrade" : b"websocket",
+            b"sec-websocket-protocol" : b"binary",
+            b"sec-websocket-accept" : make_websocket_accept_hash(key),
             }, key)
 
 def main():
