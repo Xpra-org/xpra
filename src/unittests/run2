@@ -13,7 +13,7 @@ SRC_DIR=`dirname $UNITTESTS_DIR`
 
 INSTALL_ROOT="$SRC_DIR/dist/python2"
 pushd $SRC_DIR
-python2 ./setup.py install --with-scripts --home=$INSTALL_ROOT || die "failed to build"
+python2 ./setup.py install --without-nvenc --with-scripts --home=$INSTALL_ROOT || die "failed to build"
 popd
 
 export PATH=$INSTALL_ROOT/bin:$PATH

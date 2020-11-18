@@ -871,10 +871,11 @@ fi
 
 
 %changelog
-* Mon Nov 16 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+* Wed Nov 18 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
 - fix caps lock wrongly applied to numeric keys
 - fix proxy instance zombies on server start failures
 - fix MS Windows bubble notifications not showing on some systems
+- fix MS Windows resource leak in system tray forwarding
 - fix http / websocket and ssl socket upgrade failures
 - fix ssh command option not being honourd with the client launcher
 - fix sqlite authentication module not handling configuration options
@@ -891,6 +892,7 @@ fi
 - fix file transfer errors with python3 builds
 - fix Fedora 33 package dependency issues
 - add new NVENC presets from SDK v10, workaround deprecation warnings
+- fix NVENC session leak due to flushing errors, support building with SDK10
 - make it possible to override the Xorg binary path detection
 
 * Tue Oct 06 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1

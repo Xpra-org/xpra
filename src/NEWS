@@ -1,8 +1,9 @@
-v3.0.13 (2020-11-16)
+v3.0.13 (2020-11-18)
 ======================
 	-- fix caps lock wrongly applied to numeric keys
 	-- fix proxy instance zombies on server start failures
 	-- fix MS Windows bubble notifications not showing on some systems
+	-- fix MS Windows resource leak in system tray forwarding
 	-- fix http / websocket and ssl socket upgrade failures
 	-- fix ssh command option not being honourd with the client launcher
 	-- fix sqlite authentication module not handling configuration options
@@ -18,6 +19,7 @@ v3.0.13 (2020-11-16)
 	-- fix client not showing authentication prompt only once per connection
 	-- fix file transfer errors with python3 builds
 	-- fix Fedora 33 package dependency issues
+	-- fix NVENC session leak due to flushing errors, support building with SDK10
 	-- add new NVENC presets from SDK v10, workaround deprecation warnings
 	-- make it possible to override the Xorg binary path detection
 
