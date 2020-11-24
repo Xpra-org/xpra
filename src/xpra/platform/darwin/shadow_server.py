@@ -190,11 +190,11 @@ class ShadowServer(GTKShadowServerBase):
         if button<=3:
             #we should be using CGEventCreateMouseEvent
             #instead we clear previous clicks when a "higher" button is pressed... oh well
-            args = []
+            args = [pointer[:2], 1, button]
             for i in range(button):
                 args.append(i==(button-1) and pressed)
-            log("CG.CGPostMouseEvent(%s, %s, %s, %s)", pointer[:2], 1, button, args)
-            CG.CGPostMouseEvent(pointer[:2], 1, button, *args)
+            r = CG.CGPostMouseEvent(*args)
+            log("CG.CGPostMouseEvent%s=%s", args, r)
         else:
             if not pressed:
                 #we don't simulate press/unpress
@@ -202,14 +202,14 @@ class ShadowServer(GTKShadowServerBase):
                 return
             wheel = (button-2)//2
             direction = 1-(((button-2) % 2)*2)
-            args = []
+            args = [wheel]
             for i in range(wheel):
                 if i!=(wheel-1):
                     args.append(0)
                 else:
                     args.append(direction)
-            log("CG.CGPostScrollWheelEvent(%s, %s)", wheel, args)
-            CG.CGPostScrollWheelEvent(wheel, *args)
+            r = CG.CGPostScrollWheelEvent(*args)
+            log("CG.CGPostScrollWheelEvent%s=%s", args, r)
 
     def make_hello(self, source):
         capabilities = GTKServerBase.make_hello(self, source)
