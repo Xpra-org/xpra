@@ -568,6 +568,7 @@ if avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
     CODECS.append("mpeg2")
 if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
     CODECS.append("vp9")
+CODECS = tuple(CODECS)
 log("avcodec2.init_module: CODECS=%s", CODECS)
 
 
@@ -1022,7 +1023,6 @@ def selftest(full=False):
     global CODECS
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.dec_avcodec2 import decoder
-    global CODECS
     try:
         suspend_nonfatal_logging()
         CODECS = testdecoder(decoder, full)

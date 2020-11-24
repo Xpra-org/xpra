@@ -91,7 +91,7 @@ def testdecoder(decoder_module, full):
     if not codecs:
         log.error("%s: all the codecs have failed! (%s)",
                   decoder_module.get_type(), csv(decoder_module.get_encodings()))
-    return codecs
+    return tuple(codecs)
 
 def testdecoding(decoder_module, encoding, full):
     W = 24
@@ -127,7 +127,7 @@ def testdecoding(decoder_module, encoding, full):
 
 def testencoder(encoder_module, full):
     codecs = list(encoder_module.get_encodings())
-    for encoding in list(codecs):
+    for encoding in tuple(codecs):
         try:
             testencoding(encoder_module, encoding, full)
         except Exception as e:
@@ -138,7 +138,7 @@ def testencoder(encoder_module, full):
     if not codecs:
         log.error("%s: all the codecs have failed! (%s)",
                   encoder_module.get_type(), csv(encoder_module.get_encodings()))
-    return codecs
+    return tuple(codecs)
 
 def testencoding(encoder_module, encoding, full):
     #test a bit bigger so we exercise more code:

@@ -285,7 +285,7 @@ def get_info():
              }
 
 def get_encodings():
-    return ["h265"]
+    return ("h265", )
 
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings()

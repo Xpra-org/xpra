@@ -817,7 +817,7 @@ cdef AVOutputFormat* get_av_output_format(name):
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
-CODECS = []
+CODECS = ()
 
 DEF DEFAULT_BUF_LEN = 64*1024
 
@@ -828,6 +828,7 @@ def init_module():
     global CODECS
     log("enc_ffmpeg.init_module()")
     override_logger()
+    all_codecs = []
     for codec_id, codecs in {
         AV_CODEC_ID_H264    : ("h264+mp4", ), #"h264"
         AV_CODEC_ID_VP8     : ("vp8", "vp8+webm"),
@@ -838,18 +839,22 @@ def init_module():
         AV_CODEC_ID_MPEG2VIDEO : ("mpeg2", )
         }.items():
         if avcodec_find_encoder(codec_id)!=NULL:
-            CODECS += codecs
-    log("enc_ffmpeg non vaapi CODECS=%s", csv(CODECS))
+            all_codecs += codecs
+    log("enc_ffmpeg non vaapi CODECS=%s", csv(all_codecs))
     if VAAPI and LINUX:
         try:
             suspend_nonfatal_logging()
-            init_vaapi()
+            vaapi_codecs = init_vaapi()
+            for c in vaapi_codecs:
+                if c not in all_codecs:
+                    all_codecs.append(c)
         except Exception:
             resume_nonfatal_logging()
             log("no vappi support", exc_info=True)
+    CODECS = tuple(all_codecs)
 
 def init_vaapi():
-    global CODECS, VAAPI_CODECS
+    global VAAPI_CODECS
     #can we find a device:
     cdef AVBufferRef *hw_device_ctx = init_vaapi_device()
     cdef AVCodecContext *avctx = NULL 
@@ -947,13 +952,12 @@ def init_vaapi():
             av_frame_free(&sw_frame)
             avcodec_free_context(&avctx)
         VAAPI_CODECS.append(c)
-        if c not in CODECS:
-            CODECS.append(c)
     av_buffer_unref(&hw_device_ctx)
     if VAAPI_CODECS:
         log.info("found %i vaapi codecs: %s", len(VAAPI_CODECS), csv(VAAPI_CODECS))
     else:
         log.info("no vaapi codecs found")
+    return VAAPI_CODECS
 
 cdef AVBufferRef *init_vaapi_device() except NULL:
     cdef char* device = NULL
