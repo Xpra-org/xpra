@@ -517,7 +517,7 @@ def normalize_local_display_name(local_display_name):
         local_display_name = ":" + local_display_name
     else:
         after_sc = local_display_name[pos+1:]
-    if WIN32:
+    if WIN32 or OSX:
         if after_sc.isalnum():
             return local_display_name
         raise Exception("non alphanumeric character in display name '%s'" % local_display_name)
