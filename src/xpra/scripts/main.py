@@ -458,8 +458,10 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         from xpra.scripts.bug_report import main as bug_main    #@Reimport
         bug_main(["xpra"]+args)
     elif (
-        mode in ("_proxy", "_proxy_start", "_proxy_start_desktop") and supports_server) or (
-        mode in ("_proxy_shadow_start", ) and supports_shadow):
+        mode=="_proxy" or
+        (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
+        (mode in ("_proxy_shadow_start", ) and supports_shadow)
+        ):
         nox()
         return run_proxy(error_cb, options, script_file, args, mode, defaults)
     elif mode in ("_sound_record", "_sound_play", "_sound_query"):
