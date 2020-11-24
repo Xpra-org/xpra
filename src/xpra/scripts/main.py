@@ -460,7 +460,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif (
         mode=="_proxy" or
         (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
-        (mode in ("_proxy_shadow_start", ) and supports_shadow)
+        (mode=="_proxy_shadow_start" and supports_shadow)
         ):
         nox()
         return run_proxy(error_cb, options, script_file, args, mode, defaults)
