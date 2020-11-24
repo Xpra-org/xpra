@@ -771,6 +771,12 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             r = rtc("which %s" % xpra_cmd)
             if r[2]!=0:
                 continue
+            if r[0]:
+                #use the actual path returned by 'which':
+                try:
+                    xpra_cmd = r[0].decode().rstrip("\n\r")
+                except:
+                    pass
         if xpra_cmd in tried:
             continue
         tried.add(xpra_cmd)
