@@ -54,7 +54,7 @@ class NetworkListener(StubClientMixin):
                                                 None, opts.client_socket_dirs,
                                                 str(os.getpid()), True,
                                                 opts.mmap_group, opts.socket_permissions)
-        self.sockets.update(local_sockets)
+            self.sockets.update(local_sockets)
 
     def run(self):
         self.start_listen_sockets()
