@@ -888,7 +888,8 @@ class ServerCore:
 
     def _new_udp_connection(self, sock):
         from xpra.net.udp_protocol import UDPListener
-        udpl = UDPListener(sock, self.process_udp_packet)
+        socket_options = self.socket_options.get(sock, {})
+        udpl = UDPListener(sock, self.process_udp_packet, socket_options)
         self._udp_listeners.append(udpl)
 
     def _new_connection(self, socktype, listener, handle=0):
@@ -2189,8 +2190,8 @@ class ServerCore:
     def _process_udp_control(self, proto, packet):
         proto.process_control(*packet[1:])
 
-    def process_udp_packet(self, udp_listener, uuid, seqno, synchronous, chunk, chunks, data, bfrom):
-        #log.info("process_udp_packet%s", (udp_listener, uuid, seqno, synchronous, chunk, chunks, len(data), bfrom))
+    def process_udp_packet(self, udp_listener, uuid, seqno, synchronous, chunk, chunks, data, bfrom, options):
+        #log.info("process_udp_packet%s", (udp_listener, uuid, seqno, synchronous, chunk, chunks, len(data), bfrom, options))
         protocol = self._udp_protocols.get(uuid)
         if not protocol:
             from xpra.net.udp_protocol import UDPServerProtocol, UDPSocketConnection
@@ -2204,9 +2205,9 @@ class ServerCore:
             host, port = bfrom
             sock = udp_listener._socket
             sockname = sock.getsockname()
-            conn = UDPSocketConnection(sock, sockname, (host, port), (host, port), socktype)
+            conn = UDPSocketConnection(sock, sockname, (host, port), (host, port), socktype, None, options)
             conn.timeout = SOCKET_TIMEOUT
-            protocol = self.do_make_protocol(socktype, conn, {}, udp_protocol_class)
+            protocol = self.do_make_protocol(socktype, conn, options, udp_protocol_class)
             self._udp_protocols[uuid] = protocol
         else:
             #update remote address in case the client is roaming:

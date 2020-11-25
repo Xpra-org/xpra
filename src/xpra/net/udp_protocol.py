@@ -58,11 +58,12 @@ class UDPListener:
         it parses the header and then exposes the data received via process_packet_cb.
     """
 
-    def __init__(self, sock, process_packet_cb):
+    def __init__(self, sock, process_packet_cb, options):
         assert sock is not None
         self._closed = False
         self._socket = sock
         self._process_packet_cb =  process_packet_cb
+        self._options = options
         self._read_thread = start_thread(self._read_thread_loop, "read", daemon=True)
 
     def __repr__(self):
@@ -84,7 +85,7 @@ class UDPListener:
                     break
                 values = list(_header_struct.unpack_from(buf[:_header_size])) + [buf[_header_size:], bfrom]
                 try:
-                    self._process_packet_cb(self, *values)
+                    self._process_packet_cb(self, *values, self._options)
                 except Exception as e:
                     log("_read_thread_loop() buffer=%s, from=%s", ellipsizer(buf), bfrom, exc_info=True)
                     if not self._closed:
