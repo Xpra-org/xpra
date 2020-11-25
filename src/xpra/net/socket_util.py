@@ -131,17 +131,18 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
             sock.new_connection_cb = new_connection_cb
             sock.start()
             return None
+        sources = []
         if socktype=="udp":
             assert new_udp_connection_cb, "UDP sockets cannot be handled here"
             new_udp_connection_cb(sock)
-            return None
-        from gi.repository import GLib
-        sock.listen(5)
-        def io_in_cb(sock, flags):
-            log("io_in_cb(%s, %s)", sock, flags)
-            return new_connection_cb(socktype, sock)
-        source = GLib.io_add_watch(sock, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
-        sources = [source]
+        else:
+            from gi.repository import GLib
+            sock.listen(5)
+            def io_in_cb(sock, flags):
+                log("io_in_cb(%s, %s)", sock, flags)
+                return new_connection_cb(socktype, sock)
+            source = GLib.io_add_watch(sock, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
+            sources.append(source)
         upnp_cleanup = []
         if socktype in ("udp", "tcp", "ws", "wss", "ssh", "ssl"):
             upnp = (options or {}).get("upnp", "no")
