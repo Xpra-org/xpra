@@ -432,22 +432,23 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def accept_data(self, send_id, dtype, url, printit, openit):
         #check if we have accepted this file via the GUI:
         r = self.data_send_requests.pop(send_id, None)
-        if r:
-            edtype = r[0]
-            eurl = r[1]
-            if edtype!=dtype or eurl!=url:
-                filelog.warn("Warning: the file attributes are different")
-                filelog.warn(" from the ones that were used to accept the transfer")
-                s = bytestostr
-                if edtype!=dtype:
-                    filelog.warn(" expected data type '%s' but got '%s'", s(edtype), s(dtype))
-                if eurl!=url:
-                    filelog.warn(" expected data type '%s' but got '%s'", s(eurl), s(url))
-                return None
-            #return the printit and openit flag we got from the UI:
-            return (r[2], r[3])
-        from xpra.net.file_transfer import FileTransferHandler
-        return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
+        if not r:
+            filelog("accept_data: data send request %s not found", send_id)
+            from xpra.net.file_transfer import FileTransferHandler
+            return FileTransferHandler.accept_data(self, send_id, dtype, url, printit, openit)
+        edtype = r[0]
+        eurl = r[1]
+        if edtype!=dtype or eurl!=url:
+            filelog.warn("Warning: the file attributes are different")
+            filelog.warn(" from the ones that were used to accept the transfer")
+            s = bytestostr
+            if edtype!=dtype:
+                filelog.warn(" expected data type '%s' but got '%s'", s(edtype), s(dtype))
+            if eurl!=url:
+                filelog.warn(" expected data type '%s' but got '%s'", s(eurl), s(url))
+            return None
+        #return the printit and openit flag we got from the UI:
+        return (r[2], r[3])
 
     def file_size_warning(self, action, location, basefilename, filesize, limit):
         if self.file_size_dialog:

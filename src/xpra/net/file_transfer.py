@@ -390,6 +390,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("accept_data: open-files=%s, open-files-ask=%s",
                 self.open_files, self.open_files_ask)
         req = self.files_accepted.pop(send_id, None)
+        filelog("accept_data: files_accepted[%s]=%s", send_id, req)
         if req is not None:
             return (False, req)
         if printit:
