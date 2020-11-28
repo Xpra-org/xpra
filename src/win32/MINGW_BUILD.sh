@@ -294,6 +294,8 @@ for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
 popd > /dev/null
+#and keep pdfium in the root directory:
+mv ./lib/*pdfium*.dll ./
 #liblz4 ends up in the wrong place and duplicated,
 #keep just one copy in ./lib
 find lib/lz4 -name "liblz4.dll" -exec mv {} ./lib/ \;
