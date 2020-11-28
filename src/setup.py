@@ -1101,7 +1101,7 @@ if WIN32:
                 print(" %s" % e)
                 sys.exit(1)
 
-        def do_add_DLLs(*dll_names):
+        def do_add_DLLs(prefix="lib", *dll_names):
             dll_names = list(dll_names)
             dll_files = []
             import re
@@ -1116,11 +1116,16 @@ if WIN32:
                     continue
                 for x in os.listdir(d):
                     dll_path = os.path.join(d, x)
-                    x = x.lower()
-                    if os.path.isdir(dll_path) or not x.startswith("lib") or not x.endswith(".dll"):
+                    if os.path.isdir(dll_path):
                         continue
-                    #strip "lib" and ".dll": "libatk-1.0-0.dll" -> "atk-1.0-0"
-                    nameversion = x[3:-4]
+                    x = x.lower()
+                    if prefix and not x.startswith(prefix):
+                        continue
+                    if not x.endswith(".dll"):
+                        continue
+                    #strip prefix (ie: "lib") and ".dll":
+                    #ie: "libatk-1.0-0.dll" -> "atk-1.0-0"
+                    nameversion = x[len(prefix):-4]
                     if verbose_ENABLED:
                         print("checking %s: %s" % (x, nameversion))
                     m = version_re.search(nameversion)          #look for version part of filename
@@ -1139,7 +1144,7 @@ if WIN32:
             if dll_names:
                 print("some DLLs could not be found:")
                 for x in dll_names:
-                    print(" - lib%s*.dll" % x)
+                    print(" - %s%s*.dll" % (prefix, x))
             add_data_files("", dll_files)
 
         #list of DLLs we want to include, without the "lib" prefix, or the version and extension
@@ -1360,7 +1365,7 @@ if WIN32:
         if printing_ENABLED:
             add_console_exe("xpra/platform/printing.py",        "printer.ico",     "Print")
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
-            add_DLLs("pdfium")  #libpdfium.dll
+            do_add_DLLs("", "pdfium")
         if nvenc_ENABLED:
             add_console_exe("xpra/codecs/nv_util.py",                   "nvidia.ico",   "NVidia_info")
         if nvfbc_ENABLED:

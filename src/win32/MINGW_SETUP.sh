@@ -56,6 +56,9 @@ pip3 install yuicompressor browser-cookie3 qrencode
 #$PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
 
 echo "for printing support, install libpdfium"
+echo "by downloading the plain x64 pdfium binary from"
+echo "https://github.com/bblanchon/pdfium-binaries"
+echo "and place the `pdfium.dll` in '$MINGW_PREFIX/bin'"
 
 echo "for a more seamless theme, install https://b00merang.weebly.com/windows-10.html"
 echo " (see ticket #2762)"
