@@ -409,9 +409,13 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = ""
         if len(packet)>=9:
             send_id = packet[8]
-        r = self.accept_data(send_id, b"file", basefilename, printit, openit)
+        args = (send_id, b"file", basefilename, printit, openit)
+        r = self.accept_data(*args)
+        filelog("%s%s=%s", self.accept_data, args, r)
         if r is None:
-            filelog.warn("Warning: file transfer rejected for file '%s'", bytestostr(basefilename))
+            filelog.warn("Warning: %s rejected for file '%s'",
+                         ("transfer", "printing")[bool(printit)],
+                         bytestostr(basefilename))
             return
         #accept_data can override the flags:
         printit, openit = r
