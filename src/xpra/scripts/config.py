@@ -879,9 +879,8 @@ def get_defaults():
     if sys.version_info<(2, 7, 9):
         ssl_protocol = "SSLv23"
 
-    if POSIX and not OSX:
-        from xpra.x11.fakeXinerama import find_libfakeXinerama
-        fake_xinerama = find_libfakeXinerama()
+    if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
+        fake_xinerama = "auto"
     else:
         fake_xinerama = "no"
 
