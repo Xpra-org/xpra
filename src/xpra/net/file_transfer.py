@@ -392,10 +392,11 @@ class FileTransferHandler(FileTransferAttributes):
         req = self.files_accepted.pop(send_id, None)
         if req is not None:
             return (False, req)
-        if not self.file_transfer or self.file_transfer_ask:
+        if printit:
+            if not self.printing or self.printing_ask:
+                printit = False
+        elif not self.file_transfer or self.file_transfer_ask:
             return None
-        if printit and (not self.printing or self.printing_ask):
-            printit = False
         if openit and (not self.open_files or self.open_files_ask):
             #we can't ask in this implementation,
             #so deny the request to open it:
