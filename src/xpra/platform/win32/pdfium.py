@@ -15,7 +15,7 @@ from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
 from xpra.platform.win32.win32_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR
 
-LIBPDFIUMDLL = os.environ.get("XPRA_LIBPDFIUMDLL", "libpdfium.dll")
+LIBPDFIUMDLL = os.environ.get("XPRA_LIBPDFIUMDLL", "pdfium.dll")
 try:
 	pdfium = WinDLL(LIBPDFIUMDLL, use_last_error=True)
 except WindowsError as e:		#@UndefinedVariable

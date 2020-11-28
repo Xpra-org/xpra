@@ -324,6 +324,8 @@ mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
 mv *dll lib/
 #but keep the core DLLs (python, gcc, etc):
 cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
+#and keep pdfium:
+mv lib/*pdfium*.dll ./
 pushd lib > /dev/null
 #remove all the pointless duplication:
 for x in `ls *dll`; do
