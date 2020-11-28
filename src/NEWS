@@ -1,3 +1,12 @@
+v4.0.6 (2020-11-28)
+======================
+	-- fix capslock regression on MacOS and MSWindows shadow servers
+	-- fix slow subcommands due to unnecessary calls to ldconfig on Linux
+	-- use an up-to-date PDFium library on MS Windows
+	-- make it possible to specify the socket type with systemd socket activation
+	-- re-add "~/.xpra" as socket-dir
+
+
 v4.0.5 (2020-11-18)
 ======================
 	-- fix caps lock wrongly applied to numeric keys

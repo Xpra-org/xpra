@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 4.0.5
+%define version 4.0.6
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -587,6 +587,13 @@ fi
 
 
 %changelog
+* Sat Nov 26 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+- fix capslock regression on MacOS and MSWindows shadow servers
+- fix slow subcommands due to unnecessary calls to ldconfig on Linux
+- use an up-to-date PDFium library on MS Windows
+- make it possible to specify the socket type with systemd socket activation
+- re-add "~/.xpra" as socket-dir
+
 * Wed Nov 18 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
 - fix caps lock wrongly applied to numeric keys
 - fix HTML5 client keyboard layout detection with Internet Explorer
