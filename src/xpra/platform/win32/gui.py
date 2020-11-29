@@ -11,7 +11,7 @@ import sys
 import types
 import ctypes
 from ctypes import WinDLL, CFUNCTYPE, c_int, POINTER, Structure, byref, sizeof
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT
+from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ
 
 from xpra.client import mixin_features
 from xpra.exit_codes import EXIT_OK
@@ -55,14 +55,17 @@ APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 
 
 if PYTHON3:
-    from ctypes import CDLL, pythonapi, c_void_p, py_object
+    from ctypes import CDLL, pythonapi, py_object
     from ctypes.util import find_library
     PyCapsule_GetPointer = pythonapi.PyCapsule_GetPointer
-    PyCapsule_GetPointer.restype = c_void_p
+    PyCapsule_GetPointer.restype = HGDIOBJ
     PyCapsule_GetPointer.argtypes = [py_object]
     log("PyCapsute_GetPointer=%s", PyCapsule_GetPointer)
     gdkdll = CDLL(find_library("libgdk-3-0.dll"))
     log("gdkdll=%s", gdkdll)
+    gdk_win32_window_get_handle = gdkdll.gdk_win32_window_get_handle
+    gdk_win32_window_get_handle.argtypes = [HGDIOBJ]
+    gdk_win32_window_get_handle.restype = HWND
 
 
 shell32 = WinDLL("shell32", use_last_error=True)
@@ -252,7 +255,7 @@ def get_window_handle(window):
     if PYTHON2:
         return gdk_window.handle
     gpointer =  PyCapsule_GetPointer(gdk_window.__gpointer__, None)
-    hwnd = gdkdll.gdk_win32_window_get_handle(gpointer)
+    hwnd = gdk_win32_window_get_handle(gpointer)
     #log("get_window_handle(%s) gpointer=%#x, hwnd=%#x", gpointer, hwnd)
     return hwnd
 
