@@ -2903,7 +2903,9 @@ XpraClient.prototype._send_sound_stop = function() {
 };
 
 XpraClient.prototype.close_audio = function() {
-	this._send_sound_stop();
+	if (this.connected) {
+		this._send_sound_stop();
+	}
 	if (this.audio_framework=="http-stream") {
 		this._close_audio_httpstream();
 	}
