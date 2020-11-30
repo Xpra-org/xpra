@@ -1,11 +1,15 @@
 xpra (4.0.6-1) UNRELEASED; urgency=low
+  * fix proxy instance control socket errors and process leak
   * fix capslock regression on MacOS and MSWindows shadow servers
   * fix slow subcommands due to unnecessary calls to ldconfig on Linux
+  * fix client rejecting printing requests
+  * fix errors accessing window handles on MS Windows (size hints, opengl, etc)
+  * fix duplicate / untimely audio-stop control packets with HTML5 client
   * use an up-to-date PDFium library on MS Windows
   * make it possible to specify the socket type with systemd socket activation
   * re-add "~/.xpra" as socket-dir
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 28 Nov 2020 21:30:07 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 30 Nov 2020 22:33:43 +0700
 
 xpra (4.0.5-1) UNRELEASED; urgency=low
   * fix caps lock wrongly applied to numeric keys

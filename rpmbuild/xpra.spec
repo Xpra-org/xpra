@@ -587,9 +587,13 @@ fi
 
 
 %changelog
-* Sat Nov 26 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+* Mon Nov 30 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+- fix proxy instance control socket errors and process leak
 - fix capslock regression on MacOS and MSWindows shadow servers
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
+- fix client rejecting printing requests
+- fix errors accessing window handles on MS Windows (size hints, opengl, etc)
+- fix duplicate / untimely audio-stop control packets with HTML5 client
 - use an up-to-date PDFium library on MS Windows
 - make it possible to specify the socket type with systemd socket activation
 - re-add "~/.xpra" as socket-dir
