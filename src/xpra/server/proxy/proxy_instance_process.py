@@ -252,7 +252,9 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 log("control_socket=%s", self.control_socket, exc_info=True)
                 log.error("Error accepting socket connection on %s", self.control_socket)
                 log.error(" %s", e)
-            self.new_control_connection(sock, address)
+            else:
+                self.new_control_connection(sock, address)
+        self.control_socket_thread = None
 
     def new_control_connection(self, sock, address):
         if len(self.potential_protocols)>=self.max_connections:
