@@ -431,17 +431,17 @@ class FileTransferHandler(FileTransferAttributes):
         l("receiving file: %s",
           [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         assert filesize>0, "invalid file size: %s" % filesize
-        if filesize>self.file_size_limit:
-            l.error("Error: file '%s' is too large:", basefilename)
-            l.error(" %sB, the file size limit is %sB",
-                    std_unit(filesize), std_unit(self.file_size_limit))
-            return
-        chunk_id = options.strget("file-chunk-id")
         #basefilename should be utf8:
         try:
             base = basefilename.decode("utf8")
         except UnicodeDecodeError:
             base = bytestostr(basefilename)
+        if filesize>self.file_size_limit:
+            l.error("Error: file '%s' is too large:", base)
+            l.error(" %sB, the file size limit is %sB",
+                    std_unit(filesize), std_unit(self.file_size_limit))
+            return
+        chunk_id = options.strget("file-chunk-id")
         try:
             filename, fd = safe_open_download_file(base, mimetype)
         except OSError as e:
@@ -474,7 +474,7 @@ class FileTransferHandler(FileTransferAttributes):
         #not chunked, full file:
         assert file_data, "no data, got %s" % (file_data,)
         if len(file_data)!=filesize:
-            l.error("Error: invalid data size for file '%s'", basefilename)
+            l.error("Error: invalid data size for file '%s'", base)
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
         #check digest if present:
