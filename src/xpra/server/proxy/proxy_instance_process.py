@@ -116,8 +116,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     def signal_quit(self, signum, _frame=None):
         log.info("")
         log.info("proxy process pid %s got signal %s, exiting", os.getpid(), SIGNAMES.get(signum, signum))
-        QueueScheduler.stop(self)
-        self.message_queue.put_nowait(None)
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
         self.stop(None, SIGNAMES.get(signum, signum))
@@ -331,6 +329,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     ################################################################################
 
     def stop(self, skip_proto, *reasons):
+        QueueScheduler.stop(self)
+        self.message_queue.put_nowait(None)
         super().stop(skip_proto, *reasons)
         self.stop_control_socket()
-        QueueScheduler.stop(self)
