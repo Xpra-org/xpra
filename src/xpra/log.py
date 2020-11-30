@@ -46,6 +46,15 @@ def get_all_loggers():
 debug_enabled_categories = set()
 debug_disabled_categories = set()
 
+def get_debug_args():
+    args = []
+    if debug_enabled_categories:
+        args += list(debug_enabled_categories)
+    if debug_disabled_categories:
+        for x in debug_disabled_categories:
+            args.append("-%s" % x)
+    return args
+
 class FullDebugContext:
 
     def __enter__(self):

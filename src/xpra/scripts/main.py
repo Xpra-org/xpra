@@ -48,7 +48,7 @@ from xpra.scripts.config import (
     fixup_options, dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, parse_bool, has_sound_support, name_to_field,
     )
-from xpra.log import is_debug_enabled, Logger
+from xpra.log import is_debug_enabled, Logger, get_debug_args
 assert info and warn and error, "used by modules importing those from here"
 
 NO_ROOT_WARNING = envbool("XPRA_NO_ROOT_WARNING", False)
@@ -2421,6 +2421,11 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
                 log("session not found for user '%s', not using paexec", username)
     cmd += [script_file, "shadow"] + args
     cmd += get_start_server_args(opts)
+    debug_args = os.environ.get("XPRA_SHADOW_DEBUG")
+    if debug_args is None:
+        debug_args = ",".join(get_debug_args())
+    if debug_args:
+        cmd.append("--debug=%s" % debug_args)
     log("proxy shadow start command: %s", cmd)
     proc = Popen(cmd, executable=exe, env=env, cwd=cwd)
     start = monotonic_time()
@@ -2442,7 +2447,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     raise Exception("timeout: failed to identify the new shadow server '%s'" % display_name)
 
 def start_server_subprocess(script_file, args, mode, opts, username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
-    log = Logger("server")
+    log = Logger("server", "exec")
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     #we must use a subprocess to avoid messing things up - yuk
@@ -2480,6 +2485,11 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
 
     cmd = [script_file, mode] + args        #ie: ["/usr/bin/xpra", "start-desktop", ":100"]
     cmd += get_start_server_args(opts, uid, gid)      #ie: ["--exit-with-children", "--start-child=xterm"]
+    debug_args = os.environ.get("XPRA_SUBPROCESS_DEBUG")
+    if debug_args is None:
+        debug_args = ",".join(get_debug_args())
+    if debug_args:
+        cmd.append("--debug=%s" % debug_args)
     #when starting via the system proxy server,
     #we may already have a XPRA_PROXY_START_UUID,
     #specified by the proxy-start command:
@@ -2583,7 +2593,7 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False):
 
 
 def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid=0):
-    log = Logger("server")
+    log = Logger("server", "network")
     log("identify_new_socket%s",
         (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
     #wait until the new socket appears:
@@ -2673,9 +2683,12 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 fn = x.replace("-", "_")
                 v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
                 setattr(opts, fn, v)
-
+            server_args = list(args)
+            debug_args = csv(get_debug_args())
+            if debug_args:
+                server_args.append("--debug=%s" % debug_args)
             opts.splash = False
-            proc, socket_path, display = start_server_subprocess(script_file, args, server_mode, opts)
+            proc, socket_path, display = start_server_subprocess(script_file, server_args, server_mode, opts)
             if not socket_path:
                 #if we return non-zero, we will try the next run-xpra script in the list..
                 return 0
