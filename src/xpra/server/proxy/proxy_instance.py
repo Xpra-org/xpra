@@ -174,7 +174,6 @@ class ProxyInstance:
             for x in reasons:
                 log.info(" %s", x)
             self.exit = True
-            log.info("stopping %s", self)
         self.cancel_client_ping_timer()
         self.cancel_server_ping_timer()
         self.stop_encode_thread()
