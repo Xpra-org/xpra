@@ -359,10 +359,13 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
     configure_network(options)
 
     if mode not in ("showconfig", "splash") and POSIX and not OSX and os.environ.get("XDG_RUNTIME_DIR") is None and getuid()>0:
-        from xpra.platform.xposix.paths import get_runtime_dir
-        xrd = osexpand(get_runtime_dir())
-        if not os.path.exists(xrd):
-            warn("Warning: XDG_RUNTIME_DIR does not exist")
+        xrd = "/run/user/%i" % getuid()
+        if os.path.exists(xrd):
+            warn("Warning: using '%s' as XDG_RUNTIME_DIR" % xrd)
+            os.environ["XDG_RUNTIME_DIR"] = xrd
+        else:
+            warn("Warning: XDG_RUNTIME_DIR is not defined")
+            warn(" and '%s' does not exist" % xrd)
             if os.path.exists("/tmp") and os.path.isdir("/tmp"):
                 xrd = "/tmp"
                 warn(" using '%s'" % xrd)
