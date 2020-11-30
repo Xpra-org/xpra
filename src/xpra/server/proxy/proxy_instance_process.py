@@ -173,7 +173,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
         if not self.create_control_socket():
             return
-        self.control_socket_thread = start_thread(self.control_socket_loop, "control")
+        self.control_socket_thread = start_thread(self.control_socket_loop, "control", daemon=True)
 
         self.main_queue = Queue()
 
