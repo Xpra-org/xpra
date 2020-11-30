@@ -2964,10 +2964,13 @@ XpraClient.prototype._sound_start_mediasource = function() {
 	});
 };
 
+XpraClient.prototype._send_sound_stop = function() {
+	this.log("audio: stopping stream");
+	this.send(["sound-control", "stop"]);
+};
+
 XpraClient.prototype.close_audio = function() {
-	if (this.protocol) {
-		this.send(["sound-control", "stop"]);
-	}
+	this._send_sound_stop();
 	if (this.audio_framework=="http-stream") {
 		this._close_audio_httpstream();
 	}
@@ -3002,7 +3005,6 @@ XpraClient.prototype._close_audio_mediasource = function() {
 	this.log("close_audio_mediasource: audio_source_buffer="+this.audio_source_buffer+", media_source="+this.media_source+", audio="+this.audio);
 	this.audio_source_ready = false;
 	if(this.audio) {
-		this.send(["sound-control", "stop"]);
 		if(this.media_source) {
 			try {
 				if(this.audio_source_buffer) {
