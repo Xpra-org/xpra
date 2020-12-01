@@ -59,6 +59,7 @@ ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
+SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 
 
 def noop():
@@ -158,6 +159,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def show_progress(self, pct, text=""):
         log("progress(%s, %s)", pct, text)
+        if SPLASH_LOG:
+            log.info("%3i %s", pct, text)
         pp = self.progress_process
         if not pp:
             return
