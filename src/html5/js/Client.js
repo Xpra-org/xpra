@@ -2948,6 +2948,11 @@ XpraClient.prototype._sound_start_mediasource = function() {
 	const me = this;
 
 	function audio_error(event) {
+		if(!me.media_source) {
+			//already closed
+			me.debug("audio", "media_source is closed, ignoring audio error: "+event);
+			return;
+		}
 		if(me.audio) {
 			me.error(event+" error: "+me.audio.error);
 			if(me.audio.error) {
