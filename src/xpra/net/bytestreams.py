@@ -467,6 +467,7 @@ def get_socket_options(sock, level, options) -> dict:
                 opts[k] = v
     if errs:
         log.warn("Warning: failed to query %s", csv(errs))
+        log.warn(" on %s", sock)
     return opts
 
 
