@@ -221,6 +221,7 @@ class win32NotifyIcon(object):
         self.app_id = app_id
         self.title = title
         self.current_icon = None
+        self.destroy_icon = None
         self.move_callback = move_callbacks
         self.click_callback = click_callback
         self.exit_callback = exit_callback
@@ -301,9 +302,11 @@ class win32NotifyIcon(object):
             else:
                 self.hwnd = 0
             ci = self.current_icon
-            if ci:
+            di = self.destroy_icon
+            if ci and di:
                 self.current_icon = None
-                DestroyIcon(ci)
+                self.destroy_icon = None
+                di(ci)
         except Exception as e:
             log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
@@ -327,13 +330,14 @@ class win32NotifyIcon(object):
         Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON))
         self.reset_function = (self.set_icon, iconPathName)
 
-    def do_set_icon(self, hicon):
+    def do_set_icon(self, hicon, destroy_icon=None):
         log("do_set_icon(%#x)", hicon)
         ci = self.current_icon
-        if ci and hicon!=ci:
-            self.current_icon = None
-            DestroyIcon(ci)
+        di = self.destroy_icon
+        if ci and ci!=hicon and di:
+            di(ci)
         self.current_icon = hicon
+        self.destroy_icon = destroy_icon
         Shell_NotifyIconW(NIM_MODIFY, self.make_nid(NIF_ICON))
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
@@ -356,7 +360,7 @@ class win32NotifyIcon(object):
             rowstride = w*4
 
         hicon = image_to_ICONINFO(img)
-        self.do_set_icon(hicon)
+        self.do_set_icon(hicon, DestroyIcon)
         UpdateWindow(self.hwnd)
         self.reset_function = (self.set_icon_from_data, pixels, has_alpha, w, h, rowstride)
 
