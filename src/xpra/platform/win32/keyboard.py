@@ -59,6 +59,9 @@ class Keyboard(KeyboardBase):
         KEY_TRANSLATIONS[("dead_tilde", 65107,  50)]    = "asciitilde"
         KEY_TRANSLATIONS[("dead_grave", 65104,  55)]    = "grave"
 
+    def __repr__(self):
+        return "win32.Keyboard"
+
     def set_modifier_mappings(self, mappings):
         super().set_modifier_mappings(mappings)
         self.num_lock_modifier = self.modifier_keys.get("Num_Lock")

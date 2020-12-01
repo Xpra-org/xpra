@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,6 +28,8 @@ class Keyboard(KeyboardBase):
                 log.error("Error: failed to load posix keyboard bindings")
                 log.error(" %s", str(e) or type(e))
 
+    def __repr__(self):
+        return "xposix.Keyboard"
 
     def get_keymap_modifiers(self):
         if self.keymap_modifiers is None:
