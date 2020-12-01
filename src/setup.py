@@ -1162,7 +1162,10 @@ if WIN32:
                      'jasper', 'epoxy',
                      'intl',
                      'p11-kit',
-                     'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
+                     'jpeg', 'png16', 'rsvg',
+                     'webp', "webpdecoder",
+                     'tiff',
+                     )
 
         if gtk3_ENABLED:
             add_dir('etc', ["fonts", "gtk-3.0", "pkcs11"])     #add "dbus-1"?
