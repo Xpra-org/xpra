@@ -1095,7 +1095,7 @@ if WIN32:
 
         def add_DLLs(*dll_names):
             try:
-                do_add_DLLs(*dll_names)
+                do_add_DLLs("lib", *dll_names)
             except Exception as e:
                 print("Error: failed to add DLLs: %s" % (dll_names, ))
                 print(" %s" % e)
