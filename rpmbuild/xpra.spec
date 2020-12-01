@@ -587,13 +587,17 @@ fi
 
 
 %changelog
-* Mon Nov 30 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+* Tue Dec 01 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
 - fix proxy instance control socket errors and process leak
-- fix capslock regression on MacOS and MSWindows shadow servers
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
 - fix client rejecting printing requests
-- fix errors accessing window handles on MS Windows (size hints, opengl, etc)
 - fix duplicate / untimely audio-stop control packets with HTML5 client
+- fix capslock regression on MacOS and MSWindows shadow servers
+- fix errors accessing window handles on MS Windows (size hints, opengl, etc)
+- fix missing avcodec decoder with MS Windows builds
+- fix missing webp Pillow decoder with MS Windows builds
+- fix missing tray icons regression on MS Windows (introduced in 4.0.5)
+- fix clipboard cleanup errors on MS Windows
 - use an up-to-date PDFium library on MS Windows
 - make it possible to specify the socket type with systemd socket activation
 - re-add "~/.xpra" as socket-dir
