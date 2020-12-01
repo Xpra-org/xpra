@@ -264,11 +264,12 @@ class TestAuth(unittest.TestCase):
         assert a.load_password_file() is None
         assert a.stat_password_filetime()==0
         #inaccessible:
-        filename = "./test-file-auth-%s-%s" % (get_hex_uuid(), os.getpid())
-        with open(filename, 'wb') as f:
-            os.fchmod(f.fileno(), 0o200)    #write-only
-        a.password_filename = filename
-        a.load_password_file()
+        if POSIX:
+            filename = "./test-file-auth-%s-%s" % (get_hex_uuid(), os.getpid())
+            with open(filename, 'wb') as f:
+                os.fchmod(f.fileno(), 0o200)    #write-only
+            a.password_filename = filename
+            a.load_password_file()
 
     def test_multifile(self):
         def genfiledata(a):
