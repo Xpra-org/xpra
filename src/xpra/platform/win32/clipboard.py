@@ -11,7 +11,7 @@ from ctypes import (
 from xpra.platform.win32.common import (
     WNDCLASSEX, GetLastError, WNDPROC, LPCWSTR, LPWSTR,
     DefWindowProcW,
-    GetModuleHandleA, RegisterClassExW, UnregisterClassA,
+    GetModuleHandleA, RegisterClassExW, UnregisterClassW,
     CreateWindowExW, DestroyWindow,
     OpenClipboard, EmptyClipboard, CloseClipboard, GetClipboardData, GetClipboardOwner,
     GlobalLock, GlobalUnlock, GlobalAlloc, GlobalFree,
@@ -57,6 +57,8 @@ CLIPBOARD_EVENTS = {
 
 CONVERT_LINE_ENDINGS = envbool("XPRA_CONVERT_LINE_ENDINGS", True)
 
+clipboard_window_class_name = "XpraWin32Clipboard"
+
 
 #initialize the window we will use
 #for communicating with the OS clipboard API:
@@ -71,13 +73,12 @@ class Win32Clipboard(ClipboardTimeoutHelper):
 
     def init_window(self):
         log("Win32Clipboard.init_window() creating clipboard window class and instance")
-        class_name = "XpraWin32Clipboard"
         self.wndclass = WNDCLASSEX()
         self.wndclass.cbSize = sizeof(WNDCLASSEX)
         self.wndclass.lpfnWndProc = WNDPROC(self.wnd_proc)
         self.wndclass.style =  win32con.CS_GLOBALCLASS
         self.wndclass.hInstance = GetModuleHandleA(0)
-        self.wndclass.lpszClassName = class_name
+        self.wndclass.lpszClassName = clipboard_window_class_name
         self.wndclass_handle = RegisterClassExW(byref(self.wndclass))
         log("RegisterClassExA(%s)=%#x", self.wndclass.lpszClassName, self.wndclass_handle)
         if self.wndclass_handle==0:
@@ -118,7 +119,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         if wch:
             self.wndclass = None
             self.wndclass_handle = None
-            UnregisterClassA(wch, GetModuleHandleA(0))
+            UnregisterClassW(clipboard_window_class_name, GetModuleHandleA(0))
 
     def make_proxy(self, selection):
         proxy = Win32ClipboardProxy(self.window, selection,
