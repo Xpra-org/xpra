@@ -167,7 +167,7 @@ XpraProtocol.prototype.open = function(uri) {
 	this.websocket.onclose = function (event) {
 		me.packet_handler(['close', me.close_event_str(event)], me.packet_ctx);
 	};
-	this.websocket.onerror = function () {
+	this.websocket.onerror = function (event) {
 		me.packet_handler(['error', me.close_event_str(event)], me.packet_ctx);
 	};
 	this.websocket.onmessage = function (e) {
