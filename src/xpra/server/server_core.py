@@ -1581,8 +1581,8 @@ class ServerCore:
             self._potential_protocols.remove(proto)
         #remove from UDP protocol map:
         uuid = getattr(proto, "uuid", None)
-        if uuid and uuid in self._udp_protocols:
-            del self._udp_protocols[uuid]
+        if uuid:
+            self._udp_protocols.pop(uuid, None)
         self.cleanup_protocol(proto)
 
     def _process_gibberish(self, proto, packet):
