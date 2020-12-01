@@ -11,28 +11,27 @@ export XPRA_HIDE_SUBPROCESS_OUTPUT=${XPRA_HIDE_SUBPROCESS_OUTPUT:-1}
 UNITTESTS_DIR=`dirname $(readlink -f $0)`
 SRC_DIR=`dirname $UNITTESTS_DIR`
 
+INSTALL_ROOT="$SRC_DIR/dist/python3"
 pushd $SRC_DIR
-sudo python3 ./setup.py install --without-html5 --without-printing --with-scripts --without-minify --prefix=/usr || die "failed to build"
+python3 ./setup.py install --with-scripts --home=$INSTALL_ROOT --without-minify || die "failed to build"
 popd
 
 if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
 fi
-export PYTHONPATH=.
+export PYTHONPATH=`ls -d $INSTALL_ROOT/lib*/python`:.
+export PATH=$INSTALL_ROOT/bin:$PATH
+export XPRA_COMMAND=$INSTALL_ROOT/bin/xpra
+export XPRA_CONF_DIR=$INSTALL_ROOT/etc/xpra/
 
 pushd $UNITTESTS_DIR
-#coverage erase
+coverage erase
 ./unit/run.py "$@"
-
-exit 0
-echo "combine:"
 ls -la
 coverage combine
-echo "report:"
 ls -la
 coverage report -m
-echo "html:"
 ls -la
 coverage html
-#xdg-open ./htmlcov/index.html
+xdg-open ./htmlcov/index.html
 popd
