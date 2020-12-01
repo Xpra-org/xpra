@@ -134,7 +134,7 @@ class DatabaseUtilBase:
         a.password_used = password
         sessions = a.get_sessions()
         assert sessions
-        print("success, found sessions: %s" % (sessions, ))
+        log("sql authentication success, found sessions: %s", sessions)
 
     def get_authenticator_class(self):
         raise NotImplementedError()
