@@ -312,7 +312,6 @@ else
 	done
 	popd > /dev/null
 fi
-rm lib/libx265*.dll
 mv lib/nacl/libsodium*dll ./lib/
 #gstreamer uses its own lib dir, so this does not belong in the root:
 mv ./libgst*.dll ./lib/gstreamer-1.0/
