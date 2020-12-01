@@ -68,7 +68,9 @@ class KeyboardHelperTest(unittest.TestCase):
 			pass
 		window = AdHocStruct()
 		window.quit = noop
-		assert kh.key_handled_as_shortcut(window, "F4", list(kh.shortcut_modifiers), True)
+		modifier_names = kh.get_modifier_names()
+		modifiers_used = tuple(modifier_names.get(x, x) for x in kh.shortcut_modifiers)
+		assert kh.key_handled_as_shortcut(window, "F4", modifiers_used, True)
 		assert not kh.key_handled_as_shortcut(window, "F1", (), True)
 		kh.cleanup()
 

@@ -92,10 +92,13 @@ class KeyboardHelper:
 
     def parse_shortcuts(self):
         #parse shortcuts:
-        modifier_names = get_modifier_names(self.xkbmap_mod_meanings)
+        modifier_names = self.get_modifier_names()
         self.shortcut_modifiers = parse_shortcut_modifiers(self.shortcut_modifiers_str, modifier_names)
         self.key_shortcuts = parse_shortcuts(self.key_shortcuts_strs, self.shortcut_modifiers, modifier_names)
         return self.key_shortcuts
+
+    def get_modifier_names(self):
+        return get_modifier_names(self.xkbmap_mod_meanings)
 
     def key_handled_as_shortcut(self, window, key_name, modifiers, depressed):
         #find the shortcuts that may match this key:
