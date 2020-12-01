@@ -1178,7 +1178,10 @@ if WIN32:
                      'jasper', 'epoxy',
                      'intl',
                      'p11-kit',
-                     'jpeg', 'png16', 'rsvg', 'webp', 'tiff')
+                     'jpeg', 'png16', 'rsvg',
+                     'webp', "webpdecoder",
+                     'tiff',
+                     )
             #these are missing in newer aio installers (sigh):
             do_add_DLLs('javascriptcoregtk')
             if opengl_ENABLED:
