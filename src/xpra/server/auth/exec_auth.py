@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os
 from subprocess import Popen
 from gi.repository import GLib
 
-from xpra.util import envint
+from xpra.util import envint, typedict
 from xpra.os_util import OSX
 from xpra.child_reaper import getChildReaper
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
@@ -50,7 +50,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:
+    def authenticate(self, caps : typedict) -> bool:
         info = "Connection request from %s" % self.connection_str
         cmd = [self.command, info, str(self.timeout)]
         proc = Popen(cmd)

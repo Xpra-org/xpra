@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,7 @@ class SQLAuthenticator(SysAuthenticator):
                                          "SELECT uid, gid, displays, env_options, session_options "+
                                          "FROM users WHERE username=(%s) AND password=(%s)")
         super().__init__(username, **kwargs)
-        self.authenticate = self.authenticate_hmac
+        self.authenticate_check = self.authenticate_hmac
 
     def db_cursor(self, *sqlargs):
         raise NotImplementedError()
@@ -133,7 +133,7 @@ class DatabaseUtilBase:
         assert password in passwords
         a.password_used = password
         sessions = a.get_sessions()
-        assert sessions
+        assert sessions, "no sessions found"
         log("sql authentication success, found sessions: %s", sessions)
 
     def get_authenticator_class(self):

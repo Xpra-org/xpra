@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ import os
 import sys
 from ctypes import CDLL, c_int, c_char_p
 
+from xpra.util import typedict
 from xpra.os_util import POSIX, strtobytes
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
@@ -62,7 +63,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:
+    def authenticate(self, caps : typedict) -> bool:
         if not self.host or not check_host(self.peername, self.host):
             errinfo = "'%s'" % self.peername
             if self.peername!=self.host:

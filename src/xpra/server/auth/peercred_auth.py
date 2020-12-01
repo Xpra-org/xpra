@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.os_util import get_peercred, get_group_id, osexpand, POSIX
-from xpra.util import csv
+from xpra.util import csv, typedict
 
 
 class Authenticator(SysAuthenticator):
@@ -89,7 +89,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self):
         return False
 
-    def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:    #pylint: disable=arguments-differ
+    def authenticate(self, caps : typedict) -> bool:    #pylint: disable=arguments-differ
         return self.peercred_check
 
     def __repr__(self):

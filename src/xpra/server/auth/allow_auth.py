@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator
+from xpra.util import typedict
 
 
 class Authenticator(SysAuthenticator):
@@ -14,5 +15,5 @@ class Authenticator(SysAuthenticator):
     def get_password(self) -> str:
         return None
 
-    def authenticate(self, _challenge_response=None, _client_salt=None) -> bool:
+    def authenticate(self, caps : typedict) -> bool:
         return True

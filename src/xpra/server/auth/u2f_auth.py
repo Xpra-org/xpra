@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -91,8 +91,8 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "u2f"
 
-    def authenticate(self, challenge_response=None, client_salt=None) -> bool:
-        log("authenticate(%s, %s)", repr(challenge_response), repr(client_salt))
+    def authenticate_check(self, challenge_response : str, client_salt : str) -> bool:
+        log("authenticate_check(%s, %s)", repr(challenge_response), repr(client_salt))
         user_presence, counter = struct.unpack(b">BI", strtobytes(challenge_response)[:5])
         sig = strtobytes(challenge_response[5:])
         log("u2f user_presence=%s, counter=%s, signature=%s", user_presence, counter, hexstr(sig))

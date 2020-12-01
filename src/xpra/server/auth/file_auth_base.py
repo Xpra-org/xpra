@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -28,7 +28,7 @@ class FileAuthenticatorBase(SysAuthenticator):
         self.password_filename = password_file
         self.password_filedata = None
         self.password_filetime = None
-        self.authenticate = self.authenticate_hmac
+        self.authenticate_check = self.authenticate_hmac
 
     def requires_challenge(self) -> bool:
         return True

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ class Authenticator(SQLAuthenticator):
         self.sessions_query = kwargs.pop("sessions_query",
                                          "SELECT uid, gid, displays, env_options, session_options "+
                                          "FROM users WHERE username=(?) AND password=(?)")
-        self.authenticate = self.authenticate_hmac
+        self.authenticate_check = self.authenticate_hmac
 
     def __repr__(self):
         return "sqlite"

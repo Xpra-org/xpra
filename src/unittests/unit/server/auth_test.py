@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,12 +12,14 @@ import unittest
 import tempfile
 import uuid
 import hmac
+
 from xpra.os_util import (
     strtobytes, bytestostr,
     monotonic_time,
     WIN32, OSX, POSIX,
     get_hex_uuid,
     )
+from xpra.util import typedict
 from xpra.net.digest import get_digests, get_digest_module, gendigest
 
 
@@ -92,6 +94,13 @@ class TestAuth(unittest.TestCase):
             else:
                 assert challenge is None
 
+    def capsauth(self, a, challenge_response=None, client_salt=None):
+        caps = typedict()
+        if challenge_response is not None:
+            caps["challenge_response"] = challenge_response
+        if client_salt is not None:
+            caps["challenge_client_salt"] = client_salt
+        return a.authenticate(caps)
 
     def test_all(self):
         test_modules = ["reject", "allow", "none", "file", "multifile", "env", "password"]
@@ -127,8 +136,8 @@ class TestAuth(unittest.TestCase):
         assert not a.get_passwords()
         assert a.choose_salt_digest("xor")=="xor"
         for x in (None, "bar"):
-            assert not a.authenticate(x, c)
-            assert not a.authenticate(x, x)
+            assert not self.capsauth(a, x, c)
+            assert not self.capsauth(a, x, x)
 
     def test_none(self):
         a = self._init_auth("none")
@@ -136,8 +145,8 @@ class TestAuth(unittest.TestCase):
         assert a.get_challenge(get_digests()) is None
         assert not a.get_password()
         for x in (None, "bar"):
-            assert a.authenticate(x, "")
-            assert a.authenticate("", x)
+            assert self.capsauth(a, x, "")
+            assert self.capsauth(a, "", x)
 
     def test_allow(self):
         a = self._init_auth("allow")
@@ -145,8 +154,8 @@ class TestAuth(unittest.TestCase):
         assert a.get_challenge(get_digests())
         assert not a.get_passwords()
         for x in (None, "bar"):
-            assert a.authenticate(x, "")
-            assert a.authenticate("", x)
+            assert self.capsauth(a, x, "")
+            assert self.capsauth(a, "", x)
 
     def _test_hmac_auth(self, mod_name, password, **kwargs):
         for test_password in (password, "somethingelse"):
@@ -161,9 +170,9 @@ class TestAuth(unittest.TestCase):
             auth_salt = strtobytes(gendigest(salt_digest, client_salt, salt))
             digestmod = get_digest_module(mac)
             verify = hmac.HMAC(strtobytes(test_password), auth_salt, digestmod=digestmod).hexdigest()
-            passed = a.authenticate(verify, client_salt)
+            passed = self.capsauth(a, verify, client_salt)
             assert passed == (test_password==password), "expected authentication to %s with %s vs %s" % (["fail", "succeed"][test_password==password], test_password, password)
-            assert not a.authenticate(verify, client_salt), "should not be able to athenticate again with the same values"
+            assert not self.capsauth(a, verify, client_salt), "should not be able to athenticate again with the same values"
 
     def test_env(self):
         for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
@@ -223,20 +232,20 @@ class TestAuth(unittest.TestCase):
                     if muck==0:
                         digestmod = get_digest_module(mac)
                         verify = hmac.HMAC(password, auth_salt, digestmod=digestmod).hexdigest()
-                        assert a.authenticate(verify, client_salt), "%s failed" % a.authenticate
+                        assert self.capsauth(a, verify, client_salt), "%s failed" % a.authenticate
                         if display_count>0:
                             sessions = a.get_sessions()
                             assert len(sessions)>=3
                             displays = sessions[2]
                             assert len(displays)==display_count, "expected %i displays but got %i : %s" % (
                                 display_count, len(sessions), sessions)
-                        assert not a.authenticate(verify, client_salt), "authenticated twice!"
+                        assert not self.capsauth(a, verify, client_salt), "authenticated twice!"
                         passwords = a.get_passwords()
                         assert len(passwords)==1, "expected just one password in file, got %i" % len(passwords)
                         assert password in passwords
                     else:
                         for verify in ("whatever", None, "bad"):
-                            assert not a.authenticate(verify, client_salt)
+                            assert not self.capsauth(a, verify, client_salt)
         return a
 
     def test_file(self):
@@ -315,7 +324,7 @@ class TestAuth(unittest.TestCase):
         #no connection supplied:
         pc = self._init_auth("peercred", {})
         assert not pc.requires_challenge()
-        assert not pc.authenticate("", "")
+        assert not self.capsauth(pc)
         assert pc.get_uid()==-1 and pc.get_gid()==-1
         #now with a connection object:
         from xpra.make_thread import start_thread
@@ -369,7 +378,7 @@ class TestAuth(unittest.TestCase):
                 }
             a = self._init_auth("exec", **kwargs)
             assert not a.requires_challenge(), "%s should not require a challenge" % a
-            assert a.authenticate()==success, "%s should have %s using cmd=%s" % (a, ["failed", "succeeded"][success], cmd)
+            assert self.capsauth(a)==success, "%s should have %s using cmd=%s" % (a, ["failed", "succeeded"][success], cmd)
         exec_cmd("/usr/bin/true", True)
         exec_cmd("/usr/bin/false", False)
 

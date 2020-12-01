@@ -5,6 +5,7 @@
 
 
 from xpra.net.digest import get_salt, choose_digest
+from xpra.util import typedict
 
 
 class Authenticator:
@@ -36,7 +37,7 @@ class Authenticator:
     def get_password(self):
         return None
 
-    def authenticate(self, _challenge_response, _client_salt=None) -> bool:
+    def authenticate(self, caps : typedict) -> bool:
         return False
 
     def get_sessions(self):

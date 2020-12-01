@@ -8,7 +8,7 @@ from collections import deque
 
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
-from xpra.util import envint, obsc
+from xpra.util import envint, obsc, typedict
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import hexstr, POSIX
 from xpra.log import Logger
@@ -104,9 +104,29 @@ class SysAuthenticatorBase:
     def check(self, _password) -> bool:
         return False
 
-    def authenticate(self, challenge_response=None, client_salt=None) -> bool:
-        #this will call check(password)
-        assert self.challenge_sent and not self.passed
+    def authenticate(self, caps : typedict) -> bool:
+        r = self.do_authenticate(caps)
+        if r:
+            self.passed = True
+            log("authentication challenge passed for %s", self)
+        return r
+
+    def do_authenticate(self, caps : typedict) -> bool:
+        if self.passed:
+            log("invalid state: challenge has already been passed")
+            return False
+        if not caps:
+            log("invalid state: no capabilities")
+            return False
+        if not self.challenge_sent:
+            log("invalid state: challenge has not been sent yet!")
+            return False
+        challenge_response = caps.strget("challenge_response")
+        client_salt = caps.strget("challenge_client_salt")
+        #challenge has been sent already for this module
+        if not challenge_response:
+            log("invalid state: challenge already sent but no response found!")
+            return False
         return self.authenticate_check(challenge_response, client_salt)
 
     def choose_salt_digest(self, digest_modes):
@@ -159,7 +179,7 @@ class SysAuthenticatorBase:
             log.warn("Warning: %s authentication failed", self)
             log.warn(" no password defined for '%s'", self.username)
             return False
-        log("found %i passwords using %s", len(passwords), type(self))
+        log("found %i passwords using %r", len(passwords), self)
         for x in passwords:
             if verify_digest(self.digest, x, salt, challenge_response):
                 self.password_used = x

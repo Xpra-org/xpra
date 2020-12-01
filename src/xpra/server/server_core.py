@@ -1738,16 +1738,14 @@ class ServerCore:
         remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
 
         client_expects_challenge = c.strget("challenge") is not None
-        challenge_response = c.strget("challenge_response")
-        client_salt = c.strget("challenge_client_salt")
         if client_expects_challenge and not remaining_authenticators:
             authlog.warn("Warning: client expects an authentication challenge,")
             authlog.warn(" sending a fake one")
             send_fake_challenge()
             return
 
-        authlog("processing authentication with %s, remaining=%s, response=%s, client_salt=%s, digest_modes=%s, salt_digest_modes=%s",
-                proto.authenticators, remaining_authenticators, repr(challenge_response), repr(client_salt or ""), digest_modes, salt_digest_modes)
+        authlog("processing authentication with %s, remaining=%s, digest_modes=%s, salt_digest_modes=%s",
+                proto.authenticators, remaining_authenticators, digest_modes, salt_digest_modes)
         #verify each remaining authenticator:
         for index, authenticator in enumerate(proto.authenticators):
             if authenticator not in remaining_authenticators:
@@ -1759,7 +1757,7 @@ class ServerCore:
             if not req:
                 #this authentication module does not need a challenge
                 #(ie: "peercred" or "none")
-                if not authenticator.authenticate():
+                if not authenticator.authenticate(c):
                     auth_failed("%s authentication failed" % authenticator)
                     return
                 authenticator.passed = True
@@ -1796,18 +1794,9 @@ class ServerCore:
                     log.warn("Warning: using legacy support for '%s' salt digest", salt_digest)
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
-            #challenge has been sent already for this module
-            if not challenge_response:
-                auth_failed("invalid state, challenge already sent - no response found!")
-                return
-            if not authenticator.authenticate(challenge_response, client_salt):
+            if not authenticator.authenticate(c):
                 auth_failed("authentication failed")
                 return
-            authenticator.passed = True
-            authlog("authentication challenge passed for %s", authenticator)
-            #don't re-use this response with the next authentication module:
-            challenge_response = None
-            client_salt = None
         authlog("all authentication modules passed")
         self.auth_verified(proto, packet, auth_caps)
 
