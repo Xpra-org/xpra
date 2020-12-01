@@ -1444,8 +1444,10 @@ class GTKTrayMenuBase(MenuHelper):
                 loader.write(icondata)
                 loader.close()
                 pixbuf = loader.get_pixbuf()
-            except Exception:
-                log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
+            except Exception as e:
+                log("pixbuf loader failed", exc_info=True)
+                log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
+                log.error(" %s", e)
                 log.error(" data=%s", repr_ellipsized(icondata))
         if not pixbuf and icondata:
             #let's try pillow:
