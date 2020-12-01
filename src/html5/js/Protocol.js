@@ -105,6 +105,44 @@ function XpraProtocol() {
 	this.process_interval = 0;  //milliseconds
 }
 
+XpraProtocol.prototype.close_event_str = function(event) {
+	let code_mappings = {
+		'1000': 'Normal Closure',
+		'1001': 'Going Away',
+		'1002': 'Protocol Error',
+		'1003': 'Unsupported Data',
+		'1004': '(For future)',
+		'1005': 'No Status Received',
+		'1006': 'Abnormal Closure',
+		'1007': 'Invalid frame payload data',
+		'1008': 'Policy Violation',
+		'1009': 'Message too big',
+		'1010': 'Missing Extension',
+		'1011': 'Internal Error',
+		'1012': 'Service Restart',
+		'1013': 'Try Again Later',
+		'1014': 'Bad Gateway',
+		'1015': 'TLS Handshake'
+		};
+	let msg = "";
+	try {
+	    if (typeof(code_mappings[event.code]) !== 'undefined') {
+			msg += "'"+code_mappings[event.code]+"' ("+event.code+")";
+	    }
+	    else {
+			msg += ""+event.code;
+		}
+	    if (event.reason) {
+			msg += ": '"+event.reason+"'";
+		}
+	}
+	catch (e) {
+		this.error("cannot parse websocket event:", e);
+		msg = "unknown reason";
+	}
+	return msg;
+}
+
 XpraProtocol.prototype.open = function(uri) {
 	const me = this;
 	// (re-)init
@@ -126,11 +164,11 @@ XpraProtocol.prototype.open = function(uri) {
 	this.websocket.onopen = function () {
 		me.packet_handler(['open'], me.packet_ctx);
 	};
-	this.websocket.onclose = function () {
-		me.packet_handler(['close'], me.packet_ctx);
+	this.websocket.onclose = function (event) {
+		me.packet_handler(['close', me.close_event_str(event)], me.packet_ctx);
 	};
 	this.websocket.onerror = function () {
-		me.packet_handler(['error'], me.packet_ctx);
+		me.packet_handler(['error', me.close_event_str(event)], me.packet_ctx);
 	};
 	this.websocket.onmessage = function (e) {
 		// push arraybuffer values onto the end
