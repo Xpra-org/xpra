@@ -66,7 +66,7 @@ class DotXpra:
                 os.mkdir(d, mode)
             if uid!=os.getuid() or gid!=os.getgid():
                 os.lchown(d, uid, gid)
-        else:
+        elif d!="/tmp":
             try:
                 st_mode = os.stat(d).st_mode
                 if st_mode&0o777!=mode:
