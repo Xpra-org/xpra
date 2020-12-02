@@ -155,6 +155,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def notify_setup_error(self, exception):
         notifylog("notify_setup_error(%s)", exception)
         notifylog.info("notification forwarding is not available")
+        if str(exception).endswith("is already claimed on the session bus"):
+            log.info(" the interface is already claimed")
 
     def make_notifier(self):
         nc = self.get_notifier_classes()
