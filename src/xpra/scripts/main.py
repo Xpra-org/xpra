@@ -274,10 +274,12 @@ def systemd_run_wrap(mode, args, systemd_run_args=None, **kwargs):
     cmd = systemd_run_command(mode, systemd_run_args)
     cmd += args
     cmd.append("--systemd-run=no")
+    stderr = sys.stderr
     LOG_SYSTEMD_WRAP = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
     if LOG_SYSTEMD_WRAP:
-        stderr = sys.stderr
         noerr(stderr.write, "using systemd-run to wrap '%s' server command\n" % mode)
+    LOG_SYSTEMD_WRAP_COMMAND = envbool("XPRA_LOG_SYSTEMD_WRAP_COMMAND", False)
+    if LOG_SYSTEMD_WRAP_COMMAND:
         noerr(stderr.write, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
     try:
         p = Popen(cmd, **kwargs)
