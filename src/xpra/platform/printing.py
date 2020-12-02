@@ -178,7 +178,7 @@ def main(argv):
                 return 1
             printer = get_default_printer()     #pylint: disable=assignment-from-none
             if not printer:
-                printer = printers.keys()[0]
+                printer = list(printers.keys())[0]
                 if len(printers)>1:
                     print("More than one printer found: %s", csv(printer.keys()))
             print("Using printer '%s'" % printer)
