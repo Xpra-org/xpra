@@ -758,7 +758,7 @@ class Protocol:
         if guess:
             err = "invalid packet format: %s" % guess
         else:
-            err = "%s: '%s'" % (msg, hexstr(data[:HEADER_SIZE]))
+            err = "%s: 0x%s" % (msg, hexstr(data[:HEADER_SIZE]))
             if len(data)>1:
                 err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
@@ -824,7 +824,7 @@ class Protocol:
                     #try to handle the first buffer:
                     buf = read_buffers[0]
                     if not header and buf[0]!=ord("P"):
-                        self.invalid_header(self, buf, "invalid packet header byte %s" % nonl(repr_ellipsized(buf)))
+                        self.invalid_header(self, buf, "invalid packet header byte")
                         return
                     #how much to we need to slice off to complete the header:
                     read = min(len(buf), HEADER_SIZE-len(header))
