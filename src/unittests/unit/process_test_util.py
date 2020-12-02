@@ -165,6 +165,7 @@ class ProcessTestUtil(unittest.TestCase):
                     "USER", "USERNAME", "PATH",
                     "XAUTHORITY", "PWD",
                     "PYTHONPATH", "SYSTEMROOT",
+                    "DBUS_SESSION_BUS_ADDRESS",
                     ))
         log("get_default_run_env() env(%s)=%s", repr_ellipsized(cls.default_env), env)
         env["NO_AT_BRIDGE"] = "1"
