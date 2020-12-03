@@ -4,3 +4,6 @@ AUTH=peercred
 DEBUG=
 #skip datetime prefix since the log goes to a system logger:
 XPRA_LOG_FORMAT="%(message)s"
+
+SOCKET_DIR_MODE=775
+SOCKET_DIR_GROUP=xpra
