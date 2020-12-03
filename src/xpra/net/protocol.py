@@ -216,12 +216,12 @@ class Protocol:
     def wait_for_io_threads_exit(self, timeout=None):
         io_threads = [x for x in (self._read_thread, self._write_thread) if x is not None]
         for t in io_threads:
-            if t.isAlive():
+            if t.is_alive():
                 t.join(timeout)
         exited = True
         cinfo = self._conn or "cleared connection"
         for t in io_threads:
-            if t.isAlive():
+            if t.is_alive():
                 log.warn("Warning: %s thread of %s is still alive (timeout=%s)", t.name, cinfo, timeout)
                 exited = False
         return exited
