@@ -19,7 +19,7 @@ from xpra.os_util import (
     getuid, getgid, WIN32, POSIX, OSX,
     monotonic_time, umask_context, get_group_id,
     )
-from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_GROUP
+from xpra.net.socket_util import SOCKET_DIR_MODE, GROUP, SOCKET_DIR_GROUP
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
@@ -44,7 +44,6 @@ STOP_PROXY_AUTH_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_AUTH_SOCKET_TYPES
 #something (a thread lock?) doesn't allow us to use multiprocessing on MS Windows:
 PROXY_INSTANCE_THREADED = envbool("XPRA_PROXY_INSTANCE_THREADED", WIN32)
 PROXY_CLEANUP_GRACE_PERIOD = envfloat("XPRA_PROXY_CLEANUP_GRACE_PERIOD", "0.5")
-GROUP = os.environ.get("XPRA_GROUP", "xpra")
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_PROXY_MAX_CONCURRENT_CONNECTIONS", 200)
 if WIN32:
@@ -111,7 +110,7 @@ class ProxyServer(ServerCore):
     def create_system_dir(self, sps):
         if not POSIX or OSX or not sps:
             return
-        xpra_group_id = get_group_id(SOCKET_GROUP)
+        xpra_group_id = get_group_id(SOCKET_DIR_GROUP)
         if sps.startswith("/run/xpra") or sps.startswith("/var/run/xpra"):
             #create the directory and verify its permissions
             #which should have been set correctly by tmpfiles.d,
@@ -130,11 +129,11 @@ class ProxyServer(ServerCore):
                         import grp
                         group = grp.getgrgid(stat.st_gid)[0]
                         log.warn("Warning: invalid group on '%s': %s", d, group)
-                        log.warn(" changing to '%s'", SOCKET_GROUP)
+                        log.warn(" changing to '%s'", SOCKET_DIR_GROUP)
                         os.lchown(d, xpra_group_id, stat.st_uid)
                 else:
                     log.info("creating '%s' with permissions %s and group '%s'",
-                             d, oct(SOCKET_DIR_MODE), SOCKET_GROUP)
+                             d, oct(SOCKET_DIR_MODE), SOCKET_DIR_GROUP)
                     with umask_context(0):
                         os.mkdir(d, SOCKET_DIR_MODE)
                     stat = os.stat(d)

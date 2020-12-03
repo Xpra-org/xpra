@@ -33,7 +33,7 @@ PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 PEEK_SIZE = envint("XPRA_PEEK_SIZE", 8192)
 
 SOCKET_DIR_MODE = num = int(os.environ.get("XPRA_SOCKET_DIR_MODE", "775"), 8)
-SOCKET_GROUP = os.environ.get("XPRA_SOCKET_GROUP", "xpra")
+SOCKET_DIR_GROUP = os.environ.get("XPRA_SOCKET_DIR_GROUP", GROUP)
 
 
 network_logger = None
@@ -627,7 +627,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         #this is normally done by tmpfiles.d,
                         #but we may need to do it ourselves in some cases:
                         kwargs["mode"] = SOCKET_DIR_MODE
-                        xpra_gid = get_group_id(SOCKET_GROUP)
+                        xpra_gid = get_group_id(SOCKET_DIR_GROUP)
                         if xpra_gid>0:
                             kwargs["gid"] = xpra_gid
                     log("creating sockdir=%s, kwargs=%s" % (d, kwargs))
