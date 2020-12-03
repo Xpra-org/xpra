@@ -627,7 +627,7 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                         #this is normally done by tmpfiles.d,
                         #but we may need to do it ourselves in some cases:
                         kwargs["mode"] = SOCKET_DIR_MODE
-                        xpra_gid = get_group_id("xpra")
+                        xpra_gid = get_group_id(SOCKET_GROUP)
                         if xpra_gid>0:
                             kwargs["gid"] = xpra_gid
                     log("creating sockdir=%s, kwargs=%s" % (d, kwargs))
