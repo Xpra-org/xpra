@@ -22,7 +22,7 @@ from distutils.command.install_data import install_data
 
 import xpra
 from xpra.os_util import (
-    get_status_output, getUbuntuVersion, get_distribution_version_id,
+    get_status_output, getUbuntuVersion, get_distribution_version_id, load_binary_file,
     PYTHON3, BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
     is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS, is_RedHat,
     )
@@ -1556,7 +1556,7 @@ else:
                 root_prefix = root_prefix[:-4]    #ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
             build_xpra_conf(root_prefix)
 
-            def copytodir(src, dst_dir, dst_name=None, chmod=0o644):
+            def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):
                 #convert absolute paths:
                 if dst_dir.startswith("/"):
                     dst_dir = root_prefix+dst_dir
@@ -1569,7 +1569,12 @@ else:
                 dst_file = os.path.join(dst_dir, dst_name or filename)
                 #copy it
                 print("copying %s -> %s (%s)" % (src, dst_dir, oct(chmod)))
-                shutil.copyfile(src, dst_file)
+                data = load_binary_file(src)
+                if subs:
+                    for k,v in subs.items():
+                        data = data.replace(k, v)
+                with open(dst_file, "wb") as f:
+                    return f.write(data)
                 if chmod:
                     os.chmod(dst_file, chmod)
 
@@ -1605,17 +1610,21 @@ else:
             systemd_dir = "/lib/systemd/system"
             if service_ENABLED:
                 #Linux init service:
-                if os.path.exists("/bin/systemctl"):
-                    if sd_listen_ENABLED:
-                        copytodir("service/xpra.service", systemd_dir)
-                    else:
-                        copytodir("service/xpra-nosocketactivation.service", systemd_dir, dst_name="xpra.service")
-                else:
-                    copytodir("service/xpra", "/etc/init.d")
+                subs = {}
                 if os.path.exists("/etc/sysconfig"):
                     copytodir("etc/sysconfig/xpra", "/etc/sysconfig")
                 elif os.path.exists("/etc/default"):
                     copytodir("etc/sysconfig/xpra", "/etc/default")
+                    subs[b"/etc/sysconfig"] = b"/etc/default"
+                if os.path.exists("/bin/systemctl"):
+                    if sd_listen_ENABLED:
+                        copytodir("service/xpra.service", systemd_dir,
+                                  subs=subs)
+                    else:
+                        copytodir("service/xpra-nosocketactivation.service", systemd_dir,
+                                  dst_name="xpra.service", subs=subs)
+                else:
+                    copytodir("service/xpra", "/etc/init.d")
             if sd_listen_ENABLED:
                 copytodir("service/xpra.socket", systemd_dir)
             if dbus_ENABLED and proxy_ENABLED:
