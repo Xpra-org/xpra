@@ -130,7 +130,7 @@ class ProxyServer(ServerCore):
                         group = grp.getgrgid(stat.st_gid)[0]
                         log.warn("Warning: invalid group on '%s': %s", d, group)
                         log.warn(" changing to '%s'", SOCKET_DIR_GROUP)
-                        os.lchown(d, xpra_group_id, stat.st_uid)
+                        os.lchown(d, stat.st_uid, xpra_group_id)
                 else:
                     log.info("creating '%s' with permissions %s and group '%s'",
                              d, oct(SOCKET_DIR_MODE), SOCKET_DIR_GROUP)
@@ -138,7 +138,7 @@ class ProxyServer(ServerCore):
                         os.mkdir(d, SOCKET_DIR_MODE)
                     stat = os.stat(d)
                     if xpra_group_id>=0 and stat.st_gid!=xpra_group_id:
-                        os.lchown(d, get_group_id, stat.st_uid)
+                        os.lchown(d, stat.st_uid, xpra_group_id)
                 mode = os.stat(d).st_mode
                 log("%s permissions: %s", d, oct(mode))
             except OSError as e:
