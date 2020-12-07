@@ -3215,12 +3215,12 @@ XpraClient.prototype._audio_start_stream = function() {
 		play.then(function(result) {
 			me.debug("audio", "stream playing", result);
 		}, function(err) {
-			this.on_audio_state_change("error", "stream failed:"+err);
-			this.close_audio();
+			me.on_audio_state_change("error", "stream failed:"+err);
+			me.close_audio();
 		});
 	}
 	else if (this.audio_framework=="http-stream") {
-		me.log("invalid start-of-stream data for http-stream framework");
+		this.log("invalid start-of-stream data for http-stream framework");
 	}
 	else if (this.audio_framework=="aurora") {
 		this.audio_aurora_ctx.play();
