@@ -689,6 +689,13 @@ XpraClient.prototype._check_browser_language = function(key_layout) {
 
 
 XpraClient.prototype._keyb_process = function(pressed, event) {
+	// MSIE hack
+	if (window.event)
+		event = window.event;
+	this.do_keyb_process(pressed, event);
+}
+
+XpraClient.prototype.do_keyb_process = function(pressed, event) {
 	if (this.server_readonly) {
 		return;
 	}
@@ -700,9 +707,6 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 	 * Figure out the keycode, keyname, modifiers, etc
 	 * And send the event to the server.
 	 */
-	// MSIE hack
-	if (window.event)
-		event = window.event;
 
 	let keyname = event.code || "";
 	const keycode = event.which || event.keyCode;
@@ -764,7 +768,7 @@ XpraClient.prototype._keyb_process = function(pressed, event) {
 			keyname = CHARCODE_TO_NAME[keycode];
 		}
 		//may override with shifted table:
-		if (event.getModifierState("Shift") && keycode in CHARCODE_TO_NAME_SHIFTED) {
+		if (event.getModifierState && event.getModifierState("Shift") && keycode in CHARCODE_TO_NAME_SHIFTED) {
 			keyname = CHARCODE_TO_NAME_SHIFTED[keycode];
 		}
 	}

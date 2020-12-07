@@ -3,7 +3,7 @@
 	<head>
 
 		<!--
-			Copyright (c) 2013-2019 Antoine Martin <antoine@xpra.org>
+			Copyright (c) 2013-2020 Antoine Martin <antoine@xpra.org>
 			Copyright (c) 2014 Joshua Higgins <josh@kxes.net>
 			Licensed under MPL 2.0
  		-->
@@ -51,12 +51,16 @@
 		<script type="text/javascript" src="js/Utilities.js"></script>
 		<script type="text/javascript" src="js/MediaSourceUtil.js"></script>
 		<script type="text/javascript" src="js/Client.js"></script>
-		
+
 		<link rel="stylesheet" type="text/css" href="css/menu.css"/>
 		<script type="application/javascript" src="js/Menu.js"></script>
 		<script type="application/javascript" src="js/Menu-custom.js"></script>
 		<link rel="stylesheet" type="text/css" href="css/menu-skin.css"/>
 		<link rel="stylesheet" type="text/css" href="css/icon.css"/>
+
+		<!-- simple-keyboard -->
+		<script type="application/javascript" src="js/lib/simple-keyboard.js"></script>
+		<link rel="stylesheet" href="css/simple-keyboard.css">
 	</head>
 
 	<body>
@@ -114,6 +118,9 @@
 					</li>
 					<li class="-hasSubmenu -noChevron">
 						<a href="#" id="fullscreen_button" title="Fullscreen" data-icon="fullscreen"></a>
+					</li>
+					<li class="-hasSubmenu -noChevron">
+						<a href="#" id="keyboard_button" title="Keyboard" data-icon="keyboard"></a>
 					</li>
 					<li class="-hasSubmenu -noChevron">
 						<a href="#" id="sound_button" title="Audio" data-icon="volume_off"></a>
@@ -210,6 +217,9 @@
 			<textarea id="pasteboard" style="display: block; position: absolute; left: -99em;"></textarea>
 		</div>
 
+		<div class="simple-keyboard" style="display: block; position: fixed; bottom: 0; width=100%">
+		</div>
+
 		<script>
 			const default_settings = {};
 			const getparam = function(prop) {
@@ -232,7 +242,7 @@
 
 			const float_menu_item_size = 30;
 			const float_menu_padding = 20;
-			let float_menu_width = (float_menu_item_size*4) + float_menu_padding;
+			let float_menu_width = (float_menu_item_size*5) + float_menu_padding;
 
 			let cdebug = function () {
 				Utilities.clog.apply(Utilities, arguments);
@@ -450,6 +460,7 @@
 				const remote_logging = getboolparam("remote_logging", true);
 				const insecure = getboolparam("insecure", false);
 				const ignore_audio_blacklist = getboolparam("ignore_audio_blacklist", false);
+				const keyboard = getboolparam("keyboard", Boolean(!window.onmousemove));
 				const clipboard = getboolparam("clipboard", true);
 				const printing = getboolparam("printing", true);
 				const file_transfer = getboolparam("file_transfer", true);
@@ -681,6 +692,7 @@
 									"start"				: start,
 									"sound"				: sound,
 									"audio_codec"		: audio_codec,
+									"keyboard"			: keyboard,
 									"clipboard"			: clipboard,
 									"printing"			: printing,
 									"file_transfer"		: file_transfer,
@@ -866,6 +878,59 @@
 				});
 			}
 
+			function init_keyboard(client) {
+				const Keyboard = window.SimpleKeyboard.default;
+				let kb = new Keyboard({
+					onKeyPress: button => onKeyPress(button),
+					onKeyReleased: button => onKeyReleased(button),
+					display : {
+						".com" 	: "|",
+						"{tab}" : "tab",
+						"{lock}" : "lock",
+						"{shift}" : "shift",
+						"{bksp}" : "bksp",
+						"{space}" : "space",
+						"{enter}" : "return",
+					},
+				});
+				function onChange(input){
+					console.log("Input changed", input);
+				}
+				function onKeyPress(button){
+					forward_key(true, button);
+				}
+				function onKeyReleased(button){
+					forward_key(false, button);
+				}
+				function forward_key(pressed, button) {
+					let key = {
+						"{bksp}" 	: "Backspace",
+						"{enter}" 	: "Return",
+						"{tab}" 	: "Tab",
+						"{lock}"	: "CapsLock",
+						"{shift}"	: "Shift",
+						".com"		: "|",
+						}[button] || button;
+					let e = {
+						"which" : 0,
+						"keyCode" : 0,
+						"key" : key,
+						"code" : key,
+					};
+					client.do_keyb_process(pressed, e);
+				}
+				const keyboard = getboolparam("keyboard", Boolean(!window.onmousemove));
+				if (!keyboard) {
+					$('.simple-keyboard').hide();
+				}
+				else {
+					$('.simple-keyboard').show();
+				}
+			}
+			function toggle_keyboard() {
+				$('.simple-keyboard').toggle();
+			}
+
 			function init_file_transfer(client) {
 				function send_file(f) {
 					clog("file:", f.name, ", type:", f.type, ", size:", f.size);
@@ -1023,7 +1088,7 @@
 			}
 
 			function expand_float_menu(){
-				const expanded_width = (float_menu_item_size*4);
+				const expanded_width = (float_menu_item_size*5);
 				document.getElementById('float_menu').style.width = expanded_width +'px';
 				$('#float_menu').children().show();
 				if(client){
@@ -1094,6 +1159,7 @@
 			   	else {
 			   		$('upload_link').removeAttr('href');
 			   	}
+				init_keyboard(client);
 				init_clock(client, getboolparam("clock", true));
 				init_audio(client);
 				document.addEventListener("visibilitychange", function (e) {
@@ -1116,6 +1182,10 @@
 
 				$('#fullscreen_button').on('click', function (e) {
 					toggle_fullscreen();
+				});
+
+				$('#keyboard_button').on('click', function (e) {
+					toggle_keyboard();
 				});
 
 				const screen_change_events = "webkitfullscreenchange mozfullscreenchange fullscreenchange MSFullscreenChange";

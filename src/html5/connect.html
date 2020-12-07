@@ -212,6 +212,9 @@
 					</select>
 					Keyboard Layout
 				  </li>
+				  <li class="list-group-item keyboard">
+				  	<input type="checkbox" id="keyboard"> <span>On-screen keyboard</span>
+				  </li>
 
 				  <li class="list-group-item clipboard">
 				  	<input type="checkbox" id="clipboard"> <span>Clipboard sharing</span>
@@ -297,7 +300,7 @@ const VALUE_PROPERTIES = ["server", "port", "path", "username", "password", "key
 					"bandwidth_limit", "encoding", "keyboard_layout", "audio_codec", "toolbar_position",
 					"display", "shadow_display",
 					];
-const BOOLEAN_PROPERTIES = ["clipboard", "printing", "file_transfer",
+const BOOLEAN_PROPERTIES = ["keyboard", "clipboard", "printing", "file_transfer",
 		"sound", "ignore_audio_blacklist",
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
@@ -657,7 +660,7 @@ function fill_form(default_settings) {
 	const sound = getboolparam("sound");
 	$('input#sound').prop("checked", sound && Object.keys(codecs_supported).length>0);
 
-	const bool_props = ["clipboard", "printing", "file_transfer",
+	const bool_props = ["keyboard", "clipboard", "printing", "file_transfer",
 		"encryption",
 		"exit_with_children", "exit_with_client",
 		"sharing", "steal", "reconnect", "swap_keys",
@@ -671,6 +674,11 @@ function fill_form(default_settings) {
 	if (Utilities.isMacOS()) {
 		default_on.push("swap_keys");
 		default_on.push("scroll_reverse_y");
+	}
+	if (!window.onmousemove) {
+		//no mouse, so probably no keyboard either,
+		//show the on-screen keyboard:
+		default_on.push("keyboard");
 	}
 	for (let i = 0; i < bool_props.length; i++) {
 		const prop = bool_props[i];
