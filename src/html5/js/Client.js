@@ -3204,11 +3204,19 @@ XpraClient.prototype._audio_start_stream = function() {
 		return;
 	}
 	const me = this;
+	this.on_audio_state_change("waiting", ""+this.audio_framework+" playing "+this.audio_codec+" stream");
 	if (this.audio_framework=="mediasource") {
-		this.audio.play().then(function(result) {
+		let play = this.audio.play();
+		if (play==undefined) {
+			this.on_audio_state_change("error", "no promise");
+			this.close_audio();
+			return;
+		}
+		play.then(function(result) {
 			me.debug("audio", "stream playing", result);
 		}, function(err) {
-			me.debug("audio", "stream failed:", err);
+			this.on_audio_state_change("error", "stream failed:"+err);
+			this.close_audio();
 		});
 	}
 	else if (this.audio_framework=="http-stream") {
@@ -3218,9 +3226,9 @@ XpraClient.prototype._audio_start_stream = function() {
 		this.audio_aurora_ctx.play();
 	}
 	else {
-		me.log("invalid start-of-stream data for unknown framework:", this.audio_framework);
+		this.on_audio_state_change("error", "unknown framework "+this.audio_framework);
+		this.close_audio();
 	}
-	this.on_audio_state_change("waiting", ""+this.audio_framework+" playing "+this.audio_codec+" stream");
 };
 
 XpraClient.prototype._audio_ready = function() {
