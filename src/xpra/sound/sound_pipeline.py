@@ -80,6 +80,7 @@ class SoundPipeline(GObject.GObject):
 
     def init_file(self, codec):
         gen = self.generation.increase()
+        log("init_file(%s) generation=%s, SAVE_AUDIO=%s", codec, gen, SAVE_AUDIO)
         if SAVE_AUDIO is not None:
             parts = codec.split("+")
             if len(parts)>1:
