@@ -19,7 +19,7 @@ from xpra.os_util import (
     getuid, getgid, WIN32, POSIX, OSX,
     monotonic_time, umask_context, get_group_id,
     )
-from xpra.net.socket_util import SOCKET_DIR_MODE, GROUP, SOCKET_DIR_GROUP
+from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.server_core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.child_reaper import getChildReaper
