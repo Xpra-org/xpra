@@ -39,10 +39,16 @@ if socket_path and os.path.exists(socket_path):
                 sys.exit(0)
             else:
                 if out:
-                    sys.stdout.write(out)
+                    try:
+                        sys.stdout.buffer.write(out)
+                    except AttributeError:
+                        sys.stdout.write(out)
                     sys.stdout.flush()
                 if err:
-                    sys.stderr.write(err)
+                    try:
+                        sys.stderr.buffer.write(err)
+                    except AttributeError:
+                        sys.stderr.write(err)
                     sys.stderr.flush()
         except Exception as e:
             sys.stderr.write("xdg-open: failed to forward to xpra server using socket '%s': %s\n" % (socket_path, e))
