@@ -31,7 +31,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid,
-    monotonic_time, bytestostr, use_tty, osexpand,
+    monotonic_time, bytestostr, use_tty,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
