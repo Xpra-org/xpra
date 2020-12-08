@@ -81,6 +81,8 @@ BLACKLISTED_CLIPBOARD_CLIENTS = [x for x in
                                  if x]
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
 
+clipboard_window_class_name = "XpraWin32Clipboard"
+
 
 def is_blacklisted(owner_info):
     return any(owner_info.find(x)>=0 for x in BLACKLISTED_CLIPBOARD_CLIENTS)
@@ -117,8 +119,6 @@ class Win32Clipboard(ClipboardTimeoutHelper):
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
         self.init_window()
         super().__init__(send_packet_cb, progress_cb, **kwargs)
-
-clipboard_window_class_name = "XpraWin32Clipboard"
 
     def init_window(self):
         log("Win32Clipboard.init_window() creating clipboard window class and instance")
