@@ -83,6 +83,12 @@ def safe_open_download_file(basefilename, mimetype):
     filelog("using filename '%s', file descriptor=%s", filename, fd)
     return filename, fd
 
+def s(v):
+    try:
+        return v.decode("utf8")
+    except:
+        return bytestostr(v)
+
 
 class FileTransferAttributes:
 
@@ -348,6 +354,11 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = ""
         if len(packet)>=9:
             send_id = packet[8]
+        #basefilename should be utf8:
+        try:
+            basefilename = strtobytes(basefilename).decode("utf8")
+        except UnicodeDecodeError:
+            basefilename = bytestostr(basefilename)
         r = self.accept_data(send_id, b"file", basefilename, printit, openit)
         if r is None:
             filelog.warn("Warning: file transfer rejected for file '%s'", bytestostr(basefilename))
@@ -365,19 +376,14 @@ class FileTransferHandler(FileTransferAttributes):
           [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         assert filesize>0, "invalid file size: %s" % filesize
         if filesize>self.file_size_limit*1024*1024:
-            l.error("Error: file '%s' is too large:", basefilename)
+            l.error("Error: file '%s' is too large:", s(basefilename))
             l.error(" %iMB, the file size limit is %iMB", filesize//1024//1024, self.file_size_limit)
             return
         chunk_id = options.strget("file-chunk-id")
-        #basefilename should be utf8:
         try:
-            base = basefilename.decode("utf8")
-        except UnicodeDecodeError:
-            base = bytestostr(basefilename)
-        try:
-            filename, fd = safe_open_download_file(base, mimetype)
+            filename, fd = safe_open_download_file(basefilename, mimetype)
         except OSError as e:
-            filelog("cannot save file %s / %s", base, mimetype, exc_info=True)
+            filelog("cannot save file %s / %s", basefilename, mimetype, exc_info=True)
             filelog.error("Error: failed to save downloaded file")
             filelog.error(" %s", e)
             if chunk_id:
@@ -405,7 +411,7 @@ class FileTransferHandler(FileTransferAttributes):
         #not chunked, full file:
         assert file_data, "no data, got %s" % (file_data,)
         if len(file_data)!=filesize:
-            l.error("Error: invalid data size for file '%s'", basefilename)
+            l.error("Error: invalid data size for file '%s'", s(basefilename))
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
         #check digest if present:
@@ -631,6 +637,10 @@ class FileTransferHandler(FileTransferAttributes):
         data = data[:filesize]          #gio may null terminate it
         l("send_file%s action=%s, ask=%s",
           (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
+        try:
+            filename = bytestostr(filename).encode("utf8")
+        except:
+            filename = strtobytes(filename)
         self.dump_remote_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
@@ -650,16 +660,21 @@ class FileTransferHandler(FileTransferAttributes):
         delay = self.remote_file_ask_timeout*1000
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog("sending data request for %s '%s' with send-id=%s",
-                bytestostr(dtype), url, send_id)
+                dtype, s(url), send_id)
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit)
         return send_id
 
 
     def _process_send_data_request(self, packet):
         dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
-        filelog("process send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", send_id, url, printit, openit)
+        filelog("process send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", s(send_id), url, printit, openit)
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
+        #filenames and url are always sent encoded as utf8:
+        try:
+            url = strtobytes(url).decode("utf8")
+        except:
+            url = bytestostr(url)
             self.send("send-data-response", send_id, accept)
         if dtype==b"file":
             if not self.file_transfer:
@@ -698,7 +713,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
-        filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
+        filelog("process send-data-response: send_id=%s, accept=%s", s(send_id), accept)
         send_id = bytestostr(send_id)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
@@ -753,13 +768,13 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             action = "upload"
             l = filelog
-        l("do_send_file%s", (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
+        l("do_send_file%s", (s(filename), mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
         if not self.check_file_size(action, filename, filesize):
             return False
         u = hashlib.sha1()
         u.update(data)
         absfile = os.path.abspath(filename)
-        filelog("sha1 digest(%s)=%s", absfile, u.hexdigest())
+        filelog("sha1 digest('%s')=%s", s(absfile), u.hexdigest())
         options["sha1"] = u.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
         if 0<chunk_size<filesize:

@@ -9,7 +9,7 @@ import os.path
 
 from xpra.util import parse_scaling_value, from0to100
 from xpra.server.control_command import ArgsControlCommand, ControlError
-from xpra.os_util import load_binary_file
+from xpra.os_util import load_binary_file, bytestostr, strtobytes
 from xpra.util import csv
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -241,6 +241,13 @@ class ServerBaseControlCommands(StubServerMixin):
         return "url sent to %i clients" % clients
 
     def control_command_send_file(self, filename, openit="open", client_uuids="*", maxbitrate=0):
+        #we always get the values as strings from the command interface,
+        #but those may actually be utf8 encoded binary strings,
+        #so we may have to do an ugly roundtrip:
+        try:
+            filename = strtobytes(filename).decode("utf8")
+        except:
+            filename = bytestostr(filename)
         openit = str(openit).lower() in ("open", "true", "1")
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
 

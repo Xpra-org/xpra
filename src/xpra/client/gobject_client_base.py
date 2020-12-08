@@ -12,7 +12,7 @@ from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, DONE, first_time,
     )
-from xpra.os_util import bytestostr, get_hex_uuid, POSIX, OSX, hexstr
+from xpra.os_util import bytestostr, strtobytes, get_hex_uuid, POSIX, OSX, hexstr
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (
     EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
@@ -420,7 +420,12 @@ class ControlXpraClient(CommandConnectClient):
     def make_hello(self):
         capabilities = super().make_hello()
         log("make_hello() adding command request '%s' to %s", self.command, capabilities)
-        capabilities["command_request"] = self.command
+        def b(s):
+            try:
+                return s.encode("utf8")
+            except:
+                return strtobytes(s)
+        capabilities["command_request"] = tuple(b(x) for x in self.command)
         capabilities["request"] = "command"
         return capabilities
 
