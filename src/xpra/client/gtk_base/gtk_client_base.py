@@ -445,7 +445,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if edtype!=dtype:
                 filelog.warn(" expected data type '%s' but got '%s'", s(edtype), s(dtype))
             if eurl!=url:
-                filelog.warn(" expected data type '%s' but got '%s'", s(eurl), s(url))
+                filelog.warn(" expected url '%s' but got '%s'", s(eurl), s(url))
             return None
         #return the printit and openit flag we got from the UI:
         return (r[2], r[3])
