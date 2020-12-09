@@ -485,7 +485,9 @@ def do_log_screen_sizes(root_w, root_h, sizes):
         if width!=root_w or height!=root_h:
             #log plug dimensions if not the same as display (root):
             info.append("%ix%i" % (width, height))
-        info.append("(%ix%i mm - DPI: %ix%i)" % (width_mm, height_mm, dpi(width, width_mm), dpi(height, height_mm)))
+        sdpix = dpi(width, width_mm)
+        sdpiy = dpi(height, height_mm)
+        info.append("(%ix%i mm - DPI: %ix%i)" % (width_mm, height_mm, sdpix, sdpiy))
 
         if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
             add_workarea(info, work_x, work_y, work_width, work_height)
@@ -501,9 +503,16 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 if plug_x!=0 or plug_y!=0:
                     info.append("at %ix%i" % (plug_x, plug_y))
             if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
-                info.append("(%ix%i mm - DPI: %ix%i)" % (
-                    plug_width_mm, plug_height_mm, dpi(plug_width, plug_width_mm), dpi(plug_height, plug_height_mm))
-                )
+                dpix = dpi(plug_width, plug_width_mm)
+                dpiy = dpi(plug_height, plug_height_mm)
+                if sdpix!=dpix or sdpiy!=dpiy:
+                    info.append("(%ix%i mm - DPI: %ix%i)" % (
+                        plug_width_mm, plug_height_mm, dpix, dpiy)
+                    )
+                else:
+                    info.append("(%ix%i mm)" % (
+                        plug_width_mm, plug_height_mm)
+                    )
             if len(m)>=11:
                 dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
                 #only show it again if different from the screen workarea
