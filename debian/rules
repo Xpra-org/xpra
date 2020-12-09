@@ -3,10 +3,11 @@
 #per-distro build options (builtbot will uncomment the right one):
 #xenial:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
 #bionic:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
-#disco:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
-#eoan:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
+#focal:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
+#groovy:export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
 #stretch:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 #buster:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+#bullseye:export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
 BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
