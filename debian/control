@@ -2,7 +2,7 @@ Source: xpra
 Section: x11
 Priority: optional
 Maintainer: Antoine Martin <antoine@xpra.org>
-XS-Python-Version: >= 3.6
+X-Python3-Version: >= 3.6
 Build-Depends: debhelper (>= 8)
               ,libx11-dev
               ,libvpx-dev
@@ -28,7 +28,6 @@ Build-Depends: debhelper (>= 8)
               ,dh-systemd
               ,libsystemd-dev
               ,libpam-dev
-X-Python-Version: >= 3.6
 Standards-Version: 3.9.3
 Homepage: https://xpra.org/
 Vcs-Svn: https://xpra.org/svn/Xpra/
@@ -39,6 +38,7 @@ Package: xpra
 Conflicts: python2-xpra, python3-xpra
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
+        ,python3 (>= 3.6)
         ,python3-gi
         ,gir1.2-gtk-3.0
         ,python3-cairo
