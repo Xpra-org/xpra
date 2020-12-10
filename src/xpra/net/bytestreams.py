@@ -397,6 +397,7 @@ class SocketConnection(Connection):
                 "proto"         : s.proto,
                 "family"        : FAMILY_STR.get(s.family, int(s.family)),
                 "type"          : PROTOCOL_STR.get(s.type, int(s.type)),
+                "cork"          : self.cork,
                 })
         except AttributeError:
             log("do_get_socket_info()", exc_info=True)
