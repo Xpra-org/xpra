@@ -341,6 +341,7 @@ class ClientConnection(StubSourceMixin):
 
     def send_async(self, *parts, **kwargs):
         kwargs["synchronous"] = False
+        kwargs["will_have_more"] = False
         self.send(*parts, **kwargs)
 
 
