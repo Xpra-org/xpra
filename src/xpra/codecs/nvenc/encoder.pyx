@@ -1469,15 +1469,16 @@ cdef uintptr_t cmalloc(size_t size, what) except 0:
     return <uintptr_t> ptr
 
 cdef nvencStatusInfo(NVENCSTATUS ret):
-    if ret in NV_ENC_STATUS_TXT:
-        return "%s: %s" % (ret, NV_ENC_STATUS_TXT[ret])
-    return str(ret)
+    return NV_ENC_STATUS_TXT.get(ret)
 
 class NVENCException(Exception):
     def __init__(self, code, fn):
         self.function = fn
         self.code = code
-        msg = "%s - returned %s" % (fn, nvencStatusInfo(code))
+        self.api_message = nvencStatusInfo(code)
+        msg = "%s - returned %i"
+        if self.api_message:
+            msg += ": %s" % self.api_message
         super().__init__(msg)
 
 cdef inline raiseNVENC(NVENCSTATUS ret, msg):
@@ -1674,6 +1675,15 @@ cdef class Encoder:
                 time.sleep(SLOW_DOWN_INIT)
             try:
                 self.init_device(options)
+            except NVENCException as e:
+                log("threaded_init_device(%s)", options, exc_info=True)
+                log.warn("Warning: failed to initialize NVENC device")
+                if not e.api_message:
+                    log.warn(" unknown error %i", e.code)
+                else:
+                    log.warn(" error %i:", e.code)
+                    log.warn(" '%s'", e.api_message)
+                self.clean()
             except Exception as e:
                 log("threaded_init_device(%s)", options, exc_info=True)
                 log.warn("Warning: failed to initialize device:")
@@ -2936,12 +2946,12 @@ cdef class Encoder:
             log("nvEncOpenEncodeSessionEx(..)=%s", r)
         if r in OPEN_TRANSIENT_ERROR:
             last_context_failure = monotonic_time()
-            msg = "could not open encode session: %s" % nvencStatusInfo(r)
+            msg = "could not open encode session: %s" % (nvencStatusInfo(r) or r)
             log(msg)
             raise TransientCodecException(msg)
         if self.context==NULL:
             if r!=0:
-                msg = nvencStatusInfo(r)
+                msg = nvencStatusInfo(r) or str(r)
             else:
                 msg = "context is NULL"
             last_context_failure = monotonic_time()
