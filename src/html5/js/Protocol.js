@@ -267,6 +267,11 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 		proto_flags = proto_flags & ~0x2;
 	}
 
+	if (proto_flags & 0x8) {
+		//this flag is unused client-side, so just ignore it:
+		proto_flags = proto_flags & ~0x8;
+	}
+
 	if (proto_flags > 1) {
 		this.protocol_error("we can't handle this protocol flag yet: "+proto_flags);
 		return;

@@ -16,7 +16,10 @@ from queue import Queue
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr, monotonic_time
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
-from xpra.net.common import ConnectionClosedException, may_log_packet, MAX_PACKET_SIZE    #@UndefinedVariable (pydev false positive)
+from xpra.net.common import (
+    ConnectionClosedException, may_log_packet,
+    MAX_PACKET_SIZE, FLUSH_HEADER,
+    )
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (
@@ -29,7 +32,7 @@ from xpra.net.packet_encoding import (
     decode, sanity_checks as packet_encoding_sanity_checks,
     InvalidPacketEncodingException,
     )
-from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, HEADER_SIZE
+from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE
 from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
 from xpra.log import Logger
 
@@ -165,6 +168,7 @@ class Protocol:
         self.abs_max_packet_size = 256*1024*1024
         self.large_packets = [b"hello", b"window-metadata", b"sound-data", b"notify_show", b"setting-change", b"shell-reply"]
         self.send_aliases = {}
+        self.send_flush_flag = False
         self.receive_aliases = {}
         self._log_stats = None          #None here means auto-detect
         self._closed = False
@@ -264,6 +268,8 @@ class Protocol:
     def parse_remote_caps(self, caps : typedict):
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
+        if FLUSH_HEADER:
+            self.send_flush_flag = caps.boolget("flush", False)
 
     def get_info(self, alias_info=True) -> dict:
         info = {
@@ -271,6 +277,7 @@ class Protocol:
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size,
             "aliases"               : USE_ALIASES,
+            "flush"                 : self.send_flush_flag,
             }
         c = self.compressor
         if c:
@@ -420,6 +427,9 @@ class Protocol:
                 log("sending %s bytes without header", payload_size)
                 items.append(data)
             else:
+                #if the other end can use this flag, expose it:
+                if self.send_flush_flag and not more and index==0:
+                    proto_flags |= FLAGS_FLUSH
                 #the xpra packet header:
                 #(WebSocketProtocol may also add a websocket header too)
                 header = self.make_chunk_header(packet_type, proto_flags, level, index, payload_size)

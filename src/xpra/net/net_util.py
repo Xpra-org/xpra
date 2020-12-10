@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -372,6 +372,9 @@ def get_network_caps() -> dict:
                 "compressors"           : get_enabled_compressors(),
                 "encoders"              : get_enabled_encoders(),
                }
+    from xpra.net.common import FLUSH_HEADER
+    if FLUSH_HEADER:
+        caps["flush"] = True
     caps.update(get_crypto_caps())
     caps.update(get_compression_caps())
     caps.update(get_packet_encoding_caps())
