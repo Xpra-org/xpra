@@ -14,7 +14,7 @@ from threading import Lock, Event
 from queue import Queue
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr, monotonic_time
-from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict, nonl
+from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import ConnectionClosedException, may_log_packet, MAX_PACKET_SIZE    #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
