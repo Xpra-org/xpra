@@ -25,7 +25,20 @@ from xpra.platform.displayfd import read_displayfd, parse_displayfd
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 
+RESOLUTION_ALIASES = {
+    "QVGA"  : (320, 240),
+    "VGA"   : (640, 480),
+    "SVGA"  : (800, 600),
+    "XGA"   : (1024, 768),
+    "1080p" : (1920, 1080),
+    "FHD"   : (1920, 1080),
+    "4K"    : (3840, 2160),
+    }
+
 def parse_resolution(s):
+    v = RESOLUTION_ALIASES.get(s.upper())
+    if v:
+        return v
     res = tuple(int(x) for x in s.replace(",", "x").split("x", 1))
     assert len(res)==2, "invalid resolution string '%s'" % s
     return res
