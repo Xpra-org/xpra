@@ -135,8 +135,8 @@ class SysAuthenticatorBase(object):
             return False
         salt = self.get_response_salt(client_salt)
         password = gendigest("xor", challenge_response, salt)
-        log("authenticate_check(%s, %s) xor(%s)=%s",
-            obsc(repr(challenge_response)), repr(client_salt), repr(salt), repr(password))
+        log("authenticate_check(%s, %s) response salt=%s",
+            obsc(repr(challenge_response)), repr(client_salt), repr(salt))
         #warning: enabling logging here would log the actual system password!
         #log.info("authenticate(%s, %s) password=%s (%s)",
         #    hexstr(challenge_response), hexstr(client_salt), password, hexstr(password))
