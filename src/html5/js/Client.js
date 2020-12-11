@@ -1271,6 +1271,7 @@ XpraClient.prototype._make_hello = function() {
 		"file-transfer" 			: this.file_transfer,
 		"printing" 					: this.printing,
 		"file-size-limit"			: 10,
+		"flush"						: true,
 	});
 };
 
