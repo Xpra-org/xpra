@@ -89,6 +89,8 @@ Recommends:
 # ffmpeg based codecs:
 #stretch:        ,ffmpeg-xpra
 #xenial:        ,ffmpeg-xpra
+#to be able to resize large svg icons:
+        ,gir1.2-rsvg-2.0
 #bionic:        ,libavcodec57
 #bionic:        ,libswscale4
 #disco:        ,libavcodec58

@@ -112,19 +112,25 @@ def load_icon_from_file(filename):
             size = len(icondata)
             import cairo
             import gi
-            gi.require_version('Rsvg', '2.0')
-            from gi.repository import Rsvg
-            img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
-            ctx = cairo.Context(img)
-            handle = Rsvg.Handle.new_from_data(icondata)
-            handle.render_cairo(ctx)
-            buf = BytesIO()
-            img.write_to_png(buf)
-            icondata = buf.getvalue()
-            buf.close()
-            log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
-                     filename, size, len(icondata))
-            filename = filename[:-3]+"png"
+            try:
+                gi.require_version('Rsvg', '2.0')
+            except ValueError as e:
+                if first_time("no-rsvg"):
+                    log.warn("Warning: cannot resize svg icons, Rsvg bindings not found:")
+                    log.warn(" %s", e)
+            else:
+                from gi.repository import Rsvg
+                img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
+                ctx = cairo.Context(img)
+                handle = Rsvg.Handle.new_from_data(icondata)
+                handle.render_cairo(ctx)
+                buf = BytesIO()
+                img.write_to_png(buf)
+                icondata = buf.getvalue()
+                buf.close()
+                log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
+                         filename, size, len(icondata))
+                filename = filename[:-3]+"png"
         except ImportError:
             log("cannot convert svg", exc_info=True)
         except Exception:
