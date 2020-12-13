@@ -89,6 +89,8 @@ Recommends: python3-dbus
         ,python3-xdg
 #hope that this will allow our status icon to be shown:
         ,gir1.2-appindicator3-0.1
+#to be able to resize large svg icons:
+        ,gir1.2-rsvg-2.0
 # ffmpeg based codecs:
 #bionic:        ,libavcodec57
 #bionic:        ,libswscale4
