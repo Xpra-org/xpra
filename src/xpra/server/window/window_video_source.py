@@ -916,8 +916,8 @@ class WindowVideoSource(WindowSource):
                 log("call_encode: dropping damage request with sequence=%s", sequence)
                 return
             now = monotonic_time()
-            log("process_damage_region: wid=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
-                    self.wid, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
+            log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms, frame delay=%ims",
+                    self.wid, sequence, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
             item = (ew, eh, damage_time, now, eimage, encoding, sequence, options, eflush)
             if av_delay<=0:
                 self.call_in_encode_thread(True, self.make_data_packet_cb, *item)

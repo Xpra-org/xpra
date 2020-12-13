@@ -97,6 +97,11 @@ class DelayedRegions:
         self.encoding = encoding
         self.options = options or {}
 
+    def __repr__(self):
+        return "DelayedRegion(time=%i, expired=%s, encoding=%s, %i regions, options=%s)" % (
+            self.damage_time, self.expired, self.encoding, len(self.regions), self.options
+            )
+
 
 def capr(v):
     return min(100, max(0, int(v)))
@@ -1606,7 +1611,8 @@ class WindowSource(WindowIconSource):
                     log.warn(" already delayed for more than %i seconds", actual_delay//1000)
                 self.statistics.reset_backlog()
                 return
-            log("send_delayed for wid %s, delaying again because of backlog:", self.wid)
+            log("send_delayed for wid %s, sequence %i, delaying again because of backlog:",
+                self.wid, self._sequence)
             log(" batch delay is %i, elapsed time is %ims", self.batch_config.delay, actual_delay)
             if actual_delay>=1000:
                 self._log_late_acks(log)
@@ -1838,8 +1844,8 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
-        log("process_damage_region: wid=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms",
-                self.wid, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
+        log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms",
+                self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
 
 
     def make_data_packet_cb(self, w, h, damage_time, process_damage_time, image, coding, sequence, options, flush):
@@ -2252,10 +2258,12 @@ class WindowSource(WindowIconSource):
             self.soft_expired = 0
         elif damage_delayed.expired:
             def call_may_send_delayed():
+                log("call_may_send_delayed()")
                 self.cancel_may_send_timer()
                 self.may_send_delayed()
             #this function is called from the network thread,
             #call via idle_add to prevent race conditions:
+            log("ack with expired delayed region: %s", damage_delayed)
             self.idle_add(call_may_send_delayed)
 
     def client_decode_error(self, error, message):
