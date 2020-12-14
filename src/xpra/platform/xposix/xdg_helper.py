@@ -122,7 +122,7 @@ def load_icon_from_theme(icon_name, theme=None):
     return load_icon_from_file(filename)
 
 def load_glob_icon(submenu_data, main_dirname="categories"):
-    if not LOAD_GLOB:
+    if not LOAD_GLOB or not EXPORT_ICONS:
         return None
     #doesn't work with IconTheme.getIconPath,
     #so do it the hard way:
