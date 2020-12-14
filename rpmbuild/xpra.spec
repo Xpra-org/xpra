@@ -86,7 +86,7 @@ BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
 #without this, the system tray is unusable with gnome!
-%if 0%{?el8}
+%if 0%{?el8}%{?fedora}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
 %description common-client
@@ -239,7 +239,7 @@ Recommends:			python3-pyopengl
 Recommends:			python3-pyu2f
 Recommends:			python3-pyxdg
 #without this, the system tray is unusable!
-%if 0%{?el8}
+%if 0%{?el8}%{?fedora}
 Recommends:			gnome-shell-extension-topicons-plus
 %endif
 %if 0%{?fedora}>=29
