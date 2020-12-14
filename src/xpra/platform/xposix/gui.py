@@ -10,7 +10,7 @@ import struct
 
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import iround, envbool, envint, csv, ellipsizer
-from xpra.os_util import is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland
+from xpra.os_util import is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, saved_env
 from xpra.log import Logger
 
 log = Logger("posix")
@@ -113,6 +113,12 @@ def get_native_tray_classes():
             c.append(AppindicatorTray)
         except (ImportError, ValueError):
             traylog("cannot load appindicator tray", exc_info=True)
+            traylog.warn("Warning: appindicator library not found")
+            traylog.warn(" you may want to install libappindicator")
+            traylog.warn(" to enable the system tray.")
+            if saved_env.get("XDG_CURRENT_DESKTOP")=="GNOME":
+                traylog.warn(" With gnome-shell, you may also need some extensions:")
+                traylog.warn(" 'top icons plus' and / or 'appindicator'")
     return c
 
 
