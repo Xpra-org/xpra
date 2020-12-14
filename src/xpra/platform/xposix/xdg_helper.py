@@ -78,7 +78,7 @@ def load_Rsvg():
         try:
             gi.require_version('Rsvg', '2.0')
             from gi.repository import Rsvg
-            log.warn("load_Rsvg() Rsvg=%s", Rsvg)
+            log("load_Rsvg() Rsvg=%s", Rsvg)
             _Rsvg = Rsvg
         except ValueError as e:
             if first_time("no-rsvg"):
