@@ -1931,6 +1931,7 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 
 
 def run_server(script_file, error_cb, options, args, mode, defaults):
+    display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
         check_gtk()
@@ -2031,15 +2032,26 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
                 return 1
         #show splash screen?
         progress_cb = None
-        if options.splash is True or (
-            options.splash is not False and (
-                not POSIX or (
-                    (os.environ.get("DISPLAY") or os.environ.get("XDG_SESSION_DESKTOP")) and
-                    not (os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT")) and
-                    not options.daemon
-                    )
-                )
-            ):
+        def is_splash_enabled(splash):
+            if splash in (True, False):
+                return splash
+            #auto mode, figure out if we should show it:
+            if not POSIX:
+                return True
+            if options.daemon:
+                #daemon mode would have problems with the pipes
+                return False
+            if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"):
+                #don't show the splash screen over SSH forwarding
+                return False
+            xdisplay = os.environ.get("DISPLAY")
+            if xdisplay:
+                #make sure that the display isn't the one we're running against,
+                #unless we're shadowing it
+                return xdisplay!=display or mode=="shadow"
+            if os.environ.get("XDG_SESSION_DESKTOP"):
+                return True
+        if is_splash_enabled(options.splash):
             # use splash screen to show server startup progress:
             progress = make_progress_process()
             def stop_progress_process():
