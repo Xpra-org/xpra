@@ -92,6 +92,21 @@ def load_Rsvg():
 def load_icon_from_file(filename):
     log("load_icon_from_file(%s)", filename)
     if filename.endswith("xpm"):
+        try:
+            from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
+            data = load_binary_file(filename)
+            from gi.repository import GdkPixbuf
+            loader = GdkPixbuf.PixbufLoader()
+            loader.write(data)
+            loader.close()
+            pixbuf = loader.get_pixbuf()
+            pngicondata = pixbuf_save_to_memory(pixbuf, "png")
+            return pngicondata, "png"
+        except Exception as e:
+            log("pixbuf error loading %s", filename, exc_info=True)
+            log.error("Error loading '%s':", filename)
+            log.error(" %s", e)
+        #try PIL:
         from PIL import Image
         try:
             img = Image.open(filename)
