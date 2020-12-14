@@ -174,6 +174,7 @@ def find_icon(main_dirname, icondirs, name):
                     ]
     for pathname in pathnames:
         filenames = glob.glob(pathname)
+        log("glob(%s) matches %i filenames", pathname, len(filenames))
         if filenames:
             for f in filenames:
                 icondata = load_icon_from_file(f)
