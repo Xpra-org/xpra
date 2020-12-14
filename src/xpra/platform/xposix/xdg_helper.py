@@ -92,6 +92,21 @@ def load_Rsvg():
 def load_icon_from_file(filename):
     log("load_icon_from_file(%s)", filename)
     if filename.endswith("xpm"):
+        from PIL import Image
+        try:
+            img = Image.open(filename)
+            buf = BytesIO()
+            img.save(buf, "PNG")
+            pngicondata = buf.getvalue()
+            buf.close()
+            return pngicondata, "png"
+        except ValueError as e:
+            log("Image.open(%s)", filename, exc_info=True)
+        except Exception as e:
+            log("Image.open(%s)", filename, exc_info=True)
+            log.error("Error loading '%s':", filename)
+            log.error(" %s", e)
+        #fallback to PixbufLoader:
         try:
             from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
             data = load_binary_file(filename)
@@ -106,20 +121,6 @@ def load_icon_from_file(filename):
             log("pixbuf error loading %s", filename, exc_info=True)
             log.error("Error loading '%s':", filename)
             log.error(" %s", e)
-        #try PIL:
-        from PIL import Image
-        try:
-            img = Image.open(filename)
-        except Exception as e:
-            log("Image.open(%s)", filename, exc_info=True)
-            log.error("Error loading '%s':", filename)
-            log.error(" %s", e)
-            return None
-        buf = BytesIO()
-        img.save(buf, "PNG")
-        pngicondata = buf.getvalue()
-        buf.close()
-        return pngicondata, "png"
     icondata = load_binary_file(filename)
     if not icondata:
         return None
