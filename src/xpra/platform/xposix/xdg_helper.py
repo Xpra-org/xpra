@@ -16,7 +16,7 @@ from typing import Generator as generator       #@UnresolvedImport, @UnusedImpor
 from threading import Lock
 
 from xpra.util import envbool, envint, print_nested_dict, first_time, engs
-from xpra.os_util import load_binary_file, OSEnvContext
+from xpra.os_util import load_binary_file, monotonic_time, OSEnvContext
 from xpra.log import Logger, add_debug_category
 
 log = Logger("exec", "menu")
@@ -276,11 +276,13 @@ def load_xdg_menu_data(force_reload=False):
     with load_lock:
         if not xdg_menu_data or force_reload:
             large_icons = []
+            start = monotonic_time()
             xdg_menu_data = do_load_xdg_menu_data()
+            end = monotonic_time()
             if xdg_menu_data:
                 l = sum(len(x) for x in xdg_menu_data.values())
-                log.info("%s %i start menu entries from %i sub-menus",
-                         "reloaded" if force_reload else "loaded", l, len(xdg_menu_data))
+                log.info("%s %i start menu entries from %i sub-menus in %.1f seconds",
+                         "reloaded" if force_reload else "loaded", l, len(xdg_menu_data), end-start)
             if large_icons:
                 log.warn("Warning: found %i large icon%s:", len(large_icons), engs(large_icons))
                 for filename, size in large_icons:
