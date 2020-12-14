@@ -310,7 +310,7 @@ def ssh_paramiko_connect_to(display_desc):
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
                     peername = (chost, cport)
                     conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-                    conn.target = host_target_string("ssh", cusername, chost, cport, display)
+                    conn.target = host_target_string("ssh", cusername, chost, port, display)
                     conn.timeout = SOCKET_TIMEOUT
                     conn.start_stderr_reader()
                     conn.process = (sock.process, "ssh", cmd)

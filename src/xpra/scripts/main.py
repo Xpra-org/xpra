@@ -701,7 +701,10 @@ def parse_proxy_attributes(display_name):
             raise RuntimeError("bad format: missing host in '%s'" % hostport)
         desc_tmp["proxy_host"] = host
         if hostport_match.group("port"):
-            desc_tmp["proxy_port"] = hostport_match.group("port")
+            try:
+                desc_tmp["proxy_port"] = int(hostport_match.group("port"))
+            except ValueError:
+                raise RuntimeError("bad format: proxy port '%s' is not a number" % hostport_match.group("port"))
         userpass = reout.group("userpass")
         if userpass:
             # The username ends at the first colon. This decision was not unique: I could have
