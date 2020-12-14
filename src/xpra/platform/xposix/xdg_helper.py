@@ -61,14 +61,13 @@ def export(entry, properties):
             l("error on %s", entry, exc_info=True)
             log.error("Error parsing '%s': %s", prop, e)
     l("properties(%s)=%s", name, props)
-    if EXPORT_ICONS:
-        #load icon binary data:
-        icon = props.get("Icon")
-        icondata = load_icon_from_theme(icon)
-        if icondata:
-            bdata, ext = icondata
-            props["IconData"] = bdata
-            props["IconType"] = ext
+    #load icon binary data:
+    icon = props.get("Icon")
+    icondata = load_icon_from_theme(icon)
+    if icondata:
+        bdata, ext = icondata
+        props["IconData"] = bdata
+        props["IconType"] = ext
     return props
 
 def load_icon_from_file(filename):
