@@ -306,8 +306,8 @@ class SocketConnection(Connection):
     def _setsockopt(self, *args):
         if self.active:
             sock = self.get_raw_socket()
-            assert sock, "no raw socket on %s" % self
-            sock.setsockopt(*args)
+            if sock:
+                sock.setsockopt(*args)
 
     def set_nodelay(self, nodelay : bool):
         if self.nodelay is None and self.nodelay_value!=nodelay:
