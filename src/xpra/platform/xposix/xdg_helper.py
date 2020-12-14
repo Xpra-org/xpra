@@ -70,6 +70,25 @@ def export(entry, properties):
         props["IconType"] = ext
     return props
 
+_Rsvg = None
+def load_Rsvg():
+    global _Rsvg
+    if _Rsvg is None:
+        import gi
+        try:
+            gi.require_version('Rsvg', '2.0')
+            from gi.repository import Rsvg
+            log.warn("load_Rsvg() Rsvg=%s", Rsvg)
+            _Rsvg = Rsvg
+        except ValueError as e:
+            if first_time("no-rsvg"):
+                log.warn("Warning: cannot resize svg icons,")
+                log.warn(" the Rsvg bindings were not found:")
+                log.warn(" %s", e)
+            _Rsvg = False
+    return _Rsvg
+
+
 def load_icon_from_file(filename):
     log("load_icon_from_file(%s)", filename)
     if filename.endswith("xpm"):
@@ -109,15 +128,8 @@ def load_icon_from_file(filename):
         try:
             size = len(icondata)
             import cairo
-            import gi
-            try:
-                gi.require_version('Rsvg', '2.0')
-            except ValueError as e:
-                if first_time("no-rsvg"):
-                    log.warn("Warning: cannot resize svg icons, Rsvg bindings not found:")
-                    log.warn(" %s", e)
-            else:
-                from gi.repository import Rsvg
+            Rsvg = load_Rsvg()
+            if Rsvg:
                 img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
                 ctx = cairo.Context(img)
                 handle = Rsvg.Handle.new_from_data(icondata)
