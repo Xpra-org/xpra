@@ -467,8 +467,13 @@ def get_socket_options(sock, level, options) -> dict:
             if v is not None:
                 opts[k] = v
     if errs:
-        log.warn("Warning: failed to query %s", csv(errs))
-        log.warn(" on %s", sock)
+        fileno = getattr(sock, "fileno", None)
+        #if fileno()==-1 
+        if fileno and fileno()==-1:
+            log("socket is closed, ignoring: %s", csv(errs))
+        else:
+            log.warn("Warning: failed to query %s", csv(errs))
+            log.warn(" on %s", sock)
     return opts
 
 
