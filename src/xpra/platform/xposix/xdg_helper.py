@@ -80,7 +80,7 @@ def load_Rsvg():
             from gi.repository import Rsvg
             log("load_Rsvg() Rsvg=%s", Rsvg)
             _Rsvg = Rsvg
-        except ValueError as e:
+        except (ValueError, ImportError) as e:
             if first_time("no-rsvg"):
                 log.warn("Warning: cannot resize svg icons,")
                 log.warn(" the Rsvg bindings were not found:")
@@ -141,8 +141,6 @@ def load_icon_from_file(filename):
                 log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
                          filename, size, len(icondata))
                 filename = filename[:-3]+"png"
-        except ImportError:
-            log("cannot convert svg", exc_info=True)
         except Exception:
             log.error("Error: failed to convert svg icon")
             log.error(" '%s':", filename)
