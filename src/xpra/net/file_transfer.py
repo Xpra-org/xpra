@@ -603,7 +603,7 @@ class FileTransferHandler(FileTransferAttributes):
     def do_send_open_url(self, url, send_id=""):
         self.send("open-url", url, send_id)
 
-    def send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options={}):
+    def send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options=None):
         if printit:
             l = printlog
             if not self.printing:
@@ -649,14 +649,14 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options)
         return True
 
-    def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0, printit=False, openit=True, options={}):
+    def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0, printit=False, openit=True, options=None):
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
             filelog.warn("Warning: %s dropped", action)
             filelog.warn(" %i transfer%s already waiting for a response",
                          len(self.pending_send_data), engs(self.pending_send_data))
             return None
-        self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options)
+        self.pending_send_data[send_id] = (dtype, url, mimetype, data, filesize, printit, openit, options or {})
         delay = self.remote_file_ask_timeout*1000
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog("sending data request for %s '%s' with send-id=%s",
@@ -761,7 +761,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog.warn(" the send approval request timed out")
         return False
 
-    def do_send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options={}, send_id=""):
+    def do_send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options=None, send_id=""):
         if printit:
             action = "print"
             l = printlog
@@ -775,6 +775,7 @@ class FileTransferHandler(FileTransferAttributes):
         u.update(data)
         absfile = os.path.abspath(filename)
         filelog("sha1 digest('%s')=%s", s(absfile), u.hexdigest())
+        options = options or {}
         options["sha1"] = u.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
         if 0<chunk_size<filesize:
