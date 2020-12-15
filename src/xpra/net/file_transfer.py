@@ -77,10 +77,10 @@ def safe_open_download_file(basefilename, mimetype):
     root, ext = os.path.splitext(filename)
     base = 0
     while os.path.exists(filename):
-        filelog("cannot save file as %s: file already exists", filename)
+        filelog("cannot save file as %r: file already exists", filename)
         base += 1
         filename = root+("-%s" % base)+ext
-    filelog("safe_open_download_file(%s, %s) will use '%s'", basefilename, mimetype, filename)
+    filelog("safe_open_download_file(%s, %s) will use %r", basefilename, mimetype, filename)
     flags = os.O_CREAT | os.O_RDWR | os.O_EXCL
     try:
         flags |= os.O_BINARY                #@UndefinedVariable (win32 only)
@@ -422,6 +422,7 @@ class FileTransferHandler(FileTransferAttributes):
             basefilename = strtobytes(basefilename).decode("utf8")
         except UnicodeDecodeError:
             basefilename = bytestostr(basefilename)
+        mimetype = bytestostr(mimetype)
         args = (send_id, b"file", basefilename, printit, openit)
         r = self.accept_data(*args)
         filelog("%s%s=%s", self.accept_data, args, r)
