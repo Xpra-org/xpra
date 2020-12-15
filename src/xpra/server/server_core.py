@@ -955,7 +955,7 @@ class ServerCore:
             conn.write(packet_data)
             self.timeout_add(500, self.force_close_connection, conn)
         except Exception as e:
-            netlog("error sending '%s': %s", nonl(packet_data), e)
+            netlog("error sending %r: %s", packet_data, e)
 
     def force_close_connection(self, conn):
         try:
@@ -1390,7 +1390,7 @@ class ServerCore:
             if line1 and line1[0]>=128 or line1[0]==0x16:
                 l(" request as hex: '%s'", hexstr(line1))
             else:
-                l(" request: '%s'", nonl(bytestostr(line1)))
+                l(" request: %r", bytestostr(line1))
             l(" %s", e)
         except Exception as e:
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)

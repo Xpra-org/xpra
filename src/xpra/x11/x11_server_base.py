@@ -9,7 +9,7 @@
 import os
 
 from xpra.os_util import bytestostr, strtobytes, hexstr
-from xpra.util import nonl, typedict, envbool, iround
+from xpra.util import typedict, envbool, iround
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -302,7 +302,7 @@ class X11ServerBase(X11ServerCore):
                     log.warn("Warning: failed to parse default XSettings:")
                     log.warn(" %s", e)
         old_settings = dict(self._settings)
-        log("server_settings: old=%s, updating with=%s", nonl(old_settings), nonl(settings))
+        log("server_settings: old=%r, updating with=%r", old_settings, settings)
         log("overrides: dpi=%s, double click time=%s, double click distance=%s",
             dpi, double_click_time, double_click_distance)
         log("overrides: antialias=%s", antialias)
@@ -348,7 +348,7 @@ class X11ServerBase(X11ServerCore):
                                    "Xft.hinting"    : ad.intget("hinting", -1),
                                    "Xft.rgba"       : subpixel_order,
                                    "Xft.hintstyle"  : _get_antialias_hintstyle(ad)})
-                log("server_settings: resource-manager values=%s", nonl(values))
+                log("server_settings: resource-manager values=%r", values)
                 #convert the dict back into a resource string:
                 value = ''
                 for vk, vv in values.items():
@@ -410,7 +410,7 @@ class X11ServerBase(X11ServerCore):
                 elif k == b"resource-manager":
                     from xpra.x11.gtk_x11.prop import prop_set
                     p = "RESOURCE_MANAGER"
-                    log("server_settings: setting %s to %s", nonl(p), nonl(v))
+                    log("server_settings: setting %s to %r", p, v)
                     prop_set(self.root_window, p, "latin1", strtobytes(v).decode("latin1"))
                 else:
                     log.warn("Warning: unexpected setting '%s'", bytestostr(k))

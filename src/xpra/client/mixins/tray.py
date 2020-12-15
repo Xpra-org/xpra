@@ -6,7 +6,7 @@
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import bytestostr
-from xpra.util import nonl, envint, make_instance, CLIENT_EXIT, XPRA_APP_ID
+from xpra.util import envint, make_instance, CLIENT_EXIT, XPRA_APP_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -136,5 +136,5 @@ class TrayClient(StubClientMixin):
         if not t:
             t.insert(0, "Xpra")
         v = "\n".join(str(x) for x in t)
-        log("get_tray_title()=%s (items=%s)", nonl(v), tuple(bytestostr(x) for x in t))
+        log("get_tray_title()=%r (items=%s)", v, tuple(bytestostr(x) for x in t))
         return v

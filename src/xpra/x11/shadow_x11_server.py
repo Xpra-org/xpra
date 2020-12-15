@@ -202,7 +202,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
                 if get_loaded_kernel_modules("vboxguest", "vboxvideo"):
                     body += "\nthis may be caused by the VirtualBox video driver."
                 title = "Shadow Capture Failure"
-            log("verify_capture: title='%s', body='%s'", ss, title, nonl(body))
+            log("verify_capture: title=%r, body=%r", ss, title, body)
             if title and body:
                 ss.may_notify(nid, title, body, icon_name="server")
         except Exception as e:

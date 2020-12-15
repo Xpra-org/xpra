@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -13,7 +13,7 @@ from gi.repository import Gtk, Gdk, Gio
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import (
-    AdHocStruct, typedict, envint, envbool, nonl, csv, first_time,
+    AdHocStruct, typedict, envint, envbool, csv, first_time,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
     MOVERESIZE_CANCEL,
     MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
@@ -929,7 +929,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             except UnicodeDecodeError:
                 v = bytestostr(command)
         def do_set_command():
-            metalog("do_set_command() str(%s)='%s' (type=%s)", command, nonl(v), type(command))
+            metalog("do_set_command() str(%s)='%r' (type=%s)", command, v, type(command))
             prop_set(self.get_window(), "WM_COMMAND", "latin1", v)
         self.when_realized("command", do_set_command)
 

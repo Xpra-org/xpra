@@ -11,7 +11,7 @@ import uuid
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import monotonic_time, bytestostr, strtobytes, umask_context, POSIX, WIN32
-from xpra.util import typedict, csv, nonl, envint, envbool, engs
+from xpra.util import typedict, csv, envint, envbool, engs
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.simple_stats import std_unit
 from xpra.make_thread import start_thread
@@ -320,8 +320,8 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("_process_send_file_chunk%s", (chunk_id, chunk, "%i bytes" % len(file_data), has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if not chunk_state:
-            filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
-            self.cancel_file(chunk_id, "file transfer id %s not found" % chunk_id, chunk)
+            filelog.error("Error: cannot find the file transfer id '%r'", chunk_id)
+            self.cancel_file(chunk_id, "file transfer id %r not found" % chunk_id, chunk)
             return
         if chunk_state[-4]:
             filelog("got chunk for a cancelled file transfer, ignoring it")
@@ -741,7 +741,7 @@ class FileTransferHandler(FileTransferAttributes):
         delay = self.remote_file_ask_timeout*1000
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog("sending data request for %s '%s' with send-id=%s",
-                dtype, s(url), send_id)
+                s(dtype), s(url), send_id)
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
@@ -930,7 +930,7 @@ class FileTransferHandler(FileTransferAttributes):
             return
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
         if not chunk_state:
-            filelog.error("Error: cannot find the file transfer id '%s'", nonl(chunk_id))
+            filelog.error("Error: cannot find the file transfer id '%r'", chunk_id)
             return
         if chunk_state[-1]!=chunk:
             filelog.error("Error: chunk number mismatch (%i vs %i)", chunk_state, chunk)

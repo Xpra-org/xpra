@@ -95,7 +95,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         getChildReaper()
         log("XpraClientBase.defaults_init() os.environ:")
         for k,v in os.environ.items():
-            log(" %s=%s", k, nonl(v))
+            log(" %s=%r", k, v)
         #client state:
         self.exit_code = None
         self.exit_on_signal = False

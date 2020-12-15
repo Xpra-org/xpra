@@ -7,11 +7,11 @@
 import sys
 
 def main():
-    from xpra.util import nonl, pver, flatten_dict, print_nested_dict
+    from xpra.util import pver, flatten_dict, print_nested_dict
     def print_version_dict(d, vformat=pver):
         for k in sorted(d.keys()):
             v = d[k]
-            print("* %-48s : %s" % (str(k).replace(".version", "").ljust(12), nonl(vformat(v))))
+            print("* %-48s : %r" % (str(k).replace(".version", "").ljust(12), vformat(v)))
     from xpra.platform import program_context
     with program_context("GTK-Version-Info", "GTK Version Info"):
         from xpra.platform.gui import init as gui_init, ready

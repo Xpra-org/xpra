@@ -120,7 +120,6 @@ def get_lpinfo_drv(make_and_model):
         return None
     #use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.child_reaper import getChildReaper
-    from xpra.util import nonl
     cr = getChildReaper()
     cr.add_process(proc, "lpinfo", command, ignore=True, forget=True)
     from xpra.make_thread import start_thread
@@ -150,11 +149,11 @@ def get_lpinfo_drv(make_and_model):
         out = out.decode()
     except Exception:
         out = str(out)
-    log("lpinfo out=%s", nonl(out))
-    log("lpinfo err=%s", nonl(err))
+    log("lpinfo out=%r", out)
+    log("lpinfo err=%r", err)
     if err:
         log.warn("Warning: lpinfo command produced some warnings:")
-        log.warn(" '%s'", nonl(err))
+        log.warn(" %r", err)
     for line in out.splitlines():
         if line.startswith("drv://"):
             return line.split(" ")[0]

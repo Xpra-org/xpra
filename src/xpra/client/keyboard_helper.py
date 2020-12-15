@@ -8,7 +8,7 @@
 import os
 
 from xpra.client.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
-from xpra.util import nonl, csv, std, envbool, ellipsizer
+from xpra.util import csv, std, envbool, ellipsizer
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
@@ -283,7 +283,7 @@ class KeyboardHelper:
         self.update_hash()
         log("layout=%s, layouts=%s, variant=%s, variants=%s",
             self.xkbmap_layout, self.xkbmap_layouts, self.xkbmap_variant, self.xkbmap_variants)
-        log("print=%s, query=%s, struct=%s", nonl(self.xkbmap_print), nonl(self.xkbmap_query), self.xkbmap_query_struct)
+        log("print=%r, query=%r, struct=%s", self.xkbmap_print, self.xkbmap_query, self.xkbmap_query_struct)
         log("keycodes=%s", ellipsizer(self.xkbmap_keycodes))
         log("x11 keycodes=%s", ellipsizer(self.xkbmap_x11_keycodes))
         log("mod managed: %s", self.xkbmap_mod_managed)

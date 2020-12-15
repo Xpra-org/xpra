@@ -25,7 +25,7 @@ from xpra.os_util import (
     nomodule_context, umask_context, is_main_thread,
     WIN32, OSX, POSIX,
     )
-from xpra.util import envint, envbool, nonl, engs, csv
+from xpra.util import envint, envbool, engs, csv
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("network", "ssh")
@@ -124,7 +124,7 @@ def confirm_key(info=()) -> bool:
         r = code==200
         log.info("host key %sconfirmed", ["not ", ""][r])
         return r
-    log("confirm_key(%s) will use stdin prompt", nonl(info))
+    log("confirm_key(%r) will use stdin prompt", info)
     prompt = "Are you sure you want to continue connecting (yes/NO)? "
     sys.stderr.write(os.linesep.join(info)+os.linesep+prompt)
     try:

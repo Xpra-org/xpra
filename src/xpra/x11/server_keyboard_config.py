@@ -8,7 +8,7 @@
 
 from gi.repository import Gdk
 
-from xpra.util import csv, nonl, envbool
+from xpra.util import csv, envbool
 from xpra.os_util import bytestostr
 from xpra.gtk_common.keymap import get_gtk_keymap
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -309,9 +309,9 @@ class KeyboardConfig(KeyboardConfigBase):
     def set_keymap(self, translate_only=False):
         if not self.enabled:
             return
-        log("set_keymap(%s) layout=%s, variant=%s, options=%s, query=%s",
+        log("set_keymap(%s) layout=%r, variant=%r, options=%r, query=%r",
             translate_only, self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
-            nonl(self.xkbmap_query))
+            self.xkbmap_query)
         if translate_only:
             self.keycode_translation = set_keycode_translation(self.xkbmap_x11_keycodes, self.xkbmap_keycodes)
             self.add_gtk_keynames()
@@ -325,7 +325,7 @@ class KeyboardConfig(KeyboardConfigBase):
             clean_keyboard_state()
             do_set_keymap(self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options,
                           self.xkbmap_query, self.xkbmap_query_struct)
-        log("set_keymap: xkbmap_query=%s", nonl(self.xkbmap_query))
+        log("set_keymap: xkbmap_query=%r", self.xkbmap_query)
         with xlog:
             #first clear all existing modifiers:
             clean_keyboard_state()

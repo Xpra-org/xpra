@@ -6,7 +6,7 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
 from xpra.os_util import bytestostr
-from xpra.util import nonl, envbool
+from xpra.util import envbool
 from xpra.log import Logger, is_debug_enabled
 log = Logger("libav")
 
@@ -76,7 +76,7 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
 
     with gil:
         if r<0:
-            log.error("av_log: vsnprintf returned %i on format string '%s'", r, fmt)
+            log.error("av_log: vsnprintf returned %i on format string %s", r, fmt)
             return
         logger = log.debug
         if level<=ERROR_LEVEL:
@@ -97,15 +97,15 @@ cdef void log_callback_override(void *avcl, int level, const char *fmt, va_list 
             if r>MAX_LOG_SIZE:
                 log.error("av_log: vsnprintf returned more than %i characters!", MAX_LOG_SIZE)
                 r = MAX_LOG_SIZE
-            s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
+            s = bytestostr(buffer[:r]).rstrip("\n\r")
             if s.startswith("Warning: data is not aligned!"):
                 #silence this crap, since there is nothing we can do about it
                 logger = log.debug
             #l("log_callback_override(%#x, %i, %s, ..)", <uintptr_t> avcl, level, fmt)
-            logger("libav: %s", s)
+            logger("libav: %r", s)
         except Exception as e:
             log.error("Error in log callback at level %i", level)
-            log.error(" on format string '%s':", nonl(fmt))
+            log.error(" on format string '%r':", fmt)
             log.error(" %s: %s", type(e), e)
 
 cdef int nesting_level = 0

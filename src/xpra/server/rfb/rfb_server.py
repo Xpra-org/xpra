@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from xpra.util import nonl, csv
+from xpra.util import csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
@@ -75,7 +75,7 @@ class RFBServer:
         p.send_protocol_handshake()
 
     def process_rfb_packet(self, proto, packet):
-        #log("RFB packet: '%s'", nonl(packet))
+        #log("RFB packet: '%s'", packet)
         fn_name = "_process_rfb_%s" % bytestostr(packet[0]).replace("-", "_")
         fn = getattr(self, fn_name, None)
         if not fn:
@@ -186,4 +186,4 @@ class RFBServer:
     def _process_rfb_ClientCutText(self, _proto, packet):
         #l = packet[4]
         text = packet[5]
-        log("got rfb clipboard text: %s", nonl(text))
+        log("got rfb clipboard text: %r", text)

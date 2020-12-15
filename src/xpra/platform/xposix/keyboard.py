@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import nonl
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.keyboard.layouts import xkbmap_query_tostring
@@ -109,7 +108,7 @@ class Keyboard(KeyboardBase):
         log("get_keymap_spec() Xkb query tostring(%s)=%s", query_struct, _query)
         #we no longer support servers via xkbmap_print:
         xkbmap_print = ""
-        log("get_keymap_spec()=(%s, %s, %s)", nonl(xkbmap_print), nonl(_query), nonl(query_struct))
+        log("get_keymap_spec()=(%r, %r, %r)", xkbmap_print, _query, query_struct)
         return xkbmap_print, _query, query_struct
 
 

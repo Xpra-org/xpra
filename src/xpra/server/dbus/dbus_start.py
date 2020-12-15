@@ -7,7 +7,6 @@
 import os
 from subprocess import Popen, PIPE
 
-from xpra.util import nonl
 from xpra.os_util import POSIX, bytestostr
 from xpra.scripts.server import _get_int, _get_str, _save_int, _save_str
 from xpra.scripts.config import FALSE_OPTIONS
@@ -21,7 +20,7 @@ def start_dbus(dbus_launch):
         log("start_dbus(%s) disabled", dbus_launch)
         return 0, {}
     bus_address = os.environ.get("DBUS_SESSION_BUS_ADDRESS")
-    log("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", nonl(dbus_launch), bus_address)
+    log("dbus_launch=%r, current DBUS_SESSION_BUS_ADDRESS=%s", dbus_launch, bus_address)
     if bus_address:
         log("start_dbus(%s) disabled, found an existing DBUS_SESSION_BUS_ADDRESS=%s", dbus_launch, bus_address)
         return 0, {}
@@ -42,7 +41,7 @@ def start_dbus(dbus_launch):
         assert proc.poll()==0, "exit code is %s" % proc.poll()
         #parse and add to global env:
         dbus_env = {}
-        log("out(%s)=%s", cmd, nonl(out))
+        log("out(%s)=%r", cmd, out)
         for l in bytestostr(out).splitlines():
             if l.startswith("export "):
                 continue

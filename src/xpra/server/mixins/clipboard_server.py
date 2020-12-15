@@ -8,7 +8,7 @@
 import os.path
 
 from xpra.platform.features import CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS
-from xpra.util import csv, nonl
+from xpra.util import csv
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -196,7 +196,7 @@ class ClipboardServer(StubServerMixin):
             #this can happen when we disable clipboard in the middle of transfers
             #(especially when there is a clipboard loop)
             log.warn("Warning: unexpected clipboard packet")
-            log.warn(" clipboard is disabled for %s", nonl(ss.uuid))
+            log.warn(" clipboard is disabled for %r", ss.uuid)
             return
         ch = self._clipboard_helper
         assert ch, "received a clipboard packet but clipboard sharing is disabled"

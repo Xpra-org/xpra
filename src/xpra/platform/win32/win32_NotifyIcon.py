@@ -12,7 +12,7 @@ import ctypes
 from ctypes import Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE
 
-from xpra.util import typedict, csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
+from xpra.util import typedict, csv, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
@@ -228,7 +228,7 @@ class win32NotifyIcon:
     def __init__(self, app_id=0, title="",
                  move_callbacks=None, click_callback=None, exit_callback=None, command_callback=None,
                  iconPathName=None):
-        log("win32NotifyIcon: app_id=%i, title='%s'", app_id, nonl(title))
+        log("win32NotifyIcon: app_id=%i, title=%r", app_id, title)
         self.app_id = app_id
         self.title = title
         self.current_icon = None
@@ -306,8 +306,8 @@ class win32NotifyIcon:
         #flags |= NIF_SHOWTIP
         nid.uVersion = 4
         nid.uFlags = flags
-        log("make_nid(..)=%s tooltip='%s', app_id=%i, actual flags=%s",
-            nid, nonl(title), self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
+        log("make_nid(..)=%s tooltip=%r, app_id=%i, actual flags=%s",
+            nid, title, self.app_id, csv([v for k,v in NIF_FLAGS.items() if k&flags]))
         return nid
 
     def delete_tray_window(self):
@@ -337,7 +337,7 @@ class win32NotifyIcon:
         pass
 
     def set_tooltip(self, tooltip):
-        log("set_tooltip(%s)", nonl(tooltip))
+        log("set_tooltip(%r)", tooltip)
         self.title = tooltip
         nid = self.make_nid(NIF_ICON | NIF_MESSAGE | NIF_TIP)
         Shell_NotifyIcon(NIM_MODIFY, byref(nid))

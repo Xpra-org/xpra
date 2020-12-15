@@ -10,7 +10,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 
-from xpra.util import nonl, envint, envbool, typedict, csv, AtomicInteger
+from xpra.util import envint, envbool, typedict, csv, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import video_spec
 from collections import deque
@@ -466,9 +466,9 @@ cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) 
     if r<0:
         log.error("X264_log: vsnprintf returned %s on format string '%s'", r, psz_fmt)
         return
-    s = nonl(bytestostr(buffer[:r]).rstrip("\n\r"))
+    s = bytestostr(buffer[:r]).rstrip("\n\r")
     logger = LOGGERS.get(level, log.info)
-    logger("X264: %s", s)
+    logger("X264: %r", s)
 
 
 cdef class Encoder:

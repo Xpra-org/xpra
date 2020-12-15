@@ -8,7 +8,6 @@ import os
 import sys
 
 def main():
-    from xpra.util import nonl
     from xpra.platform.displayfd import read_displayfd, parse_displayfd
     import subprocess
     r_pipe, w_pipe = os.pipe()
@@ -23,7 +22,7 @@ def main():
     proc = subprocess.Popen(cmd, pass_fds=(w_pipe, ))
     print("Popen(%s)=%s" % (cmd, proc))
     buf = read_displayfd(r_pipe, timeout=30, proc=proc)
-    print("read_displayfd(%i)='%s'" % (r_pipe, nonl(buf)))
+    print("read_displayfd(%i)='%r'" % (r_pipe, buf))
     os.close(r_pipe)
     os.close(w_pipe)
     def displayfd_err(msg):

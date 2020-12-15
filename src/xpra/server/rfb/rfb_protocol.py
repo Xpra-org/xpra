@@ -8,7 +8,7 @@ from socket import error as socket_error
 from queue import Queue
 
 from xpra.os_util import hexstr, strtobytes
-from xpra.util import repr_ellipsized, envint, nonl
+from xpra.util import repr_ellipsized, envint
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
@@ -65,7 +65,7 @@ class RFBProtocol:
         return len(packet)
 
     def _parse_protocol_handshake(self, packet):
-        log("parse_protocol_handshake(%s)", nonl(packet))
+        log("parse_protocol_handshake(%r)", packet)
         if len(packet)<12:
             return 0
         if not packet.startswith(b'RFB '):

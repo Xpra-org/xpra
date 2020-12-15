@@ -295,7 +295,7 @@ class InfoXpraClient(CommandConnectClient):
                         return w
                     v = fixvalue(v)
                     k = fixvalue(k)
-                    log.info("%s=%s", k, nonl(v))
+                    log.info("%s=%r", k, v)
             else:
                 print_nested_dict(caps)
         self.quit(EXIT_OK)
