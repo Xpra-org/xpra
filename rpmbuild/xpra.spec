@@ -871,10 +871,19 @@ fi
 
 
 %changelog
-* Mon Nov 16 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
-- fix caps lock wrongly applied to numeric keys
+* Tue Dec 15 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+- fix slow subcommands due to unnecessary calls to ldconfig on Linux
+- fix server asynchronous packets getting delayed
+- fix ssh connection errors with proxycommand or proxyhost port numbers
 - fix proxy instance zombies on server start failures
+- fix proxy instance control socket errors and process leak
+- fix capslock wrongly applied to numeric keys
 - fix MS Windows bubble notifications not showing on some systems
+- fix errors accessing window handles on MS Windows (size hints, opengl, etc)
+- fix clipboard cleanup errors on MS Windows
+- fix spurious refresh packets with mmap
+- fix mmap not used with some non-video areas
+- fix duplicate / untimely audio-stop control packets with HTML5 client
 - fix http / websocket and ssl socket upgrade failures
 - fix ssh command option not being honourd with the client launcher
 - fix sqlite authentication module not handling configuration options
@@ -883,15 +892,28 @@ fi
 - fix spurious "missing resolution" errors (often with HTML5 client resizing)
 - fix duplicated data in bug reports
 - fix handling of invalid clipboard requests
+- fix printing diagnostic script
+- fix Python 3.9 compatibility
+- fix sysconfig path in systemd service file for non-RedHat systems
+- fix xdg-open override script error handling
 - fix clipboard errors under Wayland
 - fix Wayland detection and workarounds
 - fix client failing to connect due to keymap changes (ie: Wayland)
 - fix client signal listener not forwarding signal messages
 - fix client not showing authentication prompt only once per connection
-- fix file transfer errors with python3 builds
 - fix Fedora 33 package dependency issues
+- fix file-transfer failures with small files
+- fix file-transfers with non-ascii filenames
+- fix file transfer errors with python3 builds
+- better file transfer message format
 - add new NVENC presets from SDK v10, workaround deprecation warnings
+- honour XPRA_XDG_EXPORT_ICONS=0 env var in all cases
+- hide passwords from authentication debug logging
+- updated DEB packaging for Ubuntu Focal, Groovy and Debian Bullseye
+- use an up-to-date PDFium library on MS Windows
 - make it possible to override the Xorg binary path detection
+- re-add "~/.xpra" as socket-dir
+- typo in man page
 
 * Tue Oct 06 2020 Antoine Martin <antoine@xpra.org> 3.0.12-10xpra1
 - fix memory leak with 'scroll' encoding
