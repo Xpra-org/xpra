@@ -353,11 +353,17 @@ def main():
                 log.enable_debug()
         def icon_fmt(icondata):
             return "%i bytes" % len(icondata)
-        menu = load_xdg_menu_data()
-        if menu:
-            print_nested_dict(menu, vformat={"IconData" : icon_fmt})
+        if sys.argv:
+            for x in list(sys.argv):
+                if os.path.isabs(x):
+                    v = load_icon_from_file(x)
+                    print("load_icon_from_file(%s)=%s" % (x, v))
         else:
-            print("no menu data found")
+            menu = load_xdg_menu_data()
+            if menu:
+                print_nested_dict(menu, vformat={"IconData" : icon_fmt})
+            else:
+                print("no menu data found")
     return 0
 
 if __name__ == "__main__":
