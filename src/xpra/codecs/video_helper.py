@@ -281,13 +281,6 @@ class VideoHelper:
             log(" %s", get_codec_error(encoder_name))
             return
         encoder_type = encoder_module.get_type()
-        try:
-            encoder_module.init_module()
-            self._cleanup_modules.append(encoder_module)
-        except Exception as e:
-            log(" exception in %s module %s initialization %s: %s",
-                encoder_type, encoder_module.__name__, encoder_module.init_module, e, exc_info=True)
-            raise
         encodings = encoder_module.get_encodings()
         log(" %12s encodings=%s", encoder_type, csv(encodings))
         for encoding in encodings:
@@ -327,14 +320,6 @@ class VideoHelper:
             log(" csc module %s could not be loaded:", csc_name)
             log(" %s", get_codec_error(csc_name))
             return
-        csc_type = csc_module.get_type()
-        try:
-            csc_module.init_module()
-            self._cleanup_modules.append(csc_module)
-        except Exception as e:
-            log("exception in %s module initialization %s: %s", csc_type, csc_module.init_module, e, exc_info=True)
-            log.warn("Warning: cannot use %s module %s: %s", csc_type, csc_module, e)
-            return
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             out_cscs = csc_module.get_output_colorspaces(in_csc)
@@ -370,14 +355,6 @@ class VideoHelper:
             log(" %s", get_codec_error(decoder_name))
             return
         decoder_type = decoder_module.get_type()
-        try:
-            decoder_module.init_module()
-            self._cleanup_modules.append(decoder_module)
-        except Exception as e:
-            log("exception in %s module initialization %s: %s",
-                decoder_type, decoder_module.init_module, e, exc_info=True)
-            log.warn("Warning: cannot use %s module %s: %s", decoder_type, decoder_module, e, exc_info=True)
-            return
         encodings = decoder_module.get_encodings()
         log(" %s encodings=%s", decoder_type, csv(encodings))
         for encoding in encodings:
