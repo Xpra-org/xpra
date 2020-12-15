@@ -370,8 +370,8 @@ def main():
                 log.enable_debug()
         def icon_fmt(icondata):
             return "%i bytes" % len(icondata)
-        if sys.argv:
-            for x in list(sys.argv):
+        if len(sys.argv)>1:
+            for x in sys.argv[1:]:
                 if os.path.isabs(x):
                     v = load_icon_from_file(x)
                     print("load_icon_from_file(%s)=%s" % (x, v))
