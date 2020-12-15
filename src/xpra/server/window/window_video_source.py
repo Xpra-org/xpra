@@ -506,6 +506,8 @@ class WindowVideoSource(WindowSource):
         depth = self.image_depth
         if depth==8 and "png/P" in options:
             return "png/P"
+        if self._mmap_size>0 and self.encoding!="grayscale":
+            return "mmap"
         pixel_count = ww*wh
         if pixel_count<self._rgb_auto_threshold or self.is_tray or ww<=2 or wh<=2:
             #high speed and high quality, rgb is still good
