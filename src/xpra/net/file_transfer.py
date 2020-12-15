@@ -887,10 +887,13 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state = [monotonic_time(), data, chunk_size, timer, 0]
             self.send_chunks_in_progress[chunk_id] = chunk_state
             cdata = ""
+            filelog("using chunks, sending initial file-chunk-id=%s, for chunk size=%s",
+                    chunk_id, chunk_size)
         else:
             #send everything now:
             cdata = self.compressed_wrapper("file-data", data)
             assert len(cdata)<=filesize     #compressed wrapper ensures this is true
+            filelog("sending full file: %i bytes (chunk size=%i)", filesize, chunk_size)
         basefilename = os.path.basename(filename)
         #convert str to utf8 bytes:
         try:
