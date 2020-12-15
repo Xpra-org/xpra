@@ -128,44 +128,45 @@ def load_icon_from_file(filename):
         return None
     if filename.endswith("svg") and len(icondata)>MAX_ICON_SIZE//2:
         #try to resize it
-        try:
-            size = len(icondata)
-            pngdata = svg_to_png(icondata)
-            if not pngdata and re.findall(INKSCAPE_RE, icondata):
-                #try again after stripping the bogus inkscape attributes
-                #as some rsvg versions can't handle that (ie: Debian Bullseye)
-                icondata = re.sub(INKSCAPE_RE, b"", icondata)
-                pngdata = svg_to_png(icondata)
-            if pngdata:
-                log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
-                         filename, size, len(pngdata))
-                icondata = pngdata
-                filename = filename[:-3]+"png"
-        except Exception:
-            log.error("Error: failed to convert svg icon")
-            log.error(" '%s':", filename)
-            log.error(" %i bytes, %s", len(icondata), ellipsizer(icondata), exc_info=True)
+        size = len(icondata)
+        pngdata = svg_to_png(filename, icondata)
+        if pngdata:
+            log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
+                     filename, size, len(pngdata))
+            icondata = pngdata
+            filename = filename[:-3]+"png"
     log("got icon data from '%s': %i bytes", filename, len(icondata))
     if len(icondata)>MAX_ICON_SIZE and first_time("icon-size-warning-%s" % filename):
         global large_icons
         large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
 
-def svg_to_png(icondata, w=128, h=128):
+def svg_to_png(filename, icondata, w=128, h=128):
     Rsvg = load_Rsvg()
     if not Rsvg:
         return None
-    import cairo
-    #'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
-    img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
-    ctx = cairo.Context(img)
-    handle = Rsvg.Handle.new_from_data(icondata)
-    handle.render_cairo(ctx)
-    buf = BytesIO()
-    img.write_to_png(buf)
-    icondata = buf.getvalue()
-    buf.close()
-    return icondata
+    try:
+        import cairo
+        #'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
+        img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
+        ctx = cairo.Context(img)
+        handle = Rsvg.Handle.new_from_data(icondata)
+        handle.render_cairo(ctx)
+        buf = BytesIO()
+        img.write_to_png(buf)
+        icondata = buf.getvalue()
+        buf.close()
+        return icondata
+    except Exception:
+        log("svg_to_png%s", (icondata, w, h), exc_info=True)
+        if re.findall(INKSCAPE_RE, icondata):
+            #try again after stripping the bogus inkscape attributes
+            #as some rsvg versions can't handle that (ie: Debian Bullseye)
+            icondata = re.sub(INKSCAPE_RE, b"", icondata)
+            return svg_to_png(filename, icondata, w, h)
+        log.error("Error: failed to convert svg icon")
+        log.error(" '%s':", filename)
+        log.error(" %i bytes, %s", len(icondata), ellipsizer(icondata))
 
 
 def load_icon_from_theme(icon_name, theme=None):
