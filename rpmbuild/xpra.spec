@@ -587,13 +587,17 @@ fi
 
 
 %changelog
-* Tue Dec 08 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+* Tue Dec 15 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
 - fix proxy instance control socket errors and process leak
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
+- fix server asynchronous packets getting delayed
+- fix ssh connection errors with proxycommand or proxyhost port numbers
 - fix client rejecting printing requests
 - fix duplicate / untimely audio-stop control packets with HTML5 client
 - fix capslock regression on MacOS and MSWindows shadow servers
 - fix errors accessing window handles on MS Windows (size hints, opengl, etc)
+- fix spurious refresh packets with mmap
+- fix mmap not used with some non-video areas
 - fix missing avcodec decoder with MS Windows builds
 - fix missing webp Pillow decoder with MS Windows builds
 - fix missing tray icons regression on MS Windows (introduced in 4.0.5)
@@ -602,10 +606,16 @@ fi
 - fix Python 3.9 compatibility
 - fix sysconfig path in systemd service file for non-RedHat systems
 - fix xdg-open override script error handling
+- fix file-transfer failures with small files
 - fix file-transfers with non-ascii filenames
+- better file transfer message format
+- honour XPRA_XDG_EXPORT_ICONS=0 env var in all cases
+- hide passwords from authentication debug logging
+- updated DEB packaging for Ubuntu Focal, Groovy and Debian Bullseye
 - use an up-to-date PDFium library on MS Windows
 - make it possible to specify the socket type with systemd socket activation
 - re-add "~/.xpra" as socket-dir
+- typo in man page
 
 * Wed Nov 18 2020 Antoine Martin <antoine@xpra.org> 4.0.5-10
 - fix caps lock wrongly applied to numeric keys
