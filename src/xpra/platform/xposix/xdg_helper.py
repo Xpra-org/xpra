@@ -9,6 +9,7 @@ using python-xdg
 """
 
 import os
+import re
 import sys
 import glob
 from io import BytesIO
@@ -28,6 +29,7 @@ DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 
 large_icons = []
 
+INKSCAPE_RE = b'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
 
 def isvalidtype(v):
     if isinstance(v, (list, tuple, generator)):
@@ -128,19 +130,16 @@ def load_icon_from_file(filename):
         #try to resize it
         try:
             size = len(icondata)
-            import cairo
-            Rsvg = load_Rsvg()
-            if Rsvg:
-                img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
-                ctx = cairo.Context(img)
-                handle = Rsvg.Handle.new_from_data(icondata)
-                handle.render_cairo(ctx)
-                buf = BytesIO()
-                img.write_to_png(buf)
-                icondata = buf.getvalue()
-                buf.close()
+            pngdata = svg_to_png(icondata)
+            if not pngdata and re.findall(INKSCAPE_RE, icondata):
+                #try again after stripping the bogus inkscape attributes
+                #as some rsvg versions can't handle that (ie: Debian Bullseye)
+                icondata = re.sub(INKSCAPE_RE, b"", icondata)
+                pngdata = svg_to_png(icondata)
+            if pngdata:
                 log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
-                         filename, size, len(icondata))
+                         filename, size, len(pngdata))
+                icondata = pngdata
                 filename = filename[:-3]+"png"
         except Exception:
             log.error("Error: failed to convert svg icon")
@@ -151,6 +150,23 @@ def load_icon_from_file(filename):
         global large_icons
         large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
+
+def svg_to_png(icondata, w=128, h=128):
+    Rsvg = load_Rsvg()
+    if not Rsvg:
+        return None
+    import cairo
+    #'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
+    img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
+    ctx = cairo.Context(img)
+    handle = Rsvg.Handle.new_from_data(icondata)
+    handle.render_cairo(ctx)
+    buf = BytesIO()
+    img.write_to_png(buf)
+    icondata = buf.getvalue()
+    buf.close()
+    return icondata
+
 
 def load_icon_from_theme(icon_name, theme=None):
     if not EXPORT_ICONS or not icon_name:
