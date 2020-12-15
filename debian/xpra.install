@@ -19,6 +19,7 @@ usr/share/man/man1/xpra*
 usr/share/man/man1/run_scaled*
 usr/share/icons/*.png
 usr/share/xpra/icons/*.png
+usr/share/xpra/css/*
 usr/share/xpra/cuda/*
 usr/share/xpra/content-type/*
 usr/share/xpra/content-categories/*
