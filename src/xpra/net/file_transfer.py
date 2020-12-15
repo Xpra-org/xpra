@@ -423,7 +423,7 @@ class FileTransferHandler(FileTransferAttributes):
         except UnicodeDecodeError:
             basefilename = bytestostr(basefilename)
         mimetype = bytestostr(mimetype)
-        args = (send_id, b"file", basefilename, printit, openit)
+        args = (send_id, "file", basefilename, printit, openit)
         r = self.accept_data(*args)
         filelog("%s%s=%s", self.accept_data, args, r)
         if r is None:
@@ -666,7 +666,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
             return
-        if not self.open_url_ask or self.accept_data(send_id, b"url", url, False, True):
+        if not self.open_url_ask or self.accept_data(send_id, "url", url, False, True):
             self._open_url(url)
         else:
             filelog("url '%s' not accepted", url)
@@ -757,6 +757,7 @@ class FileTransferHandler(FileTransferAttributes):
             url = strtobytes(url).decode("utf8")
         except:
             url = bytestostr(url)
+        dtype = s(dtype)
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
 
 
@@ -776,7 +777,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.files_accepted[send_id] = openit
                 cb_answer(True)
                 return
-        if dtype==b"file":
+        if dtype=="file":
             if not self.file_transfer:
                 cb_answer(False)
                 return
@@ -787,7 +788,7 @@ class FileTransferHandler(FileTransferAttributes):
                 ask = self.file_transfer_ask or self.open_files_ask
             else:
                 ask = self.file_transfer_ask
-        elif dtype==b"url":
+        elif dtype=="url":
             if not self.open_url:
                 cb_answer(False)
                 return
