@@ -135,7 +135,7 @@ class ChildCommandServer(StubServerMixin):
         watched = []
         for data_dir in data_dirs:
             menu_dir = os.path.join(data_dir, "applications")
-            if not os.path.exists(menu_dir):
+            if not os.path.exists(menu_dir) or menu_dir in watched:
                 continue
             wdd = self.watch_manager.add_watch(menu_dir, mask)
             watched.append(menu_dir)
