@@ -725,7 +725,7 @@ class FileTransferHandler(FileTransferAttributes):
         dtype = v[0]
         url = v[1]
         if accept==DENY:
-            filelog.info("the request to send %s '%s' has been denied", bytestostr(dtype), url)
+            filelog.info("the request to send %s '%s' has been denied", bytestostr(dtype), s(url))
             return
         assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
         if dtype==b"file":
