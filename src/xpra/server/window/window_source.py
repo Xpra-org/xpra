@@ -1854,7 +1854,7 @@ class WindowSource(WindowIconSource):
 
     def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
         assert data
-        if (encoding.startswith("png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith("rgb"):
+        if (encoding.startswith("png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith("rgb") or encoding=="mmap":
             actual_quality = 100
             lossy = False
         else:
