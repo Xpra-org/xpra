@@ -1072,7 +1072,7 @@ class WindowVideoSource(WindowSource):
             if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
                 self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
                 self.content_type=="text" or \
-                (self._mmap and self._mmap_size>0):
+                self._mmap_size>0:
                 #cannot use video subregions
                 #FIXME: small race if a refresh timer is due when we change encoding - meh
                 vs.reset()
@@ -1132,7 +1132,7 @@ class WindowVideoSource(WindowSource):
 
             Can be called from any thread.
         """
-        if self._mmap and self._mmap_size>0:
+        if self._mmap_size>0:
             scorelog("cannot score: mmap enabled")
             return
         if self.content_type=="text" and self.non_video_encodings:
