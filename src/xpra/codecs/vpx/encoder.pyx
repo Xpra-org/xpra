@@ -581,7 +581,7 @@ cdef class Encoder:
             f.close()
 
 
-    def compress_image(self, image, quality=-1, speed=-1, options={}):
+    def compress_image(self, image, quality=-1, speed=-1, options:typedict=None):
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         cdef uint8_t *pic_buf = NULL
@@ -604,7 +604,7 @@ cdef class Encoder:
             strides[i] = istrides[i]
             assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
             assert pic_buf_len>=istrides[i]*self.height//ydiv
-        cdef unsigned long bandwidth_limit = typedict(options).intget("bandwidth-limit", self.bandwidth_limit)
+        cdef unsigned long bandwidth_limit = typedict(options or {}).intget("bandwidth-limit", self.bandwidth_limit)
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()

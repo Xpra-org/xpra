@@ -16,7 +16,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
+from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool, typedict
 from xpra.os_util import bytestostr, strtobytes, hexstr, LINUX
 from xpra.buffers.membuf cimport memalign, object_as_buffer
 
@@ -1545,11 +1545,11 @@ cdef class Encoder:
     def get_delayed_frames(self):
         return 0
 
-    def log_av_error(self, image, err_no, options={}):
+    def log_av_error(self, image, err_no, options:dict=None):
         msg = av_error_str(err_no)
         self.log_error(image, msg, options, "error %i" % err_no)
 
-    def log_error(self, image, err, options={}, error_type="error"):
+    def log_error(self, image, err, options:dict=None, error_type="error"):
         log.error("Error: ffmpeg %s encoding %s:", error_type, self.encoding)
         log.error(" '%s'", err)
         log.error(" on image %s", image)
@@ -1560,7 +1560,7 @@ cdef class Encoder:
         for k,v in self.get_info().items():
             log.error("  %s = %s", k, v)
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options={}):
+    def compress_image(self, image, int quality=-1, int speed=-1, options:typedict=None):
         cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
@@ -1608,7 +1608,7 @@ cdef class Encoder:
             #self.av_frame.quality = 1
             frame = self.av_frame
         else:
-            assert options.get("flush")
+            assert options and options.get("flush")
             frame = NULL
 
         if self.vaapi and frame:

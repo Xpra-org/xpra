@@ -10,7 +10,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
-from xpra.util import envbool
+from xpra.util import envbool, typedict
 from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
 from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
@@ -490,7 +490,7 @@ cdef class Encoder:
         return self.src_format
 
 
-    def compress_image(self, image, quality=-1, speed=-1, options={}):
+    def compress_image(self, image, quality=-1, speed=-1, options:typedict=None):
         cdef x265_nal *nal
         cdef uint32_t nnal = 0
         cdef unsigned int i                        #@DuplicatedSignature
@@ -499,7 +499,7 @@ cdef class Encoder:
         cdef x265_picture *pic_in = NULL
         cdef int nal_size, frame_size = 0
 
-        cdef uint8_t *pic_buf
+        cdef uint8_t *pic_buf = NULL
         cdef Py_ssize_t pic_buf_len = 0
         cdef char *out
 

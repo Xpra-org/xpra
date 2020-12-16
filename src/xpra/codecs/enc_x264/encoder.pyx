@@ -10,7 +10,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 
-from xpra.util import envint, envbool, typedict, csv, AtomicInteger
+from xpra.util import envint, envbool, typedict, csv, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import video_spec
 from collections import deque
@@ -816,7 +816,7 @@ cdef class Encoder:
         return strtobytes(profile)
 
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options={}):
+    def compress_image(self, image, int quality=-1, int speed=-1, options:typedict=None):
         cdef x264_picture_t pic_in
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
@@ -830,7 +830,8 @@ cdef class Encoder:
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
 
-        content_type = options.get("content-type", self.content_type)
+        options = options or {}
+        content_type = options.strget("content-type", self.content_type)
         b_frames = options.get("b-frames", 0)
         if content_type!=self.content_type or self.b_frames!=b_frames:
             #some options have changed:

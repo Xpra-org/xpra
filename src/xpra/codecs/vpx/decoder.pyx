@@ -16,7 +16,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
 from xpra.os_util import bytestostr
-from xpra.util import envint
+from xpra.util import envint, typedict
 
 from libc.stdint cimport uint8_t
 from libc.string cimport memset, memcpy
@@ -247,7 +247,7 @@ cdef class Decoder:
         self.encoding = ""
 
 
-    def decompress_image(self, input, options):
+    def decompress_image(self, input, options:typedict=None):
         cdef vpx_image_t *img
         cdef vpx_codec_iter_t iter = NULL
         cdef const unsigned char * buf = NULL

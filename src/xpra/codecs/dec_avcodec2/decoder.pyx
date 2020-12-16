@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("decoder", "avcodec")
 
 from xpra.os_util import bytestostr, WIN32
-from xpra.util import csv
+from xpra.util import csv, typedict
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
@@ -863,11 +863,11 @@ cdef class Decoder:
     def get_type(self):                             #@DuplicatedSignature
         return "avcodec"
 
-    def log_av_error(self, int buf_len, err_no, options={}):
+    def log_av_error(self, int buf_len, err_no, options:dict=None):
         msg = av_error_str(err_no)
         self.log_error(buf_len, msg, options, "error %i" % err_no)
 
-    def log_error(self, int buf_len, err, options={}, error_type="error"):
+    def log_error(self, int buf_len, err, options:dict=None, error_type="error"):
         log.error("Error: avcodec %s decoding %i bytes of %s data:", error_type, buf_len, self.encoding)
         log.error(" '%s'", err)
         log.error(" frame %i", self.frames)
@@ -883,7 +883,7 @@ cdef class Decoder:
         for k,v in self.get_info().items():
             log.error("   %20s = %s", k, pv(v))
 
-    def decompress_image(self, input, options):
+    def decompress_image(self, input, options:typedict=None):
         cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
@@ -933,10 +933,11 @@ cdef class Decoder:
             ret = avcodec_receive_frame(self.codec_ctx, av_frame)
         free(padded_buf)
         if ret==-errno.EAGAIN:
-            d = options.intget("delayed", 0)
-            if d>0:
-                log("avcodec_receive_frame %i delayed pictures", d)
-                return None
+            if options:
+                d = options.intget("delayed", 0)
+                if d>0:
+                    log("avcodec_receive_frame %i delayed pictures", d)
+                    return None
             self.log_error(buf_len, "no picture", options)
             return None
         if ret!=0:
