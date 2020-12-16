@@ -1295,7 +1295,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(size_hints)
         return hints
 
-    def setSizeHints(self, Window xwindow, hints={}):
+    def setSizeHints(self, Window xwindow, hints):
         self.context_check()
         cdef XSizeHints *size_hints = XAllocSizeHints()
         assert size_hints!=NULL

@@ -174,7 +174,7 @@ cdef class pam_session(object):
             return False
         return True
 
-    def set_env(self, env={}):
+    def set_env(self, env):
         assert self.pam_handle!=NULL
         cdef int r
         for k,v in env.items():
@@ -202,7 +202,7 @@ cdef class pam_session(object):
         log("get_envlist()=%s", env)
         return env
 
-    def set_items(self, items={}):
+    def set_items(self, items):
         cdef const void* item
         cdef pam_xauth_data xauth_data
         cdef int r
