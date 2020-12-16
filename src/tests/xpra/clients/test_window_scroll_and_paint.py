@@ -32,9 +32,9 @@ class WindowAnim(object):
         img_data = c*w*h
         self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict({}), [])
 
-    def paint_rect(self, x=200, y=200, w=32, h=32, img_data=None, options={}):
+    def paint_rect(self, x=200, y=200, w=32, h=32, img_data=None):
         assert img_data
-        self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict(options), [])
+        self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict(), [])
 
     def paint_png(self, x=256, y=256):
         W, H = self.window.get_size()

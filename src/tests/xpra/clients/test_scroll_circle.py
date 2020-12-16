@@ -29,9 +29,9 @@ class WindowAnim(object):
         self.delta_x = 0
         self.delta_y = 0
 
-    def paint_rect(self, x=200, y=200, w=32, h=32, img_data=None, options={}):
+    def paint_rect(self, x=200, y=200, w=32, h=32, img_data=None):
         assert img_data
-        self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict(options), [])
+        self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict(), [])
 
     def movearound(self, ydelta=1):
         self.counter += 1

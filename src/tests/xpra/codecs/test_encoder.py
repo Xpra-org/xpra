@@ -26,7 +26,7 @@ def test_encoder_dimensions(encoder_module):
     test_encoder(encoder_module, dimensions=dims)
     log("")
 
-def test_performance(encoder_module, options={}):
+def test_performance(encoder_module, options=None):
     log("")
     log("test_performance()")
     dims = [(1280, 720), (1920, 1080), (3840, 2160)]
@@ -41,8 +41,8 @@ def test_performance(encoder_module, options={}):
 def log_output(args):
     log(args)
 
-def test_encoder(encoder_module, options={}, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=4, quality=20, speed=0, after_encode_cb=None, input_colorspaces=None):
-    options = typedict(options)
+def test_encoder(encoder_module, options=None, dimensions=DEFAULT_TEST_DIMENSIONS, n_images=4, quality=20, speed=0, after_encode_cb=None, input_colorspaces=None):
+    options = typedict(options or {})
     encoder_module.init_module()
     log("test_encoder(%s, %s)", encoder_module, dimensions)
     log("version=%s" % str(encoder_module.get_version()))

@@ -65,8 +65,8 @@ class WindowAnim(object):
         self.scrollup(ydelta)
         return False
 
-    def paint_rect(self, x=200, y=200, w=32, h=32, img_data="", options={}):
-        self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict(options), [])
+    def paint_rect(self, x=200, y=200, w=32, h=32, img_data=""):
+        self.window.draw_region(x, y, w, h, "rgb32", img_data, w*4, 0, typedict(), [])
 
 
 def main():
