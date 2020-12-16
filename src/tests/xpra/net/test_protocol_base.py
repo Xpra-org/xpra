@@ -69,7 +69,7 @@ class SimpleServer(object):
 
 class SimpleClient(object):
 
-    def init(self, exit_cb, packets=[]):
+    def init(self, exit_cb, packets=()):
         self.packets = packets
         sock = socket.socket(socket.AF_UNIX)
         sock.settimeout(5)

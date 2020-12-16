@@ -186,7 +186,7 @@ cdef class WebpBufferWrapper:
             self.buffer_ptr = 0
 
 
-def decompress(data, has_alpha, rgb_format=None, rgb_formats=[]):
+def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.
