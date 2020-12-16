@@ -172,7 +172,7 @@ class TestMain(unittest.TestCase):
         #proxy attributes:
         assert parse_proxy_attributes("somedisplay")==("somedisplay", {})
         attr = parse_proxy_attributes("10?proxy=username:password@host:222")[1]
-        assert attr=={"proxy_host" : "host", "proxy_port" : "222", "proxy_username" : "username", "proxy_password" : "password"}
+        assert attr=={"proxy_host" : "host", "proxy_port" : 222, "proxy_username" : "username", "proxy_password" : "password"}
         def f(s):
             v = parse_proxy_attributes(s)
             assert v[1]=={}, "parse_proxy_attributes(%s) should fail" % s
