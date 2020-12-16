@@ -1610,7 +1610,7 @@ cdef class Encoder:
                     return c_parseguid(preset_guid)
         raise Exception("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):    #@DuplicatedSignature
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX", "r210"), "invalid source format %s" % src_format
@@ -1637,6 +1637,7 @@ cdef class Encoder:
         self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
 
+        options = options or typedict()
         #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.profile_name = self._get_profile(options)

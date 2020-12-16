@@ -504,7 +504,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):
+    def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
@@ -515,6 +515,7 @@ cdef class Encoder:
         self.quality = quality
         self.speed = speed
         #self.opencl = USE_OPENCL and width>=32 and height>=32
+        options = options or typedict()
         self.content_type = options.strget("content-type", "unknown")      #ie: "video"
         self.b_frames = options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
@@ -569,7 +570,7 @@ cdef class Encoder:
             tunes.append(b"fastdecode")
         return b",".join(tunes)
 
-    cdef init_encoder(self, options):
+    cdef init_encoder(self, options:typedict):
         cdef x264_param_t param
         cdef const char *preset
         preset = get_preset_names()[self.preset]
@@ -584,7 +585,7 @@ cdef class Encoder:
         log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
-    cdef tune_param(self, x264_param_t *param, options):
+    cdef tune_param(self, x264_param_t *param, options:typedict):
         param.i_lookahead_threads = 0
         if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
             param.b_sliced_threads = 1

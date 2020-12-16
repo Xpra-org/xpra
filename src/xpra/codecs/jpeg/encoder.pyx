@@ -92,7 +92,7 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return str(err)
 
-def encode(image, int quality=50, int speed=50, options={}):
+def encode(image, int quality=50, int speed=50):
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()

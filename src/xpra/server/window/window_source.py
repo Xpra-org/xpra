@@ -2427,7 +2427,7 @@ class WindowSource(WindowIconSource):
         self.no_r210(image, ["RGB"])
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        return self.enc_jpeg.encode(image, q, s, options)
+        return self.enc_jpeg.encode(image, q, s)
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:
