@@ -2,8 +2,8 @@
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     4.2.2
-Release:     1%{?dist}
+Version:     4.3.1
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -11,9 +11,14 @@ License:     GPL
 URL:	     http://www.ffmpeg.org
 Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
+AutoProv:    0
+AutoReq:     0
 
 BuildRequires:	x264-xpra-devel
+BuildRequires:	libva-devel
 BuildRequires:	yasm
+
+#%global __requires_exclude ^libx264.so.*$
 
 
 %description
@@ -25,6 +30,9 @@ Summary:   Development package for %{real_name}
 Group:     Development/libraries
 Requires:  %{name} = %{version}-%{release}
 Requires:  pkgconfig
+Requires:  ffmpeg-xpra = %{version}
+Requires:  libva
+AutoReq:   0
 
 %description devel
 This package contains the development files for %{name}.
@@ -55,6 +63,7 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--disable-libxcb \
 	--enable-libx264 \
 	--enable-libvpx \
+	--enable-vaapi \
 	--enable-gpl \
 	--enable-protocol=file \
 	--enable-decoder=h264 \
@@ -71,6 +80,11 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--enable-encoder=mpeg2video \
 	--enable-encoder=libx264 \
 	--enable-encoder=aac \
+	--enable-encoder=h264_vaapi \
+	--enable-encoder=hevc_vaapi \
+	--enable-encoder=mpeg2_vaapi \
+	--enable-encoder=vp8_vaapi \
+	--enable-encoder=vp9_vaapi \
 	--enable-muxer=mp4 \
 	--enable-muxer=webm \
 	--enable-muxer=matroska \
@@ -80,6 +94,12 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--enable-demuxer=m4v \
 	--enable-demuxer=matroska \
 	--enable-demuxer=ogg \
+	--enable-hwaccel=h264_vaapi \
+	--enable-hwaccel=hevc_vaapi \
+	--enable-hwaccel=mpeg2_vaapi \
+	--enable-hwaccel=vp8_vaapi \
+	--enable-hwaccel=vp9_vaapi \
+	--enable-pthreads \
 	--enable-shared \
 	--enable-debug \
 	--disable-stripping \
@@ -151,6 +171,22 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Nov 10 2020 Antoine Martin <antoine@xpra.org> 4.3.1-2
+- add dependency on libva
+
+* Sat Aug 22 2020 Antoine Martin <antoine@xpra.org> 4.3.1-1
+- new upstream release
+
+* Mon Jul 06 2020 Antoine Martin <antoine@xpra.org> 4.3-2
+- rebuild against 10-bit x264
+- remove autoreq / autoprov
+
+* Wed Jun 17 2020 Antoine Martin <antoine@xpra.org> 4.3-1
+- new upstream release
+
+* Tue May 26 2020 Antoine Martin <antoine@xpra.org> 4.2.3-1
+- new upstream release
+
 * Mon Jan 20 2020 Antoine Martin <antoine@xpra.org> 4.2.2-1
 - new upstream release
 
