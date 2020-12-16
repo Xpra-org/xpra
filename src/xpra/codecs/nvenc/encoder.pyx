@@ -2349,7 +2349,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options:typedict=None, int retry=0):
+    def compress_image(self, image, int quality=-1, int speed=-1, options:dict=None, int retry=0):
         assert self.context, "context is not initialized"
         self.cuda_context.push()
         try:

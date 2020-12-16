@@ -116,7 +116,7 @@ def testdecoding(decoder_module, encoding, full):
                 log("%s: testing %s / %s with junk data", decoder_module.get_type(), encoding, cs)
                 #test failures:
                 try:
-                    image = e.decompress_image(b"junk", {})
+                    image = e.decompress_image(b"junk")
                 except Exception:
                     image = None
                 if image is not None:
@@ -218,7 +218,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                 e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1, 1), options)
                 for i in range(2):
                     image = make_test_image(cs_in, W, H)
-                    v = e.compress_image(image, options=options)
+                    v = e.compress_image(image)
                     if v is None:
                         raise Exception("%s compression failed" % encoding)
                     data, meta = v

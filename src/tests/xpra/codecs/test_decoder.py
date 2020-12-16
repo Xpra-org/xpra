@@ -21,7 +21,7 @@ def test_decoder(decoder_module, w, h, dst_format, hex_data_list):
         i = 0
         for hex_data in hex_data_list:
             data = binascii.unhexlify(hex_data)
-            img = d.decompress_image(data, {})
+            img = d.decompress_image(data)
             print("decoded image(%s - %s bytes)=%s" % (i, len(hex_data), img))
             i += 1
     finally:

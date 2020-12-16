@@ -883,7 +883,7 @@ cdef class Decoder:
         for k,v in self.get_info().items():
             log.error("   %20s = %s", k, pv(v))
 
-    def decompress_image(self, input, options:typedict=None):
+    def decompress_image(self, input, options:dict=None):
         cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
@@ -934,7 +934,7 @@ cdef class Decoder:
         free(padded_buf)
         if ret==-errno.EAGAIN:
             if options:
-                d = options.intget("delayed", 0)
+                d = options.get("delayed", 0)
                 if d>0:
                     log("avcodec_receive_frame %i delayed pictures", d)
                     return None

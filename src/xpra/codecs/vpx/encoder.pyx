@@ -581,7 +581,7 @@ cdef class Encoder:
             f.close()
 
 
-    def compress_image(self, image, quality=-1, speed=-1, options:typedict=None):
+    def compress_image(self, image, quality=-1, speed=-1, options:dict=None):
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         cdef uint8_t *pic_buf = NULL

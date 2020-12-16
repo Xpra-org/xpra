@@ -1560,7 +1560,7 @@ cdef class Encoder:
         for k,v in self.get_info().items():
             log.error("  %s = %s", k, v)
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options:typedict=None):
+    def compress_image(self, image, int quality=-1, int speed=-1, options:dict=None):
         cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
@@ -1608,7 +1608,7 @@ cdef class Encoder:
             #self.av_frame.quality = 1
             frame = self.av_frame
         else:
-            assert options and options.get("flush")
+            assert options and options.get("flush"), "no image and no flush flag"
             frame = NULL
 
         if self.vaapi and frame:

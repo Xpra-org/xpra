@@ -2092,13 +2092,13 @@ class WindowVideoSource(WindowSource):
         options["quality"] = max(5, self._current_quality-50)
         return encode_fn(encoding, image, options)
 
-    def video_encode(self, encoding, image, options : typedict):
+    def video_encode(self, encoding, image, options : dict):
         try:
             return self.do_video_encode(encoding, image, options)
         finally:
             self.free_image_wrapper(image)
 
-    def do_video_encode(self, encoding, image, options : typedict):
+    def do_video_encode(self, encoding, image, options : dict):
         """
             This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,
@@ -2212,7 +2212,7 @@ class WindowVideoSource(WindowSource):
             videolog("%s.compress_image%s", ve, (csc_image, quality, speed, options), exc_info=True)
             if self.is_cancelled():
                 return None
-            videolog.error("Error: failed to encode %s video frame:", ve.get_type())
+            videolog.error("Error: failed to encode %s video frame using %s:", ve.get_encoding(), ve.get_type())
             videolog.error(" %s", e)
             videolog.error(" source: %s", csc_image)
             videolog.error(" options:")

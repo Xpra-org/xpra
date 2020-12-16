@@ -490,7 +490,7 @@ cdef class Encoder:
         return self.src_format
 
 
-    def compress_image(self, image, quality=-1, speed=-1, options:typedict=None):
+    def compress_image(self, image, int quality=-1, int speed=-1, options:dict=None):
         cdef x265_nal *nal
         cdef uint32_t nnal = 0
         cdef unsigned int i                        #@DuplicatedSignature
