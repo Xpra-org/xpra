@@ -664,7 +664,7 @@ class CoreX11WindowModel(WindowModelStub):
 
 
     def do_xpra_shape_event(self, event):
-        shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))
+        shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))  # @UndefinedVariable
         cur_shape = self.get_property("shape")
         if cur_shape and cur_shape.get("serial", 0)>=event.serial:
             shapelog("same or older xshape serial no: %#x (current=%#x)", event.serial, cur_shape.get("serial", 0))
