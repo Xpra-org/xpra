@@ -247,7 +247,7 @@ cdef class Decoder:
         self.encoding = ""
 
 
-    def decompress_image(self, input, options:dict=None):
+    def decompress_image(self, input, options=None):
         cdef vpx_image_t *img
         cdef vpx_codec_iter_t iter = NULL
         cdef const unsigned char * buf = NULL

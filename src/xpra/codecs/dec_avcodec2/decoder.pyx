@@ -883,7 +883,7 @@ cdef class Decoder:
         for k,v in self.get_info().items():
             log.error("   %20s = %s", k, pv(v))
 
-    def decompress_image(self, input, options:dict=None):
+    def decompress_image(self, input, options=None):
         cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
