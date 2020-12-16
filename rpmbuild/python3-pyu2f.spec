@@ -10,20 +10,20 @@
 %define debug_package %{nil}
 
 Name:           python3-pyu2f
-Version:        0.1.4
-Release:        4
+Version:        0.1.5
+Release:        1
 URL:            https://github.com/google/pyu2f
 Summary:        Python3 based U2F host library for Linux
 License:        BSD
 Group:          Development/Libraries/Python
-Source:			https://files.pythonhosted.org/packages/b0/6d/0fd9107b92c792e62cdeaeca2dfe40928898509aba82d81656d53e610c64/pyu2f-%{version}.tar.gz
+Source:			https://files.pythonhosted.org/packages/29/b5/c1209e6cb77647bc2c9a6a1a953355720f34f3b006b725e303c70f3c0786/pyu2f-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
 pyu2f provides functionality for interacting with a U2F device over USB.
 
 %prep
-%setup -q -n pyu2f-0.1.4
+%setup -q -n pyu2f-0.1.5
 
 %build
 %{__python3} ./setup.py build
@@ -40,6 +40,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/pyu2f-%{version}-py3*.egg-info/*
 
 %changelog
+* Sat Oct 31 2020 Antoine Martin <antoine@xpra.org> - 0.1.5-1
+- new upstream release
+
 * Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 0.1.4-4
 - drop support for python2
 
