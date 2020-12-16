@@ -127,18 +127,25 @@ class SSHServer(paramiko.ServerInterface):
 
     def check_channel_exec_request(self, channel, command):
         def chan_send(send_fn, data, timeout=5):
+            if not data:
+                return
+            size = len(data)
             start = monotonic_time()
             while data and monotonic_time()-start<timeout:
                 sent = send_fn(data)
+                log("chan_send: sent %i bytes out of %i using %s", sent, size, send_fn)
                 if not sent:
                     break
                 data = data[sent:]
+            if data:
+                raise Exception("failed to send all the data using %s" % send_fn)
         #TODO: close channel after use? when?
         log("check_channel_exec_request(%s, %s)", channel, command)
         try:
             cmd = shlex.split(command.decode("utf8"))
         except UnicodeDecodeError:
             cmd = shlex.split(bytestostr(command))
+        log("check_channel_exec_request: cmd=%s", cmd)
         if cmd[0] in ("type", "which") and len(cmd)==2:
             xpra_cmd = cmd[1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             if not POSIX:
@@ -146,7 +153,7 @@ class SSHServer(paramiko.ServerInterface):
                 #we can't execute "type" or "which" on win32,
                 #so we just answer as best we can
                 #and only accept "xpra" as argument:
-                if xpra_cmd.strip("\"")=="xpra":
+                if xpra_cmd.strip('"').strip("'")=="xpra":
                     chan_send(channel.send, "xpra is xpra")
                     channel.send_exit_status(0)
                 else:
@@ -164,6 +171,8 @@ class SSHServer(paramiko.ServerInterface):
                 chan_send(channel.send_stderr, "failed to execute command: %s" % e)
                 channel.send_exit_status(1)
             else:
+                log("check_channel_exec_request: out(%s)=%s", cmd, out)
+                log("check_channel_exec_request: err(%s)=%s", cmd, err)
                 chan_send(channel.send, out)
                 chan_send(channel.send_stderr, err)
                 channel.send_exit_status(proc.returncode)
