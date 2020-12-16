@@ -46,7 +46,8 @@ class ShadowServerTest(ServerTestUtil):
 		info = self.get_server_info(xvfb.display)
 		assert info
 		tinfo = typedict(info)
-		assert tinfo.strget("server.display")==display
+		idisplay = tinfo.strget("server.display")
+		assert idisplay==display, "expected display '%s' in info, but got '%s'" % (display, idisplay)
 		rd = tinfo.intget("refresh-delay", 0)
 		assert rd==REFRESH_DELAY, "expected refresh-delay=%i, got %i" % (REFRESH_DELAY, rd)
 		dstr = display.lstrip(":")
