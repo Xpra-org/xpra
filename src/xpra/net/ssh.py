@@ -8,6 +8,7 @@ import os
 import shlex
 import socket
 import signal
+from time import sleep
 from subprocess import PIPE, Popen
 
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
@@ -20,7 +21,7 @@ from xpra.exit_codes import (
     EXIT_CONNECTION_FAILED,
     )
 from xpra.os_util import (
-    bytestostr, osexpand, load_binary_file,
+    bytestostr, osexpand, load_binary_file, monotonic_time,
     nomodule_context, umask_context, is_main_thread,
     WIN32, OSX, POSIX,
     )
@@ -46,6 +47,9 @@ PASSWORD_AUTH = envbool("XPRA_SSH_PASSWORD_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 assert PASSWORD_RETRY>=0
 MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
+TEST_COMMAND_TIMEOUT = envint("XPRA_SSH_TEST_COMMAND_TIMEOUT", 10)
+EXEC_STDOUT_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDOUT_TIMEOUT", 2)
+EXEC_STDERR_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDERR_TIMEOUT", 0)
 
 
 def keymd5(k) -> str:
@@ -721,7 +725,7 @@ keymd5(host_key),
 
 def paramiko_run_test_command(transport, cmd):
     from paramiko import SSHException
-    log("run_test_command('%s')", cmd)
+    log("paramiko_run_test_command(transport, %r)", cmd)
     try:
         chan = transport.open_session(window_size=None, max_packet_size=0, timeout=60)
         chan.set_name("find %s" % cmd)
@@ -729,10 +733,29 @@ def paramiko_run_test_command(transport, cmd):
         log("open_session", exc_info=True)
         raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
     chan.exec_command(cmd)
-    out = chan.makefile().read()
-    err = chan.makefile_stderr().read()
+    log("exec_command returned")
+    start = monotonic_time()
+    while not chan.exit_status_ready():
+        if monotonic_time()-start>TEST_COMMAND_TIMEOUT:
+            chan.close()
+            raise InitException("SSH test command '%s' timed out" % cmd)
+        log("exit status is not ready yet, sleeping")
+        sleep(0.01)
     code = chan.recv_exit_status()
-    log("exec_command('%s')=%s, out=%s, err=%s", cmd, code, out, err)
+    log("exec_command('%s')=%s", cmd, code)
+    def chan_read(read_fn):
+        try:
+            return read_fn()
+        except socket.error:
+            log("chan_read(%s)", read_fn, exc_info=True)
+            return b""
+    #don't wait too long for the data:
+    chan.settimeout(EXEC_STDOUT_TIMEOUT)
+    out = chan_read(chan.makefile().readline)
+    log("exec_command out=%r", out)
+    chan.settimeout(EXEC_STDERR_TIMEOUT)
+    err = chan_read(chan.makefile_stderr().readline)
+    log("exec_command err=%r", err)
     chan.close()
     return out, err, code
 
