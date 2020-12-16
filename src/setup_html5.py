@@ -51,7 +51,7 @@ def install_symlink(symlink_options, dst):
     #print("no symlinks found for %s from %s" % (dst, symlink_options))
     return False
 
-def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True, verbose=False, extra_symlinks={}):
+def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True, verbose=False):
     if minifier:
         print("minifying html5 client to '%s' using %s" % (install_dir, minifier))
     else:
