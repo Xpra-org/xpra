@@ -8,7 +8,7 @@
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import monotonic_time, is_Wayland, get_loaded_kernel_modules
 from xpra.util import (
-    envbool, envint, nonl, merge_dicts,
+    envbool, envint, merge_dicts,
     XPRA_DISPLAY_NOTIFICATION_ID, XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
     )
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import GObject, Gtk, Gdk, GLib
+from gi.repository import GObject, Gtk, Gdk
 
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
 from xpra.clipboard.clipboard_core import (
