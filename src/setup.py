@@ -1997,7 +1997,7 @@ toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 if nvenc_ENABLED and cuda_kernels_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
-    CUDA_VERSIONS = ["10.2", "10.1", "10.0", "9.2", "9.1", "9.0", "8.0", "7.5", ]
+    CUDA_VERSIONS = ["11.2", "11.1", "11.0", "10.2", "10.1", "10.0", "9.2", "9.1", "9.0", "8.0", "7.5", ]
     if WIN32:
         external_includes += ["pycuda"]
         nvcc_exe = "nvcc.exe"
