@@ -149,7 +149,7 @@ cdef class pam_session:
     def __repr__(self):
         return "pam_session(%#x)" % (<uintptr_t> self.pam_handle)
 
-    def start(self, password=False):
+    def start(self, password=False) -> bool:
         cdef pam_conv conv
         cdef int r
         cdef Py_ssize_t buffer_len
@@ -173,7 +173,7 @@ cdef class pam_session:
             return False
         return True
 
-    def set_env(self, env={}):
+    def set_env(self, env : dict):
         assert self.pam_handle!=NULL
         cdef int r
         for k,v in env.items():
@@ -184,7 +184,7 @@ cdef class pam_session:
             else:
                 log("pam_putenv: %s", name_value)
 
-    def get_envlist(self):
+    def get_envlist(self) -> dict:
         assert self.pam_handle!=NULL
         cdef char **envlist = pam_getenvlist(self.pam_handle)
         log("pam_getenvlist: %#x", <uintptr_t> envlist)
@@ -201,7 +201,7 @@ cdef class pam_session:
         log("get_envlist()=%s", env)
         return env
 
-    def set_items(self, items={}):
+    def set_items(self, items : dict):
         cdef const void* item
         cdef pam_xauth_data xauth_data
         cdef int r
@@ -231,7 +231,7 @@ cdef class pam_session:
             else:
                 log("pam_set_item: %s=%s", k, v)
 
-    def open(self):         #@ReservedAssignment
+    def open(self) -> bool:         #@ReservedAssignment
         assert self.pam_handle!=NULL
         cdef int r = pam_open_session(self.pam_handle, 0)
         log("pam_open_session: %s", PAM_ERR_STR.get(r, r))
@@ -242,7 +242,7 @@ cdef class pam_session:
             return False
         return True
 
-    def authenticate(self):
+    def authenticate(self) -> bool:
         log("authenticate()")
         assert self.pam_handle!=NULL
         cdef int r = pam_authenticate(self.pam_handle, PAM_SILENT)
@@ -253,7 +253,7 @@ cdef class pam_session:
             return False
         return True
 
-    def check_account(self):
+    def check_account(self) -> bool:
         assert self.pam_handle!=NULL
         cdef int r = pam_acct_mgmt(self.pam_handle, 0)
         if r!=PAM_SUCCESS:
@@ -263,7 +263,7 @@ cdef class pam_session:
             return False
         return True
 
-    def close(self):
+    def close(self) -> bool:
         if self.pam_handle==NULL:
             log.error("Error: no pam session to close!")
             return False

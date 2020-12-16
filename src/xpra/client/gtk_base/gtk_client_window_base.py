@@ -1268,7 +1268,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             client_properties["workspace"] = window_workspace
         self.send_control_refresh(suspend_resume, client_properties)
 
-    def send_control_refresh(self, suspend_resume, client_properties={}, refresh=False):
+    def send_control_refresh(self, suspend_resume, client_properties=None, refresh=False):
         statelog("send_control_refresh%s", (suspend_resume, client_properties, refresh))
         #we can tell the server using a "buffer-refresh" packet instead
         #and also take care of tweaking the batch config

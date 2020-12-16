@@ -1338,8 +1338,10 @@ class WindowClient(StubClientMixin):
             self.reinit_windows()
         self.reinit_window_icons()
 
-    def control_refresh(self, wid, suspend_resume, refresh, quality=100, options={}, client_properties={}):
+    def control_refresh(self, wid, suspend_resume, refresh, quality=100, options=None, client_properties=None):
         packet = ["buffer-refresh", wid, 0, quality]
+        options = options or {}
+        client_properties = client_properties or {}
         options["refresh-now"] = bool(refresh)
         if suspend_resume is True:
             options["batch"] = {
