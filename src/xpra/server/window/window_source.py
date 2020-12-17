@@ -1376,9 +1376,10 @@ class WindowSource(WindowIconSource):
             return
 
         delay = options.get("delay", self.batch_config.delay)
-        if now-self.statistics.last_resized<0.250:
-            #recently resized, batch more
-            delay = max(50, delay+25)
+        resize_elapsed = int(1000*(now-self.statistics.last_resized))
+        if resize_elapsed<250:
+            #recently resized, batch more:
+            delay = delay+250-resize_elapsed
         gs = self.global_statistics
         if gs and now-gs.last_congestion_time<1:
             delay = int(delay * (2-(now-gs.last_congestion_time)))
