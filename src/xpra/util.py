@@ -734,10 +734,18 @@ def pver(v, numsep=".", strsep=", "):
     #print for lists with version numbers, or CSV strings
     if isinstance(v, (list, tuple)):
         types = list(set(type(x) for x in v))
-        if len(types)==1 and types[0]==int:
-            return numsep.join(str(x) for x in v)
-        if len(types)==1 and types[0]==str:
-            return strsep.join(str(x) for x in v)
+        if len(types)==1:
+            if types[0]==int:
+                return numsep.join(str(x) for x in v)
+            if types[0]==str:
+                return strsep.join(str(x) for x in v)
+            if types[0]==bytes:
+                def s(x):
+                    try:
+                        return x.decode("utf8")
+                    except:
+                        return bytestostr(x)
+                return strsep.join(s(x) for x in v)
     from xpra.os_util import bytestostr
     return bytestostr(v)
 
