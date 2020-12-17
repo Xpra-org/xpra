@@ -121,7 +121,7 @@ class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image, quality=-1, speed=-1, options:dict=None):
+    def compress_image(self, image, quality=-1, speed=-1, options=None):
         log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()

@@ -863,11 +863,11 @@ cdef class Decoder:
     def get_type(self):                             #@DuplicatedSignature
         return "avcodec"
 
-    def log_av_error(self, int buf_len, err_no, options:dict=None):
+    def log_av_error(self, int buf_len, err_no, options=None):
         msg = av_error_str(err_no)
         self.log_error(buf_len, msg, options, "error %i" % err_no)
 
-    def log_error(self, int buf_len, err, options:dict=None, error_type="error"):
+    def log_error(self, int buf_len, err, options=None, error_type="error"):
         log.error("Error: avcodec %s decoding %i bytes of %s data:", error_type, buf_len, self.encoding)
         log.error(" '%s'", err)
         log.error(" frame %i", self.frames)

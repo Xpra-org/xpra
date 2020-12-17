@@ -817,7 +817,7 @@ cdef class Encoder:
         return strtobytes(profile)
 
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options:dict=None):
+    def compress_image(self, image, int quality=-1, int speed=-1, options=None):
         cdef x264_picture_t pic_in
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
