@@ -1952,10 +1952,7 @@ class WindowVideoSource(WindowSource):
         #(zero change scrolls have been removed - so maybe there are none)
         if scrolls:
             client_options = options.copy()
-            try:
-                del client_options["scroll"]
-            except KeyError:
-                pass
+            client_options.pop("scroll", None)
             if flush>0:
                 client_options["flush"] = flush
             coding = "scroll"

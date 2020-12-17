@@ -729,10 +729,7 @@ class WindowModel(BaseWindowModel):
         sanitize_size_hints(hints)
         #we don't use the "size" attribute for anything yet,
         #and changes to this property could send us into a loop
-        try:
-            del hints["size"]
-        except KeyError:
-            pass
+        hints.pop("size", None)
         # Don't send out notify and ConfigureNotify events when this property
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this

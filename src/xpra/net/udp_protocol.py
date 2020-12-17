@@ -246,26 +246,17 @@ class UDPProtocol(Protocol):
         if last_seq>=0:
             done = tuple(x for x in tuple(self.fail_cb.keys()) if x<=last_seq)
             for x in done:
-                try:
-                    del self.fail_cb[x]
-                except KeyError:
-                    pass
+                self.fail_cb.pop(x, None)
             done = tuple(x for x in tuple(self.resend_cache.keys()) if x<=last_seq)
             for x in done:
-                try:
-                    del self.resend_cache[x]
-                except KeyError:
-                    pass
+                self.resend_cache.pop(x, None)
         #next we can forget about sequence numbers that have been cancelled:
         #we don't need to request a re-send, and we can skip over them:
         if cancel:
             for seqno in cancel:
                 if seqno>self.last_sequence:
                     self.can_skip.add(seqno)
-                try:
-                    del self.pending_packets[seqno]
-                except KeyError:
-                    pass
+                self.pending_packets.pop(seqno, None)
             #we may now be able to move forward a bit:
             if self.pending_packets and (self.last_sequence+1) in self.can_skip:
                 self.process_pending()
@@ -291,14 +282,8 @@ class UDPProtocol(Protocol):
                 #TODO: if the latency is low, resending becomes cheaper..
                 if len(missing_chunks)>=len(resend_cache)//4:
                     #too many are missing, forget about it
-                    try:
-                        del self.resend_cache[seqno]
-                    except KeyError:
-                        pass
-                    try:
-                        del self.fail_cb[seqno]
-                    except KeyError:
-                        pass
+                    self.resend_cache.pop(seqno, None)
+                    self.fail_cb.pop(seqno, None)
                     self.cancel.add(seqno)
                     fail_cb_seq()
                     continue
@@ -414,10 +399,7 @@ class UDPProtocol(Protocol):
         while True:
             seqno += 1
             if seqno in self.can_skip:
-                try:
-                    del self.pending_packets[seqno]
-                except KeyError:
-                    pass
+                self.pending_packets.pop(seqno, None)
                 self.can_skip.remove(seqno)
                 self.last_sequence = seqno
                 continue

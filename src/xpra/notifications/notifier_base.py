@@ -58,10 +58,7 @@ class NotifierBase:
         return ""
 
     def clean_notification(self, nid : int):
-        try:
-            temp_file = self.temp_files.pop(nid)
-        except KeyError:
-            temp_file = None
+        temp_file = self.temp_files.pop(nid, None)
         log("clean_notification(%s) temp_file=%s", nid, temp_file)
         if temp_file:
             try:

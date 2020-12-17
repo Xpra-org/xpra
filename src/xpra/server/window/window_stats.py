@@ -256,10 +256,7 @@ class WindowPerformanceStatistics:
                 log.error(" connection may be closed or closing,")
                 log.error(" sequence numbers missing: %s", csv(drop_missing_acks))
                 for sequence in drop_missing_acks:
-                    try:
-                        del self.damage_ack_pending[sequence]
-                    except KeyError:
-                        pass
+                    self.damage_ack_pending.pop(sequence, None)
         return packets_backlog, pixels_backlog, bytes_backlog
 
     def get_acks_pending(self):

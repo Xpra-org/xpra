@@ -144,10 +144,7 @@ class EncodingsMixin(StubSourceMixin):
         for wid in wids:
             #this is safe because we only add to this set from other threads:
             self.calculate_window_ids.remove(wid)
-            try:
-                del self.calculate_window_pixels[wid]
-            except KeyError:
-                pass
+            self.calculate_window_pixels.pop(wid, None)
             ws = self.window_sources.get(wid)
             if ws is None:
                 continue
@@ -463,10 +460,7 @@ class EncodingsMixin(StubSourceMixin):
                 "vertical-refresh"  : self.vrefresh,
                 }
         ieo = dict(self.icons_encoding_options)
-        try:
-            del ieo["default.icons"]
-        except KeyError:
-            pass
+        ieo.pop("default.icons", None)
         #encoding:
         info.update({
                      "encodings"        : {

@@ -58,13 +58,10 @@ class LoggingServer(StubServerMixin):
             del self.logging_clients[protocol]
 
     def remove_logging_client(self, protocol):
-        try:
-            del self.logging_clients[protocol]
-        except KeyError:
+        if self.logging_clients.pop(protocol, None) is None:
             log.warn("Warning: logging was not enabled for '%r'", protocol)
-        else:
-            if not self.logging_clients:
-                self.stop_capturing_logging()
+        if not self.logging_clients:
+            self.stop_capturing_logging()
 
     def add_logging_client(self, protocol):
         n = len(self.logging_clients)

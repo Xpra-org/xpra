@@ -670,10 +670,7 @@ class CoreX11WindowModel(WindowModelStub):
             shapelog("same or older xshape serial no: %#x (current=%#x)", event.serial, cur_shape.get("serial", 0))
             return
         #remove serial before comparing dicts:
-        try:
-            del cur_shape["serial"]
-        except KeyError:
-            pass
+        cur_shape.pop("serial", None)
         #read new xshape:
         with xswallow:
             #should we pass the x and y offsets here?

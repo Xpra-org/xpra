@@ -997,11 +997,7 @@ class WindowSource(WindowIconSource):
         #(generally before encoding - only one may still get encoded):
         for sequence in tuple(self.statistics.encoding_pending.keys()):
             if self._damage_cancelled>=sequence:
-                try:
-                    del self.statistics.encoding_pending[sequence]
-                except KeyError:
-                    #may have been processed whilst we checked
-                    pass
+                self.statistics.encoding_pending.pop(sequence, None)
 
     def cancel_expire_timer(self):
         et = self.expire_timer
@@ -1866,11 +1862,8 @@ class WindowSource(WindowIconSource):
         finally:
             self.free_image_wrapper(image)
             del image
-            try:
-                del self.statistics.encoding_pending[sequence]
-            except KeyError:
-                #may have been cancelled whilst we processed it
-                pass
+            #may have been cancelled whilst we processed it:
+            self.statistics.encoding_pending.pop(sequence, None)
         #NOTE: we MUST send it (even if the window is cancelled by now..)
         #because the code may rely on the client having received this frame
         if not packet:

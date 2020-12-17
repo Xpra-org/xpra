@@ -80,10 +80,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             npd = printers.get(k)
             if cpd==npd:
                 #unchanged: make sure we don't try adding it again:
-                try:
-                    del printers[k]
-                except KeyError:
-                    pass
+                printers.pop(k, None)
                 continue
             if npd is None:
                 log("printer %s no longer exists", k)
@@ -92,10 +89,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 log(" was %s", cpd)
                 log(" now %s", npd)
             #remove it:
-            try:
-                del self.printers[k]
-            except KeyError:
-                pass
+            self.printers.pop(k, None)
             self.remove_printer(k)
         #expand it here so the xpraforwarder doesn't need to import anything xpra:
         attributes = {"display"         : os.environ.get("DISPLAY"),
