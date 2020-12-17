@@ -1382,11 +1382,10 @@ class WindowSource(WindowIconSource):
         gs = self.global_statistics
         if gs and now-gs.last_congestion_time<1:
             delay = int(delay * (2-(now-gs.last_congestion_time)))
-        qsize = self.queue_size()
-        if qsize>4:
-            #the queue is getting big, try to slow down progressively:
-            delay = max(10, min(self.batch_config.min_delay, delay)) * (qsize/4.0)
-        delay = max(delay, options.get("min_delay", 0))
+        #raise min_delay if qsize goes higher than 4,
+        #but never go lower than 10:
+        min_delay = max(10, self.batch_config.min_delay * max(4, self.queue_size())//4)
+        delay = max(delay, options.get("min_delay", min_delay))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
         elapsed = now-self.batch_config.last_event
