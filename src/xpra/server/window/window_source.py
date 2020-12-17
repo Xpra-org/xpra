@@ -2206,9 +2206,8 @@ class WindowSource(WindowIconSource):
             self.statistics.client_decode_time.append((monotonic_time(), width*height, decode_time))
         elif decode_time<0:
             self.client_decode_error(decode_time, message)
-        try:
-            pending = self.statistics.damage_ack_pending.pop(damage_packet_sequence)
-        except KeyError:
+        pending = self.statistics.damage_ack_pending.pop(damage_packet_sequence, None)
+        if pending is None:
             log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
         gs = self.global_statistics
