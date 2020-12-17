@@ -1650,7 +1650,7 @@ class WindowSource(WindowIconSource):
         ww, wh = self.window_dimensions
         if pixels_encoding_backlog>=(ww*wh):
             log("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s",
-                self.wid, ww*wh)
+                self.wid, pixels_encoding_backlog)
             if self.statistics.get_acks_pending()==0:
                 check_again()
             return
