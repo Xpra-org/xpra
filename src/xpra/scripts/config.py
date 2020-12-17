@@ -1228,7 +1228,7 @@ def do_validate_config(d, discard, extras_types, extras_validation):
 def make_defaults_struct(extras_defaults=None, extras_types=None, extras_validation=None, username="", uid=getuid(), gid=getgid()):
     return do_make_defaults_struct(extras_defaults or {}, extras_types or {}, extras_validation or {}, username, uid, gid)
 
-def do_make_defaults_struct(extras_defaults, extras_types, extras_validation, username:str, uid:int, gid:int):
+def do_make_defaults_struct(extras_defaults, extras_types, extras_validation, username, uid, gid):
     #populate config with default values:
     if not username and uid:
         username = get_username_for_uid(uid)
