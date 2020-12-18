@@ -161,7 +161,7 @@ class InputServer(StubServerMixin):
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         keylog("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
-        if group>=0:
+        if group>=0 and keycode>=0:
             self.set_keyboard_layout_group(group)
         #currently unused: (group, is_modifier) = packet[8:10]
         self._focus(ss, wid, None)
