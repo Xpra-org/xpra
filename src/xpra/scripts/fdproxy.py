@@ -10,7 +10,7 @@ import threading
 
 from xpra.net.bytestreams import untilConcludes
 from xpra.util import repr_ellipsized, envint, envbool
-from xpra.os_util import hexstr
+from xpra.os_util import hexstr, POSIX
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -48,6 +48,9 @@ class XpraProxy(object):
         self._exit_code = 0
         signal.signal(signal.SIGINT, self.signal_quit)
         signal.signal(signal.SIGTERM, self.signal_quit)
+        if POSIX:
+            signal.signal(signal.SIGHUP, self.signal_quit)
+            signal.signal(signal.SIGPIPE, self.signal_quit)
 
     def start_threads(self):
         self._to_client.start()
