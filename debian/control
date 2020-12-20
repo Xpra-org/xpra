@@ -11,11 +11,7 @@ Build-Depends: debhelper (>= 8)
               ,libxtst-dev
               ,libxkbfile-dev
               ,libx264-dev
-#buster:              ,uglifyjs
-#xenial:              ,uglifyjs
-#bionic:              ,uglifyjs
-#eoan:              ,uglifyjs
-#focal:              ,uglifyjs
+              ,uglifyjs
               ,brotli
               ,libjs-jquery
               ,libjs-jquery-ui
@@ -26,8 +22,7 @@ Build-Depends: debhelper (>= 8)
               ,cython
 #xenial:              ,python-gobject-dev
 #bionic:              ,python-gobject-2-dev
-#disco:              ,python-gobject-2-dev
-#eoan:              ,python-gobject-2-dev
+#focal:              ,python-gobject-2-dev
 #stretch:              ,python-gobject-dev
 #buster:              ,python-gobject-2-dev
 #python3 :
@@ -40,19 +35,19 @@ Build-Depends: debhelper (>= 8)
 #bionic:              ,libavcodec-dev
 #bionic:              ,libavformat-dev
 #bionic:              ,libswscale-dev
-#disco:              ,libavcodec-dev
-#disco:              ,libavformat-dev
-#disco:              ,libswscale-dev
-#eoan:              ,libavcodec-dev
-#eoan:              ,libavformat-dev
-#eoan:              ,libswscale-dev
 #focal:              ,libavcodec-dev
 #focal:              ,libavformat-dev
 #focal:              ,libswscale-dev
+#groovy:              ,libavcodec-dev
+#groovy:              ,libavformat-dev
+#groovy:              ,libswscale-dev
 #stretch:              ,ffmpeg-xpra
 #buster:              ,libavcodec-dev
 #buster:              ,libavformat-dev
 #buster:              ,libswscale-dev
+#bullseye:              ,libavcodec-dev
+#bullseye:              ,libavformat-dev
+#bullseye:              ,libswscale-dev
               ,dh-python
               ,dh-systemd
               ,libsystemd-dev
@@ -78,11 +73,11 @@ Depends: python3-xpra | python2-xpra,
 # fast JPEG client support:
 #xenial:         ,libturbojpeg
 #bionic:        ,libturbojpeg
-#disco:        ,libturbojpeg
-#eoan:        ,libturbojpeg
 #focal:        ,libturbojpeg
+#groovy:        ,libturbojpeg
 #stretch:         ,libturbojpeg0
 #buster:         ,libturbojpeg0
+#bullseye:         ,libturbojpeg0
 Recommends:
         python3-xpra
         ,xpra-html5
@@ -93,33 +88,34 @@ Recommends:
         ,gir1.2-rsvg-2.0
 #bionic:        ,libavcodec57
 #bionic:        ,libswscale4
-#disco:        ,libavcodec58
-#disco:        ,libswscale5
-#eoan:        ,libavcodec58
-#eoan:        ,libswscale5
 #focal:        ,libavcodec58
 #focal:        ,libswscale5
-#buster:        ,libavcodec57
-#buster:        ,libswscale4
+#groovy:        ,libavcodec58
+#groovy:        ,libswscale5
+#buster:        ,libavcodec58
+#buster:        ,libswscale5
+#buster:        ,libavcodec58
+#buster:        ,libswscale5
 # x264:
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
 #bionic:        ,libx264-152
-#disco:        ,libx264-155
-#eoan:        ,libx264-152
+#focal:        ,libx264-155
+#groovy:        ,libx264-160
 #buster:        ,libx264-155
+#bullseye:        ,libx264-160
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 # AES encryption:
         ,python-cryptography
 #webp
 #stretch:        ,libwebp6
+#buster:        ,libwebp6
+#bullseye:        ,libwebp6
 #xenial:        ,libwebp5
 #bionic:        ,libwebp6
-#disco:        ,libwebp6
-#eoan:        ,libwebp6
 #focal:        ,libwebp6
-#buster:        ,libwebp6
+#groovy:        ,libwebp6
 # audio-related:
         ,gstreamer1.0-pulseaudio
         ,gstreamer1.0-alsa
@@ -149,15 +145,14 @@ Suggests: openssh-server
 # to make the system tray work again with gnome-shell:
 #buster:        ,gnome-shell-extension-appindicator
 #bionic:        ,gnome-shell-extension-appindicator
-#disco:        ,gnome-shell-extension-appindicator
-#eoan:        ,gnome-shell-extension-appindicator
 #focal:        ,gnome-shell-extension-appindicator
+#groovy:        ,gnome-shell-extension-appindicator
 #stretch:        ,gnome-shell-extension-top-icons-plus
 #buster:        ,gnome-shell-extension-top-icons-plus
+#bullseye:        ,gnome-shell-extension-top-icons-plus
 #bionic:        ,gnome-shell-extension-top-icons-plus
-#disco:        ,gnome-shell-extension-top-icons-plus
-#eoan:        ,gnome-shell-extension-top-icons-plus
 #focal:        ,gnome-shell-extension-top-icons-plus
+#groovy:        ,gnome-shell-extension-top-icons-plus
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -216,11 +211,7 @@ Recommends: python-dbus
 #the start-session GUI:
         ,python-xdg
 #hope that this will allow our status icon to be shown:
-#stretch:        ,python-appindicator
-#xenial:        ,python-appindicator
-#bionic:        ,python-appindicator
-#disco:        ,python-appindicator
-#eoan:        ,python-appindicator
+        ,python-appindicator
 Suggests:
 # for webcam support:
         python-pyinotify
