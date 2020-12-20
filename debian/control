@@ -130,13 +130,9 @@ Recommends: python3-dbus
         ,openssh-client
 #for using SSH passwords from the GUI launcher:
         ,sshpass
-# to make the system tray work again with gnome-shell:
-		,gnome-shell-extension-appindicator | plasma-desktop
 #most of the examples use an xterm:
         ,xterm
 Suggests: openssh-server
-# to make the system tray work again (sigh):
-		,gnome-shell-extension-top-icons-plus
 # for sound forwarding (server side):
         ,pulseaudio
         ,pulseaudio-utils
@@ -144,6 +140,7 @@ Suggests: openssh-server
         ,v4l2loopback-dkms
 # to make the system tray work again with gnome-shell:
         ,gnome-shell-extension-top-icons-plus
+        ,gnome-shell-extension-appindicator
 # for webcam support:
         ,python3-pyinotify
         ,python3-opencv
