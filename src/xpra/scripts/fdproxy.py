@@ -89,8 +89,8 @@ class XpraProxy:
                     buf = buf[written:]
                     log("%s: written %s bytes", log_name, written)
             log("%s copy loop ended", log_name)
-        except Exception as e:
-            log("%s: %s", log_name, e)
+        except Exception:
+            log("%s", log_name, exc_info=True)
         finally:
             self.quit()
 
