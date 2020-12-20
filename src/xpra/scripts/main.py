@@ -878,11 +878,13 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         qpos = s.find("?")
         cpos = s.find(",")
         display = None
+        options_str = None
         if qpos>=0 and (qpos<cpos or cpos<0):
             #query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
             attr_sep = "&"
             parts = s.split("?", 1)
             s = parts[0].split("#")[0]
+            options_str = parts[1]
         elif cpos>0 and (cpos<qpos or qpos<0):
             #csv string format,
             # ie: DISPLAY,key1=value1,key2=value2
@@ -894,6 +896,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
                 #assume it is part of the parameters
                 parts = ["", s]
                 display = ""
+            if len(parts)==2:
+                options_str = parts[1]
         elif s.find("=")>0:
             #ie: just one key=value
             #(so this is not a display)
@@ -911,9 +915,9 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         desc["display"] = display
         opts.display = display
         desc["display_as_args"] = [display]
-        if len(parts)==2:
+        if options_str:
             #parse extra attributes
-            d = parse_simple_dict(parts[1], attr_sep)
+            d = parse_simple_dict(options_str, attr_sep)
             for k,v in d.items():
                 if k in desc:
                     warn("Warning: cannot override '%s' with URI" % k)
