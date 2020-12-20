@@ -878,7 +878,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         qpos = s.find("?")
         cpos = s.find(",")
         display = None
-        if qpos>0 and (qpos<cpos or cpos<0):
+        if qpos>=0 and (qpos<cpos or cpos<0):
             #query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
             attr_sep = "&"
             parts = s.split("?", 1)
