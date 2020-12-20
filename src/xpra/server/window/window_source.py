@@ -1841,7 +1841,7 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
-        log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %.1f ms, request time: %.1f ms",
+        log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
                 self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
 
 

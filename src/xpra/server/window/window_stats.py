@@ -265,12 +265,15 @@ class WindowPerformanceStatistics:
     def get_packets_backlog(self, latency_tolerance_pct=100):
         packets_backlog = 0
         if self.damage_ack_pending:
-            sent_before = monotonic_time()-((self.target_latency+0.020)*latency_tolerance_pct/100.0)
+            latency = (self.target_latency+0.020)*latency_tolerance_pct/100.0
+            sent_before = monotonic_time()-latency
             for item in self.damage_ack_pending.values():
                 start_send_at = item[0]
                 end_send_at = item[3]
                 if end_send_at>0 and start_send_at<=sent_before:
                     packets_backlog += 1
+            log("get_packets_backlog(%i)=%i (sent less than %ims ago, target latency=%i)",
+                latency_tolerance_pct, packets_backlog, int(1000*latency), int(1000*self.target_latency))
         return packets_backlog
 
     def get_pixels_encoding_backlog(self):
