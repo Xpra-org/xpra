@@ -1488,20 +1488,24 @@ class WindowSource(WindowIconSource):
         self.expire_timer = None
         delayed = self._damage_delayed
         if not delayed:
+            damagelog("expire_delayed_region() already processed")
             #region has been sent
             return False
         if self.soft_timer:
             #a soft timer will take care of it soon
+            damagelog("expire_delayed_region() soft timer will take care of it")
             return False
+        damagelog("expire_delayed_region() delayed region=%s", delayed)
         delayed.expired = True
         self.cancel_may_send_timer()
         self.may_send_delayed()
-        delayed = self._damage_delayed
-        if not delayed:
+        if not self._damage_delayed:
             #got sent
             return False
         now = monotonic_time()
         if now<due:
+            damagelog("expire_delayed_region() not due yet: now=%s, due=%s (%i ms)",
+                      now, due, int(1000*(due-now)))
             #not due yet, don't allow soft expiry, just try again later:
             delay = int(1000*(due-now))
             expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
@@ -1510,6 +1514,7 @@ class WindowSource(WindowIconSource):
         #the region has not been sent yet because we are waiting for damage ACKs from the client
         max_soft_expired = min(1+self.statistics.damage_events_count//2, self.max_soft_expired)
         if self.soft_expired<max_soft_expired:
+            damagelog("expire_delayed_region() soft expired %i (max %i)", self.soft_expired, max_soft_expired)
             #there aren't too many regions soft expired yet
             #so use the "soft timer":
             self.soft_expired += 1
@@ -1518,6 +1523,7 @@ class WindowSource(WindowIconSource):
             soft_delay = self.soft_expired*self.batch_config.expire_delay
             self.soft_timer = self.timeout_add(soft_delay, self.delayed_region_soft_timeout)
         else:
+            damagelog("expire_delayed_region() soft expire limit reached: %i", max_soft_expired)
             if max_soft_expired==self.max_soft_expired:
                 #only record this congestion if this is a new event,
                 #otherwise we end up perpetuating it
@@ -1670,6 +1676,7 @@ class WindowSource(WindowIconSource):
         self.cancel_soft_timer()
         delayed = self._damage_delayed
         if delayed:
+            damagelog("do_send_delayed() damage delayed=%s", delayed)
             self._damage_delayed = None
             now = monotonic_time()
             actual_delay = int(1000 * (now-delayed.damage_time))
