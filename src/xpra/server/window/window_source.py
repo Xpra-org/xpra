@@ -1418,10 +1418,10 @@ class WindowSource(WindowIconSource):
         regions = [rectangle(x, y, w, h)]
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = DelayedRegions(now, regions, actual_encoding, options)
-        damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms",
-                  (x, y, w, h, options), self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
+        damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms",
+                  (x, y, w, h, options), self.wid, self._sequence, expire_delay)
         due = now+delay
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
