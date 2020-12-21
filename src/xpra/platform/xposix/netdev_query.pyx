@@ -11,7 +11,7 @@ import socket
 from libc.stdint cimport uint32_t, uint16_t, uint8_t  #pylint: disable=syntax-error
 
 from xpra.util import first_time, csv
-from xpra.os_util import strtobytes, bytestostr, LINUX
+from xpra.os_util import strtobytes, bytestostr, load_binary_file, LINUX
 from xpra.log import Logger
 
 log = Logger("util", "network")
@@ -80,22 +80,113 @@ cdef extern from "net/if.h":
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
 
+#linux kernel: if_arp.h
+ARPHRD = {
+    0   : "netrom",
+    1   : "ether",
+    2   : "eether",
+    3   : "ax25",
+    4   : "pronet",
+    5   : "chaos",
+    6   : "ieee802",
+    7   : "arcnet",
+    8   : "appletlk",
+    15  : "dlci",
+    19  : "atm",
+    23  : "metricom",
+    24  : "ieee1394",
+    27  : "eui64",
+    32  : "infiniband",
+    
+    256 : "slip",
+    257 : "cslip",
+    258 : "slip6",
+    259 : "cslip6",
+    260 : "rsrvd",
+    264 : "adapt",
+    270 : "rose",
+    271 : "x25",
+    272 : "hwx25",
+    280 : "can",
+    512 : "ppp",
+    513 : "cisco",
+    516 : "lapb",
+    517 : "ddcmp",
+    518 : "rawhdlc",
+    
+    768 : "tunnel",
+    769 : "tunner6",
+    770 : "frad",
+    771 : "skip",
+    772 : "loopback",
+    773 : "localtlk",
+    774 : "fddi",
+    775 : "bif",
+    776 : "sit",
+    777 : "ipddp",
+    778 : "ipgre",
+    779 : "pimreg",
+    780 : "hippi",
+    781 : "ash",
+    782 : "econet",
+    783 : "irda",
+
+    784 : "fcpp",
+    785 : "fcal",
+    786 : "fcpl",
+    787 : "fcfabric",
+    800 : "ieee802_tr",
+    801 : "ieee80211",
+    802 : "ieee80211_prism",
+    803 : "ieee80211_radiotap",
+    804 : "ieee802154",
+
+    820 : "phonet",
+    821 : "phonet_pipe",
+    822 : "caif",
+    }
 
 def get_interface_info(int sockfd, ifname):
     if sockfd==0:
         return {}
+    info = {}
+    adapter_type = None
+    sysnetfs = "/sys/class/net/%s" % ifname
+    if os.path.exists(sysnetfs) and os.path.isdir(sysnetfs):
+        type_file = os.path.join(sysnetfs, "type")
+        if os.path.exists(type_file):
+            dev_type = bytestostr(load_binary_file(type_file).rstrip(b"\n\r"))
+            if dev_type:
+                try:
+                    idev_type = int(dev_type)
+                except ValueError:
+                    pass
+                else:
+                    adapter_type = ARPHRD.get(idev_type)
+    if not adapter_type:
+        if ifname.startswith("lo"):
+            adapter_type = "loopback"
+        elif ifname.startswith("wl"):
+            adapter_type = "wireless"
+        elif ifname.startswith("eth") or ifname.startswith("en"):
+            adapter_type = "ethernet"
+        elif ifname.startswith("ww"):
+            adapter_type = "wan"
+        else:
+            wireless_path = "%s/wireless" % sysnetfs
+            if os.path.exists(wireless_path):
+                adapter_type = "wireless"
+    if adapter_type:
+        info["adapter-type"] = adapter_type
+    if sockfd>0:
+        info.update(get_ethtool_info(sockfd, ifname))
+    return info
+
+def get_ethtool_info(int sockfd, ifname):
     if len(ifname)>=IFNAMSIZ:
         log.warn("Warning: invalid interface name '%s'", ifname)
         log.warn(" maximum length is %i", IFNAMSIZ)
         return {}
-    if ifname=="lo":
-        return {}
-    info = {}
-    sysnetfs = "/sys/class/net/%s" % ifname
-    if os.path.exists(sysnetfs):
-        wireless_path = "%s/wireless" % sysnetfs
-        if os.path.exists(wireless_path):
-            info["adapter-type"] = "wireless"
     cdef ifreq ifr
     cdef ethtool_cmd edata
     bifname = strtobytes(ifname)
@@ -104,15 +195,12 @@ def get_interface_info(int sockfd, ifname):
     ifr.ifr_ifru.ifru_data = <void*> &edata
     edata.cmd = ETHTOOL_GSET
     cdef int r = ioctl(sockfd, SIOCETHTOOL, &ifr)
+    info = {}
     if r >= 0:
         info["speed"] = edata.speed*1000*1000
         #info["duplex"] = duplex: DUPLEX_HALF, DUPLEX_FULL DUPLEX_NONE?
     else:
-        if ifname.startswith("wl"):
-            info["adapter-type"] = "wireless"
-            log("guessing wireless for interface name '%s'", ifname)
-        elif first_time("ethtool-%s" % ifname):
-            log.info("no ethtool interface speed available for %s", ifname)
+        log("no ethtool interface speed available for %s", ifname)
         return info
     cdef ethtool_drvinfo drvinfo
     drvinfo.cmd = ETHTOOL_GDRVINFO
