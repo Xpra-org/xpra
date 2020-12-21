@@ -214,7 +214,7 @@ class WindowPerformanceStatistics:
         return info
 
 
-    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
+    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010, jitter=0):
         """ geometric mean of the minimum (+20%) and average latency
             but not higher than twice more than the minimum,
             and not lower than abs_min.
@@ -227,7 +227,7 @@ class WindowPerformanceStatistics:
         min_latency = max(abs_min, min_client_latency or abs_min)*1.2
         avg_latency = max(min_latency, avg_client_latency or abs_min)
         max_latency = min(avg_latency, 4.0*min_latency+0.100)
-        return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency
+        return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency + jitter/1000.0
 
     def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
