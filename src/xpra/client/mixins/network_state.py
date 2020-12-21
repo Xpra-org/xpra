@@ -106,7 +106,7 @@ class NetworkState(StubClientMixin):
         if adapter_type:
             connection_data["adapter-type"] = adapter_type
             at = adapter_type.lower()
-            if any(at.find(x)>=0 for x in ("ethernet", "local", "fiber", "1394")):
+            if any(at.find(x)>=0 for x in ("ether", "local", "fiber", "1394", "infiniband")):
                 jitter = 0
             elif at.find("wan")>=0:
                 jitter = 20
