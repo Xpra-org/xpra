@@ -1,14 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-def logger():
-    from xpra.log import Logger
-    return Logger("network", "util", "win32")
+from xpra.log import Logger
+log = Logger("network", "util", "win32")
+
 
 def get_interface_info(_fd, iface):
-    log = logger()
     from xpra.platform.win32.comtypes_util import QuietenLogging
     with QuietenLogging():
         try:
@@ -76,6 +75,10 @@ def get_tcp_info(sock):  #pylint: disable=unused-argument
 
 
 def main():
+    import sys
+    for x in sys.argv[1:]:
+        if x in ("--verbose", "-v"):
+            log.enable_debug()
     from xpra.platform import program_context
     with program_context("Network-Speed", "Network Speed Query Tool"):
         from xpra.net.net_util import get_interfaces
@@ -88,7 +91,7 @@ def main():
                 s = "%sbps" % std_unit(v)
                 print("%s : %s" % (iface, s))
             except ValueError:
-                logger().error("Error: parsing speed value '%s'", speed, exc_info=True)
+                log.error("Error: parsing speed value '%s'", speed, exc_info=True)
 
 if __name__ == "__main__":
     main()
