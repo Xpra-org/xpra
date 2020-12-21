@@ -226,7 +226,7 @@ class WindowPerformanceStatistics:
             decoding_latency = calculate_timesize_weighted_average(cdt)[0]/1000.0
         min_latency = max(abs_min, min_client_latency or abs_min)*1.2
         avg_latency = max(min_latency, avg_client_latency or abs_min)
-        max_latency = 2.0*min_latency
+        max_latency = min(avg_latency, 4.0*min_latency+0.100)
         return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency
 
     def get_client_backlog(self):
