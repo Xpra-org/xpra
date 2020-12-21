@@ -1595,9 +1595,19 @@ class WindowSource(WindowIconSource):
             log("window %s delayed region already sent", self.wid)
             return
         damage_time = dd.damage_time
-        packets_backlog = self.get_packets_backlog()
         now = monotonic_time()
         actual_delay = int(1000 * (now-damage_time))
+        #if we're here, there is no packet backlog, but there may be damage acks pending or a bandwidth limit to honour,
+        #if there are acks pending, may_send_delayed() should be called again from damage_packet_acked,
+        #if not, we must either process the region now or set a timer to check again later
+        def check_again(delay=actual_delay/10.0):
+            #schedules a call to check again:
+            delay = int(min(self.batch_config.max_delay, max(10, delay)))
+            self.may_send_timer = self.timeout_add(delay, self._may_send_delayed)
+        if not dd.expired:
+            #we must wait for expire_delayed_region()
+            return
+        packets_backlog = self.get_packets_backlog()
         if packets_backlog>0:
             if actual_delay>self.batch_config.timeout_delay:
                 log("send_delayed for wid %s, elapsed time %ims is above limit of %.1f",
@@ -1617,13 +1627,6 @@ class WindowSource(WindowIconSource):
                 log(" %s packets", packets_backlog)
             #this method will fire again from damage_packet_acked
             return
-        #if we're here, there is no packet backlog, but there may be damage acks pending or a bandwidth limit to honour,
-        #if there are acks pending, may_send_delayed() should be called again from damage_packet_acked,
-        #if not, we must either process the region now or set a timer to check again later
-        def check_again(delay=actual_delay/10.0):
-            #schedules a call to check again:
-            delay = int(min(self.batch_config.max_delay, max(10, delay)))
-            self.may_send_timer = self.timeout_add(delay, self._may_send_delayed)
         #locked means a fixed delay we try to honour,
         #this code ensures that we don't fire too early if called from damage_packet_acked
         if self.batch_config.locked:
