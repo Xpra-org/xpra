@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -107,6 +107,9 @@ class ClientConnection(StubSourceMixin):
         self.soft_bandwidth_limit = self.bandwidth_limit
         self.bandwidth_warnings = True
         self.bandwidth_warning_time = 0
+        self.client_connection_data = {}
+        self.adapter_type = ""
+        self.jitter = 0
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
@@ -209,7 +212,9 @@ class ClientConnection(StubSourceMixin):
         if self.bandwidth_detection:
             self.bandwidth_detection = c.boolget("bandwidth-detection", True)
         self.client_connection_data = c.dictget("connection-data", {})
-        self.jitter = typedict(self.client_connection_data).intget("jitter", 0)
+        ccd = typedict(self.client_connection_data)
+        self.adapter_type = ccd.strget("adapter-type", "")
+        self.jitter = ccd.intget("jitter", 0)
         bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
                      server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
 
@@ -353,6 +358,7 @@ class ClientConnection(StubSourceMixin):
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
                 "jitter"            : self.jitter,
+                "adapter-type"      : self.adapter_type,
                 "bandwidth-limit"   : {
                     "detection"     : self.bandwidth_detection,
                     "actual"        : self.soft_bandwidth_limit or 0,

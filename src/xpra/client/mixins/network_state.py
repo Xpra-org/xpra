@@ -104,6 +104,7 @@ class NetworkState(StubClientMixin):
         adapter_type = os.environ.get("XPRA_NETWORK_ADAPTER_TYPE", device_info.get("adapter-type"))
         log("get_caps() found adapter-type=%s", adapter_type)
         if adapter_type:
+            connection_data["adapter-type"] = adapter_type
             at = adapter_type.lower()
             if any(at.find(x)>=0 for x in ("ethernet", "local", "fiber", "1394")):
                 jitter = 0
