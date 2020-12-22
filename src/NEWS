@@ -1,8 +1,10 @@
-v3.0.13 (2020-12-15)
+v3.0.13 (2020-12-23)
 ======================
+	-- fix screen refresh performance issues, especially on jittery links
 	-- fix slow subcommands due to unnecessary calls to ldconfig on Linux
 	-- fix server asynchronous packets getting delayed
 	-- fix ssh connection errors with proxycommand or proxyhost port numbers
+	-- fix 'xpra _proxy' zombies getting left behind (ssh mode)
 	-- fix proxy instance zombies on server start failures
 	-- fix proxy instance control socket errors and process leak
 	-- fix capslock wrongly applied to numeric keys

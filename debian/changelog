@@ -1,7 +1,9 @@
 xpra (3.0.13-1) UNRELEASED; urgency=low
+  * fix screen refresh performance issues, especially on jittery links
   * fix slow subcommands due to unnecessary calls to ldconfig on Linux
   * fix server asynchronous packets getting delayed
   * fix ssh connection errors with proxycommand or proxyhost port numbers
+  * fix 'xpra _proxy' zombies getting left behind (ssh mode)
   * fix proxy instance zombies on server start failures
   * fix proxy instance control socket errors and process leak
   * fix capslock wrongly applied to numeric keys
@@ -42,7 +44,7 @@ xpra (3.0.13-1) UNRELEASED; urgency=low
   * re-add "~/.xpra" as socket-dir
   * typo in man page
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 15 Dec 2020 23:39:51 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 23 Dec 2020 00:37:05 +0700
 
 xpra (3.0.12-1) UNRELEASED; urgency=low
   * fix memory leak with 'scroll' encoding

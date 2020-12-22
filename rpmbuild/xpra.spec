@@ -871,10 +871,12 @@ fi
 
 
 %changelog
-* Tue Dec 15 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+* Wed Dec 23 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+- fix screen refresh performance issues, especially on jittery links
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
 - fix server asynchronous packets getting delayed
 - fix ssh connection errors with proxycommand or proxyhost port numbers
+- fix 'xpra _proxy' zombies getting left behind (ssh mode)
 - fix proxy instance zombies on server start failures
 - fix proxy instance control socket errors and process leak
 - fix capslock wrongly applied to numeric keys
