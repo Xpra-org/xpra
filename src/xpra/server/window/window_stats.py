@@ -213,7 +213,7 @@ class WindowPerformanceStatistics(object):
         return info
 
 
-    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010):
+    def get_target_client_latency(self, min_client_latency, avg_client_latency, abs_min=0.010, jitter=0):
         """ geometric mean of the minimum (+20%) and average latency
             but not higher than twice more than the minimum,
             and not lower than abs_min.
@@ -225,8 +225,8 @@ class WindowPerformanceStatistics(object):
             decoding_latency = calculate_timesize_weighted_average(cdt)[0]/1000.0
         min_latency = max(abs_min, min_client_latency or abs_min)*1.2
         avg_latency = max(min_latency, avg_client_latency or abs_min)
-        max_latency = 2.0*min_latency
-        return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency
+        max_latency = min(avg_latency, 4.0*min_latency+0.100)
+        return max(abs_min, min(max_latency, sqrt(min_latency*avg_latency))) + decoding_latency + jitter/1000.0
 
     def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
@@ -264,16 +264,18 @@ class WindowPerformanceStatistics(object):
     def get_acks_pending(self):
         return sum(1 for x in self.damage_ack_pending.values() if x[0]!=0)
 
-    def get_packets_backlog(self, latency_tolerance_pct=100):
-        packets_backlog = 0
-        if self.damage_ack_pending:
-            sent_before = monotonic_time()-((self.target_latency+0.020)*latency_tolerance_pct/100.0)
-            for item in self.damage_ack_pending.values():
-                start_send_at = item[0]
-                end_send_at = item[3]
-                if end_send_at>0 and start_send_at<=sent_before:
-                    packets_backlog += 1
-        return packets_backlog
+    def get_acks_pending(self):
+        return sum(1 for x in self.damage_ack_pending.values() if x[0]!=0)
+
+    def get_late_acks(self, latency):
+        now = monotonic_time()
+        sent_before = now-latency
+        #start_send_at = item[0]
+        #end_send_at = item[3]
+        late = sum(1 for item in self.damage_ack_pending.values() if item[3]>0 and item[0]<=sent_before)
+        log("get_late_acks(%s)=%i (%i in full pending list)",
+            latency, late, len(self.damage_ack_pending))
+        return late
 
     def get_pixels_encoding_backlog(self):
         pixels, count = 0, 0
