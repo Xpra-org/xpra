@@ -25,7 +25,7 @@ from xpra.os_util import (
     nomodule_context, umask_context, is_main_thread,
     WIN32, OSX, POSIX,
     )
-from xpra.util import envint, envbool, nonl, engs, csv
+from xpra.util import envint, envbool, nonl, engs, csv, envfloat
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("network", "ssh")
