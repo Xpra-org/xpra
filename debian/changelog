@@ -167,7 +167,7 @@ xpra (4.0.3-1) UNRELEASED; urgency=low
   * remove workaround for unsupported versions of Ubuntu
   * make it possible to specify the path used for saving video streams / frames
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 08 Aug 2020 23:33:15 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 08 Aug 2020 23:33:15 +0700
 
 xpra (4.0.2-1) UNRELEASED; urgency=low
   * fix encryption not honoured with TCP sockets upgraded to WebSocket

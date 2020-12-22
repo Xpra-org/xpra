@@ -703,7 +703,7 @@ fi
 - add missing DEB dependency
 - MacOS and MS Windows: fix security issue in brotli decompression
 
-* Fri Aug 08 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
+* Sat Aug 08 2020 Antoine Martin <antoine@xpra.org> 4.0.3-10
 - fix server crash caused by use after free in scrolling code
 - fix encryption option overzealously enforced on all socket types
 - fix network layer compression errors that can cause connections to drop
