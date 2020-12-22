@@ -1362,7 +1362,7 @@ class WindowSource(WindowIconSource):
         delay = max(delay, options.get("min_delay", 0))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
-        elapsed = now-self.batch_config.last_event
+        elapsed = int(1000*(now-self.batch_config.last_event))
         if elapsed>delay:
             #batch delay has already elapsed since we last processed a screen update,
             #so we don't need to wait much longer:
