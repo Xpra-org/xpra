@@ -587,11 +587,14 @@ fi
 
 
 %changelog
-* Tue Dec 15 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+* Wed Dec 23 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+- fix screen refresh performance issues, especially on jittery links
 - fix proxy instance control socket errors and process leak
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
 - fix server asynchronous packets getting delayed
+- fix 'xpra _proxy' zombies getting left behind (ssh mode)
 - fix ssh connection errors with proxycommand or proxyhost port numbers
+- fix timeouts with paramiko ssh client
 - fix client rejecting printing requests
 - fix duplicate / untimely audio-stop control packets with HTML5 client
 - fix capslock regression on MacOS and MSWindows shadow servers
@@ -612,6 +615,7 @@ fi
 - honour XPRA_XDG_EXPORT_ICONS=0 env var in all cases
 - hide passwords from authentication debug logging
 - updated DEB packaging for Ubuntu Focal, Groovy and Debian Bullseye
+- updated DEB dependencies to not recommend installing Gnome
 - use an up-to-date PDFium library on MS Windows
 - make it possible to specify the socket type with systemd socket activation
 - re-add "~/.xpra" as socket-dir
