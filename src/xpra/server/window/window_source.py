@@ -1403,8 +1403,11 @@ class WindowSource(WindowIconSource):
                 x, y = 0, 0
                 w, h = ww, wh
             delay = max(delay, self.batch_config.min_delay)
-            self.batch_config.last_delays.append((now, delay))
-            self.batch_config.last_actual_delays.append((now, delay))
+            lad = (now, delay)
+            self.batch_config.last_delays.append(lad)
+            self.batch_config.last_delay = lad
+            self.batch_config.last_actual_delays.append(lad)
+            self.batch_config.last_actual_delay = lad
             def damage_now():
                 if self.is_cancelled():
                     return
@@ -1418,11 +1421,29 @@ class WindowSource(WindowIconSource):
         regions = [rectangle(x, y, w, h)]
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = DelayedRegions(now, regions, actual_encoding, options)
-        self.batch_config.last_delays.append((now, delay))
+        lad = (now, delay)
+        self.batch_config.last_delays.append(lad)
+        self.batch_config.last_delay = lad
         expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
+        #weighted average with the last delays:
+        #(so when we end up delaying a lot for some reason,
+        # then we don't expire the next one quickly after)
+        try:
+            inc = 0
+            for v in (self.batch_config.last_actual_delay, self.batch_config.last_delay):
+                if v is None:
+                    continue
+                when, d = v
+                elapsed = now-when
+                if d>expire_delay and elapsed<5:
+                    weight = (5-elapsed)/10
+                    inc = max(inc, int((d-expire_delay)*weight))
+            expire_delay += inc
+        except IndexError:
+            pass
         damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms",
                   (x, y, w, h, options), self.wid, self._sequence, expire_delay)
-        due = now+expire_delay/1000
+        due = now+expire_delay/1000.0
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
     def must_batch(self, delay):
@@ -1680,7 +1701,11 @@ class WindowSource(WindowIconSource):
             self._damage_delayed = None
             now = monotonic_time()
             actual_delay = int(1000 * (now-delayed.damage_time))
-            self.batch_config.last_actual_delays.append((now, actual_delay))
+            lad = (now, actual_delay)
+            self.batch_config.last_actual_delays.append(lad)
+            self.batch_config.last_actual_delay = lad
+            self.batch_config.last_delays.append(lad)
+            self.batch_config.last_delay = lad
             self.send_delayed_regions(delayed)
         return False
 

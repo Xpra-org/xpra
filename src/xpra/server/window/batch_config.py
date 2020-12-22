@@ -69,7 +69,9 @@ class DamageBatchConfig:
         self.locked = False                             #to force a specific delay
         self.last_event = 0
         self.last_delays = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
+        self.last_delay = None
         self.last_actual_delays = deque(maxlen=64)      #the delays we actually used (milliseconds)
+        self.last_actual_delay = None
         self.last_updated = 0
         #the metrics derived from statistics which we use for calculating the new batch delay:
         #(see batch delay calculator)
@@ -95,10 +97,18 @@ class DamageBatchConfig:
         else:
             ld = tuple(x[1] for x in self.last_delays)
             if ld:
-                info["delay"] = get_list_stats(ld)
+                ls = get_list_stats(ld)
+                ldv = self.last_delay
+                if ldv:
+                    ls["last"] = ldv[1]
+                info["delay"] = ls
             lad = tuple(x[1] for x in self.last_actual_delays)
             if lad:
-                info["actual_delays"] = get_list_stats(lad, show_percentile=(9,))
+                ls = get_list_stats(lad, show_percentile=(9,))
+                ladv = self.last_actual_delay
+                if ladv:
+                    ls["last"] = ladv[1]
+                info["actual_delays"] = ls
             for name, details, factor, weight in self.factors:
                 fdetails = details.copy()
                 fdetails[""] = int(100.0*factor), int(100.0*weight)
