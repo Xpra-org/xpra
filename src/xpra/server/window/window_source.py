@@ -1368,7 +1368,7 @@ class WindowSource(WindowIconSource):
                 (x, y, w, h, options), self.wid, len(regions), now-delayed.damage_time)
             if not self.expire_timer and not self.soft_timer and self.soft_expired==0:
                 log.error("Error: bug, found a delayed region without a timer!")
-                self.expire_timer = self.timeout_add(0, self.expire_delayed_region)
+                self.expire_timer = self.timeout_add(0, self.expire_delayed_region, now)
             return
 
         delay = options.get("delay", self.batch_config.delay)
@@ -1422,7 +1422,7 @@ class WindowSource(WindowIconSource):
         expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
         damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms",
                   (x, y, w, h, options), self.wid, self._sequence, expire_delay)
-        due = now+expire_delay
+        due = now+expire_delay/1000
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
     def must_batch(self, delay):
@@ -1505,7 +1505,7 @@ class WindowSource(WindowIconSource):
         now = monotonic_time()
         if now<due:
             damagelog("expire_delayed_region() not due yet: now=%s, due=%s (%i ms)",
-                      now, due, int(1000*(due-now)))
+                      now, due, 1000*(due-now))
             #not due yet, don't allow soft expiry, just try again later:
             delay = int(1000*(due-now))
             expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
