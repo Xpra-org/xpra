@@ -61,7 +61,7 @@ MAX_DELTA_SIZE = envint("XPRA_MAX_DELTA_SIZE", 32768)
 MAX_DELTA_HITS = envint("XPRA_MAX_DELTA_HITS", 20)
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
-ACK_JITTER = envint("XPRA_ACK_JITTER", 20)
+ACK_JITTER = envint("XPRA_ACK_JITTER", 100)
 ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 100)
 SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
 
@@ -1065,7 +1065,7 @@ class WindowSource(WindowIconSource):
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus,
                               other_is_fullscreen, other_is_maximized,
                               self.is_OR, self.soft_expired, self.batch_config,
-                              self.global_statistics, self.statistics, self.bandwidth_limit)
+                              self.global_statistics, self.statistics, self.bandwidth_limit, self.jitter)
         #update the normalized value:
         ww, wh = self.window_dimensions
         self.batch_config.delay_per_megapixel = int(self.batch_config.delay*1000000//max(1, (ww*wh)))
@@ -1456,7 +1456,10 @@ class WindowSource(WindowIconSource):
             return 0
         latency_tolerance_pct = int(min(self._damage_packet_sequence, 10) *
                                     min(monotonic_time()-gs.last_congestion_time, 10))
-        return s.get_packets_backlog(latency_tolerance_pct)
+        latency = s.target_latency + ACK_JITTER/1000*(1+latency_tolerance_pct/100)
+        #log("get_packets_backlog() latency=%s (target=%i, tolerance=%i)",
+        #         1000*latency, 1000*s.target_latency, latency_tolerance_pct)
+        return s.get_late_acks(latency)
 
     def expire_delayed_region(self, due=0):
         """ mark the region as expired so damage_packet_acked can send it later,
