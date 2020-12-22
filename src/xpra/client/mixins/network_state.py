@@ -98,13 +98,41 @@ class NetworkState(StubClientMixin):
         pinfo = self._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
         connection_data = {}
-        socket_speed = envint("XPRA_NETWORK_ADAPTER_SPEED", device_info.get("speed", 0))
+        try:
+            coptions = self._protocol._conn.options
+        except AttributeError:
+            coptions = {}
+        log("get_caps() device_info=%s, connection options=%s", device_info, coptions)
+        def device_value(attr, conv=str, default_value=""):
+            #first try an env var:
+            v = os.environ.get("XPRA_NETWORK_%s" % attr.upper().replace("-", "_"))
+            #next try device options (ie: from connection URI)
+            if v is None:
+                v = coptions.get("socket.%s" % attr)
+            #last: the OS may know:
+            if v is None:
+                v = device_info.get(attr)
+            if v is not None:
+                try:
+                    return conv(v)
+                except (ValueError, TypeError) as e:
+                    log("device_value%s", (attr, conv, default_value), exc_info=True)
+                    log.warn("Warning: invalid value for network attribute '%s'", attr)
+                    log.warn(" %r: %s", v, e)
+            return default_value
+        def parse_speed(v):
+            return parse_with_unit("speed", v)
+        #network interface speed:
+        socket_speed = device_value("speed", parse_speed, 0)
+        log("get_caps() found socket_speed=%s", socket_speed)
         if socket_speed:
             connection_data["speed"] = socket_speed
-        adapter_type = os.environ.get("XPRA_NETWORK_ADAPTER_TYPE", device_info.get("adapter-type"))
+        adapter_type = device_value("adapter-type")
         log("get_caps() found adapter-type=%s", adapter_type)
         if adapter_type:
             connection_data["adapter-type"] = adapter_type
+        jitter = device_value("jitter", int, -1)
+        if jitter<0:
             at = adapter_type.lower()
             if any(at.find(x)>=0 for x in ("ether", "local", "fiber", "1394", "infiniband")):
                 jitter = 0
@@ -112,10 +140,9 @@ class NetworkState(StubClientMixin):
                 jitter = 20
             elif at.find("wireless")>=0 or at.find("wifi")>=0 or at.find("80211")>=0:
                 jitter = 1000
-            else:
-                jitter = None
-            if jitter is not None:
-                connection_data["jitter"] = jitter
+        if jitter>=0:
+            connection_data["jitter"] = jitter
+        log("get_caps() connection-data=%s", connection_data)
         caps["connection-data"] = connection_data
         bandwidth_limit = self.bandwidth_limit
         bandwidthlog("bandwidth-limit setting=%s, socket-speed=%s", self.bandwidth_limit, socket_speed)
