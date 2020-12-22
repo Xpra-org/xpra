@@ -1345,7 +1345,7 @@ class WindowSource(WindowIconSource):
                 (x, y, w, h, options), self.wid, len(regions), now-delayed.damage_time)
             if not self.expire_timer and not self.soft_timer and self.soft_expired==0:
                 log.error("Error: bug, found a delayed region without a timer!")
-                self.expire_timer = self.timeout_add(0, self.expire_delayed_region)
+                self.expire_timer = self.timeout_add(0, self.expire_delayed_region, now)
             return
 
         delay = options.get("delay", self.batch_config.delay)
@@ -1399,7 +1399,7 @@ class WindowSource(WindowIconSource):
                   (x, y, w, h, options), self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
         expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
-        due = now+expire_delay
+        due = now+expire_delay/1000
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
     def must_batch(self, delay):
