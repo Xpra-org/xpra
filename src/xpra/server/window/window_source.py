@@ -1500,7 +1500,10 @@ class WindowSource(WindowIconSource):
             return 0
         latency_tolerance_pct = int(min(self._damage_packet_sequence, 10) *
                                     min(monotonic_time()-gs.last_congestion_time, 10))
-        return s.get_packets_backlog(latency_tolerance_pct)
+        latency = s.target_latency + ACK_JITTER/1000*(1+latency_tolerance_pct/100)
+        #log("get_packets_backlog() latency=%s (target=%i, tolerance=%i)",
+        #         1000*latency, 1000*s.target_latency, latency_tolerance_pct)
+        return s.get_late_acks(latency)
 
     def expire_delayed_region(self, due=0):
         """ mark the region as expired so damage_packet_acked can send it later,
