@@ -1811,6 +1811,9 @@ def run_opengl_probe():
         if r!=0:
             return "failed:%s" % SIGNAMES.get(0-r, 0-r)
         if props.get("success", "False").lower() in FALSE_OPTIONS:
+            from xpra.scripts.config import is_VirtualBox
+            if is_VirtualBox():
+                return "error:incomplete OpenGL support in VirtualBox"
             return "error:%s" % (err or msg)
         if props.get("safe", "False").lower() in FALSE_OPTIONS:
             return "warning:%s" % (err or msg)

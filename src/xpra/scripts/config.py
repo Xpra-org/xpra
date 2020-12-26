@@ -205,7 +205,10 @@ def xvfb_cmd_str(xvfb):
     return xvfb_str
 
 
-def OpenGL_safety_check():
+def OpenGL_safety_check() -> str:
+    return is_VirtualBox()
+
+def is_VirtualBox() -> str:
     #try to detect VirtualBox:
     #based on the code found here:
     #http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
