@@ -1796,6 +1796,7 @@ def run_opengl_probe():
         parts = line.split("=", 1)
         if len(parts)==2:
             props[parts[0]] = parts[1]
+    log("parsed OpenGL properties=%s", props)
     def probe_message():
         err = props.get("error", "")
         msg = props.get("message", "")
