@@ -198,7 +198,7 @@ def OpenGL_safety_check():
             try:
                 f = None
                 f = open("\\\\.\\VBoxMiniRdrDN", "r")
-                return True, "VirtualBox is present (VBoxMiniRdrDN)"
+                return "VirtualBox is present (VBoxMiniRdrDN)"
             finally:
                 if f:
                     f.close()
