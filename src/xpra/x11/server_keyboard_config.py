@@ -298,6 +298,9 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def set_layout(self, layout, variant, options):
         log("set_layout(%s, %s, %s)", layout, variant, options)
+        if layout=="en":
+            log.warn("Warning: invalid keyboard layout name '%s', using 'us' instead", layout)
+            layout = "us"
         if layout!=self.xkbmap_layout or variant!=self.xkbmap_variant or options!=self.xkbmap_options:
             self.xkbmap_layout = layout
             self.xkbmap_variant = variant
