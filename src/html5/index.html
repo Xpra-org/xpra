@@ -923,13 +923,21 @@
 				const keyboard = getboolparam("keyboard", Boolean(!window.onmousemove));
 				if (!keyboard) {
 					$('.simple-keyboard').hide();
+					$('#keyboard_button').css('color', '#777');
 				}
 				else {
 					$('.simple-keyboard').show();
+					$('#keyboard_button').css('color', '#111');
 				}
 			}
 			function toggle_keyboard() {
 				$('.simple-keyboard').toggle();
+				if ($('.simple-keyboard').is(":visible")) {
+					$('#keyboard_button').css('color', '#111');
+				}
+				else {
+					$('#keyboard_button').css('color', '#777');
+				}
 			}
 
 			function init_file_transfer(client) {
