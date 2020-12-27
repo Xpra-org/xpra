@@ -690,7 +690,7 @@ def find_session_by_name(opts, session_name):
 def parse_ssh_string(ssh_setting):
     if is_debug_enabled("ssh"):
         Logger("ssh").debug("parse_ssh_string(%s)", ssh_setting)
-    ssh_cmd = shlex.split(ssh_setting)
+    ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
         #try paramiko:
         try:
