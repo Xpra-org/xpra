@@ -151,7 +151,7 @@ const Utilities = {
 		for (let i = 0; i < browserLanguagePropertyKeys.length; i++) {
 			const prop = browserLanguagePropertyKeys[i];
 			language = nav[prop];
-			//console.debug(prop, "=", language);
+			//Utilities.debug(prop, "=", language);
 			if (language && language.length) {
 				return language;
 			}
@@ -161,7 +161,7 @@ const Utilities = {
 
 	getKeyboardLayout: function() {
 		let v = Utilities.getFirstBrowserLanguage();
-		console.debug("getFirstBrowserLanguage()=", v);
+		Utilities.debug("getFirstBrowserLanguage()=", v);
 		if (v==null) {
 			return "us";
 		}
@@ -180,7 +180,7 @@ const Utilities = {
 				layout = tmp;
 			}
 		}
-		console.debug("getKeyboardLayout()=", layout);
+		Utilities.debug("getKeyboardLayout()=", layout);
 		return layout;
 	},
 
