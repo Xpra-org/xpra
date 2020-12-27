@@ -621,7 +621,7 @@ def find_session_by_name(opts, session_name):
     return "socket://%s" % tuple(session_uuid_to_path.values())[0]
 
 def parse_ssh_string(ssh_setting):
-    ssh_cmd = shlex.split(ssh_setting, POSIX=not WIN32)
+    ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0]=="auto":
         #try paramiko:
         try:
