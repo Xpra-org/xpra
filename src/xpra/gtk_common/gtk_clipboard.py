@@ -130,8 +130,9 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         log("get_contents(%s, %s, %i) have-token=%s",
             target, got_contents, time, self._have_token)
         if target=="TARGETS":
-            targets = self.clipboard.wait_for_targets()
-            if targets:
+            r = self.clipboard.wait_for_targets()
+            if r and len(r)==2 and r[0]:
+                targets = r[1]
                 atoms = tuple(x.name() for x in targets)
                 got_contents("ATOM", 32, atoms)
                 return
