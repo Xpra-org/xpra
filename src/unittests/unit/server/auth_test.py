@@ -281,7 +281,7 @@ class TestAuth(unittest.TestCase):
                 "duplicateentry|pass1",
                 "duplicateentry|pass2",
                 "user|pass",
-                "otheruser|otherpassword|1000|1000||env1=A,env2=B|compression=0", 
+                "otheruser|otherpassword|1000|1000||env1=A,env2=B|compression=0",
                 ]
             return password, "\n".join(lines)
         self._test_file_auth("multifile", genfiledata, 1)
