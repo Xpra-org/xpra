@@ -593,6 +593,8 @@ fi
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
 - fix server asynchronous packets getting delayed
 - fix 'xpra _proxy' zombies getting left behind (ssh mode)
+- fix failures to enable packet compression
+- fix connection errors when a non interactive client is already connected
 - fix ssh connection errors with proxycommand or proxyhost port numbers
 - fix timeouts with paramiko ssh client
 - fix ssh string escaping with MS Windows clients

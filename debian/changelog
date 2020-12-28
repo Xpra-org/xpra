@@ -4,6 +4,8 @@ xpra (4.0.6-1) UNRELEASED; urgency=low
   * fix slow subcommands due to unnecessary calls to ldconfig on Linux
   * fix server asynchronous packets getting delayed
   * fix 'xpra _proxy' zombies getting left behind (ssh mode)
+  * fix failures to enable packet compression
+  * fix connection errors when a non interactive client is already connected
   * fix ssh connection errors with proxycommand or proxyhost port numbers
   * fix timeouts with paramiko ssh client
   * fix ssh string escaping with MS Windows clients
@@ -38,7 +40,7 @@ xpra (4.0.6-1) UNRELEASED; urgency=low
   * re-add "~/.xpra" as socket-dir
   * typo in man page
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 28 Dec 2020 16:13:09 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 28 Dec 2020 21:34:32 +0700
 
 xpra (4.0.5-1) UNRELEASED; urgency=low
   * fix caps lock wrongly applied to numeric keys
