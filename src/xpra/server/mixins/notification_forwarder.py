@@ -52,7 +52,10 @@ class NotificationForwarder(StubServerMixin):
     def parse_hello(self, ss, _caps, send_ui):
         log("parse_hello(%s, {...}, %s) notifications_forwarder=%s", ss, send_ui, self.notifications_forwarder)
         if send_ui and self.notifications_forwarder:
-            client_notification_actions = dict((s.uuid,s.send_notifications_actions) for s in self._server_sources.values())
+            client_notification_actions = dict(
+                (s.uuid, getattr(s, "send_notifications_actions", False))
+                for s in self._server_sources.values()
+                )
             log("client_notification_actions=%s", client_notification_actions)
             self.notifications_forwarder.support_actions = any(v for v in client_notification_actions.values())
 
