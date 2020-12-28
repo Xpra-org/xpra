@@ -303,6 +303,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if color_str in ("auto", ""):
             from hashlib import md5
             try:
+                if envbool("XPRA_NOMD5", False):
+                    raise ValueError("md5 explicitly disabled")
                 m = md5()
             except ValueError:
                 from hashlib import sha1
