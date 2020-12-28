@@ -20,11 +20,10 @@ from xpra.platform import program_context
 
 
 width = 400
-height = 200
+height = 400
 def make_window():
 	window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
 	window.set_title("Window Move Resize")
-	window.set_size_request(width, height)
 	window.set_position(Gtk.WindowPosition.CENTER)
 	window.connect("delete_event", Gtk.main_quit)
 	icon = get_icon_pixbuf("windows.png")
@@ -93,8 +92,9 @@ def make_window():
 						(2, 2, MOVERESIZE_SIZE_BOTTOMRIGHT),
 							):
 		add_button(x, y, direction)
-
+	table.show_all()
 	window.add(table)
+	window.set_size_request(width, height)
 	return window
 
 def main():
