@@ -61,11 +61,15 @@ class CairoBackingBase(WindowBackingBase):
     def __init__(self, wid, window_alpha, _pixel_depth=0):
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.idle_add = GLib.idle_add
+        self.size = 0, 0
+        self.render_size = 0, 0
 
     def init(self, ww : int, wh : int, bw : int, bh : int):
+        mod = self.size!=(bw, bh) or self.render_size!=(ww, wh)
         self.size = bw, bh
         self.render_size = ww, wh
-        self.create_surface()
+        if mod:
+            self.create_surface()
 
     def get_info(self):
         info = super().get_info()
