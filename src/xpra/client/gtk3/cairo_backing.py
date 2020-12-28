@@ -42,7 +42,12 @@ class CairoBacking(CairoBackingBase):
     RGB_MODES = ["BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565"]
 
     def __repr__(self):
-        return "gtk3.CairoBacking(%s)" % self._backing
+        b = self._backing
+        if b:
+            binfo = "ImageSurface(%i, %i)" % (b.get_width(), b.get_height())
+        else:
+            binfo = "None"
+        return "gtk3.CairoBacking(%s : size=%s, render_size=%s)" % (binfo, self.size, self.render_size)
 
     def _do_paint_rgb(self, cairo_format, has_alpha, img_data,
                       x : int, y : int, width : int, height : int, render_width : int, render_height : int,
