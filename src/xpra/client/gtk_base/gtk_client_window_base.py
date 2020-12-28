@@ -1818,10 +1818,9 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 window.move(x+dx, y+dy)
         geomlog("configure event: current size=%s, new size=%s, backing=%s, iconified=%s",
                 self._size, (w, h), self._backing, self._iconified)
-        if (w, h) != self._size or (self._backing is None and not self._iconified):
-            self._size = (w, h)
-            self._set_backing_size(w, h)
-        elif self._backing and not self._iconified:
+        self._size = (w, h)
+        self._set_backing_size(w, h)
+        if self._backing and not self._iconified:
             geomlog("configure event: size unchanged, queueing redraw")
             self.queue_draw_area(0, 0, w, h)
 

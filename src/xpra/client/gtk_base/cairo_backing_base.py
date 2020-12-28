@@ -37,8 +37,11 @@ class CairoBackingBase(WindowBackingBase):
     def __init__(self, wid, window_alpha, _pixel_depth=0):
         WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
         self.idle_add = glib.idle_add
+        self.size = 0, 0
+        self.render_size = 0, 0
 
     def init(self, ww, wh, bw, bh):
+        mod = self.size!=(bw, bh) or self.render_size!=(ww, wh)
         self.size = bw, bh
         self.render_size = ww, wh
         old_backing = self._backing
@@ -47,6 +50,10 @@ class CairoBackingBase(WindowBackingBase):
         if bw==0 or bh==0:
             #this can happen during cleanup
             return
+        if mod:
+            self.create_surface()
+
+    def create_surface()
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, bw, bh)
         cr = cairo.Context(self._backing)
         cr.set_operator(cairo.OPERATOR_CLEAR)
