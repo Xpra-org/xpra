@@ -2874,7 +2874,7 @@ def run_top(error_cb, options, args):
         #show all sessions:
         app = TopClient(options)
     return app.run()
-    
+
 
 def run_sessions_gui(error_cb, options):
     mdns = supports_mdns and options.mdns

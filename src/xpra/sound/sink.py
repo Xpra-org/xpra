@@ -375,7 +375,6 @@ class SoundSink(SoundPipeline):
             "max-bitrate", "max-lateness", "processing-deadline",
             "qos", "render-delay", "sync",
             "throttle-time", "ts-offset",
-            
             ):
             try:
                 v = self.sink.get_property(x)

@@ -426,7 +426,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                         size = GlobalSize(data_handle)
                         data = GlobalLock(data_handle)
                         log("GetClipboardData(%s)=%#x size=%s, data=%#x",
-                            img_format.upper(), data_handle, size, data)                        
+                            img_format.upper(), data_handle, size, data)
                         if data and size:
                             try:
                                 cdata = (c_char*size).from_address(data)
@@ -608,7 +608,6 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         def nolock(*_args):
             log.warn("Warning: failed to copy image data to the clipboard")
         self.with_clipboard_lock(got_clipboard_lock, nolock)
-        
 
 
     def get_clipboard_text(self, utf8, callback, errback):

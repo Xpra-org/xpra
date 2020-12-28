@@ -172,7 +172,7 @@ def argb_to_gray(image):
     assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
     #allocate output buffer:
     cdef int dst_stride = width*4
-    cdef MemBuf output_buffer = getbuf(dst_stride*height)    
+    cdef MemBuf output_buffer = getbuf(dst_stride*height)
     if not output_buffer:
         raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()

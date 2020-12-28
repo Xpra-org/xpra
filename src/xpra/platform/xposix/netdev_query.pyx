@@ -97,7 +97,7 @@ ARPHRD = {
     24  : "ieee1394",
     27  : "eui64",
     32  : "infiniband",
-    
+
     256 : "slip",
     257 : "cslip",
     258 : "slip6",
@@ -113,7 +113,7 @@ ARPHRD = {
     516 : "lapb",
     517 : "ddcmp",
     518 : "rawhdlc",
-    
+
     768 : "tunnel",
     769 : "tunner6",
     770 : "frad",

@@ -468,7 +468,7 @@ def get_socket_options(sock, level, options) -> dict:
                 opts[k] = v
     if errs:
         fileno = getattr(sock, "fileno", None)
-        #if fileno()==-1 
+        #if fileno()==-1
         if fileno and fileno()==-1:
             log("socket is closed, ignoring: %s", csv(errs))
         else:

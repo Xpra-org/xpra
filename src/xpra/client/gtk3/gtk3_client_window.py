@@ -202,7 +202,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
             return True
         geom = self.get_drawing_area_geometry()
         dw, dh = geom[2], geom[3]
-        return dw<maxw and dh<maxh 
+        return dw<maxw and dh<maxh
 
     def draw_widget(self, widget, context):
         paintlog("draw_widget(%s, %s)", widget, context)

@@ -82,7 +82,7 @@ def upnp_add(socktype, info, options):
                 return err("internal host IP not found: no gateways")
             UPNP_IPV6 = False
             INET = {
-                "INET"  : netifaces.AF_INET, 
+                "INET"  : netifaces.AF_INET,
                 }
             if UPNP_IPV6:
                 INET["INET6"] = netifaces.AF_INET6

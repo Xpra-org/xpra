@@ -520,7 +520,7 @@ def get_notifyicon_wnd_class():
         NIwc.hInstance = hmodule
         NIwc.hBrush = GetStockObject(win32con.WHITE_BRUSH)
         NIwc.lpszClassName = "win32NotifyIcon"
-        
+
         NIclassAtom = RegisterClassExA(byref(NIwc))
         log("RegisterClassExA(%s)=%i", NIwc.lpszClassName, NIclassAtom)
         if NIclassAtom==0:

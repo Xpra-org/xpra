@@ -191,7 +191,7 @@ class KeyboardHelper:
             return v.lower()
         def dbg(v):
             return v and keyname(v) in DEBUG_KEY_EVENTS
-        debug = ("all" in DEBUG_KEY_EVENTS) or dbg(key_event.keyname) or dbg(key_event.string) 
+        debug = ("all" in DEBUG_KEY_EVENTS) or dbg(key_event.keyname) or dbg(key_event.string)
         modifiers = key_event.modifiers
         if not debug and modifiers:
             #see if one of the modifier matches:

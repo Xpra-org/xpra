@@ -2683,7 +2683,6 @@ cdef class Encoder:
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         if DEBUG_API:
             log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
-        
         if len(name)==2 and name[0]=="P":
             tuning = self.get_tuning()
             log("tuning=%s (%i)", TUNING_STR.get(tuning, "unknown"), tuning)

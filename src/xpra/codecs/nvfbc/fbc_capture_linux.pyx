@@ -152,7 +152,7 @@ cdef extern from "NvFBC.h":
         NVFBC_BOOL bDisableAutoModesetRecovery  #[in] Whether NvFBC should not attempt to recover from modesets
         uint32_t dwSamplingRateMs           #[in] Rate in ms at which the display server generates new frames
         NVFBC_BOOL bPushModel               #[in] Enable push model for frame capture
-        
+
     uint32_t NVFBC_CREATE_CAPTURE_SESSION_PARAMS_VER
 
     ctypedef struct NVFBC_DESTROY_CAPTURE_SESSION_PARAMS:

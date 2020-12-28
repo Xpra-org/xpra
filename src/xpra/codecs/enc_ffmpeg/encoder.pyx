@@ -92,7 +92,6 @@ cdef extern from "libavutil/buffer.h":
         AVBuffer* buffer
         uint8_t *data
         int      size
-        
     AVBufferRef *av_buffer_ref(AVBufferRef *buf)
     void av_buffer_unref(AVBufferRef **buf)
 
@@ -857,7 +856,7 @@ def init_vaapi():
     global VAAPI_CODECS
     #can we find a device:
     cdef AVBufferRef *hw_device_ctx = init_vaapi_device()
-    cdef AVCodecContext *avctx = NULL 
+    cdef AVCodecContext *avctx = NULL
     cdef AVCodec *codec = NULL
     cdef AVFrame *sw_frame = NULL
     cdef AVFrame *hw_frame = NULL
