@@ -102,6 +102,8 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         class NoHeaderGLClientWindow(gl_client_window_class):
             def add_header_bar(self):
                 pass
+            def schedule_recheck_focus(self):
+                pass
         window = NoHeaderGLClientWindow(noclient, None, None, 2**32-1, x, y, w, h, w, h,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
