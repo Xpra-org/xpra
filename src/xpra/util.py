@@ -369,6 +369,8 @@ class typedict(dict):
     def listget(self, k, default_value=[], item_type=None, min_items=None, max_items=None):
         v = self.capsget(k)
         if v is None:
+            if default_value==[]:
+                return []
             return default_value
         if not isinstance(v, (list, tuple)):
             self._warn("listget%s", (k, default_value, item_type, max_items))
