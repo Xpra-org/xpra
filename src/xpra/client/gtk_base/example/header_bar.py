@@ -54,10 +54,10 @@ class HeaderBarWindow(Gtk.Window):
 
 def main():
     with program_context("header-bar", "Header Bar"):
-        import signal
         def signal_handler(*_args):
             Gtk.main_quit()
-        signal.signal(signal.SIGINT, signal_handler)
+        from xpra.gtk_common.gobject_compat import register_os_signals
+        register_os_signals(signal_handler)
         w = HeaderBarWindow()
         w.connect("delete-event", Gtk.main_quit)
         add_close_accel(w, Gtk.main_quit)

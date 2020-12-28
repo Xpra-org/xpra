@@ -73,10 +73,14 @@ class TestForm(object):
 			self.label.set_text("Unexpected event: %s" % event)
 
 def main():
+	from xpra.gtk_common.gobject_compat import register_os_signals
 	with program_context("clicks", "Clicks"):
 		w = TestForm()
 		add_close_accel(w.window, Gtk.main_quit)
 		GLib.idle_add(w.show_with_focus)
+		def signal_handler(signal):
+			Gtk.main_quit()
+		register_os_signals(signal_handler)
 		Gtk.main()
 
 

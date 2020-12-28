@@ -181,10 +181,10 @@ class FakeApplication:
 
 def main():
     with program_context("tray", "Tray"):
-        import signal
+        from xpra.gtk_common.gobject_compat import register_os_signals
         def signal_handler(*_args):
             Gtk.main_quit()
-        signal.signal(signal.SIGINT, signal_handler)
+        register_os_signals(signal_handler)
         FakeApplication()
         Gtk.main()
 

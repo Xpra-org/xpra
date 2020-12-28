@@ -47,6 +47,10 @@ def main():
 			force_focus()
 			window.show_all()
 			window.present()
+		from xpra.gtk_common.gobject_compat import register_os_signals
+		def signal_handler(*_args):
+			Gtk.main_quit()
+		register_os_signals(signal_handler)
 		add_close_accel(window, Gtk.main_quit)
 		GLib.idle_add(show_with_focus)
 		Gtk.main()

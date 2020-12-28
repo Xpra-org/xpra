@@ -41,6 +41,10 @@ def main():
             w.show_all()
             w.present()
         add_close_accel(w, Gtk.main_quit)
+        from xpra.gtk_common.gobject_compat import register_os_signals
+        def signal_handler(*_args):
+            Gtk.main_quit()
+        register_os_signals(signal_handler)
         GLib.idle_add(show_with_focus)
         Gtk.main()
         return 0

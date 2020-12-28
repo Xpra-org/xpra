@@ -97,10 +97,14 @@ def make_window():
 	return window
 
 def main():
+	from xpra.gtk_common.gobject_compat import register_os_signals
 	with program_context("initiate-moveresize", "Initiate Move-Resize"):
 		w = make_window()
 		w.show_all()
 		add_close_accel(w, Gtk.main_quit)
+		def quit(signal):
+			Gtk.main_quit()
+		register_os_signals(quit)
 		Gtk.main()
 		return 0
 

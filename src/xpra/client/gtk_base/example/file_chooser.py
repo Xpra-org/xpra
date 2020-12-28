@@ -17,6 +17,10 @@ def main():
 		file_filter.set_name("Xpra")
 		file_filter.add_pattern("*.xpra")
 		window = None
+		from xpra.gtk_common.gobject_compat import register_os_signals
+		def signal_handler(*_args):
+			Gtk.main_quit()
+		register_os_signals(quit)
 		choose_file(window, "test", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, None)
 		return 0
 
