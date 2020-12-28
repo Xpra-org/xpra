@@ -587,7 +587,7 @@ fi
 
 
 %changelog
-* Wed Dec 23 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+* Mon Dec 28 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
 - fix screen refresh performance issues, especially on jittery links
 - fix proxy instance control socket errors and process leak
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
@@ -595,8 +595,10 @@ fi
 - fix 'xpra _proxy' zombies getting left behind (ssh mode)
 - fix ssh connection errors with proxycommand or proxyhost port numbers
 - fix timeouts with paramiko ssh client
+- fix ssh string escaping with MS Windows clients
 - fix client rejecting printing requests
 - fix duplicate / untimely audio-stop control packets with HTML5 client
+- fix console errors with Internet Explorer
 - fix capslock regression on MacOS and MSWindows shadow servers
 - fix errors accessing window handles on MS Windows (size hints, opengl, etc)
 - fix spurious refresh packets with mmap
@@ -604,13 +606,17 @@ fi
 - fix missing avcodec decoder with MS Windows builds
 - fix missing webp Pillow decoder with MS Windows builds
 - fix missing tray icons regression on MS Windows (introduced in 4.0.5)
+- fix warning message format when running MS Windows under VirtualBox
 - fix clipboard cleanup errors on MS Windows
+- fix clipboard with Wayland clients
+- fix window repaint with Wayland clients
 - fix printing diagnostic script
 - fix Python 3.9 compatibility
 - fix sysconfig path in systemd service file for non-RedHat systems
 - fix xdg-open override script error handling
 - fix file-transfer failures with small files
 - fix file-transfers with non-ascii filenames
+- fix FIPS compatibility (no md5)
 - better file transfer message format
 - honour XPRA_XDG_EXPORT_ICONS=0 env var in all cases
 - hide passwords from authentication debug logging

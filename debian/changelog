@@ -6,8 +6,10 @@ xpra (4.0.6-1) UNRELEASED; urgency=low
   * fix 'xpra _proxy' zombies getting left behind (ssh mode)
   * fix ssh connection errors with proxycommand or proxyhost port numbers
   * fix timeouts with paramiko ssh client
+  * fix ssh string escaping with MS Windows clients
   * fix client rejecting printing requests
   * fix duplicate / untimely audio-stop control packets with HTML5 client
+  * fix console errors with Internet Explorer
   * fix capslock regression on MacOS and MSWindows shadow servers
   * fix errors accessing window handles on MS Windows (size hints, opengl, etc)
   * fix spurious refresh packets with mmap
@@ -15,13 +17,17 @@ xpra (4.0.6-1) UNRELEASED; urgency=low
   * fix missing avcodec decoder with MS Windows builds
   * fix missing webp Pillow decoder with MS Windows builds
   * fix missing tray icons regression on MS Windows (introduced in 4.0.5)
+  * fix warning message format when running MS Windows under VirtualBox
   * fix clipboard cleanup errors on MS Windows
+  * fix clipboard with Wayland clients
+  * fix window repaint with Wayland clients
   * fix printing diagnostic script
   * fix Python 3.9 compatibility
   * fix sysconfig path in systemd service file for non-RedHat systems
   * fix xdg-open override script error handling
   * fix file-transfer failures with small files
   * fix file-transfers with non-ascii filenames
+  * fix FIPS compatibility (no md5)
   * better file transfer message format
   * honour XPRA_XDG_EXPORT_ICONS=0 env var in all cases
   * hide passwords from authentication debug logging
@@ -32,7 +38,7 @@ xpra (4.0.6-1) UNRELEASED; urgency=low
   * re-add "~/.xpra" as socket-dir
   * typo in man page
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 23 Dec 2020 00:37:05 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 28 Dec 2020 16:13:09 +0700
 
 xpra (4.0.5-1) UNRELEASED; urgency=low
   * fix caps lock wrongly applied to numeric keys
