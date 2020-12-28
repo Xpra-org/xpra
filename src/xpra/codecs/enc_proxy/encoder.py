@@ -7,7 +7,6 @@ from collections import deque
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.os_util import memoryview_to_bytes, monotonic_time
-from xpra.util import typedict
 from xpra.log import Logger
 
 log = Logger("encoder", "proxy")
