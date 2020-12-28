@@ -30,8 +30,9 @@ def make_window():
 	icon = get_icon_pixbuf("windows.png")
 	if icon:
 		window.set_icon(icon)
-	window.realize()
-	root = window.get_window().get_screen().get_root_window()
+
+	def get_root_window():
+		return window.get_window().get_screen().get_root_window()
 
 	def initiate(x_root, y_root, direction, button, source_indication):
 		#print("initiate%s" % str((x_root, y_root, direction, button, source_indication)))
@@ -40,7 +41,7 @@ def make_window():
 		from xpra.x11.bindings.core_bindings import X11CoreBindings					#@UnresolvedImport
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		event_mask = constants["SubstructureNotifyMask"] | constants["SubstructureRedirectMask"]
-		root_xid = root.get_xid()
+		root_xid = get_root_window().get_xid()
 		xwin = window.get_window().get_xid()
 		X11Core = X11CoreBindings()
 		X11Core.UngrabPointer()
@@ -60,7 +61,7 @@ def make_window():
 	table.attach(btn, 1, 2, 1, 2, xoptions=FILL, yoptions=FILL)
 	def initiate_move(*_args):
 		cancel()
-		pos = root.get_pointer()
+		pos = get_root_window().get_pointer()
 		source_indication = 1	#normal
 		button = 1
 		direction = MOVERESIZE_MOVE
@@ -70,7 +71,7 @@ def make_window():
 
 	def btn_callback(btn, event, direction):
 		cancel()
-		x, y = root.get_pointer()[:2]
+		x, y = get_root_window().get_pointer()[:2]
 		source_indication = 1	#normal
 		button = 1
 		initiate(x, y, direction, button, source_indication)
