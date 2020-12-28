@@ -702,7 +702,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             pam.set_items({"XDISPLAY" : display_name})
 
         def check_xvfb(timeout=0):
-            return check_xvfb_process(xvfb, timeout=timeout)
+            return check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb)
     else:
         if POSIX and clobber:
             #if we're meant to be using a private XAUTHORITY file,

@@ -273,7 +273,7 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
             try:
                 os.set_inheritable(w_pipe, True)        #@UndefinedVariable
                 xvfb_cmd += ["-displayfd", str(w_pipe)]
-                xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name)
+                xvfb_cmd[0] = "%s-for-Xpra-%s" % (xvfb_executable, display_name.lstrip(":"))
                 def preexec():
                     os.setpgrp()
                     if getuid()==0 and uid:
@@ -406,7 +406,7 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
         log.error(" using command \"%s\":" % (" ".join(xauth_cmd)))
         log.error(" %s" % (e,))
 
-def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0):
+def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0, command=None):
     if xvfb is None:
         #we don't have a process to check
         return True
@@ -418,6 +418,8 @@ def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0):
     log.error("%s command has terminated! xpra cannot continue", cmd)
     log.error(" if the display is already running, try a different one,")
     log.error(" or use the --use-display flag")
+    if command:
+        log.error(" full command: %s", command)
     log.error("")
     return False
 
