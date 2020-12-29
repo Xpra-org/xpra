@@ -131,7 +131,10 @@ class Keyboard(KeyboardBase):
                 log.warn("Warning: failed to parse keyboard layout code '%s'", bytestostr(name_buf.value))
             else:
                 found = False
-                for val in (ival, ival & 0xffff):
+                sublang = (ival & 0xfc00) >> 10
+                log("sublang(%#x)=%#x", ival, sublang)
+                for mask in (0xffff, 0x3ff):
+                    val = ival & mask
                     kbdef = WIN32_KEYBOARDS.get(val)
                     log("get_layout_spec() WIN32_KEYBOARDS[%#x]=%s", val, kbdef)
                     if kbdef:
