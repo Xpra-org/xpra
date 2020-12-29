@@ -131,9 +131,10 @@ class TrayClient(StubClientMixin):
         if p:
             conn = getattr(p, "_conn", None)
             if conn:
+                from xpra.net.bytestreams import pretty_socket
                 cinfo = conn.get_info()
-                endpoint = cinfo.get("endpoint", bytestostr(conn.target))
-                t.append(endpoint.split("?")[0])
+                endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
+                t.append(endpoint)
         if not t:
             t.insert(0, "Xpra")
         v = "\n".join(str(x) for x in t)
