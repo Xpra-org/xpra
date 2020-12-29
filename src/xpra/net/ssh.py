@@ -168,19 +168,14 @@ class SSHSocketConnection(SocketConnection):
         #stderr = self._socket.makefile_stderr(mode="rb", bufsize=1)
         chan = self._socket
         stderr = chan.makefile_stderr("rb", 1)
-        errs = []
         while self.active:
             v = stderr.readline()
             if not v:
-                log("SSH EOF on stderr of %s", chan.get_name())
+                log.info("SSH EOF on stderr of %s", chan.get_name())
                 break
             s = bytestostr(v.rstrip(b"\n\r"))
             if s:
-                errs.append(s)
-        if errs:
-            log.warn("remote SSH stderr:")
-            for e in errs:
-                log.warn(" %s", e)
+                log.info(" SSH: %r", s)
 
     def peek(self, n):
         if not self._raw_socket:
