@@ -12,7 +12,7 @@ from ctypes.wintypes import DWORD
 from xpra.platform.win32.common import (
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
-    GetWindowThreadProcessId, GetThreadLocale,
+    GetWindowThreadProcessId,
     )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
