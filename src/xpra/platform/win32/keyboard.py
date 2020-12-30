@@ -281,5 +281,5 @@ class Keyboard(KeyboardBase):
             self.delayed_event = None
             rmenu = GetKeyState(win32con.VK_RMENU)
             log("send_delayed_key() GetKeyState(VK_RMENU)=%s", rmenu)
-            if rmenu not in (0, 1):
+            if rmenu in (0, 1):
                 KeyboardBase.process_key_event(self, *dk)
