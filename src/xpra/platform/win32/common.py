@@ -18,6 +18,7 @@ from ctypes.wintypes import (
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
     HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
+    HKL,
     )
 #imported from this module but not used here:
 assert GetLastError
@@ -317,6 +318,8 @@ keybd_event = user32.keybd_event
 GetKeyState = user32.GetKeyState
 GetKeyState.restype = SHORT
 GetKeyboardLayout = user32.GetKeyboardLayout
+GetKeyboardLayout.argtypes = [DWORD]
+GetKeyboardLayout.restype = HKL
 GetKeyboardLayoutList = user32.GetKeyboardLayoutList
 GetKeyboardLayoutList.argtypes = [c_int, POINTER(HANDLE*32)]
 GetKeyboardLayoutName = user32.GetKeyboardLayoutNameA
