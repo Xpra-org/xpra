@@ -587,7 +587,7 @@ fi
 
 
 %changelog
-* Mon Dec 28 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
+* Wed Dec 30 2020 Antoine Martin <antoine@xpra.org> 4.0.6-10
 - fix screen refresh performance issues, especially on jittery links
 - fix proxy instance control socket errors and process leak
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
@@ -609,6 +609,7 @@ fi
 - fix missing webp Pillow decoder with MS Windows builds
 - fix missing tray icons regression on MS Windows (introduced in 4.0.5)
 - fix warning message format when running MS Windows under VirtualBox
+- fix keyboard sub-layout detection with MS Windows clients
 - fix clipboard cleanup errors on MS Windows
 - fix clipboard with Wayland clients
 - fix window repaint with Wayland clients
