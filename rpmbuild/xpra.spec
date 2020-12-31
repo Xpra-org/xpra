@@ -871,18 +871,24 @@ fi
 
 
 %changelog
-* Wed Dec 23 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+* Thu Dec 31 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
 - fix screen refresh performance issues, especially on jittery links
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
 - fix server asynchronous packets getting delayed
+- fix dangerous default values potentially causing intractable bugs
 - fix ssh connection errors with proxycommand or proxyhost port numbers
+- fix connection errors when a non interactive client is already connected
+- fix failures to enable packet compression
 - fix 'xpra _proxy' zombies getting left behind (ssh mode)
 - fix proxy instance zombies on server start failures
 - fix proxy instance control socket errors and process leak
 - fix capslock wrongly applied to numeric keys
+- fix keyboard sub-layout detection with MS Windows clients
+- fix control key combinations with MS Windows clients
 - fix MS Windows bubble notifications not showing on some systems
 - fix errors accessing window handles on MS Windows (size hints, opengl, etc)
 - fix clipboard cleanup errors on MS Windows
+- fix warning message format when running MS Windows under VirtualBox
 - fix spurious refresh packets with mmap
 - fix mmap not used with some non-video areas
 - fix duplicate / untimely audio-stop control packets with HTML5 client
@@ -892,10 +898,12 @@ fi
 - fix opengl debug option for saving buffers as jpeg
 - fix archlinux build path stripping
 - fix spurious "missing resolution" errors (often with HTML5 client resizing)
+- fix console errors with Internet Explorer
 - fix duplicated data in bug reports
 - fix handling of invalid clipboard requests
 - fix printing diagnostic script
 - fix Python 3.9 compatibility
+- fix compatibility with 'use-display' option in newer configuration files
 - fix sysconfig path in systemd service file for non-RedHat systems
 - fix xdg-open override script error handling
 - fix clipboard errors under Wayland
@@ -913,6 +921,7 @@ fi
 - hide passwords from authentication debug logging
 - updated DEB packaging for Ubuntu Focal, Groovy and Debian Bullseye
 - use an up-to-date PDFium library on MS Windows
+- honour the NOMD5 flag with the automatic border colour option
 - make it possible to override the Xorg binary path detection
 - re-add "~/.xpra" as socket-dir
 - typo in man page
