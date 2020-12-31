@@ -88,7 +88,7 @@ class TestCrypto(unittest.TestCase):
         start = monotonic_time()
         self.do_test_backend(data, enc_iterations, dec_iterations)
         end = monotonic_time()
-        elapsed = end-start
+        elapsed = max(0.0001, end-start)
         speed = (asize*16) * (enc_iterations + dec_iterations) / elapsed
         iter_time = elapsed*1000/(enc_iterations + dec_iterations)
         print("%10iKB: %5.1fms: %16iMB/s" % (asize*16//1024, iter_time, speed//1024//1024))
