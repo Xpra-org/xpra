@@ -1131,6 +1131,8 @@ class GTKTrayMenuBase(MenuHelper):
         layouts = tuple(bytestostr(x) for x in layouts)
         variant = bytestostr(variant or b"")
         variants = tuple(bytestostr(x) for x in variants)
+        log("make_layoutsmenuitem() layout=%s, layouts=%s, variant=%s, variants=%s",
+            layout, layouts, variant, variants)
         full_layout_list = False
         if len(layouts)>1:
             log("keyboard layouts: %s", ",".join(bytestostr(x) for x in layouts))
@@ -1178,7 +1180,11 @@ class GTKTrayMenuBase(MenuHelper):
                     #no variants:
                     self.layout_submenu.append(kbitem(name, layout, None))
         keyboard_helper = self.client.keyboard_helper
-        def set_layout_enabled(*_args):
+        def set_layout_enabled(*args):
+            log("set_layout_enabled%s full_layout_list=%s",
+                     args, full_layout_list)
+            log("set_layout_enabled%s layout=%s, print=%s, query=%s",
+                     args, keyboard_helper.xkbmap_layout, keyboard_helper.xkbmap_print, keyboard_helper.xkbmap_query)
             if full_layout_list and \
             (keyboard_helper.xkbmap_layout or keyboard_helper.xkbmap_print or keyboard_helper.xkbmap_query):
                 #we have detected a layout
