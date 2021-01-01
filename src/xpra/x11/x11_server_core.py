@@ -742,7 +742,7 @@ class X11ServerCore(GTKServerBase):
                 #we can use XRRSetScreenSize:
                 try:
                     with xsync:
-                        RandR.xrr_set_screen_size(w, h, self.xdpi or self.dpi, self.ydpi or self.dpi)
+                        RandR.xrr_set_screen_size(w, h, self.xdpi or self.dpi or 96, self.ydpi or self.dpi or 96)
                 except XError:
                     screenlog("XRRSetScreenSize failed", exc_info=True)
             screenlog("calling RandR.get_screen_size()")
