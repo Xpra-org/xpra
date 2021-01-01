@@ -1,5 +1,6 @@
 xpra (3.0.13-1) UNRELEASED; urgency=low
   - fix screen refresh performance issues, especially on jittery links
+  - fix virtual screen resizing errors with invalid DPI values
   - fix slow subcommands due to unnecessary calls to ldconfig on Linux
   - fix server asynchronous packets getting delayed
   - fix dangerous default values potentially causing intractable bugs
@@ -53,7 +54,7 @@ xpra (3.0.13-1) UNRELEASED; urgency=low
   - re-add "~/.xpra" as socket-dir
   - typo in man page
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 31 Dec 2020 21:56:04 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 01 Jan 2021 22:12:34 +0700
 
 xpra (3.0.12-1) UNRELEASED; urgency=low
   * fix memory leak with 'scroll' encoding

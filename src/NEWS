@@ -1,6 +1,7 @@
-v3.0.13 (2020-12-31)
+v3.0.13 (2021-01-01)
 ======================
 	-- fix screen refresh performance issues, especially on jittery links
+	-- fix virtual screen resizing errors with invalid DPI values
 	-- fix slow subcommands due to unnecessary calls to ldconfig on Linux
 	-- fix server asynchronous packets getting delayed
 	-- fix dangerous default values potentially causing intractable bugs

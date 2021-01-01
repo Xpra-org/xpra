@@ -871,8 +871,9 @@ fi
 
 
 %changelog
-* Thu Dec 31 2020 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+* Fri Jan 01 2021 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
 - fix screen refresh performance issues, especially on jittery links
+- fix virtual screen resizing errors with invalid DPI values
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
 - fix server asynchronous packets getting delayed
 - fix dangerous default values potentially causing intractable bugs
