@@ -3,7 +3,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.3.1
-Release:     2%{?dist}
+Release:     3%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -13,6 +13,8 @@ Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 AutoReq:     0
+Requires:    libva
+Requires:    x264-xpra
 
 BuildRequires:	x264-xpra-devel
 BuildRequires:	libva-devel
@@ -171,6 +173,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sat Jan 02 2021 Antoine Martin <antoine@xpra.org> 4.3.1-3
+- manually handle dependencies in the main package
+
 * Tue Nov 10 2020 Antoine Martin <antoine@xpra.org> 4.3.1-2
 - add dependency on libva
 
