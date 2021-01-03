@@ -3,7 +3,7 @@
 
 Name:           python2-pytools
 Version:        2019.1.1
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
@@ -12,9 +12,9 @@ URL:            http://pypi.python.org/pypi/pytools
 Source0:        https://files.pythonhosted.org/packages/00/96/00416762a3eda8876a17d007df4a946f46b2e4ee1057e0b9714926472ef8/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 %if 0%{?el7}
-Provides:		python-pytools = %{version}-%{release}
-Obsoletes:		python-pytools < %{version}-%{release}
-Conflicts:		python-pytools < %{version}-%{release}
+Provides:	python-pytools = %{version}-%{release}
+Obsoletes:	python-pytools < %{version}-%{release}
+Conflicts:	python-pytools < %{version}-%{release}
 %endif
 
 BuildArch:      noarch
@@ -63,6 +63,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 2019.1.1-3
+- don't conflict with the newer python3 Fedora or CentOS 8 builds
+
 * Mon Oct 28 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
 - Fedora 31 rebuild
 

@@ -18,7 +18,7 @@
 
 Name:           python2-lz4
 Version:        2.2.1
-Release:        2
+Release:        3
 URL:            https://github.com/python-lz4/python-lz4
 Summary:        LZ4 Bindings for Python
 License:        GPLv2+
@@ -28,13 +28,13 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 BuildRequires:  python2-pkgconfig
-Requires: 		lz4
-Provides:		python-lz4 = %{version}-%{release}
+Requires: 	lz4
+%if 0%{?el7}
+Provides:	python-lz4 = %{version}-%{release}
 Obsoletes:      python-lz4 < %{version}-%{release}
-Conflicts:		python-lz4 < %{version}-%{release}
-
+Conflicts:	python-lz4 < %{version}-%{release}
+%else
 #Fedora 31 builds a package that cannot be installed if we let its automagic run:
-%if 0%{?fedora}>=31
 AutoReqProv: no
 %endif
 
@@ -94,6 +94,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Jan 03 2020 Antoine Martin <antoine@xpra.org> - 2.2.1-3
+- don't conflict with the newer python3 Fedora or CentOS 8 builds
+
 * Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2.2.1-2
 - remove old dependency
 

@@ -21,7 +21,7 @@ URL: http://winswitch.org/
 Source: https://files.pythonhosted.org/packages/0d/18/fd6e9c71a35b67a73160ec80a49da63d1eed2d2055054cc2995714949132/netifaces-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 BuildRequires: python2-devel, python2-setuptools
-%if !0%{?fedora}
+%if 0%{?el7}
 Provides: netifaces = %{version}-%{release}
 Provides: python-netifaces = %{version}-%{release}
 Obsoletes: netifaces
@@ -84,7 +84,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 0.10.9-2
-- don't conflict with the newer python3 Fedora builds
+- don't conflict with the newer python3 Fedora or CentOS 8 builds
 
 * Fri Jan 11 2019 Antoine Martin <antoine@xpra.org> - 0.10.9-1
 - new upstream release

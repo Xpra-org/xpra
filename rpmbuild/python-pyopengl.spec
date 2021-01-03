@@ -10,7 +10,7 @@
 
 Name:           python2-pyopengl
 Version:        3.1.5
-Release:        1xpra1%{?dist}
+Release:        2xpra1%{?dist}
 Summary:        Python bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -18,29 +18,29 @@ Source0:        https://files.pythonhosted.org/packages/b8/73/31c8177f3d236e9a54
 Source1:        https://files.pythonhosted.org/packages/a2/3c/f42a62b7784c04b20f8b88d6c8ad04f4f20b0767b721102418aad94d8389/%{srcname}-accelerate-%{version}.tar.gz
 
 Requires:       freeglut
+
+%if 0%{?el7}
+Requires:       numpy
+BuildRequires:  python-setuptools
+BuildRequires:  python-devel
 Obsoletes:      python-pyopengl < %{version}-%{release}
 Provides:       python-pyopengl = %{version}-%{release}
 Obsoletes:      pyopengl < %{version}-%{release}
 Provides:       pyopengl = %{version}-%{release}
-Conflicts:		pyopengl < %{version}-%{release}
+Conflicts:	pyopengl < %{version}-%{release}
 Obsoletes:      PyOpenGL < %{version}-%{release}
 Provides:       PyOpenGL = %{version}-%{release}
-Conflicts:		PyOpenGL < %{version}-%{release}
+Conflicts:	PyOpenGL < %{version}-%{release}
 #Fedora broke our xpra repository :(
 Obsoletes:      PyOpenGL-accelerate < %{version}-%{release}
 Provides:       PyOpenGL-accelerate = %{version}-%{release}
-Conflicts:		PyOpenGL-accelerate < %{version}-%{release}
-
-%if 0%{?fedora}%{?el8}
+Conflicts:	PyOpenGL-accelerate < %{version}-%{release}
+%else
 %global __provides_exclude_from ^(%{python3_sitearch}|%{python2_sitearch})/.*\\.so$
 %define with_python3 1
 Requires:       python2-numpy
 BuildRequires:  python2-setuptools
 BuildRequires:  python2-devel
-%else
-Requires:       numpy
-BuildRequires:  python-setuptools
-BuildRequires:  python-devel
 %endif
 
 %description
@@ -82,10 +82,12 @@ Summary:        %{srcname} Python 2.x Tk widget
 BuildArch:      noarch
 Requires:       python2-pyopengl = %{version}-%{release}
 Requires:       tkinter
+%if 0%{?el7}
 Obsoletes:      PyOpenGL-Tk < 3.1.2
 Provides:       PyOpenGL-Tk = %{version}-%{release}
 Obsoletes:      python-pyopengl-tk < 3.1.2
 Provides:       python-pyopengl-tk = %{version}-%{release}
+%endif
 
 %description -n python2-pyopengl-tk
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 2.x.
@@ -177,6 +179,9 @@ popd
 
 
 %changelog
+* Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 3.1.5-2xpra1
+- don't conflict with the newer python3 Fedora or CentOS 8 builds
+
 * Wed Jan 22 2020 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra1
 - new upstream release
 

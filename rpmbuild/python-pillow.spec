@@ -34,26 +34,31 @@
 
 
 Version:        6.2.2
-Release:        1%{?snap}%{?dist}
+Release:        2%{?snap}%{?dist}
 Summary:        Python image processing library
 
 # License: see http://www.pythonware.com/products/pil/license.htm
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
 Source:         https://files.pythonhosted.org/packages/b3/d0/a20d8440b71adfbf133452d4f6e0fe80de2df7c2578c9b498fb812083383/Pillow-%{version}.tar.gz
+
 %if 0%{?el7}
 Name:           python-pillow
 Provides:       python2-pillow = %{version}-%{release}
 Conflicts:      python2-pillow < %{version}-%{release}
+Provides:       python-imaging = %{version}-%{release}
+Obsoletes:      python-imaging <= 1.1.7-12
+Provides:       python2-imaging = %{version}-%{release}
+Obsoletes:      python2-imaging <= 1.1.7-12
 %else
 Name:           python2-pillow
-Provides:       python-pillow = %{version}-%{release}
-Obsoletes:      python-pillow < %{version}-%{release}
-Conflicts:      python-pillow < %{version}-%{release}
+%endif
+
+%if "%{?lcms}"!="%{nil}"
+Requires:	%{lcms}
 %endif
 
 BuildRequires:  python2-devel
-
 BuildRequires:  python2-setuptools
 %if %{with_tk}
 BuildRequires:  %{tkinter}
@@ -90,13 +95,6 @@ BuildRequires:  python3-numpy
 #BuildRequires:  python3-sphinx
 %endif
 
-Provides:       python-imaging = %{version}-%{release}
-Obsoletes:      python-imaging <= 1.1.7-12
-Provides:       python2-imaging = %{version}-%{release}
-Obsoletes:      python2-imaging <= 1.1.7-12
-%if "%{?lcms}"!="%{nil}"
-Requires:		%{lcms}
-%endif
 
 %if 0%{with_filter} > 0
 %filter_provides_in %{python2_sitearch}
@@ -333,6 +331,9 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
+* Sun Jan 03 2020 Antoine Martin <antoine@xpra.org> - 6.2.2-2
+- don't conflict with the newer python3 Fedora or CentOS 8 builds
+
 * Sat Jul 04 2020 Antoine Martin <antoine@xpra.org> - 6.2.2-1
 - workaround python2 naming conflicts on RHEL / CentOS 7
 - new upstream release

@@ -18,7 +18,7 @@
 
 Name:           python2-srp
 Version:        1.0.5
-Release:        2%{?dist}
+Release:        3%{?dist}
 URL:            http://pythonhosted.org/srp/
 Summary:        Secure Remote Password for python
 License:        MIT
@@ -29,9 +29,11 @@ BuildRequires:  python2-devel
 BuildRequires:  openssl-devel
 BuildRequires:  python2-setuptools
 Requires:       openssl
+%if 0%{el7}
 Provides:       python-srp
 Obsoletes:      python-srp
 Conflicts:      python-srp
+%endif
 Patch0:         python-srp-py3k.patch
 
 %description
@@ -88,6 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 1.0.5-3
+- don't conflict with the newer python3 Fedora builds
+
 * Sat Dec 24 2016 Antoine Martin <antoine@xpra.org> - 1.0.5-2
 - try harder to supersede the old package name
 

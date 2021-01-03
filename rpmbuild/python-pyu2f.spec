@@ -14,14 +14,16 @@
 
 Name:           python2-pyu2f
 Version:        0.1.4
-Release:        3
+Release:        4
 URL:            https://github.com/google/pyu2f
 Summary:        Python based U2F host library for Linux
 License:        BSD
 Group:          Development/Libraries/Python
 Source:			https://files.pythonhosted.org/packages/b0/6d/0fd9107b92c792e62cdeaeca2dfe40928898509aba82d81656d53e610c64/pyu2f-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+%if 0%{?el7}
 Provides:       python-pyu2f
+%endif
 
 %description
 pyu2f provides functionality for interacting with a U2F device over USB.
@@ -73,6 +75,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Sun Jan 03 2020 Antoine Martin <antoine@xpra.org> - 0.1.4-4
+- don't conflict with the newer python3 Fedora or CentOS 8 builds
+
 * Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 0.1.4-3
 - build for CentOS 8
 

@@ -14,14 +14,16 @@
 
 Name:           python2-rencode
 Version:        1.0.6
-Release:        1.xpra1%{?dist}
+Release:        2.xpra1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
 Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
-Provides:		python-rencode = %{version}-%{release}
-Obsoletes:		python-rencode < %{version}-%{release}
-Conflicts:		python-rencode < %{version}-%{release}
+%if 0%{?el7}
+Provides:	python-rencode = %{version}-%{release}
+Obsoletes:	python-rencode < %{version}-%{release}
+Conflicts:	python-rencode < %{version}-%{release}
+%endif
 Patch0:         python-rencode-readdmissingpyx.patch
 Patch1:         python-rencode-nowheelreq.patch
 Patch2:         python-rencode-rename.patch
@@ -119,6 +121,9 @@ popd
 %endif
 
 %changelog
+* Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-2.xpra1
+- don't conflict with the newer python3 Fedora / CentOS 8 builds
+
 * Mon Oct 22 2018 Antoine Martin <antoine@xpra.org> - 1.0.6-1.xpra1
 - new upstream release
 

@@ -10,16 +10,18 @@
 
 Name:           python2-uinput
 Version:        0.11.2
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
 
 License:        GPLv3
 URL:            http://pypi.python.org/pypi/python-uinput/
 Source0:        https://pypi.python.org/packages/54/b7/be7d0e8bbbbd440fef31242974d92d4edd21eb95ed96078b18cf207c7ccb/python-uinput-0.11.2.tar.gz
 
-Provides:		python-uinput
+%if 0%{?el7}
+Provides:	python-uinput
 Obsoletes:      python-uinput < 0.11.2
-Conflicts:		python-uinput < 0.11.2
+Conflicts:	python-uinput < 0.11.2
+%endif
 
 BuildRequires:  python2-devel
 BuildRequires:  kernel-headers
@@ -108,6 +110,9 @@ chmod a-x examples/*
 
 
 %changelog
+* Sun Jan 03 2020 Antoine Martin <antoine@xpra.org> - 0.11.2-4
+- don't conflict with the newer python3 Fedora or CentOS 8 builds
+
 * Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 0.11.2-3
 - use python2 explicitly
 
