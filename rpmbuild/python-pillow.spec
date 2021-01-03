@@ -331,7 +331,7 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %endif
 
 %changelog
-* Sun Jan 03 2020 Antoine Martin <antoine@xpra.org> - 6.2.2-2
+* Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 6.2.2-2
 - don't conflict with the newer python3 Fedora or CentOS 8 builds
 
 * Sat Jul 04 2020 Antoine Martin <antoine@xpra.org> - 6.2.2-1
