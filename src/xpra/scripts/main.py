@@ -101,6 +101,8 @@ def main(script_file, cmdline):
     #disable this "feature" unless explicitly enabled:
     if os.environ.get("GTK_CSD") is None:
         os.environ["GTK_CSD"] = "0"
+    if POSIX and os.environ.get("XDG_SESSION_TYPE", "x11")=="x11" and not os.environ.get("GDK_BACKEND"):
+        os.environ["GDK_BACKEND"] = "x11"
 
     if envbool("XPRA_NOMD5", False):
         import hashlib
