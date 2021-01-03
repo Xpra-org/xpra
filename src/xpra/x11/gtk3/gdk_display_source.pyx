@@ -44,9 +44,10 @@ display = None
 def init_gdk_display_source():
     global display
     import os
-    if os.environ.get("GDK_BACKEND", "")!="x11" and not is_X11():
+    backend = os.environ.get("GDK_BACKEND", "")
+    if backend!="x11" and not is_X11():
         from xpra.scripts.config import InitException
-        raise InitException("cannot use X11 bindings with Wayland and GTK3 (buggy)")
+        raise InitException("cannot use X11 bindings with %s and GTK3 (buggy)" % (backend,))
     if display:
         return
     cdef GdkDisplay* gdk_display
