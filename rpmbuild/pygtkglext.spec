@@ -5,7 +5,7 @@
 
 Name:           pygtkglext
 Version:        1.1.0
-Release:        31.xpra1%{?dist}
+Release:        32.xpra1%{?dist}
 Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
@@ -17,7 +17,7 @@ BuildRequires:  python2-devel
 BuildRequires:  pygtk2-devel
 Requires:       pygtk2
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el8}
 Requires:       python2-pyopengl
 %else
 Requires:       PyOpenGL
@@ -91,6 +91,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Nov 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-32.xpra1
+- CentOS 8.x dependency fix
+
 * Mon Nov 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra1
 - Fedora 31 rebuild
 
