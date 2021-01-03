@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import gi
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib, GdkPixbuf
 
 from xpra.gtk_common.gtk_util import add_close_accel
@@ -43,7 +45,11 @@ def _get_qrencode_fn():
                     ("data", c_char_p),
                     )
             PQRCode = POINTER(QRCode)
-            lib_file = find_library("libqrencode")
+            lib_file = None
+            for lib_name in ("libqrencode", "qrencode"):
+                lib_file = find_library(lib_name)
+                if lib_file:
+                    break
             if not lib_file:
                 if first_time("libqrencode"):
                     log.warn("Warning: libqrencode not found")
@@ -114,3 +120,16 @@ def qr_pixbuf(uri, width=640, height=640):
     pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(data, GdkPixbuf.Colorspace.RGB,
                                              False, 8, w, h, w * 3)
     return pixbuf
+
+
+def main():
+    if "-v" in sys.argv or "--verbose" in sys.argv:
+        log.enable_debug()
+    fn = get_qrencode_fn()
+    log.info("qrencode_fn=%s" % (fn,))
+
+
+if __name__ == "__main__":
+    import sys
+    main()
+    sys.exit(0)
