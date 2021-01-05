@@ -423,6 +423,10 @@ class FileTransferHandler(FileTransferAttributes):
         except UnicodeDecodeError:
             basefilename = bytestostr(basefilename)
         mimetype = bytestostr(mimetype)
+        if filesize<=0:
+            filelog.error("Error: invalid file size: %s", filesize)
+            filelog.error(" file transfer aborted for %r", basefilename)
+            return
         args = (send_id, "file", basefilename, printit, openit)
         r = self.accept_data(*args)
         filelog("%s%s=%s", self.accept_data, args, r)
@@ -442,7 +446,6 @@ class FileTransferHandler(FileTransferAttributes):
             assert self.file_transfer
         l("receiving file: %s",
           [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
-        assert filesize>0, "invalid file size: %s" % filesize
         if filesize>self.file_size_limit:
             l.error("Error: file '%s' is too large:", s(basefilename))
             l.error(" %sB, the file size limit is %sB",
