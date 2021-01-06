@@ -102,12 +102,12 @@ def do_get_system_conf_dirs():
 
 def do_get_user_conf_dirs(uid):
     #per-user configuration location:
-    #(but never use /root/.xpra)
+    #(but never use /root/.xpra or /root/.config/xpra)
     if uid is None:
         uid = os.getuid()
     dirs = []
-    dirs += [os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "xpra")]
     if uid>0:
+        dirs += [os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "xpra")]
         dirs.append("~/.xpra")
     return dirs
 
