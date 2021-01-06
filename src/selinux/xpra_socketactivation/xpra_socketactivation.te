@@ -27,6 +27,7 @@ require {
 	type unconfined_t;
 	type bin_t;
 	type avahi_t;
+	type config_home_t;
 
 	attribute can_read_shadow_passwords;
 }
@@ -54,6 +55,9 @@ files_config_file(xpra_conf_t)
 allow xpra_t xpra_conf_t:file read_file_perms;
 allow xpra_t xpra_conf_t:dir { getattr open read search };
 files_search_etc(xpra_t)
+
+allow xpra_t config_home_t:dir { getattr search };
+allow xpra_t config_home_t:file { getattr ioctl open read };
 
 type xpra_socket_t;
 files_type(xpra_socket_t)
