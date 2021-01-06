@@ -1,12 +1,12 @@
 Name:           python3-pytools
-Version:        2019.1.1
-Release:        2%{?dist}
+Version:        2020.4.4
+Release:        1%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        https://files.pythonhosted.org/packages/00/96/00416762a3eda8876a17d007df4a946f46b2e4ee1057e0b9714926472ef8/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/16/ed/f4b298876b9b624150cc01830075f7cb0b9e09c1abfc46daef14811f3eed/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
 
@@ -55,6 +55,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Jan 07 2021 Antoine Martin <antoine@xpra.org> - 2020.4.4-1
+- new upstream release
+
 * Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
 - drop support for python2
 
