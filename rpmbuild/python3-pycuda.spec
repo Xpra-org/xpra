@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,13 +13,13 @@
 %global debug_package %{nil}
 
 Name:           python3-pycuda
-Version:        2019.1.2
-Release:        2
+Version:        2020.1
+Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source:        	https://files.pythonhosted.org/packages/5e/3f/5658c38579b41866ba21ee1b5020b8225cec86fe717e4b1c5c972de0a33c/pycuda-%{version}.tar.gz
+Source:        	https://files.pythonhosted.org/packages/46/61/47d3235a4c13eec5a5f03594ddb268f4858734e02980afbcd806e6242fa5/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -66,6 +66,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Wed Jan 06 2021 Antoine Martin <antoine@xpra.org> - 2020.1-1
+- new upstream release
+
 * Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2019.1.2-2
 - build only for python3
 
