@@ -48,8 +48,8 @@ Requires:       python3-six
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
-	--no-cuda-enable-curand \
-	--boost-python-libname=boost_python37
+	--no-cuda-enable-curand
+#	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
 %{__python3} setup.py build
 make
