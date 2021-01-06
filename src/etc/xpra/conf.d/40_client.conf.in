@@ -15,7 +15,7 @@ opengl = %(opengl)s
 challenge-handlers=all
 
 # Client window title:
-title = @title@ on @hostname@
+title = @title@ on @hostinfo@
 
 # Use a header bar with controls:
 #headerbar = no

@@ -272,7 +272,12 @@ class ClientWindowBase(ClientWidgetBase):
             def getvar(var):
                 #"hostname" is magic:
                 #we try harder to find a useful value to show:
-                if var=="hostname":
+                if var in ("hostname", "hostinfo"):
+                    if var=="hostinfo" and getattr(self._client, "mmap_enabled", False):
+                        #this is a local connection for sure
+                        server_display = getattr(self._client, "server_display", None)
+                        if server_display:
+                            return server_display
                     #try to find the hostname:
                     proto = getattr(self._client, "_protocol", None)
                     if proto:
