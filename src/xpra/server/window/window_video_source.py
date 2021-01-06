@@ -382,11 +382,11 @@ class WindowVideoSource(WindowSource):
             csc_modes = self.full_csc_modes.strtupleget(x)
             if not csc_modes or x not in self.core_encodings:
                 exclude.append(x)
-                if not init:
-                    l = log.warn
+                msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)
+                if not init and first_time("no-csc-%s-%i" % (x, self.wid)):
+                    log.warn(*msg_args)
                 else:
-                    l = log
-                l("client does not support any csc modes with %s", x)
+                    log(*msg_args)
         self.common_video_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
         log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
