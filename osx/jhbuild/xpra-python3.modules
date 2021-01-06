@@ -387,9 +387,9 @@
 
 	<distutils id="python3-lz4" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/4c/c3/97c5aaeb8c70eafb0cba7dcbcb7709c2697d8a92bdef90d36b018dc502f6/lz4-3.1.0.tar.gz"
-			hash="sha256:debe75513db3eb9e5cdcd82a329ff38374b6316ab65b848b571e0404746c1e05"
-			version="3.1.0">
+			module="/packages/1b/d7/ce69a9e1ec81ca3e14018d9db7c0d05b4f9a0c58a089d8e6c2e6c2c67a2f/lz4-3.1.1.tar.gz"
+			hash="sha256:1ac354804cb2d5fb3d213857a6bf8590a301ef051cc16fbb4938bd2d6e524bda"
+			version="3.1.1">
 		</branch>
 		<dependencies>
 			<dep package="lz4"/>
