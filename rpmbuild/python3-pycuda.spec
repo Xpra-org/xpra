@@ -14,7 +14,7 @@
 
 Name:           python3-pycuda
 Version:        2020.1
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
@@ -37,6 +37,8 @@ Requires:       python3-decorator
 Requires:       python3-numpy
 Requires:       python3-pytools
 Requires:       python3-six
+
+Suggests:       nvidia-driver-cuda-libs
 
 %prep
 %setup -q -n pycuda-%{version}
@@ -66,6 +68,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Thu Jan 07 2021 Antoine Martin <antoine@xpra.org> - 2020.1-2
+- add weak dependency on the driver RPM which provides libcuda
+
 * Wed Jan 06 2021 Antoine Martin <antoine@xpra.org> - 2020.1-1
 - new upstream release
 
