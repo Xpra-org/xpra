@@ -1864,10 +1864,16 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def _set_backing_size(self, ww, wh):
         b = self._backing
+        bw = self._client.cx(ww)
+        bh = self._client.cy(wh)
+        if max(ww, wh)>=32000 or min(ww, wh)<0:
+            raise Exception("invalid window size %ix%i" % (ww, wh))
+        if max(bw, bh)>=32000:
+            raise Exception("invalid window backing size %ix%i" % (bw, bh))
         if b:
-            b.init(ww, wh, self._client.cx(ww), self._client.cy(wh))
+            b.init(ww, wh, bw, bh)
         else:
-            self.new_backing(self._client.cx(ww), self._client.cy(wh))
+            self.new_backing(bw, bh)
 
     def resize(self, w, h, resize_counter=0):
         ww, wh = self.get_size()
