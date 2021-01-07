@@ -79,7 +79,7 @@ cdef class ScrollData:
         for i,v in enumerate(arr):
             self.a2[i] = <uint64_t> abs(v)
 
-    def update(self, pixels, int16_t x, int16_t y, uint16_t width, uint16_t height, uint16_t rowstride, uint8_t bpp=4):
+    def update(self, pixels, int16_t x, int16_t y, uint16_t width, uint16_t height, uint32_t rowstride, uint8_t bpp=4):
         """
             Add a new image to compare with,
             checksum its rows into a2,
