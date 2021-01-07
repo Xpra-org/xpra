@@ -1858,6 +1858,9 @@ class WindowVideoSource(WindowSource):
         ww, wh = self.window_dimensions
         scrolllog("encode_scrolling([], %s, %s, %i) window-dimensions=%s", image, options, match_pct, (ww, wh))
         x = image.get_target_x()
+            return False
+        if w>=32000 or h>=32000:
+            scrolllog("no scrolling: the image is too large, %ix%i", w, h)
         y = image.get_target_y()
         w = image.get_width()
         h = image.get_height()
