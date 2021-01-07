@@ -1859,6 +1859,9 @@ class WindowVideoSource(WindowSource):
         if options.get("scroll") is True:
             scrolllog("no scrolling: detection has already been used on this image")
             return False
+        if w>=32000 or h>=32000:
+            scrolllog("no scrolling: the image is too large, %ix%i", w, h)
+            return False
         try:
             start = monotonic_time()
             if not scroll_data:
