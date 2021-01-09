@@ -303,7 +303,7 @@ class ProxyInstance:
         #server wants a packet
         p = self.client_packets.get()
         s = self.client_packets.qsize()
-        log("sending to client: %s (queue size=%i)", p[0], s)
+        log("sending to client: %s (queue size=%i)", bytestostr(p[0]), s)
         return p, None, None, None, True, s>0
 
     def process_client_packet(self, proto, packet):
@@ -362,7 +362,7 @@ class ProxyInstance:
         #server wants a packet
         p = self.server_packets.get()
         s = self.server_packets.qsize()
-        log("sending to server: %s (queue size=%i)", p[0], s)
+        log("sending to server: %s (queue size=%i)", bytestostr(p[0]), s)
         return p, None, None, None, True, s>0
 
 
