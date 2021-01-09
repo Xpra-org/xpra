@@ -122,7 +122,7 @@ class WindowSource(WindowIconSource):
     def __init__(self,
                     idle_add, timeout_add, source_remove,
                     ww, wh,
-                    record_congestion_event, queue_size, call_in_encode_thread, queue_packet, compressed_wrapper,
+                    record_congestion_event, queue_size, call_in_encode_thread, queue_packet,
                     statistics,
                     wid, window, batch_config, auto_refresh_delay,
                     av_sync, av_sync_delay,
@@ -150,7 +150,6 @@ class WindowSource(WindowIconSource):
         self.queue_size   = queue_size                  #callback to get the size of the damage queue
         self.call_in_encode_thread = call_in_encode_thread  #callback to add damage data which is ready to compress to the damage processing queue
         self.queue_packet = queue_packet                #callback to add a network packet to the outgoing queue
-        self.compressed_wrapper = compressed_wrapper    #callback utility for making compressed wrappers
         self.wid = wid
         self.window = window                            #only to be used from the UI thread!
         self.global_statistics = statistics             #shared/global statistics from ClientConnection

@@ -550,7 +550,7 @@ class WindowsMixin(StubSourceMixin):
                               self.idle_add, self.timeout_add, self.source_remove,
                               ww, wh,
                               self.record_congestion_event, self.encode_queue_size,
-                              self.call_in_encode_thread, self.queue_packet, self.compressed_wrapper,
+                              self.call_in_encode_thread, self.queue_packet,
                               self.statistics,
                               wid, window, batch_config, self.auto_refresh_delay,
                               av_sync, av_sync_delay,
