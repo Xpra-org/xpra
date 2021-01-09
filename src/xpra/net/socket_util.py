@@ -429,7 +429,7 @@ def setup_udp_socket(host, iport, socktype="udp"):
     except Exception as e:
         log("create_udp_socket%s", (host, iport), exc_info=True)
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
-                       "failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e))
+                       "failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e)) from None
     def cleanup_udp_socket():
         log.info("closing %s socket %s:%s", socktype, host, iport)
         try:
@@ -463,8 +463,8 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
                 try:
                     iport = int(port)
                     assert 0<iport<2**16
-                except:
-                    raise InitException("invalid port number: %s" % port)
+                except (TypeError, ValueError):
+                    raise InitException("invalid port number: %s" % port) from None
             options = {}
             if len(parts)==2:
                 options = parse_simple_dict(parts[1])

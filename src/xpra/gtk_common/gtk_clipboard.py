@@ -73,7 +73,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     continue
                 try:
                     text = data.decode("utf8")
-                except:
+                except UnicodeDecodeError:
                     text = bytestostr(data)
                 log("setting text data %s / %s of size %i: %s",
                     dtype, dformat, len(text), ellipsizer(text))

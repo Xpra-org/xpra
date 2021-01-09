@@ -97,8 +97,8 @@ def bdecode(x):
         if not fn:
             raise ValueError("invalid type identifier: %s" % (xs[0]))
         r, l = fn(xs, 0)
-    except (IndexError, KeyError):
-        raise ValueError
+    except (IndexError, KeyError) as e:
+        raise ValueError from e
     return r, l
 
 def encode_int(x, r):

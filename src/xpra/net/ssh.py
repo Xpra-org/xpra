@@ -280,8 +280,8 @@ def ssh_paramiko_connect_to(display_desc):
                 cport = host_config.get("port", port)
                 try:
                     port = int(cport)
-                except ValueError:
-                    raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % cport)
+                except (TypeError, ValueError):
+                    raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % cport) from None
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
                     log("found proxycommand='%s' for host '%s'", proxycommand, chost)

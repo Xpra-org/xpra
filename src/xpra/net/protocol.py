@@ -549,7 +549,7 @@ class Protocol:
             try:
                 l = len(item)
             except TypeError as e:
-                raise TypeError("invalid type %s in %s packet at index %s: %s" % (ti, packet[0], i, e))
+                raise TypeError("invalid type %s in %s packet at index %s: %s" % (ti, packet[0], i, e)) from None
             if ti==LargeStructure:
                 packet[i] = item.data
                 continue

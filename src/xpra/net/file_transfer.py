@@ -94,7 +94,7 @@ def safe_open_download_file(basefilename, mimetype):
 def s(v):
     try:
         return v.decode("utf8")
-    except:
+    except UnicodeDecodeError:
         return bytestostr(v)
 
 
@@ -724,7 +724,7 @@ class FileTransferHandler(FileTransferAttributes):
           (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
         try:
             filename = bytestostr(filename).encode("utf8")
-        except:
+        except Exception:
             filename = strtobytes(filename)
         self.dump_remote_caps()
         if not self.check_file_size(action, filename, filesize):
@@ -758,7 +758,7 @@ class FileTransferHandler(FileTransferAttributes):
         #filenames and url are always sent encoded as utf8:
         try:
             url = strtobytes(url).decode("utf8")
-        except:
+        except UnicodeDecodeError:
             url = bytestostr(url)
         dtype = s(dtype)
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
