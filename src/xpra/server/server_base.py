@@ -764,7 +764,7 @@ class ServerBase(ServerBaseClass):
 
     def cancel_http_stream_check_timers(self):
         for ts in tuple(self.http_stream_check_timers.keys()):
-            v = self.mp3_stream_check_timers.pop(ts, None)
+            v = self.http_stream_check_timers.pop(ts, None)
             if v:
                 timer, stop = v
                 self.source_remove(timer)
