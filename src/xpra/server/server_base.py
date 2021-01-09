@@ -116,7 +116,7 @@ class ServerBase(ServerBaseClass):
         self.idle_timeout = 0
         #duplicated from Server Source...
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
-        self.mp3_stream_check_timer = None
+        self.mp3_stream_check_timers = {}
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -847,7 +847,9 @@ class ServerBase(ServerBaseClass):
                 state["started"] = True
                 state["buffers"] = 0
                 state["codec"] = codec
+        start = monotonic_time()
         def timeout_check():
+            self.mp3_stream_check_timers.pop(start, None)
             if not state.get("started"):
                 err()
                 source.stop_sending_sound()
@@ -857,13 +859,13 @@ class ServerBase(ServerBaseClass):
             source.start_sending_sound("mp3", volume=1.0, new_stream=new_stream,
                                        new_buffer=new_buffer, skip_client_codec_check=True)
         self.idle_add(start_sending_sound)
-        self.mp3_stream_check_timer = self.timeout_add(1000*5, timeout_check)
+        self.mp3_stream_check_timers[start] = self.timeout_add(1000*5, timeout_check)
 
     def cancel_mp3_stream_check_timer(self):
-        msct = self.mp3_stream_check_timer
-        if msct:
-            self.mp3_stream_check_timer = None
-            self.source_remove(msct)
+        for ts in tuple(self.mp3_stream_check_timers.keys()):
+            t = self.mp3_stream_check_timers.pop(ts, None)
+            if t:
+                self.source_remove(t)
 
 
     ######################################################################
