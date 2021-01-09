@@ -377,6 +377,7 @@ class WindowVideoSource(WindowSource):
             exclude = []
         for x in self.video_encodings:
             if x not in self.core_encodings:
+                log("video encoding %s not in core encodings", x)
                 exclude.append(x)
                 continue
             csc_modes = self.full_csc_modes.strtupleget(x)
