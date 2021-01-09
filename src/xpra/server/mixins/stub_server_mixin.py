@@ -136,6 +136,10 @@ class StubServerMixin:
         return shlex.split(str(cmd))
 
 
+    def get_http_scripts(self) -> dict:
+        return {}
+
+
     def add_packet_handler(self, packet_type, handler, main_thread=True):
         pass
 

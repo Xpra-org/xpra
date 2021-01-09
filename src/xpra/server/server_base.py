@@ -116,7 +116,7 @@ class ServerBase(ServerBaseClass):
         self.idle_timeout = 0
         #duplicated from Server Source...
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
-        self.mp3_stream_check_timers = {}
+        self.http_stream_check_timers = {}
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -217,7 +217,7 @@ class ServerBase(ServerBaseClass):
     def do_cleanup(self):
         self.server_event("exit")
         self.wait_for_threaded_init()
-        self.cancel_mp3_stream_check_timer()
+        self.cancel_http_stream_check_timers()
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.cleanup(self)
@@ -756,116 +756,22 @@ class ServerBase(ServerBaseClass):
         return info
 
     def get_http_scripts(self) -> dict:
-        scripts = ServerCore.get_http_scripts(self)
-        scripts["/audio.mp3"] = self.http_audio_mp3_request
+        scripts = {}
+        for c in SERVER_BASES:
+            scripts.update(c.get_http_scripts(self))
+        httplog.info("scripts=%s", scripts)
         return scripts
 
-    def http_audio_mp3_request(self, handler):
-        def err(code=500):
-            handler.send_response(code)
-            return None
-        try:
-            args_str = handler.path.split("?", 1)[1]
-        except IndexError:
-            return err()
-        #parse args:
-        args = {}
-        for x in args_str.split("&"):
-            v = x.split("=", 1)
-            if len(v)==1:
-                args[v[0]] = ""
-            else:
-                args[v[0]] = v[1]
-        httplog("http_audio_mp3_request(%s) args(%s)=%s", handler, args_str, args)
-        uuid = args.get("uuid")
-        if not uuid:
-            httplog.warn("Warning: http-stream audio request, missing uuid")
-            return err()
-        source = None
-        for x in self._server_sources.values():
-            if x.uuid==uuid:
-                source = x
-                break
-        if not source:
-            httplog.warn("Warning: no client matching uuid '%s'", uuid)
-            return err()
-        #don't close the connection when handler.finish() is called,
-        #we will continue to write to this socket as we process more buffers:
-        finish = handler.finish
-        def do_finish():
-            try:
-                finish()
-            except:
-                log("error calling %s", finish, exc_info=True)
-        def noop():
-            pass
-        handler.finish = noop
-        state = {}
-        def new_buffer(_sound_source, data, _metadata, packet_metadata=()):
-            if state.get("failed"):
-                return
-            if not state.get("started"):
-                httplog.warn("buffer received but stream is not started yet")
-                source.stop_sending_sound()
-                err()
-                do_finish()
-                return
-            count = state.get("buffers", 0)
-            httplog("new_buffer [%i] for %s sound stream: %i bytes", count, state.get("codec", "?"), len(data))
-            #httplog("buffer %i: %s", count, hexstr(data))
-            state["buffers"] = count+1
-            try:
-                for x in packet_metadata:
-                    handler.wfile.write(x)
-                handler.wfile.write(data)
-                handler.wfile.flush()
-            except Exception as e:
-                state["failed"] = True
-                httplog("failed to send new audio buffer", exc_info=True)
-                httplog.warn("Error: failed to send audio packet:")
-                httplog.warn(" %s", e)
-                source.stop_sending_sound()
-                do_finish()
-        def new_stream(sound_source, codec):
-            codec = bytestostr(codec)
-            httplog("new_stream: %s", codec)
-            sound_source.codec = codec
-            headers = {
-                "Content-type"      : "audio/mpeg",
-                }
-            try:
-                handler.send_response(200)
-                for k,v in headers.items():
-                    handler.send_header(k, v)
-                handler.end_headers()
-            except ValueError:
-                httplog("new_stream error writing headers", exc_info=True)
-                state["failed"] = True
-                source.stop_sending_sound()
-                do_finish()
-            else:
-                state["started"] = True
-                state["buffers"] = 0
-                state["codec"] = codec
-        start = monotonic_time()
-        def timeout_check():
-            self.mp3_stream_check_timers.pop(start, None)
-            if not state.get("started"):
-                err()
-                source.stop_sending_sound()
-        if source.sound_source:
-            source.stop_sending_sound()
-        def start_sending_sound():
-            source.start_sending_sound("mp3", volume=1.0, new_stream=new_stream,
-                                       new_buffer=new_buffer, skip_client_codec_check=True)
-        self.idle_add(start_sending_sound)
-        self.mp3_stream_check_timers[start] = self.timeout_add(1000*5, timeout_check)
-
-    def cancel_mp3_stream_check_timer(self):
-        for ts in tuple(self.mp3_stream_check_timers.keys()):
-            t = self.mp3_stream_check_timers.pop(ts, None)
-            if t:
-                self.source_remove(t)
+    def cancel_http_stream_check_timers(self):
+        for ts in tuple(self.http_stream_check_timers.keys()):
+            v = self.mp3_stream_check_timers.pop(ts, None)
+            if v:
+                timer, stop = v
+                self.source_remove(timer)
+                try:
+                    stop()
+                except Exception:
+                    httplog("error on %s", stop, exc_info=True)
 
 
     ######################################################################

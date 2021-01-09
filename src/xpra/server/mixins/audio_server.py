@@ -7,6 +7,7 @@
 
 import os.path
 from threading import Event
+from gi.repository import GLib
 
 from xpra.os_util import pollwait, monotonic_time, bytestostr, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
@@ -19,6 +20,7 @@ from xpra.log import Logger
 
 log = Logger("server")
 soundlog = Logger("sound")
+httplog = Logger("http")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
 
@@ -99,6 +101,105 @@ class AudioServer(StubServerMixin):
             }
         log("get_server_features(%s)=%s", source, d)
         return d
+
+
+    def get_http_scripts(self) -> dict:
+        return {
+            "/audio.mp3" : self.http_audio_mp3_request,
+            }
+
+    def http_audio_mp3_request(self, handler):
+        def err(code=500):
+            handler.send_response(code)
+            return None
+        from xpra.server.http_handler import parse_url
+        args = parse_url(handler)
+        if not args:
+            return err()
+        httplog("http_audio_mp3_request(%s) args=%s", handler, args)
+        uuid = args.get("uuid")
+        if not uuid:
+            httplog.warn("Warning: http-stream audio request, missing uuid")
+            return err()
+        source = None
+        for x in self._server_sources.values():
+            if x.uuid==uuid:
+                source = x
+                break
+        if not source:
+            httplog.warn("Warning: no client matching uuid '%s'", uuid)
+            return err()
+        #don't close the connection when handler.finish() is called,
+        #we will continue to write to this socket as we process more buffers:
+        finish = handler.finish
+        def do_finish():
+            try:
+                finish()
+            except Exception:
+                log("error calling %s", finish, exc_info=True)
+        def noop():
+            pass
+        handler.finish = noop
+        state = {}
+        def new_buffer(_sound_source, data, _metadata, packet_metadata=()):
+            if state.get("failed"):
+                return
+            if not state.get("started"):
+                httplog.warn("buffer received but stream is not started yet")
+                source.stop_sending_sound()
+                err()
+                do_finish()
+                return
+            count = state.get("buffers", 0)
+            httplog("new_buffer [%i] for %s sound stream: %i bytes", count, state.get("codec", "?"), len(data))
+            #httplog("buffer %i: %s", count, hexstr(data))
+            state["buffers"] = count+1
+            try:
+                for x in packet_metadata:
+                    handler.wfile.write(x)
+                handler.wfile.write(data)
+                handler.wfile.flush()
+            except Exception as e:
+                state["failed"] = True
+                httplog("failed to send new audio buffer", exc_info=True)
+                httplog.warn("Error: failed to send audio packet:")
+                httplog.warn(" %s", e)
+                source.stop_sending_sound()
+                do_finish()
+        def new_stream(sound_source, codec):
+            codec = bytestostr(codec)
+            httplog("new_stream: %s", codec)
+            sound_source.codec = codec
+            headers = {
+                "Content-type"      : "audio/mpeg",
+                }
+            try:
+                handler.send_response(200)
+                for k,v in headers.items():
+                    handler.send_header(k, v)
+                handler.end_headers()
+            except ValueError:
+                httplog("new_stream error writing headers", exc_info=True)
+                state["failed"] = True
+                source.stop_sending_sound()
+                do_finish()
+            else:
+                state["started"] = True
+                state["buffers"] = 0
+                state["codec"] = codec
+        start = monotonic_time()
+        def timeout_check():
+            self.http_stream_check_timers.pop(start, None)
+            if not state.get("started"):
+                err()
+                source.stop_sending_sound()
+        if source.sound_source:
+            source.stop_sending_sound()
+        def start_sending_sound():
+            source.start_sending_sound("mp3", volume=1.0, new_stream=new_stream,
+                                       new_buffer=new_buffer, skip_client_codec_check=True)
+        GLib.idle_add(start_sending_sound)
+        self.http_stream_check_timers[start] = (self.timeout_add(1000*5, timeout_check), source.stop_sending_sound)
 
 
     def init_pulseaudio(self):
@@ -321,7 +422,6 @@ class AudioServer(StubServerMixin):
             self.supports_microphone = False
         #query_pulseaudio_properties may access X11,
         #do this from the main thread:
-        from gi.repository import GLib
         if bool(self.sound_properties):
             GLib.idle_add(self.query_pulseaudio_properties)
         GLib.idle_add(self.log_sound_properties)
