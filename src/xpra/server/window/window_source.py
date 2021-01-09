@@ -291,7 +291,7 @@ class WindowSource(WindowIconSource):
         self._rgb_auto_threshold = MAX_PIXELS_PREFER_RGB
 
         self.init_encoders()
-        self.update_encoding_selection(encoding, [], init=True)
+        self.update_encoding_selection(encoding, init=True)
         log("initial encoding for %s: %s", self.wid, self.encoding)
 
     def __repr__(self):
@@ -688,7 +688,7 @@ class WindowSource(WindowIconSource):
                 for x in self.enc_pillow.get_encodings():
                     if x in self.server_core_encodings:
                         self.add_encoder(x, self.pillow_encode)
-        self.update_encoding_selection(self.encoding, [])
+        self.update_encoding_selection(self.encoding)
 
 
     def parse_csc_modes(self, full_csc_modes):
@@ -756,7 +756,7 @@ class WindowSource(WindowIconSource):
         #"rgb" is a pseudo encoding and needs special code:
         if "rgb24" in  common_encodings or "rgb32" in common_encodings:
             common_encodings.append("rgb")
-        self.common_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in common_encodings]
+        self.common_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in common_encodings)
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
         #ensure the encoding chosen is supported by this source:
