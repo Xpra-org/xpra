@@ -759,7 +759,7 @@ class ServerBase(ServerBaseClass):
         scripts = {}
         for c in SERVER_BASES:
             scripts.update(c.get_http_scripts(self))
-        httplog.info("scripts=%s", scripts)
+        httplog("scripts=%s", scripts)
         return scripts
 
     def cancel_http_stream_check_timers(self):

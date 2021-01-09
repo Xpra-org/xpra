@@ -25,6 +25,24 @@ EXTENSION_TO_MIMETYPE = {
     ".css"  : "text/css",
     }
 
+
+#should be converted to use standard library
+def parse_url(handler):
+    try:
+        args_str = handler.path.split("?", 1)[1]
+    except IndexError:
+        return {}
+    #parse args:
+    args = {}
+    for x in args_str.split("&"):
+        v = x.split("=", 1)
+        if len(v)==1:
+            args[v[0]] = ""
+        else:
+            args[v[0]] = v[1]
+    return args
+
+
 """
 Xpra's builtin HTTP server.
 * locates the desktop background file at "/background.png" dynamically if missing,
