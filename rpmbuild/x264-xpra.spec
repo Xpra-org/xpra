@@ -63,7 +63,9 @@ rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 
 # remove executable and bash completion:
+%if 0%{?fedora} || 0%{?rhel} >= 7
 rm %{buildroot}/usr/share/bash-completion/completions/x264
+%endif
 rm %{buildroot}/usr/bin/x264
 
 %post -p /sbin/ldconfig
