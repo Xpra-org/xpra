@@ -2,8 +2,8 @@
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     4.2.2
-Release:     2%{?dist}
+Version:     4.3.1
+Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -11,10 +11,14 @@ License:     GPL
 URL:	     http://www.ffmpeg.org
 Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
+AutoProv:    0
+AutoReq:     0
+Requires:    x264-xpra
 
 BuildRequires:	x264-xpra-devel
 BuildRequires:	yasm
 
+#%global __requires_exclude ^libx264.so.*$
 
 %description
 ffmpeg libraries for xpra
@@ -151,6 +155,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Jan 10 2020 Antoine Martin <antoine@xpra.org> 4.3.1-1
+- new upstream release
+
 * Mon Jan 20 2020 Antoine Martin <antoine@xpra.org> 4.2.2-1
 - new upstream release
 
