@@ -328,6 +328,9 @@ cp lib/msvcrt*dll lib/libpython*dll lib/libgcc*dll lib/libwinpthread*dll ./
 #and keep pdfium:
 mv lib/*pdfium*.dll ./
 pushd lib > /dev/null
+#cx_Freeze forgets these two!?
+cp $MINGW_PREFIX/bin/libatk-*dll ./
+cp $MINGW_PREFIX/bin/libgtk-*dll ./
 #remove all the pointless duplication:
 for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
