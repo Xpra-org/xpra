@@ -260,6 +260,8 @@ pushd ${DIST} > /dev/null
 #why is it shipping those files??
 find lib/ -name "*dll.a" -exec rm {} \;
 #only keep the actual loaders, not all the other crap cx_Freeze put there:
+#but keep librsvg
+mv lib/gdk-pixbuf-2.0/2.10.0/loaders/librsvg* ./
 mkdir lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
 rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
