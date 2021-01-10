@@ -63,6 +63,7 @@ rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 
 # remove executable and bash completion:
+rm %{buildroot}/usr/share/bash-completion/completions/x264
 rm %{buildroot}/usr/bin/x264
 
 %post -p /sbin/ldconfig
