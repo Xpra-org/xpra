@@ -1,7 +1,7 @@
 %define _build_id_links none
 
 Name:	     x264-xpra
-Version:     20191217
+Version:     20210110
 %if 0%{?beta} < 1
 Release:     1%{?dist}
 %else
@@ -12,7 +12,7 @@ Summary:     x264 library for xpra
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.videolan.org/developers/x264.html
-Source0:     http://download.videolan.org/pub/x264/snapshots/x264-snapshot-%{version}-2245-stable.tar.bz2
+Source0:     http://download.videolan.org/pub/x264/snapshots/x264-snapshot-%{version}-d198931a-stable.tar.bz2
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 
@@ -43,7 +43,7 @@ This package contains the development files for %{name}.
 
 
 %prep
-%setup -q -n x264-snapshot-%{version}-2245-stable
+%setup -q -n x264-stable
 
 
 %build
