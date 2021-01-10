@@ -85,11 +85,14 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
-* Sun Nov 08 2020 Antoine Martin <antoine@xpra.org> 20191217-1
-- use the last official snapshot
+* Sun Jan 10 2021 Antoine Martin <antoine@xpra.org> 20210110-1
+- use a newer snapshot from git
 
 * Thu May 11 2017 Antoine Martin <antoine@xpra.org> 20200510-1
 - use a newer snapshot
+
+* Sun Nov 08 2020 Antoine Martin <antoine@xpra.org> 20191217-1
+- use the last official snapshot
 
 * Sat Dec 23 2017 Antoine Martin <antoine@xpra.org> 20171222-1
 - use a newer snapshot
