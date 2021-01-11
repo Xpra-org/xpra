@@ -1574,8 +1574,9 @@ else:
                     for k,v in subs.items():
                         data = data.replace(k, v)
                 with open(dst_file, "wb") as f:
-                    return f.write(data)
+                    f.write(data)
                 if chmod:
+                    print("chmod(%s, %s)" % (dst_file, oct(chmod)))
                     os.chmod(dst_file, chmod)
 
             if printing_ENABLED and POSIX:
