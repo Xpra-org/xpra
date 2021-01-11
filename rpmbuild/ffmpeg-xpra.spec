@@ -13,11 +13,9 @@ Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 AutoReq:     0
-Requires:    libva
 Requires:    x264-xpra
 
 BuildRequires:	x264-xpra-devel
-BuildRequires:	libva-devel
 BuildRequires:	yasm
 
 #%global __requires_exclude ^libx264.so.*$
@@ -33,7 +31,6 @@ Group:     Development/libraries
 Requires:  %{name} = %{version}-%{release}
 Requires:  pkgconfig
 Requires:  ffmpeg-xpra = %{version}
-Requires:  libva
 AutoReq:   0
 
 %description devel
