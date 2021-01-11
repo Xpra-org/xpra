@@ -1785,6 +1785,10 @@ class WindowVideoSource(WindowSource):
             scrolllog("no scrolling: detection has already been used on this image")
             #we've already checked
             return False
+        x = image.get_target_x()
+        y = image.get_target_y()
+        w = image.get_width()
+        h = image.get_height()
         if w>=32000 or h>=32000:
             scrolllog("no scrolling: the image is too large, %ix%i", w, h)
             return False
@@ -1795,10 +1799,6 @@ class WindowVideoSource(WindowSource):
         if self.content_type=="video" or not self.non_video_encodings:
             scrolllog("no scrolling: content is video")
             return False
-        x = image.get_target_x()
-        y = image.get_target_y()
-        w = image.get_width()
-        h = image.get_height()
         if w<MIN_SCROLL_IMAGE_SIZE or h<MIN_SCROLL_IMAGE_SIZE:
             scrolllog("no scrolling: image size %ix%i is too small, minimum is %ix%i",
                       w, h, MIN_SCROLL_IMAGE_SIZE, MIN_SCROLL_IMAGE_SIZE)
