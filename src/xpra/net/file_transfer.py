@@ -291,7 +291,7 @@ class FileTransferHandler(FileTransferAttributes):
             if chunk_state[-3]==send_id:
                 self.cancel_file(chunk_id, message)
                 return
-        filelog.error("Error: cannot cancel download %s, entry not found!", bytestostr(send_id))
+        filelog.error("Error: cannot cancel download %s, entry not found!", s(send_id))
 
     def cancel_file(self, chunk_id, message, chunk=0):
         filelog("cancel_file%s", (chunk_id, message, chunk))
@@ -422,7 +422,7 @@ class FileTransferHandler(FileTransferAttributes):
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
         send_id = ""
         if len(packet)>=9:
-            send_id = packet[8]
+            send_id = s(packet[8])
         #basefilename should be utf8:
         basefilename = utf8_decode(basefilename)
         mimetype = bytestostr(mimetype)
@@ -667,8 +667,8 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def _process_open_url(self, packet):
-        url, send_id = packet[1:3]
-        url = utf8_decode(url)
+        send_id = s(packet[2])
+        url = utf8_decode(packet[1])
         if not self.open_url:
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
@@ -762,6 +762,7 @@ class FileTransferHandler(FileTransferAttributes):
         #filenames and url are always sent encoded as utf8:
         url = utf8_decode(url)
         dtype = s(dtype)
+        send_id = s(send_id)
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
 
 
@@ -819,7 +820,7 @@ class FileTransferHandler(FileTransferAttributes):
     def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
         filelog("process send-data-response: send_id=%s, accept=%s", s(send_id), accept)
-        send_id = bytestostr(send_id)
+        send_id = s(send_id)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
             self.source_remove(timer)
