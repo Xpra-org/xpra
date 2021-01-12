@@ -569,6 +569,10 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_open_url(self, packet):
         url, send_id = packet[1:3]
+        try:
+            url = strtobytes(url).decode("utf8")
+        except UnicodeDecodeError:
+            url = bytestostr(url)
         if not self.open_url:
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
