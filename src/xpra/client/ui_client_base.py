@@ -508,7 +508,19 @@ class UIXpraClient(ClientBaseClass):
         if self.tray:
             self.tray.ready()
         self.send_info_request()
-
+        msg = "running"
+        try:
+            windows = tuple(self._id_to_window.values())
+        except AttributeError:
+            pass
+        else:
+            trays = sum(1 for w in windows if w.is_tray())
+            wins = sum(1 for w in windows if not w.is_tray())
+            if wins:
+                msg += ", %i window%s" % (wins, engs(wins))
+            if trays:
+                msg += ", %i tray%s" % (trays, engs(trays))
+        log.info(msg)
 
     def handshake_complete(self):
         oh = self._on_handshake
