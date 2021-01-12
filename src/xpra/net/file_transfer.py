@@ -94,8 +94,14 @@ def safe_open_download_file(basefilename, mimetype):
 def s(v):
     try:
         return v.decode("utf8")
-    except UnicodeDecodeError:
+    except (AttributeError, UnicodeDecodeError):
         return bytestostr(v)
+
+def utf8_decode(url):
+    try:
+        return strtobytes(url).decode("utf8")
+    except UnicodeDecodeError:
+        return bytestostr(url)
 
 
 class FileTransferAttributes:
@@ -418,10 +424,7 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet)>=9:
             send_id = packet[8]
         #basefilename should be utf8:
-        try:
-            basefilename = strtobytes(basefilename).decode("utf8")
-        except UnicodeDecodeError:
-            basefilename = bytestostr(basefilename)
+        basefilename = utf8_decode(basefilename)
         mimetype = bytestostr(mimetype)
         if filesize<=0:
             filelog.error("Error: invalid file size: %s", filesize)
@@ -665,10 +668,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_open_url(self, packet):
         url, send_id = packet[1:3]
-        try:
-            url = strtobytes(url).decode("utf8")
-        except UnicodeDecodeError:
-            url = bytestostr(url)
+        url = utf8_decode(url)
         if not self.open_url:
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
@@ -760,10 +760,7 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet)>=9:
             options = packet[8]
         #filenames and url are always sent encoded as utf8:
-        try:
-            url = strtobytes(url).decode("utf8")
-        except UnicodeDecodeError:
-            url = bytestostr(url)
+        url = utf8_decode(url)
         dtype = s(dtype)
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
 
