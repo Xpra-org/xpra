@@ -1218,10 +1218,12 @@ class ServerCore:
         protocol.authenticators = ()
         protocol.encryption = None
         protocol.keyfile = None
+        protocol.keydata = None
         if socktype in ENCRYPTED_SOCKET_TYPES:
             #special case for legacy encryption code:
             protocol.encryption = socket_options.get("encryption", self.tcp_encryption)
             protocol.keyfile = socket_options.get("encryption-keyfile") or socket_options.get("keyfile") or self.tcp_encryption_keyfile
+            protocol.keydata = socket_options.get("encryption-keydata") or socket_options.get("keydata")
             netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
             if protocol.encryption:
                 from xpra.net.crypto import crypto_backend_init
@@ -1235,7 +1237,7 @@ class ServerCore:
                     )
                 if ENCRYPT_FIRST_PACKET:
                     authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
-                    password = self.get_encryption_key(None, protocol.keyfile)
+                    password = protocol.keydata or self.get_encryption_key(None, protocol.keyfile)
                     protocol.set_cipher_in(protocol.encryption,
                                            DEFAULT_IV, password,
                                            DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
@@ -1708,7 +1710,7 @@ class ServerCore:
                     authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
                 auth_failed("unsupported cipher")
                 return
-            encryption_key = self.get_encryption_key(proto.authenticators, proto.keyfile)
+            encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
             if encryption_key is None:
                 auth_failed("encryption key is missing")
                 return
