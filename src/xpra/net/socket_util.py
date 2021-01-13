@@ -721,7 +721,7 @@ def handle_socket_error(sockpath, sperms, e):
             log.info(" %s does not exist", dirname)
         #only show extra information if the socket permissions
         #would have been accessible by the group:
-        if POSIX and (sperms & 0o40):
+        elif POSIX and (sperms & 0o40):
             uid = getuid()
             username = get_username_for_uid(uid)
             groups = get_groups(username)
