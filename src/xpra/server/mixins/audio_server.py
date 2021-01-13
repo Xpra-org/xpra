@@ -121,7 +121,7 @@ class AudioServer(StubServerMixin):
             from xpra.platform.xposix.paths import _get_xpra_runtime_dir, get_runtime_dir
             rd = osexpand(get_runtime_dir())
             if not os.path.exists(rd) or not os.path.isdir(rd):
-                log.warn("Warning: the runtime directory '%s' does not exist,")
+                log.warn("Warning: the runtime directory '%s' does not exist,", rd)
                 log.warn(" cannot start a private pulseaudio server")
             else:
                 xpra_rd = _get_xpra_runtime_dir()
