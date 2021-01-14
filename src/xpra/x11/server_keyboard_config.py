@@ -503,7 +503,8 @@ class KeyboardConfig(KeyboardConfigBase):
         def klog(msg, *args):
             kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
         #first, try to honour shift state:
-        shift = ("shift" in modifiers) ^ ("lock" in modifiers)
+        lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
+        shift = ("shift" in modifiers) ^ lock
         mode = 0
         numlock = 0
         numlock_modifier = None
