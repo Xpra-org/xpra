@@ -527,7 +527,8 @@ class KeyboardConfig(KeyboardConfigBase):
             kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
         #non-native: try harder to find matching keysym
         #first, try to honour shift state:
-        shift = ("shift" in modifiers) ^ ("lock" in modifiers)
+        lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
+        shift = ("shift" in modifiers) ^ lock
         mode = 0
         numlock = 0
         numlock_modifier = None
