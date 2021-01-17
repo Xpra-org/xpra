@@ -275,6 +275,9 @@ Recommends:			python3-pycuda
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
+BuildRequires:		libxkbfile-devel
+BuildRequires:		libXcomposite-devel
+BuildRequires:		libXdamage-devel
 #once the server is fully ported over to python3:
 #Recommends:		python3-uinput
 %description -n python3-xpra-server
