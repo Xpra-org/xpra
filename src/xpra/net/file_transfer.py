@@ -663,12 +663,12 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("process send-data-request: send_id=%s, url=%s, printit=%s, openit=%s", s(send_id), url, printit, openit)
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
+            self.send("send-data-response", send_id, accept)
         #filenames and url are always sent encoded as utf8:
         try:
             url = strtobytes(url).decode("utf8")
         except:
             url = bytestostr(url)
-            self.send("send-data-response", send_id, accept)
         if dtype==b"file":
             if not self.file_transfer:
                 cb_answer(False)
