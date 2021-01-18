@@ -35,7 +35,7 @@ class XRootPropWatcher(GObject.GObject):
         self._root.set_events(self._saved_event_mask)
 
 
-    def __repr__(self):
+    def __repr__(self):  #pylint: disable=arguments-differ
         return "XRootPropWatcher"
 
 

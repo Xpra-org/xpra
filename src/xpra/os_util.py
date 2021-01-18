@@ -391,7 +391,7 @@ def get_linux_distribution():
         except Exception:
             try:
                 import platform
-                _linux_distribution = platform.linux_distribution()  #pylint: disable=deprecated-method
+                _linux_distribution = platform.linux_distribution()  #@UndefinedVariable, pylint: disable=deprecated-method, no-member
             except Exception:
                 _linux_distribution = ("unknown", "unknown", "unknown")
         else:
@@ -560,7 +560,7 @@ def shellsub(s, subs=None):
                     s = s.replace("${%s}" % var, str(value))
             except (TypeError, ValueError):
                 raise Exception("failed to substitute '%s' with value '%s' (%s) in '%s'" % (
-                    var, value, type(value), s))
+                    var, value, type(value), s)) from None
     return s
 
 

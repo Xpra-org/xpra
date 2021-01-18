@@ -743,7 +743,7 @@ def pver(v, numsep=".", strsep=", "):
                 def s(x):
                     try:
                         return x.decode("utf8")
-                    except:
+                    except UnicodeDecodeError:
                         return bytestostr(x)
                 return strsep.join(s(x) for x in v)
     from xpra.os_util import bytestostr

@@ -3,15 +3,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from threading import Thread
-
 """
+Intercepting thread creation
+
 This is only here so we can intercept the creation
 of all deamon threads and inject some code.
 This is used by the pycallgraph test wrapper.
 (this is cleaner than overriding the threading module directly
  as only our code will be affected)
 """
+
+from threading import Thread
 
 def make_thread(target : callable, name : str, daemon : bool=False, args=()) -> Thread:
     t = Thread(target=target, name=name, args=args)
