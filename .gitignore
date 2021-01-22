@@ -1,0 +1,116 @@
+
+# eclipse IDE:
+# /
+/.project
+/.pydevproject
+/.settings/org.eclipse.core.resources.prefs
+
+# Python cache:
+__pycache__/
+*.py[cod]
+
+# Coverage tools:
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# generated during build:
+/build
+/install
+/MANIFEST
+/svn-info
+/svn-version
+/dist
+*.dll
+*.log
+*.exe
+*.pxi
+#CUDA:
+*.fatbin
+*.cubin
+#xpra's own:
+xpra/src_info.py
+xpra/build_info.py
+
+# this file no longer exists:
+/src/etc/xpra/xpra.conf
+
+# the .conf files are generated:
+/src/etc/xpra/conf.d/*.conf
+
+# these files are compiled using semodule:
+/src/selinux/cups_xpra/cups_xpra.pp
+/src/selinux/cups_xpra/tmp
+/src/selinux/cups_xpra/cups_xpra.if
+/src/selinux/cups_xpra/Makefile
+/src/selinux/xpra_socketactivation/xpra_socketactivation.if
+/src/selinux/xpra_socketactivation/xpra_socketactivation.pp
+/src/selinux/xpra_socketactivation/Makefile
+/src/selinux/xpra_socketactivation/tmp
+
+# the win32 service is compiled here:
+/src/win32/service/event_log.rc
+/src/win32/service/event_log.res
+/src/win32/service/MSG00409.bin
+/src/win32/service/Xpra-Service.exe
+
+# Generated during the build:
+/src/xpra/build_info.py
+/src/xpra/src_info.py
+
+# Cython files:
+*.html
+/src/xpra/wait_for_x_server.c
+/src/xpra/monotonic_time.c
+/src/xpra/rectangle.c
+/src/xpra/buffers/new_buffers.c
+/src/xpra/buffers/membuf.c
+/src/xpra/client/gtk3/cairo_workaround.c
+/src/xpra/codecs/nvapi_version.c
+/src/xpra/codecs/argb/argb.c
+/src/xpra/codecs/csc_cython/colorspace_converter.c
+/src/xpra/codecs/csc_libyuv/colorspace_converter.c
+/src/xpra/codecs/csc_swscale/colorspace_converter.c
+/src/xpra/codecs/dec_avcodec2/decoder.c
+/src/xpra/codecs/enc_ffmpeg/encoder.c
+/src/xpra/codecs/enc_x264/encoder.c
+/src/xpra/codecs/enc_x265/encoder.c
+/src/xpra/codecs/jpeg/decoder.c
+/src/xpra/codecs/jpeg/encoder.c
+/src/xpra/codecs/libav_common/av_log.c
+/src/xpra/codecs/nvenc/encoder.c
+/src/xpra/codecs/nvfbc/fbc_capture_linux.cpp
+/src/xpra/codecs/nvfbc/fbc_capture_win.cpp
+/src/xpra/codecs/v4l2/pusher.c
+/src/xpra/codecs/vpx/decoder.c
+/src/xpra/codecs/vpx/encoder.c
+/src/xpra/codecs/webp/encoder.c
+/src/xpra/codecs/webp/decoder.c
+/src/xpra/codecs/xor/cyxor.c
+/src/xpra/gtk_common/gdk_atoms.c
+/src/xpra/gtk_common/gtk3/gdk_atoms.c
+/src/xpra/gtk_common/gtk3/gdk_bindings.c
+/src/xpra/net/vsock.c
+/src/xpra/net/bencode/cython_bencode.c
+/src/xpra/platform/darwin/gdk3_bindings.c
+/src/xpra/platform/win32/propsys.cpp
+/src/xpra/platform/xposix/sd_listen.c
+/src/xpra/server/cystats.c
+/src/xpra/server/pam.c
+/src/xpra/server/sd_listen.c
+/src/xpra/server/window/region.c
+/src/xpra/server/window/motion.c
+/src/xpra/x11/bindings/core_bindings.c
+/src/xpra/x11/bindings/display_source.c
+/src/xpra/x11/bindings/keyboard_bindings.c
+/src/xpra/x11/bindings/randr_bindings.c
+/src/xpra/x11/bindings/wait_for_x_server.c
+/src/xpra/x11/bindings/window_bindings.c
+/src/xpra/x11/bindings/ximage.c
+/src/xpra/x11/bindings/posix_display_source.c
+/src/xpra/x11/bindings/xi2_bindings.c
+/src/xpra/x11/gtk3/gdk_display_source.c
+/src/xpra/x11/gtk3/gdk_bindings.c
+/src/xpra/x11/gtk_x11/gdk_display_source.c
+/src/xpra/x11/gtk_x11/gdk_bindings.c
