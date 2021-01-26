@@ -6,7 +6,6 @@
 #cython: auto_pickle=False, cdivision=True, language_level=3
 
 import os
-import time
 import math
 from collections import deque
 

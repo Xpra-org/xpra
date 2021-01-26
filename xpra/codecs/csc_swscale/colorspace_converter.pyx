@@ -1,19 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, cdivision=True, language_level=3
 
-import os
-import time
-
 from xpra.log import Logger
 log = Logger("csc", "swscale")
 
-from xpra.util import envbool
-from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport pylint: disable=syntax-error

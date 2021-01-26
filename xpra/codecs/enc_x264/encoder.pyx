@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import os
 from xpra.log import Logger
 log = Logger("encoder", "x264")
 
-from xpra.util import envint, envbool, typedict, csv, typedict, AtomicInteger
+from xpra.util import envint, envbool, csv, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import video_spec
 from collections import deque

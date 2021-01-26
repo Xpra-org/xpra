@@ -1,18 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 
-import os
-import time
-
 from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
-from xpra.os_util import is_Ubuntu
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
