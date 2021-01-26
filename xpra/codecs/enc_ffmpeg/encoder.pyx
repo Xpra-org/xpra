@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,12 +12,11 @@ import weakref
 from xpra.log import Logger
 log = Logger("encoder", "ffmpeg")
 
-from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.codecs.codec_constants import get_subsampling_divs, video_spec
+from xpra.codecs.codec_constants import video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool, typedict
-from xpra.os_util import bytestostr, strtobytes, hexstr, LINUX
+from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
+from xpra.os_util import bytestostr, strtobytes, LINUX
 from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int64_t, uint64_t
