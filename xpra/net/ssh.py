@@ -271,7 +271,11 @@ def ssh_paramiko_connect_to(display_desc):
         if os.path.exists(user_config_file):
             with open(user_config_file) as f:
                 ssh_config.parse(f)
-            log("parsed user config '%s': %i hosts found", user_config_file, len(ssh_config.get_hostnames()))
+            log("parsed user config '%s'", user_config_file)
+            try:
+                log("%i hosts found", len(ssh_config.get_hostnames()))
+            except KeyError:
+                pass
             host_config = ssh_config.lookup(host)
             if host_config:
                 log("got host config for '%s': %s", host, host_config)
