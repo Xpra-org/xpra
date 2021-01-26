@@ -400,11 +400,17 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         saved_env["GDK_BACKEND"] = "x11"
         os.environ["GDK_BACKEND"] = "x11"
 
+    has_child_arg = (
+            opts.start_child or
+            opts.start_child_on_connect or
+            opts.start_child_after_connect or
+            opts.start_child_on_last_client_exit
+            )
     if proxying or upgrading or upgrading_desktop:
         #when proxying or upgrading, don't exec any plain start commands:
         opts.start = opts.start_child = []
     elif opts.exit_with_children:
-        assert opts.start_child, "exit-with-children was specified but start-child is missing!"
+        assert has_child_arg, "exit-with-children was specified but start-child* is missing!"
     elif opts.start_child:
         warn("Warning: the 'start-child' option is used,")
         warn(" but 'exit-with-children' is not enabled,")
@@ -465,7 +471,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 display_name = 'S' + str(os.getpid())
 
     if not (shadowing or proxying or upgrading or upgrading_desktop) and \
-    opts.exit_with_children and not opts.start_child:
+    opts.exit_with_children and not has_child_arg:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
     atexit.register(run_cleanups)

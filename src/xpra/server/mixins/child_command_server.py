@@ -52,6 +52,7 @@ class ChildCommandServer(StubServerMixin):
         self.start_on_last_client_exit = []
         self.start_child_on_last_client_exit = []
         self.exit_with_children = False
+        self.children_count = 0
         self.start_after_connect_done = False
         self.start_new_commands = False
         self.source_env = {}
@@ -321,8 +322,9 @@ class ChildCommandServer(StubServerMixin):
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             log("pid(%s)=%s", real_cmd, proc.pid)
+            log.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
             if not ignore:
-                log.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
+                self.children_count += 1
             self.children_started.append(procinfo)
             return proc
         except (OSError, ValueError) as e:
@@ -340,7 +342,7 @@ class ChildCommandServer(StubServerMixin):
 
     def reaper_exit_check(self):
         log("reaper_exit_check() exit_with_children=%s", self.exit_with_children)
-        if self.exit_with_children:
+        if self.exit_with_children and self.children_count:
             log.info("all children have exited and --exit-with-children was specified, exiting")
             self.idle_add(self.clean_quit)
 
