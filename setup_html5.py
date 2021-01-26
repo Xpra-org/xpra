@@ -60,10 +60,10 @@ def install_html5(install_dir="www", minifier="uglifyjs", gzip=True, brotli=True
         from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
     except ImportError:
         try:
-            from add_build_info import get_svn_props
-            svn_props = get_svn_props(False)
-            REVISION = int(svn_props.get("REVISION", 0))
-            LOCAL_MODIFICATIONS = int(svn_props.get("LOCAL_MODIFICATIONS", 0))
+            from add_build_info import get_vcs_props
+            vcs_props = get_vcs_props(False)
+            REVISION = int(vcs_props.get("REVISION", 0))
+            LOCAL_MODIFICATIONS = int(vcs_props.get("LOCAL_MODIFICATIONS", 0))
         except (ImportError, ValueError):
             print("WARNING: source information is missing")
             print(" this build should not be used")

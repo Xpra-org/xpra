@@ -280,40 +280,36 @@ def record_build_info(is_build=True):
     save_properties(props, BUILD_INFO_FILE)
 
 
-def get_svn_props(warn=True):
+def get_vcs_props(warn=True):
     props = {
                 "REVISION" : "unknown",
                 "LOCAL_MODIFICATIONS" : "unknown"
             }
     #find revision:
-    proc = subprocess.Popen("svnversion -n .", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("git describe --always --tags", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
     if proc.returncode!=0:
-        print("'svnversion -n' failed with return code %s" % proc.returncode)
+        print("'git describe --always --tags' failed with return code %s" % proc.returncode)
         return  props
     if not out:
         print("could not get version information")
         return  props
     out = out.decode('utf-8')
-    if out=="exported":
-        print("svn repository information is missing ('exported')")
+    #ie: out=v4.0.6-58-g6e6614571
+    parts = out.split("-")
+    if len(parts)<3:
+        print("could not parse version information from string: %s" % out)
         return  props
-    pos = out.find(":")
-    if pos>=0:
-        out = out[pos+1:]
-    rev_str = ""
-    for c in out:
-        if c in "0123456789":
-            rev_str += c
-    if not rev_str:
-        print("could not parse version information from string: %s (original version string: %s)" % (rev_str, out))
-        return  props
-
-    rev = int(rev_str)
+    rev_str = parts[1]
+    try:
+        rev = int(rev_str)
+    except ValueError:
+        print("could not parse revision counter from string: %s (original version string: %s)" % (rev_str, out))
+        return props
     props["REVISION"] = rev
     #find number of local files modified:
     changes = 0
-    proc = subprocess.Popen("svn status", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("git status", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
     if proc.poll()!=0:
         print("could not get status of local files")
@@ -321,21 +317,15 @@ def get_svn_props(warn=True):
 
     lines = out.decode('utf-8').splitlines()
     for line in lines:
-        if not line.startswith("M"):
-            continue
-        parts = line.split(" ", 1)
-        if len(parts)!=2:
-            continue
-        filename = parts[1].strip()
-        changes += 1
-        if warn:
-            print("WARNING: found modified file: %s" % filename)
+        sline = line.strip()
+        if sline.startswith("modified: ") or sline.startswith("new file:") or sline.startswith("deleted:"):
+            changes += 1
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
 SRC_INFO_FILE = "./xpra/src_info.py"
 def record_src_info():
-    update_properties(get_svn_props(), SRC_INFO_FILE)
+    update_properties(get_vcs_props(), SRC_INFO_FILE)
 
 def has_src_info():
     return os.path.exists(SRC_INFO_FILE) and os.path.isfile(SRC_INFO_FILE)

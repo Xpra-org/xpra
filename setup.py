@@ -739,7 +739,7 @@ def get_base_conf_dir(install_dir, stripbuildroot=True):
             #ie: "/build/xpra/pkg/xpra/etc" -> "etc"
             #find the last 'pkg' from the list of directories:
             i = max(loc for loc, val in enumerate(dirs) if val == "pkg")
-            if len(dirs)>i+1 and dirs[i+1] in ("xpra", "xpra-svn"):
+            if len(dirs)>i+1 and dirs[i+1] in ("xpra", "xpra-git"):
                 dirs = dirs[i+2:]
         elif pkgdir and install_dir.startswith(pkgdir):
             #arch build dir:
