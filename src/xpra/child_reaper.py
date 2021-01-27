@@ -133,11 +133,13 @@ class ChildReaper(object):
         #see if we are meant to exit-with-children
         #see if we still have procinfos alive (and not meant to be ignored)
         self.poll()
-        alive = tuple(procinfo for procinfo in tuple(self._proc_info)
-                      if (not procinfo.ignore and not procinfo.dead))
+        watched = tuple(procinfo for procinfo in tuple(self._proc_info)
+                        if not procinfo.ignore)
+        alive = tuple(procinfo for procinfo in watched
+                      if not procinfo.dead)
         cb = self._quit
-        log("check() alive=%s, quit callback=%s", alive, cb)
-        if not alive:
+        log("check() watched=%s, alive=%s, quit callback=%s", watched, alive, cb)
+        if watched and not alive:
             if cb:
                 self._quit = None
                 cb()
