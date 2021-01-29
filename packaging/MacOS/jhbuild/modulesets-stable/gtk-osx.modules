@@ -227,8 +227,8 @@
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
     <branch module="gtk+/3.24/gtk+-3.24.23.tar.xz" version="3.24.23"
             hash="sha256:5d864d248357a2251545b3387b35942de5f66e4c66013f0962eb5cb6f8dae2b1">
-      <patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/gtk-revert-noobjc.patch" strip="1"/>
-      <patch file="https://xpra.org/svn/Xpra/trunk/osx/jhbuild/patches/0001-propagates-unhandled-keyboard-events-back-to-OS-on-OSX.patch" strip="1"/>
+      <patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/gtk-revert-noobjc.patch" strip="1"/>
+      <patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/0001-propagates-unhandled-keyboard-events-back-to-OS-on-OSX.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
