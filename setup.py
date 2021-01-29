@@ -1474,11 +1474,15 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
+    if FREEBSD:
+        icons_dir = "icons"
+    else:
+        icons_dir = "pixmaps"
     if is_Fedora() or is_CentOS() or is_RedHat() or FREEBSD:
         libexec = "libexec"
     else:
         libexec = "lib"
-    if LINUX:
+    if LINUX or FREEBSD:
         if scripts_ENABLED:
             scripts += ["scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
         libexec_scripts = []
@@ -1629,8 +1633,9 @@ else:
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         if data_ENABLED:
             #not supported by all distros, but doesn't hurt to install them anyway:
-            for x in ("tmpfiles.d", "sysusers.d"):
-                add_data_files("lib/%s" % x, ["%s/xpra.conf" % x])
+            if not FREEBSD:
+                for x in ("tmpfiles.d", "sysusers.d"):
+                    add_data_files("lib/%s" % x, ["%s/xpra.conf" % x])
             if uinput_ENABLED:
                 add_data_files("lib/udev/rules.d/", ["udev/rules.d/71-xpra-virtual-pointer.rules"])
 
