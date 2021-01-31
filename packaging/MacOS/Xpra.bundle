@@ -145,10 +145,6 @@
 		${prefix}/share/glib-2.0/schemas
 	</data>
 
-	<data dest="${bundle}/Contents/Resources/etc/gtk-2.0/gtkrc">
-		${project}/gtkrc
-	</data>
-
 	<data dest="${bundle}/Contents/Resources">
 		${project}/xpra.icns
 	</data>
