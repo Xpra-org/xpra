@@ -35,13 +35,13 @@ PYTHON_PREFIX=`python3-config --prefix`
 PYTHON_PACKAGES=`ls -d ${PYTHON_PREFIX}/lib/python3*/site-packages | sort | tail -n 1`
 rm -fr "${PYTHON_PACKAGES}/xpra"*
 rm -fr image/* dist
-ln -sf ../src/dist ./dist
+ln -sf ../../dist ./dist
 rm -fr "$PYTHON_PACKAGES/xpra"
 
 echo
 echo "*******************************************************************************"
 echo "Building and installing locally"
-pushd ../src
+pushd ../../
 
 svn upgrade ../.. >& /dev/null
 ${PYTHON} -c "from add_build_info import record_src_info;record_src_info()"
@@ -221,7 +221,7 @@ echo
 echo "*******************************************************************************"
 echo "Ship default config files"
 #the build / install step should have placed them here:
-rsync -rplogtv ../src/build/etc/xpra ${RSCDIR}/etc/
+rsync -rplogtv ../../build/etc/xpra ${RSCDIR}/etc/
 if [ "${CLIENT_ONLY}" == "0" ]; then
 	#add the launch agent file
 	mkdir ${RSCDIR}/LaunchAgents
@@ -330,8 +330,8 @@ popd	#"Resources/lib"
 echo
 echo "*******************************************************************************"
 echo "Add the manual in HTML format (since we cannot install the man page properly..)"
-groff -mandoc -Thtml < ../src/man/xpra.1 > ${RSCDIR}/share/manual.html
-groff -mandoc -Thtml < ../src/man/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
+groff -mandoc -Thtml < ../../man/xpra.1 > ${RSCDIR}/share/manual.html
+groff -mandoc -Thtml < ../../man/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
 
 echo
 echo "*******************************************************************************"
