@@ -10,7 +10,7 @@ import traceback
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
-from xpra import __version__
+from xpra.version_util import caps_to_version
 from xpra.util import typedict, std, envint, csv, engs, repr_ellipsized
 from xpra.os_util import (
     platform_name, get_machine_id,
@@ -45,15 +45,8 @@ SIGNAL_KEYS = {
 
 
 def get_title():
-    title = "Xpra top %s" % __version__
-    try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        title += "-r%s" % REVISION
-        if LOCAL_MODIFICATIONS:
-            title += "M"
-    except ImportError:
-        pass
-    return title
+    from xpra.version_util import full_version_str
+    return "Xpra top %s" % full_version_str
 
 def curses_init():
     stdscr = curses.initscr()
@@ -457,14 +450,11 @@ class TopSessionClient(MonitorXpraClient):
                 return
             server_info = self.slidictget("server")
             build = self.slidictget("build")
-            v = build.strget("version")
-            revision = build.strget("revision")
-            if v and revision:
-                v = " version %s-r%s" % (v, revision)
+            vstr = caps_to_version(build)
             mode = server_info.strget("mode", "server")
             python_info = typedict(server_info.dictget("python", {}))
             bits = python_info.intget("bits", 32)
-            server_str = "Xpra %s server%s %i-bit" % (mode, std(v), bits)
+            server_str = "Xpra %s server version %s %i-bit" % (mode, vstr, bits)
             proxy_info = self.slidictget("proxy")
             if proxy_info:
                 proxy_platform_info = typedict(proxy_info.dictget("platform", {}))
@@ -629,7 +619,8 @@ class TopSessionClient(MonitorXpraClient):
     def get_client_info(self, ci):
         #version info:
         ctype = ci.strget("type", "unknown")
-        title = "%s client version %s-r%s" % (ctype, ci.strget("version"), ci.strget("revision"))
+        title = "%s client version" % ctype
+        title += caps_to_version(ci)
         chost = ci.strget("hostname")
         conn_info = ""
         if chost:

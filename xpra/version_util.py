@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ import platform
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
-from xpra.util import updict, envbool, obsc, get_util_logger
+from xpra.util import updict, envbool, obsc, typedict, get_util_logger
 from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
@@ -34,13 +34,44 @@ def warn(msg, *args, **kwargs):
 
 
 def full_version_str() -> str:
-    s = XPRA_VERSION
+    rstr = revision_str()
+    return XPRA_VERSION if not rstr else XPRA_VERSION+"-"+rstr
+
+def caps_to_version(caps : typedict) -> str:
+    return caps.strget("version")+"-"+caps_to_revision(caps)
+
+def caps_to_revision(caps : typedict) -> str:
+    revision = caps.strget("revision")
+    local_modifications = caps.intget("local_modifications")
+    commit = caps.strget("commit")
+    branch = caps.strget("branch")
+    return make_revision_str(revision, local_modifications, branch, commit)
+
+def revision_str() -> str:
     try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS
-        s += "-r%s%s" % (REVISION, "M" if LOCAL_MODIFICATIONS>0 else "")
-    except (ImportError, TypeError):
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT  #pylint: disable=import-outside-toplevel
+    except ImportError:
         pass
-    return s
+    else:
+        return make_revision_str(REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT)
+    return ""
+
+def make_revision_str(revision, local_modifications, branch, commit) -> str:
+    rstr = ""
+    try:
+        if not commit:
+            #svn style:
+            rstr += "r"+revision
+        else:
+            rstr += str(revision)
+        if local_modifications>0:
+            rstr += "M"
+        if branch=="master" and commit:
+            rstr += " (%s)" % commit
+    except TypeError:
+        pass
+    return rstr
+
 
 
 def version_as_numbers(version : str):
@@ -103,9 +134,13 @@ def get_version_info() -> dict:
              "version"  : XPRA_VERSION
              }
     try:
-        from xpra.src_info import LOCAL_MODIFICATIONS, REVISION
-        props["local_modifications"]    = LOCAL_MODIFICATIONS
-        props["revision"]               = REVISION
+        from xpra.src_info import LOCAL_MODIFICATIONS, REVISION, COMMIT, BRANCH
+        props.update({
+            "local_modifications"   : LOCAL_MODIFICATIONS,
+            "revision"              : REVISION,
+            "branch"                : BRANCH,
+            "commit"                : COMMIT,
+            })
     except ImportError as e:
         warn("missing some source information: %s", e)
     return props

@@ -1671,7 +1671,7 @@ else:
                 "CFBundleName"              : "Xpra",
                 "CFBundleTypeRole"          : "Viewer",
                 },
-            "CFBundleGetInfoString" : "%s-r%s (c) 2012-2020 https://xpra.org/" % (XPRA_VERSION, REVISION),
+            "CFBundleGetInfoString" : "%s-%s (c) 2012-2020 https://xpra.org/" % (XPRA_VERSION, REVISION),
             "CFBundleIdentifier"            : "org.xpra.xpra",
             }
         #Note: despite our best efforts, py2app will not copy all the modules we need

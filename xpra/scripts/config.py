@@ -238,15 +238,15 @@ def is_VirtualBox() -> str:
 def get_build_info():
     info = []
     try:
-        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS             #@UnresolvedImport
+        from xpra.src_info import REVISION, LOCAL_MODIFICATIONS, BRANCH, COMMIT #@UnresolvedImport
+        info.append("revision %s" % REVISION)
+        if COMMIT:
+            info.append("commit %s from %s branch" % (COMMIT, BRANCH))
         try:
             mods = int(LOCAL_MODIFICATIONS)
+            info.append("with %s local changes" % (mods))
         except ValueError:
-            mods = 0
-        if mods==0:
-            info.append("revision %s" % REVISION)
-        else:
-            info.append("revision %s with %s local changes" % (REVISION, LOCAL_MODIFICATIONS))
+            pass
     except Exception as e:
         warn("Error: could not find the source information: %s" % e)
     try:

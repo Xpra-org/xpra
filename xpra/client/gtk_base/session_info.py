@@ -171,26 +171,19 @@ class SessionInfo(Gtk.Window):
         tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(cattr("_remote_version", "unknown")))
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
-            from xpra.src_info import REVISION as cl_rev, LOCAL_MODIFICATIONS as cl_ch      #@UnresolvedImport
         except ImportError:
-            cl_rev, cl_ch, cl_date, cl_time = "unknown", "", "", ""
+            cl_date = cl_time = ""
         def make_version_str(version):
             if version and isinstance(version, (tuple, list)):
                 version = ".".join(bytestostr(x) for x in version)
             return bytestostr(version or "unknown")
-        def make_revision_str(rev, changes):
-            try:
-                cint = int(changes)
-            except (TypeError, ValueError):
-                return rev
-            else:
-                return "%s (%s change%s)" % (rev, cint, engs(cint))
         def make_datetime(date, time):
             if not time:
                 return bytestostr(date)
             return "%s %s" % (bytestostr(date), bytestostr(time))
-        tb.new_row("Revision", slabel(make_revision_str(cl_rev, cl_ch)),
-                               slabel(make_revision_str(cattr("_remote_revision"), cattr("_remote_modifications"))))
+        from xpra.version_util import revision_str, make_revision_str
+        tb.new_row("Revision", slabel(revision_str()),
+                               slabel(make_revision_str(cattr("_remote_revision"), cattr("_remote_modifications"), cattr("_remote_commit"))))
         tb.new_row("Build date", slabel(make_datetime(cl_date, cl_time)),
                                  slabel(make_datetime(cattr("_remote_build_date"), cattr("_remote_build_time"))))
         gtk_version_info = get_gtk_version_info()
@@ -198,7 +191,8 @@ class SessionInfo(Gtk.Window):
             s = make_version_str(newdictlook(gtk_version_info, (prop, "version"), fallback))
             return slabel(s)
         def server_vinfo(lib):
-            return slabel(make_version_str(self.client._remote_lib_versions.get(lib, "")))
+            rlv = getattr(self.client, "_remote_lib_versions", {})
+            return slabel(make_version_str(rlv.get(lib, "")))
         tb.new_row("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
         tb.new_row("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
         tb.new_row("GTK",       client_vinfo("gtk"),        server_vinfo("gtk"))

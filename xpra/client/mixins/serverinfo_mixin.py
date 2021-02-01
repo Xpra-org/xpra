@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -19,6 +19,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_version = None
         self._remote_revision = None
         self._remote_modifications = 0
+        self._remote_commit = None
         self._remote_build_date = ""
         self._remote_build_time = ""
         self._remote_hostname = None
@@ -43,6 +44,7 @@ class ServerInfoMixin(StubClientMixin):
             get_util_logger().warn(" those are usually out of date and unstable")
         else:
             self._remote_modifications = c.intget("build.local_modifications", 0)
+        self._remote_commit = c.strget("build.commit")
         self._remote_build_date = c.strget("build.date")
         self._remote_build_time = c.strget("build.time")
         self._remote_hostname = c.strget("hostname")
