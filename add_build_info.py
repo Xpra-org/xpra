@@ -321,7 +321,7 @@ def get_vcs_props(warn=True):
     if branch=="master":
         #fake a sequential revision number that continues where svn left off,
         #by counting the commits and adding a magic value (5014)
-        proc = subprocess.Popen("git rev-list --count HEAD", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen("git rev-list --count HEAD --first-parent", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         out, _ = proc.communicate()
         if proc.returncode!=0:
             print("failed to get commit count using 'git rev-list --count HEAD'")
