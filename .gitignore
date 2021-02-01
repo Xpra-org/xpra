@@ -54,10 +54,10 @@ htmlcov/
 /src/selinux/xpra_socketactivation/tmp
 
 # the win32 service is compiled here:
-/src/win32/service/event_log.rc
-/src/win32/service/event_log.res
-/src/win32/service/MSG00409.bin
-/src/win32/service/Xpra-Service.exe
+/packaging/MSWindows/service/event_log.rc
+/packaging/MSWindows/service/event_log.res
+/packaging/MSWindows/service/MSG00409.bin
+/packaging/MSWindows/service/Xpra-Service.exe
 
 # Generated during the build:
 /xpra/build_info.py
