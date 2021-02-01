@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,6 +17,7 @@ from xpra.net.bytestreams import set_socket_timeout, pretty_socket
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
+    parse_encoded_bin_data,
     )
 from xpra.util import (
     envint, envbool, csv, parse_simple_dict,
@@ -867,13 +868,7 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
         raise InitException("invalid ssl-protocol '%s', must be one of: %s" % (protocol, csv(values)))
     ssllog(" protocol=%#x", proto)
     #ca_data may be hex encoded:
-    if ca_data:
-        import binascii
-        try:
-            ca_data = binascii.unhexlify(ca_data)
-        except (TypeError, binascii.Error):
-            import base64
-            ca_data = base64.b64decode(ca_data)
+    ca_data = parse_encoded_bin_data(ca_data)
     ssllog(" cadata=%s", ellipsizer(ca_data))
 
     kwargs = {

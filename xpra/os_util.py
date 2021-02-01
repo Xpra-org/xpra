@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -472,6 +472,27 @@ def load_binary_file(filename) -> bytes:
         get_util_logger().warn("Warning: failed to load '%s':", filename)
         get_util_logger().warn(" %s", e)
         return None
+
+def parse_encoded_bin_data(data):
+    if not data:
+        return None
+    header = bytestostr(data).lower()[:10]
+    if header.startswith("0x"):
+        return binascii.unhexlify(data[2:])
+    import base64
+    if header.startswith("b64:"):
+        return base64.b64decode(data[4:])
+    if header.startswith("base64:"):
+        return base64.b64decode(data[7:])
+    try:
+        return binascii.unhexlify(data)
+    except (TypeError, binascii.Error):
+        try:
+            return base64.b64decode(data)
+        except Exception:
+            pass
+    return None
+
 
 #here so we can override it when needed
 def force_quit(status=1):

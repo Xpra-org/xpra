@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -47,6 +47,7 @@ from xpra.os_util import (
     strtobytes, bytestostr, get_hex_uuid,
     getuid, monotonic_time, hexstr,
     WIN32, POSIX, BITS,
+    parse_encoded_bin_data,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.auth.auth_helper import get_auth_module
@@ -1184,7 +1185,7 @@ class ServerCore:
             #special case for legacy encryption code:
             protocol.encryption = socket_options.get("encryption", self.tcp_encryption)
             protocol.keyfile = socket_options.get("encryption-keyfile") or socket_options.get("keyfile") or self.tcp_encryption_keyfile
-            protocol.keydata = socket_options.get("encryption-keydata") or socket_options.get("keydata")
+            protocol.keydata = parse_encoded_bin_data(socket_options.get("encryption-keydata") or socket_options.get("keydata"))
             netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
             if protocol.encryption:
                 from xpra.net.crypto import crypto_backend_init

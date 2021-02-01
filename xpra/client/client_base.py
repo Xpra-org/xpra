@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -33,6 +33,7 @@ from xpra.os_util import (
     filedata_nocrlf, force_quit,
     SIGNAMES, BITS,
     strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
+    parse_encoded_bin_data,
     )
 from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict, noerr,
@@ -860,14 +861,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def get_encryption_key(self):
         conn = self._protocol._conn
-        key = conn.options.get("keydata", None)
-        cryptolog("get_encryption_key() connection options keydata=%s", key)
-        if key:
-            #may be specified as hex:
-            if key.lower().startswith("0x"):
-                import binascii
-                return binascii.unhexlify(key[2:])
-            return strtobytes(key)
+        keydata = parse_encoded_bin_data(conn.options.get("keydata", None))
+        cryptolog("get_encryption_key() connection options keydata=%s", ellipsizer(keydata))
         keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
         if keyfile:
             if os.path.exists(keyfile):
