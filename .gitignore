@@ -32,8 +32,10 @@ htmlcov/
 *.fatbin
 *.cubin
 #xpra's own:
-xpra/src_info.py
-xpra/build_info.py
+/xpra/src_info.py
+/xpra/build_info.py
+/etc/xpra/xpra.conf
+/etc/xpra/conf.d/*.conf
 
 # this file no longer exists:
 /src/etc/xpra/xpra.conf
