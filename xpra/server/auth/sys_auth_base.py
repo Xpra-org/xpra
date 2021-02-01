@@ -20,6 +20,7 @@ DEFAULT_GID = os.environ.get("XPRA_AUTHENTICATION_DEFAULT_GID", "nobody")
 
 
 def xor(s1,s2):
+    print("xor(%s, %s)" % (s1, s2))
     return b"".join(b"%c" % (a ^ b) for a,b in zip(s1,s2))
 
 def parse_uid(v) -> int:

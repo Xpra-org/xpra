@@ -100,7 +100,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         if auth:
             auth_password_file = None
             try:
-                name, authclass, authoptions = auth
+                name, _, authclass, authoptions = auth
                 auth_password_file = authoptions.get("file")
                 log("file for %s / %s: '%s'", name, authclass, password_file)
             except Exception as e:

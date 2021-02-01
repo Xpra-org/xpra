@@ -273,6 +273,9 @@ Recommends:			librsvg2
 Recommends:			python3-pynvml
 Recommends:			python3-pycuda
 %endif
+Suggests:			tcp_wrappers-libs
+Suggests:			python3-ldap3
+Suggests:			python3-ldap
 BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython

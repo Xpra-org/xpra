@@ -22,7 +22,7 @@ from xpra.version_util import (
     )
 from xpra.scripts.server import deadly_signal
 from xpra.server.server_util import write_pidfile, rm_pidfile
-from xpra.scripts.config import InitException, parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE
 from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection, PEEK_TIMEOUT_MS,
@@ -49,10 +49,11 @@ from xpra.os_util import (
     WIN32, POSIX, BITS,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
+from xpra.server.auth.auth_helper import get_auth_module
 from xpra.make_thread import start_thread
 from xpra.util import (
     first_time, noerr,
-    csv, merge_dicts, typedict, notypedict, flatten_dict, parse_simple_dict,
+    csv, merge_dicts, typedict, notypedict, flatten_dict,
     ellipsizer, dump_all_frames, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
@@ -558,47 +559,7 @@ class ServerCore:
         authlog("get_auth_modules(%s, %s, {..})", socket_type, auth_strs)
         if not auth_strs:
             return None
-        return tuple(self.get_auth_module(socket_type, auth_str) for auth_str in auth_strs)
-
-    def get_auth_module(self, socket_type, auth_str):
-        authlog("get_auth_module(%s, %s, {..})", socket_type, auth_str)
-        #separate options from the auth module name
-        #either with ":" or "," as separator
-        scpos = auth_str.find(":")
-        cpos = auth_str.find(",")
-        if cpos<0 or scpos<cpos:
-            parts = auth_str.split(":", 1)
-        else:
-            parts = auth_str.split(",", 1)
-        auth = parts[0]
-        auth_options = {}
-        if len(parts)>1:
-            auth_options = parse_simple_dict(parts[1])
-        auth_options["exec_cwd"] = self.exec_cwd
-        try:
-            if auth=="sys":
-                #resolve virtual "sys" auth:
-                if WIN32:
-                    auth_modname = "win32_auth"
-                else:
-                    auth_modname = "pam_auth"
-                authlog("will try to use sys auth module '%s' for %s", auth, sys.platform)
-            else:
-                auth_modname = auth.replace("-", "_")+"_auth"
-            auth_mod_name = "xpra.server.auth."+auth_modname
-            authlog("auth module name for '%s': '%s'", auth, auth_mod_name)
-            auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
-        except ImportError as e:
-            authlog("cannot load %s auth for socket %s", auth, socket_type, exc_info=True)
-            raise InitException("cannot load authentication module '%s' for %s socket: %s" % (auth, socket_type, e)) from None
-        authlog("auth module for '%s': %s", auth, auth_module)
-        try:
-            auth_class = auth_module.Authenticator
-            auth_class.auth_name = auth.lower()
-            return auth, auth_class, auth_options
-        except Exception as e:
-            authlog("cannot access authenticator class", exc_info=True)
-            raise InitException("authentication setup error in %s: %s" % (auth_module, e)) from None
+        return tuple(get_auth_module(auth_str) for auth_str in auth_strs)
 
 
     ######################################################################
@@ -1656,7 +1617,7 @@ class ServerCore:
         if auth_classes:
             authlog("creating authenticators %s for %s, with username=%s, connection=%s",
                     csv(auth_classes), socktype, username, conn)
-            for auth, aclass, options in auth_classes:
+            for auth, _, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["connection"] = conn
                 authenticator = aclass(username, **opts)
@@ -2145,7 +2106,7 @@ class ServerCore:
             if auth_classes:
                 authenticators = si.setdefault(socktype, {}).setdefault("authenticator", {})
                 for i, auth_class in enumerate(auth_classes):
-                    authenticators[i] = auth_class[0], auth_class[2]
+                    authenticators[i] = auth_class[0], auth_class[3]
         return si
 
 

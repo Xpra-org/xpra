@@ -53,8 +53,8 @@ class SQLDatabaseUtil(DatabaseUtilBase):
         return Authenticator
 
 
-def main():
-    return run_dbutil(SQLDatabaseUtil, "databaseURI", sys.argv)
+def main(argv):
+    return run_dbutil(SQLDatabaseUtil, "databaseURI", argv)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

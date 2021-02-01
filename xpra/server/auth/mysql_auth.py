@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -81,8 +81,8 @@ class MySQLDatabaseUtil(DatabaseUtilBase):
         return Authenticator
 
 
-def main():
-    return run_dbutil(MySQLDatabaseUtil, "databaseURI", sys.argv)
+def main(argv):
+    return run_dbutil(MySQLDatabaseUtil, "databaseURI", argv)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))

@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #!python
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
-
-import os
-import time
 
 from xpra.log import Logger
 log = Logger("util", "auth")
@@ -160,6 +157,7 @@ cdef class pam_session:
 
         if password:
             conv.conv = <void *> &password_conv
+            assert self.password, "no password to use for pam_start"
             assert object_as_buffer(self.password, <const void **> &conv.appdata_ptr, &buffer_len)==0
         else:
             conv.conv = <void*> misc_conv

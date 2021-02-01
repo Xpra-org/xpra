@@ -172,6 +172,7 @@ def configure_logging(options, mode):
         "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
         "printing-info", "version-info", "gtk-info",
         "colors-test", "colors-gradient-test", "transparent-colors", "transparent-window",
+        "auth",
         ):
         s = sys.stdout
     else:
@@ -566,6 +567,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
         write_runner_shell_scripts(script, False)
         return 0
+    elif mode=="auth":
+        return run_auth(options, args)
     elif mode == "showconfig":
         return run_showconfig(options, args)
     elif mode == "showsetting":
@@ -3103,6 +3106,20 @@ def run_list_windows(error_cb, opts, extra_args):
                 windows = csv(wstrs)
         sys.stdout.write("%s\n" % (windows, ))
         sys.stdout.flush()
+
+def run_auth(_options, args):
+    if not args:
+        raise InitException("missing module argument")
+    auth_str = args[0]
+    from xpra.server.auth.auth_helper import get_auth_module
+    auth, auth_module, _auth_class, _auth_options = get_auth_module(auth_str)
+    #see if the module has a "main" entry point:
+    main_fn = getattr(auth_module, "main", None)
+    if not main_fn:
+        raise InitExit(EXIT_UNSUPPORTED, "no command line utility for '%s' authentication module" % auth)
+    argv = [auth_module.__file__]+args[1:]
+    return main_fn(argv)
+
 
 def run_showconfig(options, args):
     log = get_util_logger()

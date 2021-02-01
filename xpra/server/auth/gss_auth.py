@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
+from xpra.util import typedict
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
 
 
@@ -67,14 +68,19 @@ def main(argv):
         token = argv[2]
         kwargs = {}
         a = Authenticator(username, **kwargs)
-        server_salt, digest = a.get_challenge(["xor"])
+        server_salt, digest = a.get_challenge(["gss"])
         salt_digest = a.choose_salt_digest(get_digests())
-        assert digest=="xor"
+        assert digest.startswith("gss:"), "unexpected digest %r" % digest
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
-        response = xor(token, combined_salt)
-        a.authenticate(response, client_salt)
-    return 0
+        response = gendigest(digest, token, combined_salt)
+        caps = typedict({
+            "challenge_response"    : response,
+            "challenge_client_salt" : client_salt,
+            })
+        r = a.authenticate(caps)
+        print("success: %s" % bool(r))
+        return r
 
 
 if __name__ == "__main__":

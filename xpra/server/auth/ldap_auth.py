@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,9 +8,9 @@ import os
 import sys
 import socket
 
-from xpra.util import envint, obsc
+from xpra.util import envint, obsc, typedict
 from xpra.os_util import bytestostr
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
+from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.log import is_debug_enabled, enable_debug_for
 
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
@@ -145,9 +145,14 @@ def main(argv):
         assert digest=="xor"
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
-        response = xor(password, combined_salt)
-        r = a.authenticate(response, client_salt)
-        print("success: %s" % r)
+        assert digest=="xor"
+        response = gendigest(digest, password, combined_salt)
+        caps = typedict({
+            "challenge_response"    : response,
+            "challenge_client_salt" : client_salt,
+            })
+        r = a.authenticate(caps)
+        print("success: %s" % bool(r))
         return int(not r)
 
 

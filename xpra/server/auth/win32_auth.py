@@ -67,21 +67,21 @@ class Authenticator(SysAuthenticator):
         return "win32"
 
 
-def main():
+def main(argv):
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Auth-Test", "Auth-Test"):
         enable_color()
         for x in ("-v", "--verbose"):
-            if x in tuple(sys.argv):
+            if x in tuple(argv):
                 log.enable_debug()
-                sys.argv.remove(x)
-        if len(sys.argv)!=3:
+                argv.remove(x)
+        if len(argv)!=3:
             log.warn("invalid number of arguments")
-            log.warn("usage: %s [--verbose] username password", sys.argv[0])
+            log.warn("usage: %s [--verbose] username password", argv[0])
             return 1
-        username = sys.argv[1]
-        password = sys.argv[2]
+        username = argv[1]
+        password = argv[2]
         a = Authenticator(username)
         if a.check(password):
             log.info("authentication succeeded")
@@ -91,4 +91,4 @@ def main():
 
 if __name__ == "__main__":
     import sys
-    sys.exit(main())
+    sys.exit(main(sys.argv))
