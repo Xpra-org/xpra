@@ -228,7 +228,7 @@ if [ "${DO_SERVICE}" == "1" ]; then
 		echo "ERROR: service build failed"
 		exit 1
 	fi
-	cp -fn Xpra-Service.exe ../../dist/
+	cp -fn Xpra-Service.exe ../../../dist/
 	popd > /dev/null
 fi
 
