@@ -1313,7 +1313,7 @@ if WIN32:
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         if (client_ENABLED or server_ENABLED) and gtk3_ENABLED:
             add_gui_exe("scripts/xpra",                         "xpra.ico",         "Xpra")
-            add_gui_exe("win32/service/shadow_server.py",       "server-notconnected.ico",    "Xpra-Shadow")
+            add_gui_exe("packaging/MSWindows/service/shadow_server.py",       "server-notconnected.ico",    "Xpra-Shadow")
             add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
             add_console_exe("scripts/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
@@ -1344,8 +1344,8 @@ if WIN32:
             add_console_exe("xpra/server/auth/win32_auth.py",   "authentication.ico", "System-Auth-Test")
             add_console_exe("xpra/server/auth/ldap_auth.py",    "authentication.ico", "LDAP-Auth-Test")
             add_console_exe("xpra/server/auth/ldap3_auth.py",   "authentication.ico", "LDAP3-Auth-Test")
-            add_console_exe("win32/service/proxy.py",           "xpra_txt.ico",     "Xpra-Proxy_cmd")
-            add_gui_exe("win32/service/proxy.py",               "xpra.ico",         "Xpra-Proxy")
+            add_console_exe("packaging/MSWindows/service/proxy.py", "xpra_txt.ico",     "Xpra-Proxy_cmd")
+            add_gui_exe("packaging/MSWindows/service/proxy.py", "xpra.ico",         "Xpra-Proxy")
             add_console_exe("xpra/platform/win32/lsa_logon_lib.py", "xpra_txt.ico",     "System-Logon-Test")
         if client_ENABLED:
             add_console_exe("xpra/codecs/loader.py",            "encoding.ico",     "Encoding_info")
@@ -1404,8 +1404,8 @@ if WIN32:
                 add_data_files('www'+k, v)
 
     if data_ENABLED:
-        add_data_files("",              ["win32/website.url"])
-        add_data_files("",              ["win32\\DirectShow.tlb"])
+        add_data_files("",              ["packaging/MSWindows/website.url"])
+        add_data_files("",              ["packaging/MSWindows/DirectShow.tlb"])
 
     remove_packages(*external_excludes)
     external_includes.append("pyu2f")
@@ -1468,7 +1468,7 @@ if WIN32:
                 if not isinstance(e, WindowsError) or ("already exists" not in str(e)): #@UndefinedVariable
                     raise
 
-        add_data_files('', glob.glob("win32\\bundle-extra\\*"))
+        add_data_files('', glob.glob("packaging/MSWindows/bundle-extra/*"))
 
     #END OF win32
 #*******************************************************************************

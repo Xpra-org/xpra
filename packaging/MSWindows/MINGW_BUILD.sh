@@ -153,7 +153,7 @@ if [ "${DO_SERVICE}" == "1" ]; then
 	else
 		ARCH_DIRS="x86"
 	fi
-	pushd "win32/service" > /dev/null
+	pushd "packaging/MSWindows/service" > /dev/null
 	#the proper way would be to run vsvars64.bat
 	#but we only want to locate 3 commands,
 	#so we find them "by hand":
@@ -235,16 +235,16 @@ fi
 
 if [ "${DO_CUDA}" == "1" ]; then
 	echo "* Building CUDA kernels"
-	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_NV12 || exit 1
-	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" BGRA_to_YUV444 || exit 1
-	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" ARGB_to_NV12 || exit 1
-	cmd.exe //c "win32\\BUILD_CUDA_KERNEL" ARGB_to_YUV444 || exit 1
+	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" BGRA_to_NV12 || exit 1
+	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" BGRA_to_YUV444 || exit 1
+	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" ARGB_to_NV12 || exit 1
+	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" ARGB_to_YUV444 || exit 1
 else
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc"
 fi
 
 echo "* Building Python3 Cython modules"
-BUILD_LOG="win32/Python3-build.log"
+BUILD_LOG="packaging/MSWindows/Python3-build.log"
 ${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& ${BUILD_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: build failed, see ${BUILD_LOG}:"
@@ -254,7 +254,7 @@ fi
 
 if [ "${DO_TESTS}" == "1" ]; then
 	echo "* Running unit tests"
-	UNITTEST_LOG="win32/unittest.log"
+	UNITTEST_LOG="packaging/MSWindows/unittest.log"
 	PYTHONPATH=.:./unittests XPRA_COMMAND="./scripts/xpra" ${PYTHON} ./unittests/unit/run.py >& ${UNITTEST_LOG}
 	if [ "$?" != "0" ]; then
 		echo "ERROR: unittests have failed, see ${UNITTEST_LOG}:"
@@ -264,7 +264,7 @@ if [ "${DO_TESTS}" == "1" ]; then
 fi
 
 echo "* Generating installation directory"
-CX_FREEZE_LOG="win32/cx_freeze-install.log"
+CX_FREEZE_LOG="packaging/MSWindows/cx_freeze-install.log"
 ${PYTHON} ./setup.py install_exe ${BUILD_OPTIONS} --install=${DIST} >& ${CX_FREEZE_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: build failed, see ${CX_FREEZE_LOG}:"
@@ -450,12 +450,12 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 			exit 1
 		fi
 	fi
-	INNOSETUP_LOG="win32/innosetup.log"
+	INNOSETUP_LOG="packaging/MSWindows/innosetup.log"
 	echo "* Creating the installer using InnoSetup"
 	rm -f "Xpra_Setup.exe" "${INSTALLER_FILENAME}" "${INNOSETUP_LOG}"
-	cp -fn "win32/xpra.iss" "xpra.iss"
+	cp -fn "packaging/MSWindows/xpra.iss" "xpra.iss"
 	if [ "${MSYSTEM_CARCH}" == "x86_64" ]; then
-		cat "win32/xpra.iss" | sed '/\(ArchitecturesInstallIn64BitMode\|ArchitecturesInstallIn64BitMode\)/ s/=.*/=x64/g' | sed '/\(AppName=\|AppVerName=\|DefaultGroupName=\)/ s/\r$/ (64-bit)\r/g' | sed 's/ArchitecturesAllowed=.*/ArchitecturesAllowed=x64/g' > "xpra.iss"
+		cat "packaging/MSWindows/xpra.iss" | sed '/\(ArchitecturesInstallIn64BitMode\|ArchitecturesInstallIn64BitMode\)/ s/=.*/=x64/g' | sed '/\(AppName=\|AppVerName=\|DefaultGroupName=\)/ s/\r$/ (64-bit)\r/g' | sed 's/ArchitecturesAllowed=.*/ArchitecturesAllowed=x64/g' > "xpra.iss"
 	fi
 	if [ "${CLIENT_ONLY}" == "1" ]; then
 		#remove shadow start menu entry
@@ -476,7 +476,7 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	mv "dist\Xpra_Setup.exe" "${INSTALLER_FILENAME}"
 
 	if [ "${DO_SIGN}" == "1" ]; then
-		SIGNTOOL_LOG="win32/signtool.log"
+		SIGNTOOL_LOG="packaging/MSWindows/signtool.log"
 		echo "* Signing EXE"
 		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${INSTALLER_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
@@ -508,10 +508,10 @@ if [ "${DO_MSI}" == "1" ]; then
 	#as they get interpreted by the shell and sed, multiple times:
 	CWD=`pwd | sed 's+/\([a-zA-Z]\)/+\1:\\\\\\\\+g; s+/+\\\\\\\\+g'`
 	echo "CWD=${CWD}"
-	cat "win32\msi.xml" | sed "s+\$CWD+${CWD}+g" | sed "s+\$INPUT+${INSTALLER_FILENAME}+g" | sed "s+\$OUTPUT+${MSI_FILENAME}+g" | sed "s+\$ZERO_PADDED_VERSION+${ZERO_PADDED_VERSION}+g" | sed "s+\$FULL_VERSION+${FULL_VERSION}+g" > msi.xml
+	cat "packaging\\MSWindows\\msi.xml" | sed "s+\$CWD+${CWD}+g" | sed "s+\$INPUT+${INSTALLER_FILENAME}+g" | sed "s+\$OUTPUT+${MSI_FILENAME}+g" | sed "s+\$ZERO_PADDED_VERSION+${ZERO_PADDED_VERSION}+g" | sed "s+\$FULL_VERSION+${FULL_VERSION}+g" > msi.xml
 	"${MSIWRAPPER}"
 	if [ "${DO_SIGN}" == "1" ]; then
-		SIGNTOOL_LOG="win32/signtool.log"
+		SIGNTOOL_LOG="packaging/MSWindows/signtool.log"
 		echo "* Signing MSI"
 		cmd.exe //c signtool.exe sign //v //f "${KEY_FILE}" //t "http://timestamp.comodoca.com/authenticode" "${MSI_FILENAME}" > ${SIGNTOOL_LOG}
 		if [ "$?" != 0 ]; then
