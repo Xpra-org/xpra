@@ -285,27 +285,48 @@ def get_vcs_props(warn=True):
                 "REVISION" : "unknown",
                 "LOCAL_MODIFICATIONS" : "unknown"
             }
-    #find revision:
+    proc = subprocess.Popen("git branch --show-current", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    out, _ = proc.communicate()
+    if proc.returncode==0:
+        branch = out.decode("utf-8").splitlines()[0]
+        props["BRANCH"] = branch
+    else:
+        print("could not get branch information with 'git branch --show-current'")
+        branch = None
+
+    #use the number of changes since the last tag:
     proc = subprocess.Popen("git describe --always --tags", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    (out, _) = proc.communicate()
+    out, _ = proc.communicate()
     if proc.returncode!=0:
         print("'git describe --always --tags' failed with return code %s" % proc.returncode)
         return  props
     if not out:
         print("could not get version information")
         return  props
-    out = out.decode('utf-8')
+    out = out.decode('utf-8').splitlines()[0]
     #ie: out=v4.0.6-58-g6e6614571
     parts = out.split("-")
     if len(parts)<3:
         print("could not parse version information from string: %s" % out)
         return  props
     rev_str = parts[1]
+    commit = parts[2]
+    props["COMMIT"] = commit
     try:
         rev = int(rev_str)
     except ValueError:
         print("could not parse revision counter from string: %s (original version string: %s)" % (rev_str, out))
         return props
+
+    if branch=="master":
+        #fake a sequential revision number that continues where svn left off,
+        #by counting the commits and adding a magic value (5014)
+        proc = subprocess.Popen("git rev-list --count HEAD", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        out, _ = proc.communicate()
+        if proc.returncode!=0:
+            print("failed to get commit count using 'git rev-list --count HEAD'")
+            sys.exit(1)
+        rev = int(out.decode("utf-8").splitlines()[0]) + 5014
     props["REVISION"] = rev
     #find number of local files modified:
     changes = 0

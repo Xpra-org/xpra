@@ -89,11 +89,10 @@ fi
 PYTHON_VERSION=`${PYTHON} --version | awk '{print $2}'`
 echo "Python version ${PYTHON_VERSION}"
 VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
-REVISION=`${PYTHON} -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION))"`
-NUMREVISION=`${PYTHON} -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(REVISION).rstrip('M'))"`
+REVISION=`${PYTHON} -c "from xpra.src_info import REVISION;import sys;sys.stdout.write(str(int(REVISION)))"`
 ZERO_PADDED_VERSION=`${PYTHON} -c 'from xpra import __version__;print(".".join((__version__.split(".")+["0","0","0"])[:3]))'`".${NUMREVISION}"
 LOCAL_MODIFICATIONS=`${PYTHON} -c "from xpra.src_info import LOCAL_MODIFICATIONS;import sys;sys.stdout.write(str(LOCAL_MODIFICATIONS))"`
-FULL_VERSION=${VERSION}-r${REVISION}
+FULL_VERSION=${VERSION}-${REVISION}
 if [ "${LOCAL_MODIFICATIONS}" != "0" ]; then
 	FULL_VERSION="${FULL_VERSION}M"
 fi
