@@ -1298,7 +1298,7 @@ if WIN32:
                         script                  = script,
                         initScript              = None,
                         #targetDir               = "dist",
-                        icon                    = "icons/%s" % icon,
+                        icon                    = "share/xpra/icons/%s" % icon,
                         targetName              = "%s.exe" % base_name,
                         base                    = base,
                         ))
@@ -1312,19 +1312,19 @@ if WIN32:
 
         #UI applications (detached from shell: no text output if ran from cmd.exe)
         if (client_ENABLED or server_ENABLED) and gtk3_ENABLED:
-            add_gui_exe("scripts/xpra",                         "xpra.ico",         "Xpra")
+            add_gui_exe("bin/xpra",                         "xpra.ico",         "Xpra")
             add_gui_exe("xpra/platform/win32/scripts/shadow_server.py",       "server-notconnected.ico",    "Xpra-Shadow")
-            add_gui_exe("scripts/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
-            add_console_exe("scripts/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
+            add_gui_exe("bin/xpra_launcher",                "xpra.ico",         "Xpra-Launcher")
+            add_console_exe("bin/xpra_launcher",            "xpra.ico",         "Xpra-Launcher-Debug")
             add_gui_exe("xpra/gtk_common/gtk_view_keyboard.py", "keyboard.ico",     "GTK_Keyboard_Test")
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
-            add_gui_exe("scripts/auth_dialog",                  "authentication.ico", "Auth_Dialog")
+            add_gui_exe("bin/auth_dialog",                  "authentication.ico", "Auth_Dialog")
         if mdns_ENABLED and gtk3_ENABLED:
             add_gui_exe("xpra/client/gtk_base/mdns_gui.py",     "mdns.ico",         "Xpra_Browser")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
-        add_console_exe("scripts/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
+        add_console_exe("bin/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
         add_console_exe("xpra/scripts/version.py",          "information.ico",  "Version_info")
         add_console_exe("xpra/net/net_util.py",             "network.ico",      "Network_info")
         if gtk3_ENABLED:
@@ -1356,7 +1356,7 @@ if WIN32:
             add_console_exe("xpra/platform/win32/gui.py",       "loop.ico",         "Events_Test")
         if sound_ENABLED:
             add_console_exe("xpra/sound/gstreamer_util.py",     "gstreamer.ico",    "GStreamer_info")
-            add_console_exe("scripts/xpra",                     "speaker.ico",      "Xpra_Audio")
+            add_console_exe("bin/xpra",                     "speaker.ico",      "Xpra_Audio")
             add_console_exe("xpra/platform/win32/directsound.py", "speaker.ico",      "Audio_Devices")
             #add_console_exe("xpra/sound/src.py",                "microphone.ico",   "Sound_Record")
             #add_console_exe("xpra/sound/sink.py",               "speaker.ico",      "Sound_Play")
@@ -1484,26 +1484,26 @@ else:
         libexec = "lib"
     if LINUX or FREEBSD:
         if scripts_ENABLED:
-            scripts += ["scripts/xpra_udev_product_version", "scripts/xpra_signal_listener"]
+            scripts += ["bin/xpra_udev_product_version", "bin/xpra_signal_listener"]
         libexec_scripts = []
         if xdg_open_ENABLED:
-            libexec_scripts += ["scripts/xdg-open", "scripts/gnome-open", "scripts/gvfs-open"]
+            libexec_scripts += ["bin/xdg-open", "bin/gnome-open", "bin/gvfs-open"]
         if server_ENABLED:
-            libexec_scripts.append("scripts/auth_dialog")
+            libexec_scripts.append("bin/auth_dialog")
         if libexec_scripts:
             add_data_files("%s/xpra/" % libexec, libexec_scripts)
     if data_ENABLED:
         man_path = "share/man"
         if OPENBSD or FREEBSD:
             man_path = "man"
-        man_pages = ["man/xpra.1", "man/xpra_launcher.1"]
+        man_pages = ["share/man/man1/xpra.1", "share/man/man1/xpra_launcher.1"]
         if not OSX:
-            man_pages.append("man/run_scaled.1")
+            man_pages.append("share/man/man1/run_scaled.1")
         add_data_files("%s/man1" % man_path,  man_pages)
-        add_data_files("share/applications",  glob.glob("xdg/*.desktop"))
-        add_data_files("share/mime/packages", ["xdg/application-x-xpraconfig.xml"])
-        add_data_files("share/icons",         ["xdg/xpra.png", "xdg/xpra-mdns.png", "xdg/xpra-shadow.png"])
-        add_data_files("share/metainfo",      ["xdg/xpra.appdata.xml"])
+        add_data_files("share/applications",  glob.glob("share/applications/*.desktop"))
+        add_data_files("share/mime/packages", ["share/mime/packages/application-x-xpraconfig.xml"])
+        add_data_files("share/icons",         glob.glob("share/icons/*.png"))
+        add_data_files("share/metainfo",      ["share/metainfo/xpra.appdata.xml"])
 
     #here, we override build and install so we can
     #generate our /etc/xpra/xpra.conf
@@ -1560,13 +1560,13 @@ else:
                 lib_cups = "lib/cups"
                 if FREEBSD:
                     lib_cups = "libexec/cups"
-                copytodir("cups/xpraforwarder", "%s/backend" % lib_cups, chmod=0o700)
+                copytodir("lib/cups/xpraforwarder", "%s/backend" % lib_cups, chmod=0o700)
 
             if x11_ENABLED:
                 #install xpra_Xdummy if we need it:
                 xvfb_command = detect_xorg_setup()
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])) or Xdummy_wrapper_ENABLED is True:
-                    copytodir("scripts/xpra_Xdummy", "bin", chmod=0o755)
+                    copytodir("bin/xpra_Xdummy", "bin", chmod=0o755)
                 #install xorg*.conf, cuda.conf and nvenc.keys:
                 etc_xpra_files = ["xorg.conf"]
                 if uinput_ENABLED:
@@ -1595,17 +1595,17 @@ else:
                     subs[b"/etc/sysconfig"] = b"/etc/default"
                 if os.path.exists("/bin/systemctl"):
                     if sd_listen_ENABLED:
-                        copytodir("service/xpra.service", systemd_dir,
+                        copytodir("lib/systemd/system/xpra.service", systemd_dir,
                                   subs=subs)
                     else:
-                        copytodir("service/xpra-nosocketactivation.service", systemd_dir,
+                        copytodir("lib/systemd/system/xpra-nosocketactivation.service", systemd_dir,
                                   dst_name="xpra.service", subs=subs)
                 else:
-                    copytodir("service/xpra", "/etc/init.d")
+                    copytodir("etc/init.d/xpra", "/etc/init.d")
             if sd_listen_ENABLED:
-                copytodir("service/xpra.socket", systemd_dir)
+                copytodir("lib/systemd/system/xpra.socket", systemd_dir)
             if dbus_ENABLED and proxy_ENABLED:
-                copytodir("dbus/xpra.conf", "/etc/dbus-1/system.d")
+                copytodir("etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
 
     # add build_conf to build step
@@ -1635,9 +1635,9 @@ else:
             #not supported by all distros, but doesn't hurt to install them anyway:
             if not FREEBSD:
                 for x in ("tmpfiles.d", "sysusers.d"):
-                    add_data_files("lib/%s" % x, ["%s/xpra.conf" % x])
+                    add_data_files("lib/%s" % x, ["lib/%s/xpra.conf" % x])
             if uinput_ENABLED:
-                add_data_files("lib/udev/rules.d/", ["udev/rules.d/71-xpra-virtual-pointer.rules"])
+                add_data_files("lib/udev/rules.d/", ["lib/udev/rules.d/71-xpra-virtual-pointer.rules"])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
@@ -1710,23 +1710,23 @@ else:
 
 
 if scripts_ENABLED:
-    scripts += ["scripts/xpra", "scripts/xpra_launcher"]
+    scripts += ["bin/xpra", "bin/xpra_launcher"]
     if not OSX and not WIN32:
-        scripts.append("scripts/run_scaled")
+        scripts.append("bin/run_scaled")
 toggle_modules(WIN32, "xpra/scripts/win32_service")
 
 if data_ENABLED:
     add_data_files(share_xpra,                      ["README", "COPYING"])
-    add_data_files(share_xpra,                      ["bell.wav"])
-    add_data_files("%s/http-headers" % share_xpra,   glob.glob("http-headers/*"))
-    ICONS = glob.glob("icons/*")
+    add_data_files(share_xpra,                      ["share/xpra/bell.wav"])
+    add_data_files("%s/http-headers" % share_xpra,   glob.glob("share/xpra/http-headers/*"))
+    ICONS = glob.glob("share/icons/*")
     if WIN32:
-        ICONS += glob.glob("icons/*ico")
+        ICONS += glob.glob("share/icons/*ico")
     add_data_files("%s/icons" % share_xpra,          ICONS)
 
-    add_data_files("%s/content-type" % share_xpra,   glob.glob("content-type/*"))
-    add_data_files("%s/content-categories" % share_xpra, glob.glob("content-categories/*"))
-    add_data_files("%s/css" % share_xpra,            glob.glob("css/*"))
+    add_data_files("%s/content-type" % share_xpra,   glob.glob("share/xpra/content-type/*"))
+    add_data_files("%s/content-categories" % share_xpra, glob.glob("share/xpra/content-categories/*"))
+    add_data_files("%s/css" % share_xpra,            glob.glob("share/xpra/css/*"))
 
 
 if html5_ENABLED:

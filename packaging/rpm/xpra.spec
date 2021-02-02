@@ -309,7 +309,7 @@ CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py b
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
-	pushd selinux/${mod}
+	pushd share/selinux/${mod}
 	for selinuxvariant in %{selinux_variants}
 	do
 	  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile
@@ -334,7 +334,7 @@ do
 	for selinuxvariant in %{selinux_variants}
 	do
 	  install -d %{buildroot}%{_datadir}/selinux/${selinuxvariant}
-	  install -p -m 644 selinux/${mod}/${mod}.pp.${selinuxvariant} \
+	  install -p -m 644 share/selinux/${mod}/${mod}.pp.${selinuxvariant} \
 	    %{buildroot}%{_datadir}/selinux/${selinuxvariant}/${mod}.pp
 	done
 done
