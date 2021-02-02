@@ -854,7 +854,7 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="splash", default=defaults.splash,
                       help="Show a splash screen whilst loading the client. Default: %s." % enabled_or_auto(defaults.splash))
     legacy_bool_parse("headerbar")
-    group.add_option("--headerbar", action="store", metavar="yes|no",
+    group.add_option("--headerbar", action="store", metavar="auto|no|force",
                       dest="headerbar", default=defaults.headerbar,
                       help="Add a headerbar with menu to decorated windows. Default: %s." % defaults.headerbar)
     legacy_bool_parse("windows")
