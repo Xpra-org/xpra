@@ -17,6 +17,12 @@ __pycache__/
 coverage.xml
 htmlcov/
 
+# Things that should never be added to the repository:
+password.*
+key.*
+*.key
+*.pem
+
 # generated during build:
 /build
 /install
