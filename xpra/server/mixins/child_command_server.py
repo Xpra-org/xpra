@@ -333,7 +333,7 @@ class ChildCommandServer(StubServerMixin):
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
             log("pid(%s)=%s", real_cmd, proc.pid)
-            log.info("started command '%s' with pid %s", " ".join(real_cmd), proc.pid)
+            log.info("started command '%s' with pid %s", " ".join(bytestostr(x) for x in real_cmd), proc.pid)
             if not ignore:
                 self.children_count += 1
             self.children_started.append(procinfo)
