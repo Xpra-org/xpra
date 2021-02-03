@@ -21,8 +21,6 @@ htmlcov/
 /build
 /install
 /MANIFEST
-/svn-info
-/svn-version
 /dist
 *.dll
 *.log
