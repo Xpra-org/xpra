@@ -54,6 +54,7 @@ htmlcov/
 # the win32 service is compiled here:
 /packaging/MSWindows/service/event_log.rc
 /packaging/MSWindows/service/event_log.res
+/packaging/MSWindows/service/event_log.h
 /packaging/MSWindows/service/MSG00409.bin
 /packaging/MSWindows/service/Xpra-Service.exe
 
