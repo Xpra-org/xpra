@@ -21,6 +21,12 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	APP_DIR="./image/Xpra-Client.app"
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy --without-html5"
 	DO_TESTS="0"
+else
+	if [ ! -d "html5" ]; then
+		echo "html5 client not found"
+		echo " perhaps run: 'git clone https://github.com/Xpra-org/xpra-html5'"
+		exit 1
+	fi
 fi
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
@@ -43,7 +49,6 @@ echo "**************************************************************************
 echo "Building and installing locally"
 pushd ../../
 
-svn upgrade ../.. >& /dev/null
 ${PYTHON} -c "from add_build_info import record_src_info;record_src_info()"
 rm -fr build/* dist/*
 ${PYTHON} ./setup.py clean
@@ -127,7 +132,7 @@ fi
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-svn revert Info.plist
+git checkout Info.plist
 sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
@@ -333,6 +338,13 @@ echo "Add the manual in HTML format (since we cannot install the man page proper
 groff -mandoc -Thtml < ../../man/xpra.1 > ${RSCDIR}/share/manual.html
 groff -mandoc -Thtml < ../../man/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
 
+if [ "${CLIENT_ONLY}" != "1" ]; then
+	echo "Add the HTML5 client"
+	pushd html5
+	python3 ./setup.py install ../${RSCDIR}/www/
+	popd
+fi
+
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
@@ -383,4 +395,4 @@ echo "Done"
 echo "*******************************************************************************"
 echo
 
-svn revert Info.plist
+git checkout Info.plist

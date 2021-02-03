@@ -157,10 +157,6 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-html5_ENABLED = DEFAULT
-html5_gzip_ENABLED = DEFAULT
-html5_brotli_ENABLED = DEFAULT
-minify_ENABLED = html5_ENABLED
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
@@ -231,7 +227,6 @@ SWITCHES = [
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
     "gtk_x11", "service",
     "gtk3", "example",
-    "html5", "minify", "html5_gzip", "html5_brotli",
     "pam", "xdg_open",
     "sound", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
@@ -328,22 +323,6 @@ if "clean" not in sys.argv:
         print("Warning: you probably want to build at least the client or server!")
     if DEFAULT and not pillow_ENABLED:
         print("Warning: including Python Pillow is VERY STRONGLY recommended")
-    if minify_ENABLED and WIN32:
-        print("Warning: minifier is not supported on MS Windows")
-        minify_ENABLED = False
-    if html5_ENABLED and minify_ENABLED:
-        r = get_status_output(["uglifyjs", "--version"])[0]
-        if r==0:
-            minifier = "uglifyjs"
-        else:
-            print("Warning: uglifyjs failed and return %i" % r)
-            try:
-                import yuicompressor
-                assert yuicompressor
-                minifier = "yuicompressor"
-            except ImportError as e:
-                print("Warning: yuicompressor module not found, cannot minify")
-                minify_ENABLED = False
     if DEFAULT and (not enc_x264_ENABLED and not vpx_ENABLED):
         print("Warning: no x264 and no vpx support!")
         print(" you should enable at least one of these two video encodings")
@@ -378,11 +357,9 @@ external_excludes = [
                     "Cython", "cython", "pyximport",
                     "pydoc_data",
                     ]
-if not html5_ENABLED and not crypto_ENABLED:
+if not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
-if not html5_ENABLED:
-    external_excludes += ["BaseHTTPServer"]
-if not html5_ENABLED and not client_ENABLED:
+if not client_ENABLED:
     external_excludes += ["mimetools"]
 
 if not client_ENABLED and not server_ENABLED:
@@ -1015,11 +992,6 @@ def glob_recurse(srcdir):
     return m
 
 
-def install_html5(install_dir="www"):
-    from setup_html5 import install_html5 as do_install_html5
-    do_install_html5(install_dir, minifier, html5_gzip_ENABLED, html5_brotli_ENABLED, verbose_ENABLED)
-
-
 #*******************************************************************************
 if WIN32:
     MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
@@ -1395,13 +1367,6 @@ if WIN32:
             add_data_files('etc/xpra', glob.glob("etc/xpra/nvenc*.keys"))
             add_data_files('etc/xpra', glob.glob("etc/xpra/nvfbc*.keys"))
             add_data_files('etc/xpra/conf.d', glob.glob("etc/xpra/conf.d/*conf"))
-        #build minified html5 client in temporary build dir:
-        if "clean" not in sys.argv and html5_ENABLED:
-            install_html5(os.path.join(install, "www"), )
-            for k,v in glob_recurse("build/www").items():
-                if k!="":
-                    k = os.sep+k
-                add_data_files('www'+k, v)
 
     if data_ENABLED:
         add_data_files("",              ["packaging/MSWindows/website.url"])
@@ -1523,8 +1488,6 @@ else:
     class install_data_override(install_data):
         def run(self):
             print("install_data_override: install_dir=%s" % self.install_dir)
-            if html5_ENABLED:
-                install_html5(os.path.join(self.install_dir, "%s/www" % share_xpra))
             install_data.run(self)
 
             root_prefix = self.install_dir.rstrip("/")
@@ -1729,10 +1692,9 @@ if data_ENABLED:
     add_data_files("%s/css" % share_xpra,            glob.glob("share/xpra/css/*"))
 
 
-if html5_ENABLED:
-    if WIN32 or OSX:
-        external_includes.append("ssl")
-        external_includes.append("_ssl")
+if WIN32 or OSX:
+    external_includes.append("ssl")
+    external_includes.append("_ssl")
 
 
 if annotate_ENABLED:

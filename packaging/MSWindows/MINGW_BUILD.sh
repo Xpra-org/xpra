@@ -46,6 +46,12 @@ PROGRAMFILES_X86="C:\\Program Files (x86)"
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5 --without-rfb"
 else
+	# Make sure we have the HTML5 client
+	if [ ! -d "html5" ]; then
+		echo "html5 client not found"
+		echo " perhaps run: 'git clone https://github.com/Xpra-org/xpra-html5'"
+		exit 1
+	fi
 	# Find a java interpreter we can use for the html5 minifier
 	$JAVA -version >& /dev/null
 	if [ "$?" != "0" ]; then
@@ -370,6 +376,13 @@ done
 
 echo "* Generating HTML Manual Page"
 groff.exe -mandoc -Thtml < man/xpra.1 > ${DIST}/manual.html
+
+if [ "${CLIENT_ONLY}" != "1" ]; then
+	echo "* Installing the HTML5 client"
+	pushd html5
+	python3 ./setup.py install ../${DIST}/www/
+	popd
+fi
 
 if [ "${BUNDLE_PUTTY}" == "1" ]; then
 	echo "* Adding TortoisePlink"

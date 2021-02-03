@@ -48,7 +48,6 @@ URL:				https://xpra.org/
 Packager:			Antoine Martin <antoine@xpra.org>
 Vendor:				https://xpra.org/
 Source:				xpra-%{version}.tar.xz
-Source1:			xpra-html5-%{version}.tar.xz
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
@@ -127,26 +126,6 @@ Requires(post):  	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbi
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 %description common-server
 This package contains the files which are shared between all the xpra server packages.
-
-%package html5
-Summary:			Xpra HTML5 client
-Group:				Networking
-BuildArch:			noarch
-Conflicts:			xpra < 2.1
-BuildRequires:		uglify-js
-#don't depend on this package,
-#so we can also install on a pure RHEL distro:
-%if 0%{?el8}
-BuildRequires:		centos-logos
-BuildRequires:		centos-backgrounds
-%else
-BuildRequires:		desktop-backgrounds-compat
-Recommends:		    desktop-backgrounds-compat
-BuildRequires:		js-jquery
-Requires:			js-jquery
-%endif
-%description html5
-This package contains Xpra's HTML5 client.
 
 %package -n python3-xpra
 Summary:			Xpra gives you "persistent remote applications" for X. Python3 build.
@@ -291,9 +270,6 @@ This package contains the python3 xpra server.
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}
 xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
-cd xpra-%{version}
-xzcat $RPM_SOURCE_DIR/xpra-html5-%{version}.tar.xz | tar -xf -
-mv xpra-html5-%{version} html5
 
 %debug_package
 
@@ -356,11 +332,6 @@ rm -fr ${RPM_BUILD_ROOT}/%{python3_sitearch}/unittests
 rm -rf $RPM_BUILD_ROOT
 
 %files
-
-%files html5
-%defattr(-,root,root)
-%{_datadir}/xpra/www
-%{_datadir}/xpra/http-headers
 
 %files common
 %defattr(-,root,root)
