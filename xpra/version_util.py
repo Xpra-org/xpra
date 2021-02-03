@@ -59,11 +59,7 @@ def revision_str() -> str:
 def make_revision_str(revision, local_modifications, branch, commit) -> str:
     rstr = ""
     try:
-        if not commit:
-            #svn style:
-            rstr += "r"+revision
-        else:
-            rstr += str(revision)
+        rstr += "r"+revision
         if local_modifications>0:
             rstr += "M"
         if branch=="master" and commit:
