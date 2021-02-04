@@ -433,7 +433,7 @@
 * more reliable window positioning and geometry
 * add more sanity checks to codecs and csc modules
 * network and protocol improvements: safety checks, threading
-* encryption improvements: support TCP only encryption, PKCS[#7](https://github.com/Xpra-org/xpra/issues/7) padding
+* encryption improvements: support TCP only encryption, `PKCS#7` padding
 * improved printer forwarding
 * improved DPI and anti-alias synchronization and handling (incomplete)
 * better multi-monitor support
@@ -2023,7 +2023,7 @@ still TBD).
 ### Wimpiggy:
 * Make compatible with current Pyrex releases (thanks to many
  people for reporting this).
-* Work around X server bug [#14648](https://github.com/Xpra-org/xpra/issues/14648) (thanks to Ethan Blanton for help
+* Work around X server bug #14648 (thanks to Ethan Blanton for help
  tracking this down).  This improves speed dramatically.
 * Reverse-engineer X server lifetime rules for NameWindowPixmap,
  and handle it properly.  Also handle it lazily.  This fixes the
