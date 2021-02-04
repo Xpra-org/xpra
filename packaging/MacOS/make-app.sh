@@ -311,8 +311,6 @@ if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 		rm libgst${x}*
 	done
 fi
-#get rid of any old 0.10 libs:
-rm -f libgst*-0.10.*
 echo "removing extra gstreamer plugins:"
 echo " * GStreamer"
 GST_PLUGIN_DIR="./gstreamer-1.0"
