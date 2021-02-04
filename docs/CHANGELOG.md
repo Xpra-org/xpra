@@ -38,54 +38,54 @@
 
 
 ## [3.0] 2019-09-21
-* Python 3 port complete, now the default: #1571, #2195
-* much nicer HTML5 client user interface: #2269
+* Python 3 port complete, now the default: [#1571](https://github.com/Xpra-org/xpra/issues/1571), [#2195](https://github.com/Xpra-org/xpra/issues/2195)
+* much nicer HTML5 client user interface: [#2269](https://github.com/Xpra-org/xpra/issues/2269)
 * Window handling:
-    * smoother window resizing: #478 (OpenGL)
-    * honouring gravity: #2217
-    * lock them in readonly mode: #2137
-* xpra top subcommand: #2348
+    * smoother window resizing: [#478](https://github.com/Xpra-org/xpra/issues/478) (OpenGL)
+    * honouring gravity: [#2217](https://github.com/Xpra-org/xpra/issues/2217)
+    * lock them in readonly mode: [#2137](https://github.com/Xpra-org/xpra/issues/2137)
+* xpra top subcommand: [#2348](https://github.com/Xpra-org/xpra/issues/2348)
 * faster startup:
-    * #2347 faster client startup
-    * #2341 faster server startup
+    * [#2347](https://github.com/Xpra-org/xpra/issues/2347) faster client startup
+    * [#2341](https://github.com/Xpra-org/xpra/issues/2341) faster server startup
 * OpenGL:
-    * more reliable driver probing: #2204
-    * cursor paint support: #1497
-    * transparency on MacOS: #1794
+    * more reliable driver probing: [#2204](https://github.com/Xpra-org/xpra/issues/2204)
+    * cursor paint support: [#1497](https://github.com/Xpra-org/xpra/issues/1497)
+    * transparency on MacOS: [#1794](https://github.com/Xpra-org/xpra/issues/1794)
 * Encoding:
-    * lossless window scrolling: #1320
-    * scrolling acceleration for non-OpenGL backends: #2295
-    * harden image parsing: #2279
-    * workaround slow video encoder initialization (ie: NVENC) using replacement frames: #2048
-    * avoid loading codecs we don't need: #2344
-    * skip some CUDA devices, speedup enumeration: #2415
+    * lossless window scrolling: [#1320](https://github.com/Xpra-org/xpra/issues/1320)
+    * scrolling acceleration for non-OpenGL backends: [#2295](https://github.com/Xpra-org/xpra/issues/2295)
+    * harden image parsing: [#2279](https://github.com/Xpra-org/xpra/issues/2279)
+    * workaround slow video encoder initialization (ie: NVENC) using replacement frames: [#2048](https://github.com/Xpra-org/xpra/issues/2048)
+    * avoid loading codecs we don't need: [#2344](https://github.com/Xpra-org/xpra/issues/2344)
+    * skip some CUDA devices, speedup enumeration: [#2415](https://github.com/Xpra-org/xpra/issues/2415)
 * Clipboard:
-    * new native clipboard implementations for all platforms: #812
-    * HTML5 asynchronous clipboard: #1844
-    * HTML5 support for copying images: #2312 (with watermarking)
-    * brotli compression for text data: #2289
+    * new native clipboard implementations for all platforms: [#812](https://github.com/Xpra-org/xpra/issues/812)
+    * HTML5 asynchronous clipboard: [#1844](https://github.com/Xpra-org/xpra/issues/1844)
+    * HTML5 support for copying images: [#2312](https://github.com/Xpra-org/xpra/issues/2312) (with watermarking)
+    * brotli compression for text data: [#2289](https://github.com/Xpra-org/xpra/issues/2289)
 * Authentication:
-    * modular client authentication handlers: #1796
-    * mysql authentication module: #2287
-    * generic SQL authentication module: #2288
+    * modular client authentication handlers: [#1796](https://github.com/Xpra-org/xpra/issues/1796)
+    * mysql authentication module: [#2287](https://github.com/Xpra-org/xpra/issues/2287)
+    * generic SQL authentication module: [#2288](https://github.com/Xpra-org/xpra/issues/2288)
 * Network:
-    * client listen mode: #1022
-    * retry to connect until it succeeds or times out: #2346
-    * mdns TXT attributes updated at runtime: #2187
-    * zeroconf fixes: #2317
-    * drop pybonjour: #2297
-    * paramiko honours IdentityFile: #2282, handles SIGINT better: #2378
-    * proxy server fixes for ssl and ssh sockets: #2399, remove spurious options: #2193
-    * proxy ping and timeouts: #2408
-    * proxy dynamic authentication: #2261
+    * client listen mode: [#1022](https://github.com/Xpra-org/xpra/issues/1022)
+    * retry to connect until it succeeds or times out: [#2346](https://github.com/Xpra-org/xpra/issues/2346)
+    * mdns TXT attributes updated at runtime: [#2187](https://github.com/Xpra-org/xpra/issues/2187)
+    * zeroconf fixes: [#2317](https://github.com/Xpra-org/xpra/issues/2317)
+    * drop pybonjour: [#2297](https://github.com/Xpra-org/xpra/issues/2297)
+    * paramiko honours IdentityFile: [#2282](https://github.com/Xpra-org/xpra/issues/2282), handles SIGINT better: [#2378](https://github.com/Xpra-org/xpra/issues/2378)
+    * proxy server fixes for ssl and ssh sockets: [#2399](https://github.com/Xpra-org/xpra/issues/2399), remove spurious options: [#2193](https://github.com/Xpra-org/xpra/issues/2193)
+    * proxy ping and timeouts: [#2408](https://github.com/Xpra-org/xpra/issues/2408)
+    * proxy dynamic authentication: [#2261](https://github.com/Xpra-org/xpra/issues/2261)
 * Automated Testing:
-    * test HTML5 client: #2231
-    * many new mixin tests: #1773 (and bugs found)
-* start-new-commands is now enabled by default: #2278, and the UI allows free text: #2221
-* basic support for native GTK wayland client: #2243
-* forward custom X11 properties: #2311
-* xpra launcher visual feedback during connection: #1421, sharing option: #2115
-* "Window" menu on MacOS: #1808
+    * test HTML5 client: [#2231](https://github.com/Xpra-org/xpra/issues/2231)
+    * many new mixin tests: [#1773](https://github.com/Xpra-org/xpra/issues/1773) (and bugs found)
+* start-new-commands is now enabled by default: [#2278](https://github.com/Xpra-org/xpra/issues/2278), and the UI allows free text: [#2221](https://github.com/Xpra-org/xpra/issues/2221)
+* basic support for native GTK wayland client: [#2243](https://github.com/Xpra-org/xpra/issues/2243)
+* forward custom X11 properties: [#2311](https://github.com/Xpra-org/xpra/issues/2311)
+* xpra launcher visual feedback during connection: [#1421](https://github.com/Xpra-org/xpra/issues/1421), sharing option: [#2115](https://github.com/Xpra-org/xpra/issues/2115)
+* "Window" menu on MacOS: [#1808](https://github.com/Xpra-org/xpra/issues/1808)
 
 
 ## [2.5] 2019-03-19
@@ -251,7 +251,7 @@
 * Python3 GTK3 client is now usable
 * shutdown the server from the tray menu
 * terminate child commands on server shutdown
-* macos library updates: #1501, support for virtual desktops
+* macos library updates: [#1501](https://github.com/Xpra-org/xpra/issues/1501), support for virtual desktops
 * NVENC SDK version 8 and HEVC support
 * Nvidia capture SDK support for fast shadow servers
 * shadow servers improvements: show shadow pointer in opengl client
@@ -433,7 +433,7 @@
 * more reliable window positioning and geometry
 * add more sanity checks to codecs and csc modules
 * network and protocol improvements: safety checks, threading
-* encryption improvements: support TCP only encryption, PKCS#7 padding
+* encryption improvements: support TCP only encryption, PKCS[#7](https://github.com/Xpra-org/xpra/issues/7) padding
 * improved printer forwarding
 * improved DPI and anti-alias synchronization and handling (incomplete)
 * better multi-monitor support
@@ -2023,7 +2023,7 @@ still TBD).
 ### Wimpiggy:
 * Make compatible with current Pyrex releases (thanks to many
  people for reporting this).
-* Work around X server bug #14648 (thanks to Ethan Blanton for help
+* Work around X server bug [#14648](https://github.com/Xpra-org/xpra/issues/14648) (thanks to Ethan Blanton for help
  tracking this down).  This improves speed dramatically.
 * Reverse-engineer X server lifetime rules for NameWindowPixmap,
  and handle it properly.  Also handle it lazily.  This fixes the
