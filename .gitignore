@@ -38,14 +38,11 @@ key.*
 #xpra's own:
 /xpra/src_info.py
 /xpra/build_info.py
-/etc/xpra/xpra.conf
-/etc/xpra/conf.d/*.conf
-
-# this file no longer exists:
-/src/etc/xpra/xpra.conf
+/fs/etc/xpra/xpra.conf
+/fs/etc/xpra/conf.d/*.conf
 
 # the .conf files are generated:
-/src/etc/xpra/conf.d/*.conf
+/fs/etc/xpra/conf.d/*.conf
 
 # these files are compiled using semodule:
 /src/selinux/cups_xpra/cups_xpra.pp
