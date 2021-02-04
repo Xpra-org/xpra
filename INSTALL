@@ -1,9 +1,0 @@
-To install globally:
-./setup.py install
-
-To install locally, just run:
-./setup.py install --home=install
-The resulting installation can be found in
-./install
-You will need to adjust your PYTHONPATH to use it.
-PYTHONPATH=`ls -d install/lib*/python`:$PYTHONPATH ./install/bin/xpra
