@@ -23,7 +23,7 @@ You can start a new display using the dummy driver without needing any special p
     Xorg -noreset +extension GLX +extension RANDR +extension RENDER \
          -logfile ./10.log -config /etc/xpra/xorg.conf :10
 
-You can find a sample configuration file for dummy here: [xorg.conf](../blob/master/etc/xpra/xorg.conf).
+You can find a sample configuration file for dummy here: [xorg.conf](../../fs/etc/xpra/xorg.conf).
 It contains many of the most common resolutions you are likely to need, including those found on phones and tablets. 
 However if your client uses unusual resolutions, for instance multiple screens of differing sizes, you may want to add new `Modelines` to match your specific resolution.
 
