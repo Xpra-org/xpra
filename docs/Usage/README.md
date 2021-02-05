@@ -1,4 +1,4 @@
-The examples below should work for the [current versions](./Versions).\
+The examples below should work for the [current versions](https://github.com/Xpra-org/xpra/wiki/Versions).\
 [The online manual](https://xpra.org/manual.html) is for the current development version, use `man xpra` to get the version corresponding to the version you have installed.
 
 # Simple [seamless](./Seamless.md) application forwarding
