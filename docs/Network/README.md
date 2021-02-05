@@ -1,6 +1,6 @@
 ![Network](https://xpra.org/icons/connect.png)
 
-See also: [authentication](./Authentication), [encryption](./Encryption) and [multicast DNS](./Multicast-DNS)
+See also: [authentication](../Usage/Authentication.md), [encryption](./Encryption.md) and [multicast DNS](./Multicast-DNS.md)
 
 
 # Connection Types
