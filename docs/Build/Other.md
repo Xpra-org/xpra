@@ -1,4 +1,4 @@
-**This page may well be out of date**, as these platforms are [not officially supported](./Platforms).
+**This page may well be out of date**, as these platforms are [not officially supported](https://github.com/Xpra-org/xpra/wiki/Platforms).
 
 
 # ![FreeBSD](https://xpra.org/icons/freebsd.png)
@@ -32,7 +32,7 @@ clean up potentially conflicting packages:
 ```
 apt-get purge xpra
 ```
-install the development packages (very similar to other [Debian](./Building-Debian)):
+install the development packages (very similar to other [Debian](./Debian.md)):
 ```
 apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev \
                 libxkbfile-dev python-all-dev python-gobject-dev python-gtk2-dev \
@@ -100,13 +100,13 @@ apt-get install python-netifaces dbus-x11 python-dbus python-rencode \
     gstreamer1.0-x gstreamer1.0-tools \
     python-pil python-lzo python-setuptools
 ```
-build xpra version 3.x from source as per [wiki](./Building)
+build xpra version 3.x from source as per [wiki](./README.md)
 
 ***
 
 # Raspbian
 
-These instructions are valid for Raspbian Stretch and are based on this gist: [Installing Xpra on a Raspberry Pi from Source](https://gist.github.com/xaviermerino/5bb83e0b471e67beaea6d5eeb80daf8c).
+These instructions are valid for Raspbian Stretch and are based on this gist: [Installing Xpra on a Raspberry Pi from Source](https://gist.github.com/xaviermerino/5bb83e0b471e67beaea6d5eeb80daf8c). (which uses an outdated version)
 
 ## Install The Dependencies
 * build dependencies:
