@@ -2,7 +2,7 @@ The proxy server is used for starting or accessing multiple xpra sessions throug
 
 This can be useful for hosts that have a limited number of publicly accessible ports or for clients accessing servers through firewalls with outbound port filtering. (ie: you can put the server on port 80 or 443 and access many sessions from this single port)
 
-When started as `root`, which is the case when the proxy server runs as a [system service](./Service), this can also help to ensure that the sessions outlive the environment they were started from.
+When started as `root`, which is the case when the proxy server runs as a [system service](./Service.md), this can also help to ensure that the sessions outlive the environment they were started from.
 
 
 # Configuration
