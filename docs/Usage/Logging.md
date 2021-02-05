@@ -76,16 +76,16 @@ xpra -d help
 |paint|client window paint code|
 |draw|client draw packets processing|
 |cairo|calls to the cairo drawing library|
-|opengl|[OpenGL rendering](./Client-OpenGL)|
+|opengl|[OpenGL rendering](./Client-OpenGL.md)|
 |info|`About` and `Session info` dialogs|
 |launcher|client launcher program|
 |**General:**|
-|clipboard|all [clipboard](./Clipboard) operations|
-|notify|[notifications forwarding](./Notifications)|
-|tray|[system tray forwarding](./System-Tray)|
-|printing|[printer forwarding](./Printing)|
-|file|[file transfers](./File-Transfer)|
-|keyboard|[keyboard](./Keyboard) mapping and key event handling|
+|clipboard|all [clipboard](../Features/Clipboard.md) operations|
+|notify|[notifications forwarding](../Features/Notifications.md)|
+|tray|[system tray forwarding](../Features/System-Tray.md)|
+|printing|[printer forwarding](../Features/Printing.md)|
+|file|[file transfers](../Features/File-Transfers.md)|
+|keyboard|[keyboard](../Features/Keyboard.md) mapping and key event handling|
 |screen|screen and workarea dimensions|
 |fps|Frames per second|
 |xsettings|XSettings synchronization|
@@ -108,7 +108,7 @@ xpra -d help
 |grab|window grabs (both keyboard and mouse)|
 |dragndrop|window drag-n-drop events|
 |filters|window filters|
-|**[Encoding](./Encodings):**|
+|**[Encoding](./Encodings.md):**|
 |codec|all codecs|
 |loader|codec loader|
 |video|video encoding and decoding|
@@ -121,7 +121,7 @@ xpra -d help
 |regionrefresh|video region refresh|
 |refresh|refresh of lossy screen updates|
 |compress|pixel compression|
-|**[Codec](./Encodings):**|
+|**[Codec](./Encodings.md):**|
 |csc|colourspace conversion codecs|
 |cuda|CUDA device access (nvenc)|
 |cython|Cython CSC module|
@@ -150,11 +150,11 @@ xpra -d help
 |gobject|command line clients|
 |test|test code|
 |verbose|very verbose flag|
-|**[Network](./Network):**|
+|**[Network](../Network/README.md):**|
 |network|all network code|
 |bandwidth|bandwidth detection and management|
-|ssh|[SSH](./SSH) connections|
-|ssl|[SSL](./SSL) connections|
+|ssh|[SSH](../Network/SSH.md) connections|
+|ssl|[SSL](../Network/SSL.md) connections|
 |http|HTTP requests|
 |rfb|RFB Protocol|
 |mmap|mmap transfers|
@@ -162,17 +162,17 @@ xpra -d help
 |websocket|WebSocket layer|
 |named-pipe|Named pipe|
 |udp|UDP|
-|crypto|[encryption](./Encryption)
-|auth|[authentication](./Authentication)
+|crypto|[encryption](../Network/Encryption.md)
+|auth|[authentication](./Authentication.md)
 |upnp|UPnP|
 |**Server:**|
 |server|all server code|
-|proxy|[proxy server](./Proxy-Server)|
-|shadow|[shadow server](./Shadow-Server)|
+|proxy|[proxy server](./Proxy-Server.md)|
+|shadow|[shadow server](./Shadow-Server.md)|
 |command|server control channel|
 |timeout|server timeouts|
 |exec|executing commands|
-|mdns|[mDNS](./Multicast-DNS) session publishing|
+|mdns|[mDNS](../Network/Multicast-DNS.md) session publishing|
 |stats|server statistics|
 |xshm|XShm pixel capture|
 |**Audio:**|
