@@ -30,7 +30,7 @@ To expose your existing main display session (usually found at `:0` on *nix) usi
     xpra shadow :0 --bind-tcp=0.0.0.0:10000
 
 Notes:
-* this is insecure and does not cover [authentication](./Authentication) or [encryption](./Encryption)
+* this is insecure and does not cover [authentication](./Authentication.md) or [encryption](../Network/Encryption.md)
 * MS Windows and Mac OS X do not have X11 display names (`:0` in the example above), in this case you can simply omit the display argument
 * if there is only a single `$DISPLAY` active on the system, you do not need to specify it (no `:0`)
 
