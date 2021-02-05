@@ -8,7 +8,7 @@ This encoder requires a [supported NVIDIA graphics card](https://developer.nvidi
 * a consumer card and a license key or a [patch](https://github.com/keylase/nvidia-patch) to workaround the artificial context limit which can be debilitating
 
 # Software Requirements
-You must have [PyCUDA](http://mathema.tician.de/software/pycuda/) installed (it is included in the official [xpra repositories](./Download)), and a recent enough version of the nvidia drivers. It is not compatible with the `nouveau` driver.
+You must have [PyCUDA](http://mathema.tician.de/software/pycuda/) installed (it is included in the official [xpra repositories](https://github.com/Xpra-org/xpra/wiki/Download)), and a recent enough version of the nvidia drivers. It is not compatible with the `nouveau` driver.
 
 How you install those drivers is entirely up to you, here are some options for Fedora / RHEL:
 * [nvidia installers](http://www.nvidia.com/object/unix.html)
