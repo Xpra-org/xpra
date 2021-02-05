@@ -1,7 +1,7 @@
 _desktop mode_ as opposed to [seamless mode](./Seamless.md) runs a full desktop session in a window instead of having each individual window forwarded separately.\
 This feature requires X11 server support is not available on MacOS  or MS Windows.
 
-The behaviour is more similar to VNC but with the added benefits of the xpra protocol: sound, printer forwarding, etc. (see [features](./Features))
+The behaviour is more similar to VNC but with the added benefits of the xpra protocol: sound, printer forwarding, etc. (see [features](../Features/README.md))
 
 You can also connect using VNC clients.\
 To access an existing desktop session, use the [shadow server](./Shadow-Server.md)- which is also available on MacOS and MS Windows.
