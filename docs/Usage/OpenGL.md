@@ -1,6 +1,6 @@
 ![OpenGL](https://xpra.org/icons/opengl.png)
 
-This documentation is about running OpenGL _applications_ in an xpra session and this has nothing to do with the [client's opengl acceleration](./Client-OpenGL).
+This documentation is about running OpenGL _applications_ in an xpra session and this has nothing to do with the [client's opengl acceleration](./Client-OpenGL.md).
 
 By default, OpenGL applications are supported but they are executed in a virtual framebuffer context which uses a software renderer, and therefore without any GPU acceleration.
 
