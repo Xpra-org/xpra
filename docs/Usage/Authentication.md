@@ -15,42 +15,42 @@ When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Netw
 Here are the modules that can be used:
 |Module|Result|Purpose|Version requirements|
 |------|------|-------|--------------------|
-|[allow](../../blob/master/xpra/server/auth/allow_auth.py)|always allows the user to login, the username used is the one supplied by the client|dangerous / only for testing|
-|[none](../../blob/master/xpra/server/auth/none_auth.py)|always allows the user to login, the username used is the one the server is running as||dangerous / only for testing|
-|[fail](../../blob/master/xpra/trunk/src/xpra/server/auth/fail_auth.py)|always fails authentication, no password required|useful for testing|
-|[reject](../../blob/master/xpra/trunk/src/xpra/server/auth/reject_auth.py)|always fails authentication, pretends to ask for a password|useful for testing|
-|[env](../../blob/master/xpra/trunk/src/xpra/server/auth/env_auth.py)|matches against an environment variable (`XPRA_PASSWORD` by default)|alternative to file module|
-|[password](../../blob/master/xpra/trunk/src/xpra/server/auth/password_auth.py)|matches against a password given as a module option, ie: `auth=password:value=mysecret`|alternative to file module|
-|[multifile](../../blob/master/xpra/trunk/src/xpra/server/auth/multifile_auth.py)|matches usernames and passwords against an authentication file|proxy: see password-file below|
-|[file](../../blob/master/xpra/server/auth/file_auth.py)|compares the password against the contents of a password file, see password-file below|simple password authentication|
-|[pam](../../blob/master/xpra/trunk/src/xpra/server/auth/pam.py)|linux PAM authentication|Linux system authentication|
-|[win32](../../blob/master/xpra/trunk/src/xpra/server/auth/win32_auth.py)|win32security authentication|MS Windows system authentication|
+|[allow](../../xpra/server/auth/allow_auth.py)|always allows the user to login, the username used is the one supplied by the client|dangerous / only for testing|
+|[none](../../xpra/server/auth/none_auth.py)|always allows the user to login, the username used is the one the server is running as||dangerous / only for testing|
+|[fail](../../xpra/trunk/src/xpra/server/auth/fail_auth.py)|always fails authentication, no password required|useful for testing|
+|[reject](../../xpra/trunk/src/xpra/server/auth/reject_auth.py)|always fails authentication, pretends to ask for a password|useful for testing|
+|[env](../../xpra/trunk/src/xpra/server/auth/env_auth.py)|matches against an environment variable (`XPRA_PASSWORD` by default)|alternative to file module|
+|[password](../../xpra/trunk/src/xpra/server/auth/password_auth.py)|matches against a password given as a module option, ie: `auth=password:value=mysecret`|alternative to file module|
+|[multifile](../../xpra/trunk/src/xpra/server/auth/multifile_auth.py)|matches usernames and passwords against an authentication file|proxy: see password-file below|
+|[file](../../xpra/server/auth/file_auth.py)|compares the password against the contents of a password file, see password-file below|simple password authentication|
+|[pam](../../xpra/trunk/src/xpra/server/auth/pam.py)|linux PAM authentication|Linux system authentication|
+|[win32](../../xpra/trunk/src/xpra/server/auth/win32_auth.py)|win32security authentication|MS Windows system authentication|
 |`sys`|system authentication|virtual module which will choose win32 or pam authentication automatically|
-|[sqlite](../../blob/master/xpra/trunk/src/xpra/server/auth/sqlite_auth.py)|sqlite database authentication|[#1488](../https://github.com/Xpra-org/xpra/issues/1488#issuecomment-765477498)|
-|[peercred](../../blob/master/xpra/trunk/src/xpra/server/auth/peercred_auth.py)|`SO_PEERCRED` authentication|
-|[tcp hosts](../../blob/master/xpra/trunk/src/xpra/server/auth/hosts_auth.py)|[TCP Wrapper](https://en.wikipedia.org/wiki/TCP_Wrapper)|[#1730](../https://github.com/Xpra-org/xpra/issues/issues/1730#issuecomment-765492022)|
-|[exec](../../blob/master/xpra/server/auth/exec_auth.py)|Delegates to an external command|[#1690](../https://github.com/Xpra-org/xpra/issues/1690)|
-|[kerberos-password](../../blob/master/xpra/server/auth/kerberos_password_auth.py)|Uses kerberos to authenticate a username + password|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
-|[kerberos-ticket](../../blob/master/xpra/server/auth/kerberos_ticket_auth.py)|Uses a kerberos ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
-|[gss_auth](../../blob/master/xpra/trunk/src/xpra/server/auth/gss_auth.py)|Uses a GSS ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
-|[ldap](../../blob/master/xpra/server/auth/ldap_auth.py)|Uses ldap via [python-ldap](https://www.python-ldap.org/en/latest/)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
-|[ldap3](../../blob/master/xpra/server/auth/ldap3_auth.py)|Uses ldap via [python-ldap3](https://github.com/cannatag/ldap3)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
-|[u2f](../../blob/master/xpra/trunk/src/xpra/server/auth/u2f_auth.py)|[Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)|[#1789](../https://github.com/Xpra-org/xpra/issues/1789)|
+|[sqlite](../../xpra/trunk/src/xpra/server/auth/sqlite_auth.py)|sqlite database authentication|[#1488](../https://github.com/Xpra-org/xpra/issues/1488#issuecomment-765477498)|
+|[peercred](../../xpra/trunk/src/xpra/server/auth/peercred_auth.py)|`SO_PEERCRED` authentication|
+|[tcp hosts](../../xpra/trunk/src/xpra/server/auth/hosts_auth.py)|[TCP Wrapper](https://en.wikipedia.org/wiki/TCP_Wrapper)|[#1730](../https://github.com/Xpra-org/xpra/issues/issues/1730#issuecomment-765492022)|
+|[exec](../../xpra/server/auth/exec_auth.py)|Delegates to an external command|[#1690](../https://github.com/Xpra-org/xpra/issues/1690)|
+|[kerberos-password](../../xpra/server/auth/kerberos_password_auth.py)|Uses kerberos to authenticate a username + password|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
+|[kerberos-ticket](../../xpra/server/auth/kerberos_ticket_auth.py)|Uses a kerberos ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
+|[gss_auth](../../xpra/trunk/src/xpra/server/auth/gss_auth.py)|Uses a GSS ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
+|[ldap](../../xpra/server/auth/ldap_auth.py)|Uses ldap via [python-ldap](https://www.python-ldap.org/en/latest/)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
+|[ldap3](../../xpra/server/auth/ldap3_auth.py)|Uses ldap via [python-ldap3](https://github.com/cannatag/ldap3)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
+|[u2f](../../xpra/trunk/src/xpra/server/auth/u2f_auth.py)|[Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)|[#1789](../https://github.com/Xpra-org/xpra/issues/1789)|
 
 
 ## Syntax
 Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
 ie for starting a [seamless](./Seamless.md) server with a `TCP` socket protected by a password stored in a file:
-
-    xpra start --start=xterm -d auth
-         --bind-tcp=0.0.0.0:10000,auth=file:filename=password.txt
-
+```
+xpra start --start=xterm -d auth
+     --bind-tcp=0.0.0.0:10000,auth=file:filename=password.txt
+```
 So that multiple sockets can use different authentication modules, and those modules can more easily be chained:
-
-    xpra start --start=xterm -d auth \
-         --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=password.txt --bind 
-         --bind-tcp=0.0.0.0:10001,auth=sys
-
+```
+xpra start --start=xterm -d auth \
+     --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=password.txt --bind 
+     --bind-tcp=0.0.0.0:10001,auth=sys
+```
 More examples:
 * `XPRA_PASSWORD=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env`
 * `SOME_OTHER_ENV_VAR_NAME=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env:name=SOME_OTHER_ENV_VAR_NAME`
@@ -62,7 +62,7 @@ Beware when mixing environment variables and password files as the latter may co
 
 ***
 ### Older versions
-The syntax with older versions uses a dedicated switch for each socket type:
+The syntax with older versions used a dedicated switch for each socket type:
 * `--auth=MODULE` for unix domain sockets and named pipes
 * `--tcp-auth=MODULE` for TCP sockets
 * `--vsock-auth=MODULE` for vsock (#983)
@@ -93,7 +93,7 @@ Or even replaced with any string of your liking, ie 'foobar':
 Only the following modules will make use of both the username and password to authenticate against their respective backend: `kerberos-password`, `ldap`, `ldap3`, `sys` (`pam` and `win32`), `sqlite`, `multifile` and `u2f`.
 In this case, using an invalid username will cause the authentication to fail.
 
-The username is usually more relevant when authenticating against a [proxy server](./ProxyServer) (see authentication details there).
+The username is usually more relevant when authenticating against a [proxy server](./Proxy-Server.md) (see authentication details there).
 
 
 ***
