@@ -3,13 +3,12 @@ usually on a remote host, direct their display to your local machine,
 and then to disconnect from these programs and reconnect from the same or another machine(s),
 without losing any state.
 Effectively giving you remote access to individual graphical applications.  
-It can do a lot more than that too:
-[accessing existing desktop sessions](./docs/Usage/Shadow-Server.md) and [starting remote desktop sessions](./docs/Usage/Start-Desktop.md),
-and [many network protocols](./docs/Network/README.md).  
+It can also be used to
+[access existing desktop sessions](./docs/Usage/Shadow-Server.md) and [start remote desktop sessions](./docs/Usage/Start-Desktop.md).
 
 Xpra is _open-source_ ([GPLv2+](./COPYING)) with clients available for [many supported platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
 and the server includes a built-in [HTML5 client](https://github.com/Xpra-org/xpra-html5).  
-Xpra is usable over a variety of [network protocols](./docs/Network/README.md) and does its best to adapt to any network conditions.
+Xpra is usable over a wide variety of [network protocols](./docs/Network/README.md) and does its best to adapt to any network conditions.
 
 # Key Features
 Xpra forwards and synchronizes many extra desktop features which allows remote applications to integrate transparently into the client's desktop environment:
