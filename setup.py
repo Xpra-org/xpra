@@ -30,11 +30,6 @@ from xpra.os_util import (
     is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat,
     )
 
-#we don't support versions of Python without the new ssl code:
-if not hasattr(ssl, "SSLContext"):
-    print("Warning: xpra requires a Python version with ssl.SSLContext support")
-    print(" SSL support will not be available!")
-
 
 #*******************************************************************************
 print(" ".join(sys.argv))
