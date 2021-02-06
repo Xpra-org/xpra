@@ -41,12 +41,12 @@ Here are the modules that can be used:
 ## Syntax
 Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
 ie for starting a [seamless](./Seamless.md) server with a `TCP` socket protected by a password stored in a file:
-```
+```shell
 xpra start --start=xterm -d auth
      --bind-tcp=0.0.0.0:10000,auth=file:filename=password.txt
 ```
 So that multiple sockets can use different authentication modules, and those modules can more easily be chained:
-```
+```shell
 xpra start --start=xterm -d auth \
      --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=password.txt --bind 
      --bind-tcp=0.0.0.0:10001,auth=sys
@@ -78,17 +78,17 @@ For more information on the different socket types, see [network examples](./Net
 
 ## Usernames
 The username can be specified in the connection files you can save from the launcher, or in the client connection string, ie for tcp:
-
-    xpra attach tcp://username:password@host:port/
-
+```shell
+xpra attach tcp://username:password@host:port/
+```
 When an authentication module is used to secure a single session, many modules will completely ignore the username part and it can be omitted from the connection string. ie for connecting to the `TCP` socket of a session secured using `password-file`:
-
-    xpra attach tcp://:password@host:port/
-
+```shell
+xpra attach tcp://:password@host:port/
+```
 Or even replaced with any string of your liking, ie 'foobar':
-
-    xpra attach tcp://foobar:password@host:port/
-
+```shell
+xpra attach tcp://foobar:password@host:port/
+```
 
 Only the following modules will make use of both the username and password to authenticate against their respective backend: `kerberos-password`, `ldap`, `ldap3`, `sys` (`pam` and `win32`), `sqlite`, `multifile` and `u2f`.
 In this case, using an invalid username will cause the authentication to fail.
