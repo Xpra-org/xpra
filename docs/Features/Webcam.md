@@ -38,10 +38,10 @@ You can enable the webcam from the client's system tray menu, or using the comma
 # Debugging
 * use the `-d webcam` [debug logging flag](../Usage/Logging.md)
 * run `xpra webcam-info` on the server to locate the virtual video devices:
-```shell
-Found 1 virtual video device:
-/dev/video1
-```
+  ```shell
+  Found 1 virtual video device:
+  /dev/video1
+  ```
 * run `xpra webcam` on the client to run the webcam capture test application (aka `Webcam_Test` on MS Windows and MacOS).
 
 
