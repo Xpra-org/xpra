@@ -11,9 +11,9 @@ On most platforms, the display being shadowed must be active: not locked or turn
 # SSH Usage Example
 
 If you have SSH access to the machine whose X11 display you wish to access remotely, simply run from your client:
-
-    xpra shadow ssh://HOST/
-
+```shell
+xpra shadow ssh://HOST/
+```
 This will connect over SSH to `HOST`, start and xpra shadow server and connect to it.\
 The shadow server will be stopped once you disconnect.\
 Xpra must already be installed on the server.
@@ -26,11 +26,12 @@ The xpra shadow server will be accessible like any other xpra server through its
 If starting via SSH is not supported as above, as is the case on most MS Windows and MacOS systems, or simply if you want to start the shadow server manually, and potentially configure more options, you can start it from a shell.
 
 To expose your existing main display session (usually found at `:0` on *nix) using a TCP server on port 10000:
-
-    xpra shadow :0 --bind-tcp=0.0.0.0:10000
+```shell
+xpra shadow :0 --bind-tcp=0.0.0.0:10000
+```
 
 Notes:
-* this is insecure and does not cover [authentication](./Authentication) or [encryption](./Encryption)
+* this is insecure and does not cover [authentication](./Authentication.md) or [encryption](../Network/Encryption.md)
 * MS Windows and Mac OS X do not have X11 display names (`:0` in the example above), in this case you can simply omit the display argument
 * if there is only a single `$DISPLAY` active on the system, you do not need to specify it (no `:0`)
 

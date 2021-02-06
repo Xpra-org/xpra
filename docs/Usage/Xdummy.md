@@ -19,24 +19,24 @@ The downside of using `Xdummy` is its incomplete `RandR` support: the resolution
 # Usage
 ## Xdummy standlone
 You can start a new display using the dummy driver without needing any special privileges (no root, no suid), you should specify your own log and config files:
-
-    Xorg -noreset +extension GLX +extension RANDR +extension RENDER \
-         -logfile ./10.log -config /etc/xpra/xorg.conf :10
-
-You can find a sample configuration file for dummy here: [xorg.conf](../blob/master/etc/xpra/xorg.conf).
+```shell
+Xorg -noreset +extension GLX +extension RANDR +extension RENDER \
+     -logfile ./10.log -config /etc/xpra/xorg.conf :10
+```
+You can find a sample configuration file for dummy here: [xorg.conf](../../fs/etc/xpra/xorg.conf).
 It contains many of the most common resolutions you are likely to need, including those found on phones and tablets. 
 However if your client uses unusual resolutions, for instance multiple screens of differing sizes, you may want to add new `Modelines` to match your specific resolution.
 
 ## Xdummy with Xpra
 With Xpra, this should have been configured automatically for you when installing.
-You choose at [build time](./Building) whether or not to use `Xdummy` using the `--with[out]-Xdummy` build switch.
+You choose at [build time](../Build/README.md) whether or not to use `Xdummy` using the `--with[out]-Xdummy` build switch.
 
 You can also specify this virtual framebuffer alternative using the `--xvfb` command line switch or by setting the xvfb option in your `/etc/xpra/xpra.conf` config file:
-
-    xvfb=Xorg -dpi 96 -noreset -nolisten tcp \
-              +extension GLX +extension RANDR +extension RENDER \
-              -logfile ${HOME}/.xpra/Xvfb-10.log -config ${HOME}/xorg.conf
-
+```
+xvfb=Xorg -dpi 96 -noreset -nolisten tcp \
+          +extension GLX +extension RANDR +extension RENDER \
+          -logfile ${HOME}/.xpra/Xvfb-10.log -config ${HOME}/xorg.conf
+```
 The `-noreset` option is only needed if the window manager is not the first application started on the display, for example if you use the `--start-child=` option, or if you want the display to survive once the window manager exits - generally, this is a good idea since xpra could crash and when it exits cleanly via `xpra stop` it already takes care of shutting down the X11 server.
 
 ## libGL Driver Conflicts

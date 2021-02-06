@@ -6,11 +6,6 @@ Please refer to the instructions most appropriate for your build platform:
 * [MacOS](./MacOS.md)
 * [Others](./Other.md)
 
-# Overview
-Before attempting to build from source, make sure that all the required [dependencies](./Dependencies.md) are installed.
-
-The platform specific documentation above usually also includes the commands required for installing the build time dependencies.
-
 
 # Download the xpra source code
 Use one of the following locations:
@@ -19,7 +14,12 @@ Use one of the following locations:
 * `xpra.org`: https://xpra.org/src/ (releases only)
 
 # Build
-* run `python3 ./setup.py install`
+First, make sure that all the required [dependencies](./Dependencies.md) are installed, then:
+```shell
+git clone https://github.com/Xpra-org/xpra
+cd xpra
+python3 ./setup.py install
+```
 
 # Caveats
 * **Do not** mix source installation with binary packages. Remove one completely before installing the other

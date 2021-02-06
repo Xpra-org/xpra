@@ -2,7 +2,7 @@ The proxy server is used for starting or accessing multiple xpra sessions throug
 
 This can be useful for hosts that have a limited number of publicly accessible ports or for clients accessing servers through firewalls with outbound port filtering. (ie: you can put the server on port 80 or 443 and access many sessions from this single port)
 
-When started as `root`, which is the case when the proxy server runs as a [system service](./Service), this can also help to ensure that the sessions outlive the environment they were started from.
+When started as `root`, which is the case when the proxy server runs as a [system service](./Service.md), this can also help to ensure that the sessions outlive the environment they were started from.
 
 
 # Configuration
@@ -25,20 +25,20 @@ Here is an example architecture using the proxy server to provide access to a nu
 *Beware*: to simplify these instructions, we use the `allow` authentication module, which does *no* checking whatsoever!
 
 start a session on display `:100` with an `xterm`, this session is not exposed via TCP as there is no `bind-tcp` option:
-```
+```shell
 xpra start :100 --start=xterm
 ```
 start a proxy server available on tcp port 14501:
-```
+```shell
 xpra proxy :20 --tcp-auth=allow --bind-tcp=0.0.0.0:14501
 ```
 if only one session exists for this user, you can connect via the proxy with:
-```
+```shell
 xpra attach tcp://foo:bar@PROXYHOST:14501/
 ```
 
 If there is more than one existing session accessible for this user account, the client also needs to specify which display it wishes to connect to using the extended attach syntax: `tcp/USERNAME:PASSWORD@SERVER:PORT/DISPLAY`:
-```
+```shell
 xpra attach tcp://foo:bar@PROXYHOST:14501/100
 ```
 
@@ -57,7 +57,6 @@ When the client requests information from the server (ie: for the session info d
 
 Just like any other xpra server instance, a proxy instance can be also be queried directly. Since proxy instances do not have their own display number, each proxy instance will create a socket using the process ID instead (ie: `:proxy-15452`), you ca
 n find their names using `xpra list`.
-}}}
 
 
 # Stopping
@@ -77,32 +76,32 @@ etc..
 This example uses a `sqlite` database to expose two remote server instances accessible from the proxy server via `TCP`.
 
 Start the two sessions we wish to access via the `PROXYHOST` (we call this `TARGETHOST` - for testing, this can be the same host as `PROXYHOST`). On `TARGETHOST`:
-```
+```shell
 xpra start :200 --bind-tcp=0.0.0.0:10100 --start=xterm
 xpra start :201 --bind-tcp=0.0.0.0:10101 --start=xterm
 ```
 Start a proxy server on port 14501 using the "`sqlite`" authentication module (we will call this server `PROXYHOST`):
-```
+```shell
 xpra proxy :100 --bind-tcp=0.0.0.0:14501,auth=sqlite:filename=./xpra-auth.sdb --socket-dir=/tmp
 ```
 and add user entries (ie: `foo` with password `bar`), pointing to the `TARGETHOST` sessions (ie: `192.168.1.200` is the `TARGETHOST`'s IP in this example):
-```
+```shell
 SQLITE_AUTH_PY=/usr/lib64/python3.9/site-packages/xpra/server/auth/sqlite_auth.py
 python $SQLITE_AUTH_PY ./xpra-auth.sdb create
 python $SQLITE_AUTH_PY ./xpra-auth.sdb add foo bar nobody nobody tcp://192.168.1.200:10100/
 python $SQLITE_AUTH_PY ./xpra-auth.sdb add moo cow nobody nobody tcp://192.168.1.200:10101/ "" "compression=0"
 ```
 connect the client through the proxy server to the first session:
-```
+```shell
 xpra attach tcp://foo:bar@$PROXYHOST:14501/
 ```
 or for the second session:
-```
+```shell
 xpra attach tcp://moo:cow@$PROXYHOST:14501/
 ```
 
 To hide the password from the command line history and process list, you can use a password file:
-```
+```shell
 echo -n "bar" > ./password.txt
 xpra attach --password-file=./password.txt tcp://foo@$PROXYHOST:14501/
 ```

@@ -1,6 +1,6 @@
 ![Network](https://xpra.org/icons/connect.png)
 
-See also: [authentication](./Authentication), [encryption](./Encryption) and [multicast DNS](./Multicast-DNS)
+See also: [authentication](../Usage/Authentication.md), [encryption](./Encryption.md) and [multicast DNS](./Multicast-DNS.md)
 
 
 # Connection Types
@@ -24,24 +24,24 @@ All the sockets that can be accessed via a network connection (all but `vsock` a
 # Examples
 
 ## TCP Upgrade to WebSocket
-```
+```shell
 xpra start --start=xterm --bind-tcp=0.0.0.0:10000
 ```
-```
+```shell
 xpra attach ws://localhost:10000/
 ```
 The same address (10000 here) can also be opened in a browser to use the HTML5 client:
-```
+```shell
 xdg-open http://localhost:10000/
 ```
 
 
 ## SSH with password file
-```
+```shell
 echo -n thepassword > password.txt
 xpra start --start=xterm --bind-ssh=0.0.0.0:10000,auth=file:filename=password.txt
 ```
-```
+```shell
 xpra attach ssh://localhost:10000/
 ```
 The client will prompt for the password, as found in the `password.txt` file and not the regular shell account password.

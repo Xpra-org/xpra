@@ -8,7 +8,7 @@ This encoder requires a [supported NVIDIA graphics card](https://developer.nvidi
 * a consumer card and a license key or a [patch](https://github.com/keylase/nvidia-patch) to workaround the artificial context limit which can be debilitating
 
 # Software Requirements
-You must have [PyCUDA](http://mathema.tician.de/software/pycuda/) installed (it is included in the official [xpra repositories](./Download)), and a recent enough version of the nvidia drivers. It is not compatible with the `nouveau` driver.
+You must have [PyCUDA](http://mathema.tician.de/software/pycuda/) installed (it is included in the official [xpra repositories](https://github.com/Xpra-org/xpra/wiki/Download)), and a recent enough version of the nvidia drivers. It is not compatible with the `nouveau` driver.
 
 How you install those drivers is entirely up to you, here are some options for Fedora / RHEL:
 * [nvidia installers](http://www.nvidia.com/object/unix.html)
@@ -23,7 +23,7 @@ If your CUDA (`libcuda.so`) or NVENC (`libnvidia-encode.so`) libraries are insta
 If the codec loads properly, it will be used ahead of the other software encoders automatically.
 
 You can verify the video encoder currently in use with:
-```
+```shell
 xpra info | grep "encoder="
 ```
 Important: the video encoder is only used when needed, usually when there is a stream of screen updates.
@@ -31,7 +31,7 @@ Important: the video encoder is only used when needed, usually when there is a s
 
 ## Debugging
 To force xpra to use nvenc exclusively as video encoder, you can use the `--video-encoders=` command line option:
-```
+```shell
 xpra start :10 --video-encoders=nvenc
 ```
 
@@ -41,7 +41,7 @@ To debug the loading of video encoders, you can run the following scripts which 
 * `xpra/codecs/nv_util.py`
 
 Once nvenc is running, you can debug the encoding process step with:
-```
+```shell
 xpra start -d nvenc ...
 ```
 
@@ -50,7 +50,7 @@ xpra start -d nvenc ...
 You can store the license keys in `nvenc.keys`, either globally in `/etc/xpra/` or per-user in `~/.xpra/`.
 
 Or you can also use the environment variable:
-```
+```shell
 XPRA_NVENC_CLIENT_KEY="0A1B2C3D-4E5F-6071-8293-A4B5C6D7E8F9" xpra ...
 ```
 
@@ -62,7 +62,7 @@ Newer SDK versions may not support keys, or just not the same set of keys, in wh
 * install [PyCuda](http://wiki.tiker.net/PyCuda/Installation/Linux) - it is included in the [official repositories](https://github.com/Xpra-org/xpra/wiki/Download) for Fedora and RHEL
 * download the [NVENC SDK](https://developer.nvidia.com/nvidia-video-codec-sdk), aka "NVIDIA VIDEO CODEC SDK" and install it somewhere (ie: just unzip into `/opt/`)
 * create a `pkgconfig` file matching your SDK version and location, ie:
-```
+```shell
 cat > /usr/lib64/pkgconfig/nvenc.pc
 prefix=/usr/local/nvenc
 exec_prefix=${prefix}
@@ -79,7 +79,7 @@ Cflags: -I${includedir}
 END
 ```
 * when building xpra, nvenc support should be auto-detected, but you can try forcing it to verify, ie:
-```
+```shell
 ./setup.py build --with-nvenc
 ```
 

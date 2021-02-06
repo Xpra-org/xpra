@@ -29,10 +29,14 @@ In particular, avoid using the clipboard synchronization from your virtualizatio
 There is a debugging tool which can be launched using `xpra clipboard-test`.
 
 The easiest way to test the clipboard on X11 platforms is to use `xclip` tool to set and verify the contents of each clipboard.
-* to set the "primary" clipboard contents to the string "_primary_":\
-    `echo _primary_ | xclip -i -selection primary`
-* To print the contents of the "primary" clipboard:\
-    `xclip -o -selection primary`
+* to set the "primary" clipboard contents to the string "_primary_":
+```shell
+echo _primary_ | xclip -i -selection primary
+```
+* To print the contents of the "primary" clipboard:
+```shell
+xclip -o -selection primary`
+```
 
 Note: on win32, you will need to change the clipboard currently in use to match the one you modify, this must be done before changing the value to ensure it is propagated.
 
