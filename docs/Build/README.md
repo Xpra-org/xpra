@@ -19,7 +19,9 @@ Use one of the following locations:
 * `xpra.org`: https://xpra.org/src/ (releases only)
 
 # Build
-* run `python3 ./setup.py install`
+```shell
+python3 ./setup.py install
+```
 
 # Caveats
 * **Do not** mix source installation with binary packages. Remove one completely before installing the other
