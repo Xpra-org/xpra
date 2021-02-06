@@ -9,7 +9,6 @@
 ##############################################################################
 # FIXME: Cython.Distutils.build_ext leaves crud in the source directory.
 
-import ssl
 import sys
 if sys.version_info<(3, 6):
     raise Exception("xpra no longer supports Python versions older than 3.6")
