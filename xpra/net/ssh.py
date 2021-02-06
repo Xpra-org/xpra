@@ -823,7 +823,7 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             log("channel exec_command(%s)" % cmd)
             chan.exec_command(cmd)
             return chan
-    raise Exception("all SSH remote proxy commands have failed")
+    raise Exception("all SSH remote proxy commands have failed - is xpra installed on the remote host?")
 
 
 def ssh_connect_failed(_message):
