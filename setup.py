@@ -34,37 +34,42 @@ from xpra.os_util import (
 print(" ".join(sys.argv))
 
 
-def convert_docs(fmt):
+def convert_doc(fsrc, fdst, fmt="html", force=False):
     import subprocess
-    def convert_doc(fsrc, fdst):
-        bsrc = os.path.basename(fsrc)
-        bdst = os.path.basename(fdst)
-        print("  %-20s -> %s" % (bsrc, bdst))
-        cmd = ["pandoc", "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
-        if fmt=="html":
-            cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
-        r = subprocess.Popen(cmd).wait(30)
-        assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
-    def convert_doc_dir(src, dst):
-        print("%-20s -> %s" % (src, dst))
-        if not os.path.exists(dst):
-            os.makedirs(dst, mode=0o755)
-        for x in os.listdir(src):
-            fsrc = os.path.join(src, x)
-            if os.path.isdir(fsrc):
-                fdst = os.path.join(dst, x)
-                convert_doc_dir(fsrc, fdst)
-            elif fsrc.endswith(".md"):
-                fdst = os.path.join(dst, x.replace("README", "index")[:-3]+"."+fmt)
-                convert_doc(fsrc, fdst)
-            else:
-                print("ignoring '%s'" % (f,))
+    bsrc = os.path.basename(fsrc)
+    bdst = os.path.basename(fdst)
+    if not force and not should_rebuild(fsrc, fdst):
+        return
+    print("  %-20s -> %s" % (bsrc, bdst))
+    cmd = ["pandoc", "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
+    if fmt=="html":
+        cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
+    r = subprocess.Popen(cmd).wait(30)
+    assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
+
+def convert_doc_dir(src, dst, fmt="html", force=False):
+    print("%-20s -> %s" % (src, dst))
+    if not os.path.exists(dst):
+        os.makedirs(dst, mode=0o755)
+    for x in os.listdir(src):
+        fsrc = os.path.join(src, x)
+        if os.path.isdir(fsrc):
+            fdst = os.path.join(dst, x)
+            convert_doc_dir(fsrc, fdst, fmt, force)
+        elif fsrc.endswith(".md"):
+            fdst = os.path.join(dst, x.replace("README", "index")[:-3]+"."+fmt)
+            convert_doc(fsrc, fdst, fmt, force)
+        else:
+            print("ignoring '%s'" % (f,))
+
+def convert_docs(fmt="html"):
     paths = [x for x in sys.argv[2:] if not x.startswith("--")]
     if paths:
         for x in paths:
             convert_doc(x, "build/%s" % x)
     else:
         convert_doc_dir("docs", "build/docs")
+
 
 if "doc" in sys.argv:
     convert_docs("html")
@@ -240,6 +245,7 @@ csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 example_ENABLED         = DEFAULT
 
 #Cython / gcc / packaging build options:
+docs_ENABLED            = DEFAULT
 annotate_ENABLED        = DEFAULT
 warn_ENABLED            = True
 strict_ENABLED          = True
@@ -268,6 +274,7 @@ SWITCHES = [
     "pam", "xdg_open",
     "sound", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
+    "docs",
     "annotate", "warn", "strict",
     "shadow", "proxy", "rfb",
     "debug", "PIC",
@@ -1607,6 +1614,8 @@ else:
             if dbus_ENABLED and proxy_ENABLED:
                 copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
+            if docs_ENABLED:
+                convert_doc_dir("./docs", "/usr/share/xpra/doc")
 
     # add build_conf to build step
     cmdclass.update({
@@ -1716,7 +1725,7 @@ if scripts_ENABLED:
 toggle_modules(WIN32, "xpra/scripts/win32_service")
 
 if data_ENABLED:
-    add_data_files(share_xpra,                      ["README", "COPYING"])
+    add_data_files(share_xpra,                      ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
     add_data_files("%s/http-headers" % share_xpra,   glob.glob("fs/share/xpra/http-headers/*"))
     ICONS = glob.glob("fs/share/icons/*")

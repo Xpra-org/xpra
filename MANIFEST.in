@@ -1,4 +1,4 @@
-include COPYING NEWS README
+include COPYING README.md
 include xpra/monotonic_ctime.h
 include xpra/monotonic_ctime.c
 include xpra/buffers/memalign.h
@@ -15,6 +15,7 @@ include xpra/codecs/v4l2/video.h
 include xpra/codecs/dec_avcodec2/register_compat.*
 recursive-include html5 *
 recursive-include fs *
+recursive-include docs *
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build

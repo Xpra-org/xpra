@@ -280,12 +280,12 @@ rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
 	%{build_args} \
-	--without-html5 --without-printing --without-cuda_kernels
+	--without-printing --without-cuda_kernels
 
 %if 0%{?with_selinux}
 for mod in %{selinux_modules}
 do
-	pushd share/selinux/${mod}
+	pushd fs/share/selinux/${mod}
 	for selinuxvariant in %{selinux_variants}
 	do
 	  make NAME=${selinuxvariant} -f /usr/share/selinux/devel/Makefile
@@ -310,7 +310,7 @@ do
 	for selinuxvariant in %{selinux_variants}
 	do
 	  install -d %{buildroot}%{_datadir}/selinux/${selinuxvariant}
-	  install -p -m 644 share/selinux/${mod}/${mod}.pp.${selinuxvariant} \
+	  install -p -m 644 fs/share/selinux/${mod}/${mod}.pp.${selinuxvariant} \
 	    %{buildroot}%{_datadir}/selinux/${selinuxvariant}/${mod}.pp
 	done
 done
@@ -319,9 +319,6 @@ popd
 
 #fix permissions on shared objects
 find %{buildroot}%{python3_sitearch}/xpra -name '*.so' -exec chmod 0755 {} \;
-
-# Ensure all .js files are not executeable
-find %{buildroot}%{_datadir}/xpra/www/js -name '*.js' -exec chmod 0644 {} \;
 
 #remove the tests, not meant to be installed in the first place
 #(but I can't get distutils to play nice: I want them built, not installed)
@@ -337,7 +334,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_bindir}/xpra*
 %{_bindir}/run_scaled*
-%{_datadir}/xpra/README
+%{_datadir}/xpra/README.md
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
 %{_datadir}/xpra/*.wav
@@ -378,6 +375,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %{_datadir}/xpra/content-type
 %{_datadir}/xpra/content-categories
+%{_datadir}/xpra/http-headers
 %{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
 %{_libexecdir}/xpra/xdg-open
