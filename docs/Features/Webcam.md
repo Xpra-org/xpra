@@ -9,8 +9,8 @@ The webcam is not forwarded by default unless the webcam command line option ena
 Clients only rely on [opencv](http://opencv.org/) and its python bindings.
 
 The server side is only supported on Linux. It relies on a virtual video device, you must install the [v4l2loopback](https://github.com/umlaeute/v4l2loopback) kernel module from and load it:
-```
-    modprobe v4l2loopback devices=1 exclusive_caps=0
+```shell
+modprobe v4l2loopback devices=1 exclusive_caps=0
 ```
 Some distributions may load the module with the wrong setting: `exclusive_caps=1` (ie: Ubuntu, see [#1596](https://github.com/Xpra-org/xpra/issues/1596))
 
@@ -38,11 +38,11 @@ You can enable the webcam from the client's system tray menu, or using the comma
 # Debugging
 * use the `-d webcam` [debug logging flag](../Usage/Logging.md)
 * run `python ./xpra/platform/xposix/webcam_util.py`, the correct output looks like this:
-
-    python ./xpra/platform/xposix/webcam_util.py 
-    Found 1 virtual video device:
-    /dev/video1
-
+```shell
+python ./xpra/platform/xposix/webcam_util.py 
+Found 1 virtual video device:
+/dev/video1
+```
 Binary installations should include a test application for capturing from the webcam using the same code that will be used to forward the webcam data to the server, run `./xpra/scripts/show_webcam.py`, or `Webcam_Test` on MS Windows and MacOS.
 
 
