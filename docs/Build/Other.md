@@ -109,7 +109,7 @@ build xpra version 3.x from source as per [wiki](./README.md)
 These instructions are valid for Raspbian Stretch and are based on this gist: [Installing Xpra on a Raspberry Pi from Source](https://gist.github.com/xaviermerino/5bb83e0b471e67beaea6d5eeb80daf8c). (which uses an outdated version)
 
 ## Install The Dependencies
-* build dependencies:
+build dependencies:
 ```shell
 apt-get install libx11-dev libxtst-dev libxcomposite-dev \
     libxdamage-dev libxkbfile-dev xauth x11-xkb-utils xserver-xorg-video-dummy \
