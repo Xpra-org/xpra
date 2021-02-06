@@ -60,7 +60,7 @@ XPRA_X11_DEBUG_EVENTS="EnterNotify,CreateNotify" xpra start :10
 ```
 
 
-***
+---
 
 
 # List of categories
