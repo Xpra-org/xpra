@@ -37,13 +37,12 @@ You can enable the webcam from the client's system tray menu, or using the comma
 
 # Debugging
 * use the `-d webcam` [debug logging flag](../Usage/Logging.md)
-* run `python ./xpra/platform/xposix/webcam_util.py`, the correct output looks like this:
+* run `xpra webcam-info` on the server to locate the virtual video devices:
 ```shell
-python ./xpra/platform/xposix/webcam_util.py 
 Found 1 virtual video device:
 /dev/video1
 ```
-Binary installations should include a test application for capturing from the webcam using the same code that will be used to forward the webcam data to the server, run `./xpra/scripts/show_webcam.py`, or `Webcam_Test` on MS Windows and MacOS.
+* run `xpra webcam` on the client to run the webcam capture test application (aka `Webcam_Test` on MS Windows and MacOS).
 
 
 # Tickets
