@@ -35,10 +35,12 @@ To force xpra to use nvenc exclusively as video encoder, you can use the `--vide
 xpra start :10 --video-encoders=nvenc
 ```
 
-To debug the loading of video encoders, you can run the following scripts which are installed with xpra:
-* `xpra/codecs/loader.py`
-* `xpra/codecs/video_helper.py`
-* `xpra/codecs/nv_util.py`
+To debug the availability of video encoders and GPUs:
+```shell
+xpra encoding
+xpra video
+xpra nvinfo
+```
 
 Once nvenc is running, you can debug the encoding process step with:
 ```shell
