@@ -35,7 +35,51 @@ if not hasattr(ssl, "SSLContext"):
     print("Warning: xpra requires a Python version with ssl.SSLContext support")
     print(" SSL support will not be available!")
 
+
+#*******************************************************************************
 print(" ".join(sys.argv))
+
+
+def convert_docs(fmt):
+    import subprocess
+    def convert_doc(fsrc, fdst):
+        bsrc = os.path.basename(fsrc)
+        bdst = os.path.basename(fdst)
+        print("  %-20s -> %s" % (bsrc, bdst))
+        cmd = ["pandoc", "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
+        if fmt=="html":
+            cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
+        r = subprocess.Popen(cmd).wait(30)
+        assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
+    def convert_doc_dir(src, dst):
+        print("%-20s -> %s" % (src, dst))
+        if not os.path.exists(dst):
+            os.makedirs(dst, mode=0o755)
+        for x in os.listdir(src):
+            fsrc = os.path.join(src, x)
+            if os.path.isdir(fsrc):
+                fdst = os.path.join(dst, x)
+                convert_doc_dir(fsrc, fdst)
+            elif fsrc.endswith(".md"):
+                fdst = os.path.join(dst, x.replace("README", "index")[:-3]+"."+fmt)
+                convert_doc(fsrc, fdst)
+            else:
+                print("ignoring '%s'" % (f,))
+    paths = [x for x in sys.argv[2:] if not x.startswith("--")]
+    if paths:
+        for x in paths:
+            convert_doc(x, "build/%s" % x)
+    else:
+        convert_doc_dir("docs", "build/docs")
+
+if "doc" in sys.argv:
+    convert_docs("html")
+    sys.exit(0)
+
+if "pdf-doc" in sys.argv:
+    convert_docs("pdf")
+    sys.exit(0)
+
 
 #*******************************************************************************
 # build options, these may get modified further down..
