@@ -15,7 +15,7 @@ The main controls can be specified in the configuration file or on the command l
 * `speaker-codec=CODEC` / `microphone-codec=CODEC`: Specify the codec(s) to use for audio output (speaker) or input (microphone). This parameter can be specified multiple times and the order in which the codecs are specified defines the preferred cod
 ec order. Use the special value ’help’ to get a list of options. When unspecified, all the available codecs are allowed and the first one is used.
 * `sound-source=PLUGIN[:OPTIONS]`: Specifies the GStreamer sound plugin used for capturing the sound stream. This affects "speaker forwarding" on the server, and "microphone" forwarding on the client. To get a list of options use the special value _h
-elp_. It is also possible to specify plugin options using the form ` "−−sound−source=SOURCE:name1=value1,name2=value2,etc"`, ie: `"−−sound−source=pulse:device=device.alsa_input.pci−0000_00_14.2.analog−stereo"`
+elp_. It is also possible to specify plugin options using the form ` "--sound-source=SOURCE:name1=value1,name2=value2,etc"`, ie: `"--sound-source=pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo"`
 
 # Screenshots
 * Audio information displayed on session info (with speaker enabled and running and microphone disabled):
