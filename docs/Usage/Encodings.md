@@ -91,13 +91,13 @@ You can choose which video decoders are loaded at runtime using the `video-decod
 
 ## Diagnostics
 To see which encodings are available to the xpra client, run:
-
-    xpra attach --encoding=help
-
+```shell
+xpra attach --encoding=help
+```
 Conversely, for a server use:
-
-    xpra start --encoding=help
-
+```shell
+xpra start --encoding=help
+```
 On MS Windows, you can use the `Encodings_info.exe` utility instead.
 
 
