@@ -11,10 +11,10 @@ It is supported on all platforms and controlled by the `notifications` [configur
 # Debugging
 * start both the client and server with the debug command line flags: `-d notify,dbus`
 * you can also test notifications forwarding using the dbus interface or xpra control, ie:
-```shell
-xpra control :100 send-notification "hello" "world" "*"
-```
-will send the message to all clients.
+  ```shell
+  xpra control :100 send-notification "hello" "world" "*"
+  ```
+  will send the message to all clients.
 
 # Screenshots
 MS Windows XP: \
