@@ -310,11 +310,18 @@ def main():
             log.info("* version %s: %s key(s)", v or "common", len(keys))
             for k in keys:
                 log.info("  %s", k)
-        cards = get_cards()
-        if cards:
-            log.info("")
-            log.info("%i card%s:", len(cards), engs(cards))
-            print_nested_dict(cards, print_fn=log.info)
+        try:
+            import pynvml
+            assert pynvml
+        except ImportError:
+            log.warn("Warning: the pynvml library is missing")
+            log.warn(" cannot identify the GPUs installed")
+        else:
+            cards = get_cards()
+            if cards:
+                log.info("")
+                log.info("%i card%s:", len(cards), engs(cards))
+                print_nested_dict(cards, print_fn=log.info)
 
 
 if __name__ == "__main__":
