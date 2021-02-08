@@ -573,6 +573,9 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
             check_display()
             from xpra.scripts import show_webcam
             return show_webcam.main()
+        elif mode=="webcam-info":
+            from xpra.platform import webcam
+            webcam.main(args)
         elif mode=="clipboard-test":
             check_display()
             from xpra.gtk_common import gtk_view_clipboard

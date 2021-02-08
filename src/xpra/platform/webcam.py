@@ -43,13 +43,12 @@ platform_import(globals(), "webcam", False,
                 "remove_video_device_change_callback")
 
 
-def main():
-    import sys
-    if "-v" in sys.argv or "--verbose" in sys.argv:
+def main(argv):
+    if "-v" in argv or "--verbose" in argv:
         from xpra.log import add_debug_category, enable_debug_for
         enable_debug_for("webcam")
         add_debug_category("webcam")
-    run = "-r" in sys.argv or "--run" in sys.argv
+    run = "-r" in argv or "--run" in argv
     from xpra.util import engs, print_nested_dict
     from xpra.platform import program_context
     with program_context("Webcam Info", "Webcam Info"):
@@ -77,6 +76,8 @@ def main():
                 pass
             log.info("terminating, removing callback")
             remove_video_device_change_callback(callback)
+    return 0
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))
