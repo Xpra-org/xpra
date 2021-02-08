@@ -79,6 +79,9 @@ if "pdf-doc" in sys.argv:
     convert_docs("pdf")
     sys.exit(0)
 
+if "unittests" in sys.argv:
+    os.execv("./tests/unittests/run", ["run"])
+
 
 #*******************************************************************************
 # build options, these may get modified further down..
