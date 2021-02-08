@@ -24,7 +24,7 @@ class TestGTK3Window(Gtk.Window):
         self.backing = ImageSurface(FORMAT_ARGB32, W, H)
         rgb_data = b"\120"*W*H*4
         self.paint_rgb(rgb_data, W, H)
-        img = Image.open("./icons/xpra.png")
+        img = Image.open("./fs/share/icons/xpra.png")
         w, h = img.size
         self.paint_image(img, 0, 0, w, h)
 

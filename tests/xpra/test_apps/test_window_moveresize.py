@@ -41,8 +41,8 @@ class MoveWindow(Gtk.Window):
 		from xpra.x11.bindings.window_bindings import constants, X11WindowBindings  #@UnresolvedImport
 		X11Window = X11WindowBindings()
 		root = self.get_window().get_screen().get_root_window()
-		root_xid = root.xid
-		xwin = self.get_window().xid
+		root_xid = root.get_xid()
+		xwin = self.get_window().get_xid()
 		SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 		SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 		event_mask = SubstructureNotifyMask | SubstructureRedirectMask

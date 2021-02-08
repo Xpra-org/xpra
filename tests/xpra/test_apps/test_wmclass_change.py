@@ -17,7 +17,7 @@ def main():
     win.show()
     def change_wmclass():
         with xsync:
-            X11Window.setClassHint(win.get_window().xid, "Hello", "hello")
+            X11Window.setClassHint(win.get_window().get_xid(), b"Hello", b"hello")
             print("WM_CLASS changed!")
     GLib.timeout_add(1000, change_wmclass)
     Gtk.main()

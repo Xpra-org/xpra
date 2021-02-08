@@ -7,4 +7,4 @@
 from xpra.x11.bindings.wait_for_x_server import wait_for_x_server       #@UnresolvedImport
 import os
 
-wait_for_x_server(os.environ.get("DISPLAY", ":0"), 5)
+wait_for_x_server(os.environ.get("DISPLAY", ":0").encode(), 5)
