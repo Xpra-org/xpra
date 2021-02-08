@@ -34,3 +34,6 @@ xpra start ssh://USER@HOST/ --start=xterm
 ```
 To start `xterm` on `HOST` and display it locally (`xterm` must be installed on `HOST`).  
 For more examples, see [usage](./docs/Usage/README.md).
+
+# Help
+You can send your questions to the [mailing list](http://lists.devloop.org.uk/mailman/listinfo/shifter-users) or join us on the IRC channel: [#winswitch on irc.freenode.net](irc://irc.freenode.net/winswitch).
