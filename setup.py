@@ -16,6 +16,7 @@ if sys.version_info<(3, 6):
 import glob
 import shutil
 import os.path
+import subprocess
 
 from distutils.core import setup
 from distutils.extension import Extension
@@ -35,7 +36,6 @@ print(" ".join(sys.argv))
 
 
 def convert_doc(fsrc, fdst, fmt="html", force=False):
-    import subprocess
     bsrc = os.path.basename(fsrc)
     bdst = os.path.basename(fdst)
     if not force and not should_rebuild(fsrc, fdst):
@@ -999,26 +999,29 @@ def clean():
 if 'clean' in sys.argv or 'sdist' in sys.argv:
     clean()
 
-from add_build_info import record_build_info, BUILD_INFO_FILE, record_src_info, SRC_INFO_FILE, has_src_info
+def add_build_info(*args):
+    cmd = ["./fs/bin/add_build_info.py"]+list(args)
+    r = subprocess.Popen(cmd).wait(30)
+    assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 if "clean" not in sys.argv:
     # Add build info to build_info.py file:
-    record_build_info()
+    add_build_info("build")
     if modules_ENABLED:
         # ensure it is included in the module list if it didn't exist before
-        add_modules(BUILD_INFO_FILE)
+        add_modules("xpra.build_info")
 
 if "sdist" in sys.argv:
-    record_src_info()
+    add_build_info("src")
 
 if "install" in sys.argv or "build" in sys.argv:
     #if installing from source tree rather than
     #from a source snapshot, we may not have a "src_info" file
     #so create one:
-    if not has_src_info() and modules_ENABLED:
-        record_src_info()
+    add_build_info()
+    if modules_ENABLED:
         # ensure it is now included in the module list
-        add_modules(SRC_INFO_FILE)
+        add_modules("xpra.src_info")
 
 
 if 'clean' in sys.argv or 'sdist' in sys.argv:

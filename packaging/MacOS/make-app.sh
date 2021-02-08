@@ -49,7 +49,7 @@ echo "**************************************************************************
 echo "Building and installing locally"
 pushd ../../
 
-${PYTHON} -c "from add_build_info import record_src_info;record_src_info()"
+${PYTHON} "./fs/bin/add_build_info.py"
 rm -fr build/* dist/*
 ${PYTHON} ./setup.py clean
 INSTALL_LOG=`pwd`/install.log

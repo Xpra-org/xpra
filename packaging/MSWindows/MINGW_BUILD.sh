@@ -85,7 +85,7 @@ fi
 
 #record in source tree:
 rm xpra/src_info.py xpra/build_info.py >& /dev/null
-${PYTHON} add_build_info.py >& /dev/null
+${PYTHON} "./fs/bin/add_build_info.py" "src" "build" >& /dev/null
 if [ "$?" != "0" ]; then
 	echo "ERROR: recording build info"
 	exit 1
