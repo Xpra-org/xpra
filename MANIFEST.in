@@ -16,6 +16,7 @@ include xpra/codecs/dec_avcodec2/register_compat.*
 recursive-include html5 *
 recursive-include fs *
 recursive-include docs *
+recursive-include tests *
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
