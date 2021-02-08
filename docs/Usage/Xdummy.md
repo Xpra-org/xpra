@@ -85,6 +85,6 @@ Then there are also ABI problems with their HWE releases, which is why Xdummy is
 
 
 ## non-suid binary
-If you distribution ships the newer version but only installs a suid Xorg binary, Xpra should have installed the [../blob/master/scripts/xpra_Xdummy xpra_Xdummy] wrapper script and configured xpra.conf to use it instead of the regular Xorg binary. 
+If you distribution ships the newer version but only installs a suid Xorg binary, Xpra should have installed the [xpra_Xdummy](../../fs/bin/xpra_Xdummy) wrapper script and configured xpra.conf to use it instead of the regular Xorg binary. 
 
 This script executes `Xorg` via `ld-linux.so`, which takes care of stripping the suid bit.
