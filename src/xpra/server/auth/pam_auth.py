@@ -7,6 +7,7 @@ import os
 import sys
 
 from xpra.util import envbool
+from xpra.os_util import strtobytes
 from xpra.scripts.config import parse_bool
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
@@ -18,7 +19,9 @@ def check(username, password, service=PAM_AUTH_SERVICE, check_account=PAM_CHECK_
     log("pam check(%s, [..])", username)
     from xpra.server.pam import pam_session #@UnresolvedImport
     session = pam_session(username, password, service)
-    if not session.start(password):
+    b = strtobytes
+    session = pam_session(b(username), b(password), service)
+    if not session.start(b(password)):
         return False
     try:
         success = session.authenticate()
