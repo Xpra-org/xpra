@@ -39,7 +39,7 @@ from xpra.net.net_util import (
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name
-from xpra.platform.paths import get_app_dir
+from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.os_util import (
     register_SIGUSR_signals,
     get_frame_info, get_info_env, get_sysconfig_info,
@@ -156,7 +156,7 @@ class ServerCore:
         self.ssl_mode = None
         self._html = False
         self._www_dir = None
-        self._http_headers_dir = None
+        self._http_headers_dirs = ()
         self._aliases = {}
         self.socket_info = {}
         self.socket_options = {}
@@ -530,13 +530,19 @@ class ServerCore:
                 if os.path.exists(self._www_dir):
                     httplog("found html5 client in '%s'", self._www_dir)
                     break
-        self._http_headers_dir = os.path.abspath(os.path.join(self._www_dir, "../http-headers"))
         if not os.path.exists(self._www_dir) and self._html:
             httplog.error("Error: cannot find the html web root")
             httplog.error(" '%s' does not exist", self._www_dir)
             self._html = False
         if self._html:
             httplog.info("serving html content from '%s'", self._www_dir)
+            self._http_headers_dirs = []
+            for d in get_system_conf_dirs():
+                self._http_headers_dirs.append(os.path.join(d, "http-headers"))
+            if not POSIX or getuid()>0:
+                for d in get_user_conf_dirs():
+                    self._http_headers_dirs.append(os.path.join(d, "http-headers"))
+            self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
         if self._html and self._tcp_proxy:
             httplog.warn("Warning: the built in html server is enabled,")
             httplog.warn(" disabling the tcp-proxy option")
@@ -1324,7 +1330,7 @@ class ServerCore:
     def start_http(self, socktype, conn, socket_options, is_ssl, req_info, line1, frominfo):
         httplog("start_http(%s, %s, %s, %s, %s, %r, %s) www dir=%s, headers dir=%s",
                 socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
-                self._www_dir, self._http_headers_dir)
+                self._www_dir, self._http_headers_dirs)
         try:
             from xpra.net.websockets.handler import WebSocketRequestHandler
             sock = conn._socket
@@ -1337,7 +1343,7 @@ class ServerCore:
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
             WebSocketRequestHandler(sock, frominfo, new_websocket_client,
-                                    self._www_dir, self._http_headers_dir, scripts)
+                                    self._www_dir, self._http_headers_dirs, scripts)
             return
         except (IOError, ValueError) as e:
             httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)
@@ -2018,7 +2024,7 @@ class ServerCore:
                    "www"    : {
                        ""                   : self._html,
                        "dir"                : self._www_dir or "",
-                       "http-headers-dir"   : self._http_headers_dir or "",
+                       "http-headers-dirs"   : self._http_headers_dirs or "",
                        },
                    "mdns"           : self.mdns,
                    })

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -1733,15 +1733,15 @@ toggle_modules(WIN32, "xpra/scripts/win32_service")
 if data_ENABLED:
     add_data_files(share_xpra,                      ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
-    add_data_files("%s/http-headers" % share_xpra,   glob.glob("fs/share/xpra/http-headers/*"))
     ICONS = glob.glob("fs/share/icons/*")
     if WIN32:
         ICONS += glob.glob("fs/share/icons/*ico")
     add_data_files("%s/icons" % share_xpra,          ICONS)
-
-    add_data_files("%s/content-type" % share_xpra,   glob.glob("fs/share/xpra/content-type/*"))
-    add_data_files("%s/content-categories" % share_xpra, glob.glob("fs/share/xpra/content-categories/*"))
     add_data_files("%s/css" % share_xpra,            glob.glob("fs/share/xpra/css/*"))
+
+    add_data_files("/etc/xpra/http-headers",         glob.glob("fs/share/xpra/http-headers/*"))
+    add_data_files("/etc/xpra/content-type",         glob.glob("fs/share/xpra/content-type/*"))
+    add_data_files("/etc/xpra/content-categories",   glob.glob("fs/share/xpra/content-categories/*"))
 
 
 if WIN32 or OSX:

@@ -62,9 +62,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def __init__(self, sock, addr,
                  web_root="/usr/share/xpra/www/",
-                 http_headers_dir="/usr/share/xpra/http-headers", script_paths=None):
+                 http_headers_dirs=("/etc/xpra/http-headers",), script_paths=None):
         self.web_root = web_root
-        self.http_headers_dir = http_headers_dir
+        self.http_headers_dirs = http_headers_dirs
         self.script_paths = script_paths or {}
         server = AdHocStruct()
         server.logger = log
@@ -141,35 +141,43 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         BaseHTTPRequestHandler.end_headers(self)
 
     def get_headers(self):
-        return self.may_reload_headers(self.http_headers_dir)
+        return self.may_reload_headers(self.http_headers_dirs)
 
     @classmethod
-    def may_reload_headers(cls, http_headers_dir):
-        if not os.path.exists(http_headers_dir) or not os.path.isdir(http_headers_dir):
-            cls.http_headers_cache[http_headers_dir] = {}
-            return {}
-        mtime = os.path.getmtime(http_headers_dir)
-        log("may_reload_headers() http headers time=%s, mtime=%s", cls.http_headers_time, mtime)
-        if mtime<=cls.http_headers_time.get(http_headers_dir, -1):
-            #no change
-            return cls.http_headers_cache.get(http_headers_dir, {})
+    def may_reload_headers(cls, http_headers_dirs):
+        if cls.http_headers_cache:
+            #do we need to refresh the cache?
+            mtimes = {}
+            for d in http_headers_dirs:
+                if os.path.exists(d) and os.path.isdir(d):
+                    mtime = os.path.getmtime(d)
+                    if mtime>cls.http_headers_time.get(d, -1):
+                        mtimes[d] = mtime
+            if not mtimes:
+                return cls.http_headers_cache
+            log("headers directories have changed: %s", mtimes)
         headers = {}
-        for f in sorted(os.listdir(http_headers_dir)):
-            header_file = os.path.join(http_headers_dir, f)
-            if os.path.isfile(header_file):
+        for d in http_headers_dirs:
+            if not os.path.exists(d) or not os.path.isdir(d):
+                continue
+            mtime = os.path.getmtime(d)
+            for f in sorted(os.listdir(d)):
+                header_file = os.path.join(d, f)
+                if not os.path.isfile(header_file):
+                    continue
                 log("may_reload_headers() loading from '%s'", header_file)
                 with open(header_file, "r") as f:
                     for line in f:
                         sline = line.strip().rstrip('\r\n').strip()
-                        if sline.startswith("#") or sline=='':
+                        if sline.startswith("#") or not sline:
                             continue
                         parts = sline.split("=", 1)
                         if len(parts)!=2:
                             continue
                         headers[parts[0]] = parts[1]
+            cls.http_headers_time[d] = mtime
         log("may_reload_headers() headers=%s, mtime=%s", headers, mtime)
-        cls.http_headers_cache[http_headers_dir] = headers
-        cls.http_headers_time[http_headers_dir] = mtime
+        cls.http_headers_cache = headers
         return headers
 
 

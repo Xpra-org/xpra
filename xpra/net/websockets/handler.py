@@ -24,7 +24,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
     def __init__(self, sock, addr, new_websocket_client,
                  web_root="/usr/share/xpra/www/",
-                 http_headers_dir="/usr/share/xpra/http-headers", script_paths=None):
+                 http_headers_dir="/etc/xpra/http-headers", script_paths=None):
         self.new_websocket_client = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         super().__init__(sock, addr, web_root, http_headers_dir, script_paths)

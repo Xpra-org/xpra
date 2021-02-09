@@ -373,9 +373,6 @@ rm -rf $RPM_BUILD_ROOT
 /lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
-%{_datadir}/xpra/content-type
-%{_datadir}/xpra/content-categories
-%{_datadir}/xpra/http-headers
 %{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
 %{_libexecdir}/xpra/xdg-open
@@ -397,6 +394,9 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/55_server_x11.conf
 %config %{_sysconfdir}/xpra/conf.d/60_server.conf
 %config %{_sysconfdir}/xpra/conf.d/65_proxy.conf
+%config %{_sysconfdir}/xpra/content-type/*
+%config %{_sysconfdir}/xpra/content-categories/*
+%config %{_sysconfdir}/xpra/http-headers/*
 %if 0%{?with_selinux}
 %{_datadir}/selinux/*/*.pp
 %endif
@@ -441,7 +441,7 @@ export XPRA_TEST_DEBUG=1
 %endif
 
 %if 0%{?run_tests}
-pushd xpra-%{version}/unittests
+pushd xpra-%{version}/tests/unittests
 PYTHONPATH="%{python3_sitearch}:%{buildroot}%{python3_sitearch}:`pwd`" \
 PATH="`pwd`/../scripts/:$PATH" \
 XPRA_COMMAND="`pwd`/../scripts/xpra" \

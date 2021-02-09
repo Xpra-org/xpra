@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,8 +8,8 @@ import re
 import os.path
 
 from xpra.util import ellipsizer
-from xpra.os_util import load_binary_file, OSX, POSIX, LINUX
-from xpra.platform.paths import get_app_dir, get_user_conf_dirs
+from xpra.os_util import load_binary_file, getuid, OSX, POSIX, LINUX
+from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
 
 log = Logger("window", "util")
@@ -41,11 +41,11 @@ def load_content_type_defs() -> dict:
     global content_type_defs
     if content_type_defs is None:
         content_type_defs = {}
-        content_type_dir = os.path.join(get_app_dir(), "content-type")
-        log("load_content_type_defs() content_type_dir=%s", content_type_dir)
-        load_content_type_dir(content_type_dir)
-        for d in get_user_conf_dirs():
-            load_content_type_dir(d)
+        for d in get_system_conf_dirs():
+            load_content_type_dir(os.path.join(d, "content-type"))
+        if not POSIX or getuid()>0:
+            for d in get_user_conf_dirs():
+                load_content_type_dir(os.path.join(d, "content-type"))
         for e in CONTENT_TYPE_DEFS.split(","):
             if not process_content_type_entry(e):
                 log.warn(" invalid entry in environment variable")
@@ -140,14 +140,24 @@ def guess_content_type_from_defs(window) -> str:
             for regex, match_data in defs.items():
                 if regex.search(str(value)):
                     regex_str, content_type = match_data
-                    log("guess_content_type(%s) found match: property=%s, regex=%s, content-type=%s", window, prop_name, regex_str, content_type)
+                    log("guess_content_type(%s) found match: property=%s, regex=%s, content-type=%s",
+                        window, prop_name, regex_str, content_type)
                     return content_type
     return None
 
 def load_categories_to_type():
-    d = os.path.join(get_app_dir(), "content-categories")
+    categories_to_type = {}
+    for d in get_system_conf_dirs():
+        v = load_content_categories_dir(os.path.join(d, "content-categories"))
+        categories_to_type.update(v)
+    if not POSIX or getuid()>0:
+        for d in get_user_conf_dirs():
+            load_content_categories_dir(os.path.join(d, "content-categories"))
+            categories_to_type.update(v)
+    return categories_to_type
+def load_content_categories_dir(d):
     if not os.path.exists(d) or not os.path.isdir(d):
-        log("load_categories_to_type() directory '%s' not found", d)
+        log("load_content_categories_dir(%s) directory not found", d)
         return {}
     categories_to_type = {}
     for f in sorted(os.listdir(d)):
@@ -160,7 +170,7 @@ def load_categories_to_type():
                     log("load_content_type_file(%s)", cc_file, exc_info=True)
                     log.error("Error loading content-type data from '%s'", cc_file)
                     log.error(" %s", e)
-    log("load_categories_to_type()=%s", categories_to_type)
+    log("load_categories_to_type(%s)=%s", d, categories_to_type)
     return categories_to_type
 def load_content_categories_file(cc_file):
     d = {}
@@ -169,7 +179,7 @@ def load_content_categories_file(cc_file):
         for line in f:
             l += 1
             line = line.rstrip("\n\r")
-            if line.startswith("#") or not (line.strip()):
+            if line.startswith("#") or not line.strip():
                 continue
             parts = line.rsplit(":", 1)
             #ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
