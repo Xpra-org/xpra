@@ -10,9 +10,10 @@ printing = %(printing)s
 lpadmin = /usr/sbin/lpadmin
 
 # Add printer options
+#add-printer-options = -u allow:all
+add-printer-options = -u allow:$USER
 add-printer-options = -E
 add-printer-options = -o printer-is-shared=false
-add-printer-options = -u allow:$USER
 
 # To query printer definitions:
 #lpinfo = lpinfo
