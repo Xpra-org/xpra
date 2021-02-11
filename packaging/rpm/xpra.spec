@@ -72,6 +72,7 @@ Group:				Networking
 BuildArch:			noarch
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 2.1
+BuildRequires:		pandoc
 BuildRequires:		libfakeXinerama
 %description common
 This package contains the files which are shared between all the xpra packages.
@@ -343,6 +344,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*
+%{_docdir}/xpra
 %{_datadir}/metainfo/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %{_datadir}/icons/xpra-mdns.png

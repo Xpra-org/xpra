@@ -34,55 +34,6 @@ from xpra.os_util import (
 #*******************************************************************************
 print(" ".join(sys.argv))
 
-
-def convert_doc(fsrc, fdst, fmt="html", force=False):
-    bsrc = os.path.basename(fsrc)
-    bdst = os.path.basename(fdst)
-    if not force and not should_rebuild(fsrc, fdst):
-        return
-    print("  %-20s -> %s" % (bsrc, bdst))
-    cmd = ["pandoc", "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
-    if fmt=="html":
-        cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
-    r = subprocess.Popen(cmd).wait(30)
-    assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
-
-def convert_doc_dir(src, dst, fmt="html", force=False):
-    print("%-20s -> %s" % (src, dst))
-    if not os.path.exists(dst):
-        os.makedirs(dst, mode=0o755)
-    for x in os.listdir(src):
-        fsrc = os.path.join(src, x)
-        if os.path.isdir(fsrc):
-            fdst = os.path.join(dst, x)
-            convert_doc_dir(fsrc, fdst, fmt, force)
-        elif fsrc.endswith(".md"):
-            fdst = os.path.join(dst, x.replace("README", "index")[:-3]+"."+fmt)
-            convert_doc(fsrc, fdst, fmt, force)
-        else:
-            print("ignoring '%s'" % (f,))
-
-def convert_docs(fmt="html"):
-    paths = [x for x in sys.argv[2:] if not x.startswith("--")]
-    if paths:
-        for x in paths:
-            convert_doc(x, "build/%s" % x)
-    else:
-        convert_doc_dir("docs", "build/docs")
-
-
-if "doc" in sys.argv:
-    convert_docs("html")
-    sys.exit(0)
-
-if "pdf-doc" in sys.argv:
-    convert_docs("pdf")
-    sys.exit(0)
-
-if "unittests" in sys.argv:
-    os.execv("./tests/unittests/run", ["run"])
-
-
 #*******************************************************************************
 # build options, these may get modified further down..
 #
@@ -380,6 +331,70 @@ if install is None and WIN32:
 if share_xpra is None:
     share_xpra = os.path.join("share", "xpra")
 
+
+
+def should_rebuild(src_file, bin_file):
+    if not os.path.exists(bin_file):
+        return "no file"
+    if rebuild_ENABLED:
+        if os.path.getctime(bin_file)<os.path.getctime(src_file):
+            return "binary file out of date"
+        if os.path.getctime(bin_file)<os.path.getctime(__file__):
+            return "newer build file"
+    return None
+
+
+def convert_doc(fsrc, fdst, fmt="html", force=False):
+    bsrc = os.path.basename(fsrc)
+    bdst = os.path.basename(fdst)
+    if not force and not should_rebuild(fsrc, fdst):
+        return
+    print("  %-20s -> %s" % (bsrc, bdst))
+    cmd = ["pandoc", "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
+    if fmt=="html":
+        cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
+    r = subprocess.Popen(cmd).wait(30)
+    assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
+
+def convert_doc_dir(src, dst, fmt="html", force=False):
+    print("%-20s -> %s" % (src, dst))
+    if not os.path.exists(dst):
+        os.makedirs(dst, mode=0o755)
+    for x in os.listdir(src):
+        fsrc = os.path.join(src, x)
+        if os.path.isdir(fsrc):
+            fdst = os.path.join(dst, x)
+            convert_doc_dir(fsrc, fdst, fmt, force)
+        elif fsrc.endswith(".md"):
+            fdst = os.path.join(dst, x.replace("README", "index")[:-3]+"."+fmt)
+            convert_doc(fsrc, fdst, fmt, force)
+        else:
+            print("ignoring '%s'" % (f,))
+
+def convert_docs(fmt="html"):
+    paths = [x for x in sys.argv[2:] if not x.startswith("--")]
+    if len(paths)==1 and os.path.isdir(paths[0]):
+        convert_doc_dir("docs", paths[0])
+    elif paths:
+        for x in paths:
+            convert_doc(x, "build/%s" % x)
+    else:
+        convert_doc_dir("docs", "build/docs")
+
+
+if "doc" in sys.argv:
+    convert_docs("html")
+    sys.exit(0)
+
+if "pdf-doc" in sys.argv:
+    convert_docs("pdf")
+    sys.exit(0)
+
+if "unittests" in sys.argv:
+    os.execv("./tests/unittests/run", ["run"])
+
+
+
 #*******************************************************************************
 # default sets:
 
@@ -592,16 +607,6 @@ def get_gcc_version():
                     break
     return GCC_VERSION
 
-
-def should_rebuild(src_file, bin_file):
-    if not os.path.exists(bin_file):
-        return "no file"
-    if rebuild_ENABLED:
-        if os.path.getctime(bin_file)<os.path.getctime(src_file):
-            return "binary file out of date"
-        if os.path.getctime(bin_file)<os.path.getctime(__file__):
-            return "newer build file"
-    return None
 
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
@@ -1003,7 +1008,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     clean()
 
 def add_build_info(*args):
-    cmd = ["./fs/bin/add_build_info.py"]+list(args)
+    cmd = ["python3", "./fs/bin/add_build_info.py"]+list(args)
     r = subprocess.Popen(cmd).wait(30)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
@@ -1621,7 +1626,8 @@ else:
                 copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
             if docs_ENABLED:
-                convert_doc_dir("./docs", "/usr/share/xpra/doc")
+                doc_dir = "%s/share/doc/xpra" % self.install_dir
+                convert_doc_dir("./docs", doc_dir)
 
     # add build_conf to build step
     cmdclass.update({

@@ -28,6 +28,7 @@ Build-Depends: debhelper (>= 8)
               ,dh-systemd
               ,libsystemd-dev
               ,libpam-dev
+              ,pandoc
 Standards-Version: 3.9.3
 Homepage: https://xpra.org/
 Vcs-Svn: https://xpra.org/svn/Xpra/

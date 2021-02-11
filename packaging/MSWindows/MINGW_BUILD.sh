@@ -13,6 +13,7 @@ DO_INSTALLER=${DO_INSTALLER:-1}
 DO_TESTS=${DO_TESTS:-1}
 DO_VERPATCH=${DO_VERPATCH:-1}
 DO_SERVICE=${DO_SERVICE:-1}
+DO_DOC=${DO_DOC:-1}
 CLIENT_ONLY=${CLIENT_ONLY:-0}
 RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
@@ -44,10 +45,10 @@ fi
 PROGRAMFILES_X86="C:\\Program Files (x86)"
 
 if [ "${CLIENT_ONLY}" == "1" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-html5 --without-rfb"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-rfb"
 else
 	# Make sure we have the HTML5 client
-	if [ ! -d "html5" ]; then
+	if [ ! -d "xpra-html5" ]; then
 		echo "html5 client not found"
 		echo " perhaps run: 'git clone https://github.com/Xpra-org/xpra-html5'"
 		exit 1
@@ -276,6 +277,10 @@ if [ "$?" != "0" ]; then
 	tail -n 20 "${CX_FREEZE_LOG}"
 	exit 1
 fi
+if [ "${DO_DOC}" == "1" ]; then
+	${PYTHON} ./setup.py doc ${DIST}/doc
+fi
+
 #fix case sensitive mess:
 mv ${DIST}/lib/girepository-1.0/Glib-2.0.typelib ${DIST}/lib/girepository-1.0/GLib-2.0.typelib.tmp
 mv ${DIST}/lib/girepository-1.0/GLib-2.0.typelib.tmp ${DIST}/lib/girepository-1.0/GLib-2.0.typelib
@@ -375,11 +380,11 @@ for itheme in `ls dist/share/icons/`; do
 done
 
 echo "* Generating HTML Manual Page"
-groff.exe -mandoc -Thtml < man/xpra.1 > ${DIST}/manual.html
+groff.exe -mandoc -Thtml < ./fs/share/man/man1/xpra.1 > ${DIST}/manual.html
 
 if [ "${CLIENT_ONLY}" != "1" ]; then
 	echo "* Installing the HTML5 client"
-	pushd html5
+	pushd "xpra-html5"
 	python3 ./setup.py install ../${DIST}/www/
 	popd
 fi
