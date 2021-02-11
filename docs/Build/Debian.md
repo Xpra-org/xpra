@@ -95,3 +95,5 @@ ln -sf ./packaging/debian .
 debuild -us -uc -b
 ```
 This builds fresh packages from git master. You can also use other branches, tags or download a [source snapshot](https://xpra.org/src/) instead.
+
+If you do not have [CUDA](https://developer.nvidia.com/cuda-downloads) installed, the build will fail until you remove `usr/share/xpra/cuda/*` from [xpra.install](../../packaging/debian/xpra.install)
