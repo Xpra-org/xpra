@@ -5,7 +5,8 @@ dnf install gcc gcc-c++ \
             python3-devel python3-Cython \
             python3-gobject pygobject3-devel python3-cairo-devel \
             gtk3-devel gobject-introspection-devel \
-            redhat-rpm-config
+            redhat-rpm-config \
+            pandoc
 ```
 You may also refer to the more generic list of [dependencies](./Dependencies.md)
 

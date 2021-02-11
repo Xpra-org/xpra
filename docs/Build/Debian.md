@@ -10,7 +10,8 @@ For general information, see [building](./README.md).
 ```shell
 apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev \
                 libxkbfile-dev \
-	  	python-all-dev
+                python-all-dev \
+                pandoc
 ```
 GTK3 for the server and GUI client:
 ```shell
@@ -84,7 +85,7 @@ apt-get install openssh-client sshpass python3-paramiko
 # DEB Packaging
 Install the packaging tools
 ```shell
-apt-get install devscripts build-essential lintian debhelper
+apt-get install devscripts build-essential lintian debhelper pandoc
 ```
 
 Build DEBs
