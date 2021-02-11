@@ -1629,6 +1629,12 @@ else:
                 doc_dir = "%s/share/doc/xpra" % self.install_dir
                 convert_doc_dir("./docs", doc_dir)
 
+            if data_ENABLED:
+                conf_dir = get_conf_dir(self.install_dir, False)
+                add_data_files("%s/http-headers" % conf_dir,        glob.glob("fs/share/xpra/http-headers/*"))
+                add_data_files("%s/content-type" % conf_dir,        glob.glob("fs/share/xpra/content-type/*"))
+                add_data_files("%s/content-categories" % conf_dir,  glob.glob("fs/share/xpra/content-categories/*"))
+
     # add build_conf to build step
     cmdclass.update({
              'build'        : build_override,
@@ -1744,10 +1750,6 @@ if data_ENABLED:
         ICONS += glob.glob("fs/share/icons/*ico")
     add_data_files("%s/icons" % share_xpra,          ICONS)
     add_data_files("%s/css" % share_xpra,            glob.glob("fs/share/xpra/css/*"))
-
-    add_data_files("/etc/xpra/http-headers",         glob.glob("fs/share/xpra/http-headers/*"))
-    add_data_files("/etc/xpra/content-type",         glob.glob("fs/share/xpra/content-type/*"))
-    add_data_files("/etc/xpra/content-categories",   glob.glob("fs/share/xpra/content-categories/*"))
 
 
 if WIN32 or OSX:
