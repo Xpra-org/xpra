@@ -138,7 +138,8 @@ class ServerTestUtil(ProcessTestUtil):
                 break
             time.sleep(1)
         if r!=0:
-            self.show_proc_error(version, "version check failed for %s, returned %s" % (display, r))
+            self.show_proc_error(version, "version check failed for %s, returned %s" % (
+                display, EXIT_STR.get(r, r)))
         return server_proc
 
     def stop_server(self, server_proc, subcommand, *connect_args):
