@@ -1488,6 +1488,11 @@ if WIN32:
                 if not isinstance(e, WindowsError) or ("already exists" not in str(e)): #@UndefinedVariable
                     raise
 
+    if data_ENABLED:
+        add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
+        for d in ("http-headers", "content-type", "content-categories"):
+            add_data_files("etc/xpra/%s" % d, glob.glob("fs/etc/%s/*" % d))
+
         add_data_files('', glob.glob("packaging/MSWindows/bundle-extra/*"))
 
     #END OF win32
@@ -1551,6 +1556,7 @@ else:
             build_xpra_conf(root_prefix)
 
             def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):
+                print("copytodir%s", (src, dst_dir, dst_name, chmod, subs))
                 #convert absolute paths:
                 if dst_dir.startswith("/"):
                     dst_dir = root_prefix+dst_dir
@@ -1572,6 +1578,11 @@ else:
                 if chmod:
                     print("chmod(%s, %s)" % (dst_file, oct(chmod)))
                     os.chmod(dst_file, chmod)
+
+            def dirtodir(src_dir, dst_dir):
+                print("dirtodir(%s, %s)" % (src_dir, dst_dir))
+                for f in os.listdir(src_dir):
+                    copytodir(os.path.join(src_dir, f), dst_dir)
 
             if printing_ENABLED and POSIX:
                 #install "/usr/lib/cups/backend" with 0700 permissions:
@@ -1630,10 +1641,8 @@ else:
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
-                conf_dir = get_conf_dir(self.install_dir, False)
-                add_data_files("%s/http-headers" % conf_dir,        glob.glob("fs/share/xpra/http-headers/*"))
-                add_data_files("%s/content-type" % conf_dir,        glob.glob("fs/share/xpra/content-type/*"))
-                add_data_files("%s/content-categories" % conf_dir,  glob.glob("fs/share/xpra/content-categories/*"))
+                for d in ("http-headers", "content-type", "content-categories"):
+                    dirtodir("fs/etc/xpra/%s" % d, "/etc/xpra/%s" % d)
 
     # add build_conf to build step
     cmdclass.update({
