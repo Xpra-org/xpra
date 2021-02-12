@@ -285,12 +285,24 @@ def get_vcs_props(warn=True):
             }
     proc = subprocess.Popen("git branch --show-current", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     out, _ = proc.communicate()
+    branch = None
     if proc.returncode==0:
         branch = out.decode("utf-8").splitlines()[0]
-        props["BRANCH"] = branch
     else:
         print("could not get branch information with 'git branch --show-current'")
-        branch = None
+        print("trying 'git branch'")
+        proc = subprocess.Popen("git branch", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        out, _ = proc.communicate()
+        if proc.returncode!=0:
+            print(" also failed!")
+            print("branch is unknown")
+        else:
+            for line in out.decode("utf-8").splitlines():
+                if line.startswith("* "):
+                    branch = line.split(" ")[1]
+                    break
+    if branch:
+        props["BRANCH"] = branch
 
     #use the number of changes since the last tag:
     proc = subprocess.Popen("git describe --always --tags", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
