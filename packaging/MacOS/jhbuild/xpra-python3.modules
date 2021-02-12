@@ -117,9 +117,9 @@
 
 	<distutils id="python3-cffi" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/cb/ae/380e33d621ae301770358eb11a896a34c34f30db188847a561e8e39ee866/cffi-1.14.3.tar.gz"
-			hash="sha256:f92f789e4f9241cd262ad7a555ca2c648a98178a953af117ef7fad46aa1d5591"
-			version="1.14.3"/>
+			module="/packages/a8/20/025f59f929bbcaa579704f443a438135918484fffaacfaddba776b374563/cffi-1.14.5.tar.gz"
+			hash="sha256:fd78e5fee591709f32ef6edb9a015b4aa1a5022598e36227500c8f4e02328d9c"
+			version="1.14.5"/>
 		<dependencies>
 	        <dep package="libffi"/>
 			<dep package="python3"/>
