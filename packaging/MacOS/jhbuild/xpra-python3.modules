@@ -735,9 +735,9 @@
 
 	<distutils id="python3-yaml" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/3d/d9/ea9816aea31beeadccd03f1f8b625ecf8f645bd66744484d162d84803ce5/PyYAML-5.3.tar.gz"
-			hash="sha256:e9f45bd5b92c7974e59bcd2dcc8631a6b6cc380a904725fce7bc08872e691615"
-			version="5.3"/>
+			module="/packages/a0/a4/d63f2d7597e1a4b55aa3b4d6c5b029991d3b824b5bd331af8d4ab1ed687d/PyYAML-5.4.1.tar.gz"
+			hash="sha256:607774cbba28732bfa802b54baa7484215f530991055bb562efbed5b2f20a45e"
+			version="5.4.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
