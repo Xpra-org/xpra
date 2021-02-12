@@ -54,7 +54,8 @@ echo "**************************************************************************
 echo "Building and installing locally"
 pushd ../../
 
-${PYTHON} "./fs/bin/add_build_info.py"
+rm -f xpra/src_info.py xpra/build_info.py
+${PYTHON} "./fs/bin/add_build_info.py" "src" "build"
 rm -fr build/* dist/*
 ${PYTHON} ./setup.py clean
 INSTALL_LOG=`pwd`/install.log
