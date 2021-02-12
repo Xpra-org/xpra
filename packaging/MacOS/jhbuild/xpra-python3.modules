@@ -220,9 +220,9 @@
 
 	<distutils id="python3-pillow" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/2b/06/93bf1626ef36815010e971a5ce90f49919d84ab5d2fa310329f843a74bc1/Pillow-8.0.1.tar.gz"
-			hash="sha256:11c5c6e9b02c9dac08af04f093eb5a2f84857df70a7d4a6a6ad461aca803fb9e"
-			version="8.0.1"/>
+			module="/packages/73/59/3192bb3bc554ccbd678bdb32993928cb566dccf32f65dac65ac7e89eb311/Pillow-8.1.0.tar.gz"
+			hash="sha256:887668e792b7edbfb1d3c9d8b5d8c859269a0f0eba4dda562adb95500f60dbba"
+			version="8.1.0"/>
 		<dependencies>
 			<dep package="python3"/>
 			<dep package="libwebp"/>
