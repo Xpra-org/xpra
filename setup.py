@@ -1716,7 +1716,7 @@ else:
         #needed by python-lz4:
         add_modules("distutils")
         py2app_options = {
-            'iconfile'          : '../osx/xpra.icns',
+            'iconfile'          : './fs/share/icons/xpra.icns',
             'plist'             : Plist,
             'site_packages'     : False,
             'argv_emulation'    : True,
@@ -1754,9 +1754,11 @@ toggle_modules(WIN32, "xpra/scripts/win32_service")
 if data_ENABLED:
     add_data_files(share_xpra,                      ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
-    ICONS = glob.glob("fs/share/icons/*")
+    ICONS = glob.glob("fs/share/icons/*.png")
+    if OSX:
+        ICONS += glob.glob("fs/share/icons/*.icns")
     if WIN32:
-        ICONS += glob.glob("fs/share/icons/*ico")
+        ICONS += glob.glob("fs/share/icons/*.ico")
     add_data_files("%s/icons" % share_xpra,          ICONS)
     add_data_files("%s/css" % share_xpra,            glob.glob("fs/share/xpra/css/*"))
 
