@@ -372,9 +372,9 @@
 
 	<distutils id="python3-test-runner" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/5b/82/1462f86e6c3600f2471d5f552fcc31e39f17717023df4bab712b4a9db1b3/pytest-runner-5.2.tar.gz"
-			hash="sha256:96c7e73ead7b93e388c5d614770d2bae6526efd997757d3543fe17b557a0942b"
-			version="5.2"/>
+			module="/packages/62/6d/681466a726a851faf4a175d0d73675cc19470a31be414e7f46fc776027e5/pytest-runner-5.3.0.tar.gz"
+			hash="sha256:ca3f58ff4957e8be6c54c55d575b235725cbbcf4dc0d5091c29c6444cfc8a5fe"
+			version="5.3.0"/>
 		<dependencies>
 			<dep package="python3"/>
 			<dep package="python3-setuptools-scm"/>
