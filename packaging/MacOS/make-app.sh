@@ -28,6 +28,11 @@ else
 		exit 1
 	fi
 fi
+pandoc -v >& /dev/null
+if [ "$?" != "0" ]; then
+	echo "pandoc not found, not building HTML documentation"
+	BUILD_ARGS="${BUILD_ARGS} --without-docs"
+fi
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RSCDIR="${CONTENTS_DIR}/Resources"
