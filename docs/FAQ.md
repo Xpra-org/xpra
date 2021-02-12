@@ -29,7 +29,7 @@ Make sure that no other tool is also doing clipboard synchronization. Avoid clip
 ### I use [RDP #696](https://github.com/Xpra-org/xpra/issues/696) or [x2go #735](https://github.com/Xpra-org/xpra/issues/735) and I have clipboard or other problems
 These tools will do their own clipboard synchronization which will definitely interfere with xpra's.\
 Try disabling one of the clipboard synchronization mechanisms, and if possible, do not layer remote desktop protocols on top of each other.
-* Where is the command output when I use `Xpra.exe`?
+### Where is the command output when I use `Xpra.exe`?
 `Xpra.exe` is a graphical application, the command output will go to a `Xpra.log` file found in `%APPDATA%\Xpra`.\
 Use `Xpra_cmd.exe` instead.
 ### How can I start `gpg-agent`, `dbus`, etc for each session?
