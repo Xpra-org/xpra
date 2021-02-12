@@ -149,6 +149,7 @@ class RootWindowModel:
                     icon_data = load_binary_file(icon_name)
                     assert icon_data
                     w, h = img.size
+                    img.close()
                     icon = (w, h, "png", icon_data)
                     icons = (icon,)
                     return icons
