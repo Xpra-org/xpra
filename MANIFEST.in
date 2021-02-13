@@ -17,6 +17,7 @@ recursive-include html5 *
 recursive-include fs *
 recursive-include docs *
 recursive-include tests *
+recursive-include packaging *
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
