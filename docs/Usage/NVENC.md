@@ -56,7 +56,7 @@ Or you can also use the environment variable:
 XPRA_NVENC_CLIENT_KEY="0A1B2C3D-4E5F-6071-8293-A4B5C6D7E8F9" xpra ...
 ```
 
-Newer SDK versions may not support keys, or just not the same set of keys, in which case the number of sessions will be limited when using consumer cards.
+Newer SDK versions may not support keys, or just not the same set of keys, in which case the number of sessions will be limited when using consumer cards unless you [patch the library](https://github.com/keylase/nvidia-patch).
 
 
 ## Building
