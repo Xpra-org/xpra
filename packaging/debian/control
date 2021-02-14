@@ -174,16 +174,3 @@ Description: tool to detach/reattach running X programs
  window.
  .
  This is the Python3 version (experimental).
-
-
-Package: xpra-html5
-Architecture: any
-Conflicts: xpra (<< 2.5)
-Depends:libjs-jquery
-        ,libjs-jquery-ui
-Recommends: gnome-backgrounds | mate-backgrounds
-Description: html5 xpra client
- This package can be used by the xpra server to provide an integrated
- HTML5 client, directly accessible via the server's builtin http server.
-
- 
