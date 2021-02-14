@@ -1,8 +1,8 @@
 # Table of Contents
-1. [About](./README.md#about)
-2. [Installation](./README.md#installation)
-3. [Usage](./README.md#usage)
-4. [Help](./README.md#help)
+1. [About](#about)
+2. [Installation](#installation)
+3. [Usage](#usage)
+4. [Help](#help)
 
 # About
 Xpra is known as _"screen for X"_ : its [seamless mode](./docs/Usage/Seamless.md) allows you to run X11 programs,
