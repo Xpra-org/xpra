@@ -1,7 +1,0 @@
-xserver-xorg-video-dummy-hwe-18.04 (1:0.3.8-3) UNRELEASED; urgency=low
-
-  * force rebuild
-
-xserver-xorg-video-dummy-hwe-18.04 (1:0.3.8-2) UNRELEASED; urgency=low
-
-  * rebuild package to upgrade the HWE version

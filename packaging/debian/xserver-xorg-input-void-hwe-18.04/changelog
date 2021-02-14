@@ -1,3 +1,0 @@
-xserver-xorg-video-void-hwe (1:1.4.1-2) UNRELEASED; urgency=low
-
-  * rebuild package to upgrade the HWE version
