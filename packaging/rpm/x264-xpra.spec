@@ -16,7 +16,7 @@ Source0:     https://xpra.org/src/x264-snapshot-%{version}-544c61f0-stable.tar.b
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 
-BuildRequires:	yasm
+BuildRequires:	nasm
 
 
 %if 0%{?fedora}%{?el8}
@@ -61,11 +61,6 @@ make %{?_smp_mflags}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
-
-# remove executable and bash completion:
-%if 0%{?fedora} || 0%{?rhel} >= 8
-rm %{buildroot}/usr/share/bash-completion/completions/x264
-%endif
 rm %{buildroot}/usr/bin/x264
 
 %post -p /sbin/ldconfig
