@@ -1,5 +1,3 @@
-%{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
-
 Name:           python3-uinput
 Version:        0.11.2
 Release:        5%{?dist}
