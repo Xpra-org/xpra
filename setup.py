@@ -1556,7 +1556,7 @@ else:
             build_xpra_conf(root_prefix)
 
             def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):
-                print("copytodir%s", (src, dst_dir, dst_name, chmod, subs))
+                #print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
                 #convert absolute paths:
                 if dst_dir.startswith("/"):
                     dst_dir = root_prefix+dst_dir
