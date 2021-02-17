@@ -1,8 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+%define _disable_source_fetch 0
 %define version 4.1
 
 %{!?__python3: %define __python3 python3}
@@ -269,6 +270,11 @@ This package contains the python3 xpra server.
 
 
 %prep
+#sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+#if [ "${sha256}" != "ffff" ]; then
+#	echo "invalid checksum for %{SOURCE0}"
+#	exit 1
+#fi 
 rm -rf $RPM_BUILD_DIR/xpra-%{version}
 xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 

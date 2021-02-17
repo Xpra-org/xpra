@@ -1,11 +1,19 @@
+#
+# spec file for our timestamp insertion element
+#
+# Copyright (c) 2021 Antoine Martin <antoine@xpra.org>
+#
+
+%define _disable_source_fetch 0
+
 Summary: GStreamer plugin for extracting monotonic timestamps
 Name: gstreamer1-plugin-timestamp
 Version: 0.1.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: LGPL
 Group: Applications/Multimedia
 
-Source: https://xpra.org/src/gst-plugin-timestamp-%{version}.tar.xz
+Source0: https://xpra.org/src/gst-plugin-timestamp-%{version}.tar.xz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires: gstreamer1-devel
@@ -20,6 +28,11 @@ BuildRequires: gcc
 This GStreamer plugin allows xpra to extract monotonic timestamps from the sound buffers.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "02f1226a930a19a8bfdbedd1fc57c53ad9bdbf708c6694c0c662d1b5c198d972" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -n gst-plugin-timestamp-%{version}
 
 %build
@@ -40,5 +53,8 @@ cp libgsttimestamp.so %{buildroot}%{_libdir}/gstreamer-1.0/
 %{_libdir}/gstreamer-1.0/libgsttimestamp.so
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> 0.1.0-2
+- verify source checksum
+
 * Thu Jun 01 2017 Antoine Martin <antoine@xpra.org> 0.1.0-1
 - Initial packaging

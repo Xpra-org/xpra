@@ -1,9 +1,10 @@
 %define _build_id_links none
+%define _disable_source_fetch 0
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.3.1
-Release:     4%{?dist}
+Release:     5%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -41,6 +42,11 @@ This package contains the development files for %{name}.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "ad009240d46e307b4e03a213a0f49c11b650e445b1f8be0dda2a9212b34d2ffb" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n %{real_name}-%{version}
 
 
@@ -173,6 +179,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> 4.3.1-5
+- verify source checksum
+
 * Sun Jan 10 2021 Antoine Martin <antoine@xpra.org> 4.3.1-4
 - force rebuild against updated libx264
 

@@ -1,7 +1,9 @@
+%define _disable_source_fetch 0
+
 Summary: Modular Assembler
 Name: yasm
 Version: 1.3.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 # See COPYING for the detail, there is quite a lot!
 License: BSD and (GPLv2+ or Artistic or LGPLv2+) and LGPLv2
 Group: Development/Languages
@@ -36,6 +38,11 @@ Install this package if you need to rebuild applications that use yasm.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "f708be0b7b8c59bc1dbe7134153cd2f31faeebaa8eec48676c10f972a1f13df3" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n yasm-%{version}
 
 
@@ -72,6 +79,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.3.0-2
+- verify source checksum
+
 * Mon Aug 18 2014 Antoine Martin <antoine@xpra.org> 1.3.0-1
 - Update to 1.3.0
 

@@ -1,12 +1,13 @@
 # Remove private provides from .so files in the python_sitearch directory
 %global __provides_exclude_from ^%{python3_sitearch}/.*\\.so$
 
+%define _disable_source_fetch 0
 #this spec file is for both Fedora and CentOS
 %global srcname PyOpenGL
 
 Name:           python3-pyopengl
 Version:        3.1.5
-Release:        1xpra1%{?dist}
+Release:        1xpra2%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -46,6 +47,16 @@ Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 3.x.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "4107ba0d0390da5766a08c242cf0cf3404c377ed293c5f6d701e457c57ba3424" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
+sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
+if [ "${sha256}" != "12e5518b0216a478527c7ce5ddce623c3d0517adeb87226da767772e8b7f2f06" ]; then
+	echo "invalid checksum for %{SOURCE1}"
+	exit 1
+fi 
 %setup -q -c -n %{srcname}-%{version} -T -a0 -a1
 
 
@@ -88,6 +99,9 @@ popd
 
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra2
+- verify source checksum
+
 * Wed Jan 22 2020 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra1
 - new upstream release
 

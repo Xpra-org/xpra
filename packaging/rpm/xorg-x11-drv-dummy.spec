@@ -3,12 +3,13 @@
 %global driverdir %{moduledir}/drivers
 %{!?make_build: %global make_build make}
 
+%define _disable_source_fetch 0
 %undefine _hardened_build
 
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.3.8
-Release:   1.xpra2%{?dist}
+Release:   1.xpra3%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
@@ -30,6 +31,11 @@ Requires: Xorg %(xserver-sdk-abi-requires videodrv)
 X.Org X11 dummy video driver.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "3712bb869307233491e4c570732d6073c0dc3d99adfdb9977396a3fdf84e95b9" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n %{tarball}-%{version}
 %patch2 -p1
 %patch3 -p1
@@ -54,6 +60,9 @@ find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 0.3.8-1.xpra3
+- verify source checksum
+
 * Fri Nov 16 2018 Antoine Martin <antoine@xpra.org> - 0.3.8-1.xpra2
 - rebuild
 

@@ -1,14 +1,10 @@
+%define _disable_source_fetch 0
 %define _build_id_links none
 
 Name:	     x264-xpra
 Version:     20210216
-%if 0%{?beta} < 1
-Release:     1%{?dist}
-%else
-Release:     0%{?dist}
-%endif
+Release:     2%{?dist}
 Summary:     x264 library for xpra
-
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.videolan.org/developers/x264.html
@@ -43,6 +39,11 @@ This package contains the development files for %{name}.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "d6816a9d37c81b87f71c3c1fcf4d10d9cca59a812943241b2787b07497965513" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n x264-stable
 
 
@@ -61,6 +62,7 @@ make %{?_smp_mflags}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
+rm -f %{buildroot}/usr/share/bash-completion/completions/x264
 rm %{buildroot}/usr/bin/x264
 
 %post -p /sbin/ldconfig
@@ -83,5 +85,8 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
-* Sun Jan 10 2021 Antoine Martin <antoine@xpra.org> 20210110-1
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 20210110-2
+- verify source checksum
+
+* Sun Jan 10 2021 Antoine Martin <antoine@xpra.org> - 20210110-1
 - use a newer snapshot from git

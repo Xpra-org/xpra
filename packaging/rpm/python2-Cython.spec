@@ -1,15 +1,16 @@
 %{!?__python2: %global __python2 python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
+%define _disable_source_fetch 0
+
 Name:		python2-Cython
 Version:	0.29.21
-Release:	2%{?dist}
+Release:	3%{?dist}
 Summary:	A language for writing Python extension modules
-
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source:     https://files.pythonhosted.org/packages/79/36/69246177114d0b6cb7bd4f9aef177b434c0f4a767e05201b373e8c8d7092/Cython-%{version}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/6c/9f/f501ba9d178aeb1f5bf7da1ad5619b207c90ac235d9859961c11829d0160/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python2
 
@@ -25,6 +26,11 @@ This is a development version of Pyrex, a language
 for writing Python extension modules.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "e57acb89bd55943c8d8bf813763d20b9099cc7165c0f16b707631a7654be9cad" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n Cython-%{version}
 find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python2}|'
 
@@ -56,6 +62,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> 0.29.21-3
+- verify source checksum
+
 * Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 0.29.21-2
 - make it installable together with newer python3-Cython packages
 

@@ -3,7 +3,7 @@ Summary:	YUV conversion and scaling functionality library
 Version:	0
 Release:	0.35.20190401git4bd08cb%{?dist}
 License:	BSD
-Url:		https://chromium.googlesource.com/libyuv/libyuv
+URL:		https://chromium.googlesource.com/libyuv/libyuv
 VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
 ## git clone https://chromium.googlesource.com/libyuv/libyuv
 ## cd libyuv

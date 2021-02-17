@@ -1,22 +1,23 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
+%define _disable_source_fetch 0
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
 
 Name:           python3-pynvml
 Version:        11.450.51
-Release:        1
+Release:        2
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source:        	https://files.pythonhosted.org/packages/4c/e7/f6fef887708f601cda64c8fd48dcb80a0763cb6ee4eaf89939bdc165ce41/nvidia-ml-py-%{version}.tar.gz
+Source0:       	https://files.pythonhosted.org/packages/4c/e7/f6fef887708f601cda64c8fd48dcb80a0763cb6ee4eaf89939bdc165ce41/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
@@ -24,6 +25,11 @@ Provides:       python-pynvml
 Python Bindings for the NVIDIA Management Library
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "5aa6dd23a140b1ef2314eee5ca154a45397b03e68fd9ebc4f72005979f511c73" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n nvidia-ml-py-%{version}
 
 %build
@@ -44,6 +50,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 11.450.51-2
+- verify source checksum
+
 * Sat Feb 06 2021 Antoine Martin <antoine@xpra.org> - 11.450.51-1
 - new upstream release
 

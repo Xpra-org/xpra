@@ -1,8 +1,9 @@
+%define _disable_source_fetch 0
+
 Name:           python3-uinput
 Version:        0.11.2
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
-
 License:        GPLv3
 URL:            http://pypi.python.org/pypi/python-uinput/
 Source0:        https://pypi.python.org/packages/54/b7/be7d0e8bbbbd440fef31242974d92d4edd21eb95ed96078b18cf207c7ccb/python-uinput-0.11.2.tar.gz
@@ -22,6 +23,11 @@ which allows attaching userspace device drivers into kernel.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "99392b676c77b5795b86b7d75274db33fe754fd1e06fb3d58b167c797dc47f0c" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n python-uinput-%{version}
 
 # Use unversioned .so
@@ -47,6 +53,9 @@ chmod a-x examples/*
 
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 0.11.2-6
+- verify source checksum
+
 * Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 0.11.2-5
 - drop support for python2
 

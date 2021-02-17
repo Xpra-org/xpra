@@ -1,15 +1,15 @@
+%define _disable_source_fetch 0
+
 Name:           python3-pytools
 Version:        2020.4.4
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A collection of tools for python
-
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
 Source0:        https://files.pythonhosted.org/packages/16/ed/f4b298876b9b624150cc01830075f7cb0b9e09c1abfc46daef14811f3eed/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
-
 BuildArch:      noarch
 BuildRequires:  python3-devel python3-setuptools
 
@@ -32,6 +32,11 @@ Small tool functions such as ::
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "3645ed839cf4d79cb4bf030f37ddaeecd7fe5e2d6698438cc36c24a1d5168809" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -q -n pytools-%{version}
 
 
@@ -55,13 +60,16 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 2020.4.4-2
+- verify source checksum
+
 * Thu Jan 07 2021 Antoine Martin <antoine@xpra.org> - 2020.4.4-1
 - new upstream release
 
 * Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
 - drop support for python2
 
-* Sun May 20 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-1
+* Mon May 20 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-1
 - new upstream release
 
 * Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 2018.5.2-1

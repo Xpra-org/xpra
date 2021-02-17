@@ -8,19 +8,18 @@
 #this spec file is for Python 2.7 builds only
 #ie: Fedora and CentOS 8.x
 
+%define _disable_source_fetch 0
+
 Name:           python2-rencode
 Version:        1.0.6
-Release:        3.xpra1%{?dist}
+Release:        3.xpra2%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
 Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
-
 Patch0:         python-rencode-readdmissingpyx.patch
 Patch1:         python-rencode-nowheelreq.patch
 Patch2:         python-rencode-rename.patch
-
-
 BuildRequires:  python2-devel
 BuildRequires:  python2-Cython
 BuildRequires:  python2-pbr
@@ -32,6 +31,11 @@ many small elements, r-encodings take up significantly less space than
 b-encodings.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "0ed61111f053ea37511da86ca7aed2a3cfda6bdaa1f54a237c4b86eea52f0733" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
 %setup -qn rencode-%{version}
 %patch0 -p1
 %patch1 -p1
@@ -58,6 +62,9 @@ popd
 %doc COPYING README.md
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-3.xpra2
+- verify source checksum
+
 * Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-3.xpra1
 - python2 builds only
 
