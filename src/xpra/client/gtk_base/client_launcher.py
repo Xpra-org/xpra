@@ -39,8 +39,9 @@ from xpra.client.gtk_base.gtk_tray_menu_base import (
     )
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
-    connect_to, make_client, configure_network, is_local,
+    connect_to, make_client, is_local,
     add_ssh_args, parse_ssh_string, add_ssh_proxy_args,
+    configure_network, configure_env, configure_logging,
     )
 from xpra.platform.paths import get_icon_dir
 from xpra.platform import get_username
@@ -863,6 +864,9 @@ class ApplicationWindow:
         #so update the client now:
         def raise_exception(*args):
             raise Exception(*args)
+        configure_env(self.config.env)
+        configure_logging(self.config, "attach")
+        configure_network(self.config)
         self.client = make_client(raise_exception, self.config)
         self.client.init(self.config)
         self.client.username = username
