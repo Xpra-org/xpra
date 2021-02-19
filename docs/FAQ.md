@@ -2,11 +2,11 @@
 
 ## Installation
 ### Which version shall I be using?
-Always use the [latest released version](./Versions)
+Always use the [latest released version](https://github.com/Xpra-org/xpra/wiki/Versions)
 ### Should I use the version shipped with my Linux distribution?
-Emphatically [NO](./Distribution-Packages)
+Emphatically [NO](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages)
 ### Which versions are supported? Which ones are compatible with which versions? On which platforms?
-See [versions](./Versions) and [platforms](./Platforms)
+See [versions](https://github.com/Xpra-org/xpra/wiki/Versions) and [platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
 ### Why do I get a GPG signature warning when I try to install
 You probably forgot to import the GPG key before installing the package.\
 The key signature is: `c11c 0a4d f702 edf6 c04f 458c 18ad b31c f18a d6bb`.
@@ -20,9 +20,9 @@ On Debian you may have to delete the key (`apt-key -d`) before adding it again.
 
 ## Usage questions
 ### Where is xpra's system tray icon?
-Some desktop environments [make it impossible to show a system tray icon](./System-Tray#caveats).
+Some desktop environments [make it impossible to show a system tray icon](./Features/System-Tray.md#caveats).
 ### Why does Xpra use any CPU when the session is idle?
-[Audio forwarding](./Audio) will consume a fairly constant amount of CPU and bandwidth. Turn speaker forwarding off if you don't need it.\
+[Audio forwarding](./Features/Audio.md) will consume a fairly constant amount of CPU and bandwidth. Turn speaker forwarding off if you don't need it.\
 Some applications will also repaint their windows unnecessarily. If you don't use them, try minimizing their windows.
 ### Why does the clipboard keep flashing? Why is clipboard synchronization unreliable?
 Make sure that no other tool is also doing clipboard synchronization. Avoid clipboard managers at all cost.
@@ -57,7 +57,7 @@ Always start your applications with `xpra start --start=APP` and not `DISPLAY=:N
 
 ## Network
 ### How can I allow multiple users to connect through a single port?
-Use the [proxy server](./Proxy-Server).
+Use the [proxy server](./Usage/Proxy-Server.md).
 ### How can I use an SSH key with MS Windows clients?
 If your SSH key is not detected and used correctly by default, you may want to use `pageant`: [putty FAQ: How do I use public keys](http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#faq-options) and tell xpra to use putty: `--ssh=plink`.
 
@@ -77,11 +77,11 @@ The server tries to create a socket in the shared group directory `/run/xpra`. T
 * "`Failed to open the uinput device: Permission denied`" - you do not have the permissions required for opening the `/dev/uinput` device
 ### "`found an existing window manager on screen ...`"
 Xpra is a window manager, you cannot run two window managers on the same X11 display at the same time.\
-If you want to forward a whole desktop, including its window manager, see [desktop mode](./Start-Desktop), otherwise stop the other window manager.
+If you want to forward a whole desktop, including its window manager, see [desktop mode](./Usage/Start-Desktop.md), otherwise stop the other window manager.
 ### "`cannot register our notification forwarder ...`"
 The xpra server was started from a GUI session which already had a dbus instance and a notification daemon, notifications forwarding cannot be enabled. 
 ### "DPI set to NN x NN (wanted MM x MM), you may experience scaling problems, such as huge or small fonts, etc - to fix this issue, try the dpi switch, or use a patched Xorg dummy driver"
-The vfb command in use does not preserve DPI settings. You may want to switch to using a patched [Xdummy](./Xdummy).
+The vfb command in use does not preserve DPI settings. You may want to switch to using a patched [Xdummy](./Usage/Xdummy.md).
 ### "`xpra [errno 2] no such file or directory`" when connecting via ssh.
 Xpra is not installed on the remote host.
 ### X11 keyboard warnings: `Unsupported high keycode XXX for name <INNN> ignored`
