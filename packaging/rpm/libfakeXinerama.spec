@@ -17,6 +17,7 @@ Source0:        https://xpra.org/src/libfakeXinerama-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 BuildRequires:  gcc
+BuildRequires:  make
 BuildRequires:  libXinerama-devel
 BuildRequires:  libX11-devel
 %if 0%{?suse_version}

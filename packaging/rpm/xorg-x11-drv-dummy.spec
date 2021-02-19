@@ -21,6 +21,7 @@ Patch5:    0005-support-for-30-bit-depth-in-dummy-driver.patch
 
 ExcludeArch: s390 s390x
 
+BuildRequires: make
 BuildRequires: xorg-x11-server-devel >= 1.10.99.902
 BuildRequires: autoconf automake libtool
 
