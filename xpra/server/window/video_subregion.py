@@ -420,23 +420,27 @@ class VideoSubregion:
             #clamp it:
             if region.width<MIN_W or region.height<MIN_H:
                 #too small, ignore it:
-                return 0
+                score = 0
             #and make sure this does not end up much bigger than needed:
-            if ww*wh<(region.width*region.height):
-                return 0
+            elif ww*wh<(region.width*region.height):
+                score = 0
             incount, outcount = inoutcount(region, ignore_size)
             total = incount+outcount
             if total==0:
-                return 0
-            score = scoreinout(ww, wh, region, incount, outcount)
-            #discount score if the region contains areas that were not damaged:
-            #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
-            if d_ratio==0:
-                d_ratio = damaged_ratio(region)
-            score = int(score * math.sqrt(d_ratio))
-            children_boost = int(region in children_rects)*SUBWINDOW_REGION_BOOST
+                ipct = opct = score = 0
+            else:
+                ipct = 100*incount//total
+                opct = 100*outcount//total
+            if score is None:
+                score = scoreinout(ww, wh, region, incount, outcount)
+                #discount score if the region contains areas that were not damaged:
+                #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
+                if d_ratio==0:
+                    d_ratio = damaged_ratio(region)
+                score = int(score * math.sqrt(d_ratio))
+                children_boost = int(region in children_rects)*SUBWINDOW_REGION_BOOST
             sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, children_boost=%i, score=%2i",
-                  info, region, 100*incount//total, 100*outcount//total, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
+                  info, region, ipct, opct, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
             scores[region] = score
             return score
 
