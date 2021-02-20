@@ -586,7 +586,6 @@ def checkdirs(*dirs):
         if not os.path.exists(d) or not os.path.isdir(d):
             raise Exception("cannot find a directory which is required for building: '%s'" % d)
 
-PYGTK_PACKAGES = ["pygobject-2.0", "pygtk-2.0"]
 
 GCC_VERSION = []
 def get_gcc_version():
@@ -1657,7 +1656,6 @@ else:
         external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
         external_includes += ["kerberos", "future", "pyu2f", "paramiko", "nacl"]
         #OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
-        PYGTK_PACKAGES += ["gdk-2.0", "gtk+-2.0"]
         add_packages("xpra.platform.darwin")
         remove_packages("xpra.platform.win32", "xpra.platform.xposix")
         #to support GStreamer 1.x we need this:
@@ -1665,7 +1663,6 @@ else:
         modules.append("mimetypes")
         external_excludes.append("numpy")
     else:
-        PYGTK_PACKAGES += ["gdk-x11-2.0", "gtk+-x11-2.0"]
         add_packages("xpra.platform.xposix")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         if data_ENABLED:
