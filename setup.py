@@ -1752,7 +1752,7 @@ toggle_modules(WIN32, "xpra/scripts/win32_service")
 if data_ENABLED:
     add_data_files(share_xpra,                      ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
-    ICONS = glob.glob("fs/share/icons/*.png")
+    ICONS = glob.glob("fs/share/xpra/icons/*.png")
     if OSX:
         ICONS += glob.glob("fs/share/icons/*.icns")
     if WIN32:
