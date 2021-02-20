@@ -1,0 +1,9 @@
+cudaroot=/opt/cuda/
+libdir=${cudaroot}/targets/x86_64-linux/libstubs/
+includedir=${cudaroot}/targets/x86_64-linux/include
+
+Name: cuda
+Description: CUDA Driver Library
+Version: 11.2
+Libs: -L${libdir} -lcuda
+Cflags: -I${includedir}

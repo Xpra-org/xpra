@@ -1,0 +1,10 @@
+[xpra-local-build]
+name=Xpra Local Build $releasever - $basearch
+baseurl=file:///src/repo/$basearch
+enabled=1
+deltarpm=0
+metadata_expire=1
+repo_gpgcheck=0
+gpgcheck=0
+type=rpm
+skip_if_unavailable=False
