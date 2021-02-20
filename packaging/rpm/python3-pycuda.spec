@@ -29,6 +29,7 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-numpy
 BuildRequires:  boost-python3-devel
+BuildRequires:  libglvnd-devel
 BuildRequires:  cuda
 
 %description
@@ -50,20 +51,22 @@ fi
 %setup -q -n pycuda-%{version}
 
 %build
+CUDA=/opt/cuda
 %{__python3} ./configure.py \
 	--cuda-enable-gl \
-	--cuda-root=/usr/local/cuda \
+	--cuda-root=$CUDA \
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
-%{__python3} setup.py build
-make
+LDFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ CXXFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ %{__python3} setup.py build
+#make
 
 %install
-%{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
+CUDA=/opt/cuda
+LDFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ CXXFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
 
 %clean
 rm -rf %{buildroot}
