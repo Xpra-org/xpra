@@ -350,7 +350,8 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
     if not force and not should_rebuild(fsrc, fdst):
         return
     print("  %-20s -> %s" % (bsrc, bdst))
-    cmd = ["pandoc", "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
+    pandoc = os.environ.get("PANDOC", "pandoc")
+    cmd = [pandoc, "--from", "markdown", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html":
         cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
     r = subprocess.Popen(cmd).wait(30)

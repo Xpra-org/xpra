@@ -42,6 +42,24 @@ fi
 
 ################################################################################
 # get paths and compilation options:
+if [ "${DO_DOC}" == "1" ]; then
+	if [ -z "${PANDOC}" ]; then
+		PANDOC="pandoc"
+	fi
+	pandoc --version >& /dev/null
+	if [ "$?" != "0" ]; then
+		PANDOC="/c/Program Files/Pandoc/pandoc.exe"
+		"$PANDOC" --version >& /dev/null
+		if [ "$?" != "0" ]; then
+			echo "pandoc not found"
+			echo " either build with DO_DOC=0 or install pandoc"
+			echo " (you can set the 'PANDOC' environment variable to point to it)"
+			exit 1
+		fi
+	fi
+fi
+
+
 PROGRAMFILES_X86="C:\\Program Files (x86)"
 
 if [ "${CLIENT_ONLY}" == "1" ]; then
@@ -278,7 +296,8 @@ if [ "$?" != "0" ]; then
 	exit 1
 fi
 if [ "${DO_DOC}" == "1" ]; then
-	${PYTHON} ./setup.py doc ${DIST}/doc
+	mkdir ${DIST}/doc
+	PANDOC="${PANDOC}" ${PYTHON} ./setup.py doc ${DIST}/doc
 fi
 
 #fix case sensitive mess:
