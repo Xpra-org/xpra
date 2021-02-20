@@ -71,4 +71,4 @@ Its flexible [proxy server](./docs/Usage/Proxy-Server.md) can be used as a relay
 # Help
 Make sure to check the [FAQ](https://github.com/Xpra-org/xpra/blob/master/docs/FAQ.md), your question may already be answered there.  
 You can send your questions to the [mailing list](http://lists.devloop.org.uk/mailman/listinfo/shifter-users) or join us on the IRC channel: [#winswitch on irc.freenode.net](irc://irc.freenode.net/winswitch).  
-If you have hit a bug (sorry about that!), please see [reporting bugs](./Reporting-Bugs).
+If you have hit a bug (sorry about that!), please see [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs).
