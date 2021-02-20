@@ -525,6 +525,7 @@ class KeyboardConfig(KeyboardConfigBase):
             l(msg, *args)
         def klog(msg, *args):
             kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, group), *args)
+        rgroup = group
         #non-native: try harder to find matching keysym
         #first, try to honour shift state:
         lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
