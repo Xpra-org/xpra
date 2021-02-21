@@ -1,6 +1,6 @@
 ![Server-Connected](https://xpra.org/icons/server-connected.png)
 
-This feature refers to the ability of using an existing display server (an existing session, usually connected to a real physical display) and use xpra to access it remotely.
+This feature refers to the ability of using an existing display server (an existing desktop session, usually connected to a real physical display) and use xpra to access it remotely.
 
 It is supported on all platforms including MS Windows and Mac OS X, but not on Wayland.\
 It is not optimized on all platforms and may cause high CPU load on both the server and the client in some cases.
@@ -34,6 +34,7 @@ Notes:
 * this is insecure and does not cover [authentication](./Authentication.md) or [encryption](../Network/Encryption.md)
 * MS Windows and Mac OS X do not have X11 display names (`:0` in the example above), in this case you can simply omit the display argument
 * if there is only a single `$DISPLAY` active on the system, you do not need to specify it (no `:0`)
+* do not shadow an existing [seamless](../../docs/Usage/Seamless.md) or [desktop](../../docs/Usage/Start-Desktop.md) xpra session when you can just attach to it
 
 
 # Relevant Tickets
