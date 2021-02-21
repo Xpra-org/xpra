@@ -37,7 +37,7 @@ while read p; do
 			echo " * missing ${dep}"
 			MISSING="${MISSING} ${dep}"
 		else
-			echo " * found	 ${dep}"
+			echo " * found   ${dep}"
 		fi
 	done < <(rpmspec -q --rpms ${SPECFILE} 2> /dev/null)
 	if [ ! -z "${MISSING}" ]; then
