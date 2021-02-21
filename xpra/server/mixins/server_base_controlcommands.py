@@ -58,6 +58,8 @@ class ServerBaseControlCommands(StubServerMixin):
 
         for cmd in (
             ArgsControlCommand("focus",                 "give focus to the window id",      validation=[int]),
+            ArgsControlCommand("map",                   "maps the window id",               validation=[int]),
+            ArgsControlCommand("unmap",                 "unmaps the window id",             validation=[int]),
             #window source:
             ArgsControlCommand("suspend",               "suspend screen updates",           max_args=0),
             ArgsControlCommand("resume",                "resume screen updates",            max_args=0),
@@ -121,6 +123,44 @@ class ServerBaseControlCommands(StubServerMixin):
         assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
         self._focus(None, wid, None)
         return "gave focus to window %s" % wid
+
+    def control_command_map(self, wid):
+        if self.readonly:
+            return
+        assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
+        window = self._id_to_window.get(wid)
+        assert window, "window %i not found" % wid
+        if window.is_tray():
+            return "cannot map tray window %s" % wid
+        if window.is_OR():
+            return "cannot map override redirect window %s" % wid
+        dm = getattr(self, "_desktop_manager", None)
+        assert dm, "%r does not have a desktop manager" % self
+        dm.show_window(window)
+        #window.set_owner(dm)
+        #iconic = window.get_property("iconic")
+        #if iconic:
+        #    window.set_property("iconic", False)
+        #w, h = window.get_geometry()[2:4]
+        #self.refresh_window_area(window, 0, 0, w, h)
+        self.repaint_root_overlay()
+        return "mapped window %s" % wid
+
+    def control_command_unmap(self, wid):
+        if self.readonly:
+            return
+        assert type(wid)==int, "argument should have been an int, but found %s" % type(wid)
+        window = self._id_to_window.get(wid)
+        assert window, "window %i not found" % wid
+        if window.is_tray():
+            return "cannot map tray window %s" % wid
+        if window.is_OR():
+            return "cannot map override redirect window %s" % wid
+        dm = getattr(self, "_desktop_manager", None)
+        assert dm, "%r does not have a desktop manager" % self
+        dm.hide_window(window)
+        self.repaint_root_overlay()
+        return "unmapped window %s" % wid
 
     def control_command_suspend(self):
         for csource in tuple(self._server_sources.values()):
