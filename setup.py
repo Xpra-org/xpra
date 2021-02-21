@@ -945,6 +945,7 @@ def clean():
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
+                   "xpra/buffers/cyxor.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
                    "xpra/codecs/nvenc/encoder.c",
@@ -964,7 +965,6 @@ def clean():
                    "xpra/codecs/csc_libyuv/colorspace_converter.cpp",
                    "xpra/codecs/csc_swscale/colorspace_converter.c",
                    "xpra/codecs/csc_cython/colorspace_converter.c",
-                   "xpra/codecs/xor/cyxor.c",
                    "xpra/codecs/argb/argb.c",
                    "xpra/codecs/nvapi_version.c",
                    "xpra/gtk_common/gdk_atoms.c",
@@ -1991,8 +1991,8 @@ if gtk3_ENABLED:
 O3_pkgconfig = pkgconfig(optimize=3)
 toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
 if client_ENABLED or server_ENABLED:
-    cython_add(Extension("xpra.codecs.xor.cyxor",
-                ["xpra/codecs/xor/cyxor.pyx"],
+    cython_add(Extension("xpra.buffers.cyxor",
+                ["xpra/buffers/cyxor.pyx"],
                 **O3_pkgconfig))
 if client_ENABLED or server_ENABLED or shadow_ENABLED:
     cython_add(Extension("xpra.rectangle",

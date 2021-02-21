@@ -63,7 +63,7 @@ class WebSocketProtocol(Protocol):
             packet_type, len(items), payload_len, self.ws_mask)
         header = encode_hybi_header(OPCODE_BINARY, payload_len, self.ws_mask)
         if self.ws_mask:
-            from xpra.codecs.xor.cyxor import hybi_mask     #@UnresolvedImport
+            from xpra.buffers.cyxor import hybi_mask     #@UnresolvedImport
             mask = os.urandom(4)
             #now mask all the items:
             for i, item in enumerate(items):

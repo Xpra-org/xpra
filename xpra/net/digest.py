@@ -71,7 +71,7 @@ def gendigest(digest, password, salt):
         #kerberos and gss use xor because we need to use the actual token
         #at the other end
         salt = salt.ljust(len(password), b"\x00")[:len(password)]
-        from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
+        from xpra.buffers.cyxor import xor_str           #@UnresolvedImport
         v = xor_str(password, salt)
         return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)

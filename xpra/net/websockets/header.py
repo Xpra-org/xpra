@@ -7,7 +7,7 @@
 
 import struct
 
-from xpra.codecs.xor.cyxor import hybi_unmask   #@UnresolvedImport
+from xpra.buffers.cyxor import hybi_unmask   #@UnresolvedImport
 
 
 def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True):
