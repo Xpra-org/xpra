@@ -13,7 +13,7 @@ include xpra/x11/gtk3/gdk_x11_macros.h
 include xpra/codecs/cuda_common/*.cu
 include xpra/codecs/v4l2/video.h
 include xpra/codecs/dec_avcodec2/register_compat.*
-recursive-include html5 *
+prune html5
 recursive-include fs *
 recursive-include docs *
 recursive-include tests *
