@@ -183,7 +183,12 @@ class SessionInfo(Gtk.Window):
             return "%s %s" % (bytestostr(date), bytestostr(time))
         from xpra.version_util import revision_str, make_revision_str
         tb.new_row("Revision", slabel(revision_str()),
-                               slabel(make_revision_str(cattr("_remote_revision"), cattr("_remote_modifications"), cattr("_remote_commit"))))
+                               slabel(make_revision_str(
+                                   cattr("_remote_revision"),
+                                   cattr("_remote_modifications"),
+                                   cattr("_remote_branch"),
+                                   cattr("_remote_commit"),
+                                   )))
         tb.new_row("Build date", slabel(make_datetime(cl_date, cl_time)),
                                  slabel(make_datetime(cattr("_remote_build_date"), cattr("_remote_build_time"))))
         gtk_version_info = get_gtk_version_info()
