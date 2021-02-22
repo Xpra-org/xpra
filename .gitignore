@@ -72,6 +72,7 @@ key.*
 /xpra/rectangle.c
 /xpra/buffers/new_buffers.c
 /xpra/buffers/membuf.c
+/xpra/buffers/cyxor.c
 /xpra/client/gtk3/cairo_workaround.c
 /xpra/codecs/nvapi_version.c
 /xpra/codecs/argb/argb.c
@@ -93,7 +94,6 @@ key.*
 /xpra/codecs/vpx/encoder.c
 /xpra/codecs/webp/encoder.c
 /xpra/codecs/webp/decoder.c
-/xpra/codecs/xor/cyxor.c
 /xpra/gtk_common/gdk_atoms.c
 /xpra/gtk_common/gtk3/gdk_atoms.c
 /xpra/gtk_common/gtk3/gdk_bindings.c
