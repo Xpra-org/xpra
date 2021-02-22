@@ -9,7 +9,7 @@ import binascii
 
 from xpra.os_util import strtobytes, monotonic_time
 try:
-    from xpra.codecs.xor.cyxor import xor_str       #@UnresolvedImport
+    from xpra.buffers.cyxor import xor_str       #@UnresolvedImport
 except ImportError:
     xor_str = None
 def h(v):
