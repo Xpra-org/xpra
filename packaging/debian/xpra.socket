@@ -1,1 +1,1 @@
-../src/service/xpra.socket
+../../fs/lib/systemd/system/xpra.socket

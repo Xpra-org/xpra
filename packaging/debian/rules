@@ -12,7 +12,7 @@
 BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
 %:
-	dh $@ --with python3 --with systemd
+	dh $@ --with python3 --with systemd --without=build-stamp
 
 override_dh_auto_clean:
 	python3 setup.py clean
@@ -24,7 +24,7 @@ override_dh_auto_install:
 	python3 setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb $(PY3BUILDOPTS)
 
 override_dh_installchangelogs:
-	dh_installchangelogs NEWS
+	dh_installchangelogs docs/CHANGELOG.md
 
 override_dh_shlibdeps:
 	dh_shlibdeps -l /usr/lib/xpra -Xfbc_capture
@@ -33,12 +33,12 @@ override_dh_systemd_enable:
 	dh_systemd_enable --no-enable xpra.service
 	dh_systemd_enable xpra.socket
 
-override_dh_systemd_start:
-	dh_systemd_start xpra.socket
+#override_dh_systemd_start:
+#	dh_systemd_start xpra.socket
 
 override_dh_installman:
 	mkdir -p debian/xpra/usr/share/man/man1
-	cp man/*.1 debian/xpra/usr/share/man/man1/
+	cp fs/share/man/man1/*.1 debian/xpra/usr/share/man/man1/
 	gzip -9 debian/xpra/usr/share/man/man1/*.1
 
 override_dh_builddeb:

@@ -1,1 +1,1 @@
-../src/service/xpra.service
+../../fs/lib/systemd/system/xpra.service
