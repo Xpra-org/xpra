@@ -2034,6 +2034,7 @@ toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
+CUDA_BIN = "%s/cuda" % share_xpra
 if nvenc_ENABLED and cuda_kernels_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
@@ -2107,8 +2108,8 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     # * detect which arches we want to build for? (does it really matter much?)
     kernels = ("ARGB_to_NV12", "ARGB_to_YUV444", "BGRA_to_NV12", "BGRA_to_YUV444")
     for kernel in kernels:
-        cuda_src = "xpra/codecs/cuda_common/%s.cu" % kernel
-        cuda_bin = "xpra/codecs/cuda_common/%s.fatbin" % kernel
+        cuda_src = "fs/share/xpra/cuda/%s.cu" % kernel
+        cuda_bin = "fs/share/xpra/cuda/%s.fatbin" % kernel
         if os.path.exists(cuda_bin) and (cuda_rebuild_ENABLED is False):
             continue
         reason = should_rebuild(cuda_src, cuda_bin)
@@ -2172,8 +2173,8 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
             print(stdout or "")
             print(stderr or "")
             sys.exit(1)
-    CUDA_BIN = "%s/cuda" % share_xpra
-    add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
+    add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
+add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 if nvenc_ENABLED:
     nvencmodule = "nvenc"

@@ -2,8 +2,8 @@
 SETLOCAL
 
 SET KERNEL=%1
-SET CUDA_SRC=xpra\codecs\cuda_common\%KERNEL%.cu
-SET CUDA_BIN=xpra\codecs\cuda_common\%KERNEL%.fatbin
+SET CUDA_SRC=fs\share\xpra\cuda\%KERNEL%.cu
+SET CUDA_BIN=fs\share\xpra\cuda\%KERNEL%.fatbin
 
 SET NVCC_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\bin\
 SET NVCC=%NVCC_DIR%\nvcc.exe
