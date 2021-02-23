@@ -52,7 +52,7 @@ class KeyboardConfigBase(object):
                 #del self.pressed_translation[client_keycode]
                 return r
         keycode, group = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, keystr, group)
-        if pressed not in (None, -1):
+        if pressed and keycode not in (None, -1):
             #keep track of it so we can unpress the same key:
             self.pressed_translation[client_keycode] = keycode, group
         return keycode, group
