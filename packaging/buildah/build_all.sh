@@ -5,6 +5,13 @@ die() { echo "$*" 1>&2 ; exit 1; }
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
+#go make a snapshot:
+pushd ../..
+python3 ./setup.py sdist --formats=xztar
+mv dist/xpra-4.1.tar.xz ./packaging/buildah/pkgs/
+popd
+
+
 RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:8}
 DEB_DISTROS=${DEB_DISTROS:-Ubuntu:xenial Ubuntu:bionic Ubuntu:focal Ubuntu:groovy Ubuntu:hirsute Debian:stretch Debian:buster Debian:bullseye Debian:sid}
 if [ -z "${DISTROS}" ]; then
@@ -41,16 +48,19 @@ for DISTRO in $DISTROS; do
 		buildah copy $TEMP_IMAGE "./build_rpms.sh" "/src/build.sh"
 		echo "RPM: $REPO_PATH"
 	else
-		REPO_PATH="${BUILDAH_DIR}/repo/"`echo $DISTRO | awk -F: 'print $2'`
-		buildah copy $TEMP_IMAGE "/src/build_debs.sh" "/src/build.sh"
+		DISTRO_RELEASE=`echo $DISTRO | awk -F: '{print $2}'`
+		REPO_PATH="${BUILDAH_DIR}/repo/$DISTRO_RELEASE"
+		buildah copy $TEMP_IMAGE "./build_debs.sh" "/src/build.sh"
 		echo "DEB: $REPO_PATH"
 	fi
 	mkdir -p $REPO_PATH >& /dev/null
+	buildah run $TEMP_IMAGE mkdir -p /src/debian
 	buildah run \
 				--volume $REPO_PATH:/src/repo:noexec,nodev,z \
 				--volume ${BUILDAH_DIR}/opt:/opt:ro,z \
 				--volume ${BUILDAH_DIR}/pkgs:/src/pkgs:ro,z \
 				--volume ${BUILDAH_DIR}/../rpm:/src/rpm:ro,z \
+				--volume ${BUILDAH_DIR}/../debian:/src/debian:O \
 				--volume /var/cache/dnf:/var/cache/dnf:O \
 				$TEMP_IMAGE /src/build.sh
 	#buildah run \
@@ -58,6 +68,7 @@ for DISTRO in $DISTROS; do
 	#			--volume ${BUILDAH_DIR}/opt:/opt:ro,z \
 	#			--volume ${BUILDAH_DIR}/pkgs:/src/pkgs:ro,z \
 	#			--volume ${BUILDAH_DIR}/../rpm:/src/rpm:ro,z \
+	#			--volume ${BUILDAH_DIR}/../debian:/src/debian:ro,z \
 	#			--volume /var/cache/dnf:/var/cache/dnf:O \
 	#			$TEMP_IMAGE bash
 	buildah rm "${TEMP_IMAGE}"

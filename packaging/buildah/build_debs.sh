@@ -1,83 +1,21 @@
 #!/bin/bash
 
-DNF="${DNF:-dnf}"
+apt-get update
+apt-get upgrade -y
+apt-get dist-upgrade -y
 
-if [ `id -u` != "0" ]; then
-	if [ "${DNF}" == "dnf" ]; then
-		echo "Warning: this script usually requires root to be able to run dnf"
-	fi
-fi
+#the image should already have everything needed,
+#unless something was added to the control file
+#after the image had already been generated:
+apt-get install -y devscripts
+mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
+#mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
 
-ARCH=`arch`
-for dir in "./repo/SRPMS" "./repo/$ARCH"; do
-	if [ ! -d "$dir/repodata" ]; then
-		echo "* creating repodata in $dir"
-		mkdir $dir
-    	createrepo $dir > /dev/null
-    fi
-done
-
-#read the name of the spec files we may want to build:
-while read p; do
-  if [ -z "${p}" ]; then
-    #skip empty lines
-  	continue
-  fi
-  if [[ "$p" == "#"* ]]; then
-    #skip comments
-  	continue
-  fi
-  echo "****************************************************************"
-  echo " $p"
-  SPECFILE="./rpm/$p.spec"
-  MISSING=""
-  while read -r dep; do
-    MATCHES=`$DNF repoquery "$dep" --repo xpra-local-build 2> /dev/null | wc -l`
-    if [ "${MATCHES}" == "0" ]; then
-      echo " * missing ${dep}"
-      MISSING="${MISSING} ${dep}"
-    else
-      echo " * found   ${dep}"
-    fi
-  done < <(rpmspec -q --rpms ${SPECFILE} 2> /dev/null)
-  if [ ! -z "${MISSING}" ]; then
-    echo " need to rebuild $p to get:${MISSING}"
-    echo " - installing build dependencies"
-    $DNF builddep -y ${SPECFILE} > builddep.log
-    if [ "$?" != "0" ]; then
-    	echo "-------------------------------------------"
-    	echo "builddep failed:"
-    	cat builddep.log
-    	exit 1
-    fi
-    rm -fr "rpmbuild/RPMS" "rpmbuild/SRPMS"
-    mkdir -p "rpmbuild/SOURCES" "rpmbuild/RPMS" 2> /dev/null
-    #specfiles and patches
-    cp ./rpm/* "rpmbuild/SOURCES/"
-    #source packages
-    cp ./pkgs/* "rpmbuild/SOURCES/"
-    echo " - building RPM package(s)"
-    rpmbuild --define "_topdir `pwd`/rpmbuild/" -ba $SPECFILE >& rpmbuild.log
-    if [ "$?" != "0" ]; then
-    	echo "-------------------------------------------"
-    	echo "rpmbuild failed:"
-    	cat rpmbuild.log
-    	exit 1
-    fi
-    rsync -rplogt rpmbuild/RPMS/*/*rpm "./repo/$ARCH/"
-    rsync -rplogt rpmbuild/SRPMS/*rpm "./repo/SRPMS/"
-    #update the local repo:
-    echo " - re-creating repository metadata"
-    for dir in "./repo/SRPMS" "./repo/$ARCH"; do
-	    createrepo $dir >& createrepo.log
-	    if [ "$?" != "0" ]; then
-	    	echo "-------------------------------------------"
-	    	echo "'createrepo $dir' failed"
-	    	cat createrepo.log
-	    	exit 1
-	    fi
-    done
-    echo " - updating local packages"
-	$DNF update -y
-  fi
-done <./rpms.txt
+VERSION=4.1
+tar -Jxf pkgs/xpra-$VERSION.tar.xz
+pushd xpra-$VERSION
+ln -sf packaging/debian .
+debuild -us -uc -b
+popd
+mv ./xpra*deb ./xpra*changes repo/
+ 
