@@ -35,7 +35,6 @@ cdef extern from "Python.h":
         pass
     void * PyCapsule_Import(const char *name, int no_block)
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 cdef extern from "cairo/cairo.h":
     ctypedef struct cairo_surface_t:
