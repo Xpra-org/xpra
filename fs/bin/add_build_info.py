@@ -100,7 +100,7 @@ def get_cpuinfo():
     if platform.uname()[5]:
         return platform.uname()[5]
     if os.path.exists("/proc/cpuinfo"):
-        with open("/proc/cpuinfo", "rU") as f:
+        with open("/proc/cpuinfo", "r") as f:
             for line in f:
                 if line.startswith("model name"):
                     return line.split(": ")[1].replace("\n", "").replace("\r", "")
