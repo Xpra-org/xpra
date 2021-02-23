@@ -38,6 +38,11 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keystr, group):
         keycode = KEYCODES.get(keyname, -1)
+        if keycode==-1 and keystr and len(keystr)==1:
+            v = VkKeyScanW(keystr)
+            vk_code = v & 0xff
+            if vk_code>0 and vk_code!=0xff:
+                keycode = vk_code
         log("get_keycode%s=%s", (client_keycode, keyname, pressed, modifiers, keystr, group), keycode)
         return keycode, group
 
