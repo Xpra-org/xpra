@@ -42,7 +42,7 @@
     </dependencies>
   </meson>
 
-  <meson id="gst-plugins-good" mesonargs="-Dtests=disabled -Dximagesrc=disabled -Dosxvideo=disabled -Dvpx=false">
+  <meson id="gst-plugins-good" mesonargs="-Dtests=disabled -Dximagesrc=disabled -Dosxvideo=disabled -Dvpx=disabled">
     <branch module="gst-plugins-good/gst-plugins-good-1.18.3.tar.xz"
             version="1.18.3"
             hash="sha256:9b3b8e05d4d6073bf929fb33e2d8f74dd81ff21fa5b50c3273c78dfa2ab9c5cb">
