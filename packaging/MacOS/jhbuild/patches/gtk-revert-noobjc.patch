@@ -194,6 +194,8 @@ index 46a4c811aa..81cd4632e8 100644
  GdkDisplay *_gdk_display = NULL;
  GdkScreen *_gdk_screen = NULL;
 diff --git a/gdk/quartz/gdkinternal-quartz.h b/gdk/quartz/gdkinternal-quartz.h
+--- a/gdk/quartz/gdkinternal-quartz.h
++++ b/gdk/quartz/gdkinternal-quartz.h
 @@ -1,288 +1 @@
 -/* gdkinternal-quartz.h
 - *
