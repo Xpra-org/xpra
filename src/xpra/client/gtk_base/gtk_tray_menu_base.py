@@ -686,13 +686,12 @@ class GTKTrayMenuBase(object):
             if not c.server_clipboard:
                 self.clipboard_menuitem.set_tooltip_text("Server does not support clipboard synchronization")
                 return
-            if not c.client_supports_clipboard:
+            ch = c.clipboard_helper
+            if not c.client_supports_clipboard or not ch:
                 self.clipboard_menuitem.set_tooltip_text("Client does not support clipboard synchronization")
                 return
             #add a submenu:
             set_sensitive(self.clipboard_menuitem, True)
-            c = self.client
-            ch = self.client.clipboard_helper
             clipboard_submenu = gtk.Menu()
             self.clipboard_menuitem.set_submenu(clipboard_submenu)
             self.popup_menu_workaround(clipboard_submenu)
