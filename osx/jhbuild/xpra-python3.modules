@@ -627,9 +627,9 @@
 
 	<distutils id="python3-pyobjc-core" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/d3/f5/07579f2986f2eb639932626f69a082598f5e6d4535e1f54a331d9efa97d7/pyobjc-core-5.2.tar.gz"
-			hash="sha256:cd13a2e9be890064a6dd11db7790bbf38502350c532a9a9d05511abb8683b8ea"
-			version="5.2"/>
+			module="/packages/31/f2/880cc03678a2de93f7b60ab94b35323b7b1be213d775113b2a1b8e975201/pyobjc-core-7.1.tar.gz"
+			hash="sha256:a0616d5d816b4471f8f782c3a9a8923d2cc85014d88ad4f7fec694be9e6ea349"
+			version="7.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -640,9 +640,9 @@
 
 	<distutils id="python3-pyobjc-framework-cocoa" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/63/fa/a9224a241fffe25f7635235f784d01c5baaed381f534e6c843a07254fd18/pyobjc-framework-Cocoa-5.2.tar.gz"
-			hash="sha256:561785bbc4dd2f05cc836464733382ef6a69cb13338a7bc5f8297f5cd021d0bd"
-			version="5.2"/>
+			module="/packages/e3/0a/44d42b3e54c26d8aa24361528802a6b830d0c97a7ddc6bedcd70ad02023f/pyobjc-framework-Cocoa-7.1.tar.gz"
+			hash="sha256:67966152b3d38a0225176fceca2e9f56d849c8e7445548da09a00cb13155ec3e"
+			version="7.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -653,9 +653,9 @@
 
 	<distutils id="python3-pyobjc-framework-quartz" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/78/cc/e0d1d6dbe15306651beb5dea0af23abb9f9c06b12acfbab841594587e513/pyobjc-framework-Quartz-5.2.tar.gz"
-			hash="sha256:89d41e86b075788deb65695e32001de488412ae9b60191294a3fd31e8b3d2613"
-			version="5.2"/>
+			module="/packages/fb/9d/fb4c6487eac0dc8ca16d312a45ca5dcdbc7cb54763975d470ecb1bbccc83/pyobjc-framework-Quartz-7.1.tar.gz"
+			hash="sha256:73102c9f4dbfa13275621014785ab3b684cf03ce93a4b0b270500c795349bea9"
+			version="7.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -666,9 +666,35 @@
 
 	<distutils id="python3-pyobjc-framework-avfoundation" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/4e/a7/2707a8da1683d7884defd73540dddeda1f471c1630a079c7fe19116bb443/pyobjc-framework-AVFoundation-5.2.tar.gz"
-			hash="sha256:b2b2d0c0c68c8189f8187fdc647c05a34cc93ca50e7f8a47b1f75a4ac47a1e17"
-			version="5.2"/>
+			module="/packages/77/a9/350974ad16ba94f00bca0d0b278285007d1b5443b5dd5c4a196f17c7d7ed/pyobjc-framework-AVFoundation-7.0.1.tar.gz"
+			hash="sha256:6f8b66b476db90bfc9a40241686d9ec2e9361c60e840fe36f14b6478f53d2cc7"
+			version="7.0.1"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
+	<distutils id="python3-pyobjc-framework-coremedia" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/d1/3b/a12e4914c7b3ecda37fef77f6651f21ad9e218b9f04e4f283bd95dc471e5/pyobjc-framework-CoreMedia-7.1.tar.gz"
+			hash="sha256:e7caa9c3a9c84f579369926f79891abca6365442804a6af705ee3cd315ac22f6"
+			version="7.1"/>
+		<dependencies>
+			<dep package="python3"/>
+		</dependencies>
+		<after>
+			<dep package="python3"/>
+		</after>
+	</distutils>
+
+	<distutils id="python3-pyobjc-framework-libdispatch" python3="1">
+		<branch repo="files.pythonhosted.org"
+			module="/packages/f6/79/9ff430c68e44e3b970b536487667ad754c01a583acb6e9b9c4b9fef87923/pyobjc-framework-libdispatch-7.1.tar.gz"
+			hash="sha256:2114052db05829c28ec0d03eefaea9a56c378629e59bc37db992526282ed2ed0"
+			version="7.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -679,9 +705,9 @@
 
 	<distutils id="python3-pyobjc-framework-SystemConfiguration" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/95/a8/6f8907a6713ff66b82c567f02dbbbea1d80b1d2d55dc4cab47d29e10d310/pyobjc-framework-SystemConfiguration-5.2.tar.gz"
-			hash="sha256:709327f66a210424cc5468379f9430e668c9afefa65ce34151c2fb7558ce398d"
-			version="5.2"/>
+			module="/packages/87/33/1ca7598ba6f2105b82cd1ba031e3c4c0b108088c795eb8084a9e3fda7ed6/pyobjc-framework-SystemConfiguration-7.1.tar.gz"
+			hash="sha256:f2e0cb6045c79f10ab71b6e995dd01d0976b6a56fc5b6b42c03e7088c392ebd2"
+			version="7.1"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
@@ -689,7 +715,6 @@
 			<dep package="python3"/>
 		</after>
 	</distutils>
-
 
 	<distutils id="python3-rencode" python3="1">
 		<branch repo="github-tarball"
