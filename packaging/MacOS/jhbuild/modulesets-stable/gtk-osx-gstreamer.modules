@@ -9,10 +9,10 @@
   <repository type="tarball" name="github.com"
               href="https://github.com/"/>
 
-  <autotools id="liborc" autogen-sh="configure">
-    <branch module="orc/orc-0.4.28.tar.xz" version="0.4.28"
-            hash="sha256:bfcd7c6563b05672386c4eedfc4c0d4a0a12b4b4775b74ec6deb88fc2bcd83ce"/>
-  </autotools>
+  <meson id="liborc">
+    <branch module="orc/orc-0.4.32.tar.xz" version="0.4.32"
+            hash="sha256:a66e3d8f2b7e65178d786a01ef61f2a0a0b4d0b8370de7ce134ba73da4af18f0"/>
+  </meson>
 
   <autotools id="faad2" autogen-sh="autoreconf"
              autogenargs="-without-bmp --without-xmms --without-drm --without-mpeg4ip">
