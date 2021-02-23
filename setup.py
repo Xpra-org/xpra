@@ -1754,9 +1754,9 @@ if data_ENABLED:
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
     ICONS = glob.glob("fs/share/xpra/icons/*.png")
     if OSX:
-        ICONS += glob.glob("fs/share/icons/*.icns")
+        ICONS += glob.glob("fs/share/xpra/icons/*.icns")
     if WIN32:
-        ICONS += glob.glob("fs/share/icons/*.ico")
+        ICONS += glob.glob("fs/share/xpra/icons/*.ico")
     add_data_files("%s/icons" % share_xpra,          ICONS)
     add_data_files("%s/css" % share_xpra,            glob.glob("fs/share/xpra/css/*"))
 
