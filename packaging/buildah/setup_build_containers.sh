@@ -73,7 +73,7 @@ for DISTRO in $DEB_DISTROS; do
 	echo "${DISTRO}" | grep Ubuntu > /dev/null
 	if [ "$?" == "0" ]; then
 		#the codecs require the "universe" repository:
-		buildah run $IMAGE_NAME --env DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common
+		buildah run $IMAGE_NAME apt-get install -y software-properties-common
 		buildah run $IMAGE_NAME add-apt-repository universe -y
 		buildah run $IMAGE_NAME apt-get update
 	fi
