@@ -7,6 +7,9 @@
 # pycharm IDE:
 /.idea
 
+# temporary files:
+*.swp
+
 # Python cache:
 __pycache__/
 *.py[cod]
@@ -22,6 +25,12 @@ password.*
 key.*
 *.key
 *.pem
+# Either generated or contains binaries:
+packaging/buildah/opt/cuda/
+packaging/buildah/opt/nvenc/
+packaging/buildah/rpmbuild
+packaging/buildah/repo/
+packaging/buildah/pkgs/*tar*
 
 # generated during build:
 /build
@@ -40,6 +49,7 @@ key.*
 /xpra/build_info.py
 /fs/etc/xpra/xpra.conf
 /fs/etc/xpra/conf.d/*.conf
+/packaging/buildah/*log
 
 # the .conf files are generated:
 /fs/etc/xpra/conf.d/*.conf
