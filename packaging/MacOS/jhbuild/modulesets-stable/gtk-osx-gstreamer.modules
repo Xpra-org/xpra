@@ -23,7 +23,7 @@
     </branch>
   </autotools>
 
-  <meson id="gstreamer" mesonargs="-Dtests=false">
+  <meson id="gstreamer" mesonargs="-Dtests=disabled">
     <branch module="gstreamer/gstreamer-1.18.3.tar.xz" version="1.18.3"
             hash="sha256:0c2e09e18f2df69a99b5cb3bd53c597b3cc2e35cf6c98043bb86a66f3d312100">
     </branch>
@@ -32,7 +32,7 @@
     </after>
   </meson>
 
-  <meson id="gst-plugins-base" mesonargs="-Dtests=false -Dx11=false -Dxvideo=false -Dexamples=false">
+  <meson id="gst-plugins-base" mesonargs="-Dtests=disabled -Dx11=disabled -Dxvideo=disabled -Dexamples=disabled -Dgl=disabled">
     <branch module="gst-plugins-base/gst-plugins-base-1.18.3.tar.xz"
             version="1.18.3"
             hash="sha256:dbfa20283848f0347a223dd8523dfb62e09e5220b21b1d157a8b0c8b67ba9f52"/>
@@ -40,11 +40,9 @@
       <dep package="gstreamer"/>
       <dep package="liborc"/>
     </dependencies>
-    <after>
-    </after>
   </meson>
 
-  <meson id="gst-plugins-good" mesonargs="-Dtests=false -Dximagesrc=false -Dosxvideo=false -Dvpx=false">
+  <meson id="gst-plugins-good" mesonargs="-Dtests=disabled -Dximagesrc=disabled -Dosxvideo=disabled -Dvpx=false">
     <branch module="gst-plugins-good/gst-plugins-good-1.18.3.tar.xz"
             version="1.18.3"
             hash="sha256:9b3b8e05d4d6073bf929fb33e2d8f74dd81ff21fa5b50c3273c78dfa2ab9c5cb">
@@ -65,7 +63,7 @@
     </dependencies>
   </meson>
 
-  <meson id="gst-plugins-bad" mesonargs="-Dgl=false -Dmpegdemux=false -Dmpegtsdemux=false -Dmpegtsmux=false -Dmpegpsmux=false -Dmpeg2enc=false -Dsmoothstreaming=false -Dhls=false -Ddtls=false -Dapplemedia=false">
+  <meson id="gst-plugins-bad" mesonargs="-Dvulkan=no -Dgl=false -Dmpegdemux=false -Dmpegtsdemux=false -Dmpegtsmux=false -Dmpegpsmux=false -Dmpeg2enc=false -Dsmoothstreaming=false -Dhls=false -Ddtls=false -Dapplemedia=false">
     <branch version="1.18.3"
             module="gst-plugins-bad/gst-plugins-bad-1.18.3.tar.xz"
             hash="sha256:b7e34b6b86272588fbd8b314dadfa6ceff895198cfb59e2950378e9e31ff22e0"/>
