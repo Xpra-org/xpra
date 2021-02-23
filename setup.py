@@ -1989,7 +1989,6 @@ if gtk3_ENABLED:
                 ))
 
 O3_pkgconfig = pkgconfig(optimize=3)
-toggle_packages(client_ENABLED or server_ENABLED, "xpra.codecs.xor")
 if client_ENABLED or server_ENABLED:
     cython_add(Extension("xpra.buffers.cyxor",
                 ["xpra/buffers/cyxor.pyx"],
