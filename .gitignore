@@ -20,6 +20,10 @@ __pycache__/
 coverage.xml
 htmlcov/
 
+# the HTML5 client may be symlinked here for some builds
+# (ie: MS Windows and MacOS)
+html5
+
 # Things that should never be added to the repository:
 password.*
 key.*
@@ -31,6 +35,10 @@ packaging/buildah/opt/nvenc/
 packaging/buildah/rpmbuild
 packaging/buildah/repo/
 packaging/buildah/pkgs/*tar*
+packaging/MacOS/dist
+packaging/MacOS/html5
+packaging/MacOS/image
+packaging/MacOS/xpra-html5
 
 # generated during build:
 /build
