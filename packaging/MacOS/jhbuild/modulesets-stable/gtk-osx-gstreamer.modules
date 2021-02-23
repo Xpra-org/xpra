@@ -75,11 +75,9 @@
       <dep package="faad2"/>
       <dep package='openssl'/>
     </dependencies>
-  </autotools>
+  </meson>
 
-  <autotools id="gst-libav" supports-non-srcdir-builds="no"
-             autogen-sh="configure"
-             autogenargs="--disable-tests">
+  <meson id="gst-libav" mesonargs="-Dtests=false">
      <branch version="1.18.3"
             module="gst-libav/gst-libav-1.18.3.tar.xz"
             hash="sha256:ad20546bcd78ac1e7cf194666d73c4f33efeb62647d2b6af22993b540699e91c"/>
@@ -87,7 +85,7 @@
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
     </dependencies>
-  </autotools>
+  </meson>
 
   <metamodule id="meta-gstreamer">
     <dependencies>
