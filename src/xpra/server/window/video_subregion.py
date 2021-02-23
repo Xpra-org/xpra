@@ -426,6 +426,8 @@ class VideoSubregion:
                 return 0
             incount, outcount = inoutcount(region, ignore_size)
             total = incount+outcount
+            if total==0:
+                return 0
             score = scoreinout(ww, wh, region, incount, outcount)
             #discount score if the region contains areas that were not damaged:
             #(apply sqrt to limit the discount: 50% damaged -> multiply by 0.7)
