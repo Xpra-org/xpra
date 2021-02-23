@@ -332,9 +332,10 @@ def get_distribution_version_id() -> bool:
         return ""
     try:
         v = load_os_release_file()
-        for l in v.splitlines():
-            if l.startswith(b"VERSION_ID="):
-                return l.split(b"=", 1)[1]
+        for line in v.splitlines():
+            l = line.decode()
+            if l.startswith("VERSION_ID="):
+                return l.split("=", 1)[1].strip('"')
     except Exception:
         pass
     return ""
