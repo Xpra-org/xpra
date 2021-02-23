@@ -639,7 +639,7 @@ index 7900c01b17..8fca4300e4 100644
  
  #include <gdk/gdk.h>
  
-@@ -26,12 +35,215 @@
+@@ -26,12 +35,225 @@
  
  #include "config.h"
  
@@ -664,6 +664,16 @@ index 7900c01b17..8fca4300e4 100644
 +typedef enum {
 +  GDK_QUARTZ_EVENT_SUBTYPE_EVENTLOOP
 +} GdkQuartzEventSubType;
++
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 10130
++#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSEventTypeTabletProximity
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSEventSubtypeTabletProximity
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSEventSubtypeTabletPoint
++#else
++#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSTabletProximity
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSTabletProximityEventSubtype
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSTabletPointEventSubtype
++#endif
 +
 +void         _gdk_quartz_events_update_focus_window    (GdkWindow *new_window,
 +                                                        gboolean   got_focus);
