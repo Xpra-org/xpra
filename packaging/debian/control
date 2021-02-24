@@ -61,6 +61,7 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 #bionic:        ,libturbojpeg
 #focal:        ,libturbojpeg
 #groovy:        ,libturbojpeg
+#hirsute:        ,libturbojpeg
 #buster:         ,libturbojpeg0
 #bullseye:         ,libturbojpeg0
 # for notifications forwarding and dbus server / proxying:
@@ -94,6 +95,8 @@ Recommends: python3-dbus
 #focal:        ,libswscale5
 #groovy:        ,libavcodec58
 #groovy:        ,libswscale5
+#hirsute:        ,libavcodec58
+#hirsute:        ,libswscale5
 #buster:        ,libavcodec57
 #buster:        ,libswscale4
 #bullseye:        ,libavcodec58
@@ -102,6 +105,7 @@ Recommends: python3-dbus
 #bionic:        ,libx264-152
 #focal:        ,libx264-155
 #groovy:        ,libx264-160
+#hirsute:        ,libx264-160
 #buster:        ,libx264-155
 #bullseye:        ,libx264-160
 # we use dbus for many things - this provides "dbus-launch":
