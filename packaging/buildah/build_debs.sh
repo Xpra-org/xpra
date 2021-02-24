@@ -20,4 +20,5 @@ popd
 eval `dpkg-architecture -s`
 REPO_ARCH_PATH="repo/main/binary-$DEB_BUILD_ARCH"
 mkdir -p $REPO_ARCH_PATH
+rm xpra-build-deps*
 mv ./xpra*deb ./xpra*changes $REPO_ARCH_PATH
