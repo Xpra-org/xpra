@@ -13,12 +13,14 @@ popd
 
 
 RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:8}
-DEB_DISTROS=${DEB_DISTROS:-Ubuntu:xenial Ubuntu:bionic Ubuntu:focal Ubuntu:groovy Ubuntu:hirsute Debian:stretch Debian:buster Debian:bullseye Debian:sid}
+DEB_DISTROS=${DEB_DISTROS:-Ubuntu:bionic Ubuntu:focal Ubuntu:groovy Ubuntu:hirsute Debian:stretch Debian:buster Debian:bullseye Debian:sid}
 if [ -z "${DISTROS}" ]; then
 	DISTROS="$RPM_DISTROS $DEB_DISTROS"
 fi
 
 for DISTRO in $DISTROS; do
+	echo
+	echo "********************************************************************************"
 	#ie: DISTRO_NAME="fedora-33"
 	FULL_DISTRO_NAME=`echo ${DISTRO,,} | sed 's/:/-/g'`
 	DISTRO_NAME=`echo ${DISTRO,,} | awk -F: '{print $1}'`
