@@ -20,7 +20,6 @@ Build-Depends: debhelper (>= 8)
               ,libavformat-dev
               ,libswscale-dev
               ,dh-python
-              ,dh-systemd
               ,libsystemd-dev
               ,libpam-dev
               ,pandoc
