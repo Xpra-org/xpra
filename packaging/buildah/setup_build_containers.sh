@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#sets up distro build images with very basic tools,
-# ie: gcc g++
-#and 
-
 die() { echo "$*" 1>&2 ; exit 1; }
 
 buildah --version >& /dev/null
