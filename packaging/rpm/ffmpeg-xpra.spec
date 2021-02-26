@@ -20,6 +20,7 @@ Requires:    x264-xpra
 BuildRequires:	x264-xpra-devel
 BuildRequires:	libva-devel
 BuildRequires:	yasm
+BuildRequires:	make
 
 #%global __requires_exclude ^libx264.so.*$
 

@@ -33,7 +33,7 @@ for DISTRO in $RPM_DISTROS; do
 	fi
 	buildah run $IMAGE_NAME dnf update -y
 	buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
-	buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
+	buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync make
 	echo $DISTRO | egrep -i "fedora" >& /dev/null
 	if [ "$?" == "0" ]; then
 		RNUM=`echo $DISTRO | awk -F: '{print $2}'`
