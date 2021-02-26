@@ -265,6 +265,7 @@ BuildRequires:		gcc
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
 BuildRequires:		libxkbfile-devel
+BuildRequires:		libXtst-devel
 BuildRequires:		libXcomposite-devel
 BuildRequires:		libXdamage-devel
 #once the server is fully ported over to python3:
