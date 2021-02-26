@@ -80,7 +80,7 @@ for DISTRO in $DEB_DISTROS; do
 	#this is only used for building xpra,
 	#so add as many dependencies already:
 	#buildah run $IMAGE_NAME apt-get install -y gcc g++ debhelper devscripts
-	buildah run $IMAGE_NAME apt-get install -y devscripts equivs lsb-release
+	buildah run $IMAGE_NAME apt-get install -y devscripts equivs lsb-release perl
 	buildah copy $IMAGE_NAME "../debian/control" "/src/control"
 	buildah run $IMAGE_NAME mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' /src/control
 	buildah run $IMAGE_NAME apt-get autoremove -y
