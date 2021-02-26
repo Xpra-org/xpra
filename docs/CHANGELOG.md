@@ -1,8 +1,60 @@
 # Changelog
 
-## [4.1] 2021-02-04
-* TODO
-
+## [4.1] 2021-02-26
+* Overhauled build system
+* Splash screen #2540
+* `run_scaled` utility script #2813
+* Client:
+	* header bar option for window control menu #2539
+	* generate qrcode to connect #2627
+	* show all keyboard shortcuts #2779
+	* progress bar for file transfers #2678
+	* GTK cairo backend support for more native bit depths #2839
+	* disable xpra's keyboard shortcuts from the system tray menu #2739
+	* automatically include the server log in bug reports #2570
+* OpenGL client backend:
+	* render at fixed bit depths with the `pixel-depth` option #2826
+	* support more bit depths #2828
+* Clipboard:
+	* MacOS support for images, more text formats, etc #273
+	* MS Windows support for images  #2619
+	* wayland clients #2927
+* Server:
+	* faster server startup: #2815
+	* `xpra list-windows` subcommand #2700
+	* new window control commands: move - resize #2774, map - unmap #3028
+	* remote logging: from server to client #2749
+	* support window re-stacking #2896
+* `xpra top`:
+	* show pids, shortcuts #2601
+	* more details in the list view #2553
+	* show speed and quality #2719
+* Display:
+	* bumped maximum resolution beyond 8K
+	* set the initial resolution more easily using the 'resize-display' option #2772
+* Encoding:
+	* server side picture downscaling #2052
+	* libva hardware accelerated encoding #451
+	* NVENC 30-bit accelerated encoding #1308
+	* vpx 30-bit #1310
+	* x264 30-bit #1462
+	* faster 30-bit RGB subsampling
+	* scroll encoding now handled more generically #2810
+	* black and white mode #1713
+* Network:
+	* IGD / UPNP: #2417
+	* SO_KEEPALIVE option #2420
+	* clients can be queried and controlled using local sockets: #2743, #2856
+	* specify connection attributes using the connection string #2794
+	* nested SSH tunnels #2867
+	* support websocket header modules #2874
+	* specify socket type with socket activation #2914
+	* expose flush flag: #2975
+	* xpra shell subcommand for interacting with processes in real time #2750
+	* custom group sockets directory permissions and name #2907
+* Testing:
+	* better test coverage #2598
+	* cleanup output #2938
 
 ## [4.0] 2020-05-10
 * Drop support for:
