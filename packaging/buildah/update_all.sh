@@ -35,6 +35,9 @@ for DISTRO in $DISTROS; do
 		buildah run $TEMP_IMAGE apt-get upgrade -y
 		buildah run $TEMP_IMAGE apt-get dist-upgrade -y
 		buildah run $TEMP_IMAGE apt-get autoremove -y
+		buildah copy $TEMP_IMAGE "../debian/control" "/src/control"
+		buildah run $TEMP_IMAGE mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' /src/control
+		buildah run $TEMP_IMAGE apt-get autoremove -y
 	fi
 	buildah commit $IMAGE_NAME $TEMP_IMAGE
 	buildah rm "${TEMP_IMAGE}"
