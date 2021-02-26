@@ -1,3 +1,5 @@
+%define _disable_source_fetch 0
+
 Name: pycairo
 Version: 1.16.3
 Release: 6%{?dist}
@@ -11,8 +13,6 @@ BuildRequires: cairo-devel
 BuildRequires: pkgconfig
 BuildRequires: python3-devel
 BuildRequires: python3-pytest
-
-%define _disable_source_fetch 0
 
 %description
 Python bindings for the cairo library.
@@ -40,9 +40,6 @@ Requires: python3-devel
 %description -n python3-cairo-devel
 This package contains files required to build wrappers for cairo add-on
 libraries so that they interoperate with py3cairo.
-
-%prep
-%setup -q
 
 %build
 %py3_build
