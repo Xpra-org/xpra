@@ -13,7 +13,11 @@ pushd ${BUILDAH_DIR}
 RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 CentOS:7 CentOS:8}
 for DISTRO in $RPM_DISTROS; do
 	DISTRO_LOWER="${DISTRO,,}"
-	IMAGE_NAME="`echo $DISTRO_LOWER | sed 's/:/-/g'`-xpra-build"
+	if [[ "$DISTRO_LOWER" == "xx"* ]];then
+	    echo "skipped $DISTRO"
+	    continue
+	fi
+	IMAGE_NAME="`echo $DISTRO_LOWER | awk -F'/' '{print $1}' | sed 's/:/-/g'`-xpra-build"
 	podman image exists $IMAGE_NAME
 	if [ "$?" == "0" ]; then
 		continue
@@ -23,6 +27,10 @@ for DISTRO in $RPM_DISTROS; do
 	echo "creating ${IMAGE_NAME}"
 	#docker names are lowercase:
 	buildah from --name $IMAGE_NAME $DISTRO_LOWER
+	if [ "$?" != "0" ]; then
+		echo "Warning: failed to create image $IMAGE_NAME"
+		continue
+	fi
 	buildah run $IMAGE_NAME dnf update -y
 	buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
 	buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
@@ -56,6 +64,10 @@ for DISTRO in $DEB_DISTROS; do
 	#DISTRO_DIR_NAME="`echo $DISTRO | sed 's/:/-/g'`-xpra-build"
 	#mkdir -p packaging/buildah/repo/Fedora/{32,33,34} >& /dev/null
 	DISTRO_LOWER="${DISTRO,,}"
+	if [[ "$DISTRO_LOWER" == "xx"* ]];then
+	    echo "skipped $DISTRO"
+	    continue
+	fi
 	IMAGE_NAME="`echo $DISTRO_LOWER | sed 's/:/-/g'`-xpra-build"
 	podman image exists $IMAGE_NAME
 	if [ "$?" == "0" ]; then
