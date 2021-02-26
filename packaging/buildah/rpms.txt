@@ -8,4 +8,4 @@ python3-pycuda
 python3-pynvml
 python3-pyu2f
 python3-uinput
-#xpra
+xpra
