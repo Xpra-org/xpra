@@ -13,7 +13,7 @@
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
 %{!?update_firewall: %define update_firewall 1}
-%{!?run_tests: %define run_tests 1}
+%{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
 %ifarch x86_64
@@ -121,9 +121,11 @@ BuildRequires:		selinux-policy-devel
 BuildRequires:		dbus-x11
 BuildRequires:		dbus-tools
 BuildRequires:		tigervnc
+BuildRequires:		xorg-x11-server-Xorg
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy
 BuildRequires:		xorg-x11-server-utils
+BuildRequires:		which
 %endif
 Requires(post):  	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
@@ -450,14 +452,19 @@ export XPRA_TEST_DEBUG=1
 %endif
 
 %if 0%{?run_tests}
-pushd xpra-%{version}/tests/unittests
+pushd xpra-%{version}
+XPRA_BIN_DIR="`pwd`/fs/bin/"
+XPRA_COMMAND="${XPRA_BIN_DIR}/xpra"
+XPRA_CONF_DIR="`pwd`/fs/etc/xpra"
+pushd tests/unittests
 PYTHONPATH="%{python3_sitearch}:%{buildroot}%{python3_sitearch}:`pwd`" \
-PATH="`pwd`/../scripts/:$PATH" \
-XPRA_COMMAND="`pwd`/../scripts/xpra" \
-XPRA_CONF_DIR="`pwd`/../etc/xpra" \
+PATH="${XPRA_BIN_DIR}:$PATH" \
+XPRA_COMMAND="${XPRA_COMMAND}" \
+XPRA_CONF_DIR="${XPRA_CONF_DIR}" \
 XPRA_TEST_COVERAGE=0 \
 GDK_BACKEND=x11 \
 %{__python3} ./unit/run.py
+popd
 popd
 %endif
 
