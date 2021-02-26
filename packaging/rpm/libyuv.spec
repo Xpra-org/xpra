@@ -4,7 +4,7 @@ Version:	0
 Release:	0.35.20190401git4bd08cb%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
-VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
+#VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
 ## git clone https://chromium.googlesource.com/libyuv/libyuv
 ## cd libyuv
 ## git archive --format=tar --prefix=libyuv-0/ 4bd08cb | xz  > ../libyuv-0.tar.xz
@@ -16,6 +16,7 @@ Patch3:		libyuv-0003-Disable-static-library.patch
 Patch4:		libyuv-0004-Don-t-install-conversion-tool.patch
 Patch5:		libyuv-0005-Use-library-suffix-during-installation.patch
 Patch6:		libyuv-0006-Link-main-library-against-libjpeg.patch
+BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
 %if !0%{?el7}
