@@ -49,10 +49,9 @@ for DISTRO in $RPM_DISTROS; do
 	buildah run $IMAGE_NAME rpmdev-setuptree
 	#buildah run dnf clean all
 
-	buildah run $IMAGE_NAME mkdir /src/pkgs /repo
+	buildah run $IMAGE_NAME mkdir -p "/src/repo/" "/src/rpm" "/src/debian" "/src/pkgs" "/usr/lib64/xpra/pkgconfig"
 	buildah config --workingdir /src $IMAGE_NAME
 	buildah copy $IMAGE_NAME "./xpra-build.repo" "/etc/yum.repos.d/"
-	buildah run $IMAGE_NAME mkdir -p "/src/repo/" "/src/rpm" "/src/debian" "/src/pkgs" "/usr/lib64/xpra/pkgconfig"
 	buildah run $IMAGE_NAME createrepo "/src/repo/"
 	buildah copy $IMAGE_NAME "./nvenc-rpm.pc" "/usr/lib64/pkgconfig/nvenc.pc"
 	buildah copy $IMAGE_NAME "./cuda.pc" "/usr/lib64/pkgconfig/cuda.pc"
