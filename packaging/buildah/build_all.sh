@@ -35,7 +35,7 @@ for DISTRO in $DISTROS; do
 		continue
 	fi
 	echo $DISTRO : $IMAGE_NAME
-	buildah run $TEMP_IMAGE mkdir -p /src/pkgs /src/repo src/rpm
+	buildah run $TEMP_IMAGE mkdir -p /opt /src/repo /src/pkgs src/rpm /src/debian /var/cache/dnf
 	echo $DISTRO | egrep -iv "fedora|centos" >& /dev/null
 	RPM="$?"
 	if [ "${RPM}" == "1" ]; then
@@ -56,15 +56,14 @@ for DISTRO in $DISTROS; do
 		echo "DEB: $REPO_PATH"
 	fi
 	mkdir -p $REPO_PATH >& /dev/null
-	buildah run $TEMP_IMAGE mkdir -p /src/debian
 	buildah run \
-				--volume $REPO_PATH:/src/repo:noexec,nodev,z \
 				--volume ${BUILDAH_DIR}/opt:/opt:ro,z \
+				--volume $REPO_PATH:/src/repo:noexec,nodev,z \
 				--volume ${BUILDAH_DIR}/pkgs:/src/pkgs:ro,z \
 				--volume ${BUILDAH_DIR}/../rpm:/src/rpm:ro,z \
 				--volume ${BUILDAH_DIR}/../debian:/src/debian:O \
-				--volume /var/cache/dnf:/var/cache/dnf:O \
 				$TEMP_IMAGE /src/build.sh
+	#			--volume /var/cache/dnf:/var/cache/dnf:O \
 	#buildah run \
 	#			--volume $REPO_PATH:/src/repo:noexec,nodev,z \
 	#			--volume ${BUILDAH_DIR}/opt:/opt:ro,z \

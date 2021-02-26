@@ -105,7 +105,6 @@ for DISTRO in $DEB_DISTROS; do
 	#	cython3 libsystemd-dev libpam-dev \
 	#	pandoc
 	buildah run $IMAGE_NAME mkdir -p "/src/repo/" "/src/rpm" "/src/debian" "/src/pkgs"
-	buildah run $IMAGE_NAME mkdir -p /src/pkgs /repo
 	buildah config --workingdir /src $IMAGE_NAME
 	#we don't need a local repo yet:
 	#DISTRO_NAME=`echo $DISTRO | awk -F: '{print $2}'`
