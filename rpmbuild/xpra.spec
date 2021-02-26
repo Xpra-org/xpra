@@ -155,6 +155,7 @@ Requires(postun):	systemd-units
 BuildRequires:		systemd-devel
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
+BuildRequires:		pam-devel
 %if 0%{?run_tests}
 BuildRequires:		dbus-x11
 BuildRequires:		tigervnc
