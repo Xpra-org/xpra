@@ -2,59 +2,59 @@
 
 ## [4.1] 2021-02-26
 * Overhauled build system
-* Splash screen #2540
-* `run_scaled` utility script #2813
+* [Splash screen](https://github.com/Xpra-org/xpra/issues/2540)
+* [`run_scaled` utility script](https://github.com/Xpra-org/xpra/issues/2813)
 * Client:
-	* header bar option for window control menu #2539
-	* generate qrcode to connect #2627
-	* show all keyboard shortcuts #2779
-	* progress bar for file transfers #2678
-	* GTK cairo backend support for more native bit depths #2839
-	* disable xpra's keyboard shortcuts from the system tray menu #2739
-	* automatically include the server log in bug reports #2570
+	* [header bar option](https://github.com/Xpra-org/xpra/issues/2539) for window control menu
+	* generate a [qrcode](https://github.com/Xpra-org/xpra/issues/2627) to connect
+	* show all [keyboard shortcuts](https://github.com/Xpra-org/xpra/issues/2779)
+	* [progress bar](https://github.com/Xpra-org/xpra/issues/2678) for file transfers
+	* GTK cairo backend support for [more native bit depths](https://github.com/Xpra-org/xpra/issues/2839)
+	* [disable xpra's keyboard shortcuts](https://github.com/Xpra-org/xpra/issues/2739) from the system tray menu
+	* automatically [include the server log](https://github.com/Xpra-org/xpra/issues/2570) in bug reports
 * OpenGL client backend:
-	* render at fixed bit depths with the `pixel-depth` option #2826
-	* support more bit depths #2828
+	* render at [fixed bit depths](https://github.com/Xpra-org/xpra/issues/2826) with the `pixel-depth` option
+	* support [more bit depths](https://github.com/Xpra-org/xpra/issues/2828)
 * Clipboard:
-	* MacOS support for images, more text formats, etc #273
-	* MS Windows support for images  #2619
-	* wayland clients #2927
+	* [MacOS support](https://github.com/Xpra-org/xpra/issues/273) for images, more text formats, etc
+	* [MS Windows](https://github.com/Xpra-org/xpra/issues/2619) support for images
+	* [wayland](https://github.com/Xpra-org/xpra/issues/2927) clients
 * Server:
-	* faster server startup: #2815
-	* `xpra list-windows` subcommand #2700
-	* new window control commands: move - resize #2774, map - unmap #3028
-	* remote logging: from server to client #2749
-	* support window re-stacking #2896
+	* [faster server startup](https://github.com/Xpra-org/xpra/issues/2815)
+	* [`xpra list-windows`](https://github.com/Xpra-org/xpra/issues/2700) subcommand
+	* new window control commands: [move - resize](https://github.com/Xpra-org/xpra/issues/2774), [map - unmap](https://github.com/Xpra-org/xpra/issues/3028)
+	* remote logging: [from server to client](https://github.com/Xpra-org/xpra/issues/2749)
+	* support [window re-stacking](https://github.com/Xpra-org/xpra/issues/2896)
 * `xpra top`:
-	* show pids, shortcuts #2601
-	* more details in the list view #2553
-	* show speed and quality #2719
+	* [show pids, shortcuts](https://github.com/Xpra-org/xpra/issues/2601)
+	* more details in the [list view](https://github.com/Xpra-org/xpra/issues/2553)
+	* show [speed and quality](https://github.com/Xpra-org/xpra/issues/2719)
 * Display:
-	* bumped maximum resolution beyond 8K
-	* set the initial resolution more easily using the 'resize-display' option #2772
+	* bumped maximum resolution [beyond 8K](https://github.com/Xpra-org/xpra/issues/2628)
+	* [set the initial resolution](https://github.com/Xpra-org/xpra/issues/2772) more easily using the 'resize-display' option
 * Encoding:
-	* server side picture downscaling #2052
-	* libva hardware accelerated encoding #451
-	* NVENC 30-bit accelerated encoding #1308
-	* vpx 30-bit #1310
-	* x264 30-bit #1462
-	* faster 30-bit RGB subsampling
-	* scroll encoding now handled more generically #2810
-	* black and white mode #1713
+	* server side picture [downscaling](https://github.com/Xpra-org/xpra/issues/2052)
+	* [libva](https://github.com/Xpra-org/xpra/issues/451) hardware accelerated encoding
+	* NVENC [30-bit](https://github.com/Xpra-org/xpra/issues/1308) accelerated encoding
+	* vpx [30-bit](https://github.com/Xpra-org/xpra/issues/1310)
+	* x264 [30-bit](https://github.com/Xpra-org/xpra/issues/1462)
+	* faster [30-bit RGB subsampling](https://github.com/Xpra-org/xpra/issues/2773)
+	* scroll encoding now handled [more generically](https://github.com/Xpra-org/xpra/issues/2810)
+	* [black and white](https://github.com/Xpra-org/xpra/issues/1713) mode
 * Network:
-	* IGD / UPNP: #2417
-	* SO_KEEPALIVE option #2420
-	* clients can be queried and controlled using local sockets: #2743, #2856
-	* specify connection attributes using the connection string #2794
-	* nested SSH tunnels #2867
-	* support websocket header modules #2874
-	* specify socket type with socket activation #2914
-	* expose flush flag: #2975
-	* xpra shell subcommand for interacting with processes in real time #2750
-	* custom group sockets directory permissions and name #2907
+	* [IGD / UPNP](https://github.com/Xpra-org/xpra/issues/2417)
+	* [SO_KEEPALIVE](https://github.com/Xpra-org/xpra/issues/2420) option
+	* clients can be [queried](https://github.com/Xpra-org/xpra/issues/2743) and [controlled](https://github.com/Xpra-org/xpra/issues/2856) using local sockets
+	* specify connection attributes [using the connection string](https://github.com/Xpra-org/xpra/issues/2794)
+	* [nested SSH tunnels](https://github.com/Xpra-org/xpra/issues/2867)
+	* websocket [header modules](https://github.com/Xpra-org/xpra/issues/2874)
+	* [specify the socket type](https://github.com/Xpra-org/xpra/issues/2914) with socket activation
+	* expose the [packet flush flag](https://github.com/Xpra-org/xpra/issues/2975)
+	* [`xpra shell`](https://github.com/Xpra-org/xpra/issues/2750) subcommand for interacting with processes in real time
+	* [custom group sockets directory](https://github.com/Xpra-org/xpra/issues/2907) permissions and name
 * Testing:
-	* better test coverage #2598
-	* cleanup output #2938
+	* better [test coverage](https://github.com/Xpra-org/xpra/issues/2598)
+	* [cleanup output](https://github.com/Xpra-org/xpra/issues/2938)
 
 ## [4.0] 2020-05-10
 * Drop support for:
