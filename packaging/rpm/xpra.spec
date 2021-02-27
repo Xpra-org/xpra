@@ -58,6 +58,8 @@ Requires:			python3-xpra-client = %{version}-%{release}
 Requires:			python3-xpra-server = %{version}-%{release}
 %if 0%{?fedora}
 Requires:			python3-xpra-audio = %{version}-%{release}
+%else
+Suggests:			python3-xpra-audio = %{version}-%{release}
 %endif
 %description
 Xpra gives you "persistent remote applications" for X. That is, unlike normal X applications, applications run with xpra are "persistent" -- you can run them remotely, and they don't die if your connection does. You can detach them, and reattach them later -- even from another computer -- with no loss of state. And unlike VNC or RDP, xpra is for remote applications, not remote desktops -- individual applications show up as individual windows on your screen, managed by your window manager. They're not trapped in a box.
