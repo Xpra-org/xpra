@@ -1,7 +1,7 @@
 # Changelog
 
 ## [4.1] 2021-02-26
-* Overhauled build system
+* Overhauled container based [build system](https://github.com/Xpra-org/xpra/tree/master/packaging/buildah)
 * [Splash screen](https://github.com/Xpra-org/xpra/issues/2540)
 * [`run_scaled` utility script](https://github.com/Xpra-org/xpra/issues/2813)
 * Client:
