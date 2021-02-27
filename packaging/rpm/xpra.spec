@@ -38,10 +38,17 @@ echo CentOS 7.x is no longer supported
 exit 1
 %endif
 
+%if ! 0%{?revision_no}
+%if 0%(echo $XPRA_REVISION)
+%define revision_no 0.r%(echo $XPRA_REVISION)
+%else
+%define revision_no 0
+%endif
+%endif
 
 Name:				xpra
 Version:			%{version}
-Release:			0%{?revision_no}%{?dist}
+Release:			%{revision_no}%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
