@@ -1,7 +1,60 @@
 xpra (4.1-1) UNRELEASED; urgency=low
-  * TODO
+  * Overhauled container based build system
+  * Splash screen
+  * `run_scaled` utility script
+  * Client:
+    - header bar option for window control menu
+    - generate a qrcode to connect
+    - show all keyboard shortcuts
+    - progress bar for file transfers
+    - GTK cairo backend support for more native bit depths
+    - disable xpra's keyboard shortcuts from the system tray menu
+    - automatically include the server log in bug reports
+  * OpenGL client backend:
+    - render at fixed bit depths with the `pixel-depth` option
+    - support more bit depths
+  * Clipboard:
+    - MacOS support for images, more text formats, etc
+    - MS Windows support for images
+    - wayland clients
+  * Server:
+    - faster server startup
+    - `xpra list-windows` subcommand
+    - new window control commands: move / resize and map / unmap
+    - remote logging from server to client
+    - support window re-stacking
+  * `xpra top`:
+    - show pids, shortcuts
+    - more details in the list view
+    - show speed and quality
+  * Display:
+    - bumped maximum resolution beyond 8K
+    - set the initial resolution more easily using the 'resize-display' option
+  * Encoding:
+    - server side picture downscaling
+    - libva hardware accelerated encoding
+    - NVENC 30-bit accelerated encoding
+    - vpx 30-bit
+    - x264 30-bit
+    - faster 30-bit RGB subsampling
+    - scroll encoding now handled more generically
+    - black and white mode
+  * Network:
+    - IGD / UPNP
+    - SO_KEEPALIVE option
+    - clients can be queried and controlled using local sockets
+    - specify connection attributes using the connection string
+    - nested SSH tunnels
+    - websocket header modules
+    - specify the socket type with socket activation
+    - expose the packet flush flag
+    - `xpra shell` subcommand for interacting with processes in real time
+    - custom group sockets directory permissions and name
+* Testing:
+    - better test coverage
+    - cleanup output
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 10 May 2020 23:06:19 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 27 Feb 2021 22:54:51 +0700
 
 xpra (4.0-1) UNRELEASED; urgency=low
   * Drop support for:
