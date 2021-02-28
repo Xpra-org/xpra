@@ -23,10 +23,11 @@ function fetch() {
 		exit 1
 	fi
 	REAL_FILENAME="${FILENAME/\%\{version\}/$VERSION}"
+	REAL_URL="${URL/\%\{version\}/$VERSION}"
 	if [ -e "${REAL_FILENAME}" ]; then
 		echo "found ${REAL_FILENAME}"
 	else
-		curl -o "${REAL_FILENAME}" "${URL}/${REAL_FILENAME}"
+		curl --output "${REAL_FILENAME}" -L "${REAL_URL}/${REAL_FILENAME}"
 	fi
 }
 pushd pkgs
