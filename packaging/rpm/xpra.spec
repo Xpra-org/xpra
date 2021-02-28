@@ -650,7 +650,7 @@ fi
    expose the packet flush flag
    `xpra shell` subcommand for interacting with processes in real time
    custom group sockets directory permissions and name
-* Testing:
+- Testing:
    better test coverage
    cleanup output
 
