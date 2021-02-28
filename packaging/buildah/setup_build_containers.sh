@@ -7,6 +7,10 @@ if [ "$?" != "0" ]; then
 	die "cannot continue without buildah"
 fi
 
+#set to "1" to skip installing many of the dependencies,
+#these can be installed automatically during the build instead
+MINIMAL="0"
+
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
@@ -33,7 +37,10 @@ for DISTRO in $RPM_DISTROS; do
 	fi
 	buildah run $IMAGE_NAME dnf update -y
 	buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
-	buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync make
+	buildah run $IMAGE_NAME dnf install -y redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
+	if [ "${MINIMAL}" != "0" ]; then
+		buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ make cmake
+	fi
 	echo $DISTRO | egrep -i "fedora" >& /dev/null
 	if [ "$?" == "0" ]; then
 		RNUM=`echo $DISTRO | awk -F: '{print $2}'`
@@ -92,8 +99,10 @@ for DISTRO in $DEB_DISTROS; do
 	#so add as many dependencies already:
 	#buildah run $IMAGE_NAME apt-get install -y gcc g++ debhelper devscripts
 	buildah run $IMAGE_NAME apt-get install -y devscripts equivs lsb-release perl findutils
-	buildah copy $IMAGE_NAME "../debian/control" "/src/control"
-	buildah run $IMAGE_NAME mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' /src/control
+	if [ "${MINIMAL}" != "0" ]; then
+		buildah copy $IMAGE_NAME "../debian/control" "/src/control"
+		buildah run $IMAGE_NAME mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' /src/control
+	fi
 	buildah run $IMAGE_NAME apt-get autoremove -y
 	#or we could do this explicitly:
 	#buildah run $IMAGE_NAME apt-get install -y gcc g++ debhelper devscripts dh-python dh-systemd \
