@@ -15,6 +15,7 @@ log = Logger("util")
 
 FAKE_UI_LOCKUPS = envint("XPRA_FAKE_UI_LOCKUPS")
 POLLING = envint("XPRA_UI_THREAD_POLLING", 500)
+ANNOUNCE_TIMEOUT = envint("XPRA_ANNOUNCE_BLOCKED", POLLING)
 
 
 class UI_thread_watcher:
@@ -28,11 +29,12 @@ class UI_thread_watcher:
         Beware that the callbacks (fail, resume and alive)
         will run from different threads..
     """
-    def __init__(self, timeout_add, source_remove, polling_timeout):
+    def __init__(self, timeout_add, source_remove, polling_timeout, announce_timeout):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
         self.polling_timeout = polling_timeout
         self.max_delta = polling_timeout * 2
+        self.announce_timeout = announce_timeout/1000.0 if announce_timeout else float('inf')
         self.init_vars()
 
     def init_vars(self):
@@ -40,6 +42,7 @@ class UI_thread_watcher:
         self.fail_callbacks = []
         self.resume_callbacks = []
         self.UI_blocked = False
+        self.announced_blocked = False
         self.last_UI_thread_time = 0
         self.ui_wakeup_timer = None
         self.exit = Event()
@@ -104,7 +107,9 @@ class UI_thread_watcher:
         self.last_UI_thread_time = monotonic_time()
         #UI thread was blocked?
         if self.UI_blocked:
-            log.info("UI thread is running again, resuming")
+            if self.announced_blocked:
+                log.info("UI thread is running again, resuming")
+                self.announced_blocked = False
             self.UI_blocked = False
             self.run_callbacks(self.resume_callbacks)
         return False
@@ -118,9 +123,11 @@ class UI_thread_watcher:
             if delta>self.max_delta/1000.0:
                 #UI thread is (still?) blocked:
                 if not self.UI_blocked:
-                    log.info("UI thread is now blocked")
                     self.UI_blocked = True
                     self.run_callbacks(self.fail_callbacks)
+                if not self.announced_blocked and delta>self.announce_timeout:
+                    self.announced_blocked = True
+                    log.info("UI thread is now blocked")
             else:
                 #seems to be ok:
                 log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
@@ -156,6 +163,6 @@ UI_watcher = None
 def get_UI_watcher(timeout_add=None, source_remove=None):
     global UI_watcher
     if UI_watcher is None and timeout_add:
-        UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING)
+        UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING, ANNOUNCE_TIMEOUT)
         log("get_UI_watcher(%s)", timeout_add)
     return UI_watcher
