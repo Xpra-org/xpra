@@ -207,7 +207,9 @@ class WindowServer(StubServerMixin):
 
     def _do_send_new_window_packet(self, ptype, window, geometry):
         wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
+        for ss in tuple(self._server_sources.values()):
+            if not isinstance(ss, WindowsMixin):
+                continue
             wprops = self.client_properties.get(wid, {}).get(ss.uuid)
             x, y, w, h = geometry
             #adjust if the transient-for window is not mapped in the same place by the client we send to:
