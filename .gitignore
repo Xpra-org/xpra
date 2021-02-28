@@ -59,6 +59,9 @@ packaging/MacOS/xpra-html5
 /fs/etc/xpra/conf.d/*.conf
 /packaging/buildah/*log
 
+# generated during the tests:
+tests/unittests/test-file*
+
 # the .conf files are generated:
 /fs/etc/xpra/conf.d/*.conf
 
