@@ -9,6 +9,7 @@ License: MPLv1.1 or LGPLv2
 URL: http://cairographics.org/pycairo
 Source0: https://github.com/pygobject/pycairo/releases/download/v%{version}/pycairo-%{version}.tar.gz
 
+BuildRequires: gcc
 BuildRequires: cairo-devel
 BuildRequires: pkgconfig
 BuildRequires: python3-devel
