@@ -11,6 +11,10 @@ python3 ./setup.py sdist --formats=xztar
 mv dist/xpra-4.1.tar.xz ./packaging/buildah/pkgs/
 popd
 
+DO_DOWNLOAD="${DO_DOWNLOAD:-1}"
+if [ "${DO_DOWNLOAD}" == "1" ]; then
+	./download_source.sh
+fi
 
 RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:8}
 DEB_DISTROS=${DEB_DISTROS:-Ubuntu:bionic Ubuntu:focal Ubuntu:groovy Ubuntu:hirsute Debian:stretch Debian:buster Debian:bullseye Debian:sid}
