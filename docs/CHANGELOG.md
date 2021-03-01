@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.2]
+* work in progress
+
 ## [4.1] 2021-02-26
 * Overhauled container based [build system](https://github.com/Xpra-org/xpra/tree/master/packaging/buildah)
 * [Splash screen](https://github.com/Xpra-org/xpra/issues/2540)

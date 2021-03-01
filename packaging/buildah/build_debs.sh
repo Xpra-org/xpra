@@ -15,7 +15,7 @@ REPO_ARCH_PATH="`pwd`/repo/main/binary-$DEB_BUILD_ARCH"
 mkdir -p $REPO_ARCH_PATH
 rm xpra-build-deps*
 
-VERSION=4.1
+VERSION=4.2
 tar -Jxf pkgs/xpra-$VERSION.tar.xz
 pushd xpra-$VERSION
 ln -sf packaging/debian .

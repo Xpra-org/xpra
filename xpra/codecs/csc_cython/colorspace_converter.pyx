@@ -87,7 +87,7 @@ def get_type():
     return "cython"
 
 def get_version():
-    return "4.1"
+    return "4.2"
 
 def get_info():
     info = {

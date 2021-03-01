@@ -20,8 +20,8 @@ done
 #if we are going to build xpra,
 #make sure we expose the revision number
 #so the spec file can generate the expected file names
-#(ie: xpra-4.1-0.r29000)
-XPRA_VERSION=4.1
+#(ie: xpra-4.2-0.r29000)
+XPRA_VERSION=4.2
 tar -Jxf pkgs/xpra-$XPRA_VERSION.tar.xz xpra-$XPRA_VERSION/xpra/src_info.py
 XPRA_REVISION=`grep "REVISION=" "xpra-$XPRA_VERSION/xpra/src_info.py" | awk -F= '{print $2}'`
 export XPRA_REVISION
