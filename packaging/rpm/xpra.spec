@@ -40,9 +40,9 @@ exit 1
 
 %if ! 0%{?revision_no}
 %if 0%(echo $XPRA_REVISION)
-%define revision_no 0.r%(echo $XPRA_REVISION)
+%define revision_no 10.r%(echo $XPRA_REVISION)
 %else
-%define revision_no 0
+%define revision_no 10
 %endif
 %endif
 
