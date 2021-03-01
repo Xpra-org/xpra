@@ -14,7 +14,7 @@ BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 
 BuildRequires:	nasm
-
+BuildRequires:	gcc
 
 %if 0%{?fedora}%{?el8}
 %global debug_package %{nil}
