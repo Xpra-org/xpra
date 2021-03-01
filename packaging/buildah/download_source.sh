@@ -31,6 +31,8 @@ function fetch() {
 	fi
 }
 pushd pkgs
+X264_COMMIT=`grep "%define commit" ../rpm/x264-xpra.spec  | awk '{print $3}'`
+fetch "x264-xpra"        "${X264_COMMIT}.zip"                    "https://github.com/mirror/x264/archive"
 fetch "ffmpeg-xpra"      "ffmpeg-%{version}.tar.xz"              "http://www.ffmpeg.org/releases"
 fetch "gstreamer1-plugin-timestamp" "gst-plugin-timestamp-%{version}.tar.xz" "https://xpra.org/src"
 fetch "libfakeXinerama"  "libfakeXinerama-%{version}.tar.bz2"    "https://xpra.org/src"

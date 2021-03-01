@@ -1,14 +1,15 @@
 %define _disable_source_fetch 0
 %define _build_id_links none
+%define commit 544c61f082194728d0391fb280a6e138ba320a96
 
 Name:	     x264-xpra
-Version:     20210216
-Release:     2%{?dist}
+Version:     20210301
+Release:     1%{?dist}
 Summary:     x264 library for xpra
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.videolan.org/developers/x264.html
-Source0:     https://xpra.org/src/x264-snapshot-%{version}-544c61f0-stable.tar.bz2
+Source0:     https://github.com/mirror/x264/archive/%{commit}.zip
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 
@@ -40,11 +41,11 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d6816a9d37c81b87f71c3c1fcf4d10d9cca59a812943241b2787b07497965513" ]; then
+if [ "${sha256}" != "7e8950c4f29a7e96b58cf5506c8990c6dda1740d855f55fd2022f4e6faf3a18f" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi 
-%setup -q -n x264-stable
+%setup -q -n x264-%{commit}
 
 
 %build
