@@ -16,7 +16,8 @@ include xpra/codecs/dec_avcodec2/register_compat.*
 prune html5
 recursive-include fs *
 recursive-include docs *
-recursive-include tests *
+recursive-include tests __init__.py perf scripts
+recursive-include tests/unittests run unit
 recursive-include packaging/debian *
 recursive-include packaging/docker *
 recursive-include packaging/MacOS *
