@@ -67,11 +67,11 @@ EOF
 
 
 %build
-%{cmake}
-%{cmake_build}
+%cmake .
+%make_build
 
 %install
-%{cmake_install}
+%make_install
 
 mkdir -p %{buildroot}%{_libdir}/pkgconfig
 cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
@@ -96,6 +96,9 @@ cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 
 %changelog
+* Wed Apr 17 2019 Antoine Martin <totaam@xpra.org> - 0-0.1766.20201016gita4ec5cf
+- Use newer snapshot on github mirror
+
 * Wed Apr 17 2019 Peter Lemenkov <lemenkov@gmail.com> - 0-0.35.20190401git4bd08cb
 - Fix linkage against libjpeg
 
