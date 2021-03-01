@@ -35,6 +35,7 @@ packaging/buildah/opt/nvenc/
 packaging/buildah/rpmbuild
 packaging/buildah/repo/
 packaging/buildah/pkgs/*tar*
+packaging/buildah/pkgs/*zip*
 packaging/MacOS/dist
 packaging/MacOS/html5
 packaging/MacOS/image
