@@ -40,12 +40,7 @@ fetch "python3-pynvml"   "nvidia-ml-py-%{version}.tar.gz"        "https://files.
 fetch "python3-pyopengl" "PyOpenGL-%{version}.tar.gz"            "https://files.pythonhosted.org/packages/b8/73/31c8177f3d236e9a5424f7267659c70ccea604dab0585bfcd55828397746"
 fetch "python3-pyopengl" "PyOpenGL-accelerate-%{version}.tar.gz" "https://files.pythonhosted.org/packages/a2/3c/f42a62b7784c04b20f8b88d6c8ad04f4f20b0767b721102418aad94d8389"
 fetch "python3-pytools"  "pytools-%{version}.tar.gz"             "https://files.pythonhosted.org/packages/16/ed/f4b298876b9b624150cc01830075f7cb0b9e09c1abfc46daef14811f3eed"
-#libyuv (from git)
-if [ ! -e "./libyuv-0.tar.xz" ]; then
-	git clone https://chromium.googlesource.com/libyuv/libyuv
-	pushd "./libyuv"
-	git archive --format=tar --prefix=libyuv-0/ 4bd08cb | xz  > "../libyuv-0.tar.xz"
-	popd
-	rm -fr "./libyuv"
-fi
+fetch "python3-pytools"  "pytools-%{version}.tar.gz"             "https://files.pythonhosted.org/packages/16/ed/f4b298876b9b624150cc01830075f7cb0b9e09c1abfc46daef14811f3eed"
+#libyuv (use github mirror to download an archive)
+fetch "libyuv"           "19d71f6b351fe992ae34b114eebd872c383a6bdb.zip" "https://github.com/lemenkov/libyuv/archive/"
 popd

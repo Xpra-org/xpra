@@ -1,14 +1,17 @@
+%define _disable_source_fetch 0
+%define COMMIT 19d71f6b351fe992ae34b114eebd872c383a6bdb
+
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.35.20190401git4bd08cb%{?dist}
+Release:	0.1766.20201016gita4ec5cf%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
 #VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
 ## git clone https://chromium.googlesource.com/libyuv/libyuv
 ## cd libyuv
 ## git archive --format=tar --prefix=libyuv-0/ 4bd08cb | xz  > ../libyuv-0.tar.xz
-Source0:	%{name}-%{version}.tar.xz
+Source0:	https://github.com/lemenkov/%{name}/archive/%{COMMIT}.zip
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
 Patch2:		libyuv-0002-Link-against-shared-library.patch
@@ -43,7 +46,12 @@ Additional header files for development with %{name}.
 
 
 %prep
-%autosetup -p1
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "5906ff00c8956df09c0187549a3fd5cf0da40859846f49d565cc9abfca93f29a" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi 
+%autosetup -p1 -n libyuv-%{COMMIT}
 
 cat > %{name}.pc << EOF
 prefix=%{_prefix}
@@ -59,15 +67,11 @@ EOF
 
 
 %build
-%if 0%{?el7}
-%{cmake} -DTEST=false
-%else
-%{cmake} -DTEST=true
-%endif
-
+%{cmake}
+%{cmake_build}
 
 %install
-%{make_install}
+%{cmake_install}
 
 mkdir -p %{buildroot}%{_libdir}/pkgconfig
 cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
