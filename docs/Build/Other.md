@@ -49,9 +49,9 @@ pip install lz4
 The system version of ffmpeg is too old, so compile a new one from source.
 The build flags used here disable most features and only keep what is actually needed by xpra - you may want to keep more features enabled if you also intend to use the ffmpeg libraries for another purpose:
 ```shell
-wget http://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2
-tar -jxf ffmpeg-4.3.1.tar.bz2
-cd ffmpeg-4.3.1
+wget http://ffmpeg.org/releases/ffmpeg-4.3.2.tar.bz2
+tar -jxf ffmpeg-4.3.2.tar.bz2
+cd ffmpeg-4.3.2
 LDPATH=/usr/lib/arm-linux-gnueabihf ./configure \
 	--enable-runtime-cpudetect \
 	--disable-avdevice \
