@@ -239,9 +239,9 @@
 
 	<distutils id="python3-py2app" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/9a/ee/acbdef06c9fdb5a0edfc13d3ccc5d5605be576c81a9cc720f6d9b6e8125f/py2app-0.22.tar.gz"
-			hash="sha256:0ec29109338cb7c5340457aa6df972904d0d00533e8ab4107b9e00fe1da5d300"
-			version="0.22"/>
+			module="/packages/9a/a7/20315782cda3ace1ebd916c66c094150732428dc39efd81efcc9908f88d1/py2app-0.23.tar.gz"
+			hash="sha256:772f7b30cac260537ecfada2801d1e9833010caf6d0439e80e64e1a558718d39"
+			version="0.23"/>
 		<dependencies>
 			<dep package="python3"/>
 		</dependencies>
