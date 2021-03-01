@@ -1,6 +1,7 @@
 %define _disable_source_fetch 0
 %define _build_id_links none
 %define commit 544c61f082194728d0391fb280a6e138ba320a96
+%global debug_package %{nil}
 
 Name:	     x264-xpra
 Version:     20210301
@@ -15,14 +16,7 @@ AutoProv:    0
 
 BuildRequires:	nasm
 BuildRequires:	gcc
-
-%if 0%{?fedora}%{?el8}
-%global debug_package %{nil}
-%endif
-
-%if 0%{?fedora} || 0%{?rhel} >= 7
 BuildRequires: perl-Digest-MD5
-%endif
 
 %description
 x264 library for xpra
@@ -86,6 +80,11 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Mon Mar 01 2021 Antoine Martin <antoine@xpra.org> - 20210301-1
+- remove legacy CentOS 7 switches
+- build from github mirror snapshot
+- add missing dependency
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 20210110-2
 - verify source checksum
 
