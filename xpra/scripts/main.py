@@ -1770,7 +1770,11 @@ def make_progress_process():
     #start the splash subprocess
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command()+["splash"]
-    progress_process = Popen(cmd, stdin=PIPE)
+    try:
+        progress_process = Popen(cmd, stdin=PIPE)
+    except OSError as e:
+        werr("Error launching 'splash' subprocess", " %s" % e)
+        return None
     def progress(pct, text):
         if progress_process.poll():
             return
