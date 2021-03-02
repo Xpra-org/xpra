@@ -49,6 +49,9 @@ packaging/MacOS/xpra-html5
 *.dll
 *.log
 *.exe
+*.zip
+*.msi
+/msi.xml
 *.pxi
 #CUDA:
 *.fatbin
