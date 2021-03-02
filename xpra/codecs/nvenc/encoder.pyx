@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,20 +7,19 @@
 
 import binascii
 import os
-import sys
 import numpy
 import platform
 from collections import deque
 import ctypes
-from ctypes import cdll as loader, POINTER
+from ctypes import cdll, POINTER
 from threading import Lock
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX, LINUX, strtobytes
+from xpra.os_util import WIN32, LINUX, strtobytes
 from xpra.make_thread import start_thread
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time, typedict
 from xpra.codecs.cuda_common.cuda_context import (
-    init_all_devices, get_devices, select_device, get_device_info, get_device_name,
+    init_all_devices, get_devices, select_device, get_device_name,
     get_cuda_info, get_pycuda_info, device_info, reset_state,
     get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO,
     )
@@ -39,7 +38,6 @@ from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
 
-CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
 TEST_ENCODINGS = os.environ.get("XPRA_NVENC_ENCODINGS", "h264,h265").split(",")
 assert (x for x in TEST_ENCODINGS in ("h264", "h265")), "invalid list of encodings: %s" % (TEST_ENCODINGS,)
 assert len(TEST_ENCODINGS)>0, "no encodings enabled!"
@@ -1104,7 +1102,7 @@ def init_nvencode_library():
         cuda_libname = "nvcuda.dll"
     else:
         #assert os.name=="posix"
-        load = ctypes.cdll.LoadLibrary
+        load = cdll.LoadLibrary
         nvenc_libname = "libnvidia-encode.so.1"
         cuda_libname = "libcuda.so"
     #CUDA:
@@ -1204,6 +1202,7 @@ test_parse()
 
 cdef GUID CLIENT_KEY_GUID
 memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
+CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
 if CLIENT_KEYS_STR:
     #if we have client keys, parse them and keep the ones that look valid
     validated = []
