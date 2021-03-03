@@ -46,7 +46,7 @@ SIGNAL_KEYS = {
 
 def get_title():
     from xpra.version_util import full_version_str
-    return "Xpra top %s" % full_version_str
+    return "Xpra top %s" % full_version_str()
 
 def curses_init():
     stdscr = curses.initscr()
