@@ -27,7 +27,7 @@ SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", 2)
 THREAD_COUNT= envint("XPRA_FFMPEG_THREAD_COUNT")
 AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
-VAAPI = envbool("XPRA_VAAPI", True)
+VAAPI = envbool("XPRA_VAAPI", False)
 
 
 
