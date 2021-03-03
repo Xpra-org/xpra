@@ -22,6 +22,7 @@ encoding = auto
 # video-encoders = x264, vpx, nvenc
 # video-encoders = none
 # video-encoders = all
+# video-encoders = all,-x265
 video-encoders = all
 
 # Used by both the client and server for colourspace conversion:

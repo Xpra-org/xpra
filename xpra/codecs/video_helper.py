@@ -134,16 +134,22 @@ class VideoHelper:
         self._lock = Lock()
 
     def set_modules(self, video_encoders=(), csc_modules=(), video_decoders=()):
+        log("set_modules%s", (video_encoders, csc_modules, video_decoders))
         assert not self._initialized, "too late to set modules, the helper is already initialized!"
         def filt(name, inlist, all_list):
-            notfound = tuple(x for x in inlist if x and x not in all_list)
-            if notfound:
-                log.warn("Warning: ignoring unknown %s: %s", name, csv(notfound))
-            return tuple(x for x in inlist if x in all_list)
+            exclist = list(x[1:] for x in inlist if x and x.startswith("-"))
+            inclist = list(x for x in inlist if x and not x.startswith("-"))
+            if "all" in inclist:
+                inclist = all_list
+            else:
+                notfound = tuple(x for x in (exclist+inclist) if x and x not in all_list)
+                if notfound:
+                    log.warn("Warning: ignoring unknown %s: %s", name, csv(notfound))    
+            return tuple(x for x in inclist if x not in exclist)
         self.video_encoders = filt("video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)
         self.video_decoders = filt("video decoders" , video_decoders,   ALL_VIDEO_DECODER_OPTIONS)
-        log("VideoHelper.set_modules(%s, %s, %s) video encoders=%s, csc=%s, video decoders=%s",
+        log("VideoHelper.set_modules(%r, %r, %r) video encoders=%s, csc=%s, video decoders=%s",
             csv(video_encoders), csv(csc_modules), csv(video_decoders),
             csv(self.video_encoders), csv(self.csc_modules), csv(self.video_decoders))
 
