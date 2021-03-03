@@ -1,17 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 
-import os
-
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
-from xpra.util import envbool, typedict
-from xpra.codecs.codec_constants import get_subsampling_divs, RGB_FORMATS, video_spec
+from xpra.util import envbool
+from xpra.codecs.codec_constants import video_spec
 from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t

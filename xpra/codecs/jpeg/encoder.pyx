@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,6 @@
 from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
-from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport makebuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
 from xpra.net.compression import Compressed
 from xpra.os_util import bytestostr
