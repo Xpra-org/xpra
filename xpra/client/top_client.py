@@ -136,7 +136,6 @@ class TopClient:
             self.stdscr = None
 
     def update_loop(self):
-        curses.cbreak()
         while self.exit_code is None:
             self.update_screen()
             elapsed = int(1000*monotonic_time()-self.last_getch)
