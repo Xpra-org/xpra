@@ -38,7 +38,7 @@ def full_version_str() -> str:
     return XPRA_VERSION if not rstr else XPRA_VERSION+"-"+rstr
 
 def caps_to_version(caps : typedict) -> str:
-    return caps.strget("version")+"-"+caps_to_revision(caps)
+    return caps.strget("version", "0")+"-"+caps_to_revision(caps)
 
 def caps_to_revision(caps : typedict) -> str:
     revision = caps.strget("revision")
