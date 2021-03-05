@@ -18,6 +18,7 @@ from xpra.os_util import (
     POSIX, SIGNAMES,
     )
 from xpra.exit_codes import EXIT_STR
+from xpra.make_thread import start_thread
 from xpra.client.gobject_client_base import MonitorXpraClient
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.dotxpra import DotXpra
@@ -112,7 +113,7 @@ class TopClient:
         self.psprocess = {}
 
     def run(self):
-        self.stdscr = curses_init()
+        self.setup()
         for signum in (signal.SIGINT, signal.SIGTERM):
             signal.signal(signum, self.signal_handler)
         self.update_loop()
@@ -122,11 +123,19 @@ class TopClient:
     def signal_handler(self, signum, *_args):
         self.exit_code = 128+signum
 
+    def setup(self):
+        self.stdscr = curses_init()
+        curses.cbreak()
+
     def cleanup(self):
-        curses_clean(self.stdscr)
+        scr = self.stdscr
+        if scr:
+            curses.nocbreak()
+            scr.erase()
+            curses_clean(scr)
+            self.stdscr = None
 
     def update_loop(self):
-        curses.cbreak()
         while self.exit_code is None:
             self.update_screen()
             elapsed = int(1000*monotonic_time()-self.last_getch)
@@ -158,7 +167,13 @@ class TopClient:
         #show this session:
         try:
             self.cleanup()
-            proc = self.do_run_subcommand("top")
+            env = os.environ.copy()
+            #we only deal with local sessions, should be fast:
+            env["XPRA_CONNECT_TIMEOUT"] = "3"
+            proc = self.do_run_subcommand("top", env=env)
+            if not proc:
+                self.message = monotonic_time(), "failed to execute subprocess", curses.color_pair(RED)
+                return
             exit_code = proc.wait()
             txt = "top subprocess terminated"
             attr = 0
@@ -171,7 +186,7 @@ class TopClient:
                     txt += " (%s)" % SIGNAMES[exit_code-128]
             self.message = monotonic_time(), txt, attr
         finally:
-            self.stdscr = curses_init()
+            self.setup()
 
     def run_subcommand(self, subcommand):
         return self.do_run_subcommand(subcommand, stdout=DEVNULL, stderr=DEVNULL)
@@ -348,6 +363,8 @@ class TopSessionClient(MonitorXpraClient):
         self.paused = False
         self.stdscr = None
         self.psprocess = {}
+        self.setup()
+        start_thread(self.input_thread, "input-thread", daemon=True)
 
     def client_type(self):
         #overriden in subclasses!
@@ -355,16 +372,25 @@ class TopSessionClient(MonitorXpraClient):
 
     def server_connection_established(self, caps):
         self.log("server_connection_established(%s)" % repr_ellipsized(caps))
+        self.log("traceback: %s" % (traceback.extract_stack(),))
         r = super().server_connection_established(caps)
         self.stdscr = curses_init()
         self.update_screen()
         return r
 
+    def setup(self):
+        self.stdscr = curses_init()
+        try:
+            curses.cbreak()
+            curses.halfdelay(10)
+        except Exception as e:
+            self.log("failed to configure curses: %s" % e)
 
     def run(self):
         register_os_signals(self.signal_handler, None)
         v = super().run()
         self.log("run()=%s" % v)
+        self.cleanup()
         self.close_log()
         return v
 
@@ -410,16 +436,24 @@ class TopSessionClient(MonitorXpraClient):
                 self.err(e)
             finally:
                 self.stdscr.refresh()
-        while True:
-            v = self.stdscr.getch()
+
+    def input_thread(self):
+        while self.exit_code is None:
+            try:
+                curses.halfdelay(10)
+                v = self.stdscr.getch()
+            except Exception as e:
+                self.log("getch() %s" % e)
+                v = -1
             self.log("getch()=%s" % v)
             if v==-1:
-                break
+                continue
             if v in EXIT_KEYS:
                 self.log("exit on key '%s'" % v)
                 self.quit(0)
                 break
             if v in SIGNAL_KEYS:
+                self.log("exit on signal key '%s'" % v)
                 self.quit(128+SIGNAL_KEYS[v])
                 break
             if v in PAUSE_KEYS:
@@ -447,7 +481,7 @@ class TopSessionClient(MonitorXpraClient):
             if height<=1:
                 return
             server_info = self.slidictget("server")
-            build = self.slidictget("build")
+            build = self.slidictget("server", "build")
             vstr = caps_to_version(build)
             mode = server_info.strget("mode", "server")
             python_info = typedict(server_info.dictget("python", {}))
