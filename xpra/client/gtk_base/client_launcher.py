@@ -770,7 +770,7 @@ class ApplicationWindow:
             self.is_putty = ssh_cmd_0.endswith("plink") or ssh_cmd_0.endswith("plink.exe")
             self.is_paramiko = ssh_cmd_0 =="paramiko"
             full_ssh = ssh_cmd[:]
-            full_ssh += add_ssh_args(username, password, host, self.config.ssh_port, self.is_putty, self.is_paramiko)
+            full_ssh += add_ssh_args(username, password, host, self.config.ssh_port, None, self.is_putty, self.is_paramiko)
             if username:
                 params["username"] = username
             if self.nostrict_host_check.get_active():
