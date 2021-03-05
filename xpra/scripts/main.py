@@ -749,6 +749,16 @@ def parse_proxy_attributes(display_name):
         display_name = display_name[:reout.start()] + display_name[reout.end():]
         return display_name, desc_tmp
 
+def _sep_pos(display_name):
+    #split the display name on ":" or "/"
+    scpos = display_name.find(":")
+    slpos = display_name.find("/")
+    if scpos<0:
+        return slpos
+    elif slpos<0:
+        return scpos
+    return min(scpos, slpos)
+
 def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     if WIN32:
         from xpra.platform.win32.dotxpra import PIPE_PREFIX # pragma: no cover
@@ -760,15 +770,16 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     display_name, proxy_attrs = parse_proxy_attributes(display_name)
     desc.update(proxy_attrs)
 
-    #split the display name on ":" or "/"
-    scpos = display_name.find(":")
-    slpos = display_name.find("/")
-    if scpos<0 and slpos<0:
+    pos = _sep_pos(display_name)
+    if pos<0 or (display_name and display_name[0] in "0123456789"):
         match = None
         if POSIX:
             #maybe this is just the display number without the ":" prefix?
             try:
-                display_name = ":%i" % int(display_name)
+                if pos>0:
+                    display_name = ":%i" % int(display_name[:pos])
+                else:
+                    display_name = ":%i" % int(display_name)
                 match = True
             except ValueError:
                 pass
@@ -781,16 +792,9 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             if match:
                 display_name = match
     #display_name may have been updated, re-parse it:
-    scpos = display_name.find(":")
-    slpos = display_name.find("/")
-    if scpos<0 and slpos<0:
+    pos = _sep_pos(display_name)
+    if pos<0:
         error_cb("unknown format for display name: %s" % display_name)
-    if scpos<0:
-        pos = slpos
-    elif slpos<0:
-        pos = scpos
-    else:
-        pos = min(scpos, slpos)
     protocol = display_name[:pos]
     #the separator between the protocol and the rest can be ":", "/" or "://"
     #but the separator value we use thereafter can only be ":" or "/"
