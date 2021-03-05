@@ -568,6 +568,9 @@ def use_tty():
     from xpra.platform.gui import use_stdin
     return use_stdin()
 
+def use_gui_prompt():
+    return WIN32 or OSX or not use_tty()
+
 
 def shellsub(s, subs=None):
     """ shell style string substitution using the dictionary given """

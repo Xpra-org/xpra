@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import glob
 import os.path
 
 from xpra.util import engs
-from xpra.os_util import hexstr, osexpand, load_binary_file, use_tty
+from xpra.os_util import hexstr, osexpand, load_binary_file, use_gui_prompt
 from xpra.platform.paths import get_user_conf_dirs
 from xpra.log import Logger
 
@@ -21,7 +21,7 @@ APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
 def main():
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
-        if not use_tty():
+        if use_gui_prompt():
             from gi.repository import GLib, Gtk
             def show_dialog(mode, *msgs):
                 dialog = Gtk.MessageDialog(None, 0, mode,

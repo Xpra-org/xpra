@@ -24,6 +24,7 @@ from xpra.exit_codes import (
 from xpra.os_util import (
     bytestostr, osexpand, load_binary_file, monotonic_time,
     nomodule_context, umask_context, is_main_thread,
+    use_gui_prompt,
     WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, envfloat, engs, csv
@@ -119,8 +120,7 @@ def confirm_key(info=()) -> bool:
     if SKIP_UI:
         return False
     from xpra.platform.paths import get_icon_filename
-    from xpra.os_util import use_tty
-    if not use_tty():
+    if use_gui_prompt():
         icon = get_icon_filename("authentication", "png") or ""
         prompt = "Are you sure you want to continue connecting?"
         code = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
@@ -141,8 +141,7 @@ def input_pass(prompt) -> str:
     if SKIP_UI:
         return None
     from xpra.platform.paths import get_icon_filename
-    from xpra.os_util import use_tty
-    if not use_tty():
+    if use_gui_prompt():
         icon = get_icon_filename("authentication", "png") or ""
         return dialog_pass("Password Input", prompt, icon)
     from getpass import getpass

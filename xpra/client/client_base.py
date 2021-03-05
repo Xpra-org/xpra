@@ -32,7 +32,7 @@ from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
     filedata_nocrlf, force_quit,
     SIGNAMES, BITS,
-    strtobytes, bytestostr, hexstr, monotonic_time, use_tty,
+    strtobytes, bytestostr, hexstr, monotonic_time, use_gui_prompt,
     parse_encoded_bin_data,
     )
 from xpra.util import (
@@ -700,8 +700,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     #utility method used by some authentication handlers,
     #and overriden in UI client to provide a GUI dialog
     def do_process_challenge_prompt(self, packet, prompt="password"):
-        authlog("do_process_challenge_prompt() use_tty=%s", use_tty())
-        if use_tty():
+        authlog("do_process_challenge_prompt() use_gui_prompt=%s", use_gui_prompt())
+        if not use_gui_prompt():
             import getpass
             authlog("stdin isatty, using password prompt")
             password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
