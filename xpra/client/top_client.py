@@ -136,35 +136,33 @@ class TopClient:
             self.stdscr = None
 
     def update_loop(self):
+        curses.cbreak()
         while self.exit_code is None:
             self.update_screen()
-            while True:
-                elapsed = int(1000*monotonic_time()-self.last_getch)
-                delay = max(0, min(1000, 1000-elapsed))
-                self.stdscr.timeout(delay)
+            elapsed = int(1000*monotonic_time()-self.last_getch)
+            delay = max(100, min(1000, 1000-elapsed))//100
+            curses.halfdelay(delay)
+            try:
                 v = self.stdscr.getch()
-                self.last_getch = int(1000*monotonic_time())
-                if v==-1:
-                    break
-                #print("v=%s" % (v,))
-                if v in EXIT_KEYS:
-                    self.exit_code = 0
-                    break
-                if v in SIGNAL_KEYS:
-                    self.exit_code = 128+SIGNAL_KEYS[v]
-                    break
-                if v==258:    #down arrow
-                    self.position += 1
-                elif v==259:    #up arrow
-                    self.position = max(self.position-1, 0)
-                elif v==10 and self.selected_session:
-                    self.show_selected_session()
-                elif v in (ord("s"), ord("S")):
-                    self.run_subcommand("stop")
-                elif v in (ord("a"), ord("A")):
-                    self.run_subcommand("attach")
-                elif v in (ord("d"), ord("D")):
-                    self.run_subcommand("detach")
+            except Exception:
+                v = -1
+            self.last_getch = int(1000*monotonic_time())
+            if v in EXIT_KEYS:
+                self.exit_code = 0
+            if v in SIGNAL_KEYS:
+                self.exit_code = 128+SIGNAL_KEYS[v]
+            if v==258:    #down arrow
+                self.position += 1
+            elif v==259:    #up arrow
+                self.position = max(self.position-1, 0)
+            elif v==10 and self.selected_session:
+                self.show_selected_session()
+            elif v in (ord("s"), ord("S")):
+                self.run_subcommand("stop")
+            elif v in (ord("a"), ord("A")):
+                self.run_subcommand("attach")
+            elif v in (ord("d"), ord("D")):
+                self.run_subcommand("detach")
 
     def show_selected_session(self):
         #show this session:
