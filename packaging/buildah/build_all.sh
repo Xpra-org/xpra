@@ -32,7 +32,7 @@ for DISTRO in $DISTROS; do
 
 	#use a temp image:
 	TEMP_IMAGE="$IMAGE_NAME-temp"
-	buildah image rmi "${TEMP_IMAGE}" >& /dev/null
+	buildah rmi "${TEMP_IMAGE}" >& /dev/null
 	buildah from --pull-never --name  $TEMP_IMAGE $IMAGE_NAME
 	if [ "$?" != "0" ]; then
 		echo "cannot build $DISTRO: image $IMAGE_NAME is missing or $TEMP_IMAGE already exists?"
