@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -102,7 +102,8 @@ class ZeroconfPublisher:
         self.port = port
         self.zeroconf = None
         self.service = None
-        self.args = None
+        self.args = ()
+        self.kwargs = {}
         self.registered = False
         try:
             #ie: service_name = localhost.localdomain :2 (ssl)
@@ -118,9 +119,18 @@ class ZeroconfPublisher:
             st = service_type+"local."
             regname += "."+st
             td = self.txt_rec(text_dict or {})
-            self.args = (st, regname, self.address, port, 0, 0, td)
-            service = ServiceInfo(*self.args)
-            log("ServiceInfo%s=%s", self.args, service)
+            if zeroconf_version<"0.23":
+                self.args = (st, regname, self.address, port, 0, 0, td)
+            else:
+                self.kwargs = {
+                    "type_"         : st,       #_xpra._tcp.local.
+                    "name"          : regname,
+                    "port"          : port,
+                    "properties"    : td,
+                    "addresses"     : [self.address],
+                    }
+            service = ServiceInfo(*self.args, **self.kwargs)
+            log("ServiceInfo(%s, %s)=%s", self.args, self.kwargs, service)
             self.service = service
         except Exception as e:
             log("zeroconf ServiceInfo", exc_info=True)
@@ -158,10 +168,13 @@ class ZeroconfPublisher:
         return new_dict
 
     def update_txt(self, txt):
-        args = list(self.args)
-        args[6] = self.txt_rec(txt)
-        self.args = tuple(args)
-        si = ServiceInfo(*self.args)
+        props = self.txt_rec(txt)
+        if self.args:
+            args = list(self.args)
+            args[6] = props
+            self.args = tuple(args)
+        self.kwargs["properties"] = props
+        si = ServiceInfo(**self.kwargs)
         try:
             self.zeroconf.update_service(si)
             self.service = si
