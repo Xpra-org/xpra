@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
 gst = import_gst()
 from gi.repository import GLib, GObject
 
-from xpra.util import envint, AtomicInteger, noerr
+from xpra.util import envint, AtomicInteger, noerr, first_time
 from xpra.os_util import monotonic_time, register_SIGUSR_signals
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.log import Logger
@@ -441,3 +441,19 @@ class SoundPipeline(GObject.GObject):
         if not set(tags).intersection(KNOWN_TAGS):
             structure = message.get_structure()
             self.gstloginfo("unknown sound pipeline tag message: %s, tags=%s", structure.to_string(), tags)
+
+
+    def get_element_properties(self, element, *properties):
+        info = {}
+        for x in properties:
+            try:
+                v = element.get_property(x)
+                if v>=0:
+                    info[x] = v
+            except TypeError as e:
+                if first_time("gst-property-%s" % x):
+                    log("'%s' not found in %r", x, self)
+                    log.warn("Warning: %s", e)
+            except Exception as e:
+                log.warn("Warning: %s (%s)", e, type(e))
+        return info

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -198,18 +198,12 @@ class SoundSource(SoundPipeline):
                 v = self.src.get_property(x)
                 if v>=0:
                     info[x] = v
-        src_info = info.setdefault("src", {})
-        for x in (
+        info["src"] = self.get_element_properties(
+            self.src,
             "actual-buffer-time", "actual-latency-time",
             "buffer-time", "latency-time",
             "provide-clock",
-            ):
-            try:
-                v = self.src.get_property(x)
-                if v>=0:
-                    src_info[x] = v
-            except Exception as e:
-                log.warn("Warning: %s", e)
+            )
         return info
 
 

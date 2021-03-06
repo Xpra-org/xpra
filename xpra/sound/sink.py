@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -366,22 +366,17 @@ class SoundSink(SoundPipeline):
                              "underruns"    : self.underruns,
                              "state"        : self.queue_state,
                              }
-        sink_info = info.setdefault("sink", {})
-        for x in (
+        info["sink"] = self.get_element_properties(
+            self.sink,
             "buffer-time", "latency-time",
             #"next_sample", "eos_rendering",
             "async", "blocksize",
             "enable-last-sample",
-            "max-bitrate", "max-lateness", "processing-deadline",
+            "max-bitrate", "max-lateness",
+            #"processing-deadline",
             "qos", "render-delay", "sync",
             "throttle-time", "ts-offset",
-            ):
-            try:
-                v = self.sink.get_property(x)
-                if v>=0:
-                    sink_info[x] = v
-            except Exception as e:
-                log.warn("Warning: %s", e)
+            )
         return info
 
     def can_push_buffer(self):
