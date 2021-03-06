@@ -759,7 +759,7 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         from xpra.net import mdns
         assert mdns
         from xpra.net.mdns import XPRA_MDNS_TYPE, RFB_MDNS_TYPE
-        PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", WIN32 or OSX)
+        PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", True)
         if PREFER_ZEROCONF:
             from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers as MDNSPublishers, get_interface_index
         else:
