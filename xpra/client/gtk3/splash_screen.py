@@ -132,7 +132,7 @@ class SplashScreen(Gtk.Window):
         log("read_stdin()")
         while self.exit_code is None:
             line = sys.stdin.readline()
-            self.handle_stdin_line(line)
+            GLib.idle_add(self.handle_stdin_line, line)
 
     def handle_stdin_line(self, line):
         parts = line.rstrip("\n\r").split(":", 1)
