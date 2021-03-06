@@ -399,7 +399,6 @@ cdef extern from "libavcodec/avcodec.h":
     int avcodec_send_frame(AVCodecContext *avctx,const AVFrame *frame) nogil
     int avcodec_receive_packet(AVCodecContext *avctx, AVPacket *avpkt) nogil
 
-    int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     AVFrame* av_frame_alloc()
     void av_frame_free(AVFrame **frame)
     int avcodec_close(AVCodecContext *avctx)
