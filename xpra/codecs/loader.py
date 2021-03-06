@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -206,9 +206,10 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True):
         if video:
             show += list(DECODER_VIDEO_CODECS)
             load(*DECODER_VIDEO_CODECS)
-
     log("done loading codecs")
-    log("found:")
+    show_codecs()
+
+def show_codecs():
     #print("codec_status=%s" % codecs)
     for name in sorted(ALL_CODECS):
         log("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
@@ -302,24 +303,32 @@ def encoding_help(encoding):
 
 
 
-def main():
+def main(args):
     from xpra.platform import program_context
     from xpra.log import enable_color, LOG_FORMAT, NOPREFIX_FORMAT
     from xpra.util import print_nested_dict, pver
     with program_context("Loader", "Encoding Info"):
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv
+        verbose = "-v" in args or "--verbose" in args
+        args = [x for x in args if x not in ("-v", "--verbose")]
         format_string = NOPREFIX_FORMAT
         if verbose:
             format_string = LOG_FORMAT
             log.enable_debug()
         enable_color(format_string)
 
-        load_codecs()
+        if len(args)>1:
+            for x in args[1:]:
+                load_codec(x)
+            list_codecs = args[1:]
+        else:
+            load_codecs()
+            list_codecs = ALL_CODECS
+
         #not really a codec, but gets used by codecs, so include version info:
         add_codec_version("numpy", "numpy")
         print("codecs and csc modules found:")
         #print("codec_status=%s" % codecs)
-        for name in sorted(ALL_CODECS):
+        for name in sorted(list_codecs):
             mod = codecs.get(name, "")
             f = mod
             if mod and hasattr(mod, "__file__"):
@@ -356,4 +365,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
