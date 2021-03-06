@@ -2439,7 +2439,7 @@ cdef class Encoder:
         cdef unsigned long copy_len
         cdef unsigned long pix_len = len(pixels)
         assert pix_len>=(h*image_stride), "image pixel buffer is too small: expected at least %ix%i=%i bytes but got %i bytes" % (h, image_stride, h*image_stride, pix_len)
-        if image_stride<=self.inputPitch and not strict_stride:
+        if image_stride==self.inputPitch or (image_stride<self.inputPitch and not strict_stride):
             stride = image_stride
             copy_len = h*image_stride
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
