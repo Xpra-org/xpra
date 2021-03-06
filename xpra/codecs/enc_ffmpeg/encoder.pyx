@@ -822,6 +822,15 @@ DEF DEFAULT_BUF_LEN = 64*1024
 
 VAAPI_CODECS = []
 
+ENCODER_NAMES = {
+    "h264"  : b"libx264",
+    "vp8"   : b"libvpx",
+    "vp9"   : b"libvpx",
+    "mpeg1" : b"mpeg1video",
+    "mpeg2" : b"mpeg2video",
+    }
+
+
 def init_module():
     global CODECS
     log("enc_ffmpeg.init_module()")
@@ -1180,12 +1189,24 @@ cdef class Encoder:
             self.video_codec = avcodec_find_encoder_by_name(name)
             self.hw_device_ctx = init_vaapi_device()
         else:
-            name = self.encoding
-            video_codec_id = CODEC_ID.get(codec, 0) #ie: AV_CODEC_ID_H264
-            assert video_codec_id!=0, "invalid codec; %s" % self.encoding
-            self.video_codec = avcodec_find_encoder(video_codec_id)
+            name = ENCODER_NAMES.get(self.encoding)
+            if name:
+                log("using encoder name '%s' for '%s'", name, self.encoding)
+                self.video_codec = avcodec_find_encoder_by_name(name)
+            else:
+                name = self.encoding
+                video_codec_id = CODEC_ID.get(codec, 0) #ie: AV_CODEC_ID_H264
+                assert video_codec_id!=0, "invalid codec; %s" % self.encoding
+                self.video_codec = avcodec_find_encoder(video_codec_id)
         if self.video_codec==NULL:
-            raise Exception("codec '%s' not found!" % name)
+            raise Exception("codec not found for '%s'!" % bytestostr(name))
+        if not self.vaapi:
+            #make sure that we don't end up using vaapi from here
+            #if we didn't want to use it
+            #(otherwise it will crash)
+            video_codec_name = bytestostr(self.video_codec.name)
+            if video_codec_name.endswith("vaapi"):
+                raise Exception("codec '%s' would use vaapi" % self.encoding)
         log("%s: \"%s\", codec flags: %s",
             bytestostr(self.video_codec.name), bytestostr(self.video_codec.long_name),
             flagscsv(CAPS, self.video_codec.capabilities))
