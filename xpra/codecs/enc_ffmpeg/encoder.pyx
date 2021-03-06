@@ -1225,14 +1225,16 @@ cdef class Encoder:
         oformat = get_av_output_format(strtobytes(self.muxer_format))
         if oformat==NULL:
             raise Exception("libavformat does not support %s" % self.muxer_format)
-        log("init_encoder() AVOutputFormat(%s)=%#x, flags=%s", self.muxer_format, <uintptr_t> oformat, flagscsv(AVFMT, oformat.flags))
+        log("init_muxer(%i) AVOutputFormat(%s)=%#x, flags=%s",
+            gen, self.muxer_format, <uintptr_t> oformat, flagscsv(AVFMT, oformat.flags))
         if oformat.flags & AVFMT_ALLOW_FLUSH==0:
             raise Exception("AVOutputFormat(%s) does not support flushing!" % self.muxer_format)
         r = avformat_alloc_output_context2(&self.muxer_ctx, oformat, strtobytes(self.muxer_format), NULL)
         if r!=0:
             msg = av_error_str(r)
             raise Exception("libavformat cannot allocate context: %s" % msg)
-        log("init_encoder() avformat_alloc_output_context2 returned %i for %s, format context=%#x, flags=%s, ctx_flags=%s", r, self.muxer_format, <uintptr_t> self.muxer_ctx,
+        log("init_muxer(%i) avformat_alloc_output_context2 returned %i for %s, format context=%#x, flags=%s, ctx_flags=%s",
+            gen, r, self.muxer_format, <uintptr_t> self.muxer_ctx,
             flagscsv(FMT_FLAGS, self.muxer_ctx.flags), flagscsv(AVFMTCTX, self.muxer_ctx.ctx_flags))
         list_options(self.muxer_ctx, self.muxer_ctx.av_class, 0)
 
@@ -1255,7 +1257,8 @@ cdef class Encoder:
         self.muxer_ctx.pb = avio_alloc_context(self.buffer, DEFAULT_BUF_LEN, 1, <void *> gen, NULL, write_packet, NULL)
         if self.muxer_ctx.pb==NULL:
             raise Exception("libavformat failed to allocate io context")
-        log("init_encoder() saving %s stream to bitstream buffer %#x", self.encoding, <uintptr_t> self.buffer)
+        log("init_muxer(%i) saving %s stream to bitstream buffer %#x",
+            gen, self.encoding, <uintptr_t> self.buffer)
         self.muxer_ctx.flush_packets = 1
         self.muxer_ctx.bit_rate = 250000
         self.muxer_ctx.start_time = 0
@@ -1265,7 +1268,8 @@ cdef class Encoder:
 
         self.video_stream = avformat_new_stream(self.muxer_ctx, NULL)    #self.video_codec
         self.video_stream.id = 0
-        log("init_encoder() video: avformat_new_stream=%#x, nb streams=%i", <uintptr_t> self.video_stream, self.muxer_ctx.nb_streams)
+        log("init_muxer(%i) video: avformat_new_stream=%#x, nb streams=%i",
+            gen, <uintptr_t> self.video_stream, self.muxer_ctx.nb_streams)
 
     def write_muxer_header(self):
         log("write_muxer_header() %s header", self.muxer_format)
@@ -1277,6 +1281,7 @@ cdef class Encoder:
             raise Exception("libavformat failed to write header: %s" % msg)
 
     def init_encoder(self, int quality, int speed, options):
+        log("init_encoder(%i, %i, %s)", quality, speed, options)
         self.video_ctx = avcodec_alloc_context3(self.video_codec)
         if self.video_ctx==NULL:
             raise Exception("failed to allocate video codec context!")
