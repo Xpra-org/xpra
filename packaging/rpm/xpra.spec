@@ -163,7 +163,13 @@ Requires:			python3-gobject
 Recommends:			python3-inotify
 Recommends:			python3-netifaces
 Recommends:			python3-dbus
+%if 0%{?el8}
 Recommends:			python3-avahi
+%else
+%if 0%{?fedora}
+Recommends:			python3-zeroconf
+%endif
+%endif
 Recommends:			python3-dns
 Recommends:			python3-paramiko
 #Recommends:			python3-lzo
