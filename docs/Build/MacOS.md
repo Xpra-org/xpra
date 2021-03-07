@@ -1,6 +1,6 @@
-![MacOS](https://xpra.org/icons/osx.png)
+# ![MacOS](https://xpra.org/icons/osx.png) Building MacOS Binaries
 
-# Setup
+## Setup
 Install [XCode](https://developer.apple.com/xcode/) and its command line tools.
 
 Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK/OSX/Building) setup script and run it:
@@ -22,13 +22,13 @@ Download everything required for the build:
 jhbuild update
 ```
 
-# Build all the libraries
+## Build all the libraries
 ```shell
 jhbuild bootstrap
 jhbuild build
 ```
 
-# Build and Package Xpra
+## Build and Package Xpra
 ```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra/packaging/MacOS/
