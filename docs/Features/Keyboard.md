@@ -1,9 +1,9 @@
-![Keyboard](https://xpra.org/icons/keyboard.png)
+# ![Keyboard](https://xpra.org/icons/keyboard.png) Keyboard
 
 Keyboard handling is an area that is constantly seeing improvements and bug fixes.
 That's because each platform does things slightly differently and xpra has to somehow convert this data into meaningful keyboard events on the remote end.
 
-# Common Issues
+## Common Issues
 * when connecting over high latency links, use the `--no-keyboard-sync` option to prevent keys from repeating. This toggle is also accessible from the system tray menu. (this switch may cause other problems though)
 * keyboard shortcuts: [#1657](https://github.com/Xpra-org/xpra/issues/1657)
 * US layout and most common layouts should work OK
@@ -14,7 +14,7 @@ That's because each platform does things slightly differently and xpra has to so
 * Input grabs: [#139](https://github.com/Xpra-org/xpra/issues/139)
 
 
-# Reporting Bugs
+## Reporting Bugs
 First, please check for existing issues that may match your problem.
 Failing that, make sure to read the [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs) guidelines and generally you will need to include (only those that apply):
 * try the keyboard debugging tool which can be launched using `xpra keyboard-test` or from the `xpra toolbox`
