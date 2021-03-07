@@ -8,7 +8,7 @@
 	* laggy input handling and screen updates
 	* long subcommand timeout
 * fix [plink ssh mode on MS Windows](https://github.com/Xpra-org/xpra/issues/3040)
-* fix connection errors with trailing slash in display name
+* fix connection errors with [trailing slash in display name](https://github.com/Xpra-org/xpra/issues/3040#issuecomment-791221370)
 * workaround [API breakage](https://github.com/Xpra-org/xpra/issues/3043) in newer versions of python-zeroconf
 * warn just once if expected GStreamer element properties are missing
 * map more applications to text mode ('code', 'jetbrains')
