@@ -1,10 +1,10 @@
-![Printer](https://xpra.org/icons/printer.png)
+# ![Printer](https://xpra.org/icons/printer.png) Printing
 
 This feature allows printers connected to the client to show as virtual printers on the server so that printing can transparently be forwarded back to the client's printer(s).
 
 This functionality shares most of the code with the [file transfers](./FileTransfers.md), as the print job is first rendered to a file before being sent to the client.
 
-# Installation and platform support
+## Installation and platform support
 * MS Windows and MacOS clients should work out of the box
 * [CentOS](https://www.centos.org/) requires manual setup to support MacOS clients as the [cups-pdf](http://www.cups-pdf.de/) package is not available in the default repositories
 * Debian and Ubuntu: the dependencies are listed as "suggestions" only, so you may need to run `apt-get install cups-filters cups-common cups-pdf python3-cups` to install the missing pieces
@@ -19,7 +19,7 @@ This functionality shares most of the code with the [file transfers](./FileTrans
 * MacOS [shadow server](./ShadowServer) Support starting with version `10.10` (aka Yosemite) prevents the xpra cups backend from connecting to the xpra server, to fix this run: `sudo sh -c 'echo "Sandboxing Relaxed" >> /etc/cups/cups-files.conf';sudo launchctl stop org.cups.cupsd`
 
 
-# Implementation
+## Implementation
 
 _How does this work?_
 The xpra client exports the list of local printers to the xpra server, the server can then create the same list of virtual printers using the `lpadmin` command.\
@@ -30,7 +30,7 @@ The xpra client then sends this PDF / postscript document straight to the actual
 The HTML5 client is written in Javascript so it does not have access to the printer device information and the PDF document is presented for printing via the standard browser's print dialog.
 
 
-# Debugging
+## Debugging
 * run the [printing.py](../../xpra/platform/printing.py) diagnostic script to see which printers are detected - this script is available as `Print.exe` on MS Windows and as `Xpra.app/Contents/Helpers/Print` on MacOS
 * you can use the same script to print files, ie: `./xpra/platform/printing.py /path/to/yourfile.pdf`
 * run the client and server with the `-d printing` debug flags (see [debug logging](./Logging))
@@ -38,7 +38,7 @@ The HTML5 client is written in Javascript so it does not have access to the prin
 * for debugging the cups server backend, run: `cupsctl --debug-logging`
 
 
-# Related Issues
+## Related Issues
 * [#1344](https://github.com/Xpra-org/xpra/issues/1344) better printer options handling and forwarding
 * [#1228](https://github.com/Xpra-org/xpra/issues/1228) printing enhancements: cups backend status
 * [#1286](https://github.com/Xpra-org/xpra/issues/1286) printing conflicts with socket authentication module 'env'
