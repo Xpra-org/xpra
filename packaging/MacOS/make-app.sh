@@ -25,6 +25,7 @@ else
 	if [ ! -d "html5" ]; then
 		echo "html5 client not found"
 		echo " perhaps run: 'git clone https://github.com/Xpra-org/xpra-html5'"
+		echo " then: ln -sf xpra-html5 html5"
 		exit 1
 	fi
 fi
