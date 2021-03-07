@@ -1,9 +1,9 @@
-![Network](https://xpra.org/icons/connect.png)
+# ![Network](https://xpra.org/icons/connect.png) Network
 
 See also: [authentication](../Usage/Authentication.md), [encryption](./Encryption.md) and [multicast DNS](./Multicast-DNS.md)
 
 
-# Connection Types
+## Connection Types
 |Type|Bind option|Availability|Information|
 |----|-----------|---------|-----------|
 |`TCP`|`bind-tcp`|All|
@@ -21,9 +21,9 @@ Unencrypted modes like plain-`TCP` and plain-`WebSocket` can also be secured wit
 All the sockets that can be accessed via a network connection (all but `vsock` and `named-pipe`) will usually be published via [multicast DNS](./Multicast-DNS.md). On Posix, `unix-domain-sockets` are exposed as `SSH` as we assume that a local SSH server is always available.
 
 
-# Examples
+## Examples
 
-## TCP Upgrade to WebSocket
+### TCP Upgrade to WebSocket
 ```shell
 xpra start --start=xterm --bind-tcp=0.0.0.0:10000
 ```
@@ -36,7 +36,7 @@ xdg-open http://localhost:10000/
 ```
 
 
-## SSH with password file
+### SSH with password file
 ```shell
 echo -n thepassword > password.txt
 xpra start --start=xterm --bind-ssh=0.0.0.0:10000,auth=file:filename=password.txt
@@ -47,7 +47,7 @@ xpra attach ssh://localhost:10000/
 The client will prompt for the password, as found in the `password.txt` file and not the regular shell account password.
 
 
-# Network Performance
+## Network Performance
 Xpra will try to detect your network adapter and connection characteristics and it should adapt to changing network capacity and performance.
 However, it may not always get it right and you may need to turn off bandwidth detection (`bandwidth-detection` option) and / or specify your own bandwidth constraints. (`bandwidth-limit` option).
 
