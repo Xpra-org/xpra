@@ -1,4 +1,6 @@
-# Basic Example
+# SSL
+
+## Basic Example
 
 start a server with TCP and SSL support using an existing certificate `cert.pem` (see below for generating one):
 ```
@@ -21,14 +23,14 @@ You can:
    xpra attach ssl://host:10000/ --ssl-ca-certs=./cert.pem
 ```
 
-## Generating a self signed certificate
+### Generating a self signed certificate
 ```
 openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout key.pem -sha256
 cat key.pem cert.pem > ssl-cert.pem
 ```
 For trusting your own certificates and testing with localhost, see [certificates for localhost](https://letsencrypt.org/docs/certificates-for-localhost/)
 
-## Socket upgrades
+### Socket upgrades
 Once a server is configured for `SSL` - usually by adding the `--ssl-cert` option, its TCP sockets (`bind-tcp` option) can automatically be upgraded to:
 * `ssl`, obviously
 * `http` and `ws` (`websockets`) connections can be upgraded to `https` and `wss` (`secure websockets`)
@@ -37,27 +39,27 @@ The same way, any `ws` sockets specified with the `bind-ws` option can then be u
 
 This allows a single port to be used with multiple protocols (including also [SSH](./SSH.md)), which can more easily go through some firewalls and may be required by some network policies. Client certificates can also be used for authentication.
 
-## SSL options
+### SSL options
 There are many options to configure and certificates to deal with.
 See [https://docs.python.org/2/library/ssl.html], on which this is based.
 
 For more details see [#1252](../https://github.com/Xpra-org/xpra/issues/1252).
 
-## Default Certificate
+### Default Certificate
 When using the binary packages from https://xpra.org, a self-signed SSL certificate will be generated during the first installation.\
 It is placed in:
 * `/etc/xpra/ssl-cert.pem` on Posix platforms
 * `C:\ProgramData\Xpra\ssl-cert.pem` on MS Windows
 * `/Library/Application Support/Xpra/ssl-cert.pem` on Mac OS
 
-## Warnings
+### Warnings
 SSL options are not applicable to unix domain sockets, named pipes or vsock. \
 Do not assume that you can just enable SSL to make your connection secure.
 
 
 ***
 
-# Securing SSL with self signed CA and certificates
+## Securing SSL with self signed CA and certificates
 
 See [The Most Dangerous Code in the World: Validating SSL Certificates in Non-Browser Software](https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf) and [Beware of Unverified TLS Certificates in PHP & Python](https://blog.sucuri.net/2016/03/beware-unverified-tls-certificates-php-python.html). \
 See also: [Fallout from the Python certificate verification change](https://lwn.net/Articles/666353/).
@@ -96,7 +98,7 @@ Connect the xpra client:
 xpra attach ssl:localhost:10000 --ssl-ca-cert=/path/to/ca.crt
 ```
 
-## Sending the CA data
+### Sending the CA data
 
 In some cases, it may be desirable to supply the CA certificate on the command line, in a URL string or in a session file. Here's how.
 
