@@ -1,10 +1,12 @@
-# Usage
+# Image Depth
+
+## Usage
 Simply specify which pixel bit depth you want to use when starting a session, ie:
 ```shell
 xpra start --pixel-depth=30
 ```
 
-# Support
+## Support
 * [seamless mode](../Usage/Seamless.md) (aka `xpra start`) supports bit depths 16,24 and 30
 * [desktop mode](../Usage/StartDesktop.md) (aka `start-desktop`) supports 8,16,24 and 30
 * the native client `xpra attach` supports 16,24,30,48
@@ -12,7 +14,7 @@ xpra start --pixel-depth=30
 Testing that high bit depth is actually in use can be tricky, for that the `xpra toolbox` provides a test application.
 
 
-# Limitations
+## Limitations
 * the operating system and display must be configured for deep colour support
 * transparency is supported in 24-bit mode, which is in effect a 32-bit mode
 * with versions older than 4.1, 30-bit rendering is only supported in the [opengl enabled client](./Client-OpenGL.md), and only the `rgb` encoding will preserve high bit depth
@@ -20,7 +22,7 @@ Testing that high bit depth is actually in use can be tricky, for that the `xpra
 * 8-bit mode is not optimized at all
 * see also [DPI](./DPI.md)
 
-# Feature links
+## Feature links
 * [#1445](https://github.com/Xpra-org/xpra/issues/1445): 8-bit server support
 * [#1315](https://github.com/Xpra-org/xpra/issues/1315): 16-bit server support
 * [#909](https://github.com/Xpra-org/xpra/issues/909): 30-bit server support
