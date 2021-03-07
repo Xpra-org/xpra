@@ -1,3 +1,5 @@
+# System Tray
+
 ## Xpra System Tray
 Xpra forwards windows for remote applications (or desktops), and unless you interact with some of its options, it does not create any windows of its own so that it can stay out of the way.
 
