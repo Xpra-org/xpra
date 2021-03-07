@@ -1,4 +1,4 @@
-![Authentication](https://xpra.org/icons/authentication.png)
+# ![Authentication](https://xpra.org/icons/authentication.png) Authentication
 
 Xpra's authentication modules can be useful for:
 * securing socket connections
@@ -11,7 +11,7 @@ SSL mode can also be used for authentication using certificates (see #1252)
 
 When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Network/Encryption.md) and authentication can be skipped: by default the unix domain sockets used by ssh do not use authentication.
 
-# Modules
+## Modules
 Here are the modules that can be used:
 |Module|Result|Purpose|Version requirements|
 |------|------|-------|--------------------|
@@ -98,7 +98,7 @@ The username is usually more relevant when authenticating against a [proxy serve
 
 ***
 
-# Authentication Process
+## Authentication Process
 
 The steps below assume that the client and server have been configured to use authentication:
 * if the server is not configured for authentication, the client connection should be accepted and a warning will be printed
@@ -106,7 +106,7 @@ The steps below assume that the client and server have been configured to use au
 * if multiple authentication modules are specified, the client may bring up multiple authentication dialogs
 * how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `kerberos`, `gss`, `u2f` and finally `prompt`
 
-## Notes
+### Notes
 * this information applies to all clients except the HTML5 client: regular GUI clients as well as command line clients like `xpra info`
 * each authentication module specifies the type of password hashing it supports (usually [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code))
 * some authentication modules (`pam`, `win32`, `kerberos-password`, `ldap` and `ldap3`) require the actual password to be sent across to perform the authentication on the server - they therefore use the weak `xor` hashing, which is insecure
@@ -119,7 +119,7 @@ The steps below assume that the client and server have been configured to use au
 
 For more information on packets, see [network](../Network/README.md).
 
-## Salt handling is important
+### Salt handling is important
 * [64-bit entropy is nowhere near enough against a serious attacker](https://crypto.stackexchange.com/a/34162/48758): _If you want to defend against rainbow tables, salts are inevitable, because you need a full rainbow table per unique salt, which is computationally and storage-wise intense_
 * [SHA-512 w/ per User Salts is Not Enough](https://blog.mozilla.org/security/2011/05/10/sha-512-w-per-user-salts-is-not-enough/): _In the event the hash was disclosed or the database was compromised, the attacker will already have one of the two values (i.e. the salt), used to construct the hash_
 * [about hmac](https://news.ycombinator.com/item?id=1998198): _Those people should know that HMAC is as easy to precompute as naked SHA1 is; you can "rainbow-table" HMAC_* and we did get it wrong before...
