@@ -1,4 +1,4 @@
-![Debian](https://xpra.org/icons/debian.png)   ![Ubuntu](https://xpra.org/icons/ubuntu.png) Building DEB pacakges
+# ![Debian](https://xpra.org/icons/debian.png)   ![Ubuntu](https://xpra.org/icons/ubuntu.png) Building DEB pacakges
 
 The debian packaging files can be found here: [packaging/debian](../../packaging/debian).
 
@@ -6,7 +6,7 @@ Debian and Ubuntu also ships xpra packages, though their _stable_ versions are c
 
 For general information, see [building](./README.md).
 
-# Build and runtime requirements
+## Build and runtime requirements
 ```shell
 apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev \
                 libxkbfile-dev \
@@ -22,7 +22,7 @@ Also install some X11 utilities if not installed already:
 apt-get install xauth x11-xkb-utils
 ```
 
-## [Codecs](../Usage/Encodings.md)
+### [Codecs](../Usage/Encodings.md)
 Basic picture codecs
 ```shell
 apt-get install libturbojpeg-dev libwebp-dev python3-pil
@@ -40,7 +40,7 @@ ffmpeg based video codecs
 apt-get install libavformat-dev libavcodec-dev libswscale-dev
 ```
 
-## Optional:
+### Optional:
 for the [html5 client](https://github.com/Xpra-org/xpra-html5)
 ```shell
 apt-get install uglifyjs brotli libjs-jquery libjs-jquery-ui gnome-backgrounds
@@ -82,7 +82,7 @@ apt-get install openssh-client sshpass python3-paramiko
 ```
 
 
-# DEB Packaging
+## DEB Packaging
 Install the packaging tools
 ```shell
 apt-get install devscripts build-essential lintian debhelper pandoc
