@@ -1,3 +1,5 @@
+# DPI
+
 Xpra synchronizes the DPI from the client to the server, so that applications will render with the correct settings and "look right" on the client.
 This may affect fonts, window sizes, cursors sizes, etc.
 
