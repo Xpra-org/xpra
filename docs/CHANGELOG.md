@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.1.1] 2021-03-07
+* ensure splash screen failures are not fatal, fix threading bug
+* avoid [vaapi crashes in ffmpeg encoder](https://github.com/Xpra-org/xpra/issues/3039)
+* `xpra top` fixes:
+	* correctly [show the version number](https://github.com/Xpra-org/xpra/issues/3041)
+	* laggy input handling and screen updates
+	* long subcommand timeout
+* fix [plink ssh mode on MS Windows](https://github.com/Xpra-org/xpra/issues/3040)
+* fix connection errors with trailing slash in display name
+* workaround [API breakage](https://github.com/Xpra-org/xpra/issues/3043) in newer versions of python-zeroconf
+* warn just once if expected GStreamer element properties are missing
+* map more applications to text mode ('code', 'jetbrains')
+
 ## [4.1] 2021-02-26
 * Overhauled container based [build system](https://github.com/Xpra-org/xpra/tree/master/packaging/buildah)
 * [Splash screen](https://github.com/Xpra-org/xpra/issues/2540)

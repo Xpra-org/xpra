@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.1
+%define version 4.1.1
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -604,6 +604,18 @@ fi
 
 
 %changelog
+* Sun Mar 07 2021 Antoine Martin <antoine@xpra.org> 4.1.1-1
+- ensure splash screen failures are not fatal, fix threading bug
+- avoid vaapi crashes in ffmpeg encoder (#3039)
+- `xpra top` fixes:
+   correctly show the version number (#3041)
+   laggy input handling and screen updates
+   long subcommand timeout
+- fix plink ssh mode on MS Windows (#3040)
+- fix connection errors with trailing slash in display name
+- workaround API breakage in newer versions of python-zeroconf (#3043)
+- warn just once if expected GStreamer element properties are missing
+
 * Sat Feb 27 2021 Antoine Martin <antoine@xpra.org> 4.1-1
 - Overhauled container based build system
 - Splash screen

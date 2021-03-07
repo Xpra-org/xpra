@@ -1,3 +1,17 @@
+xpra (4.1.1-1) UNRELEASED; urgency=low
+  * ensure splash screen failures are not fatal, fix threading bug
+  * avoid vaapi crashes in ffmpeg encoder (#3039)
+  * `xpra top` fixes:
+    - correctly show the version number (#3041)
+    - laggy input handling and screen updates
+    - long subcommand timeout
+  * fix plink ssh mode on MS Windows (#3040)
+  * fix connection errors with trailing slash in display name
+  * workaround API breakage in newer versions of python-zeroconf (#3043)
+  * warn just once if expected GStreamer element properties are missing
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 07 Mar 2021 18:46:52 +0700
+
 xpra (4.1-1) UNRELEASED; urgency=low
   * Overhauled container based build system
   * Splash screen
