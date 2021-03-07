@@ -32,7 +32,7 @@ It can also [open documents and URLs remotely](./docs/Features/File-Transfers.md
 * Linux: [RPM](./Download#-for-rpm-distributions), [DEB](./Download#-for-debian-based-distributions)
 
 All the packages are signed. There are also [beta builds](https://xpra.org/beta) available.  
-For more information, see [xpra downloads](./Download)
+For more information, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki/Download)
 
 ## Build from source
 ```
