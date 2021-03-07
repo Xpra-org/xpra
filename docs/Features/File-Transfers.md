@@ -1,4 +1,4 @@
-![Upload](https://xpra.org/icons/upload.png)
+# ![Upload](https://xpra.org/icons/upload.png) File Transfers
 
 This feature shares most of the code with [printer forwarding](./Printing.md).
 
@@ -7,13 +7,13 @@ This is not meant to replace a network filesystem, it is only there to facilitat
 For more details, see [#494](https://github.com/Xpra-org/xpra/issues/494) and [#1026](https://github.com/Xpra-org/xpra/issues/1026).
 
 
-# Client to Server
+## Client to Server
 Assuming that file-transfers are enabled (which is the default - see configuration options below), the client can send files to the server using the system tray upload menu:
 
 ![Upload Example](https://xpra.org/images/upload.png)
 
 
-# Server to Client
+## Server to Client
 The server can send files to the client using:
 * the `xpra send-file` subcommand
 * the dbus interface: [#904](https://github.com/Xpra-org/xpra/issues/904)
@@ -26,7 +26,7 @@ To send to all the clients, replace use "*". (quoted to prevent shell expansion)
 Depending on the client configuration, the `open` flag may not be honoured by the client.
 
 
-# Configuration Options
+## Configuration Options
 * `file-transfer` enables or disables all file transfers
 * `file-size-limit` the maximum size for file transfers
 * `open-files` allows files to be opened after being received - which may be a security risk
