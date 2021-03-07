@@ -1,3 +1,5 @@
+# Proxy Server
+
 The proxy server is used for starting or accessing multiple xpra sessions through a single entry point, without requiring SSH for transport or authentication.
 
 This can be useful for hosts that have a limited number of publicly accessible ports or for clients accessing servers through firewalls with outbound port filtering. (ie: you can put the server on port 80 or 443 and access many sessions from this single port)
@@ -5,23 +7,23 @@ This can be useful for hosts that have a limited number of publicly accessible p
 When started as `root`, which is the case when the proxy server runs as a [system service](./Service.md), this can also help to ensure that the sessions outlive the environment they were started from.
 
 
-# Configuration
+## Configuration
 Depending on the [authentication](./Authentication.md) module configured, the proxy server can:
 * expose all the local sessions and start new ones (this is the default behaviour)
 * provide access to a custom list of sessions (ie: using the `sqlite` authentication module)
 
 
-# GPU Accelerated Transcoding
+## GPU Accelerated Transcoding
 If the proxy server has access to a hardware accelerated encoding device (ie: [NVENC](./NVENC.md)) and the servers it proxies do not, then it can automatically be used for speeding up screen update compression. (details in [#504](../issues/504))
 
 
-# Diagram
+## Diagram
 Here is an example architecture using the proxy server to provide access to a number of servers through a single port, also showing where NVENC hardware encoders and TCP proxying (apache, nginx, thttp,..) can all hook into:
 
 ![Xpra Proxy Diagram](https://xpra.org/images/Xpra-Proxy.png)
 
 
-# Example
+## Example
 *Beware*: to simplify these instructions, we use the `allow` authentication module, which does *no* checking whatsoever!
 
 start a session on display `:100` with an `xterm`, this session is not exposed via TCP as there is no `bind-tcp` option:
@@ -52,14 +54,14 @@ Notes:
 * to use ports lower than 1024 either use `--min-port` and run as root or see [allow non-root process to bind to port 80 and 443](https://superuser.com/questions/710253/)
 
 
-# Info and Control
+## Info and Control
 When the client requests information from the server (ie: for the session info dialog or for internal use), the requests are passed through the proxy instance to the real server just like other packets, but the response is augmented with some extra information from the proxy server. (it is prefixed to prevent any interference)
 
 Just like any other xpra server instance, a proxy instance can be also be queried directly. Since proxy instances do not have their own display number, each proxy instance will create a socket using the process ID instead (ie: `:proxy-15452`), you ca
 n find their names using `xpra list`.
 
 
-# Stopping
+## Stopping
 You can stop the proxy server just like any other servers with `xpra stop :$PROXYDISPLAY`.
 
 If you want to stop an individual proxy connection instead, you must identify the proxy instance that you want to stop then use `xpra stop :proxy-$PROXYPID`.
@@ -72,7 +74,7 @@ You can identify proxy instances in a number of ways:
 etc..
 
 
-# Remote Hosts Example
+## Remote Hosts Example
 This example uses a `sqlite` database to expose two remote server instances accessible from the proxy server via `TCP`.
 
 Start the two sessions we wish to access via the `PROXYHOST` (we call this `TARGETHOST` - for testing, this can be the same host as `PROXYHOST`). On `TARGETHOST`:
@@ -125,7 +127,7 @@ Further notes:
 * you can specify more than one remote session string for each username and password pair using CSV format - but the client will then have to specify which one it wants on the connection URL
 
 
-# Username Matters
+## Username Matters
 The proxy server can also be used to expose all local sessions dynamically.\
 This is what the [system service](./Service.md) (aka "system wide proxy server") does.
 
