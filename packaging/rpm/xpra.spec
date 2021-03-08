@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.1.1
+%define version 4.1.2
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -604,6 +604,8 @@ fi
 
 
 %changelog
+* Mon Mar 08 2021 Antoine Martin <antoine@xpra.org> 4.1.2-10
+- TODO
 * Sun Mar 07 2021 Antoine Martin <antoine@xpra.org> 4.1.1-1
 - ensure splash screen failures are not fatal, fix threading bug
 - avoid vaapi crashes in ffmpeg encoder (#3039)

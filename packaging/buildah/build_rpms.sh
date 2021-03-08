@@ -21,7 +21,7 @@ done
 #make sure we expose the revision number
 #so the spec file can generate the expected file names
 #(ie: xpra-4.1-0.r29000)
-VERSION=4.1.1
+VERSION=4.1.2
 tar -Jxf pkgs/xpra-$VERSION.tar.xz xpra-$VERSION/xpra/src_info.py
 XPRA_REVISION=`grep "REVISION=" "xpra-$VERSION/xpra/src_info.py" | awk -F= '{print $2}'`
 export XPRA_REVISION

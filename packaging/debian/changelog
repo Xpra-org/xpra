@@ -1,3 +1,8 @@
+xpra \(4.1.2-1\) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 08 Mar 2021 23:22:36 +0700
+
 xpra (4.1.1-1) UNRELEASED; urgency=low
   * ensure splash screen failures are not fatal, fix threading bug
   * avoid vaapi crashes in ffmpeg encoder (#3039)

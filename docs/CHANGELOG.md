@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.1.2] 2021-03-08
+* TODO
+
 ## [4.1.1] 2021-03-07
 * ensure splash screen failures are not fatal, fix threading bug
 * avoid [vaapi crashes in ffmpeg encoder](https://github.com/Xpra-org/xpra/issues/3039)
