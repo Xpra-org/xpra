@@ -90,7 +90,7 @@ def pretty_socket(s):
         if isinstance(s, str):
             return s
         if len(s)==2:
-            if s[0].find(":")>=0:
+            if str(s[0]).find(":")>=0:
                 #IPv6
                 return "[%s]:%s" % (s[0], s[1])
             return "%s:%s" % (s[0], s[1])
