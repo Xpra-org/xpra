@@ -22,14 +22,10 @@ for k in "AppVerName" "UninstallDisplayName"; do
 	sed -i'' 's/$k=.*/$k=Xpra $NEWV/' "packaging/MSWindows/xpra.iss"
 done
 
-echo "Hello"
-
 #RPM / DEB build scripts:
 for f in build_debs.sh build_rpms.sh; do
 	sed -i'' "s/^VERSION=.*/VERSION=$NEWV/" "packaging/buildah/$f"
 done
-
-echo "Hello1"
 
 #changelogs:
 head -n 2 "docs/CHANGELOG.md" > "docs/CHANGELOG.md.new"
@@ -52,3 +48,12 @@ sed -i'' "/%changelog/a - TODO" "./packaging/rpm/xpra.spec"
 
 CHANGELOGDATE=`date '+%a %b %d %Y'`
 sed -i'' "/%changelog/a \* $CHANGELOGDATE $AUTHOR $NEWV-10" "./packaging/rpm/xpra.spec"
+
+git commit -m "bump version" \
+	xpra/__init__.py \
+	packaging/rpm/xpra.spec \
+	packaging/debian/changelog \
+	packaging/buildah/build_rpms.sh \
+	packaging/buildah/build_debs.sh \
+	fs/lib/cups/xpraforwarder \
+	docs/CHANGELOG.md
