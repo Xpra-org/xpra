@@ -35,7 +35,7 @@ echo "" >> "docs/CHANGELOG.md.new"
 tail -n +3 "docs/CHANGELOG.md" >> "docs/CHANGELOG.md.new"
 mv "docs/CHANGELOG.md.new" "docs/CHANGELOG.md"
 
-echo "xpra \($NEWV-1\) UNRELEASED; urgency=low" > "./packaging/debian/changelog.new"
+echo "xpra ($NEWV-1) UNRELEASED; urgency=low" > "./packaging/debian/changelog.new"
 echo "  * TODO" >> "./packaging/debian/changelog.new"
 echo "" >> "./packaging/debian/changelog.new"
 echo " -- Antoine Martin <antoine@nagafix.co.uk>  `date -R`" >> "./packaging/debian/changelog.new"
