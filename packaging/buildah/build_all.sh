@@ -7,8 +7,9 @@ pushd ${BUILDAH_DIR}
 
 #go make a snapshot:
 pushd ../..
+rm -f dist/xpra-*.tar.xz
 python3 ./setup.py sdist --formats=xztar
-mv dist/xpra-4.1.1.tar.xz ./packaging/buildah/pkgs/
+mv dist/xpra-*.tar.xz ./packaging/buildah/pkgs/
 popd
 
 DO_DOWNLOAD="${DO_DOWNLOAD:-1}"

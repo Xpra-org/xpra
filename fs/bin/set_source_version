@@ -1,0 +1,54 @@
+#!/bin/bash
+
+NEWV=$1
+AUTHOR=$2
+if [ -z "${NEWV}" ]; then
+	echo "usage: $0 NEW_VERSION"
+	exit 1
+fi
+if [ -z "${AUTHOR}" ]; then
+	AUTHOR="Antoine Martin <antoine@xpra.org>"
+fi
+
+
+for f in "fs/lib/cups/xpraforwarder" "xpra/__init__.py"; do
+	sed -i'' "s/__version__ = .*/__version__ = \"$NEWV\"/" $f
+done
+
+for k in "AppVersion" "VersionInfoVersion"; do
+	sed -i'' 's/$k=.*/$k=$NEWV/' "packaging/MSWindows/xpra.iss"
+done
+for k in "AppVerName" "UninstallDisplayName"; do
+	sed -i'' 's/$k=.*/$k=Xpra $NEWV/' "packaging/MSWindows/xpra.iss"
+done
+
+echo "Hello"
+
+#RPM / DEB build scripts:
+for f in build_debs.sh build_rpms.sh; do
+	sed -i'' "s/^VERSION=.*/VERSION=$NEWV/" "packaging/buildah/$f"
+done
+
+echo "Hello1"
+
+#changelogs:
+head -n 2 "docs/CHANGELOG.md" > "docs/CHANGELOG.md.new"
+echo "## [$NEWV] `date +%Y-%m-%d`" >> "docs/CHANGELOG.md.new"
+echo "* TODO" >> "docs/CHANGELOG.md.new"
+echo "" >> "docs/CHANGELOG.md.new"
+tail -n +3 "docs/CHANGELOG.md" >> "docs/CHANGELOG.md.new"
+mv "docs/CHANGELOG.md.new" "docs/CHANGELOG.md"
+
+echo "xpra \($NEWV-1\) UNRELEASED; urgency=low" > "./packaging/debian/changelog.new"
+echo "  * TODO" >> "./packaging/debian/changelog.new"
+echo "" >> "./packaging/debian/changelog.new"
+echo " -- Antoine Martin <antoine@nagafix.co.uk>  `date -R`" >> "./packaging/debian/changelog.new"
+echo "" >> "./packaging/debian/changelog.new"
+cat "./packaging/debian/changelog" >> "./packaging/debian/changelog.new"
+mv "./packaging/debian/changelog.new" "./packaging/debian/changelog"
+
+sed -i'' "s/%define version .*/%define version $NEWV/" "./packaging/rpm/xpra.spec"
+sed -i'' "/%changelog/a - TODO" "./packaging/rpm/xpra.spec"
+
+CHANGELOGDATE=`date '+%a %b %d %Y'`
+sed -i'' "/%changelog/a \* $CHANGELOGDATE $AUTHOR $NEWV-10" "./packaging/rpm/xpra.spec"
