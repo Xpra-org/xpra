@@ -1621,11 +1621,18 @@ else:
             if service_ENABLED:
                 #Linux init service:
                 subs = {}
-                if os.path.exists("/etc/sysconfig"):
-                    copytodir("fs/etc/sysconfig/xpra", "/etc/sysconfig")
-                elif os.path.exists("/etc/default"):
-                    copytodir("fs/etc/sysconfig/xpra", "/etc/default")
-                    subs[b"/etc/sysconfig"] = b"/etc/default"
+                if is_RedHat() or is_CentOS() or is_Fedora():
+                    cdir = "/etc/sysconfig"
+                elif is_Debian() or is_Ubuntu():
+                    cdir = "/etc/default"
+                elif os.path.exists("/etc/sysconfig"):
+                    cdir = "/etc/sysconfig"
+                else:
+                    cdir = "/etc/default"
+                copytodir("fs/etc/sysconfig/xpra", cdir)
+                if cdir!="/etc/sysconfig":
+                    #also replace the reference to it in the service file below
+                    subs[b"/etc/sysconfig"] = cdir.encode()
                 if os.path.exists("/bin/systemctl"):
                     if sd_listen_ENABLED:
                         copytodir("fs/lib/systemd/system/xpra.service", systemd_dir,
