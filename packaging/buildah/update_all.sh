@@ -17,31 +17,28 @@ for DISTRO in $DISTROS; do
 	DISTRO_NAME=`echo ${DISTRO,,} | awk -F: '{print $1}'`
 	IMAGE_NAME="$FULL_DISTRO_NAME-xpra-build"
 
-	TEMP_IMAGE="$IMAGE_NAME-temp"
-	buildah image rmi "${TEMP_IMAGE}" >& /dev/null
-	buildah from --pull-never --name  $TEMP_IMAGE $IMAGE_NAME
-	if [ "$?" != "0" ]; then
-		echo "cannot update $DISTRO: image $IMAGE_NAME is missing or $TEMP_IMAGE already exists?"
+	COUNT=`buildah images | grep "$IMAGE_NAME " | wc -l`
+	if [ "${COUNT}" != "1" ]; then
+		echo "cannot update $DISTRO: image $IMAGE_NAME is missing?"
 		continue
 	fi
 	echo $DISTRO : $IMAGE_NAME
 	echo $DISTRO | egrep -iv "fedora|centos" >& /dev/null
 	RPM="$?"
 	if [ "${RPM}" == "1" ]; then
-		buildah run $TEMP_IMAGE rm -fr "/src/repo/.repodata" "/src/repo/repodata" "/src/repo/x86_64"
-		buildah run $TEMP_IMAGE mkdir "/src/repo/x86_64"
-		buildah run $TEMP_IMAGE createrepo "/src/repo/x86_64/"
-		buildah run $TEMP_IMAGE dnf update --disablerepo=xpra-local-build -y
+		buildah run $IMAGE_NAME rm -fr "/src/repo/.repodata" "/src/repo/repodata" "/src/repo/x86_64"
+		buildah run $IMAGE_NAME mkdir "/src/repo/x86_64"
+		buildah run $IMAGE_NAME createrepo "/src/repo/x86_64/"
+		buildah run $IMAGE_NAME dnf update --disablerepo=xpra-local-build -y
 	else
 		buildah config --env DEBIAN_FRONTEND=noninteractive $IMAGE_NAME
-		buildah run $TEMP_IMAGE apt-get update
-		buildah run $TEMP_IMAGE apt-get upgrade -y
-		buildah run $TEMP_IMAGE apt-get dist-upgrade -y
-		buildah run $TEMP_IMAGE apt-get autoremove -y
-		buildah copy $TEMP_IMAGE "../debian/control" "/src/control"
-		buildah run $TEMP_IMAGE mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' /src/control
-		buildah run $TEMP_IMAGE apt-get autoremove -y
+		buildah run $IMAGE_NAME apt-get update
+		buildah run $IMAGE_NAME apt-get upgrade -y
+		buildah run $IMAGE_NAME apt-get dist-upgrade -y
+		buildah run $IMAGE_NAME apt-get autoremove -y
+		buildah copy $IMAGE_NAME "../debian/control" "/src/control"
+		buildah run $IMAGE_NAME mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' /src/control
+		buildah run $IMAGE_NAME apt-get autoremove -y
 	fi
-	buildah commit $IMAGE_NAME $TEMP_IMAGE
-	buildah rmi "${TEMP_IMAGE}"
+	buildah commit $IMAGE_NAME $IMAGE_NAME
 done
