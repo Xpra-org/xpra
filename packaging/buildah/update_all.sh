@@ -43,5 +43,5 @@ for DISTRO in $DISTROS; do
 		buildah run $TEMP_IMAGE apt-get autoremove -y
 	fi
 	buildah commit $IMAGE_NAME $TEMP_IMAGE
-	buildah rm "${TEMP_IMAGE}"
+	buildah rmi "${TEMP_IMAGE}"
 done
