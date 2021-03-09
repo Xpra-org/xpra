@@ -35,6 +35,11 @@ for DISTRO in $RPM_DISTROS; do
 		echo "Warning: failed to create image $IMAGE_NAME"
 		continue
 	fi
+	#some repositories are enabled by default, but don't always work!
+	#(ie with Fedora 34)
+	for repo in updates-testing-modular updates-testing-modular-debuginfo updates-testing-modular-source; do
+		buildah run $IMAGE_NAME dnf config-manager --save "--setopt=$repo.skip_if_unavailable=true" $repo
+	done
 	buildah run $IMAGE_NAME dnf update -y
 	buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
 	buildah run $IMAGE_NAME dnf install -y redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
