@@ -28,6 +28,9 @@ for DISTRO in $DISTROS; do
 	echo $DISTRO | egrep -iv "fedora|centos" >& /dev/null
 	RPM="$?"
 	if [ "${RPM}" == "1" ]; then
+		buildah run $TEMP_IMAGE rm -fr "/src/repo/.repodata" "/src/repo/repodata" "/src/repo/x86_64"
+		buildah run $TEMP_IMAGE mkdir "/src/repo/x86_64"
+		buildah run $TEMP_IMAGE createrepo "/src/repo/x86_64/"
 		buildah run $TEMP_IMAGE dnf update --disablerepo=xpra-local-build -y
 	else
 		buildah config --env DEBIAN_FRONTEND=noninteractive $IMAGE_NAME
