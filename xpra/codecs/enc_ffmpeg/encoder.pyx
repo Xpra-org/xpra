@@ -859,6 +859,8 @@ def init_module():
             log("no vappi support", exc_info=True)
     CODECS = tuple(all_codecs)
 
+VAAPI_ENCODINGS = os.environ.get("XPRA_VAAPI_ENCODINGS", "h264,hevc,mpeg2,vp8,vp9").split(",")
+
 def init_vaapi():
     global VAAPI_CODECS
     #can we find a device:
@@ -869,7 +871,7 @@ def init_vaapi():
     cdef AVFrame *hw_frame = NULL
     cdef int WIDTH = 640
     cdef int HEIGHT = 480
-    for c in ("h264", "hevc", "mpeg2", "vp8", "vp9"):
+    for c in VAAPI_ENCODINGS:
         if c in VAAPI_CODECS:
             continue
         name = ("%s_vaapi" % c).encode("latin1")
