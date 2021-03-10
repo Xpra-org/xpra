@@ -27,7 +27,7 @@ SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", 2)
 THREAD_COUNT= envint("XPRA_FFMPEG_THREAD_COUNT")
 AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
-VAAPI = envbool("XPRA_VAAPI", False)
+VAAPI = envbool("XPRA_VAAPI", True)
 
 
 
@@ -837,7 +837,7 @@ def init_module():
     all_codecs = []
     for codec_id, codecs in {
         AV_CODEC_ID_H264    : ("h264+mp4", ), #"h264"
-        AV_CODEC_ID_VP8     : ("vp8", "vp8+webm"),
+        #AV_CODEC_ID_VP8     : ("vp8", "vp8+webm"),
         #AV_CODEC_ID_VP9     : ("vp9", "vp9+webm"),
         #AV_CODEC_ID_H265    : ("h265"),
         AV_CODEC_ID_MPEG4   : ("mpeg4+mp4", ),
