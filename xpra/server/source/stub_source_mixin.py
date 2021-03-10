@@ -6,17 +6,17 @@
 
 from xpra.util import typedict
 
-"""
-Base class for client-connection mixins.
-Defines the default interface methods that each mixin may override.
-"""
 class StubSourceMixin:
+    """
+    Base class for client-connection mixins.
+    Defines the default interface methods that each mixin may override.
+    """
 
-    """
-    Is this mixin needed for the caps given?
-    """
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
+        """
+        Is this mixin needed for the caps given?
+        """
         return True
 
     def __init__(self, *_args):
