@@ -73,6 +73,7 @@ class EncodingsMixin(StubSourceMixin):
         #new encoders, so we must make a deep copy to preserve the original
         #which may be used by other clients (other ServerSource instances)
         self.video_helper = getVideoHelper().clone()
+        self.cuda_device_context = None
 
 
     def init_from(self, _protocol, server):
@@ -93,7 +94,10 @@ class EncodingsMixin(StubSourceMixin):
         self.queue_encode(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
-
+        cdd = self.cuda_device_context
+        if css:
+            self.cuda_device_context = None
+            cdd.free()
 
     def all_window_sources(self):
         #we can't assume that the window mixin is loaded:
@@ -355,6 +359,13 @@ class EncodingsMixin(StubSourceMixin):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
+
+        #are we going to need a cuda context?
+        common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
+        if "jpeg" in common_encodings and has_codec("enc_nvjpeg"):
+            from xpra.codecs.cuda_common.cuda_context import get_device_context
+            self.cuda_device_context = get_device_context(self.encoding_options)
+            log.warn("cuda_device_context=%s", self.cuda_device_context)
 
     def print_encoding_info(self):
         log("print_encoding_info() core-encodings=%s, server-core-encodings=%s",

@@ -127,6 +127,7 @@ class WindowSource(WindowIconSource):
                     wid, window, batch_config, auto_refresh_delay,
                     av_sync, av_sync_delay,
                     video_helper,
+                    cuda_device_context,
                     server_core_encodings, server_encodings,
                     encoding, encodings, core_encodings, window_icon_encodings,
                     encoding_options, icons_encoding_options,
@@ -187,6 +188,7 @@ class WindowSource(WindowIconSource):
         self.base_auto_refresh_delay = auto_refresh_delay
         self.last_auto_refresh_message = None
         self.video_helper = video_helper
+        self.cuda_device_context = cuda_device_context
 
         self.is_idle = False
         self.is_OR = window.is_OR()
@@ -319,6 +321,12 @@ class WindowSource(WindowIconSource):
         self.enc_jpeg = get_codec("enc_jpeg")
         if "jpeg" in self.server_core_encodings and self.enc_jpeg:
             self.add_encoder("jpeg", self.jpeg_encode)
+        #prefer nvjpeg over all the other jpeg encoders:
+        self.enc_nvjpeg = None
+        if self.cuda_device_context:
+            self.enc_nvjpeg = get_codec("enc_nvjpeg")
+            if self.enc_nvjpeg:
+                self.add_encoder("jpeg", self.nvjpeg_encode)
         if self._mmap_size>0:
             self.add_encoder("mmap", self.mmap_encode)
         self.full_csc_modes = typedict()
@@ -507,6 +515,9 @@ class WindowSource(WindowIconSource):
         info["damage.fps"] = int(self.get_damage_fps())
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
+        cdd = self.cuda_device_context
+        if cdd:
+            info["cuda-device"] = cdd.get_info()
         return info
 
     def get_damage_fps(self):
@@ -2457,6 +2468,27 @@ class WindowSource(WindowIconSource):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         return self.enc_jpeg.encode(image, q, s)
+
+    def nvjpeg_encode(self, coding, image, options):
+        assert coding=="jpeg"
+        cdd = self.cuda_device_context
+        assert cdd, "no cuda device context"
+        q = options.get("quality") or self.get_quality(coding)
+        s = options.get("speed") or self.get_speed(coding)
+        log("nvjpeg_encode%s", (coding, image, options))
+        #FIXME: handle this generically
+        assert image.get_pixel_format()=="BGRX"
+        rs = image.get_rowstride()
+        from xpra.codecs.argb.argb import bgra_to_rgb
+        image.set_pixels(bgra_to_rgb(image.get_pixels()))
+        image.set_pixel_format("RGB")
+        image.set_rowstride(rs*3//4)
+        with cdd:
+            data, w, h, stride = self.enc_nvjpeg.device_encode(cdd, image, q, s)
+        #FIXME: don't use memoryview!
+        from xpra.net.compression import Compressed
+        cpixels = Compressed(coding, data.tobytes(), True)
+        return "jpeg", cpixels, {}, w, h, stride, 24
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:

@@ -191,6 +191,7 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
+nvjpeg_ENABLED = False #DEFAULT and BITS==64 and any(pkg_config_ok("--exists", "nvjpeg-%s" % v) for v in ("11.0", "11.1", "11.2", "11.3"))
 nvenc_ENABLED = DEFAULT and BITS==64 and pkg_config_version("10", "nvenc")
 nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT
@@ -216,6 +217,7 @@ SWITCHES = [
     "enc_x264", "enc_x265", "enc_ffmpeg",
     "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
     "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
+    "nvjpeg",
     "v4l2",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
@@ -2229,6 +2231,25 @@ if webp_ENABLED:
     cython_add(Extension("xpra.codecs.webp.decoder",
                 ["xpra/codecs/webp/decoder.pyx"],
                 **webp_pkgconfig))
+
+toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
+if nvjpeg_ENABLED:
+    pkgc = {}
+    for v in ("11.0", "11.1", "11.2", "11.3"):
+        nvjpeg_pkgconfig = pkgconfig("nvjpeg-%s" % v)
+        if nvjpeg_pkgconfig:
+            break
+    for v in ("11.0", "11.1", "11.2", "11.3"):
+        cuda_pkgconfig = pkgconfig("cuda-%s" % v)
+        if cuda_pkgconfig:
+            break
+    for k, v in cuda_pkgconfig.items():
+        add_to_keywords(pkgc, k, *v)
+    for k, v in nvjpeg_pkgconfig.items():
+        add_to_keywords(pkgc, k, *v)
+    cython_add(Extension("xpra.codecs.nvjpeg.encoder",
+                         ["xpra/codecs/nvjpeg/encoder.pyx"],
+                         **pkgc))
 
 jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
 toggle_packages(jpeg, "xpra.codecs.jpeg")

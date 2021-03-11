@@ -555,6 +555,7 @@ class WindowsMixin(StubSourceMixin):
                               wid, window, batch_config, self.auto_refresh_delay,
                               av_sync, av_sync_delay,
                               self.video_helper,
+                              self.cuda_device_context,
                               self.server_core_encodings, self.server_encodings,
                               self.encoding, self.encodings, self.core_encodings,
                               self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,

@@ -8,6 +8,7 @@
 #pylint: disable=no-member
 
 import os
+from threading import RLock
 import pycuda               #@UnresolvedImport
 from pycuda import driver   #@UnresolvedImport
 
@@ -402,6 +403,55 @@ def load_device(device_id):
     tpct = 100*free//total
     return device, context, tpct
 
+
+def get_device_context(options):
+    MIN_COMPUTE = 0x30
+    device_id, device = select_device(options.intget("cuda_device", -1), min_compute=MIN_COMPUTE)
+    if device_id<0 or not device:
+        return None
+    return cuda_device_context(device_id, device)
+
+
+class cuda_device_context:
+    def __init__(self, device_id, device):
+        self.device_id = device_id
+        self.device = device
+        self.context = None
+        self.lock = RLock()
+
+    def __enter__(self):
+        assert self.lock.acquire(False), "failed to acquire cuda device lock"
+        if not self.context:
+            start = monotonic_time()
+            cf = driver.ctx_flags
+            self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
+            end = monotonic_time()
+            log("cuda context %s allocation took %ims", 1000*(end-start))
+        self.context.push()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        c = self.context
+        if c:
+            c.pop()
+        self.lock.release()
+
+    def __repr__(self):
+        return "cuda_device_context(%i - %s)" % (self.device_id, self.lock._is_owned())
+
+    def get_info(self):
+        return {
+            "id" : self.device_id,
+            }
+
+    def __del__(self):
+        self.free()
+
+    def free(self):
+        c = self.context
+        if c:
+            self.context = None
+            with self.lock.acquire(blocking=True):
+                c.detach()
 
 
 CUDA_ERRORS_INFO = {

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -249,8 +249,9 @@ STRUCT_KNOWN_FILTERS = {
                 "pillow"        : "Pillow encoder and decoder",
                 "jpeg"          : "JPEG codec",
                 "vpx"           : "libvpx encoder and decoder",
-                "nvenc"         : "nvenc hardware encoder",
-                "nvfbc"         : "nfbc screen capture",
+                "nvjpeg"        : "nvidia nvjpeg hardware encoder",
+                "nvenc"         : "nvidia nvenc video hardware encoder",
+                "nvfbc"         : "nvidia nvfbc screen capture",
                 "x264"          : "libx264 encoder",
                 "x265"          : "libx265 encoder",
                 "webp"          : "libwebp encoder and decoder",
