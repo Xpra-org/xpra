@@ -1014,7 +1014,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
     clean()
 
 def add_build_info(*args):
-    cmd = ["python3", "./fs/bin/add_build_info.py"]+list(args)
+    cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
     r = subprocess.Popen(cmd).wait(30)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
