@@ -1,4 +1,4 @@
-# ![Debian](https://xpra.org/icons/debian.png)   ![Ubuntu](https://xpra.org/icons/ubuntu.png) Building DEB pacakges
+# ![Debian](https://xpra.org/icons/debian.png)   ![Ubuntu](https://xpra.org/icons/ubuntu.png) Building DEB packages
 
 The debian packaging files can be found here: [packaging/debian](../../packaging/debian).
 
@@ -11,7 +11,8 @@ For general information, see [building](./README.md).
 apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev \
                 libxkbfile-dev \
                 python-all-dev \
-                pandoc
+                pandoc \
+                libsystemd-dev
 ```
 GTK3 for the server and GUI client:
 ```shell
