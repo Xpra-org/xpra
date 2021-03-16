@@ -35,11 +35,19 @@ for DISTRO in $RPM_DISTROS; do
 		echo "Warning: failed to create image $IMAGE_NAME"
 		continue
 	fi
-	#some repositories are enabled by default, but don't always work!
-	#(ie with Fedora 34)
-	for repo in updates-testing-modular updates-testing-modular-debuginfo updates-testing-modular-source; do
-		buildah run $IMAGE_NAME dnf config-manager --save "--setopt=$repo.skip_if_unavailable=true" $repo
-	done
+	if [ "${DISTRO_LOWER}" == "fedora" ]; then
+		#first install the config-manager plugin,
+		#only enable the repo containing this plugin:
+		#(this is more likely to succeed on flaky networks)
+		buildah run $IMAGE_NAME dnf install dnf-plugins-core --disablerepo='*' --enablerepo='fedora'
+		#some repositories are enabled by default,
+		#but we don't want to use them
+		#(any repository failures would cause problems)
+		for repo in fedora-cisco-openh264 fedora-modular updates-testing-modular updates-testing-modular-debuginfo updates-testing-modular-source; do
+			#buildah run $IMAGE_NAME dnf config-manager --save "--setopt=$repo.skip_if_unavailable=true" $repo
+			buildah run $IMAGE_NAME dnf config-manager --set-disabled "--setopt=$repo.skip_if_unavailable=true" $repo
+		done
+	fi
 	buildah run $IMAGE_NAME dnf update -y
 	buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
 	buildah run $IMAGE_NAME dnf install -y redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
