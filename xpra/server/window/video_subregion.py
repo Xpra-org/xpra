@@ -426,6 +426,7 @@ class VideoSubregion(object):
                 return 0
             incount, outcount = inoutcount(region, ignore_size)
             total = incount+outcount
+            children_boost = 0
             if total==0:
                 return 0
             score = scoreinout(ww, wh, region, incount, outcount)
