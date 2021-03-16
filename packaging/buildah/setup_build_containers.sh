@@ -43,9 +43,9 @@ for DISTRO in $RPM_DISTROS; do
 		#some repositories are enabled by default,
 		#but we don't want to use them
 		#(any repository failures would cause problems)
-		for repo in fedora-cisco-openh264 fedora-modular updates-testing-modular updates-testing-modular-debuginfo updates-testing-modular-source; do
+		for repo in fedora-cisco-openh264 fedora-modular updates-modular updates-testing-modular updates-testing-modular-debuginfo updates-testing-modular-source; do
 			#buildah run $IMAGE_NAME dnf config-manager --save "--setopt=$repo.skip_if_unavailable=true" $repo
-			buildah run $IMAGE_NAME dnf config-manager --set-disabled "--setopt=$repo.skip_if_unavailable=true" $repo
+			buildah run $IMAGE_NAME dnf config-manager --set-disabled $repo
 		done
 	fi
 	buildah run $IMAGE_NAME dnf update -y
