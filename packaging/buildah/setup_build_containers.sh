@@ -35,11 +35,11 @@ for DISTRO in $RPM_DISTROS; do
 		echo "Warning: failed to create image $IMAGE_NAME"
 		continue
 	fi
-	if [ "${DISTRO_LOWER}" == "fedora" ]; then
+	if [[ "${DISTRO_LOWER}" == "fedora"* ]]; then
 		#first install the config-manager plugin,
 		#only enable the repo containing this plugin:
 		#(this is more likely to succeed on flaky networks)
-		buildah run $IMAGE_NAME dnf install dnf-plugins-core --disablerepo='*' --enablerepo='fedora'
+		buildah run $IMAGE_NAME dnf install -y dnf-plugins-core --disablerepo='*' --enablerepo='fedora'
 		#some repositories are enabled by default,
 		#but we don't want to use them
 		#(any repository failures would cause problems)
@@ -54,8 +54,7 @@ for DISTRO in $RPM_DISTROS; do
 	if [ "${MINIMAL}" != "0" ]; then
 		buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ make cmake
 	fi
-	echo $DISTRO | egrep -i "fedora" >& /dev/null
-	if [ "$?" == "0" ]; then
+	if [[ "${DISTRO_LOWER}" == "fedora"* ]]; then
 		RNUM=`echo $DISTRO | awk -F: '{print $2}'`
 		dnf -y makecache --releasever=$RNUM --setopt=cachedir=/var/cache/dnf/$RNUM
 		buildah run $IMAGE_NAME dnf install -y rpmspectool
