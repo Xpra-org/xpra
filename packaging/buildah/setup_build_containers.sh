@@ -56,7 +56,7 @@ for DISTRO in $RPM_DISTROS; do
 		buildah run $IMAGE_NAME dnf config-manager --set-enabled powertools
 		#no "rpmspectool" package on CentOS 8, use setuptools to install it:
 		buildah run $IMAGE_NAME dnf install -y python3-setuptools
-		buildah run $IMAGE_NAME easy_install-3.6 rpmspec
+		buildah run $IMAGE_NAME easy_install-3.6 python-rpm-spec
 	fi
 	buildah run $IMAGE_NAME rpmdev-setuptree
 	#buildah run dnf clean all
