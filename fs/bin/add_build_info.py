@@ -283,25 +283,24 @@ def get_vcs_props(warn=True):
                 "REVISION" : "unknown",
                 "LOCAL_MODIFICATIONS" : "unknown"
             }
-    proc = subprocess.Popen("git branch --show-current", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    out, _ = proc.communicate()
     branch = None
-    if proc.returncode==0:
-        branch = out.decode("utf-8").splitlines()[0]
-    else:
-        print("could not get branch information with 'git branch --show-current'")
-        print("trying 'git branch'")
-        proc = subprocess.Popen("git branch", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    for cmd in (
+        "git branch --show-current",
+        #when in detached state, the one above does not work, but this one does:
+        "git branch --remote --verbose --no-abbrev --contains | sed -rne 's/^[^\/]*\/([^\ ]+).*$/\1/p'",
+        #if all else fails:
+        "git branch | grep '* '",
+    ):
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         out, _ = proc.communicate()
-        if proc.returncode!=0:
-            print(" also failed!")
-            print("branch is unknown")
-        else:
-            for line in out.decode("utf-8").splitlines():
-                if line.startswith("* "):
-                    branch = line.split(" ")[1]
-                    break
-    if branch:
+        if proc.returncode==0:
+            branch_out = out.decode("utf-8").splitlines()
+            if branch_out:
+	            branch = branch_out[0]
+	            break
+    if not branch:
+        print("Warning: could not get branch information")
+    else:
         props["BRANCH"] = branch
 
     #use the number of changes since the last tag:
