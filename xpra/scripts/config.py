@@ -933,7 +933,7 @@ def get_defaults():
                     "window-close"      : "auto",
                     "min-size"          : "",
                     "max-size"          : "",
-                    "desktop-scaling"   : "auto",
+                    "desktop-scaling"   : "off",
                     "display"           : "",
                     "tcp-proxy"         : "",
                     "download-path"     : get_download_dir(),
