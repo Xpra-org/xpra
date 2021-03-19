@@ -32,7 +32,7 @@ $PACMAN --noconfirm -S ${XPKG}python ${XPKG}libnotify
 #media libraries (more than we actually need):
 $PACMAN --noconfirm -S ${XPKG}ffmpeg ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
-$PACMAN --noconfirm -S ${XPKG}lz4 ${XPKG}lzo2 heimdal-libs openssh sshpass libsodium qrencode
+$PACMAN --noconfirm -S ${XPKG}lz4 ${XPKG}lzo2 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode
 #python GStreamer bindings:
 $PACMAN --noconfirm -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
