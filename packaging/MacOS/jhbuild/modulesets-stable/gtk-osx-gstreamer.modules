@@ -63,7 +63,7 @@
     </dependencies>
   </meson>
 
-  <meson id="gst-plugins-bad" mesonargs="-Dvulkan=no -Dgl=false -Dmpegdemux=false -Dmpegtsdemux=false -Dmpegtsmux=false -Dmpegpsmux=false -Dmpeg2enc=false -Dsmoothstreaming=false -Dhls=false -Ddtls=false -Dapplemedia=false">
+  <meson id="gst-plugins-bad" mesonargs="-Dvulkan=disabled -Dgl=false -Dmpegdemux=false -Dmpegtsdemux=false -Dmpegtsmux=false -Dmpegpsmux=false -Dmpeg2enc=false -Dsmoothstreaming=false -Dhls=false -Ddtls=false -Dapplemedia=false">
     <branch version="1.18.4"
             module="gst-plugins-bad/gst-plugins-bad-1.18.4.tar.xz"
             hash="sha256:74e806bc5595b18c70e9ca93571e27e79dfb808e5d2e7967afa952b52e99c85f"/>
