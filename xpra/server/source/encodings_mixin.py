@@ -95,7 +95,7 @@ class EncodingsMixin(StubSourceMixin):
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
         cdd = self.cuda_device_context
-        if css:
+        if cdd:
             self.cuda_device_context = None
             cdd.free()
 
@@ -362,6 +362,7 @@ class EncodingsMixin(StubSourceMixin):
 
         #are we going to need a cuda context?
         common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
+        from xpra.codecs.loader import has_codec
         if "jpeg" in common_encodings and has_codec("enc_nvjpeg"):
             from xpra.codecs.cuda_common.cuda_context import get_device_context
             self.cuda_device_context = get_device_context(self.encoding_options)
