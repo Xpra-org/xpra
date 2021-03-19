@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -724,7 +724,7 @@ def parse_proxy_attributes(display_name):
             try:
                 desc_tmp["proxy_port"] = int(hostport_match.group("port"))
             except ValueError:
-                raise RuntimeError("bad format: proxy port '%s' is not a number" % hostport_match.group("port"))
+                raise RuntimeError("bad format: proxy port '%s' is not a number" % hostport_match.group("port")) from None
         userpass = reout.group("userpass")
         if userpass:
             # The username ends at the first colon. This decision was not unique: I could have
@@ -1362,13 +1362,12 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             try:
                 from xpra.net.websockets.common import client_upgrade
             except ImportError as e:    # pragma: no cover
-                raise InitExit(EXIT_UNSUPPORTED, "cannot handle websocket connection: %s" % e)
+                raise InitExit(EXIT_UNSUPPORTED, "cannot handle websocket connection: %s" % e) from None
             else:
                 client_upgrade(conn.read, conn.write, host, port)
         conn.target = get_host_target_string(display_desc)
         return conn
     raise InitException("unsupported display type: %s" % dtype)
-
 
 
 def run_dialog(extra_args):
@@ -2672,10 +2671,10 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                 if p.returncode==0:
                     try:
                         out = stdout.decode('utf-8')
-                    except:
+                    except Exception:
                         try:
                             out = stdout.decode()
-                        except:
+                        except Exception:
                             out = bytestostr(stdout)
                     lines = out.splitlines()
                     log("id(%s): %s", socket_path, csv(lines))
@@ -3070,7 +3069,7 @@ def run_list_windows(error_cb, opts, extra_args):
     import re
     def sort_human(l):
         convert = lambda text: float(text) if text.isdigit() else text
-        alphanum = lambda key: [convert(c) for c in re.split('([-+]?[0-9]*\.?[0-9]*)', key)]
+        alphanum = lambda key: [convert(c) for c in re.split(r'([-+]?[0-9]*\.?[0-9]*)', key)]
         l.sort(key=alphanum)
         return l
     def exec_and_parse(subcommand="id", display=""):
@@ -3135,7 +3134,7 @@ def run_auth(_options, args):
         raise InitException("missing module argument")
     auth_str = args[0]
     from xpra.server.auth.auth_helper import get_auth_module
-    auth, auth_module, _auth_class, _auth_options = get_auth_module(auth_str)
+    auth, auth_module = get_auth_module(auth_str)[:2]
     #see if the module has a "main" entry point:
     main_fn = getattr(auth_module, "main", None)
     if not main_fn:
