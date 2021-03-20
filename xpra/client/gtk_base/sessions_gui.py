@@ -370,8 +370,8 @@ class SessionsGUI(Gtk.Window):
                 self.clients_disconnecting.remove(key)
             elif c not in (0, None):
                 self.warning.set_text(EXIT_STR.get(c, "exit code %s" % c).replace("_", " "))
-            proc = self.clients.pop(key, None)
-            if proc:
+            client_proc = self.clients.pop(key, None)
+            if client_proc:
                 def update():
                     self.update()
                     self.populate()
