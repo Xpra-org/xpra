@@ -26,7 +26,8 @@ class mdns_sessions(SessionsGUI):
         self.listener = listener_class(XPRA_MDNS_TYPE,
                                        mdns_found=None,
                                        mdns_add=self.mdns_add,
-                                       mdns_remove=self.mdns_remove)
+                                       mdns_remove=self.mdns_remove,
+                                       mdns_update=self.mdns_update)
         log("%s%s=%s", listener_class, (XPRA_MDNS_TYPE, None, self.mdns_add, self.mdns_remove), self.listener)
         self.listener.start()
 
@@ -34,6 +35,9 @@ class mdns_sessions(SessionsGUI):
     def cleanup(self):
         self.listener.stop()
         SessionsGUI.cleanup(self)
+
+    def mdns_update(self, r_name, r_type):
+        log("mdns_update%s", (r_name, r_type))
 
     def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags):
         log("mdns_remove%s", (r_interface, r_protocol, r_name, r_stype, r_domain, r_flags))
