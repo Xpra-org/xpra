@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,8 +14,8 @@ log = Logger("network", "mdns")
 
 class ZeroconfListener:
 
-    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None):
-        log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove))
+    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
+        log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         self.zeroconf = Zeroconf()
         self.browser = None
         if not service_type.endswith("local."):
@@ -24,12 +24,15 @@ class ZeroconfListener:
         self.mdns_found = mdns_found
         self.mdns_add = mdns_add
         self.mdns_remove = mdns_remove
+        self.mdns_update = mdns_update
 
     def __repr__(self):
         return "ZeroconfListener(%s)" % self.service_type
 
     def update_service(self, zeroconf, stype, name):
         log("update_service%s", (zeroconf, stype, name))
+        if self.mdns_update:
+            self.mdns_update(name, stype)
 
     def remove_service(self, zeroconf, stype, name):
         log("remove_service%s", (zeroconf, stype, name))
@@ -86,6 +89,8 @@ def main():
         print("mdns_add: %s" % (args, ))
     def mdns_remove(*args):
         print("mdns_remove: %s" % (args, ))
+    def mdns_update(*args):
+        print("mdns_update: %s" % (args, ))
 
     from gi.repository import GLib
     loop = GLib.MainLoop()
@@ -93,7 +98,7 @@ def main():
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):
         from xpra.net.mdns import XPRA_MDNS_TYPE
-        listener = ZeroconfListener(XPRA_MDNS_TYPE+"local.", mdns_found, mdns_add, mdns_remove)
+        listener = ZeroconfListener(XPRA_MDNS_TYPE+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
         log("listener=%s" % listener)
         listener.start()
         try:

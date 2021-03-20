@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # This file is part of Xpra.
-# Copyright (C) 2009-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,8 +18,8 @@ log = Logger("network", "mdns")
 
 class AvahiListener:
 
-    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None):
-        log("AvahiListener%s", (service_type, mdns_found, mdns_add, mdns_remove))
+    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
+        log("AvahiListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         try:
             self.bus = init_system_bus()
             assert self.bus
@@ -35,6 +35,7 @@ class AvahiListener:
         self.mdns_found = mdns_found
         self.mdns_add = mdns_add
         self.mdns_remove = mdns_remove
+        #self.mdns_update = mdns_update
         self.server = None
 
     def resolve_error(self, *args):
