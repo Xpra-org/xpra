@@ -822,7 +822,7 @@ class WindowClient(StubClientMixin):
             from xpra.child_reaper import getChildReaper
             from subprocess import Popen, PIPE, STDOUT
             try:
-                proc = Popen("xpra_signal_listener",
+                proc = Popen(["xpra_signal_listener"],
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
                              start_new_session=True)
             except OSError as e:
