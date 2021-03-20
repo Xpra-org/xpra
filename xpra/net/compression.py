@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -25,18 +25,19 @@ COMPRESSION = {}
 
 
 def init_lz4():
-    from lz4 import VERSION
+    from lz4 import VERSION, block
     from lz4.version import version
-    from lz4.block import compress, decompress
     import struct
+    block_compress = block.compress
+    block_decompress = block.decompress
     LZ4_HEADER = struct.Struct(b'<L')
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
         if level>=7:
-            return flag, compress(packet, mode="high_compression", compression=level)
+            return flag, block_compress(packet, mode="high_compression", compression=level)
         if level<=3:
-            return flag, compress(packet, mode="fast", acceleration=8-level*2)
-        return flag, compress(packet)
+            return flag, block_compress(packet, mode="fast", acceleration=8-level*2)
+        return flag, block_compress(packet)
     def lz4_decompress(data):
         size = LZ4_HEADER.unpack_from(data[:4])[0]
         #it would be better to use the max_size we have in protocol,
@@ -45,7 +46,7 @@ def init_lz4():
             sizemb = size//1024//1024
             maxmb = MAX_SIZE//1024//1024
             raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
-        return decompress(data)
+        return block_decompress(data)
     return Compression("lz4", version, VERSION.encode("latin1"), lz4_compress, lz4_decompress)
 
 def init_lzo():
@@ -57,7 +58,7 @@ def init_lzo():
     return Compression("lzo", lzo.LZO_VERSION_STRING, lzo.__version__, lzo_compress, lzo.decompress)
 
 def init_brotli():
-    from brotli import compress, decompress, __version__
+    import brotli
     def brotli_compress(packet, level):
         if len(packet)>1024*1024:
             level = min(9, level)
@@ -65,32 +66,32 @@ def init_brotli():
             level = min(11, level)
         if not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
-        return level | BROTLI_FLAG, compress(packet, quality=level)
-    return Compression("brotli", None, __version__, brotli_compress, decompress)
+        return level | BROTLI_FLAG, brotli.compress(packet, quality=level)
+    return Compression("brotli", None, brotli.__version__, brotli_compress, brotli.decompress)
 
 def init_zlib():
-    from zlib import compress, decompress, __version__
+    import zlib
     def zlib_compress(packet, level):
         level = max(1, level//2)
         if isinstance(packet, memoryview):
             packet = packet.tobytes()
         elif not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
-        return level + ZLIB_FLAG, compress(packet, level)
+        return level + ZLIB_FLAG, zlib.compress(packet, level)
     def zlib_decompress(data):
         if isinstance(data, memoryview):
             data = data.tobytes()
-        return decompress(data)
-    return Compression("zlib", None, __version__, zlib_compress, zlib_decompress)
+        return zlib.decompress(data)
+    return Compression("zlib", None, zlib.__version__, zlib_compress, zlib_decompress)
 
 def init_none():
     def nocompress(packet, _level):
         if not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
         return 0, packet
-    def decompress(v):
+    def nodecompress(v):
         return v
-    return Compression("none", None, None, nocompress, decompress)
+    return Compression("none", None, None, nocompress, nodecompress)
 
 
 def init_all():
