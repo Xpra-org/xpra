@@ -22,6 +22,7 @@ from xpra.os_util import (
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.make_thread import start_thread
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, scaled_image, get_default_cursor, color_parse,
@@ -249,7 +250,50 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def do_process_challenge_prompt(self, packet, prompt="password"):
+        authlog = Logger("auth")
         self.show_progress(100, "authentication")
+        PINENTRY = os.environ.get("XPRA_PINENTRY")
+        authlog("do_process_challenge_prompt%s PINENTRY=%s", (packet, prompt), PINENTRY)
+        if PINENTRY:
+            start_thread(self.handle_challenge_with_pinentry, "pinentry", True, (packet, prompt, PINENTRY))
+            return True
+        return self.do_process_challenge_prompt_dialog(packet, prompt)
+
+    def handle_challenge_with_pinentry(self, packet, prompt="password", cmd="pinentry"):
+        from xpra.scripts.main import do_run_pinentry
+        q = "Enter %s" % prompt
+        p = self._protocol
+        if p:
+            conn = getattr(p, "_conn", None)
+            if conn:
+                from xpra.net.bytestreams import pretty_socket
+                cinfo = conn.get_info()
+                endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
+                q += " for %s" % endpoint
+        messages = [
+            "SETPROMPT Xpra Server Authentication:",
+            "SETDESC %s:" % q,
+            "GETPIN",
+            ]
+        def get_input():
+            if not messages:
+                return None
+            return messages.pop(0)
+        def process_output(message, output):
+            if message=="GETPIN":
+                if output.startswith(b"D "):
+                    password = output[2:].rstrip(b"\n\r").decode()
+                    self.idle_add(self.send_challenge_reply, packet, password)
+                else:
+                    self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
+        try:
+            do_run_pinentry(get_input, process_output, cmd=cmd)
+            return True
+        except OSError:
+            log("pinentry failed", exc_info=True)
+        return self.do_process_challenge_prompt_dialog(packet, prompt)
+
+    def do_process_challenge_prompt_dialog(self, packet, prompt="password"):
         dialog = Gtk.Dialog("Server Authentication",
                None,
                Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT)

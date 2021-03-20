@@ -202,6 +202,7 @@ def configure_logging(options, mode):
         "stop", "print", "showconfig",
         "request-start", "request-start-desktop", "request-shadow",
         "_dialog", "_pass",
+        "pinentry",
         ):
         if "help" in options.speaker_codec or "help" in options.microphone_codec:
             server_mode = mode not in ("attach", "listen")
@@ -477,6 +478,9 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
             error_cb("no sound support!")
         from xpra.sound.wrapper import run_sound
         return run_sound(mode, error_cb, options, args)
+    elif mode=="pinentry":
+        check_gtk()
+        return run_pinentry(args)
     elif mode=="_dialog":
         check_gtk()
         return run_dialog(args)
@@ -1368,6 +1372,42 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         conn.target = get_host_target_string(display_desc)
         return conn
     raise InitException("unsupported display type: %s" % dtype)
+
+
+def run_pinentry(extra_args):
+    messages = list(extra_args)
+    log = Logger("exec")
+    def get_input():
+        if not messages:
+            return None
+        return messages.pop(0)
+    def process_output(message, line):
+        if line.startswith(b"ERR "):
+            log.error("Error: pinentry responded to '%s' with:", message)
+            log.error(" %s", line.rstrip(b"\n\r").decode())
+        else:
+            log("pinentry sent %r", line)
+    try:
+        return do_run_pinentry(get_input, process_output)
+    except OSError as e:
+        raise InitExit(EXIT_UNSUPPORTED, "cannot run pinentry: %s" % (e,)) from None
+
+def do_run_pinentry(get_input, process_output, cmd="pinentry"):
+    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    log = Logger("exec")
+    message = "connection"
+    while proc.poll() is None:
+        line = proc.stdout.readline()
+        process_output(message, line)
+        message = get_input()
+        if message is None:
+            break
+        log("sending %r", message)
+        r = proc.stdin.write(("%s\n" % message).encode())
+        proc.stdin.flush()
+        log("write returned: %s", r)
+    proc.terminate()
+    log("pinentry ended: %s" % proc.poll())
 
 
 def run_dialog(extra_args):
