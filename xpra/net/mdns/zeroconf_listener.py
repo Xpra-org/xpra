@@ -45,10 +45,15 @@ class ZeroconfListener:
             stype = info.type
             domain = "local"
             server = info.server
-            address = socket.inet_ntoa(info.address)
+            try:
+                addresses = info.addresses
+            except AttributeError:
+                addresses = [info.address]
             port = info.port
             props = info.properties
-            self.mdns_add(interface, protocol, name, stype, domain, server, address, port, props)
+            for address in addresses:
+                saddress = socket.inet_ntoa(address)
+                self.mdns_add(interface, protocol, name, stype, domain, server, saddress, port, props)
 
     def start(self):
         self.browser = ServiceBrowser(self.zeroconf, self.service_type, listener=self)
