@@ -197,15 +197,7 @@ class GUI(Gtk.Window):
             self.busy_cursor(self.shadow_button)
 
     def browse(self, *_args):
-        subcommand = "sessions"
-        try:
-            from xpra.net.mdns import get_listener_class
-            listener = get_listener_class()
-            if listener:
-                subcommand = "mdns-gui"
-        except ImportError:
-            pass
-        cmd = get_xpra_command()+[subcommand]
+        cmd = get_xpra_command()+["sessions"]
         proc = exec_command(cmd)
         if proc.poll() is None:
             self.busy_cursor(self.browse_button)
