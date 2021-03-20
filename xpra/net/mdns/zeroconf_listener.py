@@ -28,6 +28,9 @@ class ZeroconfListener:
     def __repr__(self):
         return "ZeroconfListener(%s)" % self.service_type
 
+    def update_service(self, zeroconf, stype, name):
+        log("update_service%s", (zeroconf, stype, name))
+
     def remove_service(self, zeroconf, stype, name):
         log("remove_service%s", (zeroconf, stype, name))
         if self.mdns_remove:
