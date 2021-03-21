@@ -8,10 +8,10 @@ from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.util import typedict
 
 
-"""
-Expose the ClientConnection using a dbus service
-"""
 class DBUS_Mixin(StubSourceMixin):
+    """
+    Expose the ClientConnection using a dbus service
+    """
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:

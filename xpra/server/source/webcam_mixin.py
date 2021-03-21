@@ -27,10 +27,10 @@ def valid_encodings(args):
     return encodings
 
 
-"""
-Handle webcam forwarding.
-"""
 class WebcamMixin(StubSourceMixin):
+    """
+    Handle webcam forwarding.
+    """
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
@@ -74,7 +74,7 @@ class WebcamMixin(StubSourceMixin):
             }
 
 
-    def get_device_options(self, device_id : int):
+    def get_device_options(self, device_id : int):  #pylint: disable=unused-argument
         if not POSIX or OSX or not self.webcam_enabled:
             return {}
         if self.webcam_device:

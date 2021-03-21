@@ -31,14 +31,14 @@ MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
-"""
-Handle window forwarding:
-- damage
-- geometry
-- events
-etc
-"""
 class WindowsMixin(StubSourceMixin):
+    """
+    Handle window forwarding:
+    - damage
+    - geometry
+    - events
+    etc
+    """
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:

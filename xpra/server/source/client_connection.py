@@ -34,25 +34,24 @@ YIELD = envbool("XPRA_YIELD", False)
 counter = AtomicInteger()
 
 
-"""
-This class mediates between the server class (which only knows about actual window objects and display server events)
-and the client specific WindowSource instances (which only know about window ids
-and manage window pixel compression).
-It sends messages to the client via its 'protocol' instance (the network connection),
-directly for a number of cases (cursor, sound, notifications, etc)
-or on behalf of the window sources for pixel data.
-
-Strategy: if we have 'ordinary_packets' to send, send those.
-When we don't, then send packets from the 'packet_queue'. (compressed pixels or clipboard data)
-See 'next_packet'.
-
-The UI thread calls damage(), which goes into WindowSource and eventually (batching may be involved)
-adds the damage pixels ready for processing to the encode_work_queue,
-items are picked off by the separate 'encode' thread (see 'encode_loop')
-and added to the damage_packet_queue.
-"""
-
 class ClientConnection(StubSourceMixin):
+    """
+    This class mediates between the server class (which only knows about actual window objects and display server events)
+    and the client specific WindowSource instances (which only know about window ids
+    and manage window pixel compression).
+    It sends messages to the client via its 'protocol' instance (the network connection),
+    directly for a number of cases (cursor, sound, notifications, etc)
+    or on behalf of the window sources for pixel data.
+
+    Strategy: if we have 'ordinary_packets' to send, send those.
+    When we don't, then send packets from the 'packet_queue'. (compressed pixels or clipboard data)
+    See 'next_packet'.
+
+    The UI thread calls damage(), which goes into WindowSource and eventually (batching may be involved)
+    adds the damage pixels ready for processing to the encode_work_queue,
+    items are picked off by the separate 'encode' thread (see 'encode_loop')
+    and added to the damage_packet_queue.
+    """
 
     def __init__(self, protocol, disconnect_cb, session_name,
                  setting_changed,
