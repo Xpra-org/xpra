@@ -434,126 +434,132 @@ class KeyboardConfig(KeyboardConfigBase):
         self.keycode_mappings = get_keycode_mappings()
 
 
+    def kmlog(self, keyname, msg, *args):
+        """ logs at info level is we are debugging this keyname """
+        if keyname in DEBUG_KEYSYMS:
+            l = log.info
+        else:
+            l = log
+        l(msg, *args)
+
     def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
         if not self.enabled:
-            log("ignoring keycode since keyboard is turned off")
+            self.kmlog(keyname, "ignoring keycode since keyboard is turned off")
             return -1, group
         if keyname=="0xffffff":
             return -1, group
         if self.xkbmap_raw:
             return client_keycode, group
-        def kmlog(msg, *args):
-            if keyname in DEBUG_KEYSYMS:
-                l = log.info
-            else:
-                l = log
-            l(msg, *args)
-        def klog(msg, *args):
-            kmlog("do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), *args)
-        keycode = None
-        rgroup = group
         if self.xkbmap_query:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
-            klog("=%s (native keymap)", keycode)
-        else:
-            """
-            from man xmodmap:
-            The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
-            hex or octal and can be determined by running the xev program).
-            Up to eight keysyms may be attached to a key, however the last four are not used in any major
-            X server implementation.
-            The first keysym is used when no modifier key is pressed in conjunction with this key,
-            the second with Shift, the third when the Mode_switch key is used with this key and
-            the fourth when both the Mode_switch and Shift keys are used.
-            """
-            #non-native: try harder to find matching keysym
-            #first, try to honour shift state:
-            lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
-            shift = ("shift" in modifiers) ^ lock
-            mode = 0
-            numlock = 0
-            numlock_modifier = None
-            for mod, keynames in self.keynames_for_mod.items():
-                if "Num_Lock" in keynames:
-                    numlock_modifier = mod
-                    break
-            for mod in modifiers:
-                names = self.keynames_for_mod.get(mod, [])
-                if "Num_Lock" in names:
-                    numlock = 1
-                for name in names:
-                    if name in ("ISO_Level3_Shift", "Mode_switch"):
-                        mode = 1
-                        break
-            levels = []
-            #try to preserve the mode (harder to toggle):
-            for m in (int(bool(mode)), int(not mode)):
-                #try to preserve shift state:
-                for s in (int(bool(shift)), int(not shift)):
-                    #group is comparatively easier to toggle (one function call):
-                    for g in (int(bool(group)), int(not group)):
-                        level = int(g)*4 + int(m)*2 + int(s)*1
-                        levels.append(level)
-            kmlog("will try levels: %s", levels)
-            for level in levels:
-                keycode = self.keycode_translation.get((keyname, level))
-                if keycode:
-                    keysyms = self.keycode_mappings.get(keycode)
-                    klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
-                    level0 = levels[0]
-                    uq_keysyms = set(keysyms)
-                    if len(uq_keysyms)<=1 or (len(keysyms)>level0 and keysyms[level0]==""):
-                        #if the keysym we would match for this keycode is 'NoSymbol',
-                        #then we can probably ignore it ('NoSymbol' shows up as "")
-                        #same if there's only one actual keysym for this keycode
-                        kmlog("not toggling any modifiers state for keysyms=%s", keysyms)
-                        break
-                    def toggle_modifier(mod):
-                        keynames = self.keynames_for_mod.get(mod)
-                        if keyname in keynames:
-                            kmlog("not toggling '%s' since '%s' should deal with it", mod, keyname)
-                            #the keycode we're returning is for this modifier,
-                            #assume that this will end up doing what is needed
-                            return
-                        if mod in modifiers:
-                            kmlog("removing '%s' from modifiers", mod)
-                            modifiers.remove(mod)
-                        else:
-                            kmlog("adding '%s' to modifiers", mod)
-                            modifiers.append(mod)
-                    #keypad overrules shift state (see #2702):
-                    if keyname.startswith("KP_"):
-                        if numlock_modifier and not numlock:
-                            toggle_modifier(numlock_modifier)
-                    elif (level & 1) ^ shift:
-                        #shift state does not match
-                        toggle_modifier("shift")
-                    if int(bool(level & 2)) ^ mode:
-                        #try to set / unset mode:
-                        for mod, keynames in self.keynames_for_mod.items():
-                            if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
-                                #found mode switch modified
-                                toggle_modifier(mod)
-                                break
-                    rgroup = level//4
-                    if rgroup!=group:
-                        kmlog("switching group from %i to %i", group, rgroup)
-                    break
-            #this should not find anything new?:
-            if keycode is None:
-                keycode = self.keycode_translation.get(keyname, -1)
-                klog("=%i, %i (keyname translation)", keycode, rgroup)
-            if keycode is None:
-                #last resort, find using the keyval:
-                display = Gdk.Display.get_default()
-                keymap = Gdk.Keymap.get_for_display(display)
-                b, entries = keymap.get_entries_for_keyval(keyval)
-                if b and entries:
-                    for entry in entries:
-                        if entry.group==group:
-                            return entry.keycode, entry.group
-        return keycode, rgroup
+            self.kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
+            return keycode, group
+        return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
+    def find_matching_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
+        """
+        from man xmodmap:
+        The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
+        hex or octal and can be determined by running the xev program).
+        Up to eight keysyms may be attached to a key, however the last four are not used in any major
+        X server implementation.
+        The first keysym is used when no modifier key is pressed in conjunction with this key,
+        the second with Shift, the third when the Mode_switch key is used with this key and
+        the fourth when both the Mode_switch and Shift keys are used.
+        """
+        keycode = None
+        rgroup = group
+        def klog(msg, *args):
+            self.kmlog(keyname, "do_get_keycode%s"+msg, (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), *args)
+        def kmlog(msg, *args):
+            self.kmlog(keyname, msg, *args)
+        #non-native: try harder to find matching keysym
+        #first, try to honour shift state:
+        lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
+        shift = ("shift" in modifiers) ^ lock
+        mode = 0
+        numlock = 0
+        numlock_modifier = None
+        for mod, keynames in self.keynames_for_mod.items():
+            if "Num_Lock" in keynames:
+                numlock_modifier = mod
+                break
+        for mod in modifiers:
+            names = self.keynames_for_mod.get(mod, [])
+            if "Num_Lock" in names:
+                numlock = 1
+            for name in names:
+                if name in ("ISO_Level3_Shift", "Mode_switch"):
+                    mode = 1
+                    break
+        levels = []
+        #try to preserve the mode (harder to toggle):
+        for m in (int(bool(mode)), int(not mode)):
+            #try to preserve shift state:
+            for s in (int(bool(shift)), int(not shift)):
+                #group is comparatively easier to toggle (one function call):
+                for g in (int(bool(group)), int(not group)):
+                    level = int(g)*4 + int(m)*2 + int(s)*1
+                    levels.append(level)
+        kmlog("will try levels: %s", levels)
+        for level in levels:
+            keycode = self.keycode_translation.get((keyname, level))
+            if keycode:
+                keysyms = self.keycode_mappings.get(keycode)
+                klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
+                level0 = levels[0]
+                uq_keysyms = set(keysyms)
+                if len(uq_keysyms)<=1 or (len(keysyms)>level0 and keysyms[level0]==""):
+                    #if the keysym we would match for this keycode is 'NoSymbol',
+                    #then we can probably ignore it ('NoSymbol' shows up as "")
+                    #same if there's only one actual keysym for this keycode
+                    kmlog("not toggling any modifiers state for keysyms=%s", keysyms)
+                    break
+                def toggle_modifier(mod):
+                    keynames = self.keynames_for_mod.get(mod)
+                    if keyname in keynames:
+                        kmlog("not toggling '%s' since '%s' should deal with it", mod, keyname)
+                        #the keycode we're returning is for this modifier,
+                        #assume that this will end up doing what is needed
+                        return
+                    if mod in modifiers:
+                        kmlog("removing '%s' from modifiers", mod)
+                        modifiers.remove(mod)
+                    else:
+                        kmlog("adding '%s' to modifiers", mod)
+                        modifiers.append(mod)
+                #keypad overrules shift state (see #2702):
+                if keyname.startswith("KP_"):
+                    if numlock_modifier and not numlock:
+                        toggle_modifier(numlock_modifier)
+                elif (level & 1) ^ shift:
+                    #shift state does not match
+                    toggle_modifier("shift")
+                if int(bool(level & 2)) ^ mode:
+                    #try to set / unset mode:
+                    for mod, keynames in self.keynames_for_mod.items():
+                        if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
+                            #found mode switch modified
+                            toggle_modifier(mod)
+                            break
+                rgroup = level//4
+                if rgroup!=group:
+                    kmlog("switching group from %i to %i", group, rgroup)
+                break
+        #this should not find anything new?:
+        if keycode is None:
+            keycode = self.keycode_translation.get(keyname, -1)
+            klog("=%i, %i (keyname translation)", keycode, rgroup)
+        if keycode is None:
+            #last resort, find using the keyval:
+            display = Gdk.Display.get_default()
+            keymap = Gdk.Keymap.get_for_display(display)
+            b, entries = keymap.get_entries_for_keyval(keyval)
+            if b and entries:
+                for entry in entries:
+                    if entry.group==group:
+                        return entry.keycode, entry.group
+        return keycode, rgroup
 
     def get_current_mask(self):
         current_mask = get_default_root_window().get_pointer()[-1]
