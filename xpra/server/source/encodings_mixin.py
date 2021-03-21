@@ -25,6 +25,9 @@ proxylog = Logger("proxy")
 statslog = Logger("stats")
 
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
+DEFAULT_VREFRESH = envint("XPRA_DEFAULT_VREFRESH", 50)
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 30)
+MAX_VREFRESH = envint("XPRA_MIN_VREFRESH", 500)
 
 
 """
@@ -256,11 +259,11 @@ class EncodingsMixin(StubSourceMixin):
 
         self.vrefresh = c.intget("vrefresh", -1)
 
-        #assume 50Hz:
-        ms_per_frame = 1000//50
-        if 30<=self.vrefresh<=500:
+        vrefresh = DEFAULT_VREFRESH
+        if MIN_VREFRESH<=self.vrefresh<=MAX_VREFRESH:
             #looks like a valid vrefresh value, use it:
-            ms_per_frame = 1000//self.vrefresh
+            vrefresh = self.vrefresh
+        ms_per_frame = 1000//vrefresh
         default_min_delay = max(DamageBatchConfig.MIN_DELAY, ms_per_frame)
         dbc = self.default_batch_config
         dbc.always      = bool(batch_value("always", DamageBatchConfig.ALWAYS))
