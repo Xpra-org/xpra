@@ -278,18 +278,18 @@ def record_build_info():
     save_properties(props, BUILD_INFO_FILE)
 
 
-def get_vcs_props(warn=True):
+def get_vcs_props():
     props = {
                 "REVISION" : "unknown",
                 "LOCAL_MODIFICATIONS" : "unknown"
             }
     branch = None
     for cmd in (
-        "git branch --show-current",
+        r"git branch --show-current",
         #when in detached state, the one above does not work, but this one does:
-        "git branch --remote --verbose --no-abbrev --contains | sed -rne 's/^[^\/]*\/([^\ ]+).*$/\1/p'",
+        r"git branch --remote --verbose --no-abbrev --contains | sed -rne 's/^[^\/]*\/([^\ ]+).*$/\1/p'",
         #if all else fails:
-        "git branch | grep '* '",
+        r"git branch | grep '* '",
     ):
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         out, _ = proc.communicate()
@@ -330,7 +330,8 @@ def get_vcs_props(warn=True):
     if branch=="master":
         #fake a sequential revision number that continues where svn left off,
         #by counting the commits and adding a magic value (5014)
-        proc = subprocess.Popen("git rev-list --count HEAD --first-parent", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen("git rev-list --count HEAD --first-parent",
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         out, _ = proc.communicate()
         if proc.returncode!=0:
             print("failed to get commit count using 'git rev-list --count HEAD'")
