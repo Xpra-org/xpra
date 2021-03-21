@@ -1,13 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, language_level=3
 
-import os
-import time
 from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 
@@ -105,11 +103,10 @@ cdef class X11CoreBindingsInstance:
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
         self.context_check()
-        cdef char* string
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
         bstr = strtobytes(str_or_int)
-        string = bstr
+        cdef char* string = bstr
         assert self.display!=NULL, "display is closed"
         return XInternAtom(self.display, string, False)
 

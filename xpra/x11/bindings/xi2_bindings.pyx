@@ -483,17 +483,14 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
 
     def parse_xi_event(self, display, uintptr_t _cookie):
         cdef XGenericEventCookie *cookie = <XGenericEventCookie*> _cookie
-        cdef XIDeviceEvent *device_e
         cdef XIHierarchyEvent *hierarchy_e
-        cdef XIHierarchyInfo *hierarchy_info
-        cdef XIEvent *xie
         cdef XIRawEvent *raw
-        cdef int i = 0, j = 0
+        cdef int i = 0
         if not XGetEventData(self.display, cookie):
             log("parse_xi_event(%#x) no event data", _cookie)
             return None
-        xie = <XIEvent*> cookie.data
-        device_e = <XIDeviceEvent*> cookie.data
+        cdef XIEvent *xie = <XIEvent*> cookie.data
+        #cdef XIDeviceEvent *device_e = <XIDeviceEvent*> cookie.data
         cdef int xi_type = cookie.evtype
         etype = self.opcode+xi_type
         global XI_EVENT_NAMES
@@ -593,14 +590,14 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         self.context_check()
         global XI_USE
         cdef int ndevices, i, j
-        cdef XIDeviceInfo *devices
+
         cdef XIDeviceInfo *device
         cdef XIAnyClassInfo *clazz
         if show_all:
             device_types = XIAllDevices
         else:
             device_types = XIAllMasterDevices
-        devices = XIQueryDevice(self.display, device_types, &ndevices)
+        cdef XIDeviceInfo *devices = XIQueryDevice(self.display, device_types, &ndevices)
         dinfo = {}
         for i in range(ndevices):
             device = &devices[i]
@@ -627,9 +624,8 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         return dinfo
 
     def get_device_properties(self, deviceid):
-        cdef Atom *atoms
         cdef int nprops, i
-        atoms = XIListProperties(self.display, deviceid, &nprops)
+        cdef Atom *atoms = XIListProperties(self.display, deviceid, &nprops)
         if atoms==NULL or nprops==0:
             return None
         props = {}
@@ -645,15 +641,13 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         cdef int buffer_size = 64 * 1024
         cdef Atom xactual_type = <Atom> 0
         cdef int actual_format = 0
-        cdef long offset = 0
         cdef unsigned long nitems = 0, bytes_after = 0
         cdef unsigned char *prop = NULL
-        cdef Status status
         cdef Atom xreq_type = XIAnyPropertyType
         if req_type:
             xreq_type = self.get_xatom(req_type)
 
-        status = XIGetProperty(self.display,
+        cdef Status status = XIGetProperty(self.display,
                                deviceid, property,
                                0,
                                buffer_size//4,

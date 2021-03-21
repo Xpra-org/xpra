@@ -1,13 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, language_level=3
-
-import os
-import time
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
@@ -157,15 +154,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def check_randr_sizes(self):
         #check for wayland, which has no sizes:
         #(and we wouldn't be able to set screen resolutions)
-        cdef Window window
-        window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config = NULL      #@DuplicatedSignature
-        config = XRRGetScreenInfo(self.display, window)
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
         if config==NULL:
             log("check_randr_sizes: failed to get randr screen info")
             return False
         cdef int num_sizes = 0                          #@DuplicatedSignature
-        xrrs = XRRConfigSizes(config, &num_sizes)
+        cdef XRRScreenSize *xrrs = XRRConfigSizes(config, &num_sizes)
         log("found %i config sizes", num_sizes)
         return num_sizes>0
 
@@ -174,9 +169,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef _get_xrr_screen_sizes(self):
         cdef int num_sizes = 0
-        cdef XRRScreenSize * xrrs
         cdef XRRScreenSize xrr
-        xrrs = XRRSizes(self.display, 0, &num_sizes)
+        cdef XRRScreenSize *xrrs = XRRSizes(self.display, 0, &num_sizes)
         sizes = []
         if xrrs==NULL:
             return sizes
@@ -192,7 +186,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef _set_screen_size(self, width, height):
         self.context_check()
-        cdef Window window
         cdef XRRScreenConfiguration *config
         cdef int num_sizes = 0                          #@DuplicatedSignature
         cdef int num_rates = 0
@@ -204,7 +197,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef XRRScreenSize *xrrs
         cdef XRRScreenSize xrr                          #@DuplicatedSignature
 
-        window = XDefaultRootWindow(self.display)
+        cdef Window window = XDefaultRootWindow(self.display)
         try:
             config = XRRGetScreenInfo(self.display, window)
             if config==NULL:
@@ -287,13 +280,12 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def _get_screen_size(self):
         self.context_check()
-        cdef Window window                              #@DuplicatedSignature
         cdef XRRScreenSize *xrrs                        #@DuplicatedSignature
         cdef Rotation original_rotation
         cdef int num_sizes = 0                          #@DuplicatedSignature
         cdef SizeID size_id
         cdef int width, height
-        window = XDefaultRootWindow(self.display)
+        cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenConfiguration *config = NULL      #@DuplicatedSignature
         try:
             config = XRRGetScreenInfo(self.display, window)
@@ -321,8 +313,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 XRRFreeScreenConfigInfo(config)
 
     def get_vrefresh(self):
-        cdef Window window                              #@DuplicatedSignature
-        window = XDefaultRootWindow(self.display)
+        cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenConfiguration *config             #@DuplicatedSignature
         try:
             config = XRRGetScreenInfo(self.display, window)
@@ -344,8 +335,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         self.context_check()
         log("add_screen_size(%i, %i)", w, h)
         cdef Window window
-        cdef XRRModeInfo *new_mode
-        cdef XRRScreenResources *rsc
         cdef RRMode mode
         cdef RROutput output
 
@@ -362,10 +351,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef double timeVBack = 0.06            #0.031901; 0.055664; // Adjust this to move picture up/down
         cdef double yFactor = 1                 #no interlace (0.5) or doublescan (2)
 
-        from xpra.util import roundup
         name = self.get_mode_name(w, h)
         bname = strtobytes(name)
-        new_mode = XRRAllocModeInfo(bname, len(bname))
+        cdef XRRModeInfo *new_mode = XRRAllocModeInfo(bname, len(bname))
+        cdef unsigned long clock
         try:
             window = XDefaultRootWindow(self.display)
 
@@ -407,7 +396,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             h, h+yFront, h+yFront+ySync, yTotal)
             new_mode.width = w
             new_mode.height = h
-            new_mode.dotClock = long(clock)
+            new_mode.dotClock = clock
             new_mode.hSyncStart = int(w+xFront)
             new_mode.hSyncEnd = int(w+xFront+xSync)
             new_mode.hTotal = int(xTotal)
@@ -458,6 +447,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     cdef RROutput get_current_output(self):
         self.context_check()
         cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = NULL
         try:
             rsc = XRRGetScreenResourcesCurrent(self.display, window)
             log("get_current_output() screen_resources: crtcs=%s, outputs=%s, modes=%s", rsc.ncrtc, rsc.noutput, rsc.nmode)

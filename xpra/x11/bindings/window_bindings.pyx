@@ -1,12 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, language_level=3
-
-import struct
 
 from xpra.gtk_common.error import XError
 
@@ -759,9 +757,8 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     def XShapeGetRectangles(self, Window window, int kind):
         self.context_check()
-        cdef XRectangle* rect
         cdef int count, ordering
-        rect = XShapeGetRectangles(self.display, window, kind, &count, &ordering)
+        cdef XRectangle* rect = XShapeGetRectangles(self.display, window, kind, &count, &ordering)
         if rect==NULL or count<=0:
             return []
         rectangles = []
@@ -914,15 +911,13 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         e.xclient.data.l[2] = cast_to_long(self.xatom(data2))
         e.xclient.data.l[3] = cast_to_long(self.xatom(data3))
         e.xclient.data.l[4] = cast_to_long(self.xatom(data4))
-        cdef Status s
-        s = XSendEvent(self.display, xtarget, propagate, event_mask, &e)
+        cdef Status s = XSendEvent(self.display, xtarget, propagate, event_mask, &e)
         if s == 0:
             raise ValueError("failed to serialize ClientMessage")
 
     def sendClick(self, Window xtarget, int button, onoff, x_root, y_root, x, y):
         self.context_check()
-        cdef Window r
-        r = XDefaultRootWindow(self.display)
+        cdef Window r = XDefaultRootWindow(self.display)
         log("sending message to %#x", xtarget)
         cdef XEvent e                       #@DuplicatedSignature
         e.type = ButtonPress
@@ -943,8 +938,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         e.xbutton.x = x
         e.xbutton.y = y
         e.xbutton.state = int(onoff)
-        cdef Status s                       #@DuplicatedSignature
-        s = XSendEvent(self.display, xtarget, False, 0, &e)
+        cdef Status s = XSendEvent(self.display, xtarget, False, 0, &e)
         if s == 0:
             raise ValueError("failed to serialize ButtonPress Message")
 
@@ -1000,8 +994,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             e.xselection.property = self.xatom(property)
         else:
             e.xselection.property = 0
-        cdef Status s                       #@DuplicatedSignature
-        s = XSendEvent(self.display, xwindow, True, 0, &e)
+        cdef Status s = XSendEvent(self.display, xwindow, True, 0, &e)
         if s == 0:
             raise ValueError("failed to serialize SelectionNotify")
         self.context_check()
@@ -1012,8 +1005,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     def sendConfigureNotify(self, Window xwindow):
         self.context_check()
-        cdef Window root_window
-        root_window = XDefaultRootWindow(self.display)
+        cdef Window root_window = XDefaultRootWindow(self.display)
 
         # Get basic attributes
         cdef XWindowAttributes attrs        #@DuplicatedSignature
@@ -1043,8 +1035,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         e.xconfigure.above = XNone
         e.xconfigure.override_redirect = attrs.override_redirect
 
-        cdef Status s                       #@DuplicatedSignature
-        s = XSendEvent(self.display, xwindow, False, StructureNotifyMask, &e)
+        cdef Status s = XSendEvent(self.display, xwindow, False, StructureNotifyMask, &e)
         if s == 0:
             raise ValueError("failed to serialize ConfigureNotify")
 
@@ -1128,23 +1119,22 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef int actual_format = 0
         cdef unsigned long nitems = 0, bytes_after = 0
         cdef unsigned char * prop = <unsigned char*> 0
-        cdef Status status
         cdef Atom xreq_type = AnyPropertyType
         if req_type:
             xreq_type = self.xatom(req_type)
         # This is the most bloody awful API I have ever seen.  You will probably
         # not be able to understand this code fully without reading
         # XGetWindowProperty's man page at least 3 times, slowly.
-        status = XGetWindowProperty(self.display,
-                                     xwindow,
-                                     self.xatom(property),
-                                     0,
-                                     # This argument has to be divided by 4.  Thus
-                                     # speaks the spec.
-                                     buffer_size // 4,
-                                     delete,
-                                     xreq_type, &xactual_type,
-                                     &actual_format, &nitems, &bytes_after, &prop)
+        cdef Status status = XGetWindowProperty(self.display,
+                                                xwindow,
+                                                self.xatom(property),
+                                                0,
+                                                # This argument has to be divided by 4.  Thus
+                                                # speaks the spec.
+                                                buffer_size // 4,
+                                                delete,
+                                                xreq_type, &xactual_type,
+                                                &actual_format, &nitems, &bytes_after, &prop)
         if status != Success:
             raise PropertyError("no such window")
         if xactual_type == XNone:

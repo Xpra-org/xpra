@@ -582,8 +582,6 @@ cdef class XShmWrapper:
     def setup(self):
         #returns:
         # (init_ok, may_retry_this_window, XShm_global_failure)
-        cdef size_t size
-        cdef Bool a
         self.ref_count = 0
         self.closed = False
         self.shminfo.shmaddr = <char *> -1
@@ -601,7 +599,7 @@ cdef class XShmWrapper:
         # Get the shared memory:
         # (include an extra line to ensure we can read rowstride at a time,
         #  even on the last line, without reading past the end of the buffer)
-        size = self.image.bytes_per_line * (self.image.height + 1)
+        cdef size_t size = self.image.bytes_per_line * (self.image.height + 1)
         self.shminfo.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT | 0777)
         xshmdebug("XShmWrapper.setup() shmget(PRIVATE, %i bytes, %#x) shmid=%#x", size, IPC_CREAT | 0777, self.shminfo.shmid)
         if self.shminfo.shmid < 0:
@@ -623,7 +621,7 @@ cdef class XShmWrapper:
 
         # set as read/write, and attach to the display:
         self.shminfo.readOnly = False
-        a = XShmAttach(self.display, &self.shminfo)
+        cdef Bool a = XShmAttach(self.display, &self.shminfo)
         xshmdebug("XShmWrapper.setup() XShmAttach(..) %s", bool(a))
         if not a:
             xshmlog.error("XShmWrapper.setup() XShmAttach(..) failed!")
@@ -654,8 +652,7 @@ cdef class XShmWrapper:
                 return None
             self.got_image = True
         self.ref_count += 1
-        cdef XShmImageWrapper imageWrapper
-        imageWrapper = XShmImageWrapper(x, y, w, h)
+        cdef XShmImageWrapper imageWrapper = XShmImageWrapper(x, y, w, h)
         imageWrapper.set_image(self.image)
         imageWrapper.set_free_callback(self.free_image_callback)
         if self.depth==8:
@@ -665,18 +662,15 @@ cdef class XShmWrapper:
 
     def read_palette(self):
         #FIXME: we assume screen is zero
-        cdef Colormap colormap = 0
         cdef XWindowAttributes attrs
-        cdef VisualID visualid
         cdef XVisualInfo vinfo_template
-        cdef XVisualInfo *vinfo
         cdef int count = 0
         if not XGetWindowAttributes(self.display, self.window, &attrs):
             return None
-        colormap = attrs.colormap
-        visualid = XVisualIDFromVisual(attrs.visual)
+        cdef Colormap colormap = attrs.colormap
+        cdef VisualID visualid = XVisualIDFromVisual(attrs.visual)
         vinfo_template.visualid = visualid
-        vinfo = XGetVisualInfo(self.display, VisualIDMask, &vinfo_template, &count)
+        cdef XVisualInfo *vinfo = XGetVisualInfo(self.display, VisualIDMask, &vinfo_template, &count)
         if count!=1 or vinfo==NULL:
             log.error("Error: visual %i not found, count=%i, vinfo=%#x", visualid, count, <uintptr_t> vinfo)
             if vinfo:
@@ -846,8 +840,7 @@ cdef class PixmapWrapper:
 
 
 cdef get_image(Display * display, Drawable drawable, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
-    cdef XImage* ximage
-    ximage = XGetImage(display, drawable, x, y, width, height, AllPlanes, ZPixmap)
+    cdef XImage* ximage = XGetImage(display, drawable, x, y, width, height, AllPlanes, ZPixmap)
     #log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
     if ximage==NULL:
         log("get_image(..) failed to get XImage for X11 drawable %#x", drawable)
@@ -863,19 +856,16 @@ cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     cdef Window root_window
     cdef int x, y
     cdef unsigned int width, height, border, depth
-    cdef Status status
-    cdef Pixmap xpixmap
-    cdef PixmapWrapper pw
-    xpixmap = XCompositeNameWindowPixmap(xdisplay, xwindow)
+    cdef Pixmap xpixmap = XCompositeNameWindowPixmap(xdisplay, xwindow)
     if xpixmap==XNone:
         return None
-    status = XGetGeometry(xdisplay, xpixmap, &root_window,
+    cdef Status status = XGetGeometry(xdisplay, xpixmap, &root_window,
                         &x, &y, &width, &height, &border, &depth)
     if status==0:
         log("failed to get pixmap dimensions for %#x", xpixmap)
         XFreePixmap(xdisplay, xpixmap)
         return None
-    pw = PixmapWrapper()
+    cdef PixmapWrapper pw = PixmapWrapper()
     pw.init(xdisplay, xpixmap, width, height)
     return pw
 
