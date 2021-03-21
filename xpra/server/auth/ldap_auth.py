@@ -62,11 +62,16 @@ class Authenticator(SysAuthenticatorBase):
                 log.warn(" LDAP Error: %s", e.message["desc"])
                 if "info" in e.message:
                     log.warn("  %s", e.message["info"])
-            except:
+            except Exception:
                 #python3: no way to get to the message dict?
                 log.warn(" %s", e)
         try:
-            import ldap
+            from ldap import (  #pylint: disable=import-outside-toplevel
+                initialize, LDAPError,
+                INVALID_CREDENTIALS, SERVER_DOWN,
+                OPT_REFERRALS,
+                OPT_X_TLS_CACERTFILE,
+                )
         except ImportError as e:
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use ldap authentication:")
@@ -79,15 +84,15 @@ class Authenticator(SysAuthenticatorBase):
             else:
                 protocol = "ldap"
             server = "%s://%s:%i" % (protocol, self.host, self.port)
-            conn = ldap.initialize(server, trace_level=LDAP_TRACE_LEVEL or is_debug_enabled("auth"))
+            conn = initialize(server, trace_level=LDAP_TRACE_LEVEL or is_debug_enabled("auth"))
             conn.protocol_version = LDAP_PROTOCOL_VERSION
-            conn.set_option(ldap.OPT_REFERRALS, LDAP_REFERRALS)
+            conn.set_option(OPT_REFERRALS, LDAP_REFERRALS)
             if self.cacert:
-                conn.set_option(ldap.OPT_X_TLS_CACERTFILE, self.cacert)
+                conn.set_option(OPT_X_TLS_CACERTFILE, self.cacert)
             log("ldap.open(%s)=%s", server, conn)
             try:
                 domain = socket.getfqdn().split(".", 1)[1]
-            except:
+            except Exception:
                 domain = "localdomain"
             user = self.username_format.replace("%username", self.username).replace("%domain", domain)
             log("user=%s", user)
@@ -97,19 +102,19 @@ class Authenticator(SysAuthenticatorBase):
                 p = bytestostr(password)
                 password = p.encode(self.encoding)
                 log("ldap encoded password as %s", self.encoding)
-            except:
+            except Exception:
                 pass
             v = conn.simple_bind_s(user, password)
             log("simple_bind_s(%s, %s)=%s", user, obsc(password), v)
             return True
-        except ldap.INVALID_CREDENTIALS:
+        except INVALID_CREDENTIALS:
             log("check(..)", exc_info=True)
             return False
-        except ldap.SERVER_DOWN as e:
+        except SERVER_DOWN as e:
             log("check(..)", exc_info=True)
             log.warn("Warning: LDAP %sserver at %s:%i is unreachable", ["", "TLS "][self.tls], self.host, self.port)
             emsg(e)
-        except ldap.LDAPError as e:
+        except LDAPError as e:
             log("check(..)", exc_info=True)
             log.warn("Error: ldap authentication failed:")
             emsg(e)

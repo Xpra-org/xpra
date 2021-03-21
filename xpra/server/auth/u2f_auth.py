@@ -91,7 +91,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "u2f"
 
-    def authenticate_check(self, challenge_response : str, client_salt : str) -> bool:
+    def authenticate_check(self, challenge_response : str, client_salt : str=None) -> bool:
         log("authenticate_check(%s, %s)", repr(challenge_response), repr(client_salt))
         user_presence, counter = struct.unpack(b">BI", strtobytes(challenge_response)[:5])
         sig = strtobytes(challenge_response[5:])

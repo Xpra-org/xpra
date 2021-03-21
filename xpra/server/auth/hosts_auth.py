@@ -95,5 +95,5 @@ def main(argv):
     return 0
 
 if __name__ == "__main__":
-    v = main(sys.argv)
-    sys.exit(v)
+    r = main(sys.argv)
+    sys.exit(r)

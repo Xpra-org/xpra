@@ -129,7 +129,7 @@ class SysAuthenticatorBase:
             return False
         return self.authenticate_check(challenge_response, client_salt)
 
-    def choose_salt_digest(self, digest_modes):
+    def choose_salt_digest(self, digest_modes) -> str:
         self.salt_digest = choose_digest(digest_modes)
         return self.salt_digest
 
@@ -146,7 +146,7 @@ class SysAuthenticatorBase:
         SysAuthenticator.USED_SALT.append(salt)
         return salt
 
-    def authenticate_check(self, challenge_response, client_salt=None) -> bool:
+    def authenticate_check(self, challenge_response : str, client_salt : str=None) -> bool:
         if self.salt is None:
             log.error("Error: illegal challenge response received - salt cleared or unset")
             return False
@@ -168,7 +168,7 @@ class SysAuthenticatorBase:
             return False
         return ret
 
-    def authenticate_hmac(self, challenge_response, client_salt=None) -> bool:
+    def authenticate_hmac(self, challenge_response : str, client_salt : str=None) -> bool:
         log("sys_auth_base.authenticate_hmac(%r, %r)", challenge_response, client_salt)
         if not self.salt:
             log.error("Error: illegal challenge response received - salt cleared or unset")

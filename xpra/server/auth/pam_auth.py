@@ -29,7 +29,7 @@ def check(username, password, service=PAM_AUTH_SERVICE, check_account=PAM_CHECK_
     finally:
         try:
             session.close()
-        except:
+        except Exception:
             log("error closing session %s", session, exc_info=True)
     return success
 

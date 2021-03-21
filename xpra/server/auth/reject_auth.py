@@ -37,7 +37,7 @@ class Authenticator:
     def get_password(self):
         return None
 
-    def authenticate(self, caps : typedict) -> bool:
+    def authenticate(self, caps : typedict) -> bool:  #pylint: disable=unused-argument
         return False
 
     def get_sessions(self):
