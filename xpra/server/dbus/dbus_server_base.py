@@ -54,7 +54,7 @@ class DBUS_Server_Base(dbus.service.Object):
     @dbus.service.method(dbus.PROPERTIES_IFACE, in_signature='', out_signature='a{sv}')
     def GetAll(self, interface_name):
         if interface_name==dbus.PROPERTIES_IFACE:
-            v = dict((x, self.Get(x)) for x in self._properties.keys())
+            v = dict((x, self.Get(interface_name, x)) for x in self._properties.keys())
         else:
             v = {}
         self.log(".GetAll(%s)=%s", interface_name, v)
