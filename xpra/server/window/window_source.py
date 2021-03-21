@@ -1385,10 +1385,8 @@ class WindowSource(WindowIconSource):
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
         elapsed = int(1000*(now-self.batch_config.last_event))
-        if elapsed>delay:
-            #batch delay has already elapsed since we last processed a screen update,
-            #so we don't need to wait much longer:
-            delay = self.batch_config.min_delay
+        #discount the elapsed time since the last event:
+        delay = max(0, delay-elapsed)
         if not self.must_batch(delay):
             #send without batching:
             damagelog("do_damage%-24s wid=%s, sending now with sequence %s",
