@@ -296,8 +296,8 @@ def get_vcs_props():
         if proc.returncode==0:
             branch_out = out.decode("utf-8").splitlines()
             if branch_out:
-	            branch = branch_out[0]
-	            break
+                branch = branch_out[0]
+                break
     if not branch:
         print("Warning: could not get branch information")
     else:
