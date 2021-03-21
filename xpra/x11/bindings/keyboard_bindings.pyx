@@ -949,7 +949,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             keysyms = []
             for group in (0, 1):
                 for level in (0, 1):
-                    keysym = XkbKeycodeToKeysym(self.display, keycode, 0, 0)
+                    keysym = XkbKeycodeToKeysym(self.display, keycode, group, level)
                     if keysym==NoSymbol:
                         continue
                     key = XKeysymToString(keysym)
