@@ -43,17 +43,17 @@ def parse_url(handler):
     return args
 
 
-"""
-Xpra's builtin HTTP server.
-* locates the desktop background file at "/background.png" dynamically if missing,
-* supports the magic ?echo-headers query,
-* loads http headers from a directory (and caches the data),
-* sets cache headers on responses,
-* supports delegation to external script classes,
-* supports pre-compressed brotli and gzip, can gzip on-the-fly,
-(subclassed in WebSocketRequestHandler to add WebSocket support)
-"""
 class HTTPRequestHandler(BaseHTTPRequestHandler):
+    """
+    Xpra's builtin HTTP server.
+    * locates the desktop background file at "/background.png" dynamically if missing,
+    * supports the magic ?echo-headers query,
+    * loads http headers from a directory (and caches the data),
+    * sets cache headers on responses,
+    * supports delegation to external script classes,
+    * supports pre-compressed brotli and gzip, can gzip on-the-fly,
+    (subclassed in WebSocketRequestHandler to add WebSocket support)
+    """
 
     wbufsize = None     #we flush explicitly when needed
     server_version = "Xpra-HTTP-Server"
@@ -113,14 +113,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         return path
 
 
-    def log_error(self, fmt, *args):
+    def log_error(self, fmt, *args):  #pylint: disable=arguments-differ
         #don't log 404s at error level:
         if len(args)==2 and args[0]==404:
             log(fmt, *args)
         else:
             log.error(fmt, *args)
 
-    def log_message(self, fmt, *args):
+    def log_message(self, fmt, *args):  #pylint: disable=arguments-differ
         if args and len(args)==3 and fmt=='"%s" %s %s' and args[1]=="400":
             fmt = '"%r" %s %s'
             args = list(args)
