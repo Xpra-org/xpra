@@ -256,7 +256,7 @@ class CoreX11WindowModel(WindowModelStub):
                 self._read_initial_X11_properties()
         except XError as e:
             log("failed to manage %#x", self.xid, exc_info=True)
-            raise Unmanageable(e)
+            raise Unmanageable(e) from e
         add_event_receiver(self.client_window, self)
         # Keith Packard says that composite state is undefined following a
         # reparent, so I'm not sure doing this here in the superclass,
@@ -275,7 +275,7 @@ class CoreX11WindowModel(WindowModelStub):
             self._composite = None
             if isinstance(e, Unmanageable):
                 raise
-            raise Unmanageable(e)
+            raise Unmanageable(e) from e
         #compositing is now enabled,
         #from now on we must call setup_failed to clean things up
         self._managed = True

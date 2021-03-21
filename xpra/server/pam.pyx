@@ -11,11 +11,13 @@ from xpra.log import Logger
 log = Logger("util", "auth")
 
 from xpra.os_util import strtobytes, bytestostr
-from ctypes import addressof, create_string_buffer
+from ctypes import addressof, create_string_buffer, sizeof
 
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport object_as_buffer
 
+ctypedef void* void_p  # @UndefinedVariable
+ctypedef const void* const_void_p  # @UndefinedVariable
 
 cdef extern from "errno.h" nogil:
     int errno
@@ -121,7 +123,7 @@ cdef int password_conv(int n_msg, const pam_message **msg, pam_response **resp, 
     cdef pam_response* response = <pam_response*> calloc(n_msg, sizeof(pam_response))
     if response==NULL:
         return 1
-    cdef char *password = <char*> appdata_ptr
+    cdef const char *password = <const char*> appdata_ptr  # @UndefinedVariable
     resp[0] = response
     for i in range(n_msg):
         if msg[i].msg_style == PAM_PROMPT_ECHO_OFF:
@@ -148,7 +150,6 @@ cdef class pam_session:
 
     def start(self, password=False) -> bool:
         cdef pam_conv conv
-        cdef int r
         cdef Py_ssize_t buffer_len
 
         if self.pam_handle!=NULL:
@@ -156,13 +157,13 @@ cdef class pam_session:
             return False
 
         if password:
-            conv.conv = <void *> &password_conv
+            conv.conv = <void_p> &password_conv
             assert self.password, "no password to use for pam_start"
-            assert object_as_buffer(self.password, <const void **> &conv.appdata_ptr, &buffer_len)==0
+            assert object_as_buffer(self.password, <const_void_p*> &conv.appdata_ptr, &buffer_len)==0
         else:
-            conv.conv = <void*> misc_conv
+            conv.conv = <void_p> misc_conv
             conv.appdata_ptr = NULL
-        r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
+        cdef int r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL
@@ -218,11 +219,11 @@ cdef class pam_session:
                 s = v+b"\0"
                 xauth_data.datalen = len(v)
                 xauth_data.data = s
-                item = <const void*> &xauth_data
+                item = <const_void_p> &xauth_data
             else:
                 s = create_string_buffer(v)
                 l = addressof(s)
-                item = <const void*> l
+                item = <const_void_p> l
             r = pam_set_item(self.pam_handle, item_type, item)
             if r!=PAM_SUCCESS:
                 log.error("Error %i: failed to set pam item '%s' to '%s'", r, k, v)
