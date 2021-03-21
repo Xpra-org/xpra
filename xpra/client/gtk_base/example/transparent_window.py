@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
-import cairo
+from cairo import OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -49,7 +49,7 @@ class TransparentWindow(Gtk.Window):
     def area_draw(self, widget, cr):
         cr.set_source_rgba(1.0, 1.0, 1.0, 0.0) # Transparent
         # Draw the background
-        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_operator(OPERATOR_SOURCE)
         cr.paint()
         # Draw a circle
         alloc = widget.get_allocated_size()[0]

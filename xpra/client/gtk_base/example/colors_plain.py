@@ -7,7 +7,7 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
-import cairo
+from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -43,14 +43,14 @@ class ColorPlainWindow(Gtk.Window):
     def area_draw(self, widget, cr):
         cr.set_font_size(32)
         #Clear everything:
-        cr.set_operator(cairo.OPERATOR_CLEAR)
+        cr.set_operator(OPERATOR_CLEAR)
         alloc = widget.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
         cr.fill()
 
         def paint_block(x, y, w, h, R=255, G=255, B=255, label=""):
-            cr.set_operator(cairo.OPERATOR_SOURCE)
+            cr.set_operator(OPERATOR_SOURCE)
             cr.set_source_rgb(R, G, B)
             cr.rectangle(x, y, w, h)
             #print("rectangle(%s, %s, %s, %s) alpha=%s" % (rx, ry, rw, rh, alpha))

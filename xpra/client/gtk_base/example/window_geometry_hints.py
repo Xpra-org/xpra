@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -33,7 +33,7 @@ class HintedWindows(Gtk.Window):
         da = Gtk.DrawingArea()
         self.add(da)
 
-        def configure_event(widget, event):
+        def configure_event(_widget, event):
             self.set_title(title or "%ix%i" % (event.width, event.height))
         da.connect("configure-event", configure_event)
 

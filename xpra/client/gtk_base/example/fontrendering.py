@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,12 @@ from xpra.platform.gui import force_focus
 from xpra.util import envbool
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
-import cairo
+from cairo import (  #pylint: disable=no-name-in-module
+    OPERATOR_SOURCE,
+    ImageSurface, Context, FontOptions,
+    ANTIALIAS_NONE, ANTIALIAS_DEFAULT, ANTIALIAS_GRAY, ANTIALIAS_SUBPIXEL,
+    FORMAT_RGB24,
+    )
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import PangoCairo, Gtk, GLib
@@ -18,10 +23,10 @@ FONT = "Serif 27"
 PATTERN = "%f"
 
 ANTIALIAS = {
-    cairo.ANTIALIAS_NONE        : "NONE",
-    cairo.ANTIALIAS_DEFAULT     : "DEFAULT",
-    cairo.ANTIALIAS_GRAY        : "GRAY",
-    cairo.ANTIALIAS_SUBPIXEL    : "SUBPIXEL",
+    ANTIALIAS_NONE        : "NONE",
+    ANTIALIAS_DEFAULT     : "DEFAULT",
+    ANTIALIAS_GRAY        : "GRAY",
+    ANTIALIAS_SUBPIXEL    : "SUBPIXEL",
     }
 
 WHITE = (1, 1, 1)
@@ -97,16 +102,16 @@ class FontWindow(Gtk.Window):
                     for i in range(len(vdata)):
                         vdata[i] = vdata[i] ^ ndata[i]
                     #paint the resulting image:
-                    cr.set_operator(cairo.OPERATOR_SOURCE)
+                    cr.set_operator(OPERATOR_SOURCE)
                     cr.set_source_surface(v, (x+2)*bw, (y+yoffset)*bh)
                     cr.rectangle((x+2)*bw, (y+yoffset)*bh, bw, bh)
                     cr.clip()
                     cr.paint()
                     cr.restore()
 
-    def paint_to_image(self, bw, bh, background, foreground, antialias=cairo.ANTIALIAS_NONE):
-        img = cairo.ImageSurface(cairo.FORMAT_RGB24, bw, bh)
-        icr = cairo.Context(img)
+    def paint_to_image(self, bw, bh, background, foreground, antialias=ANTIALIAS_NONE):
+        img = ImageSurface(FORMAT_RGB24, bw, bh)
+        icr = Context(img)
         self.paint_pattern(icr, 0, 0, antialias, None, background, foreground)
         img.flush()
         return img
@@ -122,12 +127,12 @@ class FontWindow(Gtk.Window):
         bh = h//4
         FONT_SIZE = w//8
 
-        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_operator(OPERATOR_SOURCE)
         cr.set_source_rgb(*background)
         cr.rectangle(x*bw, y*bh, bw, bh)
         cr.fill()
 
-        fo = cairo.FontOptions()
+        fo = FontOptions()
         fo.set_antialias(antialias)
         cr.set_font_options(fo)
         cr.set_antialias(antialias)

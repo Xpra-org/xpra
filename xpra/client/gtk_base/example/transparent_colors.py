@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
-import cairo
+from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -50,13 +50,13 @@ class TransparentColorWindow(Gtk.Window):
         cr.set_font_size(32)
         #Clear everything:
         cr.save()
-        cr.set_operator(cairo.OPERATOR_CLEAR)
+        cr.set_operator(OPERATOR_CLEAR)
         alloc = widget.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
         cr.fill()
         cr.restore()
-        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_operator(OPERATOR_SOURCE)
 
         def paint_block(label, x, y, r, g, b):
             #fill with colour

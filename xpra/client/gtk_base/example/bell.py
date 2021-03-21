@@ -45,7 +45,7 @@ def main():
         w = BellWindow()
         add_close_accel(w, Gtk.main_quit)
         GLib.idle_add(w.show_with_focus)
-        def signal_handler(signal):
+        def signal_handler(_signal):
             Gtk.main_quit()
         register_os_signals(signal_handler)
         Gtk.main()

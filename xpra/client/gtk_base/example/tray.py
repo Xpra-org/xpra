@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -175,7 +175,7 @@ class FakeApplication:
         log("xpra_tray_geometry%s geometry=%s", args, self.tray.get_geometry())
 
 
-    def disconnect_and_quit(self, *args):
+    def disconnect_and_quit(self, *_args):
         Gtk.main_quit()
 
 

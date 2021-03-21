@@ -7,7 +7,7 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
-import cairo
+from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -61,7 +61,7 @@ class AnimatedColorWindow(Gtk.Window):
     def area_draw(self, widget, cr):
         cr.set_font_size(32)
         #Clear everything:
-        cr.set_operator(cairo.OPERATOR_CLEAR)
+        cr.set_operator(OPERATOR_CLEAR)
         alloc = widget.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
@@ -70,7 +70,7 @@ class AnimatedColorWindow(Gtk.Window):
         def paint_block(x, y, w, h, Rm=1.0, Gm=1.0, Bm=1.0, label=""):
             bw = w/16
             bh = h/16
-            cr.set_operator(cairo.OPERATOR_SOURCE)
+            cr.set_operator(OPERATOR_SOURCE)
             for i in range(256):
                 v = ((self.counter+i) % 256) / 256.0
                 R = Rm * v

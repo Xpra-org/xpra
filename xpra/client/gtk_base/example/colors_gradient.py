@@ -7,7 +7,7 @@ from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 
-import cairo
+from cairo import OPERATOR_CLEAR, OPERATOR_SOURCE  #pylint: disable=no-name-in-module
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -45,7 +45,7 @@ class ColorGradientWindow(Gtk.Window):
     def configure_event(self, *_args):
         self.queue_draw()
 
-    def on_button_press(self, widget, event):
+    def on_button_press(self, _widget, event):
         if event.type!=Gdk.EventType.BUTTON_PRESS:
             return
         if event.button==1:
@@ -73,7 +73,7 @@ class ColorGradientWindow(Gtk.Window):
 
     def area_draw(self, widget, cr):
         cr.save()
-        cr.set_operator(cairo.OPERATOR_CLEAR)
+        cr.set_operator(OPERATOR_CLEAR)
         alloc = widget.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
@@ -94,7 +94,7 @@ class ColorGradientWindow(Gtk.Window):
         def paint_block(R=M, G=M, B=M, label=""):
             y = h*self.index//blocks
             self.index += 1
-            cr.set_operator(cairo.OPERATOR_SOURCE)
+            cr.set_operator(OPERATOR_SOURCE)
             for i in range(w):
                 v = i/w
                 cr.save()
