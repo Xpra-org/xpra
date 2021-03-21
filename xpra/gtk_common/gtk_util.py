@@ -75,9 +75,13 @@ def pixbuf_save_to_memory(pixbuf, fmt="png") -> bytes:
     return b"".join(buf)
 
 
-def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVEL,
-              event_mask=0, wclass=Gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
-              x=None, y=None, override_redirect=False, visual=None) -> Gdk.Window:
+def GDKWindow(*args, **kwargs) -> Gdk.Window:
+    return new_GDKWindow(Gdk.Window, *args, **kwargs)
+
+def new_GDKWindow(gdk_window_class,
+                  parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVEL,
+                  event_mask=0, wclass=Gdk.WindowWindowClass.INPUT_OUTPUT, title=None,
+                  x=None, y=None, override_redirect=False, visual=None) -> Gdk.Window:
     attributes_mask = 0
     attributes = Gdk.WindowAttr()
     if x is not None:
@@ -105,7 +109,7 @@ def GDKWindow(parent=None, width=1, height=1, window_type=Gdk.WindowType.TOPLEVE
     #wclass:
     attributes.wclass = wclass
     mask = Gdk.WindowAttributesType(attributes_mask)
-    return Gdk.Window(parent, attributes, mask)
+    return gdk_window_class(parent, attributes, mask)
 
 def set_visual(window, alpha : bool=True) -> bool:
     screen = window.get_screen()

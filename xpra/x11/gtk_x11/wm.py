@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,8 +13,9 @@ from xpra.gtk_common.error import xsync, xswallow
 from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del
 from xpra.x11.window_info import window_name, window_info
 from xpra.gtk_common.gobject_util import no_arg_signal, one_arg_signal
-from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
+from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.x11.common import Unmanageable
+from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.selection import ManagerSelection
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
@@ -479,7 +480,7 @@ class Wm(GObject.GObject):
         # clobber any XSelectInput calls that *we* might have wanted to make
         # on this window.)  Also, GDK might silently swallow all events that
         # are detected on it, anyway.
-        self._ewmh_window = GDKWindow(self._root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
+        self._ewmh_window = GDKX11Window(self._root, wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=self._wm_name)
         prop_set(self._ewmh_window, "_NET_SUPPORTING_WM_CHECK",
                  "window", self._ewmh_window)
         self.root_set("_NET_SUPPORTING_WM_CHECK", "window", self._ewmh_window)

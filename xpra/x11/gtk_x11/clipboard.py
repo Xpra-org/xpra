@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,8 @@ from gi.repository import GLib, GObject, Gdk
 
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
-from xpra.gtk_common.gtk_util import get_default_root_window, GDKWindow
+from xpra.gtk_common.gtk_util import get_default_root_window
+from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,                          #@UnresolvedImport
     remove_event_receiver,                       #@UnresolvedImport
@@ -108,7 +109,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     def init_window(self):
         root = get_default_root_window()
-        self.window = GDKWindow(root, width=1, height=1, title="Xpra-Clipboard", wclass=Gdk.WindowWindowClass.INPUT_ONLY)
+        self.window = GDKX11Window(root, width=1, height=1, title="Xpra-Clipboard", wclass=Gdk.WindowWindowClass.INPUT_ONLY)
         self.window.set_events(Gdk.EventMask.PROPERTY_CHANGE_MASK | self.window.get_events())
         xid = self.window.get_xid()
         with xsync:

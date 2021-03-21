@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,9 +8,10 @@ from gi.repository import GObject, Gdk, GdkX11
 from xpra.util import envint
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import xswallow, xsync, xlog
+from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.gtk_common.gtk_util import (
-    get_default_root_window, GDKWindow,
+    get_default_root_window,
     )
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -150,9 +151,9 @@ class SystemTray(GObject.GObject):
                 log.warn("setup tray: using rgb visual fallback")
                 visual = screen.get_rgb_visual()
         assert visual is not None, "failed to obtain visual"
-        self.tray_window = GDKWindow(root, width=1, height=1,
-                                  title="Xpra-SystemTray",
-                                  visual=visual)
+        self.tray_window = GDKX11Window(root, width=1, height=1,
+                                        title="Xpra-SystemTray",
+                                        visual=visual)
         xtray = self.tray_window.get_xid()
         set_tray_visual(self.tray_window, visual)
         set_tray_orientation(self.tray_window, TRAY_ORIENTATION_HORZ)
@@ -242,12 +243,12 @@ class SystemTray(GObject.GObject):
         log("dock_tray(%#x) gdk window=%#x, geometry=%s, title=%s",
             xid, xid, window.get_geometry(), title)
         visual = window.get_visual()
-        tray_window = GDKWindow(root, width=w, height=h,
-                                           event_mask = event_mask,
-                                           title=title,
-                                           x=-200, y=-200,
-                                           override_redirect=True,
-                                           visual=visual)
+        tray_window = GDKX11Window(root, width=w, height=h,
+                                   event_mask = event_mask,
+                                   title=title,
+                                   x=-200, y=-200,
+                                   override_redirect=True,
+                                   visual=visual)
         log("dock_tray(%#x) setting tray properties", xid)
         set_tray_window(tray_window, window)
         tray_window.show()

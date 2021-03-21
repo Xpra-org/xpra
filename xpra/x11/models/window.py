@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
 from xpra.gtk_common.error import XError, XSwallowContext
+from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
 from xpra.x11.prop_conv import MotifWMHints
@@ -24,10 +25,8 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     calc_constrained_size,
     x11_get_server_time,
     )
-from xpra.gtk_common.gtk_util import (
-    get_default_root_window,
-    GDKWindow,
-    )
+
+from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.log import Logger
 
 log = Logger("x11", "window")
@@ -181,7 +180,7 @@ class WindowModel(BaseWindowModel):
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
-        self.corral_window = GDKWindow(self.parking_window,
+        self.corral_window = GDKX11Window(self.parking_window,
                                         x=x, y=y, width=ow, height=oh,
                                         window_type=Gdk.WindowType.CHILD,
                                         event_mask=Gdk.EventMask.PROPERTY_CHANGE_MASK,
