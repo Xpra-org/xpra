@@ -1388,12 +1388,12 @@ def run_pinentry(extra_args):
         else:
             log("pinentry sent %r", line)
     try:
-        return do_run_pinentry(get_input, process_output)
+        proc = Popen(["pinentry"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
     except OSError as e:
         raise InitExit(EXIT_UNSUPPORTED, "cannot run pinentry: %s" % (e,)) from None
+    return do_run_pinentry(proc, get_input, process_output)
 
-def do_run_pinentry(get_input, process_output, cmd="pinentry"):
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+def do_run_pinentry(proc, get_input, process_output):
     log = Logger("exec")
     message = "connection"
     while proc.poll() is None:

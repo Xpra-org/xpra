@@ -7,11 +7,12 @@
 
 import os
 import weakref
+from subprocess import Popen, PIPE
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
-    updict, pver, iround, flatten_dict,
+    updict, pver, iround, flatten_dict, noerr,
     envbool, envint, repr_ellipsized, csv, first_time, typedict,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
@@ -84,6 +85,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
+        self.pinentry_proc = None
         self.shortcuts_info = None
         self.session_info = None
         self.bug_report = None
@@ -182,6 +184,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def cleanup(self):
         log("GTKXpraClient.cleanup()")
+        self.stop_pinentry()
         if self.shortcuts_info:
             self.shortcuts_info.destroy()
             self.shortcuts_info = None
@@ -259,38 +262,48 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return True
         return self.do_process_challenge_prompt_dialog(packet, prompt)
 
+    def stop_pinentry(self):
+        pp = self.pinentry_proc
+        if pp:
+            self.pinentry_proc = None
+            noerr(pp.terminate)
+
+
     def handle_challenge_with_pinentry(self, packet, prompt="password", cmd="pinentry"):
         from xpra.scripts.main import do_run_pinentry
-        q = "Enter %s" % prompt
-        p = self._protocol
-        if p:
-            conn = getattr(p, "_conn", None)
-            if conn:
-                from xpra.net.bytestreams import pretty_socket
-                cinfo = conn.get_info()
-                endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
-                q += " for %s" % endpoint
-        messages = [
-            "SETPROMPT Xpra Server Authentication:",
-            "SETDESC %s:" % q,
-            "GETPIN",
-            ]
-        def get_input():
-            if not messages:
-                return None
-            return messages.pop(0)
-        def process_output(message, output):
-            if message=="GETPIN":
-                if output.startswith(b"D "):
-                    password = output[2:].rstrip(b"\n\r").decode()
-                    self.idle_add(self.send_challenge_reply, packet, password)
-                else:
-                    self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
         try:
-            do_run_pinentry(get_input, process_output, cmd=cmd)
-            return True
+            proc = Popen([cmd], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         except OSError:
             log("pinentry failed", exc_info=True)
+        else:
+            self.pinentry_proc = proc
+            q = "Enter %s" % prompt
+            p = self._protocol
+            if p:
+                conn = getattr(p, "_conn", None)
+                if conn:
+                    from xpra.net.bytestreams import pretty_socket
+                    cinfo = conn.get_info()
+                    endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
+                    q += " for %s" % endpoint
+            messages = [
+                "SETPROMPT Xpra Server Authentication:",
+                "SETDESC %s:" % q,
+                "GETPIN",
+                ]
+            def get_input():
+                if not messages:
+                    return None
+                return messages.pop(0)
+            def process_output(message, output):
+                if message=="GETPIN":
+                    if output.startswith(b"D "):
+                        password = output[2:].rstrip(b"\n\r").decode()
+                        self.idle_add(self.send_challenge_reply, packet, password)
+                    else:
+                        self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
+            do_run_pinentry(proc, get_input, process_output)
+            return True
         return self.do_process_challenge_prompt_dialog(packet, prompt)
 
     def do_process_challenge_prompt_dialog(self, packet, prompt="password"):
