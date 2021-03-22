@@ -1367,12 +1367,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if gdkwin:
             d = gdkwin.get_display()
             if d:
-                d.keyboard_ungrab(0)
+                d.keyboard_ungrab(Gdk.CURRENT_TIME)
         return True
 
     def keyboard_grab(self, *args):
         grablog("keyboard_grab%s", args)
-        r = Gdk.keyboard_grab(self.get_window(), True, 0)
+        r = Gdk.keyboard_grab(self.get_window(), True, Gdk.CURRENT_TIME)
         self._client.keyboard_grabbed = r==Gdk.GrabStatus.SUCCESS
         grablog("keyboard_grab%s Gdk.keyboard_grab(%s, True)=%s, keyboard_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
@@ -1394,7 +1394,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                       em.POINTER_MOTION_HINT_MASK |
                       em.ENTER_NOTIFY_MASK |
                       em.LEAVE_NOTIFY_MASK)
-        r = Gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, 0)
+        r = Gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, Gdk.CURRENT_TIME)
         self._client.pointer_grabbed = r==Gdk.GrabStatus.SUCCESS
         grablog("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
@@ -1407,7 +1407,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if gdkwin:
             d = gdkwin.get_display()
             if d:
-                d.pointer_ungrab(0)
+                d.pointer_ungrab(Gdk.CURRENT_TIME)
         return True
 
     def toggle_pointer_grab(self):
