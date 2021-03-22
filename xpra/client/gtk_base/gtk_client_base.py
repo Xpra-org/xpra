@@ -1060,17 +1060,19 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                       em.LEAVE_NOTIFY_MASK)
         confine_to = None
         cursor = None
-        r = Gdk.pointer_grab(window.get_window(), True, event_mask, confine_to, cursor, 0)
+        etime = Gtk.get_current_event_time()
+        r = Gdk.pointer_grab(window.get_window(), True, event_mask, confine_to, cursor, etime)
         grablog("pointer_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
         #also grab the keyboard so the user won't Alt-Tab away:
-        r = Gdk.keyboard_grab(window.get_window(), False, 0)
+        r = Gdk.keyboard_grab(window.get_window(), False, etime)
         grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
         self._window_with_grab = wid
 
     def window_ungrab(self):
         grablog("window_ungrab()")
-        Gdk.pointer_ungrab(0)
-        Gdk.keyboard_ungrab(0)
+        etime = Gtk.get_current_event_time()
+        Gdk.pointer_ungrab(etime)
+        Gdk.keyboard_ungrab(etime)
         self._window_with_grab = None
 
 

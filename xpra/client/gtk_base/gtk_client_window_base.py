@@ -1654,7 +1654,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     }.get(direction)
                 geomlog("edge(%s)=%s", MOVERESIZE_DIRECTION_STRING.get(direction), edge)
                 if direction is not None:
-                    self.begin_resize_drag(edge, button, x, y, 0)
+                    etime = Gtk.get_current_event_time()
+                    self.begin_resize_drag(edge, button, x, y, etime)
         else:
             #handle it ourselves:
             #use window coordinates (which include decorations)
