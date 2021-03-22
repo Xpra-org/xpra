@@ -1050,7 +1050,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         screen.connect("size-changed", self.screen_size_changed)
 
 
-    def window_grab(self, window):
+    def window_grab(self, wid, window):
         em = Gdk.EventMask
         event_mask = (em.BUTTON_PRESS_MASK |
                       em.BUTTON_RELEASE_MASK |
@@ -1065,11 +1065,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #also grab the keyboard so the user won't Alt-Tab away:
         r = Gdk.keyboard_grab(window.get_window(), False, 0)
         grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
+        self._window_with_grab = wid
 
     def window_ungrab(self):
         grablog("window_ungrab()")
         Gdk.pointer_ungrab(0)
         Gdk.keyboard_ungrab(0)
+        self._window_with_grab = None
 
 
     def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name):

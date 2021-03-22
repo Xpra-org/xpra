@@ -790,7 +790,7 @@ class WindowClient(StubClientMixin):
         if override_redirect:
             if self.should_force_grab(metadata):
                 grablog.warn("forcing grab for OR window %i, matches %s", wid, OR_FORCE_GRAB)
-                self.window_grab(window)
+                self.window_grab(wid, window)
         return window
 
     def should_force_grab(self, metadata):
@@ -1284,11 +1284,13 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # grabs:
-    def window_grab(self, _window):
+    def window_grab(self, wid, _window):
         grablog.warn("Warning: window grab not implemented in %s", self.client_type())
+        self._window_with_grab = wid
 
     def window_ungrab(self):
         grablog.warn("Warning: window ungrab not implemented in %s", self.client_type())
+        self._window_with_grab = None
 
     def do_force_ungrab(self, wid):
         grablog("do_force_ungrab(%s)", wid)
@@ -1300,15 +1302,13 @@ class WindowClient(StubClientMixin):
         window = self._id_to_window.get(wid)
         grablog("grabbing %s: %s", wid, window)
         if window:
-            self.window_grab(window)
-            self._window_with_grab = wid
+            self.window_grab(wid, window)
 
     def _process_pointer_ungrab(self, packet):
         wid = packet[1]
         window = self._id_to_window.get(wid)
         grablog("ungrabbing %s: %s", wid, window)
         self.window_ungrab()
-        self._window_with_grab = None
 
 
     ######################################################################
