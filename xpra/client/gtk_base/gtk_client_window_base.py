@@ -452,23 +452,27 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         htf = self.has_toplevel_focus()
         focuslog("%s focus_change%s has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
         if self._been_mapped:
-            self._client.update_focus(self._id, htf)
+            self._focus_latest = htf
+            self.send_latest_focus()
 
     def recheck_focus(self):
         self.recheck_focus_timer = 0
-        #we receive pairs of FocusOut + FocusIn following a keyboard grab,
-        #so we recheck the focus status via this timer to skip unnecessary churn
+        self.send_latest_focus()
+
+    def send_latest_focus(self):
         focused = self._client._focused
         focuslog("recheck_focus() wid=%i, focused=%s, latest=%s", self._id, focused, self._focus_latest)
-        hasfocus = focused==self._id
-        if hasfocus==self._focus_latest:
-            #we're already up to date
-            return
-        if not self._focus_latest:
-            self._client.window_ungrab()
-            self._client.update_focus(self._id, False)
+        if self._focus_latest:
+            self._focus()
         else:
-            self._client.update_focus(self._id, True)
+            self._unfocus()
+
+    def _focus(self):
+        super()._focus()
+
+    def _unfocus(self):
+        self._client.window_ungrab()
+        super()._unfocus()
 
     def cancel_focus_timer(self):
         rft = self.recheck_focus_timer
@@ -477,12 +481,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.source_remove(rft)
 
     def schedule_recheck_focus(self):
+        #we receive pairs of FocusOut + FocusIn following a keyboard grab,
+        #so we recheck the focus status via this timer to skip unnecessary churn
         if FOCUS_RECHECK_DELAY<0:
             self.recheck_focus()
-            return
-        if self.recheck_focus_timer==0:
+        elif self.recheck_focus_timer==0:
             self.recheck_focus_timer = self.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
-        return True
 
     def do_xpra_focus_out_event(self, event):
         focuslog("do_xpra_focus_out_event(%s)", event)
@@ -492,13 +496,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 focuslog("dropped NotifyInferior focus event")
                 return True
         self._focus_latest = False
-        return self.schedule_recheck_focus()
+        self.schedule_recheck_focus()
+        return True
 
     def do_xpra_focus_in_event(self, event):
         focuslog("do_xpra_focus_in_event(%s) been_mapped=%s", event, self._been_mapped)
         if self._been_mapped:
             self._focus_latest = True
-            return self.schedule_recheck_focus()
+            self.schedule_recheck_focus()
+        return True
 
 
     def init_max_window_size(self):
