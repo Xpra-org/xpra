@@ -132,7 +132,7 @@ cdef inline int roundup(int n, int m):
 cdef class SWSFlags:
     cdef int flags
     cdef object flags_strs
-    def __init__(self, int flags, flags_strs):          #@DuplicatedSignature
+    def __init__(self, int flags, flags_strs):
         self.flags = flags
         self.flags_strs = flags_strs
 
@@ -266,7 +266,7 @@ cdef class ColorspaceConverter:
     cdef unsigned long frames
     cdef double time
     cdef SwsContext *context
-    cdef int flags                              #@DuplicatedSignature
+    cdef int flags
 
     cdef int out_height[4]
     cdef int out_stride[4]
@@ -275,18 +275,16 @@ cdef class ColorspaceConverter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
+                           int dst_width, int dst_height, dst_format, int speed=100):
         log("swscale.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
-        cdef CSCPixelFormat src
-        cdef CSCPixelFormat dst
         #src:
-        src = FORMATS.get(src_format)
+        cdef CSCPixelFormat src = FORMATS.get(src_format)
         log("source format=%s", src)
         assert src, "invalid source format: %s" % src_format
         self.src_format = src_format
         self.src_format_enum = src.av_enum
         #dst:
-        dst = FORMATS.get(dst_format)
+        cdef CSCPixelFormat dst = FORMATS.get(dst_format)
         log("destination format=%s", dst)
         assert dst, "invalid destination format: %s" % dst_format
         self.dst_format = dst_format
@@ -318,7 +316,7 @@ cdef class ColorspaceConverter:
         log("sws context=%#x", <uintptr_t> self.context)
         assert self.context!=NULL, "sws_getContext returned NULL"
 
-    def get_info(self) -> dict:         #@DuplicatedSignature
+    def get_info(self) -> dict:
         info = get_info()
         info.update({
                 "flags"     : get_swscale_flags_strs(self.flags),
@@ -345,7 +343,7 @@ cdef class ColorspaceConverter:
         return "swscale(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
 
-    def __dealloc__(self):                  #@DuplicatedSignature
+    def __dealloc__(self):
         self.clean()
 
     def get_src_width(self) -> int:
@@ -366,11 +364,11 @@ cdef class ColorspaceConverter:
     def get_dst_format(self):
         return self.dst_format
 
-    def get_type(self) -> str:              #@DuplicatedSignature
+    def get_type(self) -> str:
         return "swscale"
 
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         #overzealous clean is cheap!
         cdef int i
         if self.context!=NULL:
@@ -403,14 +401,10 @@ cdef class ColorspaceConverter:
         cdef const uint8_t *input_image[4]
         cdef uint8_t *output_image[4]
         cdef int input_stride[4]
-        cdef int iplanes,oplanes
-        cdef int i                          #@DuplicatedSignature
-        cdef int height
-        cdef int stride
-        cdef int result
+        cdef int i
         cdef size_t pad
         cdef double start = monotonic_time()
-        iplanes = image.get_planes()
+        cdef int iplanes = image.get_planes()
         pixels = image.get_pixels()
         strides = image.get_rowstride()
         assert iplanes in ImageWrapper.PLANE_OPTIONS, "invalid number of planes: %s" % iplanes
@@ -453,11 +447,13 @@ cdef class ColorspaceConverter:
             else:
                 #the buffer may not be used, but is not allowed to be NULL:
                 output_image[i] = output_image[0]
+        cdef int result
         with nogil:
             result = sws_scale(self.context, input_image, input_stride, 0, self.src_height, output_image, self.out_stride)
         assert result!=0, "sws_scale failed!"
         assert result==self.dst_height, "invalid output height: %s, expected %s" % (result, self.dst_height)
         #now parse the output:
+        cdef int oplanes
         if self.dst_format.endswith("P"):
             #planar mode, assume 3 planes:
             oplanes = ImageWrapper.PLANAR_3

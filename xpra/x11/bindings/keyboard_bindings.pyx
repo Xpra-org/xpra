@@ -648,7 +648,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
     cdef xmodmap_setkeycodes(self, keycodes, new_keysyms):
         self.context_check()
-        cdef KeySym keysym                      #@DuplicatedSignature
+        cdef KeySym keysym
         cdef int keycode, i
         cdef int first_keycode = min(keycodes.keys())
         cdef int last_keycode = max(keycodes.keys())
@@ -681,7 +681,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                     for ks in keysyms_strs:
                         if ks in (None, ""):
                             keysym = NoSymbol
-                        elif type(ks) in [long, int]:
+                        elif isinstance(ks, (long, int)):
                             keysym = ks
                         else:
                             keysym = self._parse_keysym(ks)
@@ -721,8 +721,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             for all the keycodes
         """
         self.context_check()
-        cdef int keysyms_per_keycode                    #@DuplicatedSignature
-        cdef KeySym keysym                              #@DuplicatedSignature
+        cdef int keysyms_per_keycode
+        cdef KeySym keysym
         cdef KeyCode keycode
         min_keycode,max_keycode = self._get_minmax_keycodes()
         cdef int keycode_count = max_keycode - min_keycode + 1
@@ -807,8 +807,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             for all keycodes (see above for list)
         """
         self.context_check()
-        cdef int keysyms_per_keycode                    #@DuplicatedSignature
-        cdef KeyCode keycode                            #@DuplicatedSignature
+        cdef int keysyms_per_keycode
+        cdef KeyCode keycode
         min_keycode,max_keycode = self._get_minmax_keycodes()
         cdef KeySym *keyboard_map = XGetKeyboardMapping(self.display, min_keycode, max_keycode - min_keycode + 1, &keysyms_per_keycode)
         mappings = {}
@@ -837,7 +837,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         the mappings from _get_raw_modifier_mappings are in raw format
         (index and keycode), so here we convert into names:
         """
-        cdef KeySym keysym                      #@DuplicatedSignature
+        cdef KeySym keysym
         cdef char *keyname
         keysyms_per_keycode, raw_mappings = self._get_raw_modifier_mappings()
         mappings = {}
@@ -877,8 +877,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             keycode[modifier*keymap.max_keypermod+i] = 0
 
     cdef xmodmap_addmodifier(self, int modifier, keysyms):
-        cdef KeyCode keycode                            #@DuplicatedSignature
-        cdef KeySym keysym                              #@DuplicatedSignature
+        cdef KeyCode keycode
+        cdef KeySym keysym
         cdef XModifierKeymap* keymap = self.get_keymap(True)
         success = True
         log("add modifier: modifier %s=%s", modifier, keysyms)
@@ -949,7 +949,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             XTestFakeKeyEvent(self.display, keycode, False, 0)
 
     cdef native_xmodmap(self, instructions):
-        cdef XModifierKeymap* keymap                    #@DuplicatedSignature
+        cdef XModifierKeymap* keymap
         cdef int modifier
         self.set_work_keymap(NULL)
         unhandled = []
@@ -1055,10 +1055,9 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         if os.environ.get("XPRA_X11_XTEST", "1")!="1":
             log.warn("XTest disabled using XPRA_X11_XTEST")
             return False
-        cdef int r
         cdef int evbase, errbase
         cdef int major, minor
-        r = XTestQueryExtension(self.display, &evbase, &errbase, &major, &minor)
+        cdef int r = XTestQueryExtension(self.display, &evbase, &errbase, &major, &minor)
         if not r:
             log.warn("Warning: XTest extension is missing")
             return False
@@ -1107,7 +1106,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         if not self.hasXkb():
             log.warn("Warning: cannot set key repeat rate without Xkb support")
             return False
-        cdef unsigned int deviceSpec = XkbUseCoreKbd    #@DuplicatedSignature
+        cdef unsigned int deviceSpec = XkbUseCoreKbd
         cdef unsigned int cdelay = delay
         cdef unsigned int cinterval = interval
         return XkbSetAutoRepeatRate(self.display, deviceSpec, cdelay, cinterval)

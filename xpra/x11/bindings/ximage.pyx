@@ -69,7 +69,6 @@ cdef extern from "errno.h" nogil:
 
 ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
-ctypedef unsigned char CARD8
 ctypedef CARD32 Colormap
 DEF XNone = 0
 
@@ -247,14 +246,14 @@ cdef class XImageWrapper:
         Presents X11 image pixels as in ImageWrapper
     """
 
-    cdef XImage *image                              #@DuplicatedSignature
+    cdef XImage *image
     cdef unsigned int x
     cdef unsigned int y
     cdef unsigned int target_x
     cdef unsigned int target_y
-    cdef unsigned int width                                  #@DuplicatedSignature
-    cdef unsigned int height                                 #@DuplicatedSignature
-    cdef unsigned int depth                                  #@DuplicatedSignature
+    cdef unsigned int width
+    cdef unsigned int height
+    cdef unsigned int depth
     cdef unsigned int rowstride
     cdef unsigned int planes
     cdef unsigned int bytesperpixel
@@ -473,7 +472,7 @@ cdef class XImageWrapper:
         memcpy(self.pixels, buf, buf_len)
 
 
-    def free(self):                                     #@DuplicatedSignature
+    def free(self):
         ximagedebug("%s.free()", self)
         self.free_image()
         self.free_pixels()
@@ -556,7 +555,7 @@ cdef class XImageWrapper:
 
 
 cdef class XShmWrapper:
-    cdef Display *display                              #@DuplicatedSignature
+    cdef Display *display
     cdef Visual *visual
     cdef Window window
     cdef unsigned int width
@@ -631,7 +630,7 @@ cdef class XShmWrapper:
             return False, True, False
         return True, True, False
 
-    def get_size(self):                                     #@DuplicatedSignature
+    def get_size(self):
         return self.width, self.height
 
     def get_image(self, Drawable drawable, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
@@ -695,7 +694,7 @@ cdef class XShmWrapper:
         #force next get_image call to get a new image from the server
         self.got_image = False
 
-    def __dealloc__(self):                              #@DuplicatedSignature
+    def __dealloc__(self):
         xshmdebug("XShmWrapper.__dealloc__() ref_count=%i", self.ref_count)
         self.cleanup()
 
@@ -710,13 +709,13 @@ cdef class XShmWrapper:
         if self.ref_count==0:
             self.free()
 
-    def free_image_callback(self):                               #@DuplicatedSignature
+    def free_image_callback(self):
         self.ref_count -= 1
         xshmdebug("XShmWrapper.free_image_callback() closed=%s, new ref_count=%i", self.closed, self.ref_count)
         if self.closed and self.ref_count==0:
             self.free()
 
-    cdef free(self):                                     #@DuplicatedSignature
+    cdef free(self):
         assert self.ref_count==0, "XShmWrapper %s cannot be freed: still has a ref count of %i" % (self, self.ref_count)
         assert self.closed, "XShmWrapper %s cannot be freed: it is not closed yet" % self
         has_shm = self.shminfo.shmaddr!=<char *> -1
@@ -737,13 +736,13 @@ cdef class XShmImageWrapper(XImageWrapper):
 
     cdef object free_callback
 
-    def __init__(self, *args):                      #@DuplicatedSignature
+    def __init__(self, *args):
         self.free_callback = None
 
-    def __repr__(self):                             #@DuplicatedSignature
+    def __repr__(self):
         return "XShmImageWrapper(%s: %s, %s, %s, %s)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
-    cdef void *get_pixels_ptr(self):                #@DuplicatedSignature
+    cdef void *get_pixels_ptr(self):
         if self.pixels!=NULL:
             xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x (pixels) %s", <uintptr_t> self.pixels, self)
             return self.pixels
@@ -758,13 +757,13 @@ cdef class XShmImageWrapper(XImageWrapper):
         xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <uintptr_t> ptr, self)
         return ptr
 
-    def freeze(self):                               #@DuplicatedSignature
+    def freeze(self):
         #we just force a restride, which will allocate a new pixel buffer:
         cdef unsigned int newstride = roundup(self.width*len(self.pixel_format), 4)
         self.timestamp = int(monotonic_time()*1000)
         return self.restride(newstride)
 
-    def free(self):                                 #@DuplicatedSignature
+    def free(self):
         #ensure we never try to XDestroyImage:
         self.image = NULL
         self.free_pixels()
@@ -783,11 +782,11 @@ cdef int xpixmap_counter = 0
 cdef class PixmapWrapper:
     cdef Display *display
     cdef Pixmap pixmap
-    cdef unsigned int width                          #@DuplicatedSignature
-    cdef unsigned int height                         #@DuplicatedSignature
+    cdef unsigned int width
+    cdef unsigned int height
 
     "Reference count an X Pixmap that needs explicit cleanup."
-    cdef init(self, Display *display, Pixmap pixmap, unsigned int width, unsigned int height):     #@DuplicatedSignature
+    cdef init(self, Display *display, Pixmap pixmap, unsigned int width, unsigned int height):
         self.display = display
         self.pixmap = pixmap
         self.width = width
@@ -796,19 +795,19 @@ cdef class PixmapWrapper:
         xpixmap_counter += 1
         ximagedebug("%s xpixmap counter: %i", self, xpixmap_counter)
 
-    def __repr__(self):                     #@DuplicatedSignature
+    def __repr__(self):
         return "PixmapWrapper(%#x, %i, %i)" % (self.pixmap, self.width, self.height)
 
-    def get_width(self):                    #@DuplicatedSignature
+    def get_width(self):
         return self.width
 
-    def get_height(self):                   #@DuplicatedSignature
+    def get_height(self):
         return self.height
 
     def get_pixmap(self):
         return self.pixmap
 
-    def get_image(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height):                #@DuplicatedSignature
+    def get_image(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
         if not self.pixmap:
             log.warn("%s.get_image%s", self, (x, y, width, height))
             return  None
@@ -823,17 +822,17 @@ cdef class PixmapWrapper:
             height = self.height-y
         return get_image(self.display, self.pixmap, x, y, width, height)
 
-    def __dealloc__(self):                  #@DuplicatedSignature
+    def __dealloc__(self):
         self.do_cleanup()
 
-    cdef do_cleanup(self):                  #@DuplicatedSignature
+    cdef do_cleanup(self):
         if self.pixmap!=0:
             XFreePixmap(self.display, self.pixmap)
             self.pixmap = 0
             global xpixmap_counter
             xpixmap_counter -= 1
 
-    def cleanup(self):                      #@DuplicatedSignature
+    def cleanup(self):
         ximagedebug("%s.cleanup()", self)
         self.do_cleanup()
 
@@ -913,7 +912,7 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
         xshm.init(self.display, xwindow, attrs.visual, attrs.width, attrs.height, attrs.depth)
         return xshm
 
-    def get_ximage(self, drawable, x, y, width, height):      #@DuplicatedSignature
+    def get_ximage(self, drawable, x, y, width, height):
         self.context_check()
         return get_image(self.display, drawable, x, y, width, height)
 

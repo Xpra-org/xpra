@@ -117,7 +117,7 @@ def get_spec(in_colorspace, out_colorspace):
 
 class CythonImageWrapper(ImageWrapper):
 
-    def free(self):                             #@DuplicatedSignature
+    def free(self):
         log("CythonImageWrapper.free() cython_buffer=%#x", <uintptr_t> self.cython_buffer)
         ImageWrapper.free(self)
         cb = self.cython_buffer
@@ -304,7 +304,7 @@ cdef class ColorspaceConverter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
+                           int dst_width, int dst_height, dst_format, int speed=100):
         cdef int i
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
@@ -406,7 +406,7 @@ cdef class ColorspaceConverter:
         else:
             raise Exception("BUG: src_format=%s, dst_format=%s", src_format, dst_format)
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         #overzealous clean is cheap!
         cdef int i                          #
         self.src_width = 0
@@ -427,7 +427,7 @@ cdef class ColorspaceConverter:
     def is_closed(self):
         return self.convert_image_function is None
 
-    def get_info(self):      #@DuplicatedSignature
+    def get_info(self):
         info = {
                 "frames"    : self.frames,
                 "src_width" : self.src_width,
@@ -449,7 +449,7 @@ cdef class ColorspaceConverter:
         return "csc_cython(%s %sx%s - %s %sx%s)" % (self.src_format, self.src_width, self.src_height,
                                                  self.dst_format, self.dst_width, self.dst_height)
 
-    def __dealloc__(self):                  #@DuplicatedSignature
+    def __dealloc__(self):
         self.clean()
 
     def get_src_width(self):
@@ -470,7 +470,7 @@ cdef class ColorspaceConverter:
     def get_dst_format(self):
         return self.dst_format
 
-    def get_type(self):                     #@DuplicatedSignature
+    def get_type(self):
         return  "cython"
 
 
@@ -504,44 +504,37 @@ cdef class ColorspaceConverter:
         cdef Py_ssize_t pic_buf_len = 0
         cdef const unsigned char *input_image
         cdef const unsigned int *input_r210
-        cdef unsigned char *output_image
-        cdef unsigned int input_stride
-        cdef unsigned int x,y,o             #@DuplicatedSignature
+        cdef unsigned int x,y,o
         cdef unsigned int sx, sy, ox, oy
-        cdef unsigned int workw, workh
-        cdef unsigned int Ystride, Ustride, Vstride
         cdef unsigned unsigned int r210
         cdef unsigned char R, G, B
         cdef unsigned short Rsum, Gsum, Bsum
-        cdef unsigned char sum, i, dx, dy
-        cdef unsigned char *Y
-        cdef unsigned char *U
-        cdef unsigned char *V
+        cdef unsigned char sum, dx, dy
 
         self.validate_rgb_image(image)
         pixels = image.get_pixels()
-        input_stride = image.get_rowstride()
+        cdef unsigned int input_stride = image.get_rowstride()
         log("do_RGB_to_YUV420P(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
 
         assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
         #allocate output buffer:
-        output_image = <unsigned char*> memalign(self.buffer_size)
-        Y = output_image + self.offsets[0]
-        U = output_image + self.offsets[1]
-        V = output_image + self.offsets[2]
+        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
+        cdef unsigned char *Y = output_image + self.offsets[0]
+        cdef unsigned char *U = output_image + self.offsets[1]
+        cdef unsigned char *V = output_image + self.offsets[2]
 
         #copy to local variables (ensures C code will be optimized correctly)
-        Ystride = self.dst_strides[0]
-        Ustride = self.dst_strides[1]
-        Vstride = self.dst_strides[2]
+        cdef unsigned int Ystride = self.dst_strides[0]
+        cdef unsigned int Ustride = self.dst_strides[1]
+        cdef unsigned int Vstride = self.dst_strides[2]
         cdef unsigned int src_width = self.src_width
         cdef unsigned int src_height = self.src_height
         cdef unsigned int dst_width = self.dst_width
         cdef unsigned int dst_height = self.dst_height
 
         #we process 4 pixels at a time:
-        workw = roundup(dst_width//2, 2)
-        workh = roundup(dst_height//2, 2)
+        cdef unsigned int workw = roundup(dst_width//2, 2)
+        cdef unsigned int workh = roundup(dst_height//2, 2)
         #from now on, we can release the gil:
         if self.src_format=="r210":
             assert Bpp==4
@@ -666,7 +659,6 @@ cdef class ColorspaceConverter:
 
     def YUV444P10_to_r210(self, image):
         self.validate_planar3_image(image)
-        iplanes = image.get_planes()
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
         log("YUV444P10_to_r210(%s) strides=%s", image, input_strides)
@@ -796,30 +788,24 @@ cdef class ColorspaceConverter:
 
     cdef do_YUV420P_to_RGB(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
         cdef Py_ssize_t buf_len = 0
-        cdef unsigned char *output_image        #
-        cdef unsigned int x,y,o                 #@DuplicatedSignature
+        cdef unsigned int x,y,o
         cdef unsigned int sx, sy, ox, oy
-        cdef unsigned int workw, workh          #
-        cdef unsigned int stride
         cdef unsigned char *Ybuf
         cdef unsigned char *Ubuf
         cdef unsigned char *Vbuf
         cdef unsigned char dx, dy
         cdef short Y, U, V
-        cdef unsigned int Ystride, Ustride, Vstride      #
-        cdef object rgb
 
         self.validate_planar3_image(image)
-        iplanes = image.get_planes()
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
         log("do_YUV420P_to_RGB(%s) strides=%s", (image, Bpp, Rindex, Gindex, Bindex, Xindex), input_strides)
 
         #copy to local variables:
-        stride = self.dst_strides[0]
-        Ystride = input_strides[0]
-        Ustride = input_strides[1]
-        Vstride = input_strides[2]
+        cdef unsigned int stride = self.dst_strides[0]
+        cdef unsigned int Ystride = input_strides[0]
+        cdef unsigned int Ustride = input_strides[1]
+        cdef unsigned int Vstride = input_strides[2]
         cdef unsigned int src_width = self.src_width
         cdef unsigned int src_height = self.src_height
         cdef unsigned int dst_width = self.dst_width
@@ -833,11 +819,11 @@ cdef class ColorspaceConverter:
         assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//2)
 
         #allocate output buffer:
-        output_image = <unsigned char*> memalign(self.buffer_size)
+        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
 
         #we process 4 pixels at a time:
-        workw = roundup(dst_width//2, 2)
-        workh = roundup(dst_height//2, 2)
+        cdef unsigned int workw = roundup(dst_width//2, 2)
+        cdef unsigned int workh = roundup(dst_height//2, 2)
         #from now on, we can release the gil:
         with nogil:
             for y in range(workh):
@@ -878,31 +864,26 @@ cdef class ColorspaceConverter:
     cdef do_RGBP_to_RGB(self, image, const uint8_t Rsrc, const uint8_t Gsrc, const uint8_t Bsrc,
                                      const uint8_t Rdst, const uint8_t Gdst, const uint8_t Bdst, const uint8_t Xdst):
         cdef Py_ssize_t buf_len = 0             #
-        cdef unsigned char *output_image        #@DuplicatedSignature
-        cdef unsigned int x,y,o                 #@DuplicatedSignature
-        cdef unsigned int sx, sy                #@DuplicatedSignature
-        cdef unsigned int stride                #@DuplicatedSignature
-        cdef unsigned char *Gbuf                #@DuplicatedSignature
+        cdef unsigned int x,y,o
+        cdef unsigned int sx, sy
+        cdef unsigned char *Gbuf
         cdef unsigned char *Gptr
-        cdef unsigned char *Bbuf                #@DuplicatedSignature
+        cdef unsigned char *Bbuf
         cdef unsigned char *Bptr
-        cdef unsigned char *Rbuf                #@DuplicatedSignature
+        cdef unsigned char *Rbuf
         cdef unsigned char *Rptr
         cdef unsigned char sum
-        cdef unsigned int Gstride, Bstride, Rstride
-        cdef object rgb                         #@DuplicatedSignature
 
         self.validate_planar3_image(image)
-        iplanes = image.get_planes()
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
         log("do_RGBP_to_RGB(%s) strides=%s", (image, Rsrc, Gsrc, Bsrc, Rdst, Gdst, Bdst, Xdst), input_strides)
 
         #copy to local variables:
-        Rstride = input_strides[Rsrc]
-        Gstride = input_strides[Gsrc]
-        Bstride = input_strides[Bsrc]
-        stride = self.dst_strides[0]
+        cdef unsigned int Rstride = input_strides[Rsrc]
+        cdef unsigned int Gstride = input_strides[Gsrc]
+        cdef unsigned int Bstride = input_strides[Bsrc]
+        cdef unsigned int stride = self.dst_strides[0]
         cdef unsigned int src_width = self.src_width
         cdef unsigned int src_height = self.src_height
         cdef unsigned int dst_width = self.dst_width
@@ -916,7 +897,7 @@ cdef class ColorspaceConverter:
         assert buf_len>=Bstride*image.get_height(), "buffer for B plane is too small: %s bytes, expected at least %s" % (buf_len, Bstride*image.get_height())
 
         #allocate output buffer:
-        output_image = <unsigned char*> memalign(self.buffer_size)
+        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
 
         #from now on, we can release the gil:
         with nogil:

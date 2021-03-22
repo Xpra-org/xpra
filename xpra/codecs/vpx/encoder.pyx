@@ -360,7 +360,7 @@ cdef class Encoder:
     cdef object __weakref__
 
 #init_context(w, h, src_format, encoding, quality, speed, scaling, options)
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
         log("vpx init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         assert encoding in CODECS, "invalid encoding: %s" % encoding
         assert scaling==(1,1), "vpx does not handle scaling"
@@ -442,7 +442,6 @@ cdef class Encoder:
             log("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
             raise Exception("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, self.codec_error_str()))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
-        cdef vpx_codec_err_t ctrl
         if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
             tile_columns = 0
             if width>=256:
@@ -503,7 +502,7 @@ cdef class Encoder:
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
 
-    def get_info(self) -> dict:                     #@DuplicatedSignature
+    def get_info(self) -> dict:
         info = get_info()
         info.update({
             "frames"    : int(self.frames),
@@ -553,7 +552,7 @@ cdef class Encoder:
     def is_closed(self):
         return self.context==NULL
 
-    def get_type(self):                     #@DuplicatedSignature
+    def get_type(self):
         return  "vpx"
 
     def get_src_format(self):
@@ -562,7 +561,7 @@ cdef class Encoder:
     def __dealloc__(self):
         self.clean()
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         if self.context!=NULL:
             vpx_codec_destroy(self.context)
             free(self.context)
@@ -620,15 +619,11 @@ cdef class Encoder:
 
     cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3]):
         #actual compression (no gil):
-        cdef vpx_image_t *image
-        cdef const vpx_codec_cx_pkt_t *pkt
         cdef vpx_codec_iter_t iter = NULL
-        cdef int frame_cnt = 0
         cdef int flags = 0
-        cdef vpx_codec_err_t i                          #@DuplicatedSignature
+        cdef vpx_codec_err_t i
 
-        cdef double start, end
-        image = <vpx_image_t *> malloc(sizeof(vpx_image_t))
+        cdef vpx_image_t *image = <vpx_image_t *> malloc(sizeof(vpx_image_t))
         memset(image, 0, sizeof(vpx_image_t))
         image.w = self.width
         image.h = self.height
@@ -667,15 +662,16 @@ cdef class Encoder:
             #cap the deadline at 250ms, which is already plenty
             deadline = MIN(250*1000, deadline)
             deadline_str = "%8.3fms" % deadline
-        start = monotonic_time()
+        cdef double start = monotonic_time()
         with nogil:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
         if ret!=0:
             free(image)
             log.error("%s codec encoding error %s: %s", self.encoding, ret, get_error_string(ret))
             return None
-        end = monotonic_time()
+        cdef double end = monotonic_time()
         log("vpx_codec_encode for %s took %ims (deadline=%16s for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline_str, self.speed, self.quality)
+        cdef const vpx_codec_cx_pkt_t *pkt
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
         end = monotonic_time()

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012 - 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #!python
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
-import time
 from xpra.monotonic_time cimport monotonic_time  #pylint: disable=syntax-error
 
 cdef extern from "math.h":
@@ -61,11 +60,11 @@ def time_weighted_average(data, double min_offset=0.1, double rpow=2.0):
         (defaults to 2, which means we square it)
     """
     assert len(data)>0
-    cdef double now = monotonic_time()              #@DuplicatedSignature
-    cdef double tv = 0.0                            #@DuplicatedSignature
-    cdef double tw = 0.0                            #@DuplicatedSignature
-    cdef double w                                   #@DuplicatedSignature
-    cdef double delta                               #@DuplicatedSignature
+    cdef double now = monotonic_time()
+    cdef double tv = 0.0
+    cdef double tw = 0.0
+    cdef double w
+    cdef double delta
     for event_time, value in data:
         delta = now-event_time
         assert delta>=0, "invalid event_time=%s, now=%s, delta=%s" % (event_time, now, delta)
@@ -82,17 +81,17 @@ def calculate_timesize_weighted_average_score(data):
         Data format: (event_time, size, value)
     """
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
-    cdef double now = monotonic_time()              #@DuplicatedSignature
-    cdef double tv = 0.0                            #@DuplicatedSignature
-    cdef double tw = 0.0                            #@DuplicatedSignature
-    cdef double rv = 0.0                            #@DuplicatedSignature
-    cdef double rw = 0.0                            #@DuplicatedSignature
-    cdef double event_time                          #@DuplicatedSignature
+    cdef double now = monotonic_time()
+    cdef double tv = 0.0
+    cdef double tw = 0.0
+    cdef double rv = 0.0
+    cdef double rw = 0.0
+    cdef double event_time
     cdef int size
     cdef int value
     cdef double pw
-    cdef double w                                   #@DuplicatedSignature
-    cdef double delta                               #@DuplicatedSignature
+    cdef double w
+    cdef double delta
     for event_time, size, value in data:
         if value<0:
             continue        #invalid record
@@ -122,18 +121,18 @@ def calculate_size_weighted_average(data):
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
     if size_avg<=0:
         size_avg = 1
-    cdef double now = monotonic_time()              #@DuplicatedSignature
-    cdef double tv = 0.0                            #@DuplicatedSignature
-    cdef double tw = 0.0                            #@DuplicatedSignature
-    cdef double rv = 0.0                            #@DuplicatedSignature
-    cdef double rw = 0.0                            #@DuplicatedSignature
-    cdef double event_time                          #@DuplicatedSignature
+    cdef double now = monotonic_time()
+    cdef double tv = 0.0
+    cdef double tw = 0.0
+    cdef double rv = 0.0
+    cdef double rw = 0.0
+    cdef double event_time
     cdef double size
     cdef double size_ps
     cdef double value
     cdef double pw
-    cdef double w                                   #@DuplicatedSignature
-    cdef double delta                               #@DuplicatedSignature
+    cdef double w
+    cdef double delta
     for event_time, size, value in data:
         if value<=0:
             continue        #invalid record

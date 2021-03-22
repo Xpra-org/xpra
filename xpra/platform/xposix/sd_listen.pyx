@@ -35,8 +35,8 @@ cdef extern from "systemd/sd-daemon.h":
 
 
 def get_sd_listen_sockets():
-    cdef int fd, n, i
-    n = sd_listen_fds(0)
+    cdef int fd, i
+    cdef int n = sd_listen_fds(0)
     log("sd_listen_fds(0)=%i", n)
     if n:
         log("REMOTE_ADDR=%s, REMOTE_PORT=%s", os.environ.get("REMOTE_ADDR", ""), os.environ.get("REMOTE_PORT", ""))
@@ -64,9 +64,9 @@ def get_sd_socket_type(fd):
 def get_sd_listen_socket(int fd):
     #re-wrapping the socket gives us a more proper socket object,
     #so we can then wrap it with ssl
-    def fromfd(family, type, proto=0):      #@DuplicatedSignature
+    def fromfd(family, stype, proto=0):
         #python3 does not need re-wrapping?
-        return socket.socket(family, type, 0, fd)
+        return socket.socket(family, stype, 0, fd)
     if sd_is_socket_unix(fd, socket.SOCK_STREAM, 1, NULL, 0)>0:
         sock = fromfd(socket.AF_UNIX, socket.SOCK_STREAM)
         sockpath = sock.getsockname()

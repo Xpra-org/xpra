@@ -159,7 +159,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if config==NULL:
             log("check_randr_sizes: failed to get randr screen info")
             return False
-        cdef int num_sizes = 0                          #@DuplicatedSignature
+        cdef int num_sizes = 0
         cdef XRRScreenSize *xrrs = XRRConfigSizes(config, &num_sizes)
         log("found %i config sizes", num_sizes)
         return num_sizes>0
@@ -187,7 +187,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     cdef _set_screen_size(self, width, height):
         self.context_check()
         cdef XRRScreenConfiguration *config
-        cdef int num_sizes = 0                          #@DuplicatedSignature
+        cdef int num_sizes = 0
         cdef int num_rates = 0
         cdef short* rates = <short*> 0
         cdef short rate = 0
@@ -195,7 +195,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef Time time = 0
         cdef int sizeID = 0
         cdef XRRScreenSize *xrrs
-        cdef XRRScreenSize xrr                          #@DuplicatedSignature
+        cdef XRRScreenSize xrr
 
         cdef Window window = XDefaultRootWindow(self.display)
         try:
@@ -280,13 +280,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def _get_screen_size(self):
         self.context_check()
-        cdef XRRScreenSize *xrrs                        #@DuplicatedSignature
+        cdef XRRScreenSize *xrrs
         cdef Rotation original_rotation
-        cdef int num_sizes = 0                          #@DuplicatedSignature
+        cdef int num_sizes = 0
         cdef SizeID size_id
         cdef int width, height
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config = NULL      #@DuplicatedSignature
+        cdef XRRScreenConfiguration *config = NULL
         try:
             config = XRRGetScreenInfo(self.display, window)
             if config==NULL:
@@ -314,7 +314,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def get_vrefresh(self):
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config             #@DuplicatedSignature
+        cdef XRRScreenConfiguration *config
         try:
             config = XRRGetScreenInfo(self.display, window)
             if config==NULL:

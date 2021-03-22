@@ -330,7 +330,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
         global COLORSPACES
         assert src_format in COLORSPACES, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES)
         assert encoding=="h265", "invalid encoding: %s" % encoding
@@ -351,7 +351,6 @@ cdef class Encoder:
 
     cdef init_encoder(self):
         global log_level
-        cdef const char *preset
 
         self.param = x265_param_alloc()
         assert self.param!=NULL
@@ -421,7 +420,7 @@ cdef class Encoder:
         log("init_encoder() x265 context=%#x", <uintptr_t> self.context)
         assert self.context!=NULL,  "context initialization failed for format %s and size %ix%i" % (self.src_format, self.width, self.height)
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         log("clean() x265 param=%#x, context=%#x", <uintptr_t> self.param, <uintptr_t> self.context)
         if self.param!=NULL:
             x265_param_free(self.param)
@@ -441,7 +440,7 @@ cdef class Encoder:
         self.first_frame_timestamp = 0
 
 
-    def get_info(self) -> dict:             #@DuplicatedSignature
+    def get_info(self) -> dict:
         cdef float pps
         if self.profile is None:
             return {}
@@ -481,7 +480,7 @@ cdef class Encoder:
     def get_height(self):
         return self.height
 
-    def get_type(self):                     #@DuplicatedSignature
+    def get_type(self):
         return  "x265"
 
     def get_src_format(self):
@@ -491,9 +490,8 @@ cdef class Encoder:
     def compress_image(self, image, int quality=-1, int speed=-1, options=None):
         cdef x265_nal *nal
         cdef uint32_t nnal = 0
-        cdef unsigned int i                        #@DuplicatedSignature
+        cdef unsigned int i
         cdef int r = 0
-        cdef x265_picture *pic_out = NULL
         cdef x265_picture *pic_in = NULL
         cdef int nal_size, frame_size = 0
 
@@ -526,7 +524,7 @@ cdef class Encoder:
                 data.append(out[:nal[i].sizeBytes])
                 log("x265 header[%s]: %s bytes", i, nal[i].sizeBytes)
 
-        pic_out = x265_picture_alloc()
+        cdef x265_picture *pic_out = x265_picture_alloc()
         assert pic_out!=NULL, "failed to allocate output picture"
         try:
             pic_in = x265_picture_alloc()

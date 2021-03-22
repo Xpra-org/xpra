@@ -672,10 +672,10 @@ class AVImageWrapper(ImageWrapper):
         when the image is freed, or once we have made a copy of the pixels.
     """
 
-    def _cn(self):                          #@DuplicatedSignature
+    def _cn(self):
         return "AVImageWrapper-%s" % self.av_frame
 
-    def free(self):                             #@DuplicatedSignature
+    def free(self):
         log("AVImageWrapper.free()")
         ImageWrapper.free(self)
         self.xpra_free_frame()
@@ -716,8 +716,6 @@ cdef class Decoder:
     cdef object __weakref__
 
     def init_context(self, encoding, int width, int height, colorspace):
-        cdef int r
-        cdef int i
         assert encoding in CODECS
         self.encoding = encoding
         self.width = width
@@ -771,7 +769,7 @@ cdef class Decoder:
         self.codec_ctx.thread_type = 2      #FF_THREAD_SLICE: allow more than one thread per frame
         self.codec_ctx.thread_count = 0     #auto
         self.codec_ctx.flags2 |= AV_CODEC_FLAG2_FAST    #may cause "no deblock across slices" - which should be fine
-        r = avcodec_open2(self.codec_ctx, self.codec, NULL)
+        cdef int r = avcodec_open2(self.codec_ctx, self.codec, NULL)
         if r<0:
             log.error("could not open codec: %s", av_error_str(r))
             self.clean_decoder()
@@ -797,7 +795,7 @@ cdef class Decoder:
 
 
     def clean_decoder(self):
-        cdef int r, i
+        cdef int r
         log("%s.clean_decoder()", self)
         #we may have images handed out, ensure we don't reference any memory
         #that needs to be freed using avcodec_release_buffer(..)
@@ -820,12 +818,12 @@ cdef class Decoder:
             self.codec_ctx = NULL
         log("clean_decoder() done")
 
-    def __repr__(self):                      #@DuplicatedSignature
+    def __repr__(self):
         if self.is_closed():
             return "dec_avcodec.Decoder(*closed*)"
         return "dec_avcodec.Decoder(%s)" % self.get_info()
 
-    def get_info(self) -> dict:                      #@DuplicatedSignature
+    def get_info(self) -> dict:
         info = {
             "version"   : get_version(),
             "encoding"  : self.encoding,
@@ -848,7 +846,7 @@ cdef class Decoder:
     def is_closed(self):
         return self.codec_ctx==NULL
 
-    def __dealloc__(self):                          #@DuplicatedSignature
+    def __dealloc__(self):
         self.clean()
 
     def get_width(self):
@@ -860,7 +858,7 @@ cdef class Decoder:
     def get_encoding(self):
         return self.encoding
 
-    def get_type(self):                             #@DuplicatedSignature
+    def get_type(self):
         return "avcodec"
 
     def log_av_error(self, int buf_len, err_no, options=None):
@@ -884,20 +882,15 @@ cdef class Decoder:
             log.error("   %20s = %s", k, pv(v))
 
     def decompress_image(self, input, options=None):
-        cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef int size
-        cdef int ret = 0
         cdef int nplanes
         cdef AVPacket avpkt
-        cdef AVFrameWrapper framewrapper
-        cdef AVFrame *av_frame
-        cdef object img
         assert self.codec_ctx!=NULL, "no codec context! (not initialized or already closed)"
         assert self.codec!=NULL
 
-        av_frame = av_frame_alloc()
+        cdef AVFrame *av_frame = av_frame_alloc()
         log("av_frame_alloc()=%#x", <uintptr_t> av_frame)
         if av_frame==NULL:
             log.error("could not allocate an AVFrame for decoding")
@@ -906,7 +899,7 @@ cdef class Decoder:
 
         #copy the whole input buffer into a padded C buffer:
         assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
-        padded_buf = <unsigned char *> memalign(buf_len+128)
+        cdef unsigned char * padded_buf = <unsigned char *> memalign(buf_len+128)
         assert padded_buf!=NULL, "failed to allocate %i bytes of memory" % (buf_len+128)
         memcpy(padded_buf, buf, buf_len)
         memset(padded_buf+buf_len, 0, 128)
@@ -919,6 +912,7 @@ cdef class Decoder:
         #ensure we can detect if the frame buffer got allocated:
         clear_frame(av_frame)
         #now safe to run without gil:
+        cdef int ret = 0
         with nogil:
             av_init_packet(&avpkt)
             avpkt.data = <uint8_t *> (padded_buf)
@@ -1002,9 +996,9 @@ cdef class Decoder:
             raise Exception("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
 
         bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
-        framewrapper = AVFrameWrapper()
+        cdef AVFrameWrapper framewrapper = AVFrameWrapper()
         framewrapper.set_context(self.codec_ctx, av_frame)
-        img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
+        cdef object img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
         img.av_frame = framewrapper
         self.frames += 1
         self.weakref_images.add(img)

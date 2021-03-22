@@ -54,7 +54,7 @@ class Encoder:
     def is_ready(self):
         return True
 
-    def get_info(self) -> dict:             #@DuplicatedSignature
+    def get_info(self) -> dict:
         info = get_info()
         if self.src_format is None:
             return info
@@ -99,13 +99,13 @@ class Encoder:
     def get_height(self):
         return self.height
 
-    def get_type(self):                     #@DuplicatedSignature
+    def get_type(self):
         return "proxy"
 
     def get_src_format(self):
         return self.src_format
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         self.width = 0
         self.height = 0
         self.quality = 0

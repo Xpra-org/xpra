@@ -180,7 +180,7 @@ cdef class WebpBufferWrapper:
         assert self.buffer_ptr>0, "WebpBufferWrapper has already been freed!"
         return memory_as_pybuffer(<void *> self.buffer_ptr, self.size, True)
 
-    def free(self):                             #@DuplicatedSignature
+    def free(self):
         if self.buffer_ptr!=0:
             free(<void *>self.buffer_ptr)
             self.buffer_ptr = 0
@@ -310,7 +310,7 @@ class YUVImageWrapper(ImageWrapper):
     def _cn(self):
         return "webp.YUVImageWrapper"
 
-    def free(self):                             #@DuplicatedSignature
+    def free(self):
         cdef uintptr_t buf = self.cython_buffer
         self.cython_buffer = 0
         log("webp.YUVImageWrapper.free() cython_buffer=%#x", buf)
@@ -325,7 +325,7 @@ def selftest(full=False):
                              (False, "52494646c001000057454250565038580a000000100000001700000f0000414c50488101000010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000056503820180000003401009d012a1800100000004c00000f040000fef81f8000")):
         import binascii
         bdata = binascii.unhexlify(hexdata)
-        b, iw, ih, stride, ia, rgb = decompress(bdata, has_alpha)
+        b, iw, ih, _, ia, _ = decompress(bdata, has_alpha)
         assert iw==w and ih==h and ia==has_alpha
         assert len(b.get_pixels())>0
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

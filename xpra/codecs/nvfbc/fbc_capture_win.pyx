@@ -668,7 +668,7 @@ cdef class NvFBC_SysCapture:
         log("image=%s buffer size=%i, (copy took %ims)", image, size, int((end-start)*1000))
         return image
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         log("clean()")
         if self.setup:
             self.setup = False
@@ -702,8 +702,7 @@ cdef class NvFBC_CUDACapture:
         if not self.cuda_device:
             raise Exception("no valid CUDA device")
         d = self.cuda_device
-        cf = driver.ctx_flags
-        self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
+        self.cuda_context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
         self.cuda_context.pop()
         self.cuda_context.push()
@@ -787,7 +786,7 @@ cdef class NvFBC_CUDACapture:
         image.buffer_size = self.max_buffer_size
         return image
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         log("clean()")
         cuda_context = self.cuda_context
         self.cuda_context = None

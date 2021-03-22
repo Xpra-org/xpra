@@ -201,7 +201,7 @@ cdef class Decoder:
     def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
-    def get_info(self) -> dict:                 #@DuplicatedSignature
+    def get_info(self) -> dict:
         return {
                 "type"      : self.get_type(),
                 "width"     : self.get_width(),
@@ -227,7 +227,7 @@ cdef class Decoder:
     def get_encoding(self):
         return self.encoding
 
-    def get_type(self):                 #@DuplicatedSignature
+    def get_type(self):
         return  "vpx"
 
     def __dealloc__(self):
@@ -246,17 +246,14 @@ cdef class Decoder:
 
 
     def decompress_image(self, input, options=None):
-        cdef vpx_image_t *img
         cdef vpx_codec_iter_t iter = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
-        cdef vpx_codec_err_t ret
         cdef int i = 0
-        cdef object image
         cdef MemBuf output_buf
         cdef void *output
         cdef Py_ssize_t plane_len = 0
-        cdef uint8_t dx, dy
+        cdef uint8_t dy
         cdef unsigned int height
         cdef int stride
         assert self.context!=NULL
@@ -264,11 +261,13 @@ cdef class Decoder:
         cdef double start = monotonic_time()
         assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
 
+        cdef vpx_codec_err_t ret
         with nogil:
             ret = vpx_codec_decode(self.context, buf, buf_len, NULL, 0)
         if ret!=VPX_CODEC_OK:
             log.error("Error: vpx_codec_decode: %s", self.codec_error_str())
             return None
+        cdef vpx_image_t *img
         with nogil:
             img = vpx_codec_get_frame(self.context, &iter)
         if img==NULL:

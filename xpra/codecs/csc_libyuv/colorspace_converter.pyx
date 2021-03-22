@@ -144,7 +144,7 @@ class YUVImageWrapper(ImageWrapper):
     def _cn(self):
         return "libyuv.YUVImageWrapper"
 
-    def free(self):                             #@DuplicatedSignature
+    def free(self):
         cdef uintptr_t buf = self.cython_buffer
         self.cython_buffer = 0
         log("libyuv.YUVImageWrapper.free() cython_buffer=%#x", buf)
@@ -155,14 +155,11 @@ class YUVImageWrapper(ImageWrapper):
 def argb_to_gray(image):
     cdef Py_ssize_t pic_buf_len = 0
     cdef const uint8_t *input_image
-    cdef int i, result
-    cdef int width, height, stride
-    cdef double start = monotonic_time()
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
-    stride = image.get_rowstride()
-    width = image.get_width()
-    height = image.get_height()
+    cdef int stride = image.get_rowstride()
+    cdef int width = image.get_width()
+    cdef int height = image.get_height()
     assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
     assert pixels, "failed to get pixels from %s" % image
     assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
@@ -172,6 +169,7 @@ def argb_to_gray(image):
     if not output_buffer:
         raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
+    cdef int result
     with nogil:
         result = ARGBGrayTo(input_image, stride,
                             buf, dst_stride,
@@ -186,15 +184,12 @@ def argb_to_gray(image):
 def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilterNone):
     cdef Py_ssize_t pic_buf_len = 0
     cdef const uint8_t *input_image
-    cdef int i, result
-    cdef int width, height, stride
-    cdef double start = monotonic_time()
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
-    stride = image.get_rowstride()
-    width = image.get_width()
-    height = image.get_height()
-    bpp = image.get_bytesperpixel()
+    cdef int stride = image.get_rowstride()
+    cdef int width = image.get_width()
+    cdef int height = image.get_height()
+    cdef int bpp = image.get_bytesperpixel()
     assert bpp in (3, 4), "invalid bytes per pixel: %s" % bpp
     assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
     assert pixels, "failed to get pixels from %s" % image
@@ -205,6 +200,7 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
     if not output_buffer:
         raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
+    cdef int result
     with nogil:
         result = ARGBScale(input_image,
                            stride, width, height,
@@ -250,7 +246,7 @@ cdef class ColorspaceConverter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed=100):    #@DuplicatedSignature
+                           int dst_width, int dst_height, dst_format, int speed=100):
         log("libyuv.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
         assert src_format=="BGRX", "invalid source format: %s" % src_format
         self.src_format = "BGRX"
@@ -312,7 +308,7 @@ cdef class ColorspaceConverter:
         self.time = 0
         self.frames = 0
 
-    def get_info(self) -> dict:         #@DuplicatedSignature
+    def get_info(self) -> dict:
         info = get_info()
         info.update({
                 "frames"    : int(self.frames),
@@ -341,7 +337,7 @@ cdef class ColorspaceConverter:
             return "libyuv(uninitialized)"
         return "libyuv(%s %sx%s %s)" % (self.src_format, self.src_width, self.src_height, self.dst_format)
 
-    def __dealloc__(self):                  #@DuplicatedSignature
+    def __dealloc__(self):
         self.clean()
 
     def get_src_width(self) -> int:
@@ -362,11 +358,11 @@ cdef class ColorspaceConverter:
     def get_dst_format(self):
         return self.dst_format
 
-    def get_type(self) -> str:              #@DuplicatedSignature
+    def get_type(self) -> str:
         return  "libyuv"
 
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         self.src_width = 0
         self.src_height = 0
         self.dst_width = 0
@@ -397,15 +393,12 @@ cdef class ColorspaceConverter:
         cdef uint8_t *out_planes[3]
         cdef uint8_t *scaled_buffer
         cdef uint8_t *scaled_planes[3]
-        cdef int iplanes
         cdef int i, result
-        cdef int width, height, stride
-        cdef object planes, strides, out_image
         cdef double start = monotonic_time()
-        iplanes = image.get_planes()
+        cdef int iplanes = image.get_planes()
         assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
-        width = image.get_width()
-        height = image.get_height()
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
         assert width>=self.src_width, "invalid image width: %s (minimum is %s)" % (width, self.src_width)
         assert height>=self.src_height, "invalid image height: %s (minimum is %s)" % (height, self.src_height)
         if self.rgb_scaling:
@@ -413,7 +406,7 @@ cdef class ColorspaceConverter:
             image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
             width = self.dst_width
             height = self.dst_height
-        stride = image.get_rowstride()
+        cdef int stride = image.get_rowstride()
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
         #get pointer to input:
@@ -445,8 +438,9 @@ cdef class ColorspaceConverter:
         cdef double elapsed = monotonic_time()-start
         log("libyuv.ARGBToI420/NV12 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
-        planes = []
-        strides = []
+        cdef object planes = []
+        cdef object strides = []
+        cdef object out_image
         if self.yuv_scaling:
             start = monotonic_time()
             scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -62,7 +62,7 @@ def is_X11_Display(display=None):
 # Headers, python magic
 ###################################
 cdef extern from "gtk-3.0/gdk/gdk.h":
-    ctypedef void* GdkAtom
+    ctypedef void* GdkAtom  # @UndefinedVariable
     GdkAtom GDK_NONE
     ctypedef struct GdkWindow:
         pass
@@ -75,11 +75,10 @@ cdef extern from "gtk-3.0/gdk/gdkx.h":
     #define GDK_WINDOW_XID(win)           (gdk_x11_window_get_xid (win))
 
 cdef extern from "gtk-3.0/gdk/gdkproperty.h":
-    ctypedef char gchar
     ctypedef int gint
     ctypedef gint gboolean
-    gchar* gdk_atom_name(GdkAtom atom)
-    GdkAtom gdk_atom_intern(const gchar *atom_name, gboolean only_if_exists)
+    char* gdk_atom_name(GdkAtom atom)
+    GdkAtom gdk_atom_intern(const char *atom_name, gboolean only_if_exists)
 
 cdef extern from "glib-2.0/glib-object.h":
     ctypedef struct cGObject "GObject":
@@ -89,7 +88,7 @@ cdef extern from "pygobject-3.0/pygobject.h":
     cGObject *pygobject_get(object box)
     object pygobject_new(cGObject * contents)
 
-    ctypedef void* gpointer
+    ctypedef void* gpointer  # @UndefinedVariable
     ctypedef int GType
     ctypedef struct PyGBoxed:
         #PyObject_HEAD
@@ -107,7 +106,6 @@ cdef extern from "pygobject-3.0/pygobject.h":
 
 ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
-ctypedef unsigned char CARD8
 DEF XNone = 0
 
 cdef extern from "X11/X.h":
@@ -448,8 +446,6 @@ cdef extern from "gtk-3.0/gdk/gdktypes.h":
         pass
     Visual * GDK_VISUAL_XVISUAL(cGdkVisual   *visual)
 
-    ctypedef struct GdkWindow:
-        pass
     Window GDK_WINDOW_XID(GdkWindow *)
 
     ctypedef struct GdkDisplay:
@@ -487,8 +483,7 @@ cdef object _get_pywindow(object display_source, Window xwindow):
     return win
 
 def get_xvisual(disp_source, pyvisual):
-    cdef Visual * xvisual
-    xvisual = _get_xvisual(pyvisual)
+    cdef Visual *xvisual = _get_xvisual(pyvisual)
     if xvisual==NULL:
         return  -1
     return xvisual.visualid
@@ -517,14 +512,12 @@ def get_xatom(str_or_xatom):
     return gdk_x11_get_xatom_by_name(b)
 
 cdef GdkAtom get_gdkatom(display_source, xatom):
-    if long(xatom) > long(2) ** 32:
+    if int(xatom) > 2**32:
         raise Exception("weirdly huge purported xatom: %s" % xatom)
     if xatom==0:
         return GDK_NONE
     cdef GdkDisplay *disp = get_raw_display_for(display_source)
-    cdef GdkAtom gdk_atom
-    gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
-    return gdk_atom
+    return gdk_x11_xatom_to_atom_for_display(disp, xatom)
 
 def get_pyatom(display_source, xatom):
     cdef GdkAtom gdk_atom = get_gdkatom(display_source, xatom)
@@ -540,13 +533,11 @@ cdef _query_tree(pywindow):
     cdef Window root = 0, parent = 0
     cdef Window * children = <Window *> 0
     cdef unsigned int i, nchildren = 0
-    cdef object pychildren
-    cdef object pyparent
     if not XQueryTree(get_xdisplay_for(pywindow),
                       get_xwindow(pywindow),
                       &root, &parent, &children, &nchildren):
         return (None, [])
-    pychildren = []
+    cdef object pychildren = []
     for i from 0 <= i < nchildren:
         #we cannot get the gdk window for wid=0
         if children[i]>0:
@@ -556,19 +547,16 @@ cdef _query_tree(pywindow):
     # try to XFree the non-NULL garbage.
     if nchildren > 0 and children != NULL:
         XFree(children)
+    cdef object pyparent = None
     if parent != XNone:
         pyparent = _get_pywindow(pywindow, parent)
-    else:
-        pyparent = None
     return (pyparent, pychildren)
 
 def get_children(pywindow):
-    (pyparent, pychildren) = _query_tree(pywindow)
-    return pychildren
+    return _query_tree(pywindow)[1]
 
 def get_parent(pywindow):
-    (pyparent, pychildren) = _query_tree(pywindow)
-    return pyparent
+    return _query_tree(pywindow)[0]
 
 
 ###################################
@@ -687,8 +675,7 @@ debug_route_events = []
 def get_error_text(code):
     if type(code)!=int:
         return code
-    cdef Display * display                              #@DuplicatedSignature
-    display = get_xdisplay_for(Gdk.get_default_root_window())
+    cdef Display *display = get_xdisplay_for(Gdk.get_default_root_window())
     cdef char[128] buffer
     XGetErrorText(display, code, buffer, 128)
     return str(buffer[:128])
@@ -699,9 +686,8 @@ cdef int get_XKB_event_base():
     cdef int error_base = 0
     cdef int major = 0
     cdef int minor = 0
-    cdef Display * xdisplay                             #@DuplicatedSignature
     display = Gdk.get_default_root_window().get_display()
-    xdisplay = get_xdisplay_for(display)
+    cdef Display *xdisplay = get_xdisplay_for(display)
     if not XkbQueryExtension(xdisplay, &opcode, &event_base, &error_base, &major, &minor):
         log.warn("Warning: Xkb extension is not available")
         return -1
@@ -709,11 +695,10 @@ cdef int get_XKB_event_base():
     return event_base
 
 cdef int get_XFixes_event_base():
-    cdef int event_base = 0                             #@DuplicatedSignature
-    cdef int error_base = 0                             #@DuplicatedSignature
-    cdef Display * xdisplay                             #@DuplicatedSignature
+    cdef int event_base = 0
+    cdef int error_base = 0
     display = Gdk.get_default_root_window().get_display()
-    xdisplay = get_xdisplay_for(display)
+    cdef Display *xdisplay = get_xdisplay_for(display)
     if not XFixesQueryExtension(xdisplay, &event_base, &error_base):
         log.warn("Warning: XFixes extension is not available")
         return -1
@@ -722,11 +707,10 @@ cdef int get_XFixes_event_base():
     return event_base
 
 cdef int get_XDamage_event_base():
-    cdef int event_base = 0                             #@DuplicatedSignature
-    cdef int error_base = 0                             #@DuplicatedSignature
-    cdef Display * xdisplay                             #@DuplicatedSignature
+    cdef int event_base = 0
+    cdef int error_base = 0
     display = Gdk.get_default_root_window().get_display()
-    xdisplay = get_xdisplay_for(display)
+    cdef Display *xdisplay = get_xdisplay_for(display)
     if not XDamageQueryExtension(xdisplay, &event_base, &error_base):
         log.warn("Warning: XDamage extension is not available")
         return -1
@@ -735,9 +719,8 @@ cdef int get_XDamage_event_base():
     return event_base
 
 cdef int get_XShape_event_base():
-    cdef Display * xdisplay                             #@DuplicatedSignature
     display = Gdk.get_default_root_window().get_display()
-    xdisplay = get_xdisplay_for(display)
+    cdef Display *xdisplay = get_xdisplay_for(display)
     cdef int event_base = 0, ignored = 0
     if not XShapeQueryExtension(xdisplay, &event_base, &ignored):
         log.warn("Warning: XShape extension is not available")
@@ -912,10 +895,9 @@ def add_catchall_receiver(signal, handler):
 
 def remove_catchall_receiver(signal, handler):
     global catchall_receivers
-    try:
-        receivers = catchall_receivers.get(signal).remove(handler)
-    except:
-        pass
+    receivers = catchall_receivers.get(signal)
+    if receivers:
+        receivers.remove(handler)
     log("remove_catchall_receiver(%s, %s) -> %s", signal, handler, catchall_receivers)
 
 
@@ -927,10 +909,9 @@ def add_fallback_receiver(signal, handler):
 
 def remove_fallback_receiver(signal, handler):
     global fallback_receivers
-    try:
-        receivers = fallback_receivers.get(signal).remove(handler)
-    except:
-        pass
+    receivers = fallback_receivers.get(signal)
+    if receivers:
+        receivers.remove(handler)
     log("remove_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
 
 
@@ -1051,17 +1032,16 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     cdef object event_args
     cdef object pyev
     cdef double start = monotonic_time()
-    cdef XEvent *e = <XEvent*>e_gdk
     cdef int etype
 
     try:
         pyev = parse_xevent(e_gdk)
-    except Exception as exc:
-        log.error("Error parsing X11 event: %s", exc, exc_info=True)
-        return GDK_FILTER_CONTINUE
+    except Exception:
+        log.error("Error parsing X11 event", exc_info=True)
+        return GDK_FILTER_CONTINUE  # @UndefinedVariable
     log("parse_event(..)=%s", pyev)
     if not pyev:
-        return GDK_FILTER_CONTINUE
+        return GDK_FILTER_CONTINUE  # @UndefinedVariable
     try:
         global x_event_signals, x_event_type_names
         etype = pyev.type
@@ -1076,7 +1056,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         Gtk.main_quit()
     except:
         log.warn("Unhandled exception in x_event_filter:", exc_info=True)
-    return GDK_FILTER_CONTINUE
+    return GDK_FILTER_CONTINUE  # @UndefinedVariable
 
 
 cdef parse_xevent(GdkXEvent * e_gdk) with gil:
@@ -1090,9 +1070,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
     cdef XSelectionClearEvent * selectionclear_e
     cdef XSelectionEvent * selection_e
     cdef XFixesSelectionNotifyEvent * selectionnotify_e
-    cdef object event_args
-    cdef object d
-    cdef object pyev
+
     cdef int etype = e.type
     global x_event_type_names, x_event_signals
     event_type = x_event_type_names.get(etype, etype)
@@ -1101,8 +1079,8 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
         return None
 
     #FIXME: this crashes!
-    d = None #wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
-    d = Gdk.Display.get_default()
+    #d = wrap(<cGObject*>gdk_x11_lookup_xdisplay(e.xany.display))
+    cdef object d = Gdk.Display.get_default()
 
     if etype == GenericEvent:
         global x_event_parsers
@@ -1112,12 +1090,12 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             return parser(d, <uintptr_t> &e.xcookie)
         return None
 
-    event_args = x_event_signals.get(etype)
+    cdef object event_args = x_event_signals.get(etype)
     log("x_event_filter event=%s/%s window=%#x", event_args, event_type, e.xany.window)
     if event_args is None:
         return None
 
-    pyev = X11Event(event_type)
+    cdef object pyev = X11Event(event_type)
     pyev.type = etype
     pyev.display = d
     pyev.send_event = e.xany.send_event
@@ -1203,20 +1181,20 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.focus = e.xcrossing.focus
         elif etype == ClientMessage:
             pyev.window = _gw(d, e.xany.window)
-            if long(e.xclient.message_type) > (long(2) ** 32):
+            if int(e.xclient.message_type) > 2**32:
                 log.warn("Xlib claims that this ClientEvent's 32-bit "
                          + "message_type is %s.  "
                          + "Note that this is >2^32.  "
                          + "This makes no sense, so I'm ignoring it.",
                          e.xclient.message_type)
-                return GDK_FILTER_CONTINUE
+                return GDK_FILTER_CONTINUE  # @UndefinedVariable
             pyev.message_type = get_pyatom(d, e.xclient.message_type)
             pyev.format = e.xclient.format
             # I am lazy.  Add this later if needed for some reason.
             if pyev.format != 32:
                 #things like _KDE_SPLASH_PROGRESS and _NET_STARTUP_INFO will come through here
                 log("FIXME: Ignoring ClientMessage type=%s with format=%s (!=32)", pyev.message_type, pyev.format)
-                return GDK_FILTER_CONTINUE
+                return GDK_FILTER_CONTINUE  # @UndefinedVariable
             pieces = []
             for i in range(5):
                 # Mask with 0xffffffff to prevent sign-extension on
@@ -1288,7 +1266,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             xkb_e = <XkbAnyEvent*>e
             verbose("XKBNotify event received xkb_type=%s", xkb_e.xkb_type)
             if xkb_e.xkb_type!=XkbBellNotify:
-                return GDK_FILTER_CONTINUE
+                return GDK_FILTER_CONTINUE  # @UndefinedVariable
             bell_e = <XkbBellNotifyEvent*>e
             pyev.subtype = "bell"
             pyev.device = int(bell_e.device)
@@ -1322,10 +1300,12 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
                 pass
             else:
                 log("Some window in our event disappeared before we could " \
-                    + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", etype, event_type, event_args, pyev)
+                    + "handle the event %s/%s using %s; so I'm just ignoring it instead. python event=%s",
+                    etype, event_type, event_args, pyev)
         else:
-            msg = "X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s", get_error_text(ex.msg), etype, event_type, event_args, pyev
-            log.error(*msg, exc_info=True)
+            log.error("X11 error %s parsing the event %s/%s using %s; so I'm just ignoring it instead. python event=%s",
+                      get_error_text(ex.msg), etype, event_type, event_args, pyev,
+                      exc_info=True)
         return None
     return pyev
 
@@ -1337,7 +1317,7 @@ def init_x11_filter():
     global _INIT_X11_FILTER_DONE
     if _INIT_X11_FILTER_DONE==0:
         init_x11_events()
-        gdk_window_add_filter(<GdkWindow*>0, x_event_filter, <void*>0)
+        gdk_window_add_filter(<GdkWindow*>0, x_event_filter, NULL)
     _INIT_X11_FILTER_DONE += 1
     return _INIT_X11_FILTER_DONE==1
 
@@ -1346,5 +1326,5 @@ def cleanup_x11_filter():
     global _INIT_X11_FILTER_DONE
     _INIT_X11_FILTER_DONE -= 1
     if _INIT_X11_FILTER_DONE==0:
-        gdk_window_remove_filter(<GdkWindow*>0, x_event_filter, <void*>0)
+        gdk_window_remove_filter(<GdkWindow*>0, x_event_filter, NULL)
     return _INIT_X11_FILTER_DONE==0

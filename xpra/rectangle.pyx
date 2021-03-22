@@ -47,17 +47,17 @@ cdef class rectangle:
             raise Exception("cannot compare rectangle and %s" % type(other))
         cdef rectangle o = other
         if op==2:   #==
-            return self.x==other.x and self.y==other.y and self.width==other.width and self.height==other.height
+            return self.x==o.x and self.y==o.y and self.width==o.width and self.height==o.height
         elif op==3: #!=
-            return self.x!=other.x or self.y!=other.y or self.width!=other.width or self.height!=other.height
+            return self.x!=o.x or self.y!=o.y or self.width!=o.width or self.height!=o.height
         elif op==0: #<
-            return self.x<other.x or self.y<other.y or self.width<other.width or self.height<other.height
+            return self.x<o.x or self.y<o.y or self.width<o.width or self.height<o.height
         elif op==1: #<=
-            return self.x<=other.x or self.y<=other.y or self.width<=other.width or self.height<=other.height
+            return self.x<=o.x or self.y<=o.y or self.width<=o.width or self.height<=o.height
         elif op==4: #>
-            return self.x>other.x or self.y>other.y or self.width>other.width or self.height>other.height
+            return self.x>o.x or self.y>o.y or self.width>o.width or self.height>o.height
         elif op==5: #>=
-            return self.x>=other.x or self.y>=other.y or self.width>=other.width or self.height>=other.height
+            return self.x>=o.x or self.y>=o.y or self.width>=o.width or self.height>=o.height
         else:
             raise Exception("invalid richcmp operator: %s" % op)
 
@@ -145,13 +145,13 @@ cdef class rectangle:
         return rectangle(self.x, self.y, self.width, self.height)
 
 
-def contains(object regions, const int x, const int y, const int w, const int h):       #@DuplicatedSignature
+def contains(object regions, const int x, const int y, const int w, const int h):
     cdef int x2 = x+w
     cdef int y2 = y+h
     return any(True for r in regions if (x>=r.x and y>=r.y and x2<=(r.x+r.width) and y2<=(r.y+r.height)))
 
 
-def contains_rect(object regions, rectangle region):            #@DuplicatedSignature
+def contains_rect(object regions, rectangle region):
     return contains(regions, region.x, region.y, region.width, region.height)
 
 
@@ -183,7 +183,6 @@ def remove_rectangle(object regions, rectangle region):
     cdef int y = region.y               #
     cdef int w = region.width           #
     cdef int h = region.height          #
-    cdef int l = len(copy)
     cdef rectangle r
     new_regions = []
     for r in copy:
@@ -191,14 +190,13 @@ def remove_rectangle(object regions, rectangle region):
     regions[:] = new_regions
 
 def merge_all(rectangles):
-    cdef rectangle r               #
-    cdef int rx, ry, rx2, ry2, x2, y2
     assert len(rectangles)>0
-    r = rectangles[0]
-    rx = r.x
-    ry = r.y
-    rx2 = r.x + r.width
-    ry2 = r.y + r.height
+    cdef rectangle r = rectangles[0]
+    cdef int rx = r.x
+    cdef int ry = r.y
+    cdef int rx2 = r.x + r.width
+    cdef int ry2 = r.y + r.height
+    cdef int x2, y2
     for r in rectangles:
         if not r:
             continue

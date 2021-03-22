@@ -9,7 +9,6 @@
 import os
 from weakref import WeakSet
 
-from xpra.os_util import WIN32
 from xpra.util import csv, roundup, envbool
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvfbc.cuda_image_wrapper import CUDAImageWrapper
@@ -594,7 +593,7 @@ cdef class NvFBC_SysCapture:
         log("image=%s buffer len=%i, (copy took %ims)", image, len(buf), int((end-start)*1000))
         return image
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         log("clean()")
         if self.has_context:
             if self.has_session:
@@ -635,8 +634,7 @@ cdef class NvFBC_CUDACapture:
         if not self.cuda_device:
             raise Exception("no valid CUDA device")
         d = self.cuda_device
-        cf = driver.ctx_flags
-        self.cuda_context = d.make_context(flags=cf.SCHED_AUTO)
+        self.cuda_context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO)
         assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
         self.context = create_context()
         get_context_status(self.context)
@@ -729,7 +727,7 @@ cdef class NvFBC_CUDACapture:
         self.images.add(image)
         return image
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         cuda_context = self.cuda_context
         self.cuda_context = None
         cdef NVFBC_SESSION_HANDLE context = self.context

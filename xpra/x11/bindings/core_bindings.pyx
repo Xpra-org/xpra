@@ -21,6 +21,9 @@ log = Logger("x11", "bindings", "core")
 cdef extern from "X11/Xutil.h":
     pass
 
+cdef extern from "X11/Xmd.h":
+    ctypedef unsigned long CARD32
+
 ######
 # Xlib primitives and constants
 ######
@@ -36,6 +39,7 @@ cdef extern from "X11/Xlib.h":
     ctypedef CARD32 Time
     ctypedef int Bool
     ctypedef int Status
+    ctypedef CARD32 Atom
 
     Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
     Status XInternAtoms(Display *display, char **names, int count, Bool only_if_exists, Atom *atoms_return)

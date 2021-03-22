@@ -461,8 +461,7 @@ LOG_LEVEL = {
 #the static logging function we want x264 to use:
 cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) with gil:
     cdef char buffer[256]
-    cdef int r
-    r = vsnprintf(buffer, 256, psz_fmt, arg)
+    cdef int r = vsnprintf(buffer, 256, psz_fmt, arg)
     if r<0:
         log.error("X264_log: vsnprintf returned %s on format string '%s'", r, psz_fmt)
         return
@@ -572,8 +571,7 @@ cdef class Encoder:
 
     cdef init_encoder(self, options:typedict):
         cdef x264_param_t param
-        cdef const char *preset
-        preset = get_preset_names()[self.preset]
+        cdef const char *preset = get_preset_names()[self.preset]
         self.tune = self.get_tune()
         x264_param_default_preset(&param, strtobytes(preset), strtobytes(self.tune))
         x264_param_apply_profile(&param, self.profile)
@@ -582,6 +580,7 @@ cdef class Encoder:
         self.context = x264_encoder_open(&param)
         cdef int maxd = x264_encoder_maximum_delayed_frames(self.context)
         log("x264 context=%#x, %7s %4ix%-4i quality=%i, speed=%i, content_type=%s", <uintptr_t> self.context, self.src_format, self.width, self.height, self.quality, self.speed, self.content_type)
+        log("x264 maximum_delayed_frames=%i", maxd)
         log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
@@ -648,7 +647,7 @@ cdef class Encoder:
         param.i_log_level = LOG_LEVEL
 
 
-    def clean(self):                        #@DuplicatedSignature
+    def clean(self):
         log("x264 close context %#x", <uintptr_t> self.context)
         cdef x264_t *context = self.context
         if context!=NULL:
@@ -676,7 +675,7 @@ cdef class Encoder:
             f.close()
 
 
-    def get_info(self) -> dict:             #@DuplicatedSignature
+    def get_info(self) -> dict:
         cdef double pps
         if self.profile is None:
             return {}
@@ -801,7 +800,7 @@ cdef class Encoder:
     def get_height(self):
         return self.height
 
-    def get_type(self):                     #@DuplicatedSignature
+    def get_type(self):
         return  "x264"
 
     def get_src_format(self):
@@ -821,8 +820,7 @@ cdef class Encoder:
         cdef x264_picture_t pic_in
         cdef uint8_t *pic_buf
         cdef Py_ssize_t pic_buf_len = 0
-        cdef char *out
-        cdef int i                        #@DuplicatedSignature
+        cdef int i
 
         assert image.get_width()>=self.width
         assert image.get_height()>=self.height
@@ -881,7 +879,6 @@ cdef class Encoder:
         cdef x264_nal_t *nals = NULL
         cdef int i_nals = 0
         cdef x264_picture_t pic_out
-        cdef int frame_size = 0
         assert self.context!=NULL
         cdef double start = monotonic_time()
 
@@ -894,6 +891,7 @@ cdef class Encoder:
         else:
             quality = self.quality
 
+        cdef int frame_size = 0
         with nogil:
             x264_picture_init(&pic_out)
             frame_size = x264_encoder_encode(self.context, &nals, &i_nals, pic_in, &pic_out)
@@ -966,10 +964,7 @@ cdef class Encoder:
         log("x264 flush(%i) %i delayed frames", frame_no, self.delayed_frames)
         if self.delayed_frames<=0:
             return None, {}
-        cdef x264_nal_t *nals = NULL
-        cdef int i_nals = 0
         cdef x264_picture_t pic_out
-        cdef int frame_size = 0
         x264_picture_init(&pic_out)
         return self.do_compress_image(NULL)
 
@@ -977,7 +972,7 @@ cdef class Encoder:
     def set_encoding_speed(self, int pct):
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
-        cdef x264_param_t param                     #@DuplicatedSignature
+        cdef x264_param_t param
         cdef int new_preset = self.get_preset_for_speed(pct)
         if new_preset == self.preset:
             return

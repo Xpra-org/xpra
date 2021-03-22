@@ -919,7 +919,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check()
         cdef Window r = XDefaultRootWindow(self.display)
         log("sending message to %#x", xtarget)
-        cdef XEvent e                       #@DuplicatedSignature
+        cdef XEvent e
         e.type = ButtonPress
         e.xany.display = self.display
         e.xany.window = xtarget
@@ -952,7 +952,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
          long data2  /* message data 2 */
          """
         self.context_check()
-        cdef XEvent e                       #@DuplicatedSignature
+        cdef XEvent e
         e.xany.display = self.display
         e.xany.window = xwindow
         e.xany.type = ClientMessage
@@ -984,7 +984,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     def sendSelectionNotify(self, Window xwindow, selection, target, property, time=CurrentTime):
         self.context_check()
-        cdef XEvent e                       #@DuplicatedSignature
+        cdef XEvent e
         e.type = SelectionNotify
         e.xselection.requestor = xwindow
         e.xselection.selection = self.xatom(selection)
@@ -1008,7 +1008,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef Window root_window = XDefaultRootWindow(self.display)
 
         # Get basic attributes
-        cdef XWindowAttributes attrs        #@DuplicatedSignature
+        cdef XWindowAttributes attrs
         XGetWindowAttributes(self.display, xwindow, &attrs)
 
         # Figure out where the window actually is in root coordinate space
@@ -1023,7 +1023,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return
 
         # Send synthetic ConfigureNotify (ICCCM 4.2.3, for example)
-        cdef XEvent e                       #@DuplicatedSignature
+        cdef XEvent e
         e.type = ConfigureNotify
         e.xconfigure.event = xwindow
         e.xconfigure.window = xwindow
@@ -1212,8 +1212,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             nbytes = sizeof(long)
         assert len(data) % nbytes == 0, "size of data is not a multiple of %s" % nbytes
         cdef int nitems = len(data) // nbytes
-        cdef char * data_str
-        data_str = data
+        cdef char * data_str = data
         XChangeProperty(self.display, xwindow,
                         self.xatom(property),
                         self.xatom(dtype),

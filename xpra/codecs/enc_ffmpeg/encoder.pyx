@@ -983,21 +983,17 @@ cdef AVBufferRef *init_vaapi_device() except NULL:
 
 
 cdef int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *hw_device_ctx, int width, int height):
-    cdef AVBufferRef *hw_frames_ref;
-    cdef AVHWFramesContext *frames_ctx = NULL
-    cdef int err = 0
-
-    hw_frames_ref = av_hwframe_ctx_alloc(hw_device_ctx)
+    cdef AVBufferRef *hw_frames_ref = av_hwframe_ctx_alloc(hw_device_ctx)
     if not hw_frames_ref:
         log.error("Error: faicreate VAAPI frame context")
         return -1
-    frames_ctx = <AVHWFramesContext *> hw_frames_ref.data
+    cdef AVHWFramesContext *frames_ctx = <AVHWFramesContext *> hw_frames_ref.data
     frames_ctx.format    = AV_PIX_FMT_VAAPI
     frames_ctx.sw_format = AV_PIX_FMT_NV12
     frames_ctx.width     = width
     frames_ctx.height    = height
     frames_ctx.initial_pool_size = 20
-    err = av_hwframe_ctx_init(hw_frames_ref)
+    cdef int err = av_hwframe_ctx_init(hw_frames_ref)
     if err<0:
         log.error("Error: failed to initialize VAAPI frame context")
         log.error(" %s", av_error_str(err))
@@ -1157,8 +1153,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):    #@DuplicatedSignature
-        cdef int r
+    def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
         global CODECS, generation
         assert encoding in CODECS
         self.vaapi = encoding in VAAPI_CODECS and src_format=="NV12"
@@ -1230,7 +1225,7 @@ cdef class Encoder:
                     filename = SAVE_TO_FILE+"-"+str(gen)+"."+self.encoding
                 self.file = open(filename, 'wb')
                 log.info("saving %s stream to %s", self.encoding, filename)
-        except Exception as e:
+        except Exception:
             log("init_encoder(%i, %i, %s) failed", quality, speed, options, exc_info=True)
             self.clean()
             del GEN_TO_ENCODER[gen]
@@ -1244,8 +1239,7 @@ cdef class Encoder:
 
     def init_muxer(self, uintptr_t gen):
         global GEN_TO_ENCODER
-        cdef AVOutputFormat *oformat = NULL
-        oformat = get_av_output_format(strtobytes(self.muxer_format))
+        cdef AVOutputFormat *oformat = get_av_output_format(strtobytes(self.muxer_format))
         if oformat==NULL:
             raise Exception("libavformat does not support %s" % self.muxer_format)
         log("init_muxer(%i) AVOutputFormat(%s)=%#x, flags=%s",
@@ -1514,12 +1508,12 @@ cdef class Encoder:
             av_buffer_unref(&self.hw_device_ctx)
         log("clean_encoder() done")
 
-    def __repr__(self):                      #@DuplicatedSignature
+    def __repr__(self):
         if self.is_closed():
             return "enc_ffmpeg.Encoder(*closed*)"
         return "enc_ffmpeg.Encoder(%s)" % self.get_info()
 
-    def get_info(self) -> dict:                      #@DuplicatedSignature
+    def get_info(self) -> dict:
         info = {
                 "version"   : get_version(),
                 "encoding"  : self.encoding,
@@ -1549,7 +1543,7 @@ cdef class Encoder:
     def is_closed(self):
         return self.video_ctx==NULL
 
-    def __dealloc__(self):                          #@DuplicatedSignature
+    def __dealloc__(self):
         self.clean()
 
     def get_width(self):
@@ -1564,7 +1558,7 @@ cdef class Encoder:
     def get_encoding(self):
         return self.encoding
 
-    def get_type(self):                             #@DuplicatedSignature
+    def get_type(self):
         return "ffmpeg"
 
     def get_delayed_frames(self):
@@ -1586,7 +1580,6 @@ cdef class Encoder:
             log.error("  %s = %s", k, v)
 
     def compress_image(self, image, int quality=-1, int speed=-1, options=None):
-        cdef unsigned char * padded_buf = NULL
         cdef const unsigned char * buf = NULL
         cdef Py_ssize_t buf_len = 0
         cdef int ret
@@ -1602,8 +1595,6 @@ cdef class Encoder:
 
             pixels = image.get_pixels()
             istrides = image.get_rowstride()
-            if self.src_format=="NV12":
-                nplanes = 2
             assert len(pixels)==self.nplanes, "image pixels does not have %i planes! (found %s)" % (self.nplanes, len(pixels))
             assert len(istrides)==self.nplanes, "image strides does not have %i values! (found %s)" % (self.nplanes, len(istrides))
             #populate the avframe:

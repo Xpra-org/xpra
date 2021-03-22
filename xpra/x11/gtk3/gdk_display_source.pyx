@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@
 # the core X11 bindings.
 
 from xpra.os_util import is_X11
+from xpra.scripts.config import InitException
 from xpra.x11.bindings.display_source cimport set_display  #pylint: disable=syntax-error
 from xpra.x11.bindings.display_source import set_display_name
 
@@ -39,6 +40,7 @@ cdef extern from "gtk-3.0/gdk/gdkx.h":
 import gi
 gi.require_version('GdkX11', '3.0')
 from gi.repository import GdkX11
+assert GdkX11
 
 display = None
 def init_gdk_display_source():
@@ -46,24 +48,19 @@ def init_gdk_display_source():
     import os
     backend = os.environ.get("GDK_BACKEND", "")
     if backend!="x11" and not is_X11():
-        from xpra.scripts.config import InitException
         raise InitException("cannot use X11 bindings with %s and GTK3 (buggy)" % (backend,))
     if display:
         return
-    cdef GdkDisplay* gdk_display
-    cdef Display * x11_display
-    #from gi.repository import GdkX11
     from gi.repository import Gdk
-    gdk_display = gdk_display_get_default()
+    cdef GdkDisplay* gdk_display = gdk_display_get_default()
     if not gdk_display:
-        from xpra.scripts.config import InitException
         raise InitException("cannot access the default display '%s'" % os.environ.get("DISPLAY", ""))
     #this next line actually ensures Gdk is initialized, somehow
     root = Gdk.get_default_root_window()
     assert root is not None, "could not get the default root window"
     display = Gdk.Display.get_default()
     #now we can get a display:
-    x11_display = gdk_x11_display_get_xdisplay(gdk_display)
+    cdef Display *x11_display = gdk_x11_display_get_xdisplay(gdk_display)
     set_display(x11_display)
     set_display_name(gdk_display_get_name(gdk_display))
 

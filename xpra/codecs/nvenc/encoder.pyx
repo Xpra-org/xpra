@@ -1519,7 +1519,7 @@ cdef class Encoder:
     cdef uint64_t free_memory
     cdef uint64_t total_memory
     #NVENC:
-    cdef NV_ENCODE_API_FUNCTION_LIST *functionList               #@DuplicatedSignature
+    cdef NV_ENCODE_API_FUNCTION_LIST *functionList
     cdef void *context
     cdef GUID codec
     cdef NV_ENC_REGISTERED_PTR inputHandle
@@ -1609,7 +1609,7 @@ cdef class Encoder:
                     return c_parseguid(preset_guid)
         raise Exception("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):    #@DuplicatedSignature
+    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX", "r210"), "invalid source format %s" % src_format
@@ -1762,19 +1762,16 @@ cdef class Encoder:
         return quality>=LOSSLESS_THRESHOLD
 
     def init_cuda(self):
-        cdef unsigned int plane_size_div
-        cdef unsigned int max_input_stride
         cdef int result
         cdef uintptr_t context_pointer
 
         assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
         global last_context_failure
         d = self.cuda_device
-        cf = driver.ctx_flags
         log("init_cuda() pixel format=%s, device_id=%s", self.pixel_format, self.cuda_device_id)
         try:
             log("init_cuda cuda_device=%s (%s)", d, device_info(d))
-            self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
+            self.cuda_context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
             assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
             log("init_cuda cuda_context=%s", self.cuda_context)
             self.cuda_info = get_cuda_info()
@@ -1891,9 +1888,8 @@ cdef class Encoder:
 
     def init_encoder(self):
         cdef GUID codec = self.init_codec()
-        cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
         cdef NVENCSTATUS r
-        params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
+        cdef NV_ENC_INITIALIZE_PARAMS *params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         try:
             self.init_params(codec, params)
@@ -1921,9 +1917,8 @@ cdef class Encoder:
 
     cdef init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
         #caller must free the config!
-        cdef GUID preset
         assert self.context, "context is not initialized"
-        preset = self.get_preset(self.codec)
+        cdef GUID preset = self.get_preset(self.codec)
         self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
         log("init_params(%s) using preset=%s", codecstr(codec), presetstr(preset))
         profiles = self.query_profiles(codec)
@@ -2035,18 +2030,13 @@ cdef class Encoder:
 
     def init_buffers(self):
         cdef NV_ENC_REGISTER_RESOURCE registerResource
-        cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
-        cdef uintptr_t resource
-        cdef Py_ssize_t size
-        cdef unsigned char* cptr = NULL
-        cdef NVENCSTATUS r                  #
         assert self.context, "context is not initialized"
         #register CUDA input buffer:
         memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
         registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
         registerResource.resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
-        resource = int(self.cudaOutputBuffer)
+        cdef uintptr_t resource = int(self.cudaOutputBuffer)
         registerResource.resourceToRegister = <void *> resource
         registerResource.width = self.encoder_width
         registerResource.height = self.encoder_height
@@ -2054,6 +2044,7 @@ cdef class Encoder:
         registerResource.bufferFormat = self.bufferFmt
         if DEBUG_API:
             log("nvEncRegisterResource(%#x)", <uintptr_t> &registerResource)
+        cdef NVENCSTATUS r                  #
         with nogil:
             r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
         raiseNVENC(r, "registering CUDA input buffer")
@@ -2076,7 +2067,7 @@ cdef class Encoder:
         assert self.bitstreamBuffer!=NULL
 
 
-    def get_info(self) -> dict:                     #@DuplicatedSignature
+    def get_info(self) -> dict:
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
         cdef double pps
         info = get_info()
@@ -2159,7 +2150,7 @@ cdef class Encoder:
             self.clean()
 
 
-    def clean(self):                          #@DuplicatedSignature
+    def clean(self):
         if not self.closed:
             self.closed = 1
             if self.threaded_init:
@@ -2172,7 +2163,7 @@ cdef class Encoder:
         with device_lock:
             self.do_clean()
 
-    def do_clean(self):                        #@DuplicatedSignature
+    def do_clean(self):
         log("clean() cuda_context=%s, encoder context=%#x", self.cuda_context, <uintptr_t> self.context)
         if self.cuda_context:
             self.cuda_context.push()
@@ -2226,7 +2217,7 @@ cdef class Encoder:
 
 
     cdef cuda_clean(self):
-        cdef NVENCSTATUS r                  #@DuplicatedSignature
+        cdef NVENCSTATUS r
         if self.context!=NULL and self.frames>0:
             self.flushEncoder()
         if self.inputHandle!=NULL and self.context!=NULL:
@@ -2275,10 +2266,10 @@ cdef class Encoder:
     def get_height(self) -> int:
         return self.height
 
-    def get_type(self) -> str:                     #@DuplicatedSignature
+    def get_type(self) -> str:
         return "nvenc"
 
-    def get_encoding(self) -> str:                     #@DuplicatedSignature
+    def get_encoding(self) -> str:
         return self.encoding
 
     def get_src_format(self) -> str:
@@ -2290,8 +2281,7 @@ cdef class Encoder:
             self.update_bitrate()
 
     def set_encoding_quality(self, int quality):
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
-        cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
+        #cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
         assert self.context, "context is not initialized"
         if self.quality==quality:
             return
@@ -2337,7 +2327,7 @@ cdef class Encoder:
 
     cdef flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS picParams
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
         picParams.version = NV_ENC_PIC_PARAMS_VER
@@ -2371,12 +2361,11 @@ cdef class Encoder:
             return self.compress_image(image, options, retry+1)
 
     cdef do_compress_image(self, image, options):
-        cdef unsigned int stride, w, h
         assert self.context, "context is not initialized"
-        w = image.get_width()
-        h = image.get_height()
+        cdef unsigned int w = image.get_width()
+        cdef unsigned int h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
-        stride = image.get_rowstride()
+        cdef unsigned int stride = image.get_rowstride()
         log("compress_image(%s, %s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i", image, options, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
@@ -2530,7 +2519,7 @@ cdef class Encoder:
                     return hex(int(v))
                 return int(v)
             log_args = tuple(lf(v) for v in args)
-            log("calling %s%s with block=%s, grid=%s", self.kernel_name, args, (blockw,blockh,1), (gridw, gridh))
+            log("calling %s%s with block=%s, grid=%s", self.kernel_name, log_args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
         self.cuda_context.synchronize()
         cdef double end = monotonic_time()
@@ -2563,8 +2552,7 @@ cdef class Encoder:
         raiseNVENC(r, "unmapping input resource")
 
     cdef nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0):
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
-        cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
+        cdef NV_ENC_PIC_PARAMS picParams
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         assert input_size>0, "invalid input size %i" % input_size
 
@@ -2618,7 +2606,7 @@ cdef class Encoder:
         #picParams.rcParams.maxQP.qpIntra = qmax
         #picParams.rcParams.averageBitRate = self.target_bitrate
         #picParams.rcParams.maxBitRate = self.max_bitrate
-
+        cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "error during picture encoding")
@@ -2673,8 +2661,8 @@ cdef class Encoder:
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID) except *:
         """ you must free it after use! """
-        cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NV_ENC_PRESET_CONFIG *presetConfig
+        cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
         presetConfig = <NV_ENC_PRESET_CONFIG*> cmalloc(sizeof(NV_ENC_PRESET_CONFIG), "preset config")
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
@@ -2709,7 +2697,7 @@ cdef class Encoder:
         cdef GUID preset_GUID
         cdef NV_ENC_PRESET_CONFIG *presetConfig
         cdef NV_ENC_CONFIG *encConfig
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
         presets = {}
         if DEBUG_API:
@@ -2763,19 +2751,18 @@ cdef class Encoder:
     cdef object query_profiles(self, GUID encode_GUID):
         cdef uint32_t profileCount
         cdef uint32_t profilesRetCount
-        cdef GUID* profile_GUIDs
         cdef GUID profile_GUID
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
         assert self.context, "context is not initialized"
         profiles = {}
         if DEBUG_API:
             log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &profileCount)
+        cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount)
         raiseNVENC(r, "getting profile count")
         log("%s profiles:", profileCount)
         assert profileCount<2**8
-        profile_GUIDs = <GUID*> cmalloc(sizeof(GUID) * profileCount, "profile GUIDs")
+        cdef GUID* profile_GUIDs = <GUID*> cmalloc(sizeof(GUID) * profileCount, "profile GUIDs")
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
             if DEBUG_API:
@@ -2796,20 +2783,19 @@ cdef class Encoder:
 
     cdef object query_input_formats(self, GUID encode_GUID):
         cdef uint32_t inputFmtCount
-        cdef NV_ENC_BUFFER_FORMAT* inputFmts
         cdef uint32_t inputFmtsRetCount
         cdef NV_ENC_BUFFER_FORMAT inputFmt
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
         assert self.context, "context is not initialized"
         input_formats = {}
         if DEBUG_API:
             log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &inputFmtCount)
+        cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
         raiseNVENC(r, "getting input format count")
         log("%s input format type%s:", inputFmtCount, engs(inputFmtCount))
         assert inputFmtCount>0 and inputFmtCount<2**8
-        inputFmts = <NV_ENC_BUFFER_FORMAT*> cmalloc(sizeof(int) * inputFmtCount, "input formats")
+        cdef NV_ENC_BUFFER_FORMAT* inputFmts = <NV_ENC_BUFFER_FORMAT*> cmalloc(sizeof(int) * inputFmtCount, "input formats")
         try:
             if DEBUG_API:
                 log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <uintptr_t> inputFmts, inputFmtCount, <uintptr_t> &inputFmtsRetCount)
@@ -2832,7 +2818,7 @@ cdef class Encoder:
     cdef int query_encoder_caps(self, GUID encode_GUID, NV_ENC_CAPS caps_type) except *:
         cdef int val
         cdef NV_ENC_CAPS_PARAM encCaps
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
         memset(&encCaps, 0, sizeof(NV_ENC_CAPS_PARAM))
         encCaps.version = NV_ENC_CAPS_PARAM_VER
@@ -2849,7 +2835,7 @@ cdef class Encoder:
         cdef uint32_t GUIDRetCount
         cdef GUID* encode_GUIDs
         cdef GUID encode_GUID
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
         if DEBUG_API:
             log("nvEncGetEncodeGUIDCount(%#x, %#x)", <uintptr_t> self.context, <uintptr_t> &GUIDCount)
@@ -2904,8 +2890,6 @@ cdef class Encoder:
 
     def open_encode_session(self):
         global context_counter, context_gen_counter, last_context_failure
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
-        cdef int t
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
 
         assert self.functionList is NULL, "session already active"
@@ -2923,7 +2907,7 @@ cdef class Encoder:
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
         if DEBUG_API:
             log("NvEncodeAPICreateInstance(%#x)", <uintptr_t> self.functionList)
-        r = NvEncodeAPICreateInstance(<uintptr_t> self.functionList)
+        cdef NVENCSTATUS r = NvEncodeAPICreateInstance(<uintptr_t> self.functionList)
         raiseNVENC(r, "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
@@ -2970,7 +2954,7 @@ def init_module():
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     cdef Encoder test_encoder
-    cdef uint32_t max_version
+    #cdef uint32_t max_version
     #cdef NVENCSTATUS r = NvEncodeAPIGetMaxSupportedVersion(&max_version)
     #raiseNVENC(r, "querying max version")
     #log(" maximum supported version: %s", max_version)
