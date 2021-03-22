@@ -225,6 +225,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         self._current_frame_extents = None
         self._screen = -1
         self._frozen = False
+        self._focus_latest = None
         self.window_state_timer = None
         self.send_iconify_timer = None
         self.remove_pointer_overlay_timer = None
@@ -398,7 +399,6 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                 log.warn("Warning: missing gdk bindings:")
                 log.warn(" %s", e)
             else:
-                self._focus_latest = None
                 grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
                 add_event_receiver(self.get_window(), self)
         #other platforms should bet getting regular focus events instead:
