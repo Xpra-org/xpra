@@ -146,6 +146,8 @@ Suggests: openssh-server
 # to make the system tray work again with gnome-shell:
         ,gnome-shell-extension-top-icons-plus
         ,gnome-shell-extension-appindicator
+# password prompts:
+        ,pinentry-gnome3
 # for webcam support:
         ,python3-pyinotify
         ,python3-opencv

@@ -234,6 +234,7 @@ Requires:			xpra-common-client = %{version}-%{release}
 Requires:			python3-xpra = %{version}-%{release}
 BuildRequires:		python3-pyxdg
 BuildRequires:		python3-cups
+Recommends:			pinentry
 Recommends:			python3-xpra-audio
 Recommends:			python3-cups
 Recommends:			python3-pyopengl
