@@ -18,7 +18,7 @@ from xpra.util import (
     )
 from xpra.os_util import (
     bytestostr, strtobytes, hexstr, monotonic_time, load_binary_file,
-    WIN32, OSX, POSIX, is_Wayland,
+    WIN32, OSX, POSIX, is_Wayland, is_gnome, is_kde, which,
     )
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
@@ -255,11 +255,29 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def do_process_challenge_prompt(self, packet, prompt="password"):
         authlog = Logger("auth")
         self.show_progress(100, "authentication")
-        PINENTRY = os.environ.get("XPRA_PINENTRY")
+        PINENTRY = os.environ.get("XPRA_PINENTRY", "")
         authlog("do_process_challenge_prompt%s PINENTRY=%s", (packet, prompt), PINENTRY)
-        if PINENTRY:
-            start_thread(self.handle_challenge_with_pinentry, "pinentry", True, (packet, prompt, PINENTRY))
-            return True
+        if PINENTRY.lower() not in FALSE_OPTIONS:
+            pinentry_cmd = PINENTRY
+            def find_pinentry_bin():
+                if is_gnome():
+                    return which("pinentry-gnome3")
+                if is_kde():
+                    return which("pinentry-qt")
+                return None
+            if PINENTRY=="" or PINENTRY.lower()=="auto":
+                #figure out if we should use it:
+                if WIN32 or OSX:
+                    #not enabled by default on those platforms
+                    pinentry_cmd = None
+                else:
+                    pinentry_cmd = find_pinentry_bin()
+            if PINENTRY.lower() in TRUE_OPTIONS:
+                pinentry_cmd = find_pinentry_bin()
+            if pinentry_cmd:
+                start_thread(self.handle_challenge_with_pinentry,
+                             "pinentry", True, (packet, prompt, pinentry_cmd))
+                return True
         return self.do_process_challenge_prompt_dialog(packet, prompt)
 
     def stop_pinentry(self):
@@ -270,11 +288,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def handle_challenge_with_pinentry(self, packet, prompt="password", cmd="pinentry"):
+        authlog = Logger("auth")
+        authlog("handle_challenge_with_pinentry%s", (packet, prompt, cmd))
         from xpra.scripts.main import do_run_pinentry
         try:
             proc = Popen([cmd], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         except OSError:
-            log("pinentry failed", exc_info=True)
+            authlog("pinentry failed", exc_info=True)
         else:
             self.pinentry_proc = proc
             q = "Enter %s" % prompt
