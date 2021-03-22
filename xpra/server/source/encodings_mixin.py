@@ -257,7 +257,7 @@ class EncodingsMixin(StubSourceMixin):
         self.vrefresh = c.intget("vrefresh", -1)
 
         #assume 50Hz:
-        ms_per_frame = 1000//50
+        ms_per_frame = 1000//100
         if 30<=self.vrefresh<=500:
             #looks like a valid vrefresh value, use it:
             ms_per_frame = 1000//self.vrefresh
