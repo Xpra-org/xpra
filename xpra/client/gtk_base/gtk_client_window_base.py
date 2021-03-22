@@ -446,6 +446,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.connect("focus-out-event", focus_out)
         if not self._override_redirect:
             self.connect("notify::has-toplevel-focus", self._focus_change)
+        def grab_broken(win, event):
+            grablog("grab_broken%s", (win, event))
+            self._client._window_with_grab = None
+        self.connect("grab-broken-event", grab_broken)
 
     def _focus_change(self, *args):
         assert not self._override_redirect
