@@ -1383,18 +1383,16 @@ class WindowSource(WindowIconSource):
 
         delay = options.get("delay", self.batch_config.delay)
         resize_elapsed = int(1000*(now-self.statistics.last_resized))
-        if resize_elapsed<500:
-            #recently resized, batch more:
-            delay = delay+(500-resize_elapsed)//2
+        #batch more when recently resized:
+        delay += max(0, 500-resize_elapsed)//2
         gs = self.global_statistics
         congestion_elapsed = -1
         if gs:
-            congestion_elapsed = now-gs.last_congestion_time
-            if congestion_elapsed<1:
-                delay = int(delay * (2-congestion_elapsed))
-        #raise min_delay if qsize goes higher than 4,
-        #but never go lower than 10:
-        min_delay = max(10, self.batch_config.min_delay * max(4, self.queue_size())//4)
+            congestion_elapsed = int(1000*(now-gs.last_congestion_time))
+            if congestion_elapsed<1000:
+                delay += (1000-congestion_elapsed)//4
+        #raise min_delay with qsize:
+        min_delay = self.batch_config.min_delay * max(2, self.queue_size())//2
         delay = max(delay, options.get("min_delay", min_delay))
         delay = min(delay, options.get("max_delay", self.batch_config.max_delay))
         delay = int(delay)
