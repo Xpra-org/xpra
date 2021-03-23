@@ -17,6 +17,8 @@ class NotificationMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("notifications", False)
 
+    def __init__(self, *_args):
+        pass
 
     def init_state(self):
         self.send_notifications = False
@@ -36,7 +38,8 @@ class NotificationMixin(StubSourceMixin):
     ######################################################################
     # notifications:
     # Utility functions for mixins (makes notifications optional)
-    def may_notify(self, nid=0, summary="", body="", actions=(), hints=None, expire_timeout=10*1000,
+    def may_notify(self, nid=0, summary="", body="",    #pylint: disable=arguments-differ
+                   actions=(), hints=None, expire_timeout=10*1000,
                    icon_name=None, user_callback=None):
         try:
             from xpra.platform.paths import get_icon_filename

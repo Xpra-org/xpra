@@ -94,11 +94,11 @@ def verify_checksum(img_data, options):
         assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
 
 
-"""
-Generic superclass for all Backing code,
-see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
-"""
 class WindowBackingBase:
+    """
+    Generic superclass for all Backing code,
+    see CairoBackingBase and GTK2WindowBacking subclasses for actual implementations
+    """
     RGB_MODES = ()
 
     def __init__(self, wid : int, window_alpha : bool):

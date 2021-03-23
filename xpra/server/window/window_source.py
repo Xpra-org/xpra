@@ -106,16 +106,16 @@ class DelayedRegions:
 def capr(v):
     return min(100, max(0, int(v)))
 
-"""
-We create a Window Source for each window we send pixels for.
-
-The UI thread calls 'damage' for screen updates,
-we eventually call 'ClientConnection.call_in_encode_thread' to queue the damage compression,
-the function can then submit the packet using the 'queue_damage_packet' callback.
-
-(also by 'send_window_icon' and clibpoard packets)
-"""
 class WindowSource(WindowIconSource):
+    """
+    We create a Window Source for each window we send pixels for.
+    
+    The UI thread calls 'damage' for screen updates,
+    we eventually call 'ClientConnection.call_in_encode_thread' to queue the damage compression,
+    the function can then submit the packet using the 'queue_damage_packet' callback.
+    
+    (also by 'send_window_icon' and clibpoard packets)
+    """
 
     _encoding_warnings = set()
 

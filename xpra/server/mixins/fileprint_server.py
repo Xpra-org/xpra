@@ -23,11 +23,11 @@ filelog = Logger("file")
 SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 
 
-"""
-Mixin for servers that can handle file transfers and forwarded printers.
-Printer forwarding is only supported on Posix servers with the cups backend script.
-"""
 class FilePrintServer(StubServerMixin):
+    """
+    Mixin for servers that can handle file transfers and forwarded printers.
+    Printer forwarding is only supported on Posix servers with the cups backend script.
+    """
 
     def __init__(self):
         self.lpadmin = ""
@@ -121,7 +121,7 @@ class FilePrintServer(StubServerMixin):
             try:
                 #this should be the name of the auth module:
                 auth_name = auth_class[0]
-            except:
+            except Exception:
                 auth_name = str(auth_class)
             if auth_name not in ("none", "file"):
                 printlog.warn("Warning: printer forwarding cannot be used,")

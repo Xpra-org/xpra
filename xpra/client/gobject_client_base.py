@@ -184,6 +184,9 @@ class SendCommandConnectClient(CommandConnectClient):
         assert self.parse_network_capabilities(caps), "network capabilities failure"
         return super().server_connection_established(caps)
 
+    def do_command(self, caps : typedict):
+        raise NotImplementedError()
+
 
 class HelloRequestClient(SendCommandConnectClient):
     """
@@ -524,7 +527,7 @@ class ControlXpraClient(CommandConnectClient):
         def b(s):
             try:
                 return s.encode("utf8")
-            except:
+            except Exception:
                 return strtobytes(s)
         capabilities["command_request"] = tuple(b(x) for x in self.command)
         capabilities["request"] = "command"

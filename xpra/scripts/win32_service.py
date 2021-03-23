@@ -37,7 +37,8 @@ def main(argv):
         #"-d", "win32,proxy",
         #"--mdns=no",
         ]
-    if True:
+    SYSTEM_USER = os.environ.get("SYSTEM_USER", "1")
+    if SYSTEM_USER=="1":
         #only SYSTEM can access this named pipe:
         #(so no need for auth)
         os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "0"

@@ -139,7 +139,7 @@ class ToolboxGUI(Gtk.Window):
     def label(self, text):
         return label(text, font="sans 14")
 
-    def button(self, label, tooltip, relpath):
+    def button(self, label_str, tooltip, relpath):
         def cb(_btn):
             cp = os.path.dirname(__file__)
             script = os.path.join(cp, relpath)
@@ -153,7 +153,7 @@ class ToolboxGUI(Gtk.Window):
                     return
             cmd = get_python_execfile_command()+[script]
             exec_command(cmd)
-        return imagebutton(label, None,
+        return imagebutton(label_str, None,
                            tooltip, clicked_callback=cb,
                            icon_size=48)
 

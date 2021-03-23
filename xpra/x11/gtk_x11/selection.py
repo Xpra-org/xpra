@@ -44,7 +44,7 @@ class ManagerSelection(GObject.GObject):
         "xpra-destroy-event": one_arg_signal,
         }
 
-    def __str__(self):
+    def __str__(self):  #pylint: disable=arguments-differ
         return "ManagerSelection(%s)" % self.atom
 
     def __init__(self, selection):

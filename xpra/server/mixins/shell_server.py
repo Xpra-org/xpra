@@ -7,10 +7,11 @@
 
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
-"""
-Mixin for adding shell support
-"""
+
 class ShellServer(StubServerMixin):
+    """
+    Mixin for adding shell support
+    """
 
     def get_info(self, _source=None) -> dict:
         return {

@@ -252,7 +252,7 @@ def get_window_handle(window):
     gdk_window = window
     try:
         gdk_window = window.get_window()
-    except:
+    except Exception:
         pass
     if not gdk_window:
         return 0
@@ -314,7 +314,7 @@ def win32_propsys_set_group_leader(self, leader):
         log("win32_propsys_set_group_leader(%s)", leader)
         lhandle = get_window_handle(leader)
         assert lhandle
-    except:
+    except Exception:
         log("win32_propsys_set_group_leader(%s)", leader, exc_info=True)
         log.warn("Warning: no window handle for %s", leader)
         log.warn(" cannot set window grouping attribute")
@@ -635,7 +635,7 @@ def remove_window_hooks(window):
             log("remove_window_hooks(%s) found %s", window, win32hooks)
             win32hooks.cleanup()
             window.win32hooks = None
-    except:
+    except Exception:
         log.error("remove_window_hooks(%s)", exc_info=True)
 
 

@@ -9,10 +9,10 @@ from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 from xpra.client.gtk3.cairo_backing import CairoBacking
 from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
 
-"""
-GTK3 window painted with cairo
-"""
 class ClientWindow(GTK3ClientWindow):
+    """
+    GTK3 window painted with cairo
+    """
 
     __gsignals__ = GTK3ClientWindow.__common_gsignals__
 

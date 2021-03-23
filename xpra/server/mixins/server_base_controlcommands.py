@@ -289,7 +289,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #so we may have to do an ugly roundtrip:
         try:
             filename = strtobytes(filename).decode("utf8")
-        except:
+        except Exception:
             filename = bytestostr(filename)
         openit = str(openit).lower() in ("open", "true", "1")
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
@@ -435,7 +435,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 try:
                     wid = int(x)
                 except:
-                    raise ControlError("invalid window id: %s" % x)
+                    raise ControlError("invalid window id: %s" % x) from None
                 if wid in self._id_to_window:
                     wids.append(wid)
                 else:
@@ -606,7 +606,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 keycode = int(keycode_str)
             assert keycode>0 and keycode<=255
         except:
-            raise ControlError("invalid keycode specified: '%s' (must be a number between 1 and 255)" % keycode_str)
+            raise ControlError("invalid keycode specified: '%s' (must be a number between 1 and 255)" % keycode_str) from None
         if press is not True:
             if press in ("1", "press"):
                 press = True

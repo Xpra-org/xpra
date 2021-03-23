@@ -55,8 +55,8 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
 MAX_TIP_SIZE = 64
 
 def getNOTIFYICONDATAClass(char_type=CHAR, tip_size=MAX_TIP_SIZE):
-    class NOTIFYICONDATA(Structure):
-        _fields_ = [
+    class _NOTIFYICONDATA(Structure):
+        _fields_ = (
             ("cbSize",              DWORD),
             ("hWnd",                HWND),
             ("uID",                 UINT),
@@ -72,8 +72,8 @@ def getNOTIFYICONDATAClass(char_type=CHAR, tip_size=MAX_TIP_SIZE):
             ("dwInfoFlags",         DWORD),
             ("guidItem",            GUID),
             ("hBalloonIcon",        HICON),
-        ]
-    return NOTIFYICONDATA
+        )
+    return _NOTIFYICONDATA
 
 NOTIFYICONDATAA = getNOTIFYICONDATAClass()
 NOTIFYICONDATAW = getNOTIFYICONDATAClass(WCHAR)
@@ -333,7 +333,7 @@ class win32NotifyIcon:
 
 
     def set_blinking(self, on):
-        #FIXME: implement blinking on win32 using a timer
+        #implement blinking on win32 using a timer?
         pass
 
     def set_tooltip(self, tooltip):

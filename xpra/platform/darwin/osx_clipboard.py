@@ -49,8 +49,8 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
         ClipboardTimeoutHelper.cleanup(self)
         self.pasteboard = None
 
-    def make_proxy(self, clipboard):
-        proxy = OSXClipboardProxy(clipboard, self.pasteboard,
+    def make_proxy(self, selection):
+        proxy = OSXClipboardProxy(selection, self.pasteboard,
                                   self._send_clipboard_request_handler, self._send_clipboard_token_handler)
         proxy.set_direction(self.can_send, self.can_receive)
         return proxy

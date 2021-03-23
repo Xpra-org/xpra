@@ -14,7 +14,6 @@ log = Logger("server")
 def get_client_connection_class(caps):
     from xpra.server.source.clientinfo_mixin import ClientInfoMixin
     CC = [ClientInfoMixin]
-    #TODO: notifications mixin
     if server_features.notifications:
         from xpra.server.source.notification_mixin import NotificationMixin
         CC.append(NotificationMixin)

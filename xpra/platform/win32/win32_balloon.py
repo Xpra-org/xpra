@@ -160,8 +160,8 @@ def notify(hwnd, app_id, title, message, timeout=5000, icon=None):
     log("notify using %s", Shell_NotifyIconA)
 
 def main():
-    from xpra.platform.win32.win32_NotifyIcon import main
-    main()
+    from xpra.platform.win32.win32_NotifyIcon import notifyicon_main
+    notifyicon_main()
 
 if __name__=='__main__':
     main()

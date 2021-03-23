@@ -36,11 +36,12 @@ def noicondata(menu_data):
             newdata[k] = v
     return newdata
 
-"""
-Mixin for servers that can handle file transfers and forwarded printers.
-Printer forwarding is only supported on Posix servers with the cups backend script.
-"""
+
 class ChildCommandServer(StubServerMixin):
+    """
+    Mixin for servers that can handle file transfers and forwarded printers.
+    Printer forwarding is only supported on Posix servers with the cups backend script.
+    """
 
     def __init__(self):
         self.child_display = None

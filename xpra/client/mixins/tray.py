@@ -15,11 +15,11 @@ log = Logger("tray")
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 
 
-"""
-Mixin for supporting our system tray
-(not forwarding other application's trays - that's handled in WindowClient)
-"""
 class TrayClient(StubClientMixin):
+    """
+    Mixin for supporting our system tray
+    (not forwarding other application's trays - that's handled in WindowClient)
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)

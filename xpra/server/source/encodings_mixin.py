@@ -41,6 +41,9 @@ class EncodingsMixin(StubSourceMixin):
         return bool(caps.strtupleget("encodings"))
 
 
+    def __init__(self, *_args):
+        pass
+
     def init_state(self):
         self.wants_encodings = False
         self.wants_features = False

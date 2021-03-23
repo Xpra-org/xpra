@@ -225,7 +225,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._internal_set_property("client-window", client_window)
 
 
-    def __repr__(self):
+    def __repr__(self):  #pylint: disable=arguments-differ
         try:
             return "%s(%#x)" % (type(self).__name__, self.xid)
         except AttributeError:
@@ -289,7 +289,7 @@ class CoreX11WindowModel(WindowModelStub):
                     self.setup_failed(e)
             except Exception as ex:
                 log.error("error in cleanup handler: %s", ex)
-            raise Unmanageable(e)
+            raise Unmanageable(e) from None
         self._setup_done = True
 
     def setup_failed(self, e):

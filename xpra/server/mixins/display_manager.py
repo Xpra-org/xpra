@@ -14,10 +14,11 @@ from xpra.log import Logger
 log = Logger("screen")
 gllog = Logger("opengl")
 
-"""
-Mixin for servers that handle displays.
-"""
+
 class DisplayManager(StubServerMixin):
+    """
+    Mixin for servers that handle displays.
+    """
 
     def __init__(self):
         self.randr = False

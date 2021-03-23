@@ -215,7 +215,7 @@ class TrayBacking(WindowBackingBase):
     def idle_add(self, *args, **kwargs):
         return GLib.idle_add(*args, **kwargs)
 
-    def paint_scroll(self, _img_data, _options, callbacks):
+    def paint_scroll(self, img_data, options, callbacks):
         raise Exception("scroll should not be used with tray icons")
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):

@@ -25,13 +25,14 @@ MIN_BANDWIDTH_LIMIT = envint("XPRA_MIN_BANDWIDTH_LIMIT", 1024*1024)
 MAX_BANDWIDTH_LIMIT = envint("XPRA_MAX_BANDWIDTH_LIMIT", 10*1024*1024*1024)
 CPUINFO = envbool("XPRA_CPUINFO", False)
 
-"""
-Mixin for adding client / network state monitoring functions:
-- ping and echo
-- bandwidth management
-- leak detection (file descriptors, memory)
-"""
+
 class NetworkStateServer(StubServerMixin):
+    """
+    Mixin for adding client / network state monitoring functions:
+    - ping and echo
+    - bandwidth management
+    - leak detection (file descriptors, memory)
+    """
 
     def __init__(self):
         self.pings = False

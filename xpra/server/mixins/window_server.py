@@ -20,10 +20,10 @@ def noop(*_args):
     pass
 
 
-"""
-Mixin for servers that forward windows.
-"""
 class WindowServer(StubServerMixin):
+    """
+    Mixin for servers that forward windows.
+    """
 
     def __init__(self):
         # Window id 0 is reserved for "not a window"

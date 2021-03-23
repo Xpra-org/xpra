@@ -19,6 +19,7 @@ class DBUS_Mixin(StubSourceMixin):
         #supports one of the mixins it exposes:
         return caps.boolget("windows", False) or caps.boolget("sound", False)
 
+
     def __init__(self):
         self.dbus_control = False
         self.dbus_server = None

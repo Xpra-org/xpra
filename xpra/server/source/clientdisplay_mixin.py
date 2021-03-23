@@ -12,10 +12,10 @@ from xpra.log import Logger
 log = Logger("av-sync")
 
 
-"""
-Store information and manage events related to the client's display
-"""
 class ClientDisplayMixin(StubSourceMixin):
+    """
+    Store information and manage events related to the client's display
+    """
 
     def cleanup(self):
         self.init_state()

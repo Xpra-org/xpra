@@ -42,11 +42,11 @@ def fequ(v1, v2):
     return r4cmp(v1)==r4cmp(v2)
 
 
-"""
-Utility superclass for clients that handle a desktop / display
-Adds client-side scaling handling
-"""
 class DisplayClient(StubClientMixin):
+    """
+    Utility mixin for clients that handle a desktop / display
+    Adds client-side scaling handling
+    """
     __signals__ = ["scaling-changed"]
 
     def __init__(self):

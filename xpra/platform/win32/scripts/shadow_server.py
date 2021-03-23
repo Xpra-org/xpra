@@ -17,7 +17,7 @@ def get_commonappdata_dir():
         SHGetFolderPath = shell32.SHGetFolderPathW
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         return buf.value
-    except:
+    except Exception:
         return None
 
 def main():
@@ -32,7 +32,7 @@ def main():
     set_default_name("Xpra-Shadow")
     init()
 
-    from xpra.scripts.main import main
+    from xpra.scripts.main import main as xpra_main
     args = sys.argv[:1] + [
         "shadow",
         ] + sys.argv[1:]
@@ -41,7 +41,7 @@ def main():
         ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
         if os.path.exists(ssl_cert):
             args.append("--ssl-cert=%s" % ssl_cert)
-    sys.exit(main(sys.argv[0], args))
+    sys.exit(xpra_main(sys.argv[0], args))
 
 if __name__ == "__main__":
     main()

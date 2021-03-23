@@ -17,6 +17,6 @@ with program_context("xpra-python-exec", "Xpra Python Exec"):
         sys.exit(1)
 
     for arg in sys.argv[1:]:
-        exec(arg)
+        exec(arg)  #pylint: disable=exec-used
 
 sys.exit(0)

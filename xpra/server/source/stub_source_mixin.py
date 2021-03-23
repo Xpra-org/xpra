@@ -19,9 +19,6 @@ class StubSourceMixin:
         """
         return True
 
-    def __init__(self, *_args):
-        pass
-
     def init_state(self):
         """
         Initialize state attributes.

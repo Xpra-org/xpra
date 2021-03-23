@@ -124,15 +124,15 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96):
     return cmd
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
-                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn=warn):
+                        Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn=warn):
     #returns the xvfb command to use
     if WIN32:   # pragma: no cover
         return ""
     if OSX:     # pragma: no cover
         return get_Xvfb_command()
     if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
-        if warn:
-            warn("Warning: sorry, no support for Xdummy on %s" % sys.platform)
+        if warn_fn:
+            warn_fn("Warning: sorry, no support for Xdummy on %s" % sys.platform)
         return get_Xvfb_command()
     if is_arm():
         #arm struggles to launch Xdummy, so use Xvfb:
@@ -148,8 +148,8 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
             #honour what was specified:
             use_wrapper = Xdummy_wrapper_ENABLED
         elif not xorg_bin:
-            if warn:
-                warn("Warning: Xorg binary not found, assuming the wrapper is needed!")
+            if warn_fn:
+                warn_fn("Warning: Xorg binary not found, assuming the wrapper is needed!")
             use_wrapper = True
         else:
             #auto-detect
@@ -157,8 +157,8 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
             xorg_stat = os.stat(xorg_bin)
             if (xorg_stat.st_mode & stat.S_ISUID)!=0:
                 if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                    if warn:
-                        warn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
+                    if warn_fn:
+                        warn_fn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
                     return get_Xvfb_command()
                 debug("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
                 use_wrapper = True
@@ -882,7 +882,7 @@ def get_defaults():
     for conf_dir in conf_dirs:
         if conf_dir and os.path.exists(conf_dir):
             break
-    xvfb = detect_xvfb_command(conf_dir, bin_dir, warn=None)
+    xvfb = detect_xvfb_command(conf_dir, bin_dir, warn_fn=None)
     xvfb_str = xvfb_cmd_str(xvfb)
 
     ssl_protocol = "TLSv1_2"

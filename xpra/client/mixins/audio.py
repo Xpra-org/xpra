@@ -19,10 +19,10 @@ DELTA_THRESHOLD = envint("XPRA_AV_SYNC_DELTA_THRESHOLD", 40)
 DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
-"""
-Utility superclass for clients that handle audio
-"""
 class AudioClient(StubClientMixin):
+    """
+    Utility mixin for clients that handle audio
+    """
     __signals__ = ["speaker-changed", "microphone-changed"]
 
     def __init__(self):

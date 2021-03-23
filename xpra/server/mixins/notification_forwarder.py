@@ -16,10 +16,10 @@ from xpra.log import Logger
 log = Logger("notify")
 
 
-"""
-Mixin for servers that forward notifications.
-"""
 class NotificationForwarder(StubServerMixin):
+    """
+    Mixin for servers that forward notifications.
+    """
 
     def __init__(self):
         self.notifications_forwarder = None

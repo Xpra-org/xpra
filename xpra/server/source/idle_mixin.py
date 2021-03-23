@@ -22,6 +22,7 @@ class IdleMixin(StubSourceMixin):
         #so we have to enable the mixin by default:
         return caps.boolget("keyboard", True) or caps.boolget("mouse", True) or caps.boolget("windows", False)
 
+
     def __init__(self):
         self.idle_timeout = 0
         #duplicated from clientconnection:

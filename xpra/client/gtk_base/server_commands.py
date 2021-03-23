@@ -227,8 +227,8 @@ def main(): # pragma: no cover
         client.send_info_request = noop
         client.send = noop
         window1 = AdHocStruct()
-        window1._metadata = {"pid" : 542}
-        client._id_to_window = {
+        window1._metadata = {"pid" : 542}  #pylint: disable=protected-access
+        client._id_to_window = {  #pylint: disable=protected-access
             1 : window1
             }
         def show_start_new_command(*_args):

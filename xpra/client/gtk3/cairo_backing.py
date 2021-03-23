@@ -1,10 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import cairo
+from cairo import ImageSurface  #pylint: disable=no-name-in-module
 from gi.repository import GLib              #@UnresolvedImport
 from gi.repository import GdkPixbuf         #@UnresolvedImport
 
@@ -61,7 +61,7 @@ class CairoBacking(CairoBackingBase):
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
             rgb_formats = CAIRO_FORMATS.get(cairo_format)
             if rgb_format in rgb_formats:
-                img_surface = cairo.ImageSurface(cairo_format, width, height)
+                img_surface = ImageSurface(cairo_format, width, height)
                 set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
                 self.cairo_paint_surface(img_surface, x, y, render_width, render_height, options)
                 return True

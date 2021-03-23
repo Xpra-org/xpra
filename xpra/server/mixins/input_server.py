@@ -14,11 +14,11 @@ from xpra.log import Logger
 keylog = Logger("keyboard")
 mouselog = Logger("mouse")
 
-"""
-Mixin for servers that handle input devices
-(keyboard, mouse, etc)
-"""
 class InputServer(StubServerMixin):
+    """
+    Mixin for servers that handle input devices
+    (keyboard, mouse, etc)
+    """
 
     def __init__(self):
         self.input_devices = "auto"

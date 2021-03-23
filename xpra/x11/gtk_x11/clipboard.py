@@ -289,12 +289,13 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if self._can_receive and claim:
             self.claim()
 
-    def claim(self, time=0):
+    def claim(self):
+        time = 0
         try:
             with xsync:
                 owner = X11Window.XGetSelectionOwner(self._selection)
                 if owner==self.xid:
-                    log("claim(%i) we already own the '%s' selection", time, self._selection)
+                    log("claim() we already own the '%s' selection", self._selection)
                     return
                 setsel = X11Window.XSetSelectionOwner(self.xid, self._selection, time)
                 owner = X11Window.XGetSelectionOwner(self._selection)

@@ -67,16 +67,16 @@ def noop():
     pass
 
 
-""" Base class for Xpra clients.
+class XpraClientBase(ServerInfoMixin, FilePrintMixin):
+    """
+    Base class for Xpra clients.
     Provides the glue code for:
     * sending packets via Protocol
     * handling packets received via _process_packet
     For an actual implementation, look at:
     * GObjectXpraClient
-    * xpra.client.gtk2.client
     * xpra.client.gtk3.client
-"""
-class XpraClientBase(ServerInfoMixin, FilePrintMixin):
+    """
 
     INSTALL_SIGNAL_HANDLERS = True
 
@@ -915,12 +915,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return True
 
 
-    def parse_server_capabilities(self, caps : typedict) -> bool:
+    def parse_server_capabilities(self, c : typedict) -> bool:
         for c in XpraClientBase.__bases__:
-            if not c.parse_server_capabilities(self, caps):
+            if not c.parse_server_capabilities(self, c):
                 return False
-        self.server_client_shutdown = caps.boolget("client-shutdown", True)
-        self.server_compressors = caps.strtupleget("compressors", ("zlib",))
+        self.server_client_shutdown = c.boolget("client-shutdown", True)
+        self.server_compressors = c.strtupleget("compressors", ("zlib",))
         return True
 
     def parse_network_capabilities(self, caps : typedict) -> bool:

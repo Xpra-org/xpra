@@ -16,10 +16,10 @@ log = Logger("notify")
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 
 
-"""
-Utility superclass for clients that handle notifications
-"""
 class NotificationClient(StubClientMixin):
+    """
+    Mixin for clients that handle notifications
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)

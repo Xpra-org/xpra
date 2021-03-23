@@ -126,7 +126,7 @@ class WorldWindow(Gtk.Window):
         self.move(0, 0)
         self._resize()
 
-    def __repr__(self):
+    def __repr__(self):  #pylint: disable=arguments-differ
         xid = 0
         w = self.get_window()
         if w:

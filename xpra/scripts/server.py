@@ -718,7 +718,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             if os.path.exists(xauthority):
                 log("found XAUTHORITY=%s", xauthority)
                 os.environ["XAUTHORITY"] = xauthority
-        def check_xvfb(timeout=0):
+        def check_xvfb(timeout=0):  #pylint: disable=unused-argument
             return True
 
     if POSIX and not OSX and displayfd>0:

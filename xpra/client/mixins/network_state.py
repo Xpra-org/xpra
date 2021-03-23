@@ -28,12 +28,12 @@ AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
 
-"""
-Mixin for adding server / network state monitoring functions:
-- ping and echo
-- info request and response
-"""
 class NetworkState(StubClientMixin):
+    """
+    Mixin for adding server / network state monitoring functions:
+    - ping and echo
+    - info request and response
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)

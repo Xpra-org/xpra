@@ -14,10 +14,10 @@ log = Logger("rpc")
 dbuslog = Logger("dbus", "rpc")
 
 
-"""
-Mixin for servers that handle DBUS and RPC requests.
-"""
 class DBUS_RPC_Server(StubServerMixin):
+    """
+    Mixin for servers that handle DBUS and RPC requests.
+    """
 
     def __init__(self):
         self.rpc_handlers = {}

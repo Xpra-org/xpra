@@ -23,7 +23,6 @@ class AVSyncMixin(StubSourceMixin):
             return False
         return caps.boolget("av-sync") and caps.boolget("windows")
 
-
     def __init__(self):
         self.av_sync = False
 

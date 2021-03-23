@@ -16,7 +16,7 @@ class StubClientMixin:
         self.exit_code = None
         self.start_time = int(time.time())
 
-    def init(self, _opts, _extra_args=()):
+    def init(self, opts):
         """
         Initialize this instance with the options given.
         Options are usually obtained by parsing the command line,
@@ -74,7 +74,7 @@ class StubClientMixin:
         """
         return {}
 
-    def parse_server_capabilities(self, c : typedict) -> bool:
+    def parse_server_capabilities(self, c : typedict) -> bool:  #pylint: disable=unused-argument
         """
         Parse server attributes specified in the hello capabilities.
         This runs in a non-UI thread.

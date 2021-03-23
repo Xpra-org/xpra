@@ -115,7 +115,7 @@ class SessionsGUI(Gtk.Window):
         self.vbox.show()
         self.show()
 
-    def show(self):
+    def show(self):  #pylint: disable=arguments-differ
         super().show()
         def show():
             force_focus()

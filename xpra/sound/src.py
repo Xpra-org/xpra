@@ -177,7 +177,7 @@ class SoundSource(SoundPipeline):
         self.init_file(codec)
 
 
-    def __repr__(self):
+    def __repr__(self):  #pylint: disable=arguments-differ
         return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self):

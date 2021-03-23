@@ -13,7 +13,7 @@ from gi.repository import GLib, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
-from xpra.util import prettify_plug_name, typedict, csv, engs, iround
+from xpra.util import prettify_plug_name, typedict, csv, iround
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client import mixin_features
@@ -106,7 +106,7 @@ def newdictlook(d, parts, fallback=None):
                 if newv is None:
                     return fallback
             v = newv
-        except:
+        except Exception:
             return fallback
     return v
 
@@ -890,7 +890,7 @@ class SessionInfo(Gtk.Window):
             compression_str += " (level %s)" % level
         self.compression_label.set_text(compression_str)
 
-        def enclabel(label, cipher):
+        def enclabel(label_widget, cipher):
             if not cipher:
                 info = "None"
             else:
@@ -901,7 +901,7 @@ class SessionInfo(Gtk.Window):
             backend = ncaps.get("backend")
             if backend=="python-cryptography":
                 info += " / python-cryptography"
-            label.set_text(info)
+            label_widget.set_text(info)
         enclabel(self.input_encryption_label, p.cipher_in_name)
         enclabel(self.output_encryption_label, p.cipher_out_name)
         return True

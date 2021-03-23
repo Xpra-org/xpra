@@ -12,13 +12,16 @@ from xpra.log import Logger
 log = Logger("server")
 
 
-"""
-Store information about the client.
-"""
 class ClientInfoMixin(StubSourceMixin):
+    """
+    Store information about the client.
+    """
 
     def cleanup(self):
         self.init_state()
+
+    def __init__(self, *_args):
+        pass
 
     def init_state(self):
         self.uuid = ""

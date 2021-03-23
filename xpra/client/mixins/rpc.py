@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -15,10 +15,10 @@ log = Logger("client", "rpc")
 RPC_TIMEOUT = envint("XPRA_RPC_TIMEOUT", 5000)
 
 
-"""
-Utility superclass for client classes that handle RPC calls
-"""
 class RPCClient(StubClientMixin):
+    """
+    Utility mixin for client classes that handle RPC calls
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)
@@ -73,9 +73,10 @@ class RPCClient(StubClientMixin):
             v = self.rpc_pending_requests.get(k)
             if v is None:
                 continue
-            t, rpc_type, _rpc_args, _reply_handler, ecb = v
+            t, rpc_type, rpc_args, reply_handler, ecb = v
             if 1000*(monotonic_time()-t)>=RPC_TIMEOUT:
-                log.warn("%s rpc request: %s has timed out", rpc_type, _rpc_args)
+                log.warn("Warning: %s rpc request: %s has timed out", rpc_type, reply_handler)
+                log.warn(" args: %s", rpc_args)
                 try:
                     del self.rpc_pending_requests[k]
                     if ecb is not None:

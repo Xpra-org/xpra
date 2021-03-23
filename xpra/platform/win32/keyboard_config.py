@@ -110,7 +110,7 @@ MOD_KEYS = {
 #we currently assume that all key events are sent using X11 names,
 #so we need to translate them to win32 VK constants
 #even when the client and server are both win32...
-#FIXME: support native untranslated win32 values,
+#we should support native untranslated win32 values,
 # either using a special capability,
 # or by adding a new argument to keypress packets
 VIRTUAL_KEYS = [

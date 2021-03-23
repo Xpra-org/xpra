@@ -64,7 +64,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         self.cancel_btn = self.add_button("Cancel", 1)
 
 
-    def show(self):
+    def show(self):  #pylint: disable=arguments-differ
         log("PasswordInputDialogWindow.show()")
         self.show_all()
         def show():

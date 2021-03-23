@@ -15,10 +15,10 @@ from xpra.log import Logger
 log = Logger("clipboard")
 
 
-"""
-Utility superclass for clients that handle clipboard synchronization
-"""
 class ClipboardClient(StubClientMixin):
+    """
+    Utility mixin for clients that handle clipboard synchronization
+    """
     __signals__ = ["clipboard-toggled"]
 
     def __init__(self):

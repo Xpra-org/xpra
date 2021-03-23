@@ -16,12 +16,12 @@ from xpra.log import Logger, set_global_logging_handler
 log = Logger("client")
 
 
-"""
-Mixin for remote logging support,
-either sending local logging events to the server,
-or receiving logging events from the server.
-"""
 class RemoteLogging(StubClientMixin):
+    """
+    Mixin for remote logging support,
+    either sending local logging events to the server,
+    or receiving logging events from the server.
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)
@@ -65,7 +65,7 @@ class RemoteLogging(StubClientMixin):
                 log.warn("Warning: cannot receive log output from the server")
                 log.warn(" the feature is not enabled or not supported by the server")
             else:
-                self.after_handshake(self.start_receiving_logging)
+                self.after_handshake(self.start_receiving_logging)  #pylint: disable=no-member
         return True
 
     def start_receiving_logging(self):
@@ -105,7 +105,8 @@ class RemoteLogging(StubClientMixin):
             log.log(level, line)
 
 
-    def remote_logging_handler(self, log, level, msg, *args, **kwargs):
+    def remote_logging_handler(self, logger_log, level, msg, *args, **kwargs):
+        print("log=%s (%s)" % (log, type(log)))
         #prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
@@ -116,7 +117,7 @@ class RemoteLogging(StubClientMixin):
             except UnicodeEncodeError:
                 return strtobytes(x)
         def local_warn(*args):
-            self.local_logging(log, logging.WARNING, *args)
+            self.local_logging(logger_log, logging.WARNING, *args)
         try:
             dtime = int(1000*(monotonic_time() - self.monotonic_start_time))
             if args:
@@ -137,7 +138,7 @@ class RemoteLogging(StubClientMixin):
                     etypeinfo = str(exc_info[0])
                 self.send("logging", level, enc("%s: %s" % (etypeinfo, exc_info[1])), dtime)
             if self.log_both:
-                self.local_logging(log, level, msg, *args, **kwargs)
+                self.local_logging(logger_log, level, msg, *args, **kwargs)
         except Exception as e:
             if self.exit_code is not None:
                 #errors can happen during exit, don't care
@@ -150,7 +151,7 @@ class RemoteLogging(StubClientMixin):
             else:
                 local_warn(" (no arguments)")
             try:
-                self.local_logging(log, level, msg, *args, **kwargs)
+                self.local_logging(logger_log, level, msg, *args, **kwargs)
             except Exception:
                 pass
             try:

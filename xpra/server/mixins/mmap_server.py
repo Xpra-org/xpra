@@ -10,10 +10,10 @@ from xpra.scripts.config import parse_bool
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 
 
-"""
-Mixin for servers that can handle mmap transfers
-"""
 class MMAP_Server(StubServerMixin):
+    """
+    Mixin for servers that can handle mmap transfers
+    """
 
     def __init__(self):
         self.supports_mmap = False

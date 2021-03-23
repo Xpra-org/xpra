@@ -13,7 +13,7 @@ from xpra.exit_codes import EXIT_INCOMPATIBLE_VERSION
 
 class ServerInfoMixin(StubClientMixin):
 
-    def __init__(self):
+    def __init__(self):  #pylint: disable=super-init-not-called
         self._remote_machine_id = None
         self._remote_uuid = None
         self._remote_version = None

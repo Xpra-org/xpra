@@ -34,7 +34,7 @@ def check_host_key(hostname, key):
 
 def do_check_host_key(hostname, keytype, keydata) -> str:
     resolver = Resolver()
-    resolver.use_edns(0, flags.DO, 1280)
+    resolver.use_edns(0, flags.DO, 1280)  # @UndefinedVariable pylint: disable=no-member
     log("do_check_host_key(%s, %s, ..) resolver=%s", hostname, keytype, resolver)
 
     key_alg = _key_algorithms.get(keytype)
@@ -66,7 +66,7 @@ def do_check_host_key(hostname, keytype, keydata) -> str:
         fg_expect = hash_func(keydata).hexdigest()
         if fg_expect == fg:
             log("found valid SSHFP record for host %s", hostname)
-            if not resp.response.flags & flags.AD:
+            if not resp.response.flags & flags.AD:  # @UndefinedVariable pylint: disable=no-member
                 return "answer matches but does not have a valid DNSSEC signature"
             return True
     return "no matching SSHFP records found"

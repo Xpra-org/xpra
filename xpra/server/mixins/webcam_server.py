@@ -16,12 +16,12 @@ from xpra.log import Logger
 log = Logger("webcam")
 
 
-"""
-Mixin for servers that handle webcam forwarding,
-it just delegates to the webcam source mixin,
-so each user can have its own webcam device(s).
-"""
 class WebcamServer(StubServerMixin):
+    """
+    Mixin for servers that handle webcam forwarding,
+    it just delegates to the webcam source mixin,
+    so each user can have its own webcam device(s).
+    """
 
     def __init__(self):
         self.webcam_device = ""

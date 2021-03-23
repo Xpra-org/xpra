@@ -15,10 +15,10 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
-"""
-Mixin for adding encodings to a server
-"""
 class EncodingServer(StubServerMixin):
+    """
+    Mixin for adding encodings to a server
+    """
 
     def __init__(self):
         self.default_quality = -1

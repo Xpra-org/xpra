@@ -613,7 +613,7 @@ class ClipboardProxyCore:
     def __repr__(self):
         return  "ClipboardProxyCore(%s)" % self._selection
 
-    def do_owner_changed(self, *_args):
+    def do_owner_changed(self):
         #an application on our side owns the clipboard selection
         #(they are ready to provide something via the clipboard)
         log("clipboard: %s owner_changed, enabled=%s, "+
@@ -684,7 +684,7 @@ class ClipboardProxyCore:
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
-    def get_contents(self, target, cb):
+    def get_contents(self, target, got_contents):
         pass
 
 

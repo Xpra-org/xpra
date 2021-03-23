@@ -238,7 +238,7 @@ class UIXpraClient(ClientBaseClass):
             c.run(self)
 
 
-    def quit(self, _exit_code=0):
+    def quit(self, exit_code=0):
         raise NotImplementedError()
 
     def cleanup(self):

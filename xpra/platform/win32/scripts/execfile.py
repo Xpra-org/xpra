@@ -34,5 +34,5 @@ if filename.endswith(".pyc"):
     import marshal
     #16 is the magic value for python 3.8:
     fdata = marshal.loads(fdata[16:])
-exec(fdata)
+exec(fdata)  #pylint: disable=exec-used
 ret(0)

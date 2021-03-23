@@ -16,10 +16,10 @@ from xpra.log import Logger
 log = Logger("clipboard")
 
 
-"""
-Mixin for servers that handle clipboard synchronization.
-"""
 class ClipboardServer(StubServerMixin):
+    """
+    Mixin for servers that handle clipboard synchronization.
+    """
 
     def __init__(self):
         self.clipboard = False

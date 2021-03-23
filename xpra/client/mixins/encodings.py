@@ -124,8 +124,8 @@ class Encodings(StubClientMixin):
         updict(caps, "encoding",        self.get_encodings_caps())
         return caps
 
-    def parse_server_capabilities(self, caps : typedict) -> bool:
-        self._parse_server_capabilities(caps)
+    def parse_server_capabilities(self, c : typedict) -> bool:
+        self._parse_server_capabilities(c)
         return True
 
     def _parse_server_capabilities(self, c):

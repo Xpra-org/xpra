@@ -627,6 +627,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 errback()
                 return True
             data_handle = None
+            fmt = None
             for fmt in matching:
                 data_handle = GetClipboardData(fmt)
                 log("GetClipboardData(%s)=%#x", format_name(fmt), data_handle or 0)

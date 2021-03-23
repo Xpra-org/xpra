@@ -71,12 +71,13 @@ def parse_shortcut_modifiers(s, modifier_names=()):
     return shortcut_modifiers
 
 def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
+    """
+    if none are defined, add this as default
+    it would be nicer to specify it via OptionParser in main
+    but then it would always have to be there with no way of removing it
+    whereas now it is enough to define one (any shortcut)
+    """
     if not strs:
-        """ if none are defined, add this as default
-        it would be nicer to specify it via OptionParser in main
-        but then it would always have to be there with no way of removing it
-        whereas now it is enough to define one (any shortcut)
-        """
         strs = ["meta+shift+F4:quit"]
     log("parse_shortcuts(%s)" % str(strs))
     shortcuts = {}
