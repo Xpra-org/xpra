@@ -76,7 +76,6 @@ KEYCODES = {
             "minus" : 27,
             "plus"  : 69,       #KeypadPlus
             "equal" : 24,
-            "equal" : 24,
             "bracketleft"   : 33,
             "bracketright"  : 30,
             "semicolon"     : 41,
