@@ -86,7 +86,7 @@ if not xpra_cmd or not os.path.exists(xpra_cmd):
 xpra_argv = [
     xpra_cmd,
     "start",
-    "--start-child=\"%s\"" % join(command_argv),
+    "--start-child=%s" % join(command_argv),
     "--attach=yes",
     "--exit-with-children=yes",
     "--desktop-scaling=%s" % scale,
