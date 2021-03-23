@@ -143,8 +143,8 @@ class GTKStatusIconTray(TrayBase):
             self.tray_widget.set_tooltip_text(tooltip or "Xpra")
 
     def set_blinking(self, on):
-        if self.tray_widget and hasattr(self.tray_widget, "set_blinking"):
-            self.tray_widget.set_blinking(on)
+        #no longer supported with GTK3
+        pass
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, _options=None):
