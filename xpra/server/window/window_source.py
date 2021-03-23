@@ -1387,8 +1387,11 @@ class WindowSource(WindowIconSource):
             #recently resized, batch more:
             delay = delay+(500-resize_elapsed)//2
         gs = self.global_statistics
-        if gs and now-gs.last_congestion_time<1:
-            delay = int(delay * (2-(now-gs.last_congestion_time)))
+        congestion_elapsed = -1
+        if gs:
+            congestion_elapsed = now-gs.last_congestion_time
+            if congestion_elapsed<1:
+                delay = int(delay * (2-congestion_elapsed))
         #raise min_delay if qsize goes higher than 4,
         #but never go lower than 10:
         min_delay = max(10, self.batch_config.min_delay * max(4, self.queue_size())//4)
@@ -1436,21 +1439,23 @@ class WindowSource(WindowIconSource):
         #weighted average with the last delays:
         #(so when we end up delaying a lot for some reason,
         # then we don't expire the next one quickly after)
+        inc = 0
         try:
-            inc = 0
             for v in (self.batch_config.last_actual_delay, self.batch_config.last_delay):
                 if v is None:
                     continue
                 when, d = v
-                elapsed = now-when
-                if d>expire_delay and elapsed<5:
-                    weight = (5-elapsed)/10
+                delta = now-when
+                if d>expire_delay and delta<5:
+                    weight = (5-delta)/10
                     inc = max(inc, int((d-expire_delay)*weight))
             expire_delay += inc
         except IndexError:
             pass
-        damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms",
+        damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %4i in %3i ms",
                   (x, y, w, h, options), self.wid, self._sequence, expire_delay)
+        damagelog(" delay=%i, elapsed=%i, resize_elapsed=%i, congestion_elapsed=%i, batch=%i, min=%i, inc=%i",
+                  delay, elapsed, resize_elapsed, congestion_elapsed, self.batch_config.delay, min_delay, inc)
         due = now+expire_delay/1000.0
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
