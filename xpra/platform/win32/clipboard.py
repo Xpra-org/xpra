@@ -361,8 +361,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("do_emit_token() formats=%s", format_names(fmts))
             send_token(fmts)
             return True
-        def errback(_errmsg=None):
-            send_token()
+        def errback(errmsg=None):
+            #nothing we can do!
+            log("not sending the token since we failed to get the clipboard lock: %s", errmsg)
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
     def get_contents(self, target, got_contents):
