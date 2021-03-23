@@ -51,12 +51,15 @@ cdef extern from "X11/Xlib.h":
 ###################################
 cdef extern from "X11/extensions/randr.h":
     cdef unsigned int RR_Rotate_0
+    ctypedef unsigned long XRRModeFlags
+    ctypedef unsigned short Connection
+    ctypedef unsigned short SubpixelOrder
+    ctypedef unsigned short Rotation
 
 cdef extern from "X11/extensions/Xrandr.h":
     ctypedef XID RRMode
     ctypedef XID RROutput
     ctypedef XID RRCrtc
-    ctypedef unsigned long XRRModeFlags
 
     Bool XRRQueryExtension(Display *, int *, int *)
     Status XRRQueryVersion(Display *, int * major, int * minor)
@@ -90,6 +93,35 @@ cdef extern from "X11/extensions/Xrandr.h":
         int         nmode
         XRRModeInfo *modes
 
+    ctypedef struct XRROutputInfo:
+        Time            timestamp
+        RRCrtc          crtc
+        char            *name
+        int             nameLen
+        unsigned long   mm_width
+        unsigned long   mm_height
+        Connection      connection
+        SubpixelOrder   subpixel_order
+        int             ncrtc
+        RRCrtc          *crtcs
+        int             nclone
+        RROutput        *clones
+        int             nmode
+        int             npreferred
+        RRMode          *modes
+
+    ctypedef struct XRRCrtcInfo:
+        Time            timestamp
+        int             x, y
+        unsigned int    width, height
+        RRMode          mode
+        Rotation        rotation
+        int             noutput
+        RROutput        *outputs
+        Rotation        rotations
+        int             npossible
+        RROutput        *possible
+
     ctypedef unsigned short SizeID
     ctypedef struct XRRScreenConfiguration:
         pass
@@ -105,6 +137,12 @@ cdef extern from "X11/extensions/Xrandr.h":
     void XRRFreeScreenConfigInfo(XRRScreenConfiguration *)
     XRRScreenResources *XRRGetScreenResourcesCurrent(Display *dpy, Window window)
     void XRRFreeScreenResources(XRRScreenResources *resources)
+
+    XRROutputInfo *XRRGetOutputInfo(Display *dpy, XRRScreenResources *resources, RROutput output)
+    void XRRFreeOutputInfo (XRROutputInfo *outputInfo)
+
+    XRRCrtcInfo *XRRGetCrtcInfo(Display *dpy, XRRScreenResources *resources, RRCrtc crtc)
+    void XRRFreeCrtcInfo(XRRCrtcInfo *crtcInfo)
 
     XRRModeInfo *XRRAllocModeInfo(char *name, int nameLength)
     RRMode XRRCreateMode(Display *dpy, Window window, XRRModeInfo *modeInfo)
@@ -321,9 +359,14 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 XRRFreeScreenConfigInfo(config)
 
     def get_vrefresh(self):
-        cdef Window window                              #@DuplicatedSignature
-        window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config             #@DuplicatedSignature
+        voutputs = self.get_vrefresh_outputs()
+        if voutputs:
+            return min(voutputs.values())
+        return self.get_vrefresh_display()
+
+    def get_vrefresh_display(self):
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenConfiguration *config = NULL
         try:
             config = XRRGetScreenInfo(self.display, window)
             if config==NULL:
@@ -333,6 +376,37 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             if config!=NULL:
                 XRRFreeScreenConfigInfo(config)
+
+    def get_vrefresh_outputs(self):
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = NULL
+        cdef XRROutputInfo *output_info = NULL
+        cdef XRRCrtcInfo *crtc_info = NULL
+        cdef XRRModeInfo *mode_info = NULL
+        rates = {}
+        try:
+            rsc = XRRGetScreenResourcesCurrent(self.display, window)
+            for crtc in range(rsc.ncrtc):
+                crtc_info = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[crtc])
+                #find the mode info:
+                for i in range(rsc.nmode):
+                    mode_info = &rsc.modes[i]
+                    if mode_info.id==crtc_info.mode:
+                        if mode_info.hTotal and mode_info.vTotal:
+                            rate = iround(mode_info.dotClock / (mode_info.hTotal * mode_info.vTotal))
+                            #outputs affected:
+                            output_names = []
+                            for o in range(crtc_info.noutput):
+                                output_info = XRRGetOutputInfo(self.display, rsc, crtc_info.outputs[o])
+                                output_names.append(output_info.name.decode("utf8"))
+                                XRRFreeOutputInfo(output_info)
+                            rates[tuple(output_names)] = rate
+                        break
+        finally:
+            if rsc:
+                XRRFreeScreenResources(rsc)
+        return rates
+
 
     def set_screen_size(self, width, height):
         return self._set_screen_size(width, height)
