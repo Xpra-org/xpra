@@ -1421,7 +1421,7 @@ class WindowSource(WindowIconSource):
         lad = (now, delay)
         self.batch_config.last_delays.append(lad)
         self.batch_config.last_delay = lad
-        expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
+        expire_delay = min(self.batch_config.expire_delay, delay)
         #weighted average with the last delays:
         #(so when we end up delaying a lot for some reason,
         # then we don't expire the next one quickly after)
