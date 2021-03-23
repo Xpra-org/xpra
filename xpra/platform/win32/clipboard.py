@@ -318,7 +318,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         super().__init__(selection)
 
     def with_clipboard_lock(self, success_callback, failure_callback, retries=RETRY, delay=DELAY):
-        with_clipboard_lock(self.window, success_callback, failure_callback, retries=RETRY, delay=DELAY)
+        with_clipboard_lock(self.window, success_callback, failure_callback, retries=retries, delay=delay)
 
     def clear(self):
         self.with_clipboard_lock(self.empty_clipboard, self.clear_error)
