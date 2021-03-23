@@ -916,8 +916,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
 
     def parse_server_capabilities(self, c : typedict) -> bool:
-        for c in XpraClientBase.__bases__:
-            if not c.parse_server_capabilities(self, c):
+        for bc in XpraClientBase.__bases__:
+            if not bc.parse_server_capabilities(self, c):
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
         self.server_compressors = c.strtupleget("compressors", ("zlib",))
