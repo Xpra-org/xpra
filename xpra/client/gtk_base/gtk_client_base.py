@@ -228,6 +228,22 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.UI_watcher.add_fail_callback(UI_failed)
 
 
+    def get_vrefresh(self):
+        #try via GTK:
+        rates = {}
+        display = Gdk.Display.get_default()
+        for m in range(display.get_n_monitors()):
+            monitor = display.get_monitor(m)
+            log("monitor %i (%s) refresh-rate=%i", m, monitor.get_model(), monitor.get_refresh_rate())
+            rates[m] = monitor.get_refresh_rate()
+        rate = -1
+        if rates:
+            rate = iround(min(rates.values())/1000)
+        if rate<30 or rate>250:
+            rate = super().get_vrefresh()
+        return rate
+
+
     def get_notifier_classes(self):
         #subclasses may add their toolkit specific variants
         #by overriding this method
