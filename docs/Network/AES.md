@@ -8,7 +8,11 @@ The encryption key can be stored in a keyfile or specified using the `keydata` s
 The key data is stretched using [PBKDF2](http://en.wikipedia.org/wiki/PBKDF2)(Password-Based Key Derivation Function 2).\
 The salts used are generated using Python's [uuid.uuid4()](http://docs.python.org/2/library/uuid.html#uuid.uuid4)
 
-# Usage Example
+
+For step by step instructions on setting up AES, expand:
+<details>
+  <summary>AES Usage Example</summary>
+
 generate a key:
 ```
 uuidgen > ./key.txt
@@ -33,6 +37,7 @@ xpra start --start=xterm \
 ```
 xpra attach tcp://$HOST:10000 --tcp-encryption=AES --tcp-encryption-keyfile=./key.txt
 ```
+</details>
 
 ## keydata
 With newer versions, instead of using the `keyfile` option, it is also possible to inline the `keydata` value in the bind and attach strings:
