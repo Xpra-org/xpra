@@ -2,6 +2,7 @@
 
 See also [network](./README.md)
 
+***
 
 ## OpenSSH
 With Posix servers already running an SSH server, xpra sessions can be accessed without any extra configuration. ie:
@@ -16,6 +17,8 @@ xpra start ssh://USERNAME@HOST/ --start=xterm
 ```
 
 The sessions do not require any specific `bind` command line options: the default xpra configuration will already create unix domain sockets which are forwarded to the client by the SSH transport. Those sockets can be seen with `xpra list` on the server.
+
+***
 
 ## Builtin SSH
 This mode can be used to enable SSH connections on servers that do not include an SSH server by default (ie: MS Windows servers), or to use SSH authentication and encryption but without allowing full shell logins via SSH on the server system. (as the connection can only be used to connect to the xpra server)
@@ -34,6 +37,7 @@ Regular TCP sockets can also be upgraded to SSH.
 
 For details, see [#1920](https://github.com/Xpra-org/xpra/issues/1920), use the `-d ssh` [debug logging flag](../Usage/Logging.md).
 
+***
 
 ## Client
 
