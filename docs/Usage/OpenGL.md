@@ -40,6 +40,9 @@ xpra start --use-display :0
 The downside is that the session is no longer accessible from the local display.
 
 
+***
+
+
 # Caveats
 
 ## GL library conflicts
