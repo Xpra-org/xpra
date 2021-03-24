@@ -392,7 +392,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                 if output_info!=NULL:
                                     output_names.append(output_info.name.decode("utf8"))
                                     XRRFreeOutputInfo(output_info)
-                            rates[tuple(output_names)] = rate
+                            log("%s : %s", csv(output_names), rate)
+                            rates[crtc] = rate
                         break
         finally:
             XRRFreeScreenResources(rsc)
