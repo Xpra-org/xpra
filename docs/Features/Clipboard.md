@@ -25,7 +25,10 @@ You must ensure that there are no other clipboard synchronization tools already 
 In particular, avoid using the clipboard synchronization from your virtualization solution if you use one (ie: virtualbox, vmware, etc), or from tools like synergy. Alternatively, you can disable xpra's clipboard instead. Just avoid running both at the same time.
 
 
-## Testing and debugging the clipboard
+<details>
+  <summary>Debugging</summary>
+
+### Tool
 There is a debugging tool which can be launched using `xpra clipboard-test`.
 
 The easiest way to test the clipboard on X11 platforms is to use `xclip` tool to set and verify the contents of each clipboard.
@@ -40,8 +43,9 @@ The easiest way to test the clipboard on X11 platforms is to use `xclip` tool to
 
 Note: on win32, you will need to change the clipboard currently in use to match the one you modify, this must be done before changing the value to ensure it is propagated.
 
-### Debugging
+### Logging
 just add `-d clipboard` to your xpra command line.
+</details>
 
 
 ## Useful Pointers
@@ -53,12 +57,13 @@ And here is a good quote from it:
   _Clipboard sharing and network transparency: It's nearly impossible to make the clipboard shared across different desktop computers. In fact it is possible, but such an implementation would be needlessly difficult and complex. The same can be said 
 of support for virtualization (Qemu, Xen, VMWare). Sharing the clipboard between a virtual machine and the desktop itself is painfully difficult to implement correctly (in case X11 is running on the host operating system)._
 
-
-## Source code
+### Source code
 [xpra/clipboard](../xpra/tree/master/xpra/clipboard/)
 
 
-## Related tickets
+<details>
+  <summary>Related tickets</summary>
+
 * [#2312](https://github.com/Xpra-org/xpra/issues/2312) clipboard images with html5 client
 * [#2634](https://github.com/Xpra-org/xpra/issues/2634) disable clipboard watermarks
 * [#1844](https://github.com/Xpra-org/xpra/issues/1844) async clipboard api
@@ -91,3 +96,4 @@ of support for virtualization (Qemu, Xen, VMWare). Sharing the clipboard between
 * [#52](https://github.com/Xpra-org/xpra/issues/52) another atom name issue, this time with Java apps
 * [#8](https://github.com/Xpra-org/xpra/issues/8), [#84](https://github.com/Xpra-org/xpra/issues/84) and [#99](https://github.com/Xpra-org/xpra/issues/99) (dupe: [#104](https://github.com/Xpra-org/xpra/issues/104)): more clipboard atom problems
 * [#11](https://github.com/Xpra-org/xpra/issues/11) win32 and osx clipboard ticket (old)
+</details>
