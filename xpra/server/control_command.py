@@ -24,15 +24,13 @@ class ControlCommand:
     def __init__(self, name, help_text=None, run=None):
         self.name = name
         self.help = help_text
-        if run:
-            self.do_run = run
+        self.do_run = run
 
     def run(self, *args):
         log("%s.run: calling %s%s", self, self.do_run, args)
+        if self.do_run is None:
+            raise NotImplementedError("control command %s undefined!" % self.name)
         return self.do_run(*args)
-
-    def do_run(self, *args):
-        raise NotImplementedError("control command %s undefined!" % self.name)
 
     def raise_error(self, msg):
         raise ControlError(msg, self.help)
@@ -68,9 +66,6 @@ class ArgsControlCommand(ControlCommand):
             except ValueError as e:
                 self.raise_error("argument %i failed validation: %s" % (i+1, e))
         return super().run(*args)
-
-    def do_run(self):
-        raise NotImplementedError()
 
 
 class FixedMessageCommand(ControlCommand):
