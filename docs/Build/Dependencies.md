@@ -3,18 +3,22 @@ Most of these dependencies should be installed automatically when you install of
 Unless otherwise stated, the dependencies are all optional.
 
 
-## Core Dependencies
-Those are required for almost every component.
+<details>
+  <summary>Core Dependencies</summary>
+
+Those are required by almost every component.
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
 |[glib](https://developer.gnome.org/glib/)|[https://ftp.gnome.org/pub/gnome/sources/glib/](https://ftp.gnome.org/pub/gnome/sources/glib/)|low-level library|both|Required|
 |[gtk](http://www.gtk.org/)|http://ftp.gnome.org/pub/gnome/sources/gtk+/|UI Toolkit|both|Required|
 |[pyopengl](http://pyopengl.sourceforge.net/)|https://pypi.python.org/pypi/PyOpenGL and <br /> https://pypi.python.org/pypi/PyOpenGL-accelerate|[client OpenGL accelerated rendering](./Client-OpenGL)|client| |
 |[pycups](https://github.com/zdohnal/pycups)|https://pypi.org/project/pycups/)|[Printing](./Printing)|both| |
+</details>
 
-<br />
+<details>
+  <summary>Network Layer</summary>
 
-## [Network Layer](../Network/README.md)
+See [Network](../Network/README.md)
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
 |[rencode](https://github.com/aresch/rencode)|https://pypi.python.org/pypi/rencode/|[packet encoding](./PacketEncoding)|both |Recommended|
@@ -31,10 +35,12 @@ Those are required for almost every component.
 |[paramiko](https://pypi.org/project/paramiko/)|https://pypi.org/project/paramiko/|[ssh integration](./SSH)|both||
 |[sshpass](https://sourceforge.net/projects/sshpass/)|https://sourceforge.net/projects/sshpass/files/sshpass/|non-interactive SSH password authentication|usually client||
 |[brotli](https://github.com/google/brotli)|https://github.com/google/brotli/releases|HTML client compression|r15540 |
+</details>
 
-<br />
+<details>
+  <summary>Authentication</summary>
 
-## [Authentication](../Usage/Authentication.md)
+See [authentication modules](../Usage/Authentication.md)
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
 |[python-gssapi](https://github.com/sigmaris/python-gssapi)|https://pypi.org/project/python-gssapi|GSSAPI|server|[#1691](../../issues/1691)|
@@ -42,10 +48,11 @@ Those are required for almost every component.
 |[python-ldap](https://www.python-ldap.org)|https://pypi.org/project/python-ldap/|LDAP|server|[#1691](../../issues/1691)|
 |[python-ldap3](https://github.com/cannatag/ldap3)|https://pypi.org/project/ldap3/|LDAP v3|server|[#1691](../../issues/1691)|
 |[pyu2f](https://github.com/google/pyu2f)|https://pypi.org/project/pyu2f/|U2F|server|[#1789](../../issues/1789)|
+</details>
 
-<br />
+<details>
+  <summary>Python modules</summary>
 
-## Python modules
 | Project | Source Download Link | Notes |
 |---------|----------------------|:------|
 |[python-ipaddress](https://github.com/phihag/ipaddress)|https://pypi.org/project/ipaddress/|unspecified: r11859|
@@ -68,10 +75,12 @@ Those are required for almost every component.
 |[pycparser](https://github.com/eliben/pycparser)|https://pypi.org/project/pycparser/|required by cffi: r11634|
 |[pynacl](https://github.com/pyca/pynacl/)|https://pypi.org/project/PyNaCl/|crypto library used by paramiko: r19967|
 |[bcrypt](https://github.com/pyca/bcrypt/)|https://pypi.org/project/bcrypt/|crypto library used by paramiko: r19965|
+</details>
 
-<br />
+<details>
+  <summary>Encodings</summary>
 
-## [Encodings](../Usage/Encodings.md)
+See [picture encodings](../Usage/Encodings.md)
 | Project | Source Download Link | Purpose | Client or Server |
 |---------|----------------------|---------|------------------|
 |[x264](http://www.videolan.org/developers/x264.html)|ftp://ftp.videolan.org/pub/x264/snapshots/|h264 encoding|server|
@@ -86,10 +95,12 @@ Those are required for almost every component.
 |[pycuda](https://mathema.tician.de/software/pycuda/)|https://pypi.python.org/pypi/pycuda|[NVENC](./NVENC)|server|
 |[cuda](http://www.nvidia.com/object/cuda_home_new.html)|https://developer.nvidia.com/cuda-toolkit|[NVENC](./NVENC)|server|
 |[pyNVML](http://pythonhosted.org/nvidia-ml-py/)|https://pypi.python.org/pypi/nvidia-ml-py/|[NVENC](./NVENC)|server|
+</details>
 
-<br />
+<details>
+  <summary>Audio</summary>
 
-## [Audio Forwarding](../Features/Audio.md)
+See [audio forwarding](../Features/Audio.md)
 | Project | Source Download Link | Purpose |
 |---------|----------------------|---------|
 |[gstreamer](http://gstreamer.freedesktop.org/)|http://gstreamer.freedesktop.org/src/|audio framework|
@@ -104,3 +115,4 @@ Those are required for almost every component.
 |[lame](http://lame.sourceforge.net/)|http://sourceforge.net/projects/lame/files/lame/|MP3 encoder|
 |[TwoLame](http://www.twolame.org/)|http://sourceforge.net/projects/twolame/files/twolame/|MP3 encoder|
 |[Mad](http://sourceforge.net/projects/mad/)|http://sourceforge.net/projects/mad/files/libmad/|MP3 decoder|
+</details>
