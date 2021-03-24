@@ -207,8 +207,7 @@ class UIXpraClient(ClientBaseClass):
 
         if MOUSE_DELAY_AUTO:
             try:
-                from xpra.platform.gui import get_vrefresh
-                v = get_vrefresh()
+                v = self.get_vrefresh()
                 if v<=0:
                     #some platforms don't detect the vrefresh correctly
                     #(ie: macos in virtualbox?), so use a sane default:
@@ -217,6 +216,11 @@ class UIXpraClient(ClientBaseClass):
                 log("mouse delay: %s", self._mouse_position_delay)
             except Exception:
                 log("failed to calculate automatic delay", exc_info=True)
+
+    def get_vrefresh(self):
+        #this method is overriden in the GTK client
+        from xpra.platform.gui import get_vrefresh
+        return get_vrefresh()
 
 
     def run(self):

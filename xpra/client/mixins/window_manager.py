@@ -282,7 +282,7 @@ class WindowClient(StubClientMixin):
             "double_click.distance"     : get_double_click_distance(),
             #features:
             "bell"                      : self.client_supports_bell,
-            "vrefresh"                  : get_vrefresh(),
+            "vrefresh"                  : self.get_vrefresh(),
             "windows"                   : self.windows_enabled,
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             #system tray forwarding:
@@ -306,6 +306,9 @@ class WindowClient(StubClientMixin):
             "eos"                       : True,
             })
         return caps
+
+    def get_vrefresh(self):
+        return get_vrefresh()
 
     def get_window_caps(self):
         return {
