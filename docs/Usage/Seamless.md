@@ -1,3 +1,4 @@
+# Seamless Mode
 Seamless mode is how xpra is generally used, via the `xpra start` subcommand.
 
 This mode allows for individual windows to be forwarded to the client, these windows appear on the client's desktop just like other local applications.
