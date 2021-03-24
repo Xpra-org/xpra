@@ -982,10 +982,10 @@ def clean():
                    "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
     if cuda_rebuild_ENABLED:
         CLEAN_FILES += [
-            "xpra/codecs/cuda_common/ARGB_to_NV12.fatbin",
-            "xpra/codecs/cuda_common/ARGB_to_YUV444.fatbin",
-            "xpra/codecs/cuda_common/BGRA_to_NV12.fatbin",
-            "xpra/codecs/cuda_common/BGRA_to_YUV444.fatbin",
+            "fs/share/xpra/cuda/ARGB_to_NV12.fatbin",
+            "fs/share/xpra/cuda/ARGB_to_YUV444.fatbin",
+            "fs/share/xpra/cuda/BGRA_to_NV12.fatbin",
+            "fs/share/xpra/cuda/BGRA_to_YUV444.fatbin",
             ]
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
