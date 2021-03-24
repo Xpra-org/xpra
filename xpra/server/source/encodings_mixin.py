@@ -262,10 +262,12 @@ class EncodingsMixin(StubSourceMixin):
 
         self.vrefresh = c.intget("vrefresh", -1)
 
+        delay = DamageBatchConfig.START_DELAY
         vrefresh = DEFAULT_VREFRESH
         if MIN_VREFRESH<=self.vrefresh<=MAX_VREFRESH:
             #looks like a valid vrefresh value, use it:
             vrefresh = self.vrefresh
+            delay = 1000//vrefresh
         ms_per_frame = max(5, 1000//vrefresh - 5)
         default_min_delay = max(DamageBatchConfig.MIN_DELAY, ms_per_frame)
         dbc = self.default_batch_config
@@ -275,7 +277,7 @@ class EncodingsMixin(StubSourceMixin):
         dbc.max_events  = batch_value("max_events", DamageBatchConfig.MAX_EVENTS)
         dbc.max_pixels  = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
         dbc.time_unit   = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
-        dbc.delay       = batch_value("delay", DamageBatchConfig.START_DELAY, 0)
+        dbc.delay       = batch_value("delay", delay, 0)
         log("default batch config: %s", dbc)
 
         #encodings:
