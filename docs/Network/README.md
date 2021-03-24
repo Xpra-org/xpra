@@ -21,9 +21,10 @@ Unencrypted modes like plain-`TCP` and plain-`WebSocket` can also be secured wit
 All the sockets that can be accessed via a network connection (all but `vsock` and `named-pipe`) will usually be published via [multicast DNS](./Multicast-DNS.md). On Posix, `unix-domain-sockets` are exposed as `SSH` as we assume that a local SSH server is always available.
 
 
-## Examples
+## Examples:
+<details>
+  <summary>TCP Upgrade to WebSocket</summary>
 
-### TCP Upgrade to WebSocket
 ```shell
 xpra start --start=xterm --bind-tcp=0.0.0.0:10000
 ```
@@ -34,9 +35,11 @@ The same address (10000 here) can also be opened in a browser to use the HTML5 c
 ```shell
 xdg-open http://localhost:10000/
 ```
+</details>
 
+<details>
+  <summary>SSH with password file</summary>
 
-### SSH with password file
 ```shell
 echo -n thepassword > password.txt
 xpra start --start=xterm --bind-ssh=0.0.0.0:10000,auth=file:filename=password.txt
@@ -45,7 +48,9 @@ xpra start --start=xterm --bind-ssh=0.0.0.0:10000,auth=file:filename=password.tx
 xpra attach ssh://localhost:10000/
 ```
 The client will prompt for the password, as found in the `password.txt` file and not the regular shell account password.
+</details>
 
+***
 
 ## Network Performance
 Xpra will try to detect your network adapter and connection characteristics and it should adapt to changing network capacity and performance.
@@ -56,6 +61,11 @@ You can see how much bandwidth is used and how good the picture latency is using
 ![Session Info : Graphs](https://xpra.org/images/session-info-graphs.png)]]
 
 More network information is available elsewhere in the "Session Info" dialog or via the "xpra info" command:
+</details>
+
+<details>
+  <summary>network latency via xpra info</summary>
+
 ```
 $ xpra info | egrep -i "network|latency"
 (..)
@@ -65,6 +75,7 @@ client.latency.90p=3
 client.latency.absmin=1
 (..)
 ```
+</details>
 
 The performance of xpra will be affected by your network connection speed, in particular [bufferbloat](https://en.wikipedia.org/wiki/Bufferbloat) is known to cause severe performance degradations as xpra is quite sensitive to network jitter and latency, try to [eliminate bufferbloat in your network](https://www.bufferbloat.net/projects/bloat/wiki/What_can_I_do_about_Bufferbloat/).
 
