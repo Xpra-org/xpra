@@ -39,6 +39,9 @@ xpra attach tcp://$HOST:10000 --tcp-encryption=AES --tcp-encryption-keyfile=./ke
 ```
 </details>
 
+<details>
+  <summary>Specifying the key data</summary>
+
 ## keydata
 With newer versions, instead of using the `keyfile` option, it is also possible to inline the `keydata` value in the bind and attach strings:
 * `keydata=0x...` for hexadecimal encoded keys
@@ -47,12 +50,15 @@ With newer versions, instead of using the `keyfile` option, it is also possible 
 
 One major disadvantage is that the key data may be leaked in the process list.\
 However, it may be easier in some cases to generate commands that do not require extra files to run.
+</details>
 
+<details>
+  <summary>Debugging</summary>
 
-# Debugging
 To verify that your client connection is using AES, look for `cipher=AES`:
 ```
 xpra info | grep cipher=
 ```
 
 To enable debugging, use the `-d crypto` [debug logging](../Usage/Logging.md) option.
+</details>
