@@ -23,7 +23,11 @@ Also install some X11 utilities if not installed already:
 apt-get install xauth x11-xkb-utils
 ```
 
-### [Codecs](../Usage/Encodings.md)
+### Optional:
+<details>
+  <summary>Extra codecs</summary>
+
+See [picture codecs](../Usage/Encodings.md)
 Basic picture codecs
 ```shell
 apt-get install libturbojpeg-dev libwebp-dev python3-pil
@@ -40,48 +44,81 @@ ffmpeg based video codecs
 ```shell
 apt-get install libavformat-dev libavcodec-dev libswscale-dev
 ```
+</details>
 
-### Optional:
-for the [html5 client](https://github.com/Xpra-org/xpra-html5)
+<details>
+  <summary>HTML5 client</summary>
+
+for more details, see [html5 client](https://github.com/Xpra-org/xpra-html5)
 ```shell
 apt-get install uglifyjs brotli libjs-jquery libjs-jquery-ui gnome-backgrounds
 ```
+</details>
+
+<details>
+  <summary>Client OpenGL acceleration</summary>
+
 [OpenGL](../Usage/Client-OpenGL.md)
 ```shell
 apt-get install python3-opengl
 ```
-[network](../Network/README.md) layer
+</details>
+
+<details>
+  <summary>Network layer</summary>
+
+For more details, see [network](../Network/README.md).
 ```shell
 apt-get install python3-rencode python3-lz4 python3-dbus python3-cryptography \
                 python3-netifaces python3-yaml python3-lzo
 ```
-misc extras
+[SSH](../Network/SSH.md):
+```shell
+apt-get install openssh-client sshpass python3-paramiko
+```
+</details>
+
+<details>
+  <summary>misc extras</summary>
+
+python libraries:
 ```shell
 apt-get install python3-setproctitle python3-xdg python3-pyinotify python3-opencv
 ```
-misc X11
+X11:
 ```shell
 apt-get install libpam-dev quilt xserver-xorg-dev xutils-dev xserver-xorg-video-dummy xvfb keyboard-configuration
 ```
-extra [authentication](../Usage/Authentication.md) modules
+</details>
+
+<details>
+  <summary>authentication modules</summary>
+
+For more details, see [authentication](../Usage/Authentication.md).
 ```shell
 apt-get install python3-kerberos python3-gssapi
 ```
-[audio](../Features/Audio.md) support and codecs
+</details>
+
+<details>
+  <summary>audio forwarding</summary>
+
+See [audio](../Features/Audio.md) support and codecs
 ```shell
 apt-get install gstreamer1.0-pulseaudio gstreamer1.0-alsa \
                 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
                 gstreamer1.0-plugins-ugly
 ```
-[printing](../Features/Printing.md)
+</details>
+
+<details>
+  <summary>printer forwarding</summary>
+
+See [printing](../Features/Printing.md)
 ```shell
 apt-get install cups-filters cups-common cups-pdf python3-cups
 ```
-[SSH](../Network/SSH.md)
-```shell
-apt-get install openssh-client sshpass python3-paramiko
-```
-
+</details>
 
 ## DEB Packaging
 Install the packaging tools
