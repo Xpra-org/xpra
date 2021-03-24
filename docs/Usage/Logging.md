@@ -47,13 +47,9 @@ XPRA_GEOMETRY_DEBUG=1 xpra attach
 
 ***
 
-The full list of categories can be shown using:
-```shell
-xpra -d help
-```
-To see this list, click on:
+The full list of categories can be shown using `xpra -d help`, to see this list now, click on:
 <details>
-  <summary>List of categories</summary>
+  <summary>complete list of categories</summary>
 
 |Area|Description|
 |----|-----------|
