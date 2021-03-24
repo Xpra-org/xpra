@@ -266,7 +266,7 @@ class EncodingsMixin(StubSourceMixin):
         if MIN_VREFRESH<=self.vrefresh<=MAX_VREFRESH:
             #looks like a valid vrefresh value, use it:
             vrefresh = self.vrefresh
-        ms_per_frame = 1000//vrefresh
+        ms_per_frame = max(5, 1000//vrefresh - 5)
         default_min_delay = max(DamageBatchConfig.MIN_DELAY, ms_per_frame)
         dbc = self.default_batch_config
         dbc.always      = bool(batch_value("always", DamageBatchConfig.ALWAYS))
