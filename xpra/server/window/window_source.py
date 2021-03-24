@@ -2357,12 +2357,11 @@ class WindowSource(WindowIconSource):
             Converts a damage item picked from the 'compression_work_queue'
             by the 'encode' thread and returns a packet
             ready for sending by the network layer.
-
+            The actual encoding method used is: self._encoders[coding], ie:
             * 'mmap' will use 'mmap_encode'
-            * 'jpeg' and 'png' are handled by 'pillow_encode'
             * 'webp' uses 'webp_encode'
-            * 'h264', 'h265', 'vp8' and 'vp9' use 'video_encode'
             * 'rgb24' and 'rgb32' use 'rgb_encode'
+            * etc..
         """
         if self.is_cancelled(sequence) or self.suspended:
             log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
