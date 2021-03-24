@@ -1,73 +1,59 @@
-Debug logging is controlled by the `--debug` (or `-d`) option.
+# Logging
 
-## Examples:
+Logging is controlled by the `--debug` (or `-d`) option.
+
+<details>
+  <summary>Examples</summary>
+
 Enable `geometry` debugging with a client:
 ```shell
 xpra attach -d geometry
 ```
 
+***
+
+Start a seamless server with `focus` debugging enabled:
+```shell
+xpra start -d focus --start=xterm
+```
+</details>
+
+
+## Logging Categories
 Use the special category value `all` to enable all logging. (this will be very verbose and should be avoided)\
-You can also prefix a `CATEGORY` with a dash "`-`" to disable debug logging for it.\
-For example, to log everything except the `window` and `focus` categories:
+You can also prefix a logging category with a dash "`-`" to disable debug logging for it.
+<details>
+  <summary>example</summary>
+
+To log everything except the `window` and `focus` categories:
 ```shell
 xpra start :10 -d all,-window,-focus
 ```
+</details>
 
+***
 
-## Environment Variables
-Each logging category can also be enabled using environment variables. This can be useful if you cannot modify the command line, or if the logging should happen very early on, or if you aren't calling the code from its normal wrappers.\
-Use: `XPRA_CATEGORY_DEBUG=1 xpra ...` to enable debug logging for your chosen `CATEGORY`.\
-For example, to enable "geometry" debugging with the attach subcommand use:
+Each logging category can also be enabled using environment variables.  
+This can be useful if you cannot modify the command line, or if the logging should happen
+very early on, or if you aren't calling the code from its normal wrappers.
+<details>
+  <summary>example using an environment variable</summary>
+
+to enable "geometry" debugging with the `attach` subcommand use:
 ```shell
 XPRA_GEOMETRY_DEBUG=1 xpra attach
 ```
+</details>
 
+***
 
-## Control channel
-It is also possible to enable and disable debug logging of a server at runtime using the `control` subcommand:
-```shell
-xpra control :DISPLAY debug enable CATEGORY
-```
-The debug control commands are also available trough the server's dbus interface, see [#904](https://github.com/Xpra-org/xpra/issues/904).
-
-This can be used to affect the clients connected to this server using `client debug`:
-```shell
-xpra control :DISPLAY client debug enable geometry
-```
-
-
-You can enable many categories at once:
-```shell
-xpra control :2 debug enable window geometry screen
-```
-Or only enable loggers that match multiple categories with `+`:
-```shell
-xpra control :2  debug disable focus+grab
-```
-
-
-## Detailed Logging
-Some subsystems require special environment variables to enable logging, this is done to minimize the cost of logging in performance critical paths.\
-In particular the X11 bindings, as those can process thousands of events per second.
-
-Log all X11 events:
-```shell
-XPRA_X11_DEBUG_EVENTS="*" xpra start :10
-```
-or just specific events:
-```shell
-XPRA_X11_DEBUG_EVENTS="EnterNotify,CreateNotify" xpra start :10
-```
-
-
----
-
-
-# List of categories
 The full list of categories can be shown using:
 ```shell
 xpra -d help
 ```
+To see this list, click on:
+<details>
+  <summary>List of categories</summary>
 
 |Area|Description|
 |----|-----------|
@@ -193,3 +179,55 @@ xpra -d help
 |osx|MacOS platform support|
 |win32|Microsoft Windows platform support|
 |posix|Posix platform|
+</details>
+
+***
+
+## Runtime changes
+
+Logging settings can be modified at runtime:
+<details>
+  <summary>via the control subcommand</summary>
+
+Using the `control` channel:
+```shell
+xpra control :DISPLAY debug enable CATEGORY
+```
+This can be used to contol both servers and clients (using the client's socket path: #2406).
+
+The server can also forward debug control commands to the clients connected to it using `client debug`:
+```shell
+xpra control :DISPLAY client debug enable geometry
+```
+
+***
+
+You can enable many categories at once:
+```shell
+xpra control :2 debug enable window geometry screen
+```
+Or only enable loggers that match multiple categories with `+`:
+```shell
+xpra control :2  debug disable focus+grab
+```
+</details>
+<details>
+  <summary>the server's dbus interface</summary>
+
+The debug control commands are also available trough the server's dbus interface, see [#904](https://github.com/Xpra-org/xpra/issues/904).
+</details>
+
+***
+
+## Extra Detailed Logging
+Some subsystems require special environment variables to enable logging, this is done to minimize the cost of logging in performance critical paths.\
+In particular the X11 bindings, as those can process thousands of events per second.
+
+Log all X11 events:
+```shell
+XPRA_X11_DEBUG_EVENTS="*" xpra start :10
+```
+or just specific events:
+```shell
+XPRA_X11_DEBUG_EVENTS="EnterNotify,CreateNotify" xpra start :10
+```
