@@ -58,23 +58,23 @@
 ---
 
 ## [Network](./Network/README.md)
-### [Encryption](./Network/Encryption.md)
+See [Multicast DNS](./Network/Multicast-DNS.md) and [Encryption](./Network/Encryption.md):
+<details>
+  <summary>encryption options</summary>
+
 * [AES](./Network/AES.md)
 * [SSL](./Network/SSL.md)
 * [SSH](./Network/SSH.md)
-### [Multicast DNS](./Network/Multicast-DNS.md)
-
+</details>
 
 ---
 
-
 ## [Build](./Build/README.md)
-For developers:
-### [Generic list of dependencies](./Build/Dependencies.md)
-</details>
+Information for developers:
 <details>
-  <summary>Platform specific build instructions</summary>
+  <summary>building from source</summary>
 
+* [Generic list of dependencies](./Build/Dependencies.md)
 * [Fedora / RedHat](./Build/RPM.md)
 * [Debian](./Build/Debian.md)
 * [MS Windows](./Build/MSWindows.md)
