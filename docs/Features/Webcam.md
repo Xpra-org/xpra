@@ -36,6 +36,9 @@ You can enable the webcam from the client's system tray menu, or using the comma
 
 
 ## Debugging
+<details>
+  <summary>Diagnostics</summary>
+
 * use the `-d webcam` [debug logging flag](../Usage/Logging.md)
 * run `xpra webcam-info` on the server to locate the virtual video devices:
   ```shell
@@ -43,10 +46,13 @@ You can enable the webcam from the client's system tray menu, or using the comma
   /dev/video1
   ```
 * run `xpra webcam` on the client to run the webcam capture test application (aka `Webcam_Test` on MS Windows and MacOS).
+</details>
 
+<details>
+  <summary>Issues</summary>
 
-## Tickets
 * [#1030](https://github.com/Xpra-org/xpra/issues/1030) original feature ticket
 * [#1113](https://github.com/Xpra-org/xpra/issues/1113) improve webcam support
 * [#1596](https://github.com/Xpra-org/xpra/issues/1596) Webcam is greyed out, even when v4l2loopback device is present
 * [#1833](https://github.com/Xpra-org/xpra/issues/1833) API regression
+</details>
