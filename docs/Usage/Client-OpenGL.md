@@ -28,7 +28,8 @@ For more details, run `xpra opengl`. On MS Windows, there is an `OpenGL_check.ex
 
 
 # Intel Driver Issues
-Why is the Intel opengl driver greylisted?
+<details>
+  <summary>Why is the Intel opengl driver greylisted?</summary>
 
 Because it doesn't work very well.
 See:
@@ -46,7 +47,7 @@ See:
 * [#147 original feature ticket - odd behaviour already reported](https://github.com/Xpra-org/xpra/issues/147)
 * [#1358 glclear bug in driver](https://github.com/Xpra-org/xpra/issues/1358)
 * [#1362 high cpu usage due to non-opengl rendering](https://github.com/Xpra-org/xpra/issues/1362)
-
+</details>
 
 # `OpenGL` Reference Links
 * [mesamatrix](https://mesamatrix.net/): mesa driver implementation coverage
