@@ -1056,6 +1056,10 @@ class WindowSource(WindowIconSource):
     def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
         if self.batch_config.locked:
             return
+        if self._mmap_size>0:
+            #mmap is so fast that we don't need to use the batch delay:
+            self.batch_config.delay = self.batch_config.min_delay
+            return
         #calculations take time (CPU), see if we can just skip it this time around:
         now = monotonic_time()
         lr = self.statistics.last_recalculate
@@ -1234,6 +1238,9 @@ class WindowSource(WindowIconSource):
 
 
     def update_refresh_attributes(self):
+        if self._mmap_size>0:
+            #not used since mmap is lossless
+            return
         if self.auto_refresh_delay==0:
             self.base_auto_refresh_delay = 0
             return
@@ -1796,7 +1803,7 @@ class WindowSource(WindowIconSource):
             merged_packet_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
             log("send_delayed_regions: merged=%s, merged_bytes_cost=%s, bytes_cost=%s, merged_pixel_count=%s, pixel_count=%s",
                      merged_rects, merged_packet_cost, packet_cost, merged_pixel_count, pixel_count)
-            if merged_packet_cost<packet_cost or merged_pixel_count<pixel_count:
+            if self._mmap_size>0 or merged_packet_cost<packet_cost or merged_pixel_count<pixel_count:
                 #better, so replace with merged regions:
                 regions = merged_rects
 
