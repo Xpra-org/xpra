@@ -21,10 +21,10 @@ Here is the full list:
 <details>
   <summary>list of modules</summary>
   
-|Module|Result|Purpose|Version requirements|
-|------|------|-------|--------------------|
+|Module|Result|Purpose|
+|------|------|-------|
 |[allow](../../xpra/server/auth/allow_auth.py)|always allows the user to login, the username used is the one supplied by the client|dangerous / only for testing|
-|[none](../../xpra/server/auth/none_auth.py)|always allows the user to login, the username used is the one the server is running as||dangerous / only for testing|
+|[none](../../xpra/server/auth/none_auth.py)|always allows the user to login, the username used is the one the server is running as|dangerous / only for testing|
 |[fail](../../xpra/trunk/src/xpra/server/auth/fail_auth.py)|always fails authentication, no password required|useful for testing|
 |[reject](../../xpra/trunk/src/xpra/server/auth/reject_auth.py)|always fails authentication, pretends to ask for a password|useful for testing|
 |[env](../../xpra/trunk/src/xpra/server/auth/env_auth.py)|matches against an environment variable (`XPRA_PASSWORD` by default)|alternative to file module|
