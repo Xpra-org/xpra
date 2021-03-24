@@ -1,14 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, language_level=3
 
-import os
-import time
 import struct
-import collections
+from collections import deque
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "xinput")
@@ -352,7 +350,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
 
 
     def reset_events(self):
-        self.events = collections.deque(maxlen=100)
+        self.events = deque(maxlen=100)
 
     def find_event(self, event_name, serial):
         for x in reversed(self.events):
@@ -503,7 +501,8 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         if len(self.events)>0:
             last_event = self.events[-1]
             if last_event.serial==xie.serial and last_event.type==etype:
-                log("parse_xi_event(%#x) repeated %s event skipped (%s)", _cookie, last_event.name, event_name)
+                log("parse_xi_event(%#x) repeated %s event skipped (%s)",
+                    _cookie, last_event.name, event_name)
                 return None
 
         pyev = X11Event(event_name)
@@ -671,7 +670,8 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         data = (<char *> prop)[:nbytes]
         XFree(prop)
         prop_type = self.XGetAtomName(xactual_type)
-        log("hex=%s (type=%s, nitems=%i, bytes per item=%i, actual format=%i)", hexstr(data), prop_type, nitems, bytes_per_item, actual_format)
+        log("hex=%s (type=%s, nitems=%i, bytes per item=%i, actual format=%i)",
+            hexstr(data), prop_type, nitems, bytes_per_item, actual_format)
         fmt = None
         if prop_type=="INTEGER":
             fmt = {
