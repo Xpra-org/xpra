@@ -1,12 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: auto_pickle=False, language_level=3
-
-import errno as pyerrno
 
 from xpra.os_util import bytestostr
 from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer  #pylint: disable=syntax-error
@@ -66,6 +64,8 @@ cdef extern from "sys/shm.h":
 
 cdef extern from "errno.h" nogil:
     int errno
+    enum:
+        EINVAL
 
 ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
@@ -606,7 +606,7 @@ cdef class XShmWrapper:
             self.cleanup()
             #only try again if we get EINVAL,
             #the other error codes probably mean this is never going to work..
-            return False, errno==pyerrno.EINVAL, errno!=pyerrno.EINVAL
+            return False, errno==EINVAL, errno!=EINVAL
         # Attach:
         self.image.data = <char *> shmat(self.shminfo.shmid, NULL, 0)
         self.shminfo.shmaddr = self.image.data
