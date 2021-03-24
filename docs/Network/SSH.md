@@ -20,7 +20,7 @@ The sessions do not require any specific `bind` command line options: the defaul
 
 ***
 
-## Builtin SSH
+## Builtin SSH Server
 This mode can be used to enable SSH connections on servers that do not include an SSH server by default (ie: MS Windows servers), or to use SSH authentication and encryption but without allowing full shell logins via SSH on the server system. (as the connection can only be used to connect to the xpra server)
 
 This mode can be used with plain TCP sockets which end up being upgraded to SSH. The server also supports the `bind-ssh` option: these sockets will only allow SSH connections. ie:
