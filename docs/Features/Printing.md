@@ -12,10 +12,10 @@ This functionality shares most of the code with the [file transfers](./FileTrans
     * for Fedora and centos the `sys` group: `gpasswd -a $USER sys`
     * for Debian and Ubuntu the `lpadmin` group: `usermod -a -G lpadmin $USER`
 * the cups backend installed must have `0700` permissions: `chmod 700 /usr/lib/cups/backend/xpraforwarder`
-* [SELinux](https://en.wikipedia.org/wiki/Security-Enhanced_Linux) can cause problems: either disable it or use the "cups_xpra" policy add-on (see [#815](../https://github.com/Xpra-org/xpra/issues/815)
+* [SELinux](https://en.wikipedia.org/wiki/Security-Enhanced_Linux) can cause problems: either disable it or use the "cups_xpra" policy add-on (see [#815])
 * forwarding is only supported to a Posix server, support for MS Windows and MacOS _servers_ may be added in the future
-* do not use socket authentication on your local sockets (see [#1286](../https://github.com/Xpra-org/xpra/issues/1286)
-* MacOS clients use Postscript [#995](../https://github.com/Xpra-org/xpra/issues/995), other clients use PDF for transport
+* do not use socket authentication on your local sockets (see [#1286])
+* MacOS clients use Postscript (#995), other clients use PDF for transport
 * MacOS [shadow server](./ShadowServer) Support starting with version `10.10` (aka Yosemite) prevents the xpra cups backend from connecting to the xpra server, to fix this run: `sudo sh -c 'echo "Sandboxing Relaxed" >> /etc/cups/cups-files.conf';sudo launchctl stop org.cups.cupsd`
 
 
@@ -31,16 +31,21 @@ The HTML5 client is written in Javascript so it does not have access to the prin
 
 
 ## Debugging
+<details>
+  <summary>Diagnostics</summary>
+
 * run the [printing.py](../../xpra/platform/printing.py) diagnostic script to see which printers are detected - this script is available as `Print.exe` on MS Windows and as `Xpra.app/Contents/Helpers/Print` on MacOS
 * you can use the same script to print files, ie: `./xpra/platform/printing.py /path/to/yourfile.pdf`
 * run the client and server with the `-d printing` debug flags (see [debug logging](./Logging))
 * look for the cups backend messages in your system log (ie: with journald: `sudo journalctl -f -t xpraforwarder`)
 * for debugging the cups server backend, run: `cupsctl --debug-logging`
+</details>
+<details>
+  <summary>Issues</summary>
 
-
-## Related Issues
-* [#1344](https://github.com/Xpra-org/xpra/issues/1344) better printer options handling and forwarding
-* [#1228](https://github.com/Xpra-org/xpra/issues/1228) printing enhancements: cups backend status
-* [#1286](https://github.com/Xpra-org/xpra/issues/1286) printing conflicts with socket authentication module 'env'
-* [#964](https://github.com/Xpra-org/xpra/issues/964) printer forwarding doesn't work with encryption or authentication
-* [#928](https://github.com/Xpra-org/xpra/issues/928) printer forwarding on ubuntu
+* better printer options handling and forwarding: #1344
+* printing enhancements - cups backend status: #1228
+* printing conflicts with socket authentication module 'env': #1286
+* printer forwarding doesn't work with encryption or authentication : #964
+* printer forwarding on ubuntu: #928
+</details>
