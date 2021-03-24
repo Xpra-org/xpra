@@ -1,3 +1,5 @@
+# Xpra Configuration
+
 Most xpra features can be configured from the command line or through xpra's configuration files.
 
 You can find some example configuration files here: [sample /etc/xpra/ directory](https://xpra.org/conf/)
@@ -7,8 +9,9 @@ The manual is also shipped with all binary installations and should be easily ac
 
 _(some more obscure features can be configured using environmentent variables)_
 
+***
 
-## Configuration Files Location
+### Configuration Files Location
 
 The exact location of the configuration files varies widely from platform to platform, and even from one version of the OS to another.
 * for unix-like operating systems, the system configuration files can usually be found in `/etc/xpra` and the per-user settings can be placed in `~/.config/xpra` - you can also run the `xpra/platform/path.py` script for more details
