@@ -122,7 +122,6 @@ cdef extern from "X11/extensions/Xrandr.h":
     ctypedef unsigned short SizeID
     ctypedef struct XRRScreenConfiguration:
         pass
-    ctypedef unsigned short Rotation
     Status XRRSetScreenConfigAndRate(Display *dpy, XRRScreenConfiguration *config,
                                   Drawable draw, int size_index, Rotation rotation,
                                   short rate, Time timestamp)
@@ -224,7 +223,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef _set_screen_size(self, width, height):
         self.context_check()
-        cdef XRRScreenConfiguration *config
         cdef int num_sizes = 0
         cdef int num_rates = 0
         cdef short* rates = <short*> 0
@@ -236,11 +234,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef XRRScreenSize xrr
 
         cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
+        if config==NULL:
+            log.error("Error: failed to get randr screen info")
+            return False
         try:
-            config = XRRGetScreenInfo(self.display, window)
-            if config==NULL:
-                log.error("Error: failed to get randr screen info")
-                return False
             xrrs = XRRConfigSizes(config, &num_sizes)
             if xrrs==NULL:
                 log.error("Error: failed to get randr screen sizes")
@@ -324,11 +322,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef SizeID size_id
         cdef int width, height
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config = NULL
+        cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
+        if config==NULL:
+            raise Exception("failed to get screen info")
         try:
-            config = XRRGetScreenInfo(self.display, window)
-            if config==NULL:
-                raise Exception("failed to get screen info")
             xrrs = XRRConfigSizes(config, &num_sizes)
             if num_sizes==0:
                 #on Xwayland, we get no sizes...
@@ -347,8 +344,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             assert width>0 and height>0, "invalid XRR size: %ix%i" % (width, height)
             return int(width), int(height)
         finally:
-            if config!=NULL:
-                XRRFreeScreenConfigInfo(config)
+            XRRFreeScreenConfigInfo(config)
 
     def get_vrefresh(self):
         voutputs = self.get_vrefresh_outputs()
@@ -358,28 +354,31 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def get_vrefresh_display(self):
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenConfiguration *config
+        cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
+        if config==NULL:
+            log.error("Error: cannot get refresh rate from screen info")
+            return 0
         try:
-            config = XRRGetScreenInfo(self.display, window)
-            if config==NULL:
-                log.error("Error: cannot get refresh rate from screen info")
-                return 0
             return XRRConfigCurrentRate(config)
         finally:
-            if config!=NULL:
-                XRRFreeScreenConfigInfo(config)
+            XRRFreeScreenConfigInfo(config)
 
     def get_vrefresh_outputs(self):
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenResources *rsc = NULL
         cdef XRROutputInfo *output_info = NULL
         cdef XRRCrtcInfo *crtc_info = NULL
         cdef XRRModeInfo *mode_info = NULL
         rates = {}
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        if rsc==NULL:
+            log.error("Error: cannot access screen resources")
+            return 0
         try:
-            rsc = XRRGetScreenResourcesCurrent(self.display, window)
             for crtc in range(rsc.ncrtc):
                 crtc_info = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[crtc])
+                if crtc_info==NULL:
+                    log.warn("Warning: no CRTC info for %i", crtc)
+                    continue
                 #find the mode info:
                 for i in range(rsc.nmode):
                     mode_info = &rsc.modes[i]
@@ -390,13 +389,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             output_names = []
                             for o in range(crtc_info.noutput):
                                 output_info = XRRGetOutputInfo(self.display, rsc, crtc_info.outputs[o])
-                                output_names.append(output_info.name.decode("utf8"))
-                                XRRFreeOutputInfo(output_info)
+                                if output_info!=NULL:
+                                    output_names.append(output_info.name.decode("utf8"))
+                                    XRRFreeOutputInfo(output_info)
                             rates[tuple(output_names)] = rate
                         break
         finally:
-            if rsc:
-                XRRFreeScreenResources(rsc)
+            XRRFreeScreenResources(rsc)
         return rates
 
 
@@ -409,7 +408,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def add_screen_size(self, unsigned int w, unsigned int h):
         self.context_check()
         log("add_screen_size(%i, %i)", w, h)
-        cdef Window window
         cdef RRMode mode
         cdef RROutput output
 
@@ -428,11 +426,12 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
         name = self.get_mode_name(w, h)
         bname = strtobytes(name)
+        cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRModeInfo *new_mode = XRRAllocModeInfo(bname, len(bname))
+        assert new_mode!=NULL
+
         cdef unsigned long clock
         try:
-            window = XDefaultRootWindow(self.display)
-
             xFront = int(w * timeHFront)
             xSync = int(w * timeHSync)
             xBack = int(w * timeHBack)
@@ -522,9 +521,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     cdef RROutput get_current_output(self):
         self.context_check()
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenResources *rsc = NULL
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        assert rsc!=NULL
         try:
-            rsc = XRRGetScreenResourcesCurrent(self.display, window)
             log("get_current_output() screen_resources: crtcs=%s, outputs=%s, modes=%s", rsc.ncrtc, rsc.noutput, rsc.nmode)
             if rsc.noutput!=1:
                 log.warn("Warning: unexpected number of outputs: %s", rsc.noutput)

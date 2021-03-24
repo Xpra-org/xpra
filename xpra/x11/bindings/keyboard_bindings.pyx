@@ -531,14 +531,17 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return self.min_keycode, self.max_keycode
 
     def get_modifier_map(self):
-        cdef XModifierKeymap *xmodmap = XGetModifierMapping(self.display)
+        cdef XModifierKeymap *xmodmap = NULL
         try:
+            xmodmap = XGetModifierMapping(self.display)
+            assert xmodmap
             keycode_array = []
             for i in range(8 * xmodmap.max_keypermod):
                 keycode_array.append(xmodmap.modifiermap[i])
             return (xmodmap.max_keypermod, keycode_array)
         finally:
-            XFreeModifiermap(xmodmap)
+            if xmodmap!=NULL:
+                XFreeModifiermap(xmodmap)
 
 
     def get_xkb_keycode_mappings(self):
@@ -1157,7 +1160,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
                 int(image.cursor_serial), bytes(pixels), bytes(image.name)]
         finally:
-            if image:
+            if image!=NULL:
                 XFree(image)
 
 
