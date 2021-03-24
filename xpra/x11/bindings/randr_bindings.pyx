@@ -379,13 +379,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def get_vrefresh_outputs(self):
         cdef Window window = XDefaultRootWindow(self.display)
-        cdef XRRScreenResources *rsc = NULL
         cdef XRROutputInfo *output_info = NULL
         cdef XRRCrtcInfo *crtc_info = NULL
         cdef XRRModeInfo *mode_info = NULL
         rates = {}
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        assert rsc!=NULL
         try:
-            rsc = XRRGetScreenResourcesCurrent(self.display, window)
             for crtc in range(rsc.ncrtc):
                 crtc_info = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[crtc])
                 #find the mode info:
@@ -398,13 +398,14 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             output_names = []
                             for o in range(crtc_info.noutput):
                                 output_info = XRRGetOutputInfo(self.display, rsc, crtc_info.outputs[o])
-                                output_names.append(output_info.name.decode("utf8"))
-                                XRRFreeOutputInfo(output_info)
-                            rates[tuple(output_names)] = rate
+                                if output_info!=NULL:
+                                    output_names.append(output_info.name.decode("utf8"))
+                                    XRRFreeOutputInfo(output_info)
+                            log("%s : %s", csv(output_names), rate)
+                            rates[crtc] = rate
                         break
         finally:
-            if rsc:
-                XRRFreeScreenResources(rsc)
+            XRRFreeScreenResources(rsc)
         return rates
 
 
