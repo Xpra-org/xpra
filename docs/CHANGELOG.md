@@ -2,7 +2,7 @@
 
 ## [4.1.2] 2021-03-24
 * fix unnecessary screen update delays
-* fix screen refresh rate detection with X11 clients
+* fix screen refresh rate detection
 * increase the default screen update refresh rate
 * fix `run_scaled` script handling of multiple arguments
 * fix ioctl error with nested SSH connections
