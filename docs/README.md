@@ -5,45 +5,57 @@
 
 [Simple examples](./Usage/README.md) to get started.
 
-### Starting a session
+<details>
+  <summary>Starting a session</summary>
+
 * [Seamless Session](./Usage/Seamless.md) : individual windows
 * [Desktop Session](./Usage/Start-Desktop.md) : a full desktop session
 * [Shadow Session](./Usage/Shadow-Server.md) : view an existing display
+</details>
+<details>
+  <summary>Configuration</summary>
 
-### Configuration
 * [Authentication modules](./Usage/Authentication.md) to secure access to sessions
 * [Options](./Usage/Configuration.md) to configure xpra
+</details>
+<details>
+  <summary>Advanced Topics</summary>
 
-### Advanced Topics
 * [proxy server](./Usage/Proxy-Server.md) to manage access
 * [system service](./Usage/Service.md) to start on boot
 * [picture encodings](./Usage/Encodings.md) : quality and performance
 * [OpenGL applications](./Usage/OpenGL.md) : server-side GPU acceleration
 * [Client OpenGL acceleration](./Usage/Client-OpenGL.md)
 * [Xdummy](./Usage/Xdummy.md) : alternative to `Xvfb`
-
+</details>
 
 ---
 
-
 ## [Features](./Features/README.md)
-### Device Forwarding
+<details>
+  <summary>Device Forwarding</summary>
+
 * [Audio](./Features/Audio.md) : speaker and microphone
 * [Printers](./Features/Printing.md)
 * [Webcams](./Features/Webcam.md)
 * [Keyboard](./Features/Keyboard.md)
-### Data Synchronization
+</details>
+<details>
+  <summary>Data Synchronization</summary>
+
 * [Clipboard](./Features/Clipboard.md)
 * [File transfers](./Features/File-Transfers.md)
 * [System tray](./Features/System-Tray.md)
 * [Notifications](./Features/Notifications.md)
-### Display Characteristics
+</details>
+<details>
+  <summary>Display Characteristics</summary>
+
 * [Image Depth](./Features/Image-Depth.md)
 * [DPI](./Features/DPI.md)
-
+</details>
 
 ---
-
 
 ## [Network](./Network/README.md)
 ### [Encryption](./Network/Encryption.md)
@@ -59,11 +71,13 @@
 ## [Build](./Build/README.md)
 For developers:
 ### [Generic list of dependencies](./Build/Dependencies.md)
+</details>
+<details>
+  <summary>Platform specific build instructions</summary>
 
-### Platform specific build instructions
 * [Fedora / RedHat](./Build/RPM.md)
 * [Debian](./Build/Debian.md)
 * [MS Windows](./Build/MSWindows.md)
 * [MacOS](./Build/MacOS.md)
 * [Other](./Build/Other.md)
-
+</details>
