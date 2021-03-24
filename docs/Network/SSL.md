@@ -1,6 +1,8 @@
 # SSL
 
-## Basic Example
+For step by step instructions, expand this:
+<details>
+  <summary>Basic Example</summary>
 
 start a server with TCP and SSL support using an existing certificate `cert.pem` (see below for generating one):
 ```
@@ -29,6 +31,9 @@ openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout key.pem -sha256
 cat key.pem cert.pem > ssl-cert.pem
 ```
 For trusting your own certificates and testing with localhost, see [certificates for localhost](https://letsencrypt.org/docs/certificates-for-localhost/)
+</details>
+
+***
 
 ### Socket upgrades
 Once a server is configured for `SSL` - usually by adding the `--ssl-cert` option, its TCP sockets (`bind-tcp` option) can automatically be upgraded to:
@@ -41,7 +46,7 @@ This allows a single port to be used with multiple protocols (including also [SS
 
 ### SSL options
 There are many options to configure and certificates to deal with.
-See [https://docs.python.org/2/library/ssl.html], on which this is based.
+See https://docs.python.org/2/library/ssl.html, on which this is based.
 
 For more details see [#1252](../https://github.com/Xpra-org/xpra/issues/1252).
 
@@ -59,7 +64,9 @@ Do not assume that you can just enable SSL to make your connection secure.
 
 ***
 
-## Securing SSL with self signed CA and certificates
+For detailed instructions on using your own CA, click on:
+<details>
+  <summary>Securing SSL with self signed CA and certificates</summary>
 
 See [The Most Dangerous Code in the World: Validating SSL Certificates in Non-Browser Software](https://www.cs.utexas.edu/~shmat/shmat_ccs12.pdf) and [Beware of Unverified TLS Certificates in PHP & Python](https://blog.sucuri.net/2016/03/beware-unverified-tls-certificates-php-python.html). \
 See also: [Fallout from the Python certificate verification change](https://lwn.net/Articles/666353/).
@@ -130,3 +137,4 @@ The cadata can also be encoded using base64, which is more dense:
 ```
 $ python -c 'import sys,base64;print("base64:"+(base64.b64encode(open(sys.argv[1], "rb").read()).decode()))' ca.crt
 ```
+</details>
