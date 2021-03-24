@@ -23,7 +23,9 @@ Here is an example architecture using the proxy server to provide access to a nu
 ![Xpra Proxy Diagram](https://xpra.org/images/Xpra-Proxy.png)
 
 
-## Example
+<details>
+  <summary>Setup example</summary>
+
 *Beware*: to simplify these instructions, we use the `allow` authentication module, which does *no* checking whatsoever!
 
 start a session on display `:100` with an `xterm`, this session is not exposed via TCP as there is no `bind-tcp` option:
@@ -52,7 +54,7 @@ Notes:
 * when running the proxy server as root, once authenticated, the proxy server spawns a new process and no longer runs as root
 * the display number chosen for the proxy server is only used for identifying the proxy server and interacting with it using the regular tools (`xpra info`, etc)
 * to use ports lower than 1024 either use `--min-port` and run as root or see [allow non-root process to bind to port 80 and 443](https://superuser.com/questions/710253/)
-
+</details>
 
 ## Info and Control
 When the client requests information from the server (ie: for the session info dialog or for internal use), the requests are passed through the proxy instance to the real server just like other packets, but the response is augmented with some extra information from the proxy server. (it is prefixed to prevent any interference)
@@ -73,8 +75,9 @@ You can identify proxy instances in a number of ways:
 * from the proxy instance log file
 etc..
 
+<details>
+  <summary>Remote Hosts Example</summary>
 
-## Remote Hosts Example
 This example uses a `sqlite` database to expose two remote server instances accessible from the proxy server via `TCP`.
 
 Start the two sessions we wish to access via the `PROXYHOST` (we call this `TARGETHOST` - for testing, this can be the same host as `PROXYHOST`). On `TARGETHOST`:
@@ -125,7 +128,7 @@ Further notes:
 * this example uses `socket-dir=/tmp` to ensure that the proxy instances can create their sockets, no matter what user they runs as (nobody) - this is not always necessary (ie: not usually needed when running as non-root)
 * you can specify the uid and gid using their names (ie: uid="joe", gid="users", Posix servers only) or numerical values (ie: 1000)
 * you can specify more than one remote session string for each username and password pair using CSV format - but the client will then have to specify which one it wants on the connection URL
-
+</details>
 
 ## Username Matters
 The proxy server can also be used to expose all local sessions dynamically.\
