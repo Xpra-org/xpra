@@ -9,15 +9,6 @@ It is supported on all platforms and controlled by the `notifications` [configur
 * MacOS clients use a custom GTK window since there was no system API until OSX 10.8.x (this should be replaced with native code at some point)
 * posix clients can use `python-notify` or `python-dbus` (the exact name of the packages required vary)
 
-
-## Debugging
-* start both the client and server with the debug command line flags: `-d notify,dbus`
-* you can also test notifications forwarding using the dbus interface or xpra control, ie:
-  ```shell
-  xpra control :100 send-notification "hello" "world" "*"
-  ```
-  will send the message to all clients.
-
 ## Screenshots
 MS Windows XP: \
 ![MS Windows Notification](http://xpra.org/images/win2-notification.png)
@@ -27,3 +18,13 @@ MacOS 10.10.x: \
 
 Gnome-shell: \
 ![Gnome-Shell Notification](http://xpra.org/images/gnome-shell-notification.png)
+
+***
+
+## Debugging
+* start both the client and server with the debug command line flags: `-d notify,dbus`
+* you can also test notifications forwarding using the dbus interface or xpra control, ie:
+  ```shell
+  xpra control :100 send-notification "hello" "world" "*"
+  ```
+  will send the message to all clients.
