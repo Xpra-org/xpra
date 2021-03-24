@@ -604,8 +604,22 @@ fi
 
 
 %changelog
-* Mon Mar 08 2021 Antoine Martin <antoine@xpra.org> 4.1.2-10
-- TODO
+* Wed Mar 24 2021 Antoine Martin <antoine@xpra.org> 4.1.2-10
+- fix unnecessary screen update delays
+- fix screen refresh rate detection with X11 clients
+- increase the default screen update refresh rate
+- fix `run_scaled` script handling of multiple arguments
+- fix ioctl error with nested SSH connections
+- fix video region detection error
+- fix sessions GUI not updating on process exit
+- fix compatibility with newer versions of python-zeroconf
+- fix directory listing with the builtin http server (still disabled by default)
+- fix clipboard errors on MS Windows when we fail to acquire the lock
+- fix the server's GetAll dbus property handler
+- show the correct list of pressed keys
+- better service configuration file location detection
+- packaging script fixes
+
 * Sun Mar 07 2021 Antoine Martin <antoine@xpra.org> 4.1.1-1
 - ensure splash screen failures are not fatal, fix threading bug
 - avoid vaapi crashes in ffmpeg encoder (#3039)

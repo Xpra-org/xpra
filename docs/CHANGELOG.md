@@ -1,7 +1,20 @@
 # Changelog
 
-## [4.1.2] 2021-03-08
-* TODO
+## [4.1.2] 2021-03-24
+* fix unnecessary screen update delays
+* fix screen refresh rate detection with X11 clients
+* increase the default screen update refresh rate
+* fix `run_scaled` script handling of multiple arguments
+* fix ioctl error with nested SSH connections
+* fix video region detection error
+* fix sessions GUI not updating on process exit
+* fix compatibility with newer versions of python-zeroconf
+* fix directory listing with the builtin http server (still disabled by default)
+* fix clipboard errors on MS Windows when we fail to acquire the lock
+* fix the server's GetAll dbus property handler
+* show the correct list of pressed keys
+* better service configuration file location detection
+* packaging script fixes
 
 ## [4.1.1] 2021-03-07
 * ensure splash screen failures are not fatal, fix threading bug

@@ -1,7 +1,20 @@
 xpra (4.1.2-1) UNRELEASED; urgency=low
-  * TODO
+  * fix unnecessary screen update delays
+  * fix screen refresh rate detection with X11 clients
+  * increase the default screen update refresh rate
+  * fix run_scaled script handling of multiple arguments
+  * fix ioctl error with nested SSH connections
+  * fix video region detection error
+  * fix sessions GUI not updating on process exit
+  * fix compatibility with newer versions of python-zeroconf
+  * fix directory listing with the builtin http server (still disabled by default)
+  * fix clipboard errors on MS Windows when we fail to acquire the lock
+  * fix the server's GetAll dbus property handler
+  * show the correct list of pressed keys
+  * better service configuration file location detection
+  * packaging script fixes
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 08 Mar 2021 23:22:36 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 24 Mar 2021 12:03:47 +0700
 
 xpra (4.1.1-1) UNRELEASED; urgency=low
   * ensure splash screen failures are not fatal, fix threading bug
