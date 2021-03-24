@@ -11,8 +11,16 @@ SSL mode can also be used for authentication using certificates (see #1252)
 
 When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Network/Encryption.md) and authentication can be skipped: by default the unix domain sockets used by ssh do not use authentication.
 
-## Modules
-Here are the modules that can be used:
+***
+
+### Authentication Modules
+Xpra supports many authentication modules.
+Some of these modules require extra [dependencies](../Build/Dependencies.md).
+
+Here is the full list:
+<details>
+  <summary>list of modules</summary>
+  
 |Module|Result|Purpose|Version requirements|
 |------|------|-------|--------------------|
 |[allow](../../xpra/server/auth/allow_auth.py)|always allows the user to login, the username used is the one supplied by the client|dangerous / only for testing|
@@ -36,9 +44,11 @@ Here are the modules that can be used:
 |[ldap](../../xpra/server/auth/ldap_auth.py)|Uses ldap via [python-ldap](https://www.python-ldap.org/en/latest/)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
 |[ldap3](../../xpra/server/auth/ldap3_auth.py)|Uses ldap via [python-ldap3](https://github.com/cannatag/ldap3)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
 |[u2f](../../xpra/trunk/src/xpra/server/auth/u2f_auth.py)|[Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)|[#1789](../https://github.com/Xpra-org/xpra/issues/1789)|
+</details>
 
+***
 
-## Syntax
+### Syntax
 Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
 ie for starting a [seamless](./Seamless.md) server with a `TCP` socket protected by a password stored in a file:
 ```shell
@@ -51,7 +61,9 @@ xpra start --start=xterm -d auth \
      --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=password.txt --bind 
      --bind-tcp=0.0.0.0:10001,auth=sys
 ```
-More examples:
+<details>
+  <summary>more examples</summary>
+
 * `XPRA_PASSWORD=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env`
 * `SOME_OTHER_ENV_VAR_NAME=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env:name=SOME_OTHER_ENV_VAR_NAME`
 * `xpra start --bind-tcp=0.0.0.0:10000,auth=password:value=mysecret`
@@ -59,9 +71,11 @@ More examples:
 * `xpra start --bind-tcp=0.0.0.0:10000,auth=sqlite:filename=/path/to/userlist.sdb`
 
 Beware when mixing environment variables and password files as the latter may contain a trailing newline character whereas the former often do not.
+</details>
 
-***
-### Older versions
+<details>
+  <summary>syntax for older versions</summary>
+
 The syntax with older versions used a dedicated switch for each socket type:
 * `--auth=MODULE` for unix domain sockets and named pipes
 * `--tcp-auth=MODULE` for TCP sockets
@@ -69,26 +83,40 @@ The syntax with older versions used a dedicated switch for each socket type:
 etc
 
 For more information on the different socket types, see [network examples](./Network)
+</details>
 
+***
 
-## Password File
+### Password File
 
 * with the `file` module, the password-file contains a single password, the whole file is the password (including any trailing newline characters)
 * with `multifile`, the password-file contains a list of authentication values, see [proxy server](./ProxyServer) - this module is deprecated in favour of the `sqlite` module which is much easier to configure
 
-## Usernames
-The username can be specified in the connection files you can save from the launcher, or in the client connection string, ie for tcp:
+### Usernames
+The username can be specified:
+* in the connection files you can save from the launcher
+* in the client connection string
+<details>
+  <summary>tcp example</summary>
+  
 ```shell
 xpra attach tcp://username:password@host:port/
 ```
-When an authentication module is used to secure a single session, many modules will completely ignore the username part and it can be omitted from the connection string. ie for connecting to the `TCP` socket of a session secured using `password-file`:
+</details>
+
+When an authentication module is used to secure a single session, many modules will completely ignore the username part and it can be omitted from the connection string.
+<details>
+  <summary>example: specifying the password only</summary>
+
+for connecting to the `TCP` socket and specifying the password only:
 ```shell
 xpra attach tcp://:password@host:port/
 ```
-Or even replaced with any string of your liking, ie 'foobar':
+Since the username is ignored, it can also be replaced with any string of your liking, ie 'foobar':
 ```shell
 xpra attach tcp://foobar:password@host:port/
 ```
+</details>
 
 Only the following modules will make use of both the username and password to authenticate against their respective backend: `kerberos-password`, `ldap`, `ldap3`, `sys` (`pam` and `win32`), `sqlite`, `multifile` and `u2f`.
 In this case, using an invalid username will cause the authentication to fail.
@@ -98,15 +126,19 @@ The username is usually more relevant when authenticating against a [proxy serve
 
 ***
 
-## Authentication Process
+## Development Documentation
+<details>
+  <summary>Authentication Process</summary>
 
 The steps below assume that the client and server have been configured to use authentication:
 * if the server is not configured for authentication, the client connection should be accepted and a warning will be printed
 * if the client is not configured for authentication, a password dialog may show up, and the connection will fail with an authentication error if the correct value is not supplied
 * if multiple authentication modules are specified, the client may bring up multiple authentication dialogs
 * how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `kerberos`, `gss`, `u2f` and finally `prompt`
+</details>
+<details>
+  <summary>module and platform specific notes</summary>
 
-### Notes
 * this information applies to all clients except the HTML5 client: regular GUI clients as well as command line clients like `xpra info`
 * each authentication module specifies the type of password hashing it supports (usually [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code))
 * some authentication modules (`pam`, `win32`, `kerberos-password`, `ldap` and `ldap3`) require the actual password to be sent across to perform the authentication on the server - they therefore use the weak `xor` hashing, which is insecure
@@ -118,8 +150,11 @@ The steps below assume that the client and server have been configured to use au
 * if you are concerned about security, use [SSH](../Network/SSH.md) as transport instead
 
 For more information on packets, see [network](../Network/README.md).
+</details>
+<details>
+  <summary>Salt handling is important</summary>
 
-### Salt handling is important
 * [64-bit entropy is nowhere near enough against a serious attacker](https://crypto.stackexchange.com/a/34162/48758): _If you want to defend against rainbow tables, salts are inevitable, because you need a full rainbow table per unique salt, which is computationally and storage-wise intense_
 * [SHA-512 w/ per User Salts is Not Enough](https://blog.mozilla.org/security/2011/05/10/sha-512-w-per-user-salts-is-not-enough/): _In the event the hash was disclosed or the database was compromised, the attacker will already have one of the two values (i.e. the salt), used to construct the hash_
 * [about hmac](https://news.ycombinator.com/item?id=1998198): _Those people should know that HMAC is as easy to precompute as naked SHA1 is; you can "rainbow-table" HMAC_* and we did get it wrong before...
+</details>
