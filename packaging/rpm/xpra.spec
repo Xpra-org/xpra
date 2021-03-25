@@ -95,10 +95,6 @@ Requires:			xpra-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
 Requires(postun):	desktop-file-utils
-#without this, the system tray is unusable with gnome!
-%if 0%{?el8}
-Recommends:			gnome-shell-extension-topicons-plus
-%endif
 %description common-client
 This package contains the files which are shared between all the xpra client packages.
 
@@ -242,12 +238,11 @@ Recommends:			python3-pyu2f
 Recommends:			python3-pyxdg
 Recommends:         python3-psutil
 Recommends:         python3-qrencode
-#without this, the system tray is unusable!
+#without this, the system tray is unusable with gnome!
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus
-%endif
-%if 0%{?fedora}
-Recommends:			libappindicator-gtk3
+%else
+Suggests:			gnome-shell-extension-appindicator
 %endif
 Suggests:			sshpass
 %if 0%{?run_tests}
