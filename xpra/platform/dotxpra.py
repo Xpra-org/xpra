@@ -53,6 +53,9 @@ class DotXpra(object):
                 uid = self.uid
             if gid is None:
                 gid = self.gid
+            parent = os.path.dirname(d)
+            if parent and parent!="/" and not os.path.exists(parent):
+                self.mksockdir(parent, mode, uid, gid)
             with umask_context(0):
                 os.mkdir(d, mode)
             if uid!=os.getuid() or gid!=os.getgid():
