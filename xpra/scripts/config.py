@@ -1335,11 +1335,14 @@ def fixup_video_all_or_none(options):
     options.proxy_video_encoders = getlist(pvestr, "proxy video encoders", "HARDWARE_ENCODER_OPTIONS")
 
 def fixup_socketdirs(options):
-    if isinstance(options.socket_dirs, str):
-        options.socket_dirs = options.socket_dirs.split(os.path.pathsep)
-    else:
-        assert isinstance(options.socket_dirs, (list, tuple))
-        options.socket_dirs = [v for x in options.socket_dirs for v in x.split(os.path.pathsep)]
+    for option_name in ("socket_dirs", "client_socket_dirs"):
+        value = getattr(options, option_name)
+        if isinstance(value, str):
+            value = value.split(os.path.pathsep)
+        else:
+            assert isinstance(options.socket_dirs, (list, tuple))
+            value = [v for x in value for v in x.split(os.path.pathsep)]
+        setattr(options, option_name, value)
 
 def fixup_pings(options):
     #pings used to be a boolean, True mapped to "5"
