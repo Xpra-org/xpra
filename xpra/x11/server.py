@@ -23,6 +23,7 @@ from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_da
 from xpra.x11.common import Unmanageable
 from xpra.x11.gtk_x11.prop import prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
+from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver,
     get_children,
@@ -266,7 +267,13 @@ class XpraServer(GObject.GObject, X11ServerBase):
         ### Create the WM object
         with xsync:
             from xpra.x11.gtk_x11.wm import Wm
-            self._wm = Wm(self.clobber, self.wm_name)
+            try:
+                self._wm = Wm(self.clobber, self.wm_name)
+            except AlreadyOwned:
+                log("Error: cannot create our window manager", exc_info=True)
+                display = os.environ.get("DISPLAY", "")
+                from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
+                raise InitException("another window manager is active on display '%s'" % display) from None
         if server_features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
