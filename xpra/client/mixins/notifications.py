@@ -111,17 +111,19 @@ class NotificationClient(StubClientMixin):
                 for x in body.splitlines():
                     log.info(" %s", x)
             return
-        try:
-            from xpra.notifications.common import parse_image_path
-            icon_filename = get_icon_filename(icon_name)
-            icon = parse_image_path(icon_filename)
-            n.show_notify("", self.tray, nid, "Xpra", nid, "",
-                          summary, body, actions, hints or {}, expire_timeout, icon)
-        except Exception as e:
-            log("failed to show notification", exc_info=True)
-            log.error("Error: cannot show notification")
-            log.error(" '%s'", summary)
-            log.error(" %s", e)
+        def show_notification():
+            try:
+                from xpra.notifications.common import parse_image_path
+                icon_filename = get_icon_filename(icon_name)
+                icon = parse_image_path(icon_filename)
+                n.show_notify("", self.tray, nid, "Xpra", nid, "",
+                              summary, body, actions, hints or {}, expire_timeout, icon)
+            except Exception as e:
+                log("failed to show notification", exc_info=True)
+                log.error("Error: cannot show notification")
+                log.error(" '%s'", summary)
+                log.error(" %s", e)
+        self.idle_add(show_notification)
 
     def _process_notify_show(self, packet):
         if not self.notifications_enabled:
