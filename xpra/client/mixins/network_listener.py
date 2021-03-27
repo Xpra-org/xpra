@@ -16,7 +16,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.protocol import Protocol
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, InitExit
 from xpra.log import Logger
 
 log = Logger("network")
@@ -50,11 +50,18 @@ class NetworkListener(StubClientMixin):
         opts.bind_udp = ()
         self.sockets = create_sockets(opts, err)
         if opts.bind:
-            local_sockets = setup_local_sockets(opts.bind,
+            try:
+                local_sockets = setup_local_sockets(opts.bind,
                                                 None, opts.client_socket_dirs,
                                                 str(os.getpid()), True,
                                                 opts.mmap_group, opts.socket_permissions)
-            self.sockets.update(local_sockets)
+            except (OSError, InitExit) as e:
+                log("setup_local_sockets bind=%s, client_socket_dirs=%s",
+                    opts.bind, opts.client_socket_dirs, exc_info=True)
+                log.warn("Warning: failed to create the client sockets:")
+                log.warn(" '%s'", e)
+            else:
+                self.sockets.update(local_sockets)
 
     def run(self):
         self.start_listen_sockets()
