@@ -22,11 +22,6 @@ for k in "AppVerName" "UninstallDisplayName"; do
 	sed -i'' 's/$k=.*/$k=Xpra $NEWV/' "packaging/MSWindows/xpra.iss"
 done
 
-#RPM / DEB build scripts:
-for f in build_debs.sh build_rpms.sh; do
-	sed -i'' "s/^XPRA_VERSION=.*/XPRA_VERSION=$NEWV/" "packaging/buildah/$f"
-done
-
 #changelogs:
 head -n 2 "docs/CHANGELOG.md" > "docs/CHANGELOG.md.new"
 echo "## [$NEWV] `date +%Y-%m-%d`" >> "docs/CHANGELOG.md.new"
