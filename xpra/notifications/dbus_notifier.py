@@ -11,7 +11,8 @@ from xpra.dbus.helper import native_to_dbus
 from xpra.notifications.notifier_base import NotifierBase, log
 try:
     #new recommended way of using the glib main loop:
-    from dbus.mainloop.glib import DBusGMainLoop
+    from dbus.mainloop.glib import DBusGMainLoop, threads_init
+    threads_init()
     DBusGMainLoop(set_as_default=True)
 except ImportError:
     #beware: this import has side-effects:
