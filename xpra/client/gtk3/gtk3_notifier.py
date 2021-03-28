@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -30,3 +30,7 @@ class GTK3_Notifier(NotifierBase):
 
     def close_notify(self, nid):
         self.clean_notification(nid)
+
+    def cleanup(self):
+        Notify.uninit()
+        super().cleanup()
