@@ -50,7 +50,7 @@ OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
 OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
 OSX_WHEEL_DIVISOR = envint("XPRA_OSX_WHEEL_DIVISOR", 10)
 WHEEL = envbool("XPRA_WHEEL", True)
-NATIVE_NOTIFIER = envbool("XPRA_OSX_NATIVE_NOTIFIER", False)
+NATIVE_NOTIFIER = envbool("XPRA_OSX_NATIVE_NOTIFIER", True)
 SUBPROCESS_NOTIFIER = envbool("XPRA_OSX_SUBPROCESS_NOTIFIER", False)
 
 ALPHA = {
@@ -104,65 +104,55 @@ class OSX_Notifier(NotifierBase):
 
     def __init__(self, closed_cb=None, action_cb=None):
         super().__init__(closed_cb, action_cb)
+        self.gtk_notifier = None
+        self.gtk_notifications = set()
         self.notifications = {}
         self.notification_center = NSUserNotificationCenter.defaultUserNotificationCenter()
         assert self.notification_center
 
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
+    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon,
+                    summary, body, actions, hints, expire_timeout, icon):
+        GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
+        if actions and GTK_NOTIFIER:
+            #try to use GTK notifier if we have actions buttons to handle:
+            try:
+                from xpra.gtk_common.gtk_notifier import GTK_Notifier
+            except ImportError as e:
+                log("cannot use GTK notifier for handling actions: %s", e)
+            else:
+                self.gtk_notifier = GTK_Notifier(self.closed_cb, self.action_cb)
+                self.gtk_notifier.show_notify(dbus_id, tray, nid, app_name, replaces_nid, app_icon,
+                                              summary, body, actions, hints, expire_timeout, icon)
+                self.gtk_notifications.add(nid)
+                return
+        GLib.idle_add(self.do_show_notify, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
+
+    def do_show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon,
+                       summary, body, actions, hints, expire_timeout, icon):
         notification = NSUserNotification.alloc().init()
         notification.setTitle_(summary)
         notification.setInformativeText_(body)
         notification.setIdentifier_("%s" % nid)
         #enable sound:
         notification.setSoundName_(NSUserNotificationDefaultSoundName)
-        notifylog("show_notify(..) nid=%s, %s(%s)", nid, self.notification_center.deliverNotification_, notification)
+        notifylog("do_show_notify(..) nid=%s, %s(%s)", nid, self.notification_center.deliverNotification_, notification)
         self.notifications[nid] = notification
         self.notification_center.deliverNotification_(notification)
 
     def close_notify(self, nid):
-        notification = self.notifications.get(nid)
-        notifylog("close_notify(..) notification[%i]=%s", nid, notification)
-        if notification:
-            self.notification_center.removeDeliveredNotification_(notification)
+        try:
+            self.gtk_notifications.remove(nid)
+        except KeyError:
+            notification = self.notifications.get(nid)
+            notifylog("close_notify(..) notification[%i]=%s", nid, notification)
+            if notification:
+                GLib.idle_add(self.notification_center.removeDeliveredNotification_, notification)
+        else:
+            self.gtk_notifier.close_notify(nid)
 
     def cleanup(self):
         NotifierBase.cleanup(self)
-        self.notification_center.removeAllDeliveredNotifications()
-
-
-class OSX_Subprocess_Notifier(NotifierBase):
-    def show_notify(self, dbus_id, tray, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon):
-        from xpra.platform.darwin import osx_notifier
-        osx_notifier_file = osx_notifier.__file__
-        if osx_notifier_file.endswith("pyc"):
-            osx_notifier_file = osx_notifier_file[:-1]
-        import time
-        #osx_notifier_file = "/Users/osx/osx_notifier.py"
-        from xpra.platform.paths import get_app_dir
-        base = get_app_dir()
-        #python_bin = "/usr/bin/python"
-        python_bin = os.path.join(base, "Resources", "bin", "python")
-        cmd = [python_bin, osx_notifier_file, "%s-%s" % (int(time.time()), nid), summary, body]
-        from xpra.child_reaper import getChildReaper
-        import subprocess
-        env = os.environ.copy()
-        for x in ("DYLD_LIBRARY_PATH", "XDG_CONFIG_DIRS", "XDG_DATA_DIRS",
-                  "GTK_DATA_PREFIX", "GTK_EXE_PREFIX", "GTK_PATH",
-                  "GTK2_RC_FILES", "GTK_IM_MODULE_FILE", "GDK_PIXBUF_MODULE_FILE",
-                  "PANGO_RC_FILE", "PANGO_LIBDIR", "PANGO_SYSCONFDIR",
-                  "CHARSETALIASDIR",
-                  "GST_BUNDLE_CONTENTS", "PYTHON", "PYTHONHOME",
-                  "PYTHONPATH"):
-            if x in env:
-                del env[x]
-        notifylog("running %s with env=%s", cmd, env)
-        proc = subprocess.Popen(cmd, env=env)
-        proc.wait()
-        notifylog("returned %i", proc.poll())
-        getChildReaper().add_process(proc, "notifier-%s" % nid, cmd, True, True)
-
-    def close_notify(self, nid):
-        pass
+        GLib.idle_add(self.notification_center.removeAllDeliveredNotifications)
 
 
 def get_clipboard_native_class():
@@ -173,8 +163,6 @@ def get_native_notifier_classes():
     v = []
     if NATIVE_NOTIFIER and NSUserNotificationCenter.defaultUserNotificationCenter():
         v.append(OSX_Notifier)
-    if SUBPROCESS_NOTIFIER:
-        v.append(OSX_Subprocess_Notifier)
     notifylog("get_native_notifier_classes()=%s", v)
     return v
 

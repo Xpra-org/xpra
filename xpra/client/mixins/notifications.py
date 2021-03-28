@@ -14,6 +14,7 @@ from xpra.log import Logger
 log = Logger("notify")
 
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
+THREADED_NOTIFICATIONS = envbool("XPRA_THREADED_NOTIFICATIONS", True)
 
 
 class NotificationClient(StubClientMixin):
@@ -123,7 +124,10 @@ class NotificationClient(StubClientMixin):
                 log.error("Error: cannot show notification")
                 log.error(" '%s'", summary)
                 log.error(" %s", e)
-        self.idle_add(show_notification)
+        if THREADED_NOTIFICATIONS:
+            show_notification()
+        else:
+            self.idle_add(show_notification)
 
     def _process_notify_show(self, packet):
         if not self.notifications_enabled:
