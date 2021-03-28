@@ -24,7 +24,7 @@ done
 
 #RPM / DEB build scripts:
 for f in build_debs.sh build_rpms.sh; do
-	sed -i'' "s/^VERSION=.*/VERSION=$NEWV/" "packaging/buildah/$f"
+	sed -i'' "s/^XPRA_VERSION=.*/XPRA_VERSION=$NEWV/" "packaging/buildah/$f"
 done
 
 #changelogs:

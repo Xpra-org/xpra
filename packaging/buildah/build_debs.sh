@@ -1,5 +1,7 @@
 #!/bin/bash
 
+XPRA_VERSION=4.2
+
 apt-get update
 apt-get upgrade -y
 apt-get dist-upgrade -y
@@ -9,15 +11,15 @@ apt-get dist-upgrade -y
 #after the image had already been generated:
 mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
 #mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
+rm xpra-build-deps*
 
 eval `dpkg-architecture -s`
 REPO_ARCH_PATH="`pwd`/repo/main/binary-$DEB_BUILD_ARCH"
 mkdir -p $REPO_ARCH_PATH
-rm xpra-build-deps*
 
-VERSION=4.2
-tar -Jxf pkgs/xpra-$VERSION.tar.xz
-pushd xpra-$VERSION
+
+tar -Jxf pkgs/xpra-$XPRA_VERSION.tar.xz
+pushd xpra-$XPRA_VERSION
 ln -sf packaging/debian .
 
 #the control file has a few distribution specific entries
