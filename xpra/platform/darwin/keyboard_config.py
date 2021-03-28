@@ -75,7 +75,6 @@ KEYCODES = {
             "0"     : 29,
             "minus" : 27,
             "plus"  : 69,       #KeypadPlus
-            "equal" : 24,
             "bracketleft"   : 33,
             "bracketright"  : 30,
             "semicolon"     : 41,
@@ -103,6 +102,7 @@ KEYCODES = {
             "KP_9"  : 92,
             "KP_0"  : 82,
             "KP_Decimal"    : 65,
+            #"equal" : 24,
             "equal"         : 81,
             "KP_Divide"     : 75,
             "KP_Multiply"   : 67,
