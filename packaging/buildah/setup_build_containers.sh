@@ -51,7 +51,7 @@ for DISTRO in $RPM_DISTROS; do
 	buildah run $IMAGE_NAME dnf update -y
 	buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
 	buildah run $IMAGE_NAME dnf install -y redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
-	if [ "${MINIMAL}" != "0" ]; then
+	if [ "${MINIMAL}" == "0" ]; then
 		buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ make cmake
 	fi
 	if [[ "${DISTRO_LOWER}" == "fedora"* ]]; then
