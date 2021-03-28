@@ -11,3 +11,4 @@ python3-pyu2f
 python3-uinput
 python3-cairo
 xpra
+xpra-html5

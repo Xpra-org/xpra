@@ -21,9 +21,22 @@ done
 #make sure we expose the revision number
 #so the spec file can generate the expected file names
 #(ie: xpra-4.2-0.r29000)
-VERSION=4.2
-tar -Jxf pkgs/xpra-$VERSION.tar.xz xpra-$VERSION/xpra/src_info.py
-XPRA_REVISION=`grep "REVISION=" "xpra-$VERSION/xpra/src_info.py" | awk -F= '{print $2}'`
+XPRA_TAR_XZ=`ls pkgs/xpra-* | grep -v html5 | sort -n | tail -n 1`
+if [ -z "${XPRA_TAR_XZ}" ]; then
+	echo "xpra source not found"
+	exit 1
+fi
+rm -fr xpra-*
+tar -Jxf ${XPRA_TAR_XZ} "xpra-*/xpra/src_info.py"
+if [ "$?" != "0" ]; then
+	echo "failed to extract src_info"
+	exit 1
+fi
+XPRA_REVISION=`grep "REVISION=" xpra-*/xpra/src_info.py | awk -F= '{print $2}'`
+if [ -z "${XPRA_REVISION}" ]; then
+	echo "revision not found in src_info.py"
+	exit 1
+fi
 export XPRA_REVISION
 
 #read the name of the spec files we may want to build:

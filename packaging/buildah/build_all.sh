@@ -2,15 +2,31 @@
 
 die() { echo "$*" 1>&2 ; exit 1; }
 
+DO_SNAPSHOTS=${DO_SNAPSHOTS:-1}
+
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
-#go make a snapshot:
-pushd ../..
-rm -f dist/xpra-*.tar.xz
-python3 ./setup.py sdist --formats=xztar
-mv dist/xpra-*.tar.xz ./packaging/buildah/pkgs/
-popd
+if [ "${DO_SNAPSHOTS}" == "1" ]; then
+	#go make a snapshot:
+	pushd ../..
+	rm -f pkgs/xpra-*.tar.xz
+	python3 ./setup.py sdist --formats=xztar
+	mv dist/xpra-*.tar.xz ./packaging/buildah/pkgs/
+	popd
+	
+	if [ -e "html5" ]; then
+		rm -f pkgs/xpra-html5-*.tar.xz
+		pushd html5
+		python3 ./setup.py sdist --formats=xztar
+		popd
+		cp html5/dist/xpra-html5-*.tar.xz ./pkgs/
+		cp html5/rpm/xpra-html5.spec ../rpm/
+	else
+		echo "html5 directory not found"
+		echo " skipped creating a source snapshot"
+	fi
+fi
 
 DO_DOWNLOAD="${DO_DOWNLOAD:-1}"
 if [ "${DO_DOWNLOAD}" == "1" ]; then
