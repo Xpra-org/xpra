@@ -28,7 +28,7 @@ class Win32_Notifier(NotifierBase):
         if self.gtk_notifier is None:
             try:
                 self.gtk_notifier = GTK_Notifier(self.closed_cb, self.action_cb)
-            except:
+            except Exception:
                 log("failed to load GTK Notifier fallback", exc_info=True)
         return self.gtk_notifier
 
