@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,8 @@ class PyNotify_Notifier(NotifierBase):
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
-        notify2.init(app_name or "Xpra")
+        if not notify2.is_initted():
+            notify2.init(app_name or "Xpra", "glib")
         n = notify2.Notification(summary, body, icon_string)
         n.set_urgency(notify2.URGENCY_LOW)
         n.set_timeout(timeout)
