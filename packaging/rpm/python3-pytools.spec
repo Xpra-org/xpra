@@ -1,13 +1,13 @@
 %define _disable_source_fetch 0
 
 Name:           python3-pytools
-Version:        2020.4.4
-Release:        2%{?dist}
+Version:        2021.2.1
+Release:        1%{?dist}
 Summary:        A collection of tools for python
 Group:          Development/Languages
 License:        MIT
 URL:            http://pypi.python.org/pypi/pytools
-Source0:        https://files.pythonhosted.org/packages/16/ed/f4b298876b9b624150cc01830075f7cb0b9e09c1abfc46daef14811f3eed/pytools-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/3c/fb/a059825fa8c2c79894eca8aadcb798a1e5c66c0e66999a2374f313766823/pytools-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
 BuildArch:      noarch
@@ -60,6 +60,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Mar 28 2021 Antoine Martin <antoine@xpra.org> - 2021.2.1-1
+- new upstream release
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 2020.4.4-2
 - verify source checksum
 
