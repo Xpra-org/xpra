@@ -106,7 +106,6 @@ class RemoteLogging(StubClientMixin):
 
 
     def remote_logging_handler(self, logger_log, level, msg, *args, **kwargs):
-        print("log=%s (%s)" % (log, type(log)))
         #prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
