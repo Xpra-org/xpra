@@ -16,7 +16,8 @@ AutoProv:    0
 
 BuildRequires:	nasm
 BuildRequires:	gcc
-BuildRequires: perl-Digest-MD5
+BuildRequires:	make
+BuildRequires:	perl-Digest-MD5
 
 %description
 x264 library for xpra
