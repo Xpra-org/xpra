@@ -3,7 +3,7 @@
 #gtkPopupNotify.py
 #
 # Copyright 2009 Daniel Woodhouse
-# Copyright 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright 2013-2021 Antoine Martin <antoine@xpra.org>
 #
 #This program is free software: you can redistribute it and/or modify
 #it under the terms of the GNU Lesser General Public License as published by
@@ -121,7 +121,7 @@ class GTK_Notifier(NotifierBase):
     def show_notify(self, dbus_id, tray, nid,
                     app_name, replaces_nid, app_icon,
                     summary, body, actions, hints, timeout, icon):
-        self.new_popup(nid, summary, body, actions, icon, timeout, 0<timeout<=600)
+        GLib.idle_add(self.new_popup, nid, summary, body, actions, icon, timeout, 0<timeout<=600)
 
     def new_popup(self, nid, summary, body, actions, icon, timeout=10*1000, show_timeout=False):
         """Create a new Popup instance."""
@@ -294,7 +294,7 @@ class Popup(Gtk.Window):
         """Move the notification window down, when an older notification is removed"""
         log("reposition(%s, %s)", offset, stack)
         new_offset = self.h + offset
-        self.move(self.get_x(self.w), self.get_y(new_offset))
+        GLib.idle_add(self.move, self.get_x(self.w), self.get_y(new_offset))
         return new_offset
 
     def fade_in(self):
@@ -347,6 +347,8 @@ class Popup(Gtk.Window):
             if v:
                 setattr(self, timer, None)
                 GLib.source_remove(v)
+        #destroy window from the UI thread:
+        GLib.idle_add(self.destroy)
         self.destroy()
         self.destroy_cb(self)
 
