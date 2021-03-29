@@ -111,9 +111,11 @@ for DISTRO in $DEB_DISTROS; do
 	#so add as many dependencies already:
 	#buildah run $IMAGE_NAME apt-get install -y gcc g++ debhelper devscripts
 	buildah run $IMAGE_NAME apt-get install -y devscripts equivs lsb-release perl findutils
-	if [ "${MINIMAL}" != "0" ]; then
+	if [ "${MINIMAL}" == "0" ]; then
 		buildah copy $IMAGE_NAME "../debian/control" "/src/control"
 		buildah run $IMAGE_NAME mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' /src/control
+		#used by the html5 client:
+		buildah run $IMAGE_NAME apt-get install -y uglifyjs brotli brotli libjs-jquery libjs-jquery-ui gnome-backgrounds
 	fi
 	buildah run $IMAGE_NAME apt-get autoremove -y
 	#or we could do this explicitly:
