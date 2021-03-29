@@ -43,7 +43,7 @@ done
 $PACMAN --noconfirm -S ${XPKG}cython
 
 #this needs to be converted to a PKGBUILD:
-$PACMAN --noconfirm -S ${XPKG}python-pip
+$PACMAN --noconfirm -S ${XPKG}python-pip ${XPKG}gcc
 for x in yuicompressor browser-cookie3 qrencode; do
 	pip3 install $x
 done
