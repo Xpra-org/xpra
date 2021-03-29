@@ -2,19 +2,22 @@
 
 die() { echo "$*" 1>&2 ; exit 1; }
 
-DO_SNAPSHOTS=${DO_SNAPSHOTS:-1}
+DO_XPRA=${DO_XPRA:-1}
+DO_XPRA_HTML5=${DO_XPRA_HTML5:-1}
 
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
-if [ "${DO_SNAPSHOTS}" == "1" ]; then
+if [ "${DO_XPRA}" == "1" ]; then
 	#go make a snapshot:
 	pushd ../..
 	rm -f pkgs/xpra-*.tar.xz
 	python3 ./setup.py sdist --formats=xztar
 	mv dist/xpra-*.tar.xz ./packaging/buildah/pkgs/
 	popd
-	
+fi
+
+if [ "${DO_XPRA_HTML5}" == "1" ]; then
 	if [ -e "html5" ]; then
 		rm -f pkgs/xpra-html5-*.tar.xz
 		pushd html5
