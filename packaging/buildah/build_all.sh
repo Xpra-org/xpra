@@ -21,7 +21,7 @@ if [ "${DO_SNAPSHOTS}" == "1" ]; then
 		python3 ./setup.py sdist --formats=xztar
 		popd
 		cp html5/dist/xpra-html5-*.tar.xz ./pkgs/
-		cp html5/rpm/xpra-html5.spec ../rpm/
+		cp html5/packaging/rpm/xpra-html5.spec ../rpm/
 	else
 		echo "html5 directory not found"
 		echo " skipped creating a source snapshot"
