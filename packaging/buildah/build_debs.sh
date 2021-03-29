@@ -63,7 +63,7 @@ if [ ! -z "${XPRA_HTML5_TAR_XZ}" ]; then
 	tar -Jxf ${XPRA_HTML5_TAR_XZ}
 	pushd xpra-html5-*
 
-	mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
+	mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' packaging/debian/control
 	rm -f xpra-html5-build-deps*
 
 	python3 ./setup.py deb
