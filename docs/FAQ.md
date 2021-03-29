@@ -88,3 +88,7 @@ Xpra is not installed on the remote host.
 These are harmless and unavoidable, see [Bug 1615700 - warning shows up after run "Xvfb :99 &"](https://bugzilla.redhat.com/show_bug.cgi?id=1615700#c1)
 * `gtk_window_add_accel_group: assertion 'GTK_IS_WINDOW (window)' failed` - harmless and unavoidable on MacOS
 * `gui.py: Warning: invalid cast from 'GtkMenuBar?' to 'GtkWindow?'` - harmless and unavoidable on MacOS
+### MacOS complains about "damaged application"
+```
+sudo xattr -rd com.apple.quarantine /Applications/Xpra.app
+```
