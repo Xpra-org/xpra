@@ -44,7 +44,7 @@ $PACMAN --noconfirm -S ${XPKG}cython
 
 #this needs to be converted to a PKGBUILD:
 $PACMAN --noconfirm -S ${XPKG}python-pip ${XPKG}gcc
-for x in yuicompressor browser-cookie3 qrencode; do
+for x in browser-cookie3 qrencode; do
 	pip3 install $x
 done
 #for webcam support:
@@ -54,6 +54,9 @@ echo "for printing support, install libpdfium"
 echo "by downloading the plain x64 pdfium binary from"
 echo "https://github.com/bblanchon/pdfium-binaries"
 echo "and place the 'pdfium.dll' in '$MINGW_PREFIX/bin'"
+echo
+echo "for minifying the html5 client,"
+echo "install yuicompressor"
 echo
 echo "for generating the documentation, install pandoc"
 echo "https://github.com/jgm/pandoc/releases/latest"
