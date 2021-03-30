@@ -12,7 +12,8 @@ ARCH=`arch`
 for dir in "./repo/SRPMS" "./repo/$ARCH"; do
 	if [ ! -d "$dir/repodata" ]; then
 		echo "* creating repodata in $dir"
-		mkdir $dir
+		mkdir $dir 2> /dev/null
+		rm -fr $dir/repodata
 		createrepo $dir > /dev/null
 	fi
 done
