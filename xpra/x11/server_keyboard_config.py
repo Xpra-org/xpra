@@ -672,10 +672,13 @@ class KeyboardConfig(KeyboardConfigBase):
             failed = []
             for modifier in modifiers:
                 modifier = bytestostr(modifier)
-                keynames = self.keynames_for_mod.get(modifier)
-                if not keynames:
+                keynames = self.keynames_for_mod.get(modifier, None)
+                if keynames is None:
                     log.error("Error: unknown modifier '%s'", modifier)
                     log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))
+                    continue
+                if not keynames:
+                    log.warn("Warning: found no keynames for '%s'", modifier)
                     continue
                 #find the keycodes that match the keynames for this modifier
                 keycodes = []
