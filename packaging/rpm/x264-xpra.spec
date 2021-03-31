@@ -13,6 +13,9 @@ BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 
 BuildRequires:	nasm
+BuildRequires:	gcc
+BuildRequires:	make
+BuildRequires:	perl-Digest-MD5
 
 
 %if 0%{?fedora}%{?el8}
