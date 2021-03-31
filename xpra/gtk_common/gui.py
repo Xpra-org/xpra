@@ -104,18 +104,18 @@ class GUI(Gtk.Window):
         if has_client:
             icon = get_icon_pixbuf("browse.png")
             self.browse_button = imagebutton("Browse", icon,
-                                             "Browse and connect to local sessions", clicked_callback=self.browse,
+                                             "Browse and connect to local and mDNS sessions", clicked_callback=self.browse,
                                              icon_size=48, label_font=label_font)
             self.widgets.append(self.browse_button)
             icon = get_icon_pixbuf("connect.png")
             self.connect_button = imagebutton("Connect", icon,
-                                              "Connect to a session", clicked_callback=self.show_launcher,
+                                              "Connect to an existing session\nover the network", clicked_callback=self.show_launcher,
                                               icon_size=48, label_font=label_font)
             self.widgets.append(self.connect_button)
         if has_server:
             icon = get_icon_pixbuf("server-connected.png")
             self.shadow_button = imagebutton("Shadow", icon,
-                                             "Start a shadow server", clicked_callback=self.start_shadow,
+                                             "Start a shadow server,\nmaking this desktop accessible to others\n(authentication required)", clicked_callback=self.start_shadow,
                                              icon_size=48, label_font=label_font)
             if not has_shadow:
                 self.shadow_button.set_tooltip_text("This build of Xpra does not support starting sessions")
