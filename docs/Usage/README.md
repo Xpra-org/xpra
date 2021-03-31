@@ -1,7 +1,8 @@
 # Usage Examples
 
 The examples below should work for the [current versions](https://github.com/Xpra-org/xpra/wiki/Versions).\
-[The online manual](https://xpra.org/manual.html) is for the current development version, use `man xpra` to get the version corresponding to the version you have installed.
+[The online manual](https://xpra.org/manual.html) is for the current development version, use `man xpra` to get the version corresponding to the version you have installed.  
+On MS Windows, the command you should with the examples below is `Xpra_cmd.exe` rather than plain `Xpra`.
 
 ## Simple [seamless](./Seamless.md) application forwarding
 This is how xpra is most often used.\
