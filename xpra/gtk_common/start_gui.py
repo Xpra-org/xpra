@@ -21,11 +21,6 @@ from xpra.log import Logger
 log = Logger("client", "util")
 
 try:
-    from xpra.server import server_util
-    has_server = bool(server_util)
-except ImportError:
-    has_server = False
-try:
     import xdg
 except ImportError:
     xdg = None
