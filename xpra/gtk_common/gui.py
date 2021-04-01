@@ -18,7 +18,7 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.gtk_common.start_gui import StartSession
 from xpra.platform.paths import get_xpra_command
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, platform_name
 from xpra.log import Logger
 from xpra.gtk_common.about import about
 
