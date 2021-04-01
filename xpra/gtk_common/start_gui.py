@@ -116,6 +116,10 @@ class StartSession(Gtk.Window):
         self.exit_with_children_cb.set_label("exit with application")
         hbox.add(self.exit_with_children_cb)
         self.exit_with_children_cb.set_active(True)
+        self.exit_with_client_cb = Gtk.CheckButton()
+        self.exit_with_client_cb.set_label("exit with client")
+        hbox.add(self.exit_with_client_cb)
+        self.exit_with_client_cb.set_active(False)
         #maybe add:
         #clipboard, opengl, sharing?
 
@@ -276,6 +280,8 @@ class StartSession(Gtk.Window):
             cmd.append("start")
         else:
             cmd.append("start-desktop")
+        ewc = self.exit_with_client_cb.get_active()
+        cmd.append("--exit-with-client=%s" % ewc)
         ewc = self.exit_with_children_cb.get_active()
         cmd.append("--attach=%s" % self.attach_cb.get_active())
         cmd.append("--exit-with-children=%s" % ewc)
