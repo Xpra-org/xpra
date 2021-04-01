@@ -52,6 +52,7 @@ for DISTRO in $DISTROS; do
 
 	#use a temp image:
 	TEMP_IMAGE="$IMAGE_NAME-temp"
+	buildah rm "${TEMP_IMAGE}" >& /dev/null
 	buildah rmi "${TEMP_IMAGE}" >& /dev/null
 	buildah from --pull-never --name  $TEMP_IMAGE $IMAGE_NAME
 	if [ "$?" != "0" ]; then
