@@ -52,52 +52,67 @@ class StartSession(Gtk.Window):
         vbox = Gtk.VBox(False, 0)
         vbox.set_spacing(0)
 
+        # choose the session type:
         hbox = Gtk.HBox(True, 10)
+        def ralx(btn, xalign=1):
+            al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
+            al.add(btn)
+            hbox.add(al)
         self.seamless_btn = Gtk.RadioButton.new_with_label(None, "Seamless Session")
-        self.seamless_btn.connect("toggled", self.seamless_toggled)
-        al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(self.seamless_btn)
-        hbox.add(al)
+        self.seamless_btn.connect("toggled", self.mode_toggled)
+        ralx(self.seamless_btn)
         self.desktop_btn = Gtk.RadioButton.new_with_label_from_widget(self.seamless_btn, "Desktop Session")
-        #since they're radio buttons, both get toggled,
-        #so no need to connect to both signals:
-        #self.desktop.connect("toggled", self.desktop_toggled)
-        hbox.add(self.desktop_btn)
+        self.desktop_btn.connect("toggled", self.mode_toggled)
+        ralx(self.desktop_btn)
+        self.shadow_btn = Gtk.RadioButton.new_with_label_from_widget(self.seamless_btn, "Shadow Session")
+        self.shadow_btn.connect("toggled", self.mode_toggled)
+        ralx(self.shadow_btn)
         self.seamless = True
-        vbox.add(hbox)
+        vbox.pack_start(hbox, False)
+
+        options_box = Gtk.VBox(False, 10)
+        vbox.pack_start(options_box, True, False, 20)
+        # For Shadow mode only:
+        self.display_box = Gtk.HBox(False, 20)
+        options_box.pack_start(self.display_box, False, True, 20)
+        self.display_label = Gtk.Label("Display:")
+        self.display_entry = Gtk.Entry()
+        self.display_entry.set_text("")
+        self.display_entry.set_width_chars(10)
+        self.display_entry.set_placeholder_text("optional")
+        self.display_entry.set_max_length(10)
+        self.display_box.pack_start(self.display_label, True)
+        self.display_box.pack_start(self.display_entry, True, False)
 
         # Label:
         self.entry_label = Gtk.Label("Command to run:")
         self.entry_label.modify_font(Pango.FontDescription("sans 14"))
         self.entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
         self.entry_al.add(self.entry_label)
-        vbox.add(self.entry_al)
-
+        options_box.pack_start(self.entry_al, False)
         # input command directly as text (if pyxdg is not installed):
         self.entry = Gtk.Entry()
         self.entry.set_max_length(255)
         self.entry.set_width_chars(32)
         self.entry.connect('activate', self.run_command)
-        vbox.add(self.entry)
+        options_box.pack_start(self.entry, False)
 
         # or use menus if we have xdg data:
-        hbox = Gtk.HBox(False, 20)
-        vbox.add(hbox)
-        self.category_box = hbox
+        self.category_box = Gtk.HBox(False, 20)
+        options_box.pack_start(self.category_box, False)
         self.category_label = Gtk.Label("Category:")
         self.category_combo = Gtk.ComboBoxText()
-        hbox.add(self.category_label)
-        hbox.add(self.category_combo)
+        self.category_box.add(self.category_label)
+        self.category_box.add(self.category_combo)
         self.category_combo.connect("changed", self.category_changed)
         self.categories = {}
 
-        hbox = Gtk.HBox(False, 20)
-        vbox.add(hbox)
-        self.command_box = hbox
+        self.command_box = Gtk.HBox(False, 20)
+        options_box.pack_start(self.command_box, False)
         self.command_label = Gtk.Label("Command:")
         self.command_combo = Gtk.ComboBoxText()
-        hbox.pack_start(self.command_label)
-        hbox.pack_start(self.command_combo)
+        self.command_box.pack_start(self.command_label)
+        self.command_box.pack_start(self.command_combo)
         self.command_combo.connect("changed", self.command_changed)
         self.commands = {}
         self.xsessions = None
@@ -105,7 +120,7 @@ class StartSession(Gtk.Window):
 
         # start options:
         hbox = Gtk.HBox(False, 20)
-        vbox.add(hbox)
+        options_box.pack_start(hbox, False)
         self.attach_cb = Gtk.CheckButton()
         self.attach_cb.set_label("attach immediately")
         self.attach_cb.set_active(True)
@@ -125,7 +140,7 @@ class StartSession(Gtk.Window):
 
         # Action buttons:
         hbox = Gtk.HBox(False, 20)
-        vbox.add(hbox)
+        vbox.pack_start(hbox, False, True, 20)
         def btn(label, tooltip, callback, icon_name=None):
             btn = Gtk.Button(label)
             btn.set_tooltip_text(tooltip)
@@ -159,20 +174,33 @@ class StartSession(Gtk.Window):
 
 
     def populate_menus(self):
-        if xdg:
+        shadow_mode = self.shadow_btn.get_active()
+        if shadow_mode:
+            #only option we show is the optional display input
+            self.display_box.show_all()
             self.entry_al.hide()
             self.entry.hide()
-            if self.seamless:
-                self.category_box.show()
-                self.populate_category()
+            self.category_box.hide()
+            self.command_box.hide()
+            self.exit_with_children_cb.hide()
+        else:
+            self.command_label.set_text("Command:" if self.seamless else "Desktop Environment:")
+            self.display_box.hide()
+            self.command_box.show_all()
+            self.exit_with_children_cb.show()
+            if xdg:
+                #we have menus, so hide text input:
+                self.entry_al.hide()
+                self.entry.hide()
+                if self.seamless:
+                    self.category_box.show()
+                    self.populate_category()
+                else:
+                    self.category_box.hide()
+                    self.populate_command()
+                return
             else:
-                self.category_box.hide()
-                self.populate_command()
-            return
-        self.entry_al.show()
-        self.entry.show()
-        self.category_box.hide()
-        self.command_box.hide()
+                self.entry_al.show_all()
 
 
     def populate_category(self):
@@ -251,9 +279,11 @@ class StartSession(Gtk.Window):
             self.run_btn.set_sensitive(False)
 
 
-    def seamless_toggled(self, *args):
+    def mode_toggled(self, *args):
         self.seamless = self.seamless_btn.get_active()
-        log("seamless_toggled(%s) seamless=%s", args, self.seamless)
+        log("mode_toggled(%s) seamless=%s", args, self.seamless)
+        if self.shadow_btn.get_active():
+            self.exit_with_client_cb.set_active(True)
         self.populate_menus()
 
 
@@ -276,19 +306,23 @@ class StartSession(Gtk.Window):
         else:
             command = self.entry.get_text()
         cmd = get_xpra_command()
+        shadow = self.shadow_btn.get_active()
         if self.seamless:
             cmd.append("start")
+        elif shadow:
+            cmd.append("shadow")
         else:
             cmd.append("start-desktop")
         ewc = self.exit_with_client_cb.get_active()
         cmd.append("--exit-with-client=%s" % ewc)
-        ewc = self.exit_with_children_cb.get_active()
+        if not shadow:
+            ewc = self.exit_with_children_cb.get_active()
+            cmd.append("--exit-with-children=%s" % ewc)
+            if ewc:
+                cmd.append("--start-child=%s" % command)
+            else:
+                cmd.append("--start=%s" % command)
         cmd.append("--attach=%s" % self.attach_cb.get_active())
-        cmd.append("--exit-with-children=%s" % ewc)
-        if ewc:
-            cmd.append("--start-child=%s" % command)
-        else:
-            cmd.append("--start=%s" % command)
         exec_command(cmd)
 
 
