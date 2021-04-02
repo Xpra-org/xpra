@@ -1442,10 +1442,18 @@ def fixup_clipboard(options):
 
 def abs_paths(options):
     ew = options.exec_wrapper
-    if ew and not os.path.isabs(ew):
-        ew = which(ew)
-        if ew:
-            options.exec_wrapper = ew
+    if ew:
+        import shlex
+        ewp = shlex.split(ew)
+        if ewp and not os.path.isabs(ewp[0]):
+            abscmd = which(ewp[0])
+            if abscmd:
+                ewp[0] = abscmd
+                try:
+                    options.exec_wrapper = shlex.join(ewp)
+                except AttributeError:
+                    #(shlex.join requires Python 3.8)
+                    options.exec_wrapper = " ".join(shlex.quote(x) for x in ewp)
     #convert to absolute paths before we daemonize
     for k in ("clipboard-filter-file",
               "tcp-encryption-keyfile", "encryption-keyfile",
