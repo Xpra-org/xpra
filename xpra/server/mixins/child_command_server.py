@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -327,6 +327,7 @@ class ChildCommandServer(StubServerMixin):
         env = self.get_child_env()
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",
             (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), self.exec_wrapper, self.exec_cwd)
+        real_cmd = []
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
@@ -341,6 +342,9 @@ class ChildCommandServer(StubServerMixin):
         except (OSError, ValueError) as e:
             log("start_command%s", (name, child_cmd, ignore, callback, use_wrapper, shell, kwargs), exc_info=True)
             log.error("Error spawning child '%s':" % (child_cmd, ))
+            if len(real_cmd)>1:
+                log.error(" using command:")
+                log.error(" %s", " ".join("'%s'" % x for x in real_cmd))
             log.error(" %s" % (e,))
             return None
 
