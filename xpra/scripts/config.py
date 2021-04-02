@@ -12,6 +12,7 @@ from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
     is_Debian, is_Ubuntu, is_arm,
+    which,
     )
 
 def warn(msg):
@@ -1440,6 +1441,11 @@ def fixup_clipboard(options):
         options.clipboard_direction = "disabled"
 
 def abs_paths(options):
+    ew = options.exec_wrapper
+    if ew and not os.path.isabs(ew):
+        ew = which(ew)
+        if ew:
+            options.exec_wrapper = ew
     #convert to absolute paths before we daemonize
     for k in ("clipboard-filter-file",
               "tcp-encryption-keyfile", "encryption-keyfile",
