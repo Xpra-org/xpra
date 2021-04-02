@@ -58,12 +58,20 @@ for DISTRO in $RPM_DISTROS; do
 		RNUM=`echo $DISTRO | awk -F: '{print $2}'`
 		dnf -y makecache --releasever=$RNUM --setopt=cachedir=/var/cache/dnf/$RNUM
 		buildah run $IMAGE_NAME dnf install -y rpmspectool
+		if [ "${MINIMAL}" == "0" ]; then
+			#these are required by the xpra-html5 build:
+			buildah run $IMAGE_NAME dnf install -y brotli js-jquery desktop-backgrounds-compat
+		fi
 	else
 		#some of the packages we need for building are in the "PowerTools" repository:
 		buildah run $IMAGE_NAME dnf config-manager --set-enabled powertools
 		#no "rpmspectool" package on CentOS 8, use setuptools to install it:
 		buildah run $IMAGE_NAME dnf install -y python3-setuptools
 		buildah run $IMAGE_NAME easy_install-3.6 python-rpm-spec
+		if [ "${MINIMAL}" == "0" ]; then
+			#these are required by the xpra-html5 build:
+			buildah run $IMAGE_NAME dnf install -y brotli centos-backgrounds centos-logos
+		fi
 	fi
 	buildah run $IMAGE_NAME rpmdev-setuptree
 	#buildah run dnf clean all
