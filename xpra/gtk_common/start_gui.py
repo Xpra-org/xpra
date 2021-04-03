@@ -8,17 +8,20 @@ import sys
 import os.path
 import subprocess
 
-from gi.repository import Pango, Gtk
+from gi.repository import Gtk, Pango, GLib
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.gtk_common.gtk_util import (
     add_close_accel,
-    scaled_image, get_icon_pixbuf,
+    get_icon_pixbuf,
+    imagebutton,
     )
+from xpra.os_util import OSX, WIN32
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
 log = Logger("client", "util")
+log.enable_debug()
 
 try:
     import xdg
@@ -29,10 +32,24 @@ except ImportError:
 def exec_command(cmd):
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
+    env["XPRA_NOTTY"] = "1"
     proc = subprocess.Popen(cmd, env=env)
     log("exec_command(%s)=%s", cmd, proc)
     return proc
 
+
+def xal(widget, xalign=1):
+    al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
+    al.add(widget)
+    return al
+
+def sf(w, font="sans 14"):
+    w.modify_font(Pango.FontDescription(font))
+    return w
+
+def l(label):
+    widget = Gtk.Label(label)
+    return sf(widget)
 
 class StartSession(Gtk.Window):
 
@@ -50,34 +67,69 @@ class StartSession(Gtk.Window):
         add_close_accel(self, self.quit)
 
         vbox = Gtk.VBox(False, 0)
-        vbox.set_spacing(0)
+        vbox.set_spacing(10)
 
         # choose the session type:
-        hbox = Gtk.HBox(True, 10)
-        def ralx(btn, xalign=1):
-            al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
-            al.add(btn)
-            hbox.add(al)
-        self.seamless_btn = Gtk.RadioButton.new_with_label(None, "Seamless Session")
-        self.seamless_btn.connect("toggled", self.mode_toggled)
-        ralx(self.seamless_btn)
-        self.desktop_btn = Gtk.RadioButton.new_with_label_from_widget(self.seamless_btn, "Desktop Session")
-        self.desktop_btn.connect("toggled", self.mode_toggled)
-        ralx(self.desktop_btn)
-        self.shadow_btn = Gtk.RadioButton.new_with_label_from_widget(self.seamless_btn, "Shadow Session")
-        self.shadow_btn.connect("toggled", self.mode_toggled)
-        ralx(self.shadow_btn)
-        self.seamless = True
+        hbox = Gtk.HBox(True, 40)
+        def rb(sibling=None, label="", cb=None, tooltip_text=None):
+            btn = Gtk.RadioButton.new_with_label_from_widget(sibling, label)
+            if cb:
+                btn.connect("toggled", cb)
+            if tooltip_text:
+                btn.set_tooltip_text(tooltip_text)
+            sf(btn, "sans 16")
+            hbox.add(btn)
+            return btn
+        self.seamless_btn = rb(None, "Seamless Session", self.session_toggled, "Forward an application window(s) individually, seamlessly")
+        self.desktop_btn = rb(self.seamless_btn, "Desktop Session", self.session_toggled, "Forward a full desktop environment, contained in a window")
+        self.shadow_btn = rb(self.seamless_btn, "Shadow Session", self.session_toggled, "Forward an existing desktop session, shown in a window")
         vbox.pack_start(hbox, False)
+
+        vbox.pack_start(Gtk.HSeparator(), True, False)
 
         options_box = Gtk.VBox(False, 10)
         vbox.pack_start(options_box, True, False, 20)
+        # select host:
+        host_box = Gtk.HBox(True, 20)
+        options_box.pack_start(host_box, False)
+        self.host_label = l("Host:")
+        hbox = Gtk.HBox(True, 0)
+        host_box.pack_start(self.host_label, True)
+        host_box.pack_start(hbox, True, True)
+        self.localhost_btn = rb(None, "Local System", self.host_toggled)
+        self.remote_btn = rb(self.localhost_btn, "Remote")
+        self.address_box = Gtk.HBox(False, 0)
+        options_box.pack_start(xal(self.address_box), True, True)
+        self.mode_combo = sf(Gtk.ComboBoxText())
+        self.address_box.pack_start(xal(self.mode_combo), False)
+        for mode in ("SSH", "TCP", "SSL", "WS", "WSS"):
+            self.mode_combo.append_text(mode)
+        self.mode_combo.set_active(0)
+        self.mode_combo.connect("changed", self.mode_changed)
+        self.username_entry = sf(Gtk.Entry())
+        self.username_entry.set_width_chars(12)
+        self.username_entry.set_placeholder_text("Username")
+        self.username_entry.set_max_length(255)
+        self.address_box.pack_start(xal(self.username_entry), False)
+        self.address_box.pack_start(l("@"), False)
+        self.host_entry = sf(Gtk.Entry())
+        self.host_entry.set_width_chars(24)
+        self.host_entry.set_placeholder_text("Hostname or IP address")
+        self.host_entry.set_max_length(255)
+        self.address_box.pack_start(xal(self.host_entry), False)
+        self.address_box.pack_start(Gtk.Label(":"), False)
+        self.port_entry = sf(Gtk.Entry())
+        self.port_entry.set_text("22")
+        self.port_entry.set_width_chars(5)
+        self.port_entry.set_placeholder_text("Port")
+        self.port_entry.set_max_length(5)
+        self.address_box.pack_start(xal(self.port_entry, 0), False)
+
         # For Shadow mode only:
-        self.display_box = Gtk.HBox(False, 20)
+        self.display_box = Gtk.HBox(True, 20)
         options_box.pack_start(self.display_box, False, True, 20)
-        self.display_label = Gtk.Label("Display:")
-        self.display_entry = Gtk.Entry()
-        self.display_entry.set_text("")
+        self.display_label = l("Display:")
+        self.display_entry = sf(Gtk.Entry())
         self.display_entry.set_width_chars(10)
         self.display_entry.set_placeholder_text("optional")
         self.display_entry.set_max_length(10)
@@ -85,34 +137,33 @@ class StartSession(Gtk.Window):
         self.display_box.pack_start(self.display_entry, True, False)
 
         # Label:
-        self.entry_label = Gtk.Label("Command to run:")
-        self.entry_label.modify_font(Pango.FontDescription("sans 14"))
-        self.entry_al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0)
-        self.entry_al.add(self.entry_label)
-        options_box.pack_start(self.entry_al, False)
-        # input command directly as text (if pyxdg is not installed):
-        self.entry = Gtk.Entry()
+        self.entry_box = Gtk.HBox(True, 20)
+        options_box.pack_start(self.entry_box, False, True, 20)
+        self.entry_label = l("Command:")
+        self.entry = sf(Gtk.Entry())
         self.entry.set_max_length(255)
         self.entry.set_width_chars(32)
-        self.entry.connect('activate', self.run_command)
-        options_box.pack_start(self.entry, False)
+        #self.entry.connect('activate', self.run_command)
+        self.entry.connect('changed', self.entry_changed)
+        self.entry_box.pack_start(self.entry_label, True)
+        self.entry_box.pack_start(self.entry, True, False)
 
         # or use menus if we have xdg data:
-        self.category_box = Gtk.HBox(False, 20)
+        self.category_box = Gtk.HBox(True, 20)
         options_box.pack_start(self.category_box, False)
-        self.category_label = Gtk.Label("Category:")
-        self.category_combo = Gtk.ComboBoxText()
-        self.category_box.add(self.category_label)
-        self.category_box.add(self.category_combo)
+        self.category_label = l("Category:")
+        self.category_combo = sf(Gtk.ComboBoxText())
+        self.category_box.pack_start(self.category_label, True)
+        self.category_box.pack_start(self.category_combo, True, True)
         self.category_combo.connect("changed", self.category_changed)
         self.categories = {}
 
-        self.command_box = Gtk.HBox(False, 20)
+        self.command_box = Gtk.HBox(True, 20)
         options_box.pack_start(self.command_box, False)
-        self.command_label = Gtk.Label("Command:")
-        self.command_combo = Gtk.ComboBoxText()
-        self.command_box.pack_start(self.command_label)
-        self.command_box.pack_start(self.command_combo)
+        self.command_label = l("Command:")
+        self.command_combo = sf(Gtk.ComboBoxText())
+        self.command_box.pack_start(self.command_label, True)
+        self.command_box.pack_start(self.command_combo, True, True)
         self.command_combo.connect("changed", self.command_changed)
         self.commands = {}
         self.xsessions = None
@@ -121,19 +172,13 @@ class StartSession(Gtk.Window):
         # start options:
         hbox = Gtk.HBox(False, 20)
         options_box.pack_start(hbox, False)
-        self.attach_cb = Gtk.CheckButton()
-        self.attach_cb.set_label("attach immediately")
-        self.attach_cb.set_active(True)
-        al = Gtk.Alignment(xalign=1, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(self.attach_cb)
-        hbox.add(al)
-        self.exit_with_children_cb = Gtk.CheckButton()
+        self.exit_with_children_cb = sf(Gtk.CheckButton())
         self.exit_with_children_cb.set_label("exit with application")
-        hbox.add(self.exit_with_children_cb)
+        hbox.add(xal(self.exit_with_children_cb, 0.5))
         self.exit_with_children_cb.set_active(True)
-        self.exit_with_client_cb = Gtk.CheckButton()
+        self.exit_with_client_cb = sf(Gtk.CheckButton())
         self.exit_with_client_cb.set_label("exit with client")
-        hbox.add(self.exit_with_client_cb)
+        hbox.add(xal(self.exit_with_client_cb, 0.5))
         self.exit_with_client_cb.set_active(False)
         #maybe add:
         #clipboard, opengl, sharing?
@@ -141,18 +186,19 @@ class StartSession(Gtk.Window):
         # Action buttons:
         hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox, False, True, 20)
-        def btn(label, tooltip, callback, icon_name=None):
-            btn = Gtk.Button(label)
-            btn.set_tooltip_text(tooltip)
-            btn.connect("clicked", callback)
-            icon = get_icon_pixbuf(icon_name)
-            if icon:
-                btn.set_image(scaled_image(icon, 24))
+        def btn(label, tooltip, callback, default=False):
+            btn = imagebutton(label, tooltip=tooltip, clicked_callback=callback, icon_size=32,
+                default=default, label_font=Pango.FontDescription("sans 16"))
             hbox.pack_start(btn)
             return btn
-        self.cancel_btn = btn("Cancel", "", self.quit, "quit.png")
-        self.run_btn = btn("Start", "Start this command in an xpra session", self.run_command, "forward.png")
+        self.cancel_btn = btn("Cancel", "",
+                              self.quit)
+        self.run_btn = btn("Start", "Start the xpra session",
+                           self.run_command)
         self.run_btn.set_sensitive(False)
+        self.runattach_btn = btn("Start & Attach", "Start the xpra session and attach to it",
+                                 self.runattach_command, True)
+        self.runattach_btn.set_sensitive(False)
 
         vbox.show_all()
         self.add(vbox)
@@ -166,6 +212,8 @@ class StartSession(Gtk.Window):
 
     def quit(self, *args):
         log("quit%s", args)
+        if self.exit_code is None:
+            self.exit_code = 0
         self.do_quit()
 
     def do_quit(self):
@@ -174,33 +222,47 @@ class StartSession(Gtk.Window):
 
 
     def populate_menus(self):
+        localhost = self.localhost_btn.get_active()
+        only_shadow = (OSX or WIN32) and localhost
+        if only_shadow:
+            self.shadow_btn.set_active(True)
+        self.seamless_btn.set_sensitive(not only_shadow)
+        self.desktop_btn.set_sensitive(not only_shadow)
         shadow_mode = self.shadow_btn.get_active()
+        seamless = self.seamless_btn.get_active()
+        if localhost:
+            self.address_box.hide()
+        else:
+            self.address_box.show_all()
         if shadow_mode:
             #only option we show is the optional display input
             self.display_box.show_all()
-            self.entry_al.hide()
-            self.entry.hide()
+            self.entry_box.hide()
             self.category_box.hide()
             self.command_box.hide()
             self.exit_with_children_cb.hide()
         else:
-            self.command_label.set_text("Command:" if self.seamless else "Desktop Environment:")
             self.display_box.hide()
-            self.command_box.show_all()
             self.exit_with_children_cb.show()
-            if xdg:
-                #we have menus, so hide text input:
-                self.entry_al.hide()
-                self.entry.hide()
-                if self.seamless:
+            if xdg and localhost:
+                #we have the xdg menus and the server is local, so we can use them:
+                self.entry_box.hide()
+                self.command_label.set_text("Command:" if seamless else "Desktop Environment:")
+                self.command_box.show_all()
+                if seamless:
                     self.category_box.show()
                     self.populate_category()
                 else:
                     self.category_box.hide()
                     self.populate_command()
-                return
+                self.exit_with_children_cb.set_sensitive(True)
             else:
-                self.entry_al.show_all()
+                #remote server (or missing xdg data)
+                self.command_box.hide()
+                self.category_box.hide()
+                self.entry_label.set_text("Command:" if seamless else "Desktop Environment:")
+                self.entry_box.show_all()
+                self.exit_with_children_cb.set_sensitive(bool(self.entry.get_text()))
 
 
     def populate_category(self):
@@ -268,22 +330,43 @@ class StartSession(Gtk.Window):
         name = self.command_combo.get_active_text()
         log("command_changed(%s) command=%s", args, name)
         if name:
-            if self.seamless:
+            seamless = self.seamless_btn.get_active()
+            if seamless:
                 self.desktop_entry = self.commands[name]
             else:
                 self.desktop_entry = self.xsessions[name]
             log("command_changed(%s) desktop_entry=%s", args, self.desktop_entry)
             self.run_btn.set_sensitive(True)
+            self.runattach_btn.set_sensitive(True)
         else:
             self.desktop_entry = None
             self.run_btn.set_sensitive(False)
+            self.runattach_btn.set_sensitive(False)
+
+    def entry_changed(self, *args):
+        text = self.entry.get_text()
+        log("entry_changed(%s) entry=%s", args, text)
+        self.exit_with_children_cb.set_sensitive(bool(text))
+
+    def get_default_port(self, mode):
+        return {
+            "SSH" : 22,
+            }.get(mode, 14500)
 
 
-    def mode_toggled(self, *args):
-        self.seamless = self.seamless_btn.get_active()
-        log("mode_toggled(%s) seamless=%s", args, self.seamless)
+    def mode_changed(self, *args):
+        log("mode_changed(%s)", args)
+        mode = self.mode_combo.get_active_text()
+        self.port_entry.set_text(str(self.get_default_port(mode)))
+
+    def session_toggled(self, *args):
+        log("session_toggled(%s) seamless=%s", args, self.seamless_btn.get_active())
         if self.shadow_btn.get_active():
             self.exit_with_client_cb.set_active(True)
+        self.populate_menus()
+
+    def host_toggled(self, *args):
+        log("host_toggled(%s)", args)
         self.populate_menus()
 
 
@@ -294,8 +377,28 @@ class StartSession(Gtk.Window):
 
 
     def run_command(self, *_args):
+        self.do_run()
+        pass
+
+    def runattach_command(self, *args):
+        self.do_run(True)
+
+    def do_run(self, attach=False):
         self.hide()
-        if xdg:
+        cmd = self.get_run_command(attach)
+        proc = exec_command(cmd)
+        if proc:
+            from xpra.make_thread import start_thread
+            start_thread(self.wait_for_subprocess, "wait-%i" % proc.pid, daemon=True, args=(proc,))
+
+    def wait_for_subprocess(self, proc):
+        proc.wait()
+        log("return code: %s", proc.returncode)
+        GLib.idle_add(self.show)
+
+    def get_run_command(self, attach=False):
+        localhost = self.localhost_btn.get_active()
+        if xdg and localhost:
             if self.desktop_entry.getTryExec():
                 try:
                     command = self.desktop_entry.findTryExec()
@@ -307,7 +410,8 @@ class StartSession(Gtk.Window):
             command = self.entry.get_text()
         cmd = get_xpra_command()
         shadow = self.shadow_btn.get_active()
-        if self.seamless:
+        seamless = self.seamless_btn.get_active()
+        if seamless:
             cmd.append("start")
         elif shadow:
             cmd.append("shadow")
@@ -315,15 +419,38 @@ class StartSession(Gtk.Window):
             cmd.append("start-desktop")
         ewc = self.exit_with_client_cb.get_active()
         cmd.append("--exit-with-client=%s" % ewc)
-        if not shadow:
+        if shadow:
+            display = self.display_entry.get_text()
+        else:
+            display = None
             ewc = self.exit_with_children_cb.get_active()
             cmd.append("--exit-with-children=%s" % ewc)
             if ewc:
                 cmd.append("--start-child=%s" % command)
             else:
                 cmd.append("--start=%s" % command)
-        cmd.append("--attach=%s" % self.attach_cb.get_active())
-        exec_command(cmd)
+        cmd.append("--attach=%s" % attach)
+        localhost = self.localhost_btn.get_active()
+        if not localhost:
+            mode = self.mode_combo.get_active_text()
+            uri = "%s://" % mode.lower()
+            username = self.username_entry.get_text()
+            if username:
+                uri += "%s@" % username
+            host = self.host_entry.get_text()
+            if host:
+                uri += host
+            port = self.port_entry.get_text()
+            if port!=self.get_default_port(mode):
+                uri += ":%s" % port
+            uri += "/"
+            if display:
+                uri += display.lstrip(":")
+        else:
+            uri = display
+        if uri:
+            cmd.append(uri)
+        return cmd
 
 
 def main(): # pragma: no cover
@@ -340,8 +467,8 @@ def main(): # pragma: no cover
         gui.show()
         gui.present()
         Gtk.main()
-        log("do_main() gui.exit_code=%i", gui.exit_code)
-        return 0
+        log("do_main() gui.exit_code=%s", gui.exit_code)
+        return gui.exit_code
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -123,16 +123,10 @@ class GUI(Gtk.Window):
                 self.shadow_button.set_sensitive(False)
             self.widgets.append(self.shadow_button)
             icon = get_icon_pixbuf("windows.png")
+            label = "Start a new %sxpra session" % (" remote" if (WIN32 or OSX) else "")
             self.start_button = imagebutton("Start", icon,
-                                            "Start a session", clicked_callback=self.start,
+                                            label, clicked_callback=self.start,
                                             icon_size=48, label_font=label_font)
-            #not all builds and platforms can start sessions:
-            if OSX or WIN32:
-                self.start_button.set_tooltip_text("Starting sessions is not supported on %s" % platform_name(sys.platform))
-                self.start_button.set_sensitive(False)
-            elif not has_server:
-                self.start_button.set_tooltip_text("This build of Xpra does not support starting sessions")
-                self.start_button.set_sensitive(False)
             self.widgets.append(self.start_button)
         assert len(self.widgets)%2==0
         table = Gtk.Table(len(self.widgets)//2, 2, True)
