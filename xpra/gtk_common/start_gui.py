@@ -347,6 +347,8 @@ class StartSession(Gtk.Window):
         text = self.entry.get_text()
         log("entry_changed(%s) entry=%s", args, text)
         self.exit_with_children_cb.set_sensitive(bool(text))
+        self.run_btn.set_sensitive(bool(text))
+        self.runattach_btn.set_sensitive(bool(text))
 
     def get_default_port(self, mode):
         return {
@@ -364,10 +366,12 @@ class StartSession(Gtk.Window):
         if self.shadow_btn.get_active():
             self.exit_with_client_cb.set_active(True)
         self.populate_menus()
+        self.entry_changed()
 
     def host_toggled(self, *args):
         log("host_toggled(%s)", args)
         self.populate_menus()
+        self.entry_changed()
 
 
     def hide_window(self, *args):
