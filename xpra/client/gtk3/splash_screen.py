@@ -11,7 +11,7 @@ from gi.repository import Gtk, Gdk, GLib, Pango
 from xpra import __version__
 from xpra.util import envint
 from xpra.os_util import SIGNAMES, OSX
-from xpra.exit_codes import EXIT_TIMEOUT
+from xpra.exit_codes import EXIT_TIMEOUT, EXIT_CONNECTION_LOST
 from xpra.common import SPLASH_EXIT_DELAY
 from xpra.gtk_common.gtk_util import add_close_accel, get_icon_pixbuf
 from xpra.gtk_common.gobject_compat import install_signal_handlers
@@ -132,7 +132,11 @@ class SplashScreen(Gtk.Window):
         log("read_stdin()")
         while self.exit_code is None:
             line = sys.stdin.readline()
-            GLib.idle_add(self.handle_stdin_line, line)
+            if not line:
+                self.exit()
+            else:
+                self.exit_code = EXIT_CONNECTION_LOST
+                GLib.idle_add(self.handle_stdin_line, line)
 
     def handle_stdin_line(self, line):
         parts = line.rstrip("\n\r").split(":", 1)
