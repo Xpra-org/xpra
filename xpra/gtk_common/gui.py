@@ -18,7 +18,7 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.gtk_common.start_gui import StartSession
 from xpra.platform.paths import get_xpra_command
-from xpra.os_util import OSX, WIN32, platform_name
+from xpra.os_util import OSX, WIN32
 from xpra.log import Logger
 from xpra.gtk_common.about import about
 
@@ -40,7 +40,7 @@ try:
 except ImportError:
     has_shadow = False
 try:
-    import xdg
+    import xdg  #pylint: disable=unused-import
 except ImportError:
     xdg = None
 
@@ -57,7 +57,6 @@ class GUI(Gtk.Window):
 
     def __init__(self, title="Xpra"):
         self.exit_code = 0
-        self.start_session = None
         Gtk.Window.__init__(self)
 
         hb = Gtk.HeaderBar()
@@ -206,12 +205,10 @@ class GUI(Gtk.Window):
             self.busy_cursor(self.connect_button)
 
     def start(self, *_args):
-        if not self.start_session:
-            self.start_session = StartSession()
-            self.start_session.do_quit = self.start_session.hide_window
-        self.start_session.populate_menus()
-        self.start_session.show()
-        self.start_session.present()
+        cmd = get_xpra_command()+["start-gui"]
+        proc = exec_command(cmd)
+        if proc.poll() is None:
+            self.busy_cursor(self.start_button)
 
     def open_file(self, filename):
         log("open_file(%s)", filename)
