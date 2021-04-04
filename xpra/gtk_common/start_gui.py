@@ -16,17 +16,18 @@ from xpra.gtk_common.gtk_util import (
     get_icon_pixbuf,
     imagebutton,
     )
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, platform_name
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
 log = Logger("client", "util")
-log.enable_debug()
 
 try:
     import xdg
 except ImportError:
     xdg = None
+
+REQUIRE_COMMAND = False
 
 
 def exec_command(cmd):
@@ -80,9 +81,12 @@ class StartSession(Gtk.Window):
             sf(btn, "sans 16")
             hbox.add(btn)
             return btn
-        self.seamless_btn = rb(None, "Seamless Session", self.session_toggled, "Forward an application window(s) individually, seamlessly")
-        self.desktop_btn = rb(self.seamless_btn, "Desktop Session", self.session_toggled, "Forward a full desktop environment, contained in a window")
-        self.shadow_btn = rb(self.seamless_btn, "Shadow Session", self.session_toggled, "Forward an existing desktop session, shown in a window")
+        self.seamless_btn = rb(None, "Seamless Session", self.session_toggled,
+                               "Forward an application window(s) individually, seamlessly")
+        self.desktop_btn = rb(self.seamless_btn, "Desktop Session", self.session_toggled,
+                              "Forward a full desktop environment, contained in a window")
+        self.shadow_btn = rb(self.seamless_btn, "Shadow Session", self.session_toggled,
+                             "Forward an existing desktop session, shown in a window")
         vbox.pack_start(hbox, False)
 
         vbox.pack_start(Gtk.HSeparator(), True, False)
@@ -98,6 +102,7 @@ class StartSession(Gtk.Window):
         host_box.pack_start(hbox, True, True)
         self.localhost_btn = rb(None, "Local System", self.host_toggled)
         self.remote_btn = rb(self.localhost_btn, "Remote")
+        self.remote_btn.set_tooltip_text("Start sessions on a remote system")
         self.address_box = Gtk.HBox(False, 0)
         options_box.pack_start(xal(self.address_box), True, True)
         self.mode_combo = sf(Gtk.ComboBoxText())
@@ -223,11 +228,8 @@ class StartSession(Gtk.Window):
 
     def populate_menus(self):
         localhost = self.localhost_btn.get_active()
-        only_shadow = (OSX or WIN32) and localhost
-        if only_shadow:
+        if (OSX or WIN32) and localhost:
             self.shadow_btn.set_active(True)
-        self.seamless_btn.set_sensitive(not only_shadow)
-        self.desktop_btn.set_sensitive(not only_shadow)
         shadow_mode = self.shadow_btn.get_active()
         seamless = self.seamless_btn.get_active()
         if localhost:
@@ -336,19 +338,17 @@ class StartSession(Gtk.Window):
             else:
                 self.desktop_entry = self.xsessions[name]
             log("command_changed(%s) desktop_entry=%s", args, self.desktop_entry)
-            self.run_btn.set_sensitive(True)
-            self.runattach_btn.set_sensitive(True)
         else:
             self.desktop_entry = None
-            self.run_btn.set_sensitive(False)
-            self.runattach_btn.set_sensitive(False)
+        self.run_btn.set_sensitive(not REQUIRE_COMMAND or bool(name))
+        self.runattach_btn.set_sensitive(not REQUIRE_COMMAND or bool(name))
 
     def entry_changed(self, *args):
         text = self.entry.get_text()
         log("entry_changed(%s) entry=%s", args, text)
         self.exit_with_children_cb.set_sensitive(bool(text))
-        self.run_btn.set_sensitive(bool(text))
-        self.runattach_btn.set_sensitive(bool(text))
+        self.run_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
+        self.runattach_btn.set_sensitive(not REQUIRE_COMMAND or bool(text))
 
     def get_default_port(self, mode):
         return {
@@ -362,9 +362,19 @@ class StartSession(Gtk.Window):
         self.port_entry.set_text(str(self.get_default_port(mode)))
 
     def session_toggled(self, *args):
-        log("session_toggled(%s) seamless=%s", args, self.seamless_btn.get_active())
-        if self.shadow_btn.get_active():
+        localhost = self.localhost_btn.get_active()
+        log("session_toggled(%s) localhost=%s", args, localhost)
+        shadow = self.shadow_btn.get_active()
+        local_shadow_only = WIN32 or OSX
+        if shadow:
             self.exit_with_client_cb.set_active(True)
+        elif local_shadow_only and localhost:
+            #can only do shadow on localhost, so switch to remote:
+            self.remote_btn.set_active(True)
+        can_use_localhost = shadow or not local_shadow_only
+        self.localhost_btn.set_sensitive(can_use_localhost)
+        self.localhost_btn.set_tooltip_text("Start sessions on the local system" if can_use_localhost else
+                                            "Cannot start local desktop or seamless sessions on %s" % platform_name())
         self.populate_menus()
         self.entry_changed()
 
@@ -382,9 +392,8 @@ class StartSession(Gtk.Window):
 
     def run_command(self, *_args):
         self.do_run()
-        pass
 
-    def runattach_command(self, *args):
+    def runattach_command(self, *_args):
         self.do_run(True)
 
     def do_run(self, attach=False):
