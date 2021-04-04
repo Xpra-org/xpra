@@ -202,7 +202,6 @@ class StartSession(Gtk.Window):
                               self.quit)
         self.run_btn = btn("Start", "Start the xpra session",
                            self.run_command)
-        self.run_btn.set_sensitive(False)
         self.runattach_btn = btn("Start & Attach", "Start the xpra session and attach to it",
                                  self.runattach_command, True)
         self.runattach_btn.set_sensitive(False)
@@ -332,6 +331,8 @@ class StartSession(Gtk.Window):
         self.command_combo.set_active(0)
 
     def command_changed(self, *args):
+        if self.shadow_btn.get_active():
+            return
         name = self.command_combo.get_active_text()
         log("command_changed(%s) command=%s", args, name)
         if name:
