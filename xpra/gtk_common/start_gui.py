@@ -138,6 +138,7 @@ class StartSession(Gtk.Window):
         self.display_entry.set_width_chars(10)
         self.display_entry.set_placeholder_text("optional")
         self.display_entry.set_max_length(10)
+        self.display_entry.set_tooltip_text("To use a specific X11 display number")
         self.display_box.pack_start(self.display_label, True)
         self.display_box.pack_start(self.display_entry, True, False)
 
@@ -230,6 +231,9 @@ class StartSession(Gtk.Window):
         localhost = self.localhost_btn.get_active()
         if (OSX or WIN32) and localhost:
             self.shadow_btn.set_active(True)
+            self.display_box.hide()
+        else:
+            self.display_box.show()
         shadow_mode = self.shadow_btn.get_active()
         seamless = self.seamless_btn.get_active()
         if localhost:
@@ -238,13 +242,11 @@ class StartSession(Gtk.Window):
             self.address_box.show_all()
         if shadow_mode:
             #only option we show is the optional display input
-            self.display_box.show_all()
             self.entry_box.hide()
             self.category_box.hide()
             self.command_box.hide()
             self.exit_with_children_cb.hide()
         else:
-            self.display_box.hide()
             self.exit_with_children_cb.show()
             if xdg and localhost:
                 #we have the xdg menus and the server is local, so we can use them:
@@ -432,10 +434,7 @@ class StartSession(Gtk.Window):
             cmd.append("start-desktop")
         ewc = self.exit_with_client_cb.get_active()
         cmd.append("--exit-with-client=%s" % ewc)
-        if shadow:
-            display = self.display_entry.get_text()
-        else:
-            display = None
+        if not shadow:
             ewc = self.exit_with_children_cb.get_active()
             cmd.append("--exit-with-children=%s" % ewc)
             if ewc:
@@ -444,7 +443,10 @@ class StartSession(Gtk.Window):
                 cmd.append("--start=%s" % command)
         cmd.append("--attach=%s" % attach)
         localhost = self.localhost_btn.get_active()
-        if not localhost:
+        display = self.display_entry.get_text().lstrip(":")
+        if localhost:
+            uri = ":"+display
+        else:
             mode = self.mode_combo.get_active_text()
             uri = "%s://" % mode.lower()
             username = self.username_entry.get_text()
@@ -458,9 +460,7 @@ class StartSession(Gtk.Window):
                 uri += ":%s" % port
             uri += "/"
             if display:
-                uri += display.lstrip(":")
-        else:
-            uri = display
+                uri += display
         if uri:
             cmd.append(uri)
         return cmd
