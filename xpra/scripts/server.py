@@ -124,6 +124,9 @@ def display_name_check(display_name):
     n = display_name[1:].split(".")[0]    #ie: ":0.0" -> "0"
     try:
         dno = int(n)
+    except (ValueError, TypeError):
+        raise InitException("invalid display number %r" % n) from None
+    else:
         if 0<=dno<10:
             warn("WARNING: low display number: %s" % dno)
             warn(" You are attempting to run the xpra server")
@@ -131,8 +134,6 @@ def display_name_check(display_name):
             warn(" This is generally not what you want.")
             warn(" You should probably use a higher display number")
             warn(" just to avoid any confusion and this warning message.")
-    except IOError:
-        pass
 
 
 def print_DE_warnings():
