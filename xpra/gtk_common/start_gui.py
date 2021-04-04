@@ -135,6 +135,7 @@ class StartSession(Gtk.Window):
         options_box.pack_start(self.display_box, False, True, 20)
         self.display_label = l("Display:")
         self.display_entry = sf(Gtk.Entry())
+        self.display_entry.connect('changed', self.display_changed)
         self.display_entry.set_width_chars(10)
         self.display_entry.set_placeholder_text("optional")
         self.display_entry.set_max_length(10)
@@ -346,6 +347,8 @@ class StartSession(Gtk.Window):
         self.runattach_btn.set_sensitive(not REQUIRE_COMMAND or bool(name))
 
     def entry_changed(self, *args):
+        if self.shadow_btn.get_active():
+            return
         text = self.entry.get_text()
         log("entry_changed(%s) entry=%s", args, text)
         self.exit_with_children_cb.set_sensitive(bool(text))
@@ -377,11 +380,26 @@ class StartSession(Gtk.Window):
         self.localhost_btn.set_sensitive(can_use_localhost)
         self.localhost_btn.set_tooltip_text("Start sessions on the local system" if can_use_localhost else
                                             "Cannot start local desktop or seamless sessions on %s" % platform_name())
+        self.display_changed()
         self.populate_menus()
         self.entry_changed()
 
+    def display_changed(self, *args):
+        display = self.display_entry.get_text().lstrip(":")
+        localhost = self.localhost_btn.get_active()
+        shadow = self.shadow_btn.get_active()
+        log("display_changed(%s) display=%s, localhost=%s, shadow=%s", args, display, localhost, shadow)
+        ra_label = "Start the xpra session and attach to it"
+        self.runattach_btn.set_sensitive(True)
+        if shadow and localhost:
+            if WIN32 or OSX or (not display or os.environ.get("DISPLAY", "").lstrip(":")==display):
+                ra_label = "Cannot attach this desktop session to itself"
+                self.runattach_btn.set_sensitive(False)
+        self.runattach_btn.set_tooltip_text(ra_label)
+
     def host_toggled(self, *args):
         log("host_toggled(%s)", args)
+        self.display_changed()
         self.populate_menus()
         self.entry_changed()
 
@@ -445,7 +463,7 @@ class StartSession(Gtk.Window):
         localhost = self.localhost_btn.get_active()
         display = self.display_entry.get_text().lstrip(":")
         if localhost:
-            uri = ":"+display
+            uri = ":"+display if display else ""
         else:
             mode = self.mode_combo.get_active_text()
             uri = "%s://" % mode.lower()
