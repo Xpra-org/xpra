@@ -230,7 +230,6 @@ class StartSession(Gtk.Window):
     def populate_menus(self):
         localhost = self.localhost_btn.get_active()
         if (OSX or WIN32) and localhost:
-            self.shadow_btn.set_active(True)
             self.display_box.hide()
         else:
             self.display_box.show()
@@ -496,6 +495,9 @@ def main(): # pragma: no cover
         register_os_signals(gui.app_signal)
         ready()
         gui.populate_menus()
+        gui.session_toggled()
+        if WIN32 or OSX:
+            gui.remote_btn.set_active(True)
         gui.show()
         gui.present()
         Gtk.main()
