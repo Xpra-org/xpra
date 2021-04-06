@@ -268,6 +268,10 @@ def get_screen_sizes(xscale=1, yscale=1):
         monitor = display.get_monitor(j)
         geom = monitor.get_geometry()
         manufacturer, model = monitor.get_manufacturer(), monitor.get_model()
+        if manufacturer=="unknown":
+            manufacturer = ""
+        if model=="unknown":
+            model = ""
         if manufacturer and model:
             plug_name = "%s %s" % (manufacturer, model)
         elif manufacturer:

@@ -518,7 +518,12 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 #only show it again if different from the screen workarea
                 if dwork_x!=work_x or dwork_y!=work_y or dwork_width!=work_width or dwork_height!=work_height:
                     add_workarea(info, dwork_x, dwork_y, dwork_width, dwork_height)
-            log.info("    "+" ".join(info))
+            istr = " ".join(info)
+            if len(monitors)==1 and istr in ("unknown unknown", str(i-1), str(i), "minitor %i" % (i+1)):
+                #a single monitor with no real name,
+                #so don't bother showing it:
+                continue
+            log.info("    "+istr)
 
 def get_screen_info(screen_sizes):
     #same format as above
