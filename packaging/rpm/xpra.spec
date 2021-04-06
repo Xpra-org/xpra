@@ -608,6 +608,11 @@ fi
 - fix unnecessary screen update delays
 - fix screen refresh rate detection
 - increase the default screen update refresh rate
+- fix missing encodings with 'upgrade' and 'upgrade-desktop' subcommands
+- fix client failures due to missing socket directories
+- fix crashes when showing notifications (ie: MacOS Big Sur)
+- workaround for hidden library paths (MacOS Big Sur)
+- more correct API usage of 'notify2' backend
 - fix `run_scaled` script handling of multiple arguments
 - fix ioctl error with nested SSH connections
 - fix video region detection error
@@ -616,9 +621,12 @@ fi
 - fix directory listing with the builtin http server (still disabled by default)
 - fix clipboard errors on MS Windows when we fail to acquire the lock
 - fix the server's GetAll dbus property handler
-- show the correct list of pressed keys
+- fix display-name validation check
+- the 'exec-wrapper' option no longer needs to use an absolute path
+- show the correct list of pressed keys, unkown modifiers
+- prevent the splash screen process from consuming too much CPU
 - better service configuration file location detection
-- packaging script fixes
+- packaging script fixes, library and documentation updates
 
 * Sun Mar 07 2021 Antoine Martin <antoine@xpra.org> 4.1.1-1
 - ensure splash screen failures are not fatal, fix threading bug

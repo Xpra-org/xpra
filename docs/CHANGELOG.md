@@ -1,9 +1,14 @@
 # Changelog
 
-## [4.1.2] 2021-03-24
+## [4.1.2] 2021-04-06
 * fix unnecessary screen update delays
 * fix screen refresh rate detection
 * increase the default screen update refresh rate
+* fix missing encodings with 'upgrade' and 'upgrade-desktop' subcommands
+* fix client failures due to missing socket directories
+* fix crashes when showing notifications (ie: MacOS Big Sur)
+* workaround for hidden library paths (MacOS Big Sur)
+* more correct API usage of 'notify2' backend
 * fix `run_scaled` script handling of multiple arguments
 * fix ioctl error with nested SSH connections
 * fix video region detection error
@@ -12,9 +17,12 @@
 * fix directory listing with the builtin http server (still disabled by default)
 * fix clipboard errors on MS Windows when we fail to acquire the lock
 * fix the server's GetAll dbus property handler
-* show the correct list of pressed keys
+* fix display-name validation check
+* the 'exec-wrapper' option no longer needs to use an absolute path
+* show the correct list of pressed keys, unkown modifiers
+* prevent the splash screen process from consuming too much CPU
 * better service configuration file location detection
-* packaging script fixes
+* packaging script fixes, library and documentation updates
 
 ## [4.1.1] 2021-03-07
 * ensure splash screen failures are not fatal, fix threading bug
