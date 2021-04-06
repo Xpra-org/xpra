@@ -174,7 +174,7 @@ class ZeroconfPublisher:
             args[6] = props
             self.args = tuple(args)
         self.kwargs["properties"] = props
-        si = ServiceInfo(**self.kwargs)
+        si = ServiceInfo(*self.args, **self.kwargs)
         try:
             self.zeroconf.update_service(si)
             self.service = si
