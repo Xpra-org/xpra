@@ -1,4 +1,9 @@
 xpra (4.1.2-1) UNRELEASED; urgency=low
+  * rebuild with packaging fix for systemd service file
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Apr 2021 23:18:41 +0700
+
+xpra (4.1.2-1) UNRELEASED; urgency=low
   * fix unnecessary screen update delays
   * fix screen refresh rate detection
   * increase the default screen update refresh rate
