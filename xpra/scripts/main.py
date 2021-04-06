@@ -393,6 +393,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
     if mode in (
         "start", "start-desktop",
         "shadow", "attach", "listen",
+        "upgrade", "upgrade-desktop",
         "request-start", "request-start-desktop", "request-shadow",
         ):
         options.encodings = validated_encodings(options.encodings)
