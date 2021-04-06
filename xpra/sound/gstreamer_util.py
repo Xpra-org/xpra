@@ -47,7 +47,7 @@ def get_queue_time(default_value=450, prefix=""):
 ALLOW_SOUND_LOOP = envbool("XPRA_ALLOW_SOUND_LOOP", False)
 USE_DEFAULT_DEVICE = envbool("XPRA_USE_DEFAULT_DEVICE", True)
 IGNORED_INPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_INPUT_DEVICES", "bell.ogg,bell.wav").split(",")
-IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_OUTPUT_DEVICES", "").split(",")
+IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_OUTPUT_DEVICES", "bell-window-system").split(",")
 def force_enabled(codec_name):
     return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), "0")=="1"
 
