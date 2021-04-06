@@ -168,12 +168,16 @@ class ZeroconfPublisher:
         return new_dict
 
     def update_txt(self, txt):
+        if not hasattr(self.zeroconf, "update_service"):
+            log("no update_service with zeroconf version %s", zeroconf_version)
+            return
         props = self.txt_rec(txt)
         if self.args:
             args = list(self.args)
             args[6] = props
             self.args = tuple(args)
-        self.kwargs["properties"] = props
+        else:
+            self.kwargs["properties"] = props
         si = ServiceInfo(*self.args, **self.kwargs)
         try:
             self.zeroconf.update_service(si)
