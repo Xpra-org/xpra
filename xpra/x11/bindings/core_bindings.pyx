@@ -37,7 +37,7 @@ cdef extern from "X11/Xlib.h":
 
     ctypedef struct Display:
         pass
-    ctypedef CARD32 Time
+    ctypedef unsigned long Time
     ctypedef int Bool
     ctypedef int Status
 
