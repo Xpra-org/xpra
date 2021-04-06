@@ -623,6 +623,7 @@ fi
 - fix the server's GetAll dbus property handler
 - fix display-name validation check
 - the 'exec-wrapper' option no longer needs to use an absolute path
+- ignore bell audio devices
 - show the correct list of pressed keys, unkown modifiers
 - prevent the splash screen process from consuming too much CPU
 - better service configuration file location detection
