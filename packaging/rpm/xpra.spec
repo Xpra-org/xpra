@@ -604,7 +604,7 @@ fi
 
 
 %changelog
-* Wed Mar 24 2021 Antoine Martin <antoine@xpra.org> 4.1.2-10
+* Tue Apr 06 2021 Antoine Martin <antoine@xpra.org> 4.1.2-10
 - fix unnecessary screen update delays
 - fix screen refresh rate detection
 - increase the default screen update refresh rate

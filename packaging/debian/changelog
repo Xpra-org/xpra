@@ -22,7 +22,7 @@ xpra (4.1.2-1) UNRELEASED; urgency=low
   * better service configuration file location detection
   * packaging script fixes, library and documentation updates
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 06 Apr 2021 12:13:01 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 06 Apr 2021 12:13:01 +0700
 
 xpra (4.1.1-1) UNRELEASED; urgency=low
   * ensure splash screen failures are not fatal, fix threading bug
