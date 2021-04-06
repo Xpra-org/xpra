@@ -255,122 +255,68 @@ def get_screen_sizes(xscale=1, yscale=1):
         if size_mm==0:
             return 0
         return iround(size_pixels * 254 / size_mm / 10)
-    n_screens = display.get_n_screens()
-    get_n_monitors = getattr(display, "get_n_monitors", None)
-    if get_n_monitors:
-        #GTK 3.22: always just one screen
-        n_monitors = get_n_monitors()
-        workareas = get_workareas()
-        if workareas and len(workareas)!=n_monitors:
-            screenlog(" workareas: %s", workareas)
-            screenlog(" number of monitors does not match number of workareas!")
-            workareas = []
-        monitors = []
-        for j in range(n_monitors):
-            monitor = display.get_monitor(j)
-            geom = monitor.get_geometry()
-            manufacturer, model = monitor.get_manufacturer(), monitor.get_model()
-            if manufacturer and model:
-                plug_name = "%s %s" % (manufacturer, model)
-            elif manufacturer:
-                plug_name = manufacturer
-            elif model:
-                plug_name = model
-            else:
-                plug_name = "%i" % j
-            wmm, hmm = monitor.get_width_mm(), monitor.get_height_mm()
-            monitor_info = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
-            screenlog(" monitor %s: %s", j, monitor)
-            if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
-                rect = monitor.get_workarea()
-                monitor_info += list(swork(rect.x, rect.y, rect.width, rect.height))
-            elif workareas:
-                w = workareas[j]
-                monitor_info += list(swork(*w))
-            monitors.append(tuple(monitor_info))
-        screen = display.get_default_screen()
-        sw, sh = screen.get_width(), screen.get_height()
-        work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
-        workarea = get_workarea()   #pylint: disable=assignment-from-none
-        if workarea:
-            work_x, work_y, work_width, work_height = swork(*workarea)  #pylint: disable=not-an-iterable
-        screenlog(" workarea=%s", workarea)
-        wmm = screen.get_width_mm()
-        hmm = screen.get_height_mm()
-        xdpi = dpi(sw, wmm)
-        ydpi = dpi(sh, hmm)
+    #GTK 3.22 onwards always returns just a single screen,
+    #potentially with multiple monitors
+    n_monitors = display.get_n_monitors()
+    workareas = get_workareas()
+    if workareas and len(workareas)!=n_monitors:
+        screenlog(" workareas: %s", workareas)
+        screenlog(" number of monitors does not match number of workareas!")
+        workareas = []
+    monitors = []
+    for j in range(n_monitors):
+        monitor = display.get_monitor(j)
+        geom = monitor.get_geometry()
+        manufacturer, model = monitor.get_manufacturer(), monitor.get_model()
+        if manufacturer and model:
+            plug_name = "%s %s" % (manufacturer, model)
+        elif manufacturer:
+            plug_name = manufacturer
+        elif model:
+            plug_name = model
+        else:
+            plug_name = "%i" % j
+        wmm, hmm = monitor.get_width_mm(), monitor.get_height_mm()
+        monitor_info = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
+        screenlog(" monitor %s: %s", j, monitor)
+        if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
+            rect = monitor.get_workarea()
+            monitor_info += list(swork(rect.x, rect.y, rect.width, rect.height))
+        elif workareas:
+            w = workareas[j]
+            monitor_info += list(swork(*w))
+        monitors.append(tuple(monitor_info))
+    screen = display.get_default_screen()
+    sw, sh = screen.get_width(), screen.get_height()
+    work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
+    workarea = get_workarea()   #pylint: disable=assignment-from-none
+    if workarea:
+        work_x, work_y, work_width, work_height = swork(*workarea)  #pylint: disable=not-an-iterable
+    screenlog(" workarea=%s", workarea)
+    wmm = screen.get_width_mm()
+    hmm = screen.get_height_mm()
+    xdpi = dpi(sw, wmm)
+    ydpi = dpi(sh, hmm)
+    if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
+        log("ignoring invalid screen size %ix%imm", wmm, hmm)
+        if os.environ.get("WAYLAND_DISPLAY"):
+            log(" (wayland display?)")
+        if n_monitors>0:
+            wmm = sum(display.get_monitor(i).get_width_mm() for i in range(n_monitors))
+            hmm = sum(display.get_monitor(i).get_height_mm() for i in range(n_monitors))
+            xdpi = dpi(sw, wmm)
+            ydpi = dpi(sh, hmm)
         if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
-            log("ignoring invalid screen size %ix%imm", wmm, hmm)
-            if os.environ.get("WAYLAND_DISPLAY"):
-                log(" (wayland display?)")
-            if n_monitors>0:
-                wmm = sum(display.get_monitor(i).get_width_mm() for i in range(n_monitors))
-                hmm = sum(display.get_monitor(i).get_height_mm() for i in range(n_monitors))
-                xdpi = dpi(sw, wmm)
-                ydpi = dpi(sh, hmm)
-            if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
-                #still invalid, generate one from DPI=96
-                wmm = iround(sw*25.4/96)
-                hmm = iround(sh*25.4/96)
-            log(" using %ix%i mm", wmm, hmm)
-        item = (screen.make_display_name(), xs(sw), ys(sh),
-                    wmm, hmm,
-                    monitors,
-                    work_x, work_y, work_width, work_height)
-        screenlog(" screen: %s", item)
-        screen_sizes = [item]
-    else:
-        i=0
-        screen_sizes = []
-        #GTK2 or GTK3<3.22:
-        screenlog("get_screen_sizes(%f, %f) found %s screens", xscale, yscale, n_screens)
-        while i<n_screens:
-            screen = display.get_screen(i)
-            j = 0
-            monitors = []
-            workareas = []
-            #native "get_workareas()" is only valid for a single screen (but describes all the monitors)
-            #and it is only implemented on win32 right now
-            #other platforms only implement "get_workarea()" instead, which is reported against the screen
-            n_monitors = screen.get_n_monitors()
-            screenlog(" screen %s has %s monitors", i, n_monitors)
-            if n_screens==1:
-                workareas = get_workareas()
-                if workareas and len(workareas)!=n_monitors:
-                    screenlog(" workareas: %s", workareas)
-                    screenlog(" number of monitors does not match number of workareas!")
-                    workareas = []
-            while j<screen.get_n_monitors():
-                geom = screen.get_monitor_geometry(j)
-                plug_name = ""
-                if hasattr(screen, "get_monitor_plug_name"):
-                    plug_name = screen.get_monitor_plug_name(j) or ""
-                wmm = -1
-                if hasattr(screen, "get_monitor_width_mm"):
-                    wmm = screen.get_monitor_width_mm(j)
-                hmm = -1
-                if hasattr(screen, "get_monitor_height_mm"):
-                    hmm = screen.get_monitor_height_mm(j)
-                monitor = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
-                screenlog(" monitor %s: %s", j, monitor)
-                if workareas:
-                    w = workareas[j]
-                    monitor += list(swork(*w))
-                monitors.append(tuple(monitor))
-                j += 1
-            work_x, work_y, work_width, work_height = swork(0, 0, screen.get_width(), screen.get_height())
-            workarea = get_workarea()   #pylint: disable=assignment-from-none
-            if workarea:
-                work_x, work_y, work_width, work_height = swork(*workarea)  #pylint: disable=not-an-iterable
-            screenlog(" workarea=%s", workarea)
-            item = (screen.make_display_name(), xs(screen.get_width()), ys(screen.get_height()),
-                        screen.get_width_mm(), screen.get_height_mm(),
-                        monitors,
-                        work_x, work_y, work_width, work_height)
-            screenlog(" screen %s: %s", i, item)
-            screen_sizes.append(item)
-            i += 1
-    return screen_sizes
+            #still invalid, generate one from DPI=96
+            wmm = iround(sw*25.4/96)
+            hmm = iround(sh*25.4/96)
+        log(" using %ix%i mm", wmm, hmm)
+    screen0 = (screen.make_display_name(), xs(sw), ys(sh),
+                wmm, hmm,
+                monitors,
+                work_x, work_y, work_width, work_height)
+    screenlog(" screen: %s", screen0)
+    return [screen0]
 
 def get_screen_info(display, screen) -> dict:
     info = {}
