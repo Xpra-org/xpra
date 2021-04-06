@@ -497,7 +497,8 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 log.info("    %s", m)
                 continue
             plug_name, plug_x, plug_y, plug_width, plug_height, plug_width_mm, plug_height_mm = m[:7]
-            info = ['%s' % prettify_plug_name(plug_name, "monitor %i" % (i+1))]
+            default_name = "monitor %i" % i
+            info = ['%s' % prettify_plug_name(plug_name, default_name)]
             if plug_width!=width or plug_height!=height or plug_x!=0 or plug_y!=0:
                 info.append("%ix%i" % (plug_width, plug_height))
                 if plug_x!=0 or plug_y!=0:
@@ -519,7 +520,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
                 if dwork_x!=work_x or dwork_y!=work_y or dwork_width!=work_width or dwork_height!=work_height:
                     add_workarea(info, dwork_x, dwork_y, dwork_width, dwork_height)
             istr = " ".join(info)
-            if len(monitors)==1 and istr in ("unknown unknown", str(i-1), str(i), "minitor %i" % (i+1)):
+            if len(monitors)==1 and istr in ("unknown unknown", "0", "1", default_name):
                 #a single monitor with no real name,
                 #so don't bother showing it:
                 continue
