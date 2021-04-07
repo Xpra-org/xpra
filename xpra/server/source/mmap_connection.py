@@ -64,8 +64,13 @@ class MMAP_Connection(StubSourceMixin):
         mmap_token = c.intget(mmapattr("token"))
         log("mmap supported=%s, token=%s", self.supports_mmap, mmap_token)
         if self.mmap_filename:
-            log("using global server specified mmap file path: '%s'", self.mmap_filename)
-            mmap_filename = self.mmap_filename
+            if os.path.isdir(self.mmap_filename):
+                #use the client's filename, but at the server path:
+                mmap_filename = os.path.join(self.mmap_filename, os.path.basename(mmap_filename))
+                log("using global server specified mmap directory: '%s'", self.mmap_filename)
+            else:
+                log("using global server specified mmap file path: '%s'", self.mmap_filename)
+                mmap_filename = self.mmap_filename
         if not self.supports_mmap:
             log("client enabled mmap but mmap mode is not supported", mmap_filename)
         elif WIN32 and mmap_filename.startswith("/"):
@@ -80,8 +85,8 @@ class MMAP_Connection(StubSourceMixin):
                 DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES,
                 )
             self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
-            log("found client mmap area: %s, %i bytes - min mmap size=%i",
-                self.mmap, self.mmap_size, self.min_mmap_size)
+            log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
+                self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
             if self.mmap_size>0:
                 index = c.intget(mmapattr("token_index"), DEFAULT_TOKEN_INDEX)
                 count = c.intget(mmapattr("token_bytes"), DEFAULT_TOKEN_BYTES)

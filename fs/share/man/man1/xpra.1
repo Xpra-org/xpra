@@ -346,14 +346,17 @@ Displays a summary of command line usage.
 Enable debug logging.  The special value \fBall\fP enables all
 debugging.
 .TP
-\fB--mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP
+\fB--mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP|\fIDIRECTORY\fP
 Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
 client reside on the same filesystem namespace.
 This method of data transfer offers much lower overheads
 and reduces both CPU consumption and local network traffic.
 When attaching, you can also specify an absolute path where
-the mmap file will be created.
+the mmap file will be created. When used on the server,
+one can specify the exact filename that the client will create,
+or just the directory where the file will be created so that
+multiple clients may connect and use mmap concurrently.
 .TP
 \fB--mmap-group\fP=\fIGROUP\fP
 Sets the mmap file's gid to the group specified, and sets
