@@ -18,7 +18,6 @@ from libc.stdlib cimport free, malloc
 
 DEF PATH_MAX = 1024
 DEF DFLT_XKB_RULES_FILE = b"base"
-DEF DFLT_XKB_CONFIG_ROOT = b"/usr/share/X11/xkb"
 
 ###################################
 # Headers, python magic
@@ -365,9 +364,10 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             "variant" : NS(rdefs.variant),
             "options" : NS(rdefs.options),
             })
-        #try to load rules files from all include paths until the first
-        #we succeed with
-        for include_path in (b".", DFLT_XKB_CONFIG_ROOT):
+        #try to load rules files from all include paths until
+        #we find one that works:
+        XKB_CONFIG_ROOT = os.environ.get("XPRA_XKB_CONFIG_ROOT", "/usr/share/X11/xkb").encode()
+        for include_path in (b".", XKB_CONFIG_ROOT):
             rules_path = os.path.join(include_path, b"rules", strtobytes(rules_name))
             if len(rules_path)>=PATH_MAX:
                 log.warn("Warning: rules path too long: %. Ignored.", rules_path)
