@@ -511,6 +511,9 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             if vd.options!=NULL:
                 v["options"] = s(vd.options)
                 XFree(vd.options)
+            if vd.variant!=NULL:
+                v["variant"] = s(vd.variant)
+                XFree(vd.variant)
             #log("vd.num_extra=%s", vd.num_extra)
             if vd.extra_names:
                 #no idea how to use this!

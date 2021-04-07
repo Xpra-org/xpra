@@ -130,11 +130,13 @@ class Keyboard(KeyboardBase):
     def get_layout_spec(self):
         layout = ""
         layouts = []
+        variant = ""
         options = ""
         v = None
         if self.keyboard_bindings:
             props = self.keyboard_bindings.getXkbProperties()
             v = props.get("layout")
+            variant = props.get("variant", "")
             options = props.get("options", "")
         else:
             locale = self.get_locale_status()
@@ -153,7 +155,7 @@ class Keyboard(KeyboardBase):
                 return v.encode("latin1")
             except Exception:
                 return str(v)
-        return s(layout), [s(x) for x in layouts], "", None, options
+        return s(layout), [s(x) for x in layouts], variant, None, options
 
 
     def get_keyboard_repeat(self):
