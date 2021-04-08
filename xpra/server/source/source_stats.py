@@ -199,6 +199,7 @@ class GlobalPerformanceStatistics:
 
     def get_connection_info(self) -> dict:
         latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))
+        now = monotonic_time()
         info = {
             "mmap_bytecount"  : self.mmap_bytes_sent,
             "latency"           : get_list_stats(latencies),
@@ -207,6 +208,10 @@ class GlobalPerformanceStatistics:
                 },
             "client"            : {
                 "ping_latency"   : get_list_stats(int(1000*x[1]) for x in tuple(self.client_ping_latency)),
+                },
+            "congestion" : {
+                "avg-send-speed"        : self.avg_congestion_send_speed,
+                "elapsed-time"          : int(now-self.last_congestion_time),
                 },
             }
         if self.min_client_latency is not None:
@@ -235,10 +240,6 @@ class GlobalPerformanceStatistics:
                 "client-latency"    : client_latency,
                 },
             "encoding" : {"decode_errors"   : self.decode_errors},
-            "congestion" : {
-                "avg-send-speed"        : self.avg_congestion_send_speed,
-                "elapsed-time"          : int(now-self.last_congestion_time),
-                },
             "connection" : self.get_connection_info(),
             }
         if self.quality:
