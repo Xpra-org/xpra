@@ -184,7 +184,7 @@ class BaseWindowModel(CoreX11WindowModel):
                       ]
     _dynamic_property_names = CoreX11WindowModel._dynamic_property_names + [
                               "attention-requested", "content-type",
-                              "workspace", "opacity",
+                              "window-type", "workspace", "opacity",
                               "fullscreen", "focused", "maximized", "above", "below", "shaded",
                               "skip-taskbar", "skip-pager", "sticky",
                               "quality", "speed", "encoding",
