@@ -15,7 +15,7 @@ from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
-    STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB,
+    STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB, LOSSLESS_WINDOW_TYPES,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
@@ -415,6 +415,8 @@ class WindowVideoSource(WindowSource):
             properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
+        if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
+            return super().get_best_encoding_impl_default()
         if self.encoding!="grayscale" or has_codec("csc_libyuv"):
             if self.common_video_encodings or self.supports_scrolling:
                 return self.get_best_encoding_video

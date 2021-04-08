@@ -88,6 +88,9 @@ TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb3
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/L"))
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32"))
 
+LOSSLESS_WINDOW_TYPES = set(os.environ.get("XPRA_LOSSLESS_WINDOW_TYPES",
+                                       "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(","))
+
 
 class DelayedRegions:
     def __init__(self, damage_time, regions, encoding, options):
@@ -262,15 +265,21 @@ class WindowSource(WindowIconSource):
         self._fixed_min_speed = capr(default_encoding_options.get("min-speed", 0))
         self._encoding_hint = None
         self._quality_hint = self.window.get("quality", -1)
-        if "quality" in window.get_dynamic_property_names():
+        dyn_props = window.get_dynamic_property_names()
+        if "quality" in dyn_props:
             sid = window.connect("notify::quality", self.quality_changed)
             self.window_signal_handlers.append(sid)
         self._speed_hint = self.window.get("speed", -1)
-        if "speed" in window.get_dynamic_property_names():
+        if "speed" in dyn_props:
             sid = window.connect("notify::speed", self.speed_changed)
             self.window_signal_handlers.append(sid)
-        if "encoding" in window.get_dynamic_property_names():
+        if "encoding" in dyn_props:
             sid = window.connect("notify::encoding", self.encoding_changed)
+            self.window_signal_handlers.append(sid)
+        self.window_type = set()
+        if "window-type" in dyn_props:
+            self.window_type = set(self.window.get_property("window-type"))
+            sid = window.connect("notify::window-type", self.window_type_changed)
             self.window_signal_handlers.append(sid)
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
@@ -655,6 +664,10 @@ class WindowSource(WindowIconSource):
             window, args, self._encoding_hint, self.get_best_encoding)
         return True
 
+    def window_type_changed(self, window, *args):
+        self.window_type = set(window.get_property("window-type"))
+        log("window_type_changed(window, %s) window_type=%s", window, args, self.window_type)
+        self.assign_encoding_getter()
 
     def set_client_properties(self, properties):
         #filter out stuff we don't care about
@@ -1198,6 +1211,10 @@ class WindowSource(WindowIconSource):
             return
         if self._sequence<10:
             self._encoding_quality_info = {"pending" : True}
+            return
+        if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
+            self._encoding_quality_info = {"lossless-window-type" : self.window_type}
+            self._current_quality = 100
             return
         now = monotonic_time()
         info, target = get_target_quality(self.window_dimensions, self.batch_config,
