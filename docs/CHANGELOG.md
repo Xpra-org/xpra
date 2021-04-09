@@ -1,7 +1,9 @@
 # Changelog
 
 ## [4.1.3] 2021-04-09
-* TODO
+* fix xpra start failures when the display is already running (with use-display=auto)
+* fix vp9 libvpx encoder failures with older library versions
+* fix 'xpra top' errors when the version string is missing
 
 ## [4.1.2] 2021-04-06
 * fix unnecessary screen update delays

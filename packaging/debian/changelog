@@ -1,5 +1,7 @@
 xpra (4.1.3-1) UNRELEASED; urgency=low
-  * TODO
+  * fix xpra start failures when the display is already running (with use-display=auto)
+  * fix vp9 libvpx encoder failures with older library versions
+  * fix 'xpra top' errors when the version string is missing
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 09 Apr 2021 21:56:50 +0700
 

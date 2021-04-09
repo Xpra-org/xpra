@@ -605,7 +605,10 @@ fi
 
 %changelog
 * Fri Apr 09 2021 Antoine Martin <antoine@xpra.org> 4.1.3-10
-- TODO
+- fix xpra start failures when the display is already running (with use-display=auto)
+- fix vp9 libvpx encoder failures with older library versions
+- fix 'xpra top' errors when the version string is missing
+
 * Tue Apr 06 2021 Antoine Martin <antoine@xpra.org> 4.1.2-10
 - fix unnecessary screen update delays
 - fix screen refresh rate detection
