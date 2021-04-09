@@ -2362,7 +2362,7 @@ def no_gtk():
     if Gtk is None:
         #all good, not loaded
         return
-    raise Exception("the Gtk module is already loaded: %s" % Gtk)
+    raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
 
 def run_qrcode(args):
