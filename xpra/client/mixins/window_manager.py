@@ -1257,7 +1257,9 @@ class WindowClient(StubClientMixin):
         else:
             if self._window_with_grab:
                 self.window_ungrab()
-                self.do_force_ungrab(self._window_with_grab)
+                wwgrab = self._window_with_grab
+                if wwgrab:
+                    self.do_force_ungrab(wwgrab)
                 self._window_with_grab = None
             if wid and self._focused and self._focused!=wid:
                 #if this window lost focus, it must have had it!
