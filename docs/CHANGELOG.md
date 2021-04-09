@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.1.3] 2021-04-09
+* TODO
+
 ## [4.1.2] 2021-04-06
 * fix unnecessary screen update delays
 * fix screen refresh rate detection
