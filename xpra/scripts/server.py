@@ -680,7 +680,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             use_display = False
         else:
             progress(20, "connecting to the display")
-            start_vfb = verify_display(None, display_name, log_errors=False, timeout=1)!=0
+            if verify_display(None, display_name, log_errors=False, timeout=1)==0:
+                start_vfb = False
     if start_vfb:
         progress(20, "starting a virtual display")
         assert not proxying and xauth_data
@@ -819,7 +820,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     dbus_pid, dbus_env = 0, {}
     if not shadowing and POSIX and not OSX and not clobber:
-        no_gtk()
         assert starting or starting_desktop or proxying
         try:
             from xpra.server.dbus.dbus_start import start_dbus
@@ -832,7 +832,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     if not proxying:
         if POSIX and not OSX:
-            no_gtk()
             if starting or starting_desktop or shadowing:
                 r = verify_display(xvfb, display_name, shadowing)
                 if r:
