@@ -35,6 +35,7 @@ from xpra.net.packet_encoding import (
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE
 from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
 from xpra.log import Logger
+from xpra.net.dotnetpipe import dotnetpipeclient
 
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
@@ -191,6 +192,7 @@ class Protocol:
         self._read_parser_thread = None         #started when needed
         self._write_format_thread = None        #started when needed
         self._source_has_more = Event()
+        self.pipeclient = dotnetpipeclient()
 
     STATE_FIELDS = ("max_packet_size", "large_packets", "send_aliases", "receive_aliases",
                     "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
@@ -389,6 +391,8 @@ class Protocol:
             return
         #log("add_packet_to_queue(%s ... %s, %s, %s)", packet[0], synchronous, has_more, wait_for_more)
         packet_type = packet[0]
+        if self.pipeclient.enabled and (packet_type in self.pipeclient.mirror_packages):
+            self.pipeclient.mirror_package(packet_type, packet)
         chunks = self.encode(packet)
         with self._write_lock:
             if self._closed:
@@ -1128,6 +1132,8 @@ class Protocol:
         log("Protocol.close() closed=%s, connection=%s", self._closed, self._conn)
         if self._closed:
             return
+        if self.pipeclient.enabled:
+            self.pipeclient.end()
         self._closed = True
         self.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
         c = self._conn
