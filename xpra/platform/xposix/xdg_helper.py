@@ -29,7 +29,7 @@ DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 
 large_icons = []
 
-INKSCAPE_RE = b'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
+INKSCAPE_RE = b'\\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
 
 def isvalidtype(v):
     if isinstance(v, (list, tuple, generator)):
