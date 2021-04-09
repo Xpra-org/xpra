@@ -18,6 +18,7 @@ class dotnetpipeclient:
 		self.connected = False
 		self.sock = None
 		self.mirror_packages = ('hello', 'new-window', 'lost-window', 'window-metadata', 'window-icon', 'desktop_size')
+
 	def connect_pipe(self):
 		self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 		try:
@@ -27,7 +28,7 @@ class dotnetpipeclient:
 			log("sock.connect(%s) failed. Will retry on next packet.", self.path)
 
 	def end (self):
-		print("ending pipeconnection")
+		log("ending pipeconnection")
 		try:
 			if self.connected:
 				self.sock.close()
@@ -103,7 +104,7 @@ class dotnetpipeclient:
 						"w": str(packet[1]),
 						"h" : str(packet[2])
 					}
-				bMsg = json.dumps(msg).encode('utf-8');
+				bMsg = json.dumps(msg).encode('utf-8')
 				self.sock.sendall(bMsg)
 		except socket.error as err:
 			log("Socket error in dotnetpipe. Will retry on next packet.")
