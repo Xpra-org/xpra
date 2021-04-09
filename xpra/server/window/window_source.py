@@ -2054,20 +2054,18 @@ class WindowSource(WindowIconSource):
             We figure out if now is the right time to do the refresh,
             and if not re-schedule.
         """
+        self.refresh_timer = None
         #timer is running now, clear so we don't try to cancel it somewhere else:
         #re-do some checks that may have changed:
         if not self.can_refresh():
-            self.refresh_timer = None
             self.refresh_event_time = 0
             return False
         ret = self.refresh_event_time
         if ret==0:
-            self.refresh_timer = None
             return False
         delta = self.refresh_target_time - monotonic_time()
         if delta<0.050:
             #this is about right (due already or due shortly)
-            self.refresh_timer = None
             self.timer_full_refresh()
             return False
         #re-schedule ourselves:
