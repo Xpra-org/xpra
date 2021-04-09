@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from cairo import ImageSurface, Context, FORMAT_ARGB32, OPERATOR_CLEAR, OPERATOR_SOURCE
 from PIL import Image

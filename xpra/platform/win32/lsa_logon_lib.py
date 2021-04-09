@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # This file is part of Xpra.
 # This code is released under the terms of the MIT license:
 # https://opensource.org/licenses/MIT

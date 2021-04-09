@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import gi
 gi.require_version('Gdk', '3.0')

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This file is part of Xpra.
 # Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>

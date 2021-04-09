@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
 init_gdk_display_source()

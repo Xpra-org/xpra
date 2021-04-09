@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -54,3 +54,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+9bf3fe0c36e6e869363105c1535eb68050f1fc53
