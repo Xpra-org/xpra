@@ -5,11 +5,11 @@ Maintainer: Antoine Martin <antoine@xpra.org>
 X-Python3-Version: >= 3.6
 Build-Depends: debhelper (>= 8)
               ,libx11-dev
-              ,libvpx-dev
               ,libxcomposite-dev
               ,libxdamage-dev
               ,libxtst-dev
               ,libxkbfile-dev
+              ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
               ,libturbojpeg-dev
@@ -102,6 +102,13 @@ Recommends: python3-dbus
 #buster:        ,libswscale4
 #bullseye:        ,libavcodec58
 #bullseye:        ,libswscale5
+# vpx:
+#bionic:        ,libvpx5
+#focal:        ,libvpx6
+#groovy:        ,libvpx6
+#hirsute:        ,libvpx6
+#buster:        ,libvpx5
+#bullseye:        ,libvpx6
 # x264:
 #bionic:        ,libx264-152
 #focal:        ,libx264-155
