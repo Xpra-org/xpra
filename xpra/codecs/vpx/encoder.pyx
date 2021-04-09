@@ -211,7 +211,10 @@ CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
 #this is the ABI version with libvpx 1.4.0:
 assert VPX_ENCODER_ABI_VERSION>=10, "vpx abi version is too old: %i (minimum is 10)" % VPX_ENCODER_ABI_VERSION
-COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
+if VPX_ENCODER_ABI_VERSION<=23:
+    COLORSPACES["vp9"] = ("YUV420P", "YUV444P", )
+else:
+    COLORSPACES["vp9"] = ("YUV420P", "YUV444P", "YUV444P10")
 
 VP9_RANGE = 3
 #as of 1.8:
