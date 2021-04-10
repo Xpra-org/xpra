@@ -1,5 +1,6 @@
 %define _build_id_links none
 %define _disable_source_fetch 0
+%global __requires_exclude ^libx264.so.*$
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
@@ -21,9 +22,6 @@ BuildRequires:	x264-xpra-devel
 BuildRequires:	libva-devel
 BuildRequires:	yasm
 BuildRequires:	make
-
-#%global __requires_exclude ^libx264.so.*$
-
 
 %description
 ffmpeg libraries for xpra
