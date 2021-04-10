@@ -12,6 +12,7 @@ License:     GPL
 URL:	     http://www.videolan.org/developers/x264.html
 Source0:     https://github.com/mirror/x264/archive/%{commit}.zip
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+AutoReq:     0
 AutoProv:    0
 
 BuildRequires:	nasm
@@ -28,7 +29,6 @@ Group: Development/libraries
 Requires: %{name} = %{version}
 Requires: pkgconfig
 Requires: x264-xpra = %{version}
-AutoReq:  0
 
 %description devel
 This package contains the development files for %{name}.
