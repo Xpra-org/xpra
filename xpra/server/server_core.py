@@ -1997,7 +1997,10 @@ class ServerCore:
         if logfile:
             si["log-file"] = logfile
         if POSIX:
-            si["load"] = tuple(int(x*1000) for x in os.getloadavg())
+            try:
+                si["load"] = tuple(int(x*1000) for x in os.getloadavg())
+            except OSError:
+                log("cannot get load average", exc_info=True)
         if self.original_desktop_display:
             si["original-desktop-display"] = self.original_desktop_display
         return si
