@@ -25,8 +25,18 @@ def make_window():
     if icon:
         window.set_icon(icon)
 
+    vbox = Gtk.VBox(False, 10)
+    window.add(vbox)
     entry = Gtk.Entry()
     entry.set_text("hello")
+    vbox.add(entry)
+
+    textview = Gtk.TextView()
+    textbuffer = textview.get_buffer()
+    textbuffer.set_text("Sample text\nmultiline")
+    textview.set_editable(True)
+    textview.set_size_request(200, 80)
+    vbox.add(textview)
 
     window.add(entry)
     return window
