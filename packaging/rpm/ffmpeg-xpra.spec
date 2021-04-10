@@ -22,6 +22,7 @@ BuildRequires:	x264-xpra-devel
 BuildRequires:	libva-devel
 BuildRequires:	yasm
 BuildRequires:	make
+BuildRequires:	gcc
 
 %description
 ffmpeg libraries for xpra
