@@ -801,7 +801,8 @@ class X11ServerCore(GTKServerBase):
             return
         for ss in self._server_sources.values():
             if ALWAYS_NOTIFY_MOTION or self.last_mouse_user is None or self.last_mouse_user!=ss.uuid:
-                ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
+                if hasattr(ss, "update_mouse"):
+                    ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
 
 
     def do_xpra_xkb_event(self, event):
