@@ -147,10 +147,10 @@ def svg_to_png(filename, icondata, w=128, h=128):
     if not Rsvg:
         return None
     try:
-        import cairo
+        from cairo import ImageSurface, Context, FORMAT_ARGB32  #pylint: disable=no-name-in-module
         #'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
-        img = cairo.ImageSurface(cairo.FORMAT_ARGB32, 128, 128)
-        ctx = cairo.Context(img)
+        img = ImageSurface(FORMAT_ARGB32, 128, 128)
+        ctx = Context(img)
         handle = Rsvg.Handle.new_from_data(icondata)
         handle.render_cairo(ctx)
         buf = BytesIO()
