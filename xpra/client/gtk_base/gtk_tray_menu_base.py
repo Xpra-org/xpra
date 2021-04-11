@@ -1635,7 +1635,11 @@ class GTKTrayMenuBase(object):
         pixbuf = None
         if app_name and not icondata:
             #try to load from our icons:
-            icon_filename = os.path.join(get_icon_dir(), "%s.png" % app_name.decode("utf-8").lower())
+            try:
+                nstr = app_name.decode("utf-8").lower()
+            except UnicodeDecodeError:
+                nstr = bytestostr(app_name).lower()
+            icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
             if os.path.exists(icon_filename):
                 from xpra.gtk_common.gtk_util import pixbuf_new_from_file
                 pixbuf = pixbuf_new_from_file(icon_filename)
