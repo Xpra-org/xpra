@@ -4,19 +4,63 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk
+import os
 
-from xpra.util import envbool
-from xpra.os_util import OSX
-from xpra.gtk_common.gtk_util import menuitem
+from gi.repository import Gtk, GdkPixbuf
+
+from xpra.util import envbool, repr_ellipsized
+from xpra.os_util import OSX, bytestostr
+from xpra.gtk_common.gtk_util import (
+    menuitem,
+    get_pixbuf_from_data, scaled_image,
+    )
 from xpra.gtk_common.about import about, close_about
 from xpra.platform.gui import get_icon_size
+from xpra.platform.paths import get_icon_dir
 from xpra.log import Logger
 
 log = Logger("menu")
 
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 HIDE_DISABLED_MENU_ENTRIES = OSX
+
+
+LOSSLESS = "Lossless"
+QUALITY_OPTIONS_COMMON = {
+                50      : "Average",
+                30      : "Low",
+                }
+MIN_QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
+MIN_QUALITY_OPTIONS.update({
+    0 : "None",
+    75  : "High",
+    })
+MIN_QUALITY_OPTIONS = dict(sorted(MIN_QUALITY_OPTIONS.items()))
+QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
+QUALITY_OPTIONS.update({
+    0 : "Auto",
+    1   : "Lowest",
+    90  : "Best",
+    100 : LOSSLESS,
+    })
+QUALITY_OPTIONS = dict(sorted(QUALITY_OPTIONS.items()))
+
+
+SPEED_OPTIONS_COMMON = {
+                70      : "Low Latency",
+                50      : "Average",
+                30      : "Low Bandwidth",
+                }
+MIN_SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
+MIN_SPEED_OPTIONS[0] = "None"
+MIN_SPEED_OPTIONS = dict(sorted(MIN_SPEED_OPTIONS.items()))
+SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
+SPEED_OPTIONS.update({
+    0   : "Auto",
+    1   : "Lowest Bandwidth",
+    100 : "Lowest Latency",
+    })
+SPEED_OPTIONS = dict(sorted(SPEED_OPTIONS.items()))
 
 
 def ll(m):
@@ -32,6 +76,47 @@ def set_sensitive(widget, sensitive):
         else:
             widget.hide()
     widget.set_sensitive(sensitive)
+
+
+def get_appimage(app_name, icondata=None, menu_icon_size=24):
+    pixbuf = None
+    if app_name and not icondata:
+        #try to load from our icons:
+        try:
+            nstr = app_name.decode("utf-8").lower()
+        except UnicodeDecodeError:
+            nstr = bytestostr(app_name).lower()
+        icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
+        if os.path.exists(icon_filename):
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+    if not pixbuf and icondata:
+        #gtk pixbuf loader:
+        try:
+            loader = GdkPixbuf.PixbufLoader()
+            loader.write(icondata)
+            loader.close()
+            pixbuf = loader.get_pixbuf()
+        except Exception as e:
+            log("pixbuf loader failed", exc_info=True)
+            log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
+            log.error(" %s", e)
+            log.error(" data=%s", repr_ellipsized(icondata))
+    if not pixbuf and icondata:
+        #let's try pillow:
+        try:
+            from xpra.codecs.pillow.decoder import open_only
+            img = open_only(icondata)
+            has_alpha = img.mode=="RGBA"
+            width, height = img.size
+            rowstride = width * (3+int(has_alpha))
+            pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
+            return scaled_image(pixbuf, icon_size=menu_icon_size)
+        except Exception:
+            log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
+            log.error(" data=%s", repr_ellipsized(icondata))
+    if pixbuf:
+        return scaled_image(pixbuf, icon_size=menu_icon_size)
+    return None
 
 
 #utility method to ensure there is always only one CheckMenuItem

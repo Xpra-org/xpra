@@ -6,7 +6,7 @@
 
 import os
 import re
-from gi.repository import GLib, Gtk, GdkPixbuf
+from gi.repository import GLib, Gtk
 
 from xpra.util import (
     CLIENT_EXIT,
@@ -14,18 +14,17 @@ from xpra.util import (
     ellipsizer, repr_ellipsized, reverse_dict, typedict,
     )
 from xpra.os_util import bytestostr, OSX, WIN32
-from xpra.gtk_common.gtk_util import (
-    get_pixbuf_from_data, scaled_image,
-    )
 from xpra.client.gtk_base.menu_helper import (
     MenuHelper,
+    QUALITY_OPTIONS, MIN_QUALITY_OPTIONS,
+    SPEED_OPTIONS, MIN_SPEED_OPTIONS,
+    get_appimage,
     ll, set_sensitive, ensure_item_selected,
     make_encodingsmenu, make_min_auto_menu,
     )
 from xpra.client.client_base import EXIT_OK
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.simple_stats import std_unit_dec
-from xpra.platform.paths import get_icon_dir
 from xpra.client import mixin_features
 from xpra.log import Logger
 
@@ -65,31 +64,6 @@ def get_bandwidth_menu_options():
     return options
 BANDWIDTH_MENU_OPTIONS = get_bandwidth_menu_options()
 
-LOSSLESS = "Lossless"
-QUALITY_OPTIONS_COMMON = {
-                50      : "Average",
-                30      : "Low",
-                }
-MIN_QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
-MIN_QUALITY_OPTIONS[0] = "None"
-MIN_QUALITY_OPTIONS[75] = "High"
-QUALITY_OPTIONS = QUALITY_OPTIONS_COMMON.copy()
-QUALITY_OPTIONS[0]  = "Auto"
-QUALITY_OPTIONS[1]  = "Lowest"
-QUALITY_OPTIONS[90]  = "Best"
-QUALITY_OPTIONS[100]  = LOSSLESS
-
-
-SPEED_OPTIONS_COMMON = {
-                70      : "Low Latency",
-                30      : "Low Bandwidth",
-                }
-MIN_SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
-MIN_SPEED_OPTIONS[0] = "None"
-SPEED_OPTIONS = SPEED_OPTIONS_COMMON.copy()
-SPEED_OPTIONS[0]    = "Auto"
-SPEED_OPTIONS[1]    = "Lowest Bandwidth"
-SPEED_OPTIONS[100]  = "Lowest Latency"
 
 CLIPBOARD_LABELS = ["Clipboard", "Primary", "Secondary"]
 CLIPBOARD_LABEL_TO_NAME = {
@@ -1435,50 +1409,10 @@ class GTKTrayMenuBase(MenuHelper):
         menu.show_all()
         return menu
 
-    def get_appimage(self, app_name, icondata=None):
-        pixbuf = None
-        if app_name and not icondata:
-            #try to load from our icons:
-            try:
-                nstr = app_name.decode("utf-8").lower()
-            except UnicodeDecodeError:
-                nstr = bytestostr(app_name).lower()
-            icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
-            if os.path.exists(icon_filename):
-                pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        if not pixbuf and icondata:
-            #gtk pixbuf loader:
-            try:
-                loader = GdkPixbuf.PixbufLoader()
-                loader.write(icondata)
-                loader.close()
-                pixbuf = loader.get_pixbuf()
-            except Exception as e:
-                log("pixbuf loader failed", exc_info=True)
-                log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
-                log.error(" %s", e)
-                log.error(" data=%s", repr_ellipsized(icondata))
-        if not pixbuf and icondata:
-            #let's try pillow:
-            try:
-                from xpra.codecs.pillow.decoder import open_only
-                img = open_only(icondata)
-                has_alpha = img.mode=="RGBA"
-                width, height = img.size
-                rowstride = width * (3+int(has_alpha))
-                pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
-                return scaled_image(pixbuf, icon_size=self.menu_icon_size)
-            except Exception:
-                log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
-                log.error(" data=%s", repr_ellipsized(icondata))
-        if pixbuf:
-            return scaled_image(pixbuf, icon_size=self.menu_icon_size)
-        return None
-
     def start_menuitem(self, title, icondata=None):
         smi = self.handshake_menuitem(title)
         if icondata:
-            image = self.get_appimage(title, icondata)
+            image = get_appimage(title, icondata, self.menu_icon_size)
             if image:
                 smi.set_image(image)
         return smi
