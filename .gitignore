@@ -70,14 +70,14 @@ tests/unittests/test-file*
 /fs/etc/xpra/conf.d/*.conf
 
 # these files are compiled using semodule:
-/src/selinux/cups_xpra/cups_xpra.pp
-/src/selinux/cups_xpra/tmp
-/src/selinux/cups_xpra/cups_xpra.if
-/src/selinux/cups_xpra/Makefile
-/src/selinux/xpra_socketactivation/xpra_socketactivation.if
-/src/selinux/xpra_socketactivation/xpra_socketactivation.pp
-/src/selinux/xpra_socketactivation/Makefile
-/src/selinux/xpra_socketactivation/tmp
+/fs/share/selinux/cups_xpra/cups_xpra.pp
+/fs/share/selinux/cups_xpra/tmp
+/fs/share/selinux/cups_xpra/cups_xpra.if
+/fs/share/selinux/cups_xpra/Makefile
+/fs/share/selinux/xpra_socketactivation/xpra_socketactivation.if
+/fs/share/selinux/xpra_socketactivation/xpra_socketactivation.pp
+/fs/share/selinux/xpra_socketactivation/Makefile
+/fs/share/selinux/xpra_socketactivation/tmp
 
 # the win32 service is compiled here:
 /packaging/MSWindows/service/event_log.rc
