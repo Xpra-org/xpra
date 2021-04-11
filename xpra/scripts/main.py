@@ -554,6 +554,12 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         elif mode=="network-info":
             from xpra.net import net_util
             return net_util.main()
+        elif mode=="compression":
+            from xpra.net import compression
+            return compression.main()
+        elif mode=="packet-encoding":
+            from xpra.net import packet_encoding
+            return packet_encoding.main()
         elif mode=="path-info":
             from xpra.platform import paths
             return paths.main()
