@@ -145,9 +145,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     @classmethod
     def may_reload_headers(cls, http_headers_dirs):
+        mtimes = {}
         if cls.http_headers_cache:
             #do we need to refresh the cache?
-            mtimes = {}
             for d in http_headers_dirs:
                 if os.path.exists(d) and os.path.isdir(d):
                     mtime = os.path.getmtime(d)
@@ -176,7 +176,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                             continue
                         headers[parts[0]] = parts[1]
             cls.http_headers_time[d] = mtime
-        log("may_reload_headers() headers=%s, mtime=%s", headers, mtime)
+        log("may_reload_headers() headers=%s, mtime=%s", headers, mtimes)
         cls.http_headers_cache = headers
         return headers
 
