@@ -466,7 +466,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "start-gui":
         check_gtk()
         from xpra.gtk_common.start_gui import main as gui_main        #@Reimport
-        return gui_main()
+        return gui_main(options)
     elif mode == "bug-report":
         check_gtk()
         from xpra.scripts.bug_report import main as bug_main    #@Reimport

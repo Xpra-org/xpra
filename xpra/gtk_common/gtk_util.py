@@ -651,7 +651,7 @@ class TableBuilder:
                 i += 1
         self.inc()
 
-    def attach(self, widget, i, count=1,
+    def attach(self, widget, i=0, count=1,
                xoptions=Gtk.AttachOptions.FILL, yoptions=Gtk.AttachOptions.FILL,
                xpadding=10, ypadding=0):
         self.table.attach(widget, i, i+count, self.row, self.row+1,
