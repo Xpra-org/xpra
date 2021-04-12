@@ -556,6 +556,13 @@ class ServerBase(ServerBaseClass):
 
 
     ######################################################################
+    # utility method:
+    def window_sources(self):
+        from xpra.server.source.windows_mixin import WindowsMixin  #pylint: disable=import-outside-toplevel
+        return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsMixin))
+
+
+    ######################################################################
     # info:
     def _process_info_request(self, proto, packet):
         log("process_info_request(%s, %s)", proto, packet)

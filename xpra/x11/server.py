@@ -17,7 +17,6 @@ from xpra.util import updict, rindex, envbool, envint, typedict, AdHocStruct, WO
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.server import server_features
-from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
 from xpra.x11.common import Unmanageable
@@ -490,7 +489,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def parse_hello_ui_window_settings(self, ss, _caps):
         #FIXME: with multiple users, don't set any frame size?
         frame = None
-        if isinstance(ss, WindowsMixin):
+        if ss in self.window_sources():
             window_frame_sizes = ss.window_frame_sizes
             framelog("parse_hello_ui_window_settings: client window_frame_sizes=%s", window_frame_sizes)
             if window_frame_sizes:
@@ -574,9 +573,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #name, dtype, dformat, value = event
         metadata = {"x11-property" : event}
         wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            if not isinstance(ss, WindowsMixin):
-                continue
+        for ss in self.window_sources():
             ms = getattr(ss, "metadata_supported", ())
             if "x11-property" in ms:
                 ss.send("window-metadata", wid, metadata)
@@ -626,8 +623,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         x, y, nw, nh = self._desktop_manager.window_geometry(window)
         resize_counter = self._desktop_manager.get_resize_counter(window, 1)
-        wsources = [ss for ss in self._server_sources.values() if isinstance(ss, WindowsMixin)]
-        for ss in wsources:
+        for ss in self.window_sources():
             ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
             #refresh to ensure the client gets the new window contents:
             #TODO: to save bandwidth, we should compare the dimensions and skip the refresh
@@ -703,9 +699,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         geomlog("or_window_geometry_changed: %s (window=%s)", geom, window)
         wid = self._window_to_id[window]
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
-                ss.or_window_geometry(wid, window, x, y, w, h)
+        for ss in self.window_sources():
+            ss.or_window_geometry(wid, window, x, y, w, h)
 
 
     def add_control_commands(self):
@@ -725,9 +720,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def _show_desktop(self, wm, show):
         log("show_desktop(%s, %s)", wm, show)
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
-                ss.show_desktop(show)
+        for ss in self.window_sources():
+            ss.show_desktop(show)
 
 
     def _focus(self, server_source, wid, modifiers):
@@ -792,9 +786,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def _send_new_tray_window_packet(self, wid, window):
         ww, wh = window.get_dimensions()
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
-                ss.new_tray(wid, window, ww, wh)
+        for ss in self.window_sources():
+            ss.new_tray(wid, window, ww, wh)
         self.refresh_window(window)
 
 
@@ -816,9 +809,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if grab_id<0 or self._has_grab==grab_id:
             return
         self._has_grab = grab_id
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
-                ss.pointer_grab(self._has_grab)
+        for ss in self.window_sources():
+            ss.pointer_grab(self._has_grab)
 
     def _window_ungrab(self, window, event):
         grab_id = self._window_to_id.get(window, -1)
@@ -827,9 +819,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if not self._has_grab:
             return
         self._has_grab = 0
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
-                ss.pointer_ungrab(grab_id)
+        for ss in self.window_sources():
+            ss.pointer_ungrab(grab_id)
 
 
     def _initiate_moveresize(self, window, event):
@@ -838,7 +829,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #x_root, y_root, direction, button, source_indication = event.data
         wid = self._window_to_id[window]
         #find clients that handle windows:
-        wsources = [ss for ss in self._server_sources.values() if isinstance(ss, WindowsMixin)]
+        wsources = self.window_sources()
         if not wsources:
             return
         #prefer the "UI driver" if we find it:
@@ -858,9 +849,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.last_raised = None
         if detail==0 and self._has_focus==wid:  #Above=0
             return
-        for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
-                ss.restack_window(wid, window, detail, sibling)
+        for ss in self.window_sources():
+            ss.restack_window(wid, window, detail, sibling)
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
@@ -956,9 +946,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self._set_window_state(proto, wid, window, packet[3])
         if self._desktop_manager.is_shown(window):
             geomlog("client %s unmapped window %s - %s", ss, wid, window)
-            for ss in self._server_sources.values():
-                if isinstance(ss, WindowsMixin):
-                    ss.unmap_window(wid, window)
+            for ss in self.window_sources():
+                ss.unmap_window(wid, window)
             window.unmap()
             iconified = len(packet)>=3 and bool(packet[2])
             if iconified and not window.get_property("iconic"):
@@ -1049,8 +1038,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     if resized and SHARING_SYNC_SIZE:
                         #try to ensure this won't trigger a resizing loop:
                         counter = max(0, resize_counter-1)
-                        for s in self._server_sources.values():
-                            if s!=ss and isinstance(s, WindowsMixin):
+                        for s in self.window_sources():
+                            if s!=ss:
                                 s.resize_window(wid, window, aw, ah, resize_counter=counter)
                     damage |= owx!=ax or owy!=ay or resized
             if not shown and not skip_geometry:
