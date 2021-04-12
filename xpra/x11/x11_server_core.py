@@ -17,6 +17,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.x11.vfb_util import parse_resolution
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
@@ -787,7 +788,6 @@ class X11ServerCore(GTKServerBase):
             return
         cursorlog("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
-        from xpra.server.source.windows_mixin import WindowsMixin
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
                 ss.send_cursor()
@@ -816,8 +816,9 @@ class X11ServerCore(GTKServerBase):
         #so we use wid=0 for that:
         wid = 0
         for ss in self._server_sources.values():
-            name = strtobytes(event.bell_name or "")
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
+            if isinstance(ss, WindowsMixin):
+                name = strtobytes(event.bell_name or "")
+                ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def _bell_signaled(self, wm, event):
@@ -828,7 +829,6 @@ class X11ServerCore(GTKServerBase):
         if event.window!=get_default_root_window() and event.window_model is not None:
             wid = self._window_to_id.get(event.window_model, 0)
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
-        from xpra.server.source.windows_mixin import WindowsMixin
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
                 name = strtobytes(event.bell_name or "")
