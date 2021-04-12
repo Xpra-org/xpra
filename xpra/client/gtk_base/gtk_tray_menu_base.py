@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import re
 from gi.repository import GLib, Gtk
 
@@ -16,6 +15,7 @@ from xpra.util import (
 from xpra.os_util import bytestostr, OSX, WIN32
 from xpra.client.gtk_base.menu_helper import (
     MenuHelper,
+    BANDWIDTH_MENU_OPTIONS,
     QUALITY_OPTIONS, MIN_QUALITY_OPTIONS,
     SPEED_OPTIONS, MIN_SPEED_OPTIONS,
     get_appimage,
@@ -52,17 +52,6 @@ SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
-
-
-def get_bandwidth_menu_options():
-    options = []
-    for x in os.environ.get("XPRA_BANDWIDTH_MENU_OPTIONS", "1,2,5,10,20,50,100").split(","):
-        try:
-            options.append(int(float(x)*1000*1000))
-        except ValueError:
-            log.warn("Warning: invalid bandwidth menu option '%s'", x)
-    return options
-BANDWIDTH_MENU_OPTIONS = get_bandwidth_menu_options()
 
 
 CLIPBOARD_LABELS = ["Clipboard", "Primary", "Secondary"]
