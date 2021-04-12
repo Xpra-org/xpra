@@ -568,6 +568,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         metadata = {"x11-property" : event}
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
+            if not isinstance(ss, WindowsMixin):
+                continue
             ms = getattr(ss, "metadata_supported", ())
             if "x11-property" in ms:
                 ss.send("window-metadata", wid, metadata)
@@ -695,7 +697,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         geomlog("or_window_geometry_changed: %s (window=%s)", geom, window)
         wid = self._window_to_id[window]
         for ss in self._server_sources.values():
-            ss.or_window_geometry(wid, window, x, y, w, h)
+            if isinstance(ss, WindowsMixin):
+                ss.or_window_geometry(wid, window, x, y, w, h)
 
 
     def add_control_commands(self):
@@ -716,7 +719,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def _show_desktop(self, wm, show):
         log("show_desktop(%s, %s)", wm, show)
         for ss in self._server_sources.values():
-            ss.show_desktop(show)
+            if isinstance(ss, WindowsMixin):
+                ss.show_desktop(show)
 
 
     def _focus(self, server_source, wid, modifiers):
@@ -782,7 +786,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def _send_new_tray_window_packet(self, wid, window):
         ww, wh = window.get_dimensions()
         for ss in self._server_sources.values():
-            ss.new_tray(wid, window, ww, wh)
+            if isinstance(ss, WindowsMixin):
+                ss.new_tray(wid, window, ww, wh)
         self.refresh_window(window)
 
 
@@ -805,7 +810,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         self._has_grab = grab_id
         for ss in self._server_sources.values():
-            ss.pointer_grab(self._has_grab)
+            if isinstance(ss, WindowsMixin):
+                ss.pointer_grab(self._has_grab)
 
     def _window_ungrab(self, window, event):
         grab_id = self._window_to_id.get(window, -1)
@@ -815,7 +821,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return
         self._has_grab = 0
         for ss in self._server_sources.values():
-            ss.pointer_ungrab(grab_id)
+            if isinstance(ss, WindowsMixin):
+                ss.pointer_ungrab(grab_id)
 
 
     def _initiate_moveresize(self, window, event):
