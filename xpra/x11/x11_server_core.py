@@ -17,6 +17,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
 from xpra.gtk_common.gtk_util import get_xwindow, display_get_default, get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
@@ -859,8 +860,9 @@ class X11ServerCore(GTKServerBase):
         #so we use wid=0 for that:
         wid = 0
         for ss in self._server_sources.values():
-            name = strtobytes(event.bell_name or "")
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
+            if isinstance(ss, WindowsMixin):
+                name = strtobytes(event.bell_name or "")
+                ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def _bell_signaled(self, wm, event):

@@ -12,6 +12,7 @@ from xpra.util import updict, log_screen_sizes, envbool
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.gobject_compat import import_glib
 from xpra.gtk_common.error import XError
@@ -501,8 +502,9 @@ class XpraDesktopServer(DesktopServerBaseClass):
         x, y, w, h = window.get_geometry()
         geomlog("window_resized_signaled(%s) geometry=%s", window, (x, y, w, h))
         for ss in self._server_sources.values():
-            ss.resize_window(wid, window, w, h)
-            ss.damage(wid, window, 0, 0, w, h)
+            if isinstance(ss, WindowsMixin):
+                ss.resize_window(wid, window, w, h)
+                ss.damage(wid, window, 0, 0, w, h)
 
 
     def send_initial_windows(self, ss, sharing=False):

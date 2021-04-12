@@ -318,7 +318,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                     img = Image.frombuffer("RGBA", (w, h), pixels, "raw", "BGRA", 0, 1)
                     img.save("cursor-%#x.png" % serial, format="PNG")
             for ss in self._server_sources.values():
-                ss.send_cursor()
+                if hasattr(ss, "send_cursor"):
+                    ss.send_cursor()
 
     def do_get_cursor_data(self):
         #this method is overriden in subclasses with platform specific code
