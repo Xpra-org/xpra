@@ -53,7 +53,7 @@ class CairoBackingBase(WindowBackingBase):
         if mod:
             self.create_surface()
 
-    def create_surface()
+    def create_surface():
         self._backing = cairo.ImageSurface(cairo.FORMAT_ARGB32, bw, bh)
         cr = cairo.Context(self._backing)
         cr.set_operator(cairo.OPERATOR_CLEAR)

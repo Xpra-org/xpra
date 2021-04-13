@@ -125,7 +125,7 @@ def display_name_check(display_name):
     try:
         dno = int(n)
     except (ValueError, TypeError):
-        raise InitException("invalid display number %r" % n) from None
+        raise InitException("invalid display number %r" % n)
     else:
         if 0<=dno<10:
             warn("WARNING: low display number: %s" % dno)
