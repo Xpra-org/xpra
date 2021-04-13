@@ -139,3 +139,8 @@ tests/unittests/test-file*
 /xpra/x11/gtk3/gdk_bindings.c
 /xpra/x11/gtk_x11/gdk_display_source.c
 /xpra/x11/gtk_x11/gdk_bindings.c
+
+/xpra/gtk_common/gtk2/gdk_atoms.c
+/xpra/gtk_common/gtk2/gdk_bindings.c
+/xpra/x11/gtk2/gdk_bindings.c
+/xpra/x11/gtk2/gdk_display_source.c
