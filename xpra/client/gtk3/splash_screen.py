@@ -133,9 +133,9 @@ class SplashScreen(Gtk.Window):
         while self.exit_code is None:
             line = sys.stdin.readline()
             if not line:
+                self.exit_code = EXIT_CONNECTION_LOST
                 self.exit()
             else:
-                self.exit_code = EXIT_CONNECTION_LOST
                 GLib.idle_add(self.handle_stdin_line, line)
 
     def handle_stdin_line(self, line):
