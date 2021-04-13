@@ -94,8 +94,8 @@ Recommends:
 #groovy:        ,libswscale5
 #buster:        ,libavcodec58
 #buster:        ,libswscale5
-#buster:        ,libavcodec58
-#buster:        ,libswscale5
+#bullseye:      ,libavcodec58
+#bullseye:      ,libswscale5
 # x264:
 #stretch:        ,libx264-148
 #xenial:        ,libx264-148
