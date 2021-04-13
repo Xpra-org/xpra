@@ -1396,7 +1396,7 @@ class WindowSource(WindowIconSource):
         damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %s in %i ms",
                   (x, y, w, h, options), self.wid, self._sequence, delay)
         self.batch_config.last_delays.append((now, delay))
-        expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
+        expire_delay = min(self.batch_config.expire_delay, delay)
         due = now+expire_delay/1000
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
