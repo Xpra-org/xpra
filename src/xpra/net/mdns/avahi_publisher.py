@@ -73,7 +73,7 @@ class AvahiPublishers(object):
                 for k,v in text_dict.items():
                     txt.append("%s=%s" % (k,v))
             fqdn = host
-            if host=="0.0.0.0":
+            if host in ("0.0.0.0", "::"):
                 fqdn = ""
             elif host:
                 try:
@@ -132,12 +132,13 @@ class AvahiPublisher(object):
         self.server = None
         self.group = None
 
-    def get_info(self):
-        def iface():
-            if self.interface>0:
-                return "interface %i" % self.interface
-            return "all interfaces"
-        return "%s %s:%s on %s" % (self.name, self.host, self.port, iface())
+    def iface(self):
+        if self.interface>0:
+            return "interface %i" % self.interface
+        return "all interfaces"
+
+    def get_info(self) -> dict:
+        return "%s %s:%s on %s" % (self.name, self.host, self.port, self.iface())
 
     def __repr__(self):
         return "AvahiPublisher(%s)" % self.get_info()
@@ -162,6 +163,7 @@ class AvahiPublisher(object):
             log.error("Error: mdns server name collision")
             if error:
                 log.error(" %s", error)
+            log.error(" for name '%s' and port %i on %s", self.name, self.port, self.iface())
             self.stop()
             return False
         if state == avahi.SERVER_RUNNING:
@@ -173,7 +175,8 @@ class AvahiPublisher(object):
             if val is not None and val==state:
                 state_str = const
                 break
-        log.warn("Warning: server state changed to '%s'", state_str)
+        log.warn("Warning: mdns server state changed to '%s'", state_str)
+        log.warn(" for name '%s' and port %i on %s", self.name, self.port, self.iface())
         return False
 
     def add_service(self):
@@ -225,14 +228,19 @@ class AvahiPublisher(object):
             log.warn("Warning: cannot update mdns record")
             log.warn(" publisher has already been stopped")
             return
+        #prevent avahi from choking on ints:
+        txt_strs = dict((k,str(v)) for k,v in txt.items())
         def reply_handler(*args):
             log("reply_handler%s", args)
             log("update_txt(%s) done", txt)
         def error_handler(*args):
             log("error_handler%s", args)
             log.warn("Warning: failed to update mDNS TXT record")
-        #prevent avahi from choking on ints:
-        txt_strs = dict((k,str(v)) for k,v in txt.items())
+            log.warn(" for name '%s'", self.name)
+            log.warn(" host=%s, port=%s", self.host, self.port)
+            log.warn(" with new data:")
+            for k,v in txt_strs.items():
+                log.warn(" * %s=%s", k, v)
         txt_array = avahi.dict_to_txt_array(txt_strs)
         self.group.UpdateServiceTxt(self.interface,
             avahi.PROTO_UNSPEC, dbus.UInt32(0), self.name, self.stype, self.domain,

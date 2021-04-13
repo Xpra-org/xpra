@@ -106,7 +106,8 @@ class ZeroconfPublisher(object):
         self.port = port
         self.zeroconf = None
         self.service = None
-        self.args = None
+        self.args = ()
+        self.kwargs = {}
         self.registered = False
         try:
             #ie: service_name = localhost.localdomain :2 (ssl)
@@ -122,9 +123,18 @@ class ZeroconfPublisher(object):
             st = service_type+"local."
             regname += "."+st
             td = self.txt_rec(text_dict or {})
-            self.args = (st, regname, self.address, port, 0, 0, td)
-            service = ServiceInfo(*self.args)
-            log("ServiceInfo%s=%s", self.args, service)
+            if zeroconf_version<"0.23":
+                self.args = (st, regname, self.address, port, 0, 0, td)
+            else:
+                self.kwargs = {
+                    "type_"         : st,       #_xpra._tcp.local.
+                    "name"          : regname,
+                    "port"          : port,
+                    "properties"    : td,
+                    "addresses"     : [self.address],
+                    }
+            service = ServiceInfo(*self.args, **self.kwargs)
+            log("ServiceInfo(%s, %s)=%s", self.args, self.kwargs, service)
             self.service = service
         except Exception as e:
             log("zeroconf ServiceInfo", exc_info=True)
@@ -163,10 +173,17 @@ class ZeroconfPublisher(object):
         return new_dict
 
     def update_txt(self, txt):
-        args = list(self.args)
-        args[6] = self.txt_rec(txt)
-        self.args = tuple(args)
-        si = ServiceInfo(*self.args)
+        if not hasattr(self.zeroconf, "update_service"):
+            log("no update_service with zeroconf version %s", zeroconf_version)
+            return
+        props = self.txt_rec(txt)
+        if self.args:
+            args = list(self.args)
+            args[6] = props
+            self.args = tuple(args)
+        else:
+            self.kwargs["properties"] = props
+        si = ServiceInfo(*self.args, **self.kwargs)
         try:
             self.zeroconf.update_service(si)
             self.service = si

@@ -14,8 +14,8 @@ log = Logger("network", "mdns")
 
 class ZeroconfListener(object):
 
-    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None):
-        log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove))
+    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
+        log("ZeroconfListener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         self.zeroconf = Zeroconf()
         self.browser = None
         if not service_type.endswith("local."):
@@ -24,9 +24,15 @@ class ZeroconfListener(object):
         self.mdns_found = mdns_found
         self.mdns_add = mdns_add
         self.mdns_remove = mdns_remove
+        self.mdns_update = mdns_update
 
     def __repr__(self):
         return "ZeroconfListener(%s)" % self.service_type
+
+    def update_service(self, zeroconf, stype, name):
+        log("update_service%s", (zeroconf, stype, name))
+        if self.mdns_update:
+            self.mdns_update(name, stype)
 
     def remove_service(self, zeroconf, stype, name):
         log("remove_service%s", (zeroconf, stype, name))
@@ -45,10 +51,15 @@ class ZeroconfListener(object):
             stype = info.type
             domain = "local"
             server = info.server
-            address = socket.inet_ntoa(info.address)
+            try:
+                addresses = info.addresses
+            except AttributeError:
+                addresses = [info.address]
             port = info.port
             props = info.properties
-            self.mdns_add(interface, protocol, name, stype, domain, server, address, port, props)
+            for address in addresses:
+                saddress = socket.inet_ntoa(address)
+                self.mdns_add(interface, protocol, name, stype, domain, server, saddress, port, props)
 
     def start(self):
         self.browser = ServiceBrowser(self.zeroconf, self.service_type, listener=self)
@@ -78,6 +89,8 @@ def main():
         print("mdns_add: %s" % (args, ))
     def mdns_remove(*args):
         print("mdns_remove: %s" % (args, ))
+    def mdns_update(*args):
+        print("mdns_update: %s" % (args, ))
 
     from xpra.gtk_common.gobject_compat import import_glib
     glib = import_glib()
@@ -86,7 +99,7 @@ def main():
     from xpra.platform import program_context
     with program_context("zeroconf-listener", "zeroconf-listener"):
         from xpra.net.mdns import XPRA_MDNS_TYPE
-        listener = ZeroconfListener(XPRA_MDNS_TYPE+"local.", mdns_found, mdns_add, mdns_remove)
+        listener = ZeroconfListener(XPRA_MDNS_TYPE+"local.", mdns_found, mdns_add, mdns_remove, mdns_update)
         log("listener=%s" % listener)
         listener.start()
         try:
