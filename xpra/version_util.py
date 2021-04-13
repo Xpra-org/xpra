@@ -42,6 +42,28 @@ def full_version_str():
         pass
     return s
 
+def caps_to_version(caps):
+    return caps.strget("version", "0")+"-"+caps_to_revision(caps)
+
+def caps_to_revision(caps):
+    revision = caps.strget("revision")
+    local_modifications = caps.intget("local_modifications")
+    commit = caps.strget("commit")
+    branch = caps.strget("branch")
+    return make_revision_str(revision, local_modifications, branch, commit)
+
+def make_revision_str(revision, local_modifications, branch, commit):
+    rstr = ""
+    try:
+        rstr += "r"+revision
+        if local_modifications>0:
+            rstr += "M"
+        if branch=="master" and commit:
+            rstr += " (%s)" % commit
+    except TypeError:
+        pass
+    return rstr
+
 
 def version_as_numbers(version):
     return [int(x) for x in version.split(".")]

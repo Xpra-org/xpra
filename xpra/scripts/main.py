@@ -1621,8 +1621,19 @@ def get_client_app(error_cb, opts, extra_args, mode):
         from xpra.client.gobject_client_base import MonitorXpraClient
         app = MonitorXpraClient(connect(), opts)
     elif mode == "top":
-        from xpra.client.top_client import TopClient
-        app = TopClient(connect(), opts)
+        from xpra.client.top_client import TopClient, TopSessionClient
+        app = None
+        if extra_args:
+            try:
+                display_desc = pick_display(error_cb, opts, extra_args)
+            except Exception:
+                pass
+            else:
+                #show the display we picked automatically:
+                app = TopSessionClient(connect(), opts)
+        if not app:
+            #show all sessions:
+            app = TopClient(connect(), opts)
     elif mode=="control":
         from xpra.client.gobject_client_base import ControlXpraClient
         if len(extra_args)<=1:

@@ -363,6 +363,12 @@ class typedict(dict):
     def strlistget(self, k, default_value=[], min_items=None, max_items=None):
         return self.listget(k, default_value, str, min_items, max_items)
 
+    def strtupleget(self, k, default_value=[], min_items=None, max_items=None):
+        return tuple(self.strlistget(k, default_value, min_items, max_items))
+
+    def inttupleget(self, k, default_value=[], min_items=None, max_items=None):
+        return tuple(self.intlistget(k, default_value, min_items, max_items))
+
     def intlistget(self, k, default_value=[], min_items=None, max_items=None):
         return self.listget(k, default_value, int, min_items, max_items)
 
