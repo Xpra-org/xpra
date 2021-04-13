@@ -183,7 +183,7 @@ class WorldWindow(gtk.Window):
         log("add(%s) realized=%s, widget window=%s", widget, self.get_realized(), w)
         #the DesktopManager does not have a window..
         if w:
-            super().add(widget)
+            gtk.Window.add(self, widget)
 
     def do_focus_in_event(self, event):
         htf = self.get_property("has-toplevel-focus")

@@ -217,16 +217,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_vrefresh(self):
         #try via GTK:
         rates = {}
-        display = Gdk.Display.get_default()
-        for m in range(display.get_n_monitors()):
-            monitor = display.get_monitor(m)
-            log("monitor %i (%s) refresh-rate=%i", m, monitor.get_model(), monitor.get_refresh_rate())
-            rates[m] = monitor.get_refresh_rate()
+        display = display_get_default()
+        if hasattr(display, "get_n_monitors"):
+            for m in range(display.get_n_monitors()):
+                monitor = display.get_monitor(m)
+                log("monitor %i (%s) refresh-rate=%i", m, monitor.get_model(), monitor.get_refresh_rate())
+                rates[m] = monitor.get_refresh_rate()
         rate = -1
         if rates:
             rate = iround(min(rates.values())/1000)
         if rate<30 or rate>250:
-            rate = super().get_vrefresh()
+            rate = UIXpraClient.get_vrefresh(self)
         return rate
 
 

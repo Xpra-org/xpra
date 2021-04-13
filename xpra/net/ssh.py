@@ -229,7 +229,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
 
     def close(self):
         try:
-            super().close()
+            SSHSocketConnection.close(self)
         except Exception:
             #this can happen if the proxy command gets a SIGINT,
             #it's closed already and we don't care
