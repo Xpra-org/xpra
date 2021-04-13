@@ -2320,6 +2320,7 @@ if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("libavcodec", "libavutil", "libavformat")
     if get_gcc_version()>=[9, 0]:
         add_to_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
+    add_to_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/dec_avcodec2/register_compat.c"],
                 **avcodec2_pkgconfig))
@@ -2358,6 +2359,7 @@ if enc_ffmpeg_ENABLED:
     ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat", "libavutil")
     if get_gcc_version()>=[9, 0]:
         add_to_keywords(ffmpeg_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
+    add_to_keywords(ffmpeg_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
                 ["xpra/codecs/enc_ffmpeg/encoder.pyx"],
                 **ffmpeg_pkgconfig))
