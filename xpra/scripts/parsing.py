@@ -240,6 +240,8 @@ def get_usage():
                         "list-windows",
                         "sessions",
                         "launcher",
+                        "gui",
+                        "start-gui",
                       ]
     if supports_mdns:
         command_options.append("list-mdns")
