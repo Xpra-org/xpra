@@ -28,10 +28,41 @@ SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 DEFAULT_ENCODINGS = os.environ.get("XPRA_DEFAULT_ENCODINGS", "rgb32,rgb24,jpeg,png").split(",")
 
 
-"""
-Mixin for adding encodings to a client
-"""
+def get_core_encodings():
+    """
+        This method returns the actual encodings supported.
+        ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
+        It is often overriden in the actual client class implementations,
+        where extra encodings can be added (generally just 'rgb32' for transparency),
+        or removed if the toolkit implementation class is more limited.
+    """
+    #we always support rgb:
+    core_encodings = ["rgb24", "rgb32"]
+    for codec in ("dec_pillow", "dec_webp", "dec_jpeg"):
+        if has_codec(codec):
+            c = get_codec(codec)
+            encs = c.get_encodings()
+            log("%s.get_encodings()=%s", codec, encs)
+            for e in encs:
+                if e not in core_encodings:
+                    core_encodings.append(e)
+    if SCROLL_ENCODING:
+        core_encodings.append("scroll")
+    #we enable all the video decoders we know about,
+    #what will actually get used by the server will still depend on the csc modes supported
+    video_decodings = getVideoHelper().get_decodings()
+    log("video_decodings=%s", video_decodings)
+    for encoding in video_decodings:
+        if encoding not in core_encodings:
+            core_encodings.append(encoding)
+    #remove duplicates and use prefered encoding order:
+    return [x for x in PREFERRED_ENCODING_ORDER if x in set(core_encodings)]
+
+
 class Encodings(StubClientMixin):
+    """
+    Mixin for adding encodings to a client
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)
@@ -255,36 +286,7 @@ class Encodings(StubClientMixin):
         return e
 
     def get_core_encodings(self):
-        """
-            This method returns the actual encodings supported.
-            ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
-            It is often overriden in the actual client class implementations,
-            where extra encodings can be added (generally just 'rgb32' for transparency),
-            or removed if the toolkit implementation class is more limited.
-        """
-        #we always support rgb:
-        core_encodings = ["rgb24", "rgb32"]
-        for codec in ("dec_pillow", "dec_webp", "dec_jpeg"):
-            if has_codec(codec):
-                c = get_codec(codec)
-                encs = c.get_encodings()
-                log("%s.get_encodings()=%s", codec, encs)
-                for e in encs:
-                    if e not in core_encodings:
-                        core_encodings.append(e)
-        if SCROLL_ENCODING:
-            core_encodings.append("scroll")
-        #we enable all the video decoders we know about,
-        #what will actually get used by the server will still depend on the csc modes supported
-        video_decodings = getVideoHelper().get_decodings()
-        log("video_decodings=%s", video_decodings)
-        for encoding in video_decodings:
-            if encoding not in core_encodings:
-                core_encodings.append(encoding)
-        #remove duplicates and use prefered encoding order:
-        core_encodings = [x for x in PREFERRED_ENCODING_ORDER
-                          if x in set(core_encodings) and x in self.allowed_encodings]
-        return core_encodings
+        return [x for x in get_core_encodings() if x in self.allowed_encodings]
 
     def set_encoding(self, encoding):
         log("set_encoding(%s)", encoding)

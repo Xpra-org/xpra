@@ -28,6 +28,7 @@ from xpra.client.gtk_base.menu_helper import (
     BANDWIDTH_MENU_OPTIONS,
     MIN_QUALITY_OPTIONS, MIN_SPEED_OPTIONS,
     )
+from xpra.make_thread import start_thread
 from xpra.platform.paths import get_xpra_command
 from xpra.log import Logger
 
@@ -72,7 +73,6 @@ def link_btn(link, label=None, icon_name="question.png"):
         webbrowser.open(link)
     def help_clicked(*args):
         log("help_clicked%s opening '%s'", args, link)
-        from xpra.make_thread import start_thread
         start_thread(open_link, "open-link", True)
     icon = get_icon_pixbuf(icon_name)
     btn = imagebutton("" if icon else label, icon, label, help_clicked, 12, False)
@@ -267,6 +267,17 @@ class StartSession(Gtk.Window):
 
         vbox.show_all()
         self.add(vbox)
+        #load encodings in the background:
+        self.loader_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
+
+    def load_codecs(self):
+        from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
+        vh = getVideoHelper()
+        vh.set_modules(video_decoders=self.session_options.video_decoders,
+                       csc_modules=self.session_options.csc_modules or NO_GFX_CSC_OPTIONS)
+        vh.init()
+        from xpra.codecs.loader import load_codecs
+        load_codecs()
 
     def set_options(self, options):
         #cook some attributes,
@@ -302,6 +313,9 @@ class StartSession(Gtk.Window):
     def configure_network(self, *_args):
         self.run_dialog(NetworkWindow)
     def configure_encoding(self, *_args):
+        if self.loader_thread.is_alive():
+            log("waiting for loader thread to complete")
+            self.loader_thread.join()
         self.run_dialog(EncodingWindow)
     def configure_keyboard(self, *_args):
         self.run_dialog(KeyboardWindow)
@@ -622,6 +636,15 @@ class SessionOptions(Gtk.Window):
         self.set_value_from_widgets()
         self.destroy()
 
+    def sep(self, tb):
+        tb.inc()
+        hsep = Gtk.HSeparator()
+        hsep.set_size_request(-1, 2)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=1, yscale=0)
+        al.set_size_request(-1, 10)
+        al.add(hsep)
+        tb.attach(al, 0, 2)
+        tb.inc()
 
     def bool_cb(self, table, label, option_name, tooltip_text=None, link=None):
         attach_label(table, label, tooltip_text, link)
@@ -752,7 +775,7 @@ class FeaturesWindow(SessionOptions):
 
     def populate_form(self):
         btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/README.md",
-                       label="Features Documentation", icon_name=None)
+                       label="Open Features Documentation", icon_name=None)
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
@@ -762,20 +785,23 @@ class FeaturesWindow(SessionOptions):
             "force" : ("force",),
             })
         self.bool_cb(tb, "Splash Screen", "splash")
-        self.bool_cb(tb, "Notifications", "notifications", None,
-                     "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notifications.md")
-        self.bool_cb(tb, "System Tray", "system-tray", None,
-                     "https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
-        self.bool_cb(tb, "Cursors", "cursors")
-        self.bool_cb(tb, "Bell", "bell")
+        self.sep(tb)
+        #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notifications.md")
+        self.bool_cb(tb, "Xpra's System Tray", "tray")
+        self.bool_cb(tb, "Forward System Trays", "system-tray")
+        self.bool_cb(tb, "Notifications", "notifications")
+        #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
+        #self.bool_cb(tb, "Cursors", "cursors")
+        #self.bool_cb(tb, "Bell", "bell")
         self.bool_cb(tb, "Modal Windows", "modal-windows")
         pixel_depths = {0   : "auto"}
         if self.run_mode=="shadow":
             pixel_depths[8] = 8
         for pd in (16, 24, 30, 32):
             pixel_depths[pd] = pd
-        self.combo(tb, "Pixel Depth", "pixel-depth", pixel_depths,
-                   "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Image-Depth.md")
+        self.sep(tb)
+        self.combo(tb, "Pixel Depth", "pixel-depth", pixel_depths)
+        #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Image-Depth.md")
         self.combo(tb, "Mouse Wheel", "mousewheel", {
             "on" : "on",
             "no" : "disabled",
@@ -804,12 +830,11 @@ class NetworkWindow(SessionOptions):
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
-        self.bool_cb(tb, "Multicast DNS", "mdns", "Publish the session via mDNS",
-                     "https://github.com/Xpra-org/xpra/blob/master/docs/Network/Multicast-DNS.md")
+        #"https://github.com/Xpra-org/xpra/blob/master/docs/Network/Multicast-DNS.md")
         self.radio_cb_auto(tb, "Session Sharing", "sharing")
         self.radio_cb_auto(tb, "Session Lock", "lock", "Prevent sessions from being taken over by new clients")
-        tb.attach(Gtk.Label(""))
-        tb.inc()
+        self.sep(tb)
+        self.bool_cb(tb, "Multicast DNS", "mdns", "Publish the session via mDNS")
         self.bool_cb(tb, "Bandwidth Detection", "bandwidth-detection", "Automatically detect runtime bandwidth limits")
         bwoptions = {}
         for bwlimit in BANDWIDTH_MENU_OPTIONS:
@@ -853,15 +878,22 @@ class EncodingWindow(SessionOptions):
             0.15    : "normal",
             0.5     : "slow",
             })
-        tb.attach(Gtk.Label(""), 0, 2)
-        tb.inc()
-        tb.attach(Gtk.HSeparator(), 0, 2)
-        tb.inc()
-        tb.attach(Gtk.Label("Colourspace Modules"), 0)
-        tb.inc()
-        tb.attach(Gtk.Label("Video Encoders"), 0)
-        tb.inc()
-        tb.attach(Gtk.Label("Video Decoders"), 0)
+        self.sep(tb)
+        from xpra.client.mixins.encodings import get_core_encodings
+        encodings = ["auto", "rgb"] + get_core_encodings()
+        encodings.remove("rgb24")
+        encodings.remove("rgb32")
+        if "grayscale" not in encodings:
+            encodings.append("grayscale")
+        from xpra.codecs.loader import get_encoding_name
+        encoding_options = dict((encoding, get_encoding_name(encoding)) for encoding in encodings)
+        #opts.encodings
+        self.combo(tb, "Encoding", "encoding", encoding_options)
+        #tb.attach(Gtk.Label("Colourspace Modules"), 0)
+        #tb.inc()
+        #tb.attach(Gtk.Label("Video Encoders"), 0)
+        #tb.inc()
+        #tb.attach(Gtk.Label("Video Decoders"), 0)
         self.vbox.show_all()
 
 
