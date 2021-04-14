@@ -27,7 +27,7 @@ from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
-from xpra.net.compression import use
+from xpra.net.compression import use, Compressed
 from xpra.log import Logger
 
 log = Logger("window", "encoding")
@@ -2514,23 +2514,17 @@ class WindowSource(WindowIconSource):
         if w<16 or h<16:
             log("nvjpeg_encode: image size %ix%i is too small", w, h)
             return self.pillow_encode(coding, image, options)
-        if image.get_pixel_format()!="BGRX":
+        pixel_format = image.get_pixel_format()
+        if pixel_format!="RGB" and not argb_swap(image, ("RGB", )):
             log("nvjpeg_encode: cannot handle %s", image.get_pixel_format())
             return self.pillow_encode(coding, image, options)
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         log("nvjpeg_encode%s", (coding, image, options))
-        #FIXME: handle this generically
-        rs = image.get_rowstride()
-        from xpra.codecs.argb.argb import bgra_to_rgb
-        image.set_pixels(bgra_to_rgb(image.get_pixels()))
-        image.set_pixel_format("RGB")
-        image.set_rowstride(rs*3//4)
         with cdd:
             data, w, h, stride = self.enc_nvjpeg.device_encode(cdd, image, q, s)
-        #FIXME: don't use memoryview!
-        from xpra.net.compression import Compressed
-        cpixels = Compressed(coding, data.tobytes(), True)
+        cpixels = Compressed(coding, data, False)
+        #cpixels = Compressed(coding, data.tobytes(), True)
         return "jpeg", cpixels, {}, w, h, stride, 24
 
     def pillow_encode(self, coding, image, options):
