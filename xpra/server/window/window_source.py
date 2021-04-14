@@ -982,6 +982,8 @@ class WindowSource(WindowIconSource):
             return "rgb32"
         if w*h<self._rgb_auto_threshold:
             return "rgb24"
+        if self.enc_nvjpeg and "jpeg" in co and w>=16 and h>=16 and quality<100:
+            return "jpeg"
         if depth in (24, 32) and "webp" in co and 16383>=w>=2 and 16383>=h>=2:
             return "webp"
         if "png" in co and ((quality>=80 and speed<80) or depth<=16):
@@ -2504,12 +2506,21 @@ class WindowSource(WindowIconSource):
     def nvjpeg_encode(self, coding, image, options):
         assert coding=="jpeg"
         cdd = self.cuda_device_context
-        assert cdd, "no cuda device context"
+        if not cdd:
+            log("nvjpeg_encode: no cuda device context")
+            return self.pillow_encode(coding, image, options)
+        w = image.get_width()
+        h = image.get_height()
+        if w<16 or h<16:
+            log("nvjpeg_encode: image size %ix%i is too small", w, h)
+            return self.pillow_encode(coding, image, options)
+        if image.get_pixel_format()!="BGRX":
+            log("nvjpeg_encode: cannot handle %s", image.get_pixel_format())
+            return self.pillow_encode(coding, image, options)
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         log("nvjpeg_encode%s", (coding, image, options))
         #FIXME: handle this generically
-        assert image.get_pixel_format()=="BGRX"
         rs = image.get_rowstride()
         from xpra.codecs.argb.argb import bgra_to_rgb
         image.set_pixels(bgra_to_rgb(image.get_pixels()))
