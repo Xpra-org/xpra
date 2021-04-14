@@ -461,16 +461,17 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         return launcher_main(["xpra"]+args)
     elif mode == "gui":
         check_gtk()
-        from xpra.gtk_common.gui import main as gui_main        #@Reimport
-        return gui_main()
+        from xpra.gtk_common import gui
+        return gui.main()
     elif mode == "start-gui":
+        print("sharing=%s" % (options.sharing,))
         check_gtk()
-        from xpra.gtk_common.start_gui import main as gui_main        #@Reimport
-        return gui_main(options)
+        from xpra.gtk_common import start_gui
+        return start_gui.main(options)
     elif mode == "bug-report":
         check_gtk()
-        from xpra.scripts.bug_report import main as bug_main    #@Reimport
-        bug_main(["xpra"]+args)
+        from xpra.scripts import bug_report
+        bug_report.main(["xpra"]+args)
     elif (
         mode=="_proxy" or
         (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
