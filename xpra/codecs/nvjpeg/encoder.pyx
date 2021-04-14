@@ -9,7 +9,6 @@ from libc.stdint cimport uintptr_t
 from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
 
-from threading import Lock
 from pycuda import driver
 
 from xpra.os_util import bytestostr
