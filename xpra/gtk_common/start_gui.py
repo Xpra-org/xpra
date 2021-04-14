@@ -54,7 +54,7 @@ def exec_command(cmd):
 
 
 def xal(widget, xalign=1):
-    al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
+    al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0, yscale=0)
     al.add(widget)
     return al
 
@@ -271,12 +271,12 @@ class StartSession(Gtk.Window):
         self.loader_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
 
     def load_codecs(self):
-        from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS
+        from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS  #pylint: disable=import-outside-toplevel
         vh = getVideoHelper()
         vh.set_modules(video_decoders=self.session_options.video_decoders,
                        csc_modules=self.session_options.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()
-        from xpra.codecs.loader import load_codecs
+        from xpra.codecs.loader import load_codecs  #pylint: disable=import-outside-toplevel
         load_codecs()
 
     def set_options(self, options):
@@ -284,7 +284,6 @@ class StartSession(Gtk.Window):
         #so they won't trigger "changes" messages later
         #- we don't show "auto" as an option, convert to either true or false:
         options.splash = (str(options.splash) or "").lower() not in FALSE_OPTIONS
-        options.sharing = ()
         self.session_options = options
 
 
@@ -650,9 +649,11 @@ class SessionOptions(Gtk.Window):
         attach_label(table, label, tooltip_text, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
-        cb = Gtk.CheckButton()
+        cb = Gtk.Switch()
+        #cb = Gtk.CheckButton()
         cb.set_active(str(value).lower() not in FALSE_OPTIONS)
-        table.attach(cb, 1)
+        al = xal(cb, xalign=0)
+        table.attach(al, 1)
         setattr(self, "%s_widget" % fn, cb)
         setattr(self, "%s_widget_type" % fn, "bool")
         self.widgets.append(option_name)
@@ -663,14 +664,13 @@ class SessionOptions(Gtk.Window):
         return self.radio_cb(table, label, option_name, tooltip_text, link, {
             "yes"   : TRUE_OPTIONS,
             "no"    : FALSE_OPTIONS,
-            "auto" : ("auto", "", None),
+            "auto"  : ("auto", "", None),
             })
 
     def radio_cb(self, table, label, option_name, tooltip_text=None, link=None, options=None):
         attach_label(table, label, tooltip_text, link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
-        setattr(self, "%s_options" % fn, options)
         setattr(self, "%s_widget_type" % fn, "radio")
         self.widgets.append(option_name)
         value = getattr(self.options, fn)
@@ -679,15 +679,24 @@ class SessionOptions(Gtk.Window):
         i = 0
         sibling = None
         btns = []
+        saved_options = {}
         for label, match in options.items():
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, label)
             hbox.add(btn)
             setattr(self, "%s_%s" % (widget_base_name, label), btn)
-            btn.set_active(str(value).lower() in match)
+            saved_match = match
+            matched = value in match or str(value).lower() in match
+            btn.set_active(matched)
+            if matched:
+                #ensure we save the current value first,
+                #so that's what we will set as value when retrieving the form values:
+                saved_match = [value]+list(match)
             if i==0:
                 sibling = btn
             i += 1
+            saved_options[label] = saved_match
             btns.append(btn)
+        setattr(self, "%s_options" % fn, saved_options)
         table.attach(hbox, 1)
         table.inc()
         return btns
@@ -836,7 +845,9 @@ class NetworkWindow(SessionOptions):
         self.sep(tb)
         self.bool_cb(tb, "Multicast DNS", "mdns", "Publish the session via mDNS")
         self.bool_cb(tb, "Bandwidth Detection", "bandwidth-detection", "Automatically detect runtime bandwidth limits")
-        bwoptions = {}
+        bwoptions = {
+            "auto" : "Auto",
+            }
         for bwlimit in BANDWIDTH_MENU_OPTIONS:
             if bwlimit<=0:
                 s = "None"
