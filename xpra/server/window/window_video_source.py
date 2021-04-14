@@ -126,17 +126,22 @@ class WindowVideoSource(WindowSource):
 
     def init_encoders(self):
         WindowSource.init_encoders(self)
-        #for 0.12 onwards: per encoding lists:
-
+        self._csc_encoder = None
+        self._video_encoder = None
+        self._last_pipeline_check = 0
+        if has_codec("csc_libyuv"):
+            #need libyuv to be able to handle 'grayscale' video:
+            #(to convert ARGB to grayscale)
+            self.add_encoder("grayscale", self.video_encode)
+        if self._mmap_size>0:
+            self.non_video_encodings = ()
+            self.common_video_encodings = ()
+            return
         self.video_encodings = self.video_helper.get_encodings()
         for x in self.video_encodings:
             if x in self.server_core_encodings:
                 self.add_encoder(x, self.video_encode)
         self.add_encoder("auto", self.video_encode)
-        if has_codec("csc_libyuv"):
-            #need libyuv to be able to handle 'grayscale' video:
-            #(to convert ARGB to grayscale)
-            self.add_encoder("grayscale", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
@@ -146,10 +151,6 @@ class WindowVideoSource(WindowSource):
                                             if x in self.video_encodings and x in self.core_encodings)
         if "scroll" in self.server_core_encodings:
             self.add_encoder("scroll", self.scroll_encode)
-        #those two instances should only ever be modified or accessed from the encode thread:
-        self._csc_encoder = None
-        self._video_encoder = None
-        self._last_pipeline_check = 0
 
     def __repr__(self):
         return "WindowVideoSource(%s : %s)" % (self.wid, self.window_dimensions)

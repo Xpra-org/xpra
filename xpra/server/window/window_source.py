@@ -112,11 +112,11 @@ def capr(v):
 class WindowSource(WindowIconSource):
     """
     We create a Window Source for each window we send pixels for.
-    
+
     The UI thread calls 'damage' for screen updates,
     we eventually call 'ClientConnection.call_in_encode_thread' to queue the damage compression,
     the function can then submit the packet using the 'queue_damage_packet' callback.
-    
+
     (also by 'send_window_icon' and clibpoard packets)
     """
 
@@ -317,9 +317,14 @@ class WindowSource(WindowIconSource):
     def init_encoders(self):
         self._all_encoders = {}
         self._encoders = {}
+        self.full_csc_modes = typedict()
         self.add_encoder("rgb24", self.rgb_encode)
         self.add_encoder("rgb32", self.rgb_encode)
+        #we need pillow for scaling and grayscale:
         self.enc_pillow = get_codec("enc_pillow")
+        if self._mmap_size>0:
+            self.add_encoder("mmap", self.mmap_encode)
+            return
         if self.enc_pillow:
             for x in self.enc_pillow.get_encodings():
                 if x in self.server_core_encodings:
@@ -332,13 +337,11 @@ class WindowSource(WindowIconSource):
             self.add_encoder("jpeg", self.jpeg_encode)
         #prefer nvjpeg over all the other jpeg encoders:
         self.enc_nvjpeg = None
+        log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
         if self.cuda_device_context:
             self.enc_nvjpeg = get_codec("enc_nvjpeg")
             if self.enc_nvjpeg:
                 self.add_encoder("jpeg", self.nvjpeg_encode)
-        if self._mmap_size>0:
-            self.add_encoder("mmap", self.mmap_encode)
-        self.full_csc_modes = typedict()
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
 
 
@@ -776,6 +779,13 @@ class WindowSource(WindowIconSource):
     def update_encoding_selection(self, encoding=None, exclude=(), init=False):
         #now we have the real list of encodings we can use:
         #"rgb32" and "rgb24" encodings are both aliased to "rgb"
+        if self._mmap_size>0 and self.encoding!="grayscale":
+            self.auto_refresh_encodings = ()
+            self.encoding = "mmap"
+            self.encodings = ("mmap", )
+            self.common_encodings = ("mmap", )
+            self.get_best_encoding = self.encoding_is_mmap
+            return
         common_encodings = [x for x in self._encoders if x in self.core_encodings and x not in exclude]
         #"rgb" is a pseudo encoding and needs special code:
         if "rgb24" in  common_encodings or "rgb32" in common_encodings:
