@@ -78,7 +78,7 @@ def link_btn(link, label=None, icon_name="question.png"):
     btn = imagebutton("" if icon else label, icon, label, help_clicked, 12, False)
     return btn
 
-def attach_label(table, label, tooltip_text, link=None):
+def attach_label(table, label, tooltip_text=None, link=None):
     lbl = Gtk.Label(label)
     if tooltip_text:
         lbl.set_tooltip_text(tooltip_text)
@@ -721,6 +721,28 @@ class SessionOptions(Gtk.Window):
         table.inc()
         return c
 
+    def scale(self, table, label, option_name, minv=0, maxv=100, marks=None):
+        attach_label(table, label)
+        fn = option_name.replace("-", "_")
+        value = getattr(self.options, fn)
+        #c = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, minv, maxv, 10)
+        c = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL)
+        c.set_range(minv, maxv)
+        c.set_draw_value(True)
+        c.set_digits(0)
+        c.set_hexpand(True)
+        c.set_value(value or 0)
+        c.set_valign(Gtk.Align.START)
+        if marks:
+            for v,label in marks.items():
+                c.add_mark(v, Gtk.PositionType.BOTTOM, label)
+        table.attach(c, 1)
+        setattr(self, "%s_widget" % fn, c)
+        setattr(self, "%s_widget_type" % fn, "scale")
+        self.widgets.append(option_name)
+        table.inc()
+        return c
+
     def set_value_from_widgets(self):
         for option_name in self.widgets:
             self.set_value_from_widget(option_name)
@@ -735,6 +757,9 @@ class SessionOptions(Gtk.Window):
             values = self.valuesfromradio(option_name)
         elif widget_type=="combo":
             values = self.valuesfromcombo(option_name)
+        elif widget_type=="scale":
+            widget = getattr(self, "%s_widget" % fn)
+            values = (int(widget.get_value()), )
         else:
             log.warn("unknown widget type '%s'", widget_type)
         if len(values)!=1 or values[0]!=UNSET:
@@ -879,17 +904,24 @@ class EncodingWindow(SessionOptions):
         tb = self.table()
         qoptions = MIN_QUALITY_OPTIONS.copy()
         qoptions.pop(0, None)
-        self.combo(tb, "Minimum Quality", "min-quality", qoptions)
-        soptions = MIN_SPEED_OPTIONS.copy()
-        soptions.pop(0, None)
-        self.combo(tb, "Minimum Speed", "min-speed", soptions)
+        self.scale(tb, "Minimum Quality", "min-quality", marks={
+            0   : "Very Low",
+            30  : "Low",
+            50  : "Medium",
+            75  : "High",
+            100 : "Lossless",
+            })
+        self.scale(tb, "Minimum Speed", "min-speed", marks={
+            0   : "Low Bandwidth",
+            100 : "Low Latency",
+            })
+        self.sep(tb)
         self.combo(tb, "Auto-refresh", "auto-refresh-delay", {
             0       : "disabled",
             0.1     : "fast",
             0.15    : "normal",
             0.5     : "slow",
             })
-        self.sep(tb)
         from xpra.client.mixins.encodings import get_core_encodings
         encodings = ["auto", "rgb"] + get_core_encodings()
         encodings.remove("rgb24")
@@ -951,23 +983,25 @@ class AudioWindow(SessionOptions):
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
             })
-        tb.attach(Gtk.Label("Speaker Codec"))
-        self.speaker_codec_widget = Gtk.ComboBoxText()
-        for v in ("mp3", "wav"):
-            self.speaker_codec_widget.append_text(v)
-        tb.attach(self.speaker_codec_widget, 1)
-        tb.inc()
+        self.sep(tb)
+        #tb.attach(Gtk.Label("Speaker Codec"))
+        #self.speaker_codec_widget = Gtk.ComboBoxText()
+        #for v in ("mp3", "wav"):
+        #    self.speaker_codec_widget.append_text(v)
+        #tb.attach(self.speaker_codec_widget, 1)
+        #tb.inc()
         self.radio_cb(tb, "Microphone", "microphone", None, None, {
             "on"        : TRUE_OPTIONS,
             "off"       : FALSE_OPTIONS,
             "disabled"  : ("disabled", ),
             })
-        tb.attach(Gtk.Label("Microphone Codec"))
-        self.microphone_codec_widget = Gtk.ComboBoxText()
-        for v in ("mp3", "wav"):
-            self.microphone_codec_widget.append_text(v)
-        tb.attach(self.microphone_codec_widget, 1)
-        tb.inc()
+        self.sep(tb)
+        #tb.attach(Gtk.Label("Microphone Codec"))
+        #self.microphone_codec_widget = Gtk.ComboBoxText()
+        #for v in ("mp3", "wav"):
+        #    self.microphone_codec_widget.append_text(v)
+        #tb.attach(self.microphone_codec_widget, 1)
+        #tb.inc()
         self.bool_cb(tb, "AV Sync", "av-sync")
         self.vbox.show_all()
 
