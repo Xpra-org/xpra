@@ -512,7 +512,11 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 v["options"] = s(vd.options)
                 XFree(vd.options)
             if vd.variant!=NULL:
-                v["variant"] = s(vd.variant)
+                simplified = ",".join(x for x in s(vd.variant).split(",") if x)
+                if simplified=="":
+                    v["variant"] = ""
+                else:
+                    v["variant"] = s(vd.variant)
                 XFree(vd.variant)
             #log("vd.num_extra=%s", vd.num_extra)
             if vd.extra_names:
