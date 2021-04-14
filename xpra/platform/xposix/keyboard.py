@@ -1,8 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+import os
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
@@ -129,6 +131,18 @@ class Keyboard(KeyboardBase):
 
 
     def get_all_x11_layouts(self):
+        import lxml.etree
+        repository = "/usr/share/X11/xkb/rules/base.xml"
+        if os.path.exists(repository):
+            with open(repository) as f:
+                tree = lxml.etree.parse(f)
+            x11_layouts = {}
+            for layout in tree.xpath("//layout"):
+                layout = layout.xpath("./configItem/name")[0].text
+                x11_layouts[layout] = layout
+                #for variant in layout.xpath("./variantList/variant/configItem/name"):
+                #    variant_name = variant.text
+            return x11_layouts
         from subprocess import Popen, PIPE
         try:
             proc = Popen(["localectl", "list-x11-keymap-layouts"], stdout=PIPE, stderr=PIPE)
