@@ -97,6 +97,13 @@ class Keyboard(KeyboardBase):
         KeyboardBase.cleanup(self)
 
 
+    def get_all_x11_layouts(self):
+        x11_layouts = {}
+        for name, layout in APPLE_LAYOUTS.items():
+            x11_layouts[layout] = name
+        return x11_layouts
+
+
     def get_layout_spec(self):
         layout = "us"
         layouts = ["us"]

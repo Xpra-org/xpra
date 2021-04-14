@@ -120,6 +120,19 @@ class Keyboard(KeyboardBase):
         """
         return  {}, [], ["lock"]
 
+
+    def get_all_x11_layouts(self):
+        x11_layouts = {}
+        for win32_layout in WIN32_LAYOUTS.values():
+            #("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
+            x11_layout = win32_layout[4]
+            if x11_layout in x11_layouts:
+                continue
+            name = win32_layout[2]
+            x11_layouts[x11_layout] = name
+        return x11_layouts
+
+
     def get_layout_spec(self):
         KMASKS = (0xffffffff, 0xffff, 0x3ff)
         layout = None

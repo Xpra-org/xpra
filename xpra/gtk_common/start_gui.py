@@ -18,7 +18,7 @@ from xpra.gtk_common.gtk_util import (
     TableBuilder,
     )
 from xpra.util import repr_ellipsized
-from xpra.os_util import OSX, WIN32, platform_name
+from xpra.os_util import POSIX, OSX, WIN32, platform_name
 from xpra.simple_stats import std_unit_dec
 from xpra.scripts.config import (
     get_defaults, parse_bool,
@@ -918,10 +918,19 @@ class KeyboardWindow(SessionOptions):
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
-        tb.attach(Gtk.Label("Keyboard Layout"))
-        self.keyboard_layout_widget = Gtk.ComboBoxText()
-        tb.attach(self.keyboard_layout_widget, 1)
-        tb.inc()
+        if POSIX and not OSX:
+            try:
+                from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+                init_gdk_display_source()
+            except Exception:
+                pass
+        from xpra.platform.keyboard import Keyboard
+        kbd = Keyboard()  #pylint: disable=not-callable
+        layouts = {
+            ""  : "auto",
+            }
+        layouts.update(kbd.get_all_x11_layouts())
+        self.combo(tb, "Keyboard Layout", "keyboard-layout", layouts)
         self.bool_cb(tb, "State Synchronization", "keyboard-sync")
         self.bool_cb(tb, "Raw Mode", "keyboard-raw")
         self.vbox.show_all()

@@ -127,6 +127,26 @@ class Keyboard(KeyboardBase):
         log("get_xkb_rules_names_property()=%s", xkb_rules_names)
         return xkb_rules_names
 
+
+    def get_all_x11_layouts(self):
+        from subprocess import Popen, PIPE
+        try:
+            proc = Popen(["localectl", "list-x11-keymap-layouts"], stdout=PIPE, stderr=PIPE)
+            out = proc.communicate()[0]
+            log("get_all_x11_layouts() proc=%s", proc)
+            log("get_all_x11_layouts() returncode=%s", proc.returncode)
+            if proc.wait()==0:
+                x11_layouts = {}
+                for line in out.splitlines():
+                    layout = line.decode().split("/")[-1]
+                    if layout:
+                        x11_layouts[layout] = layout
+                return x11_layouts
+        except OSError:
+            log("get_all_x11_layouts()", exc_info=True)
+        return {"us" : "English"}
+
+
     def get_layout_spec(self):
         layout = ""
         layouts = []
