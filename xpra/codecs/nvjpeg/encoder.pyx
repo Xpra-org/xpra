@@ -417,6 +417,8 @@ def cleanup_module():
 def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
     from xpra.codecs.codec_checks import make_test_image
-    img = make_test_image("BGRA", 32, 32)
-    v = encode(img)
-    assert v, "failed to compress test image"
+    for size in (32, 256):
+        img = make_test_image("BGRA", size, size)
+        log("testing with %s", img)
+        v = encode(img)
+        assert v, "failed to compress test image"
