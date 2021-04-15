@@ -174,7 +174,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
             #apply min size to the drawing_area:
             #(for CSD mode, ie: headerbar)
             minw = thints.intget("min_width", 0)
-            minh = thints.intget("min_width", 0)
+            minh = thints.intget("min_height", 0)
             self.drawing_area.set_size_request(minw, minh)
 
         geom = Gdk.Geometry()
