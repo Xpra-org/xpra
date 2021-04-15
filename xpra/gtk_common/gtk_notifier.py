@@ -19,6 +19,9 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
 
 from xpra.os_util import OSX, bytestostr
@@ -82,18 +85,14 @@ class GTK_Notifier(NotifierBase):
         self._offset = 0
 
         display = Gdk.Display.get_default()
-        screen = display.get_default_screen()
-        n = screen.get_n_monitors()
-        log("screen=%s, monitors=%s", screen, n)
-        if n<2:
-            self.max_width = screen.get_width()
-            self.max_height = screen.get_height()
-            log("screen dimensions: %dx%d", self.max_width, self.max_height)
-        else:
-            rect = screen.get_monitor_geometry(0)
-            self.max_width = rect.width
-            self.max_height = rect.height
-            log("first monitor dimensions: %dx%d", self.max_width, self.max_height)
+        n = display.get_n_monitors()
+        log("monitors=%s", n)
+        #if n<2:
+        monitor = display.get_monitor(0)
+        geom = monitor.get_geometry()
+        self.max_width = geom.width
+        self.max_height = geom.height
+        log("first monitor dimensions: %dx%d", self.max_width, self.max_height)
         self.x = self.max_width - 20        #keep away from the edge
         self.y = self.max_height - 64        #space for a panel
         log("our reduced dimensions: %dx%d", self.x, self.y)
@@ -124,7 +123,11 @@ class GTK_Notifier(NotifierBase):
         self.new_popup(nid, summary, body, actions, icon, timeout, 0<timeout<=600)
 
     def new_popup(self, nid, summary, body, actions, icon, timeout=10*1000, show_timeout=False):
-        """Create a new Popup instance."""
+        """Create a new Popup instance, or update an existing one """
+        existing = [p for p in self._notify_stack if p.nid==nid]
+        if existing:
+            existing[0].set_content(summary, body, actions, icon)
+            return
         if len(self._notify_stack) == self.max_popups:
             oldest = self._notify_stack[0]
             oldest.hide_notification()
@@ -185,7 +188,6 @@ class Popup(Gtk.Window):
         main_box = Gtk.VBox()
         header_box = Gtk.HBox()
         self.header = Gtk.Label()
-        self.header.set_markup("<b>%s</b>" % title)
         self.header.set_padding(3, 3)
         self.header.set_alignment(0, 0)
         header_box.pack_start(self.header, True, True, 5)
@@ -203,19 +205,16 @@ class Popup(Gtk.Window):
         main_box.pack_start(header_box)
 
         body_box = Gtk.HBox()
-        if image is not None:
-            self.image = Gtk.Image()
-            self.image.set_size_request(70, 70)
-            self.image.set_alignment(0, 0)
-            self.image.set_from_pixbuf(image)
-            body_box.pack_start(self.image, False, False, 5)
+        self.image = Gtk.Image()
+        self.image.set_size_request(70, 70)
+        self.image.set_alignment(0, 0)
+        body_box.pack_start(self.image, False, False, 5)
         self.message = Gtk.Label()
         self.message.set_max_width_chars(80)
         self.message.set_size_request(stack.size_x - 90, -1)
         self.message.set_line_wrap(True)
         self.message.set_alignment(0, 0)
         self.message.set_padding(5, 10)
-        self.message.set_text(message)
         self.counter = Gtk.Label()
         self.counter.set_alignment(1, 1)
         self.counter.set_padding(3, 3)
@@ -225,16 +224,10 @@ class Popup(Gtk.Window):
         body_box.pack_end(self.counter, False, False, 5)
         main_box.pack_start(body_box, False, False, 5)
 
-        if len(actions)>=2:
-            buttons_box = Gtk.HBox(True)
-            while len(actions)>=2:
-                action_id, action_text = actions[:2]
-                actions = actions[2:]
-                button = self.action_button(action_id, action_text)
-                buttons_box.add(button)
-            alignment = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
-            alignment.add(buttons_box)
-            main_box.pack_start(alignment)
+        self.buttons_box = Gtk.HBox(homogeneous=True)
+        alignment = Gtk.Alignment(xalign=1.0, yalign=0.5, xscale=0.0, yscale=0.0)
+        alignment.add(self.buttons_box)
+        main_box.pack_start(alignment)
         self.add(main_box)
         if stack.bg_color is not None:
             self.modify_bg(Gtk.StateType.NORMAL, stack.bg_color)
@@ -251,11 +244,31 @@ class Popup(Gtk.Window):
         self.wait_timer = None
         self.fade_out_timer = None
         self.fade_in_timer = GLib.timeout_add(100, self.fade_in)
+        #populate the window:
+        self.set_content(title, message, actions, image)
         #ensure we dont show it in the taskbar:
         self.realize()
         self.get_window().set_skip_taskbar_hint(True)
         self.get_window().set_skip_pager_hint(True)
         add_close_accel(self, self.user_closed)
+
+    def set_content(self, title, message, actions=(), image=None):
+        self.header.set_markup("<b>%s</b>" % title)
+        self.message.set_text(message)
+        #remove any existing actions:
+        for w in tuple(self.buttons_box.get_children()):
+            self.buttons_box.remove(w)
+        while len(actions)>=2:
+            action_id, action_text = actions[:2]
+            actions = actions[2:]
+            button = self.action_button(action_id, action_text)
+            self.buttons_box.add(button)
+        if image:
+            self.image.show()
+            self.image.set_from_pixbuf(image)
+        else:
+            self.image.hide()
+
 
     def action_button(self, action_id, action_text):
         try:
@@ -356,26 +369,29 @@ def main():
     #example usage
     import random
     color_combos = (("red", "white"), ("white", "blue"), ("green", "black"))
-    messages = (("Hello", "This is a popup"),
-            ("Some Latin", "Quidquid latine dictum sit, altum sonatur."),
-            ("A long message", "The quick brown fox jumped over the lazy dog. " * 6))
+    messages = [
+        (1, "Hello", "This is a popup"),
+        (2, "Some Latin", "Quidquid latine dictum sit, altum sonatur."),
+        (3, "A long message", "The quick brown fox jumped over the lazy dog. " * 6),
+        (1, "Hello Again", "Replacing the first notification"),
+        ]
     #images = ("logo1_64.png", None)
     def notify_factory():
         color = random.choice(color_combos)
-        title, message = random.choice(messages)
+        nid, title, message = messages.pop(0)
         icon = None #random.choice(images)
         notifier.bg_color = color_parse(color[0])
         notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))
-        notifier.new_popup(0, title, message, (), icon)
-        return True
+        notifier.new_popup(nid, title, message, (), icon)
+        return len(messages)
     def gtk_main_quit():
         print("quitting")
         Gtk.main_quit()
 
     notifier = GTK_Notifier(timeout=6)
     GLib.timeout_add(4000, notify_factory)
-    GLib.timeout_add(20000, gtk_main_quit)
+    GLib.timeout_add(30000, gtk_main_quit)
     Gtk.main()
 
 if __name__ == "__main__":
