@@ -279,8 +279,9 @@ class ServerBaseControlCommands(StubServerMixin):
             raise ControlError("no clients found matching: %s" % client_uuids)
         clients = 0
         for ss in sources:
-            if ss.send_open_url(url):
-                clients += 1
+            if hasattr(ss, "send_open_url"):
+                if ss.send_open_url(url):
+                    clients += 1
         return "url sent to %i clients" % clients
 
     def control_command_send_file(self, filename, openit="open", client_uuids="*", maxbitrate=0):
