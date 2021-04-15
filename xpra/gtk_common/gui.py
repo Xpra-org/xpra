@@ -117,7 +117,7 @@ class GUI(Gtk.Window):
                                              "Start a shadow server,\nmaking this desktop accessible to others\n(authentication required)", clicked_callback=self.start_shadow,
                                              icon_size=48, label_font=label_font)
             if not has_shadow:
-                self.shadow_button.set_tooltip_text("This build of Xpra does not support starting sessions")
+                self.shadow_button.set_tooltip_text("This build of Xpra does not support starting shadow sessions")
                 self.shadow_button.set_sensitive(False)
             self.widgets.append(self.shadow_button)
             icon = get_icon_pixbuf("windows.png")
@@ -126,13 +126,12 @@ class GUI(Gtk.Window):
                                             label, clicked_callback=self.start,
                                             icon_size=48, label_font=label_font)
             self.widgets.append(self.start_button)
-        assert len(self.widgets)%2==0
-        table = Gtk.Table(len(self.widgets)//2, 2, True)
+        table = Gtk.Table(2, 2, True)
         for i, widget in enumerate(self.widgets):
             table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
         self.vbox.add(table)
         self.vbox.show_all()
-        self.set_size_request(640, 100+100*len(self.widgets)//2)
+        self.set_default_size(640, 300)
         def focus_in(window, event):
             log("focus_in(%s, %s)", window, event)
         def focus_out(window, event):
