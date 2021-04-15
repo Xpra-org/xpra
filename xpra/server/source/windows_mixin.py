@@ -625,7 +625,7 @@ class WindowsMixin(StubSourceMixin):
             #enough congestion events?
             T = 10
             min_time = now-T
-            count = len(tuple(True for x in gs.congestion_send_speed if x[0]>min_time))
+            count = sum(int(x[0]>min_time) for x in gs.congestion_send_speed)
             bandwidthlog("record_congestion_event: %i events in the last %i seconds (warnings after %i)",
                          count, T, CONGESTION_WARNING_EVENT_COUNT)
             if count>CONGESTION_WARNING_EVENT_COUNT:
