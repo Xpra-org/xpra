@@ -2505,19 +2505,23 @@ class WindowSource(WindowIconSource):
 
     def nvjpeg_encode(self, coding, image, options):
         assert coding=="jpeg"
+        def fallback(reason):
+            log("nvjpeg_encode: %s", reason)
+            if self.enc_jpeg:
+                return self.jpeg_encode(coding, image, options)
+            if self.enc_pillow:
+                return self.pillow_encode(coding, image, options)
+            return None
         cdd = self.cuda_device_context
         if not cdd:
-            log("nvjpeg_encode: no cuda device context")
-            return self.pillow_encode(coding, image, options)
+            return fallback("no cuda device context")
         w = image.get_width()
         h = image.get_height()
         if w<16 or h<16:
-            log("nvjpeg_encode: image size %ix%i is too small", w, h)
-            return self.pillow_encode(coding, image, options)
+            return fallback("image size %ix%i is too small" % (w, h))
         pixel_format = image.get_pixel_format()
         if pixel_format!="RGB" and not argb_swap(image, ("RGB", )):
-            log("nvjpeg_encode: cannot handle %s", image.get_pixel_format())
-            return self.pillow_encode(coding, image, options)
+            return fallback("cannot handle %s" % pixel_format)
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         log("nvjpeg_encode%s", (coding, image, options))
