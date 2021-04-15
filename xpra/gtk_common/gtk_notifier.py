@@ -142,7 +142,7 @@ class GTK_Notifier(NotifierBase):
         popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout//1000, show_timeout=show_timeout)
         self._notify_stack.append(popup)
         self._offset += self._notify_stack[-1].h
-        return popup
+        return False
 
     def destroy_popup_cb(self, popup):
         if popup in self._notify_stack:
