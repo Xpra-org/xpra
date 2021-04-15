@@ -577,7 +577,7 @@ class WindowVideoSource(WindowSource):
         super().do_damage(ww, wh, x, y, w, h, options)
 
 
-    def cancel_damage(self):
+    def cancel_damage(self, limit=0):
         self.cancel_encode_from_queue()
         self.free_encode_queue_images()
         vsr = self.video_subregion
@@ -585,7 +585,7 @@ class WindowVideoSource(WindowSource):
             vsr.cancel_refresh_timer()
         self.free_scroll_data()
         self.last_scroll_time = 0
-        WindowSource.cancel_damage(self)
+        WindowSource.cancel_damage(self, limit)
         #we must clean the video encoder to ensure
         #we will resend a key frame because we may be missing a frame
         self.cleanup_codecs()

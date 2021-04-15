@@ -304,6 +304,8 @@ class WindowSource(WindowIconSource):
         self.init_encoders()
         self.update_encoding_selection(encoding, init=True)
         log("initial encoding for %s: %s", self.wid, self.encoding)
+        #ready to service:
+        self._damage_cancelled = 0
 
     def __repr__(self):
         return "WindowSource(%s : %s)" % (self.wid, self.window_dimensions)
@@ -409,17 +411,15 @@ class WindowSource(WindowIconSource):
         #
         self._damage_delayed = None
         self._sequence = 1
-        self._damage_cancelled = 0
+        self._damage_cancelled = INFINITY
         self._damage_packet_sequence = 1
 
     def cleanup(self):
-        self.cancel_damage()
+        self.cancel_damage(INFINITY)
         log("encoding_totals for wid=%s with primary encoding=%s : %s",
             self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
         self._mmap_size = 0
-        #make sure we don't queue any more screen updates for encoding:
-        self._damage_cancelled = INFINITY
         self.batch_config.cleanup()
         #we can only clear the encoders after clearing the whole encoding queue:
         #(because mmap cannot be cancelled once queued for encoding)
@@ -1008,16 +1008,16 @@ class WindowSource(WindowIconSource):
         self.go_idle()
 
 
-    def cancel_damage(self):
+    def cancel_damage(self, limit=0):
         """
         Use this method to cancel all currently pending and ongoing
         damage requests for a window.
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
-        damagelog("cancel_damage() wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s",
-                  self.wid, self._damage_delayed, len(self.encode_queue), self._sequence)
+        damagelog("cancel_damage(%i) wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s",
+                  limit, self.wid, self._damage_delayed, len(self.encode_queue), self._sequence)
         #for those in flight, being processed in separate threads, drop by sequence:
-        self._damage_cancelled = self._sequence
+        self._damage_cancelled = limit or self._sequence
         self.cancel_expire_timer()
         self.cancel_may_send_timer()
         self.cancel_soft_timer()
