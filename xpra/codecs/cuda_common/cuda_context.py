@@ -418,6 +418,10 @@ class cuda_device_context:
         self.device = device
         self.context = None
         self.lock = RLock()
+        log("%r", self)
+
+    def __bool__(self):
+        return self.device is not None
 
     def __enter__(self):
         assert self.lock.acquire(False), "failed to acquire cuda device lock"
@@ -426,7 +430,7 @@ class cuda_device_context:
             cf = driver.ctx_flags
             self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
             end = monotonic_time()
-            log("cuda context %s allocation took %ims", 1000*(end-start))
+            log("cuda context allocation took %ims", 1000*(end-start))
         self.context.push()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -447,11 +451,14 @@ class cuda_device_context:
         self.free()
 
     def free(self):
+        log("free() context=%s", self.context)
         c = self.context
         if c:
+            self.device_id = 0
+            self.device = None
             self.context = None
-            with self.lock.acquire(blocking=True):
-                c.detach()
+            with self.lock:
+                c.pop()
 
 
 CUDA_ERRORS_INFO = {
