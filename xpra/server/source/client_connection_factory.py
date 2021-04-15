@@ -104,7 +104,7 @@ def get_client_connection_class(caps):
                     log("%s.cleanup()", bc, exc_info=True)
                     log.error("Error closing connection")
                     log.error(" %s", e)
-                    raise Exception("failed to initialize %s: %s" % (bc, e)) from None
+                    raise Exception("failed to close %s: %s" % (bc, e)) from None
 
         def send_hello(self, server_capabilities):
             capabilities = server_capabilities.copy()
