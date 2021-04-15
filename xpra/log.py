@@ -361,6 +361,7 @@ class Logger:
             caller = None
         if caller not in ("__main__", None):
             self.categories.insert(0, caller)
+        self.level_override = 0
         self.logger = logging.getLogger(".".join(self.categories))
         self.logger.setLevel(default_level)
         disabled = False
@@ -409,6 +410,8 @@ class Logger:
     def disable_debug(self):
         self.debug_enabled = False
 
+    def critical(self, enable=False):
+        self.level_override = logging.CRITICAL if enable else 0
 
     def log(self, level, msg : str, *args, **kwargs):
         if kwargs.get("exc_info") is True:
@@ -418,7 +421,7 @@ class Logger:
         global global_logging_handler
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
-        global_logging_handler(self.logger.log, level, msg, *args, **kwargs)
+        global_logging_handler(self.logger.log, self.level_override or level, msg, *args, **kwargs)
 
     def __call__(self, msg : str, *args, **kwargs):
         if self.debug_enabled:

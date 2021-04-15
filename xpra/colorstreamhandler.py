@@ -32,13 +32,15 @@ class _AnsiColorStreamHandler(logging.StreamHandler):
     GREEN   = '\x1b[32m'
     YELLOW  = '\x1b[33m'
     CYAN    = '\x1b[36m'
+    BLUE    = '\x1b[34m'
+    MAGENTA = '\x1b[35m'
     NONE    = ''
 
-    CRITICAL = RED
+    CRITICAL = MAGENTA
     ERROR    = RED
     WARNING  = YELLOW
     INFO     = NONE
-    DEBUG    = CYAN
+    DEBUG    = GREEN
 
     @classmethod
     def _get_color(cls, level):
@@ -83,11 +85,11 @@ class _WinColorStreamHandler(logging.StreamHandler):
     BACKGROUND_INTENSITY = 0x0080 # background color is intensified.
 
     DEFAULT  = FOREGROUND_GREEN
-    CRITICAL = BACKGROUND_YELLOW | FOREGROUND_RED | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY
+    CRITICAL = BACKGROUND_YELLOW | FOREGROUND_MAGENTA | FOREGROUND_INTENSITY | BACKGROUND_INTENSITY
     ERROR    = FOREGROUND_RED | FOREGROUND_INTENSITY
     WARNING  = FOREGROUND_YELLOW | FOREGROUND_INTENSITY
     INFO     = FOREGROUND_WHITE
-    DEBUG    = FOREGROUND_CYAN
+    DEBUG    = FOREGROUND_GREEN
 
     @classmethod
     def _get_color(cls, level):
