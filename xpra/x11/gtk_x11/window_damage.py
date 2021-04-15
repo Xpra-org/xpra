@@ -178,7 +178,7 @@ class WindowDamageHandler(object):
                     if shm_image:
                         return shm_image
         except XError as e:
-            if e.msg=="BadMatch":
+            if e.msg.startswith("BadMatch") or e.msg.startswith("BadWindow"):
                 log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
                 log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
