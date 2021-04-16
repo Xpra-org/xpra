@@ -196,7 +196,16 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def handle_request(self):
         content = self.send_head()
         if content:
-            self.wfile.write(content)
+            try:
+                self.wfile.write(content)
+            except TypeError:
+                log("handle_request()", exc_info=True)
+                log.error("Error handling http request")
+                log.error(" for '%s'", self.path)
+                log.error(" content type is %s", type(content))
+            except Exception:
+                log.error("Error handling http request")
+                log.error(" for '%s'", self.path, exc_info=True)
 
     def do_HEAD(self):
         self.send_head()
