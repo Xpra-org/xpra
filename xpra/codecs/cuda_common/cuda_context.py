@@ -17,6 +17,7 @@ from xpra.os_util import monotonic_time, load_binary_file
 from xpra.log import Logger
 
 log = Logger("cuda")
+log.critical(True)
 
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 
@@ -430,6 +431,7 @@ class cuda_device_context:
             cf = driver.ctx_flags
             self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
             end = monotonic_time()
+            self.context.pop()
             log("cuda context allocation took %ims", 1000*(end-start))
         self.context.push()
 
@@ -458,7 +460,7 @@ class cuda_device_context:
             self.device = None
             self.context = None
             with self.lock:
-                c.pop()
+                c.detach()
 
 
 CUDA_ERRORS_INFO = {
