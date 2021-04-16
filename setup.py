@@ -2237,11 +2237,11 @@ if webp_ENABLED:
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:
     pkgc = {}
-    for v in ("11.0", "11.1", "11.2", "11.3"):
+    for v in ("11.3", "11.2", "11.1", "11.0", ):
         nvjpeg_pkgconfig = pkgconfig("nvjpeg-%s" % v)
         if nvjpeg_pkgconfig:
             break
-    for v in ("11.0", "11.1", "11.2", "11.3"):
+    for v in ("11.3", "11.2", "11.1", "11.0", ):
         cuda_pkgconfig = pkgconfig("cuda-%s" % v)
         if cuda_pkgconfig:
             break
