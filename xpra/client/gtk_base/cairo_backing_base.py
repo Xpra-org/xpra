@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -88,8 +88,9 @@ class CairoBackingBase(WindowBackingBase):
         if bw==0 or bh==0:
             #this can happen during cleanup
             return None
-        self._backing = ImageSurface(FORMAT_ARGB32, bw, bh)
-        cr = Context(self._backing)
+        backing = ImageSurface(FORMAT_ARGB32, bw, bh)
+        self._backing = backing
+        cr = Context(backing)
         cr.set_operator(OPERATOR_CLEAR)
         cr.set_source_rgba(1, 1, 1, 1)
         cr.rectangle(0, 0, bw, bh)
@@ -103,12 +104,14 @@ class CairoBackingBase(WindowBackingBase):
             cr.set_operator(OPERATOR_SOURCE)
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
-            self._backing.flush()
+            backing.flush()
         return cr
 
     def close(self):
-        if self._backing:
-            self._backing.finish()
+        backing = self._backing
+        if backing:
+            backing.finish()
+            self._backing = None
         WindowBackingBase.close(self)
 
 
@@ -129,10 +132,13 @@ class CairoBackingBase(WindowBackingBase):
     def cairo_paint_from_source(self, set_source_fn, source,
                                 x : int, y : int, iw : int, ih : int, width : int, height : int, options):
         """ must be called from UI thread """
+        backing = self._backing
         log("cairo_paint_surface%s backing=%s, paint box line width=%i",
             (set_source_fn, source, x, y, iw, ih, width, height, options),
-            self._backing, self.paint_box_line_width)
-        gc = Context(self._backing)
+            backing, self.paint_box_line_width)
+        if not backing:
+            return
+        gc = Context(backing)
         if self.paint_box_line_width:
             gc.save()
 
@@ -201,6 +207,9 @@ class CairoBackingBase(WindowBackingBase):
 
     def do_paint_scroll(self, scrolls, callbacks):
         old_backing = self._backing
+        if not old_backing:
+            fire_paint_callbacks(callbacks, False, message="no backing")
+            return
         gc = self.create_surface()
         if not gc:
             fire_paint_callbacks(callbacks, False, message="no context")
@@ -255,9 +264,10 @@ class CairoBackingBase(WindowBackingBase):
 
 
     def cairo_draw(self, context):
-        log("cairo_draw: size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",
-            self.size, self.render_size, self.offsets, self.pointer_overlay)
-        if self._backing is None:
+        backing = self._backing
+        log("cairo_draw: backing=%s, size=%s, render-size=%s, offsets=%s, pointer_overlay=%s",
+            backing, self.size, self.render_size, self.offsets, self.pointer_overlay)
+        if backing is None:
             return
         #try:
         #    log("clip rectangles=%s", context.copy_clip_rectangle_list())
@@ -273,7 +283,7 @@ class CairoBackingBase(WindowBackingBase):
         if x!=0 or y!=0:
             context.translate(x, y)
         context.set_operator(OPERATOR_SOURCE)
-        context.set_source_surface(self._backing, 0, 0)
+        context.set_source_surface(backing, 0, 0)
         context.paint()
         if self.pointer_overlay and self.cursor_data:
             px, py, _size, start_time = self.pointer_overlay[2:]
