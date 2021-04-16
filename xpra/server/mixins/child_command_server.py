@@ -8,9 +8,10 @@
 import os.path
 
 from xpra.platform.features import COMMAND_SIGNALS
+from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import getChildReaper, reaper_cleanup
-from xpra.os_util import monotonic_time, bytestostr, OSX, WIN32, POSIX
-from xpra.util import envint, csv
+from xpra.os_util import monotonic_time, load_binary_file, bytestostr, OSX, WIN32, POSIX
+from xpra.util import envint, csv, envbool
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
@@ -19,10 +20,12 @@ from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("exec")
+httplog = Logger("http")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
-EXPORT_XDG_MENU_DATA = envint("XPRA_EXPORT_XDG_MENU_DATA", True)
+EXPORT_XDG_MENU_DATA = envbool("XPRA_EXPORT_XDG_MENU_DATA", True)
+HTTP_MENU = envbool("XPRA_EXPORT_HTTP_MENU_DATA", EXPORT_XDG_MENU_DATA)
 
 
 def noicondata(menu_data):
@@ -181,6 +184,67 @@ class ChildCommandServer(StubServerMixin):
             "server-commands-info"      : not WIN32 and not OSX,
             "xdg-menu-update"           : POSIX and not OSX,
             }
+
+    def get_http_scripts(self) -> dict:
+        if not HTTP_MENU:
+            return {}
+        return {
+            "/menu" : self.http_menu_request,
+            "/menu-icon" : self.http_menu_icon_request,
+            }
+
+    def http_menu_request(self, handler):
+        def err(code=500):
+            handler.send_response(code)
+            return None
+        xdg_menu = self._get_xdg_menu_data() or {}
+        #from xpra.util import print_nested_dict
+        #print_nested_dict(noicondata(xdg_menu))
+        import json
+        ji = json.dumps(noicondata(xdg_menu))
+        return self.send_http_response(handler, ji, "application/json")
+
+    def http_menu_icon_request(self, handler):
+        def err(code=500):
+            handler.send_response(code)
+            return None
+        def invalid_path():
+            httplog("invalid menu-icon request path '%s'", handler.path)
+            return err()
+        parts = handler.path.split("/menu-icon/", 1)
+        #ie: "/menu-icon/a/b" -> ['', 'a/b']
+        if len(parts)<2:
+            return invalid_path()
+        path = parts[1].split("/")
+        #ie: "a/b" -> ['a', 'b']
+        if len(path)<2:
+            return invalid_path()
+        xdg_menu = self._get_xdg_menu_data() or {}
+        category_name, app_name = path[:2]
+        category = xdg_menu.get(category_name)
+        if not category:
+            httplog("invalid menu category '%s'", category_name)
+            return err()
+        entries = category.get("Entries")
+        if not entries:
+            httplog("no entries for category '%s'", category_name)
+            return err()
+        app = entries.get(app_name)
+        if not app:
+            httplog("no matching application for '%s' in category '%s'",
+                app_name, category_name)
+            return err()
+        icon_data = app.get("IconData")
+        icon_type = app.get("IconType")
+        mime_type = "application/octet-stream"
+        if icon_type in ("png", "jpeg", "svg",):
+            mime_type = "image/%s" % icon_type
+        if not icon_data:
+            icon_data = load_binary_file(get_icon_filename("transparent.png"))
+            mime_type = "image/png"
+        httplog("menu-icon for %s/%s : %i bytes of %s",
+            category_name, app_name, len(icon_data or b""), mime_type)
+        return self.send_http_response(handler, icon_data, mime_type)
 
 
     def _get_xdg_menu_data(self, force_reload=False):

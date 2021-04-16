@@ -213,6 +213,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     #code taken from MIT licensed code in GzipSimpleHTTPServer.py
     def send_head(self):
         path = self.path.split("?",1)[0].split("#",1)[0]
+        #strip path after second slash:
+        while path.rfind("/", 1)>0:
+            path = path[:path.rfind("/", 1)]
         script = self.script_paths.get(path)
         log("send_head() script(%s)=%s", path, script)
         if script:
