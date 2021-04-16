@@ -57,7 +57,7 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     log("read_displayfd%s", (r_pipe, timeout, proc))
     while monotonic_time()<limit and len(buf)<8 and (proc is None or proc.poll() is None):
         try:
-            timeout = max(0, limit-monotonic_time())
+            timeout = 1
             if POSIX:
                 r = select.select([r_pipe], [], [], timeout)[0]
                 log("readable=%s", r)
