@@ -263,6 +263,7 @@ class Popup(Gtk.Window):
             actions = actions[2:]
             button = self.action_button(action_id, action_text)
             self.buttons_box.add(button)
+        self.buttons_box.show_all()
         if image:
             self.image.show()
             self.image.set_from_pixbuf(image)
@@ -370,20 +371,22 @@ def main():
     import random
     color_combos = (("red", "white"), ("white", "blue"), ("green", "black"))
     messages = [
-        (1, "Hello", "This is a popup"),
-        (2, "Some Latin", "Quidquid latine dictum sit, altum sonatur."),
-        (3, "A long message", "The quick brown fox jumped over the lazy dog. " * 6),
-        (1, "Hello Again", "Replacing the first notification"),
+        (1, "Hello", "This is a popup", ()),
+        (2, "Actions", "This notification has 3 actions", (1, "Action 1", 2, "Action 2", 3, "Action 3")),
+        (3, "Some Latin", "Quidquid latine dictum sit, altum sonatur.", ()),
+        (4, "A long message", "The quick brown fox jumped over the lazy dog. " * 6, ()),
+        (1, "Hello Again", "Replacing the first notification", ()),
+        (2, "Actions Again", "Replacing with just 1 action", (999, "Action 999")),
         ]
     #images = ("logo1_64.png", None)
     def notify_factory():
         color = random.choice(color_combos)
-        nid, title, message = messages.pop(0)
+        nid, title, message, actions = messages.pop(0)
         icon = None #random.choice(images)
         notifier.bg_color = color_parse(color[0])
         notifier.fg_color = color_parse(color[1])
         notifier.show_timeout = random.choice((True, False))
-        notifier.new_popup(nid, title, message, (), icon)
+        notifier.new_popup(nid, title, message, actions, icon)
         return len(messages)
     def gtk_main_quit():
         print("quitting")
