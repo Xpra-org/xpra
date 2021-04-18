@@ -1,9 +1,19 @@
 # Changelog
 
-## [4.1.3] 2021-04-09
+## [4.1.3] 2021-04-18
+* fix window geometry constraints being applied wrong
 * fix xpra start failures when the display is already running (with use-display=auto)
 * fix vp9 libvpx encoder failures with older library versions
 * fix 'xpra top' errors when the version string is missing
+* fix server errors when non interactive clients are connected (ie: 'xpra top')
+* fix http server error on incomplete installations
+* fix http server builtin script handler
+* fix icon loading errors causing empty start menus
+* fix compilation against ffmpeg 4.4 and later on some distributions (ie: CentOS 8)
+* exit more quickly with a failure if the VFB failed to start
+* correctly replace existing notifications with the gtk notifier backend
+* silence some rare errors and stacktraces
+* support CUDA 11.3
 
 ## [4.1.2] 2021-04-06
 * fix unnecessary screen update delays
