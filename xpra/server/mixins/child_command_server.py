@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os.path
 
 from xpra.platform.features import COMMAND_SIGNALS
@@ -191,6 +192,7 @@ class ChildCommandServer(StubServerMixin):
         return {
             "/menu" : self.http_menu_request,
             "/menu-icon" : self.http_menu_icon_request,
+            "/desktop-menu" : self.http_desktop_menu_request,
             }
 
     def http_menu_request(self, handler):
@@ -202,6 +204,25 @@ class ChildCommandServer(StubServerMixin):
         #print_nested_dict(noicondata(xdg_menu))
         import json
         ji = json.dumps(noicondata(xdg_menu))
+        return self.send_http_response(handler, ji, "application/json")
+
+    def http_desktop_menu_request(self, handler):
+        from xdg.DesktopEntry import DesktopEntry
+        xsessions_dir = "%s/share/xsessions" % sys.prefix
+        xdg_sessions = {}
+        if os.path.exists(xsessions_dir):
+            for f in os.listdir(xsessions_dir):
+                filename = os.path.join(xsessions_dir, f)
+                de = DesktopEntry(filename)
+                try:
+                    from xpra.platform.xposix.xdg_helper import load_xdg_entry
+                    xdg_sessions[de.getName()] = load_xdg_entry(de)
+                except Exception as e:
+                    log("http_desktop_menu_request(%s)", handler, exc_info=True)
+                    log.error("Error loading desktop entry '%s':", filename)
+                    log.error(" %s", e)
+        import json
+        ji = json.dumps(noicondata(xdg_sessions))
         return self.send_http_response(handler, ji, "application/json")
 
     def http_menu_icon_request(self, handler):
