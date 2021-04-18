@@ -26,7 +26,6 @@ from xpra.scripts.config import (
     )
 from xpra.client.gtk_base.menu_helper import (
     BANDWIDTH_MENU_OPTIONS,
-    MIN_QUALITY_OPTIONS, MIN_SPEED_OPTIONS,
     )
 from xpra.make_thread import start_thread
 from xpra.platform.paths import get_xpra_command
@@ -902,8 +901,6 @@ class EncodingWindow(SessionOptions):
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
-        qoptions = MIN_QUALITY_OPTIONS.copy()
-        qoptions.pop(0, None)
         self.scale(tb, "Minimum Quality", "min-quality", marks={
             0   : "Very Low",
             30  : "Low",
