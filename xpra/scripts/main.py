@@ -2281,7 +2281,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
 X11_SOCKET_DIR = "/tmp/.X11-unix/"
 
 def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
-    displays = []
+    displays = {}
     if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
         for x in os.listdir(X11_SOCKET_DIR):
             socket_path = os.path.join(X11_SOCKET_DIR, x)
@@ -2319,8 +2319,7 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                 except OSError:
                     pass
                 else:
-                    #print("found display path '%s'" % socket_path)
-                    displays.append(v)
+                    displays[v] = (sstat.st_uid, sstat.st_gid, )
             except Exception as e:
                 warn("failure on %s: %s" % (socket_path, e))
     return displays

@@ -11,13 +11,17 @@ import os.path
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import getChildReaper, reaper_cleanup
-from xpra.os_util import monotonic_time, load_binary_file, bytestostr, OSX, WIN32, POSIX
+from xpra.os_util import (
+    monotonic_time, load_binary_file, bytestostr, get_username_for_uid,
+    OSX, WIN32, POSIX,
+    )
 from xpra.util import envint, csv, envbool
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
 
 log = Logger("exec")
@@ -72,6 +76,7 @@ class ChildCommandServer(StubServerMixin):
         self.watch_manager = None
         self.watch_notifier = None
         self.xdg_menu_reload_timer = None
+        self.dotxpra = None
         #does not belong here...
         if not hasattr(self, "_upgrading"):
             self._upgrading = False
@@ -96,6 +101,7 @@ class ChildCommandServer(StubServerMixin):
         self.child_reaper = getChildReaper()
         self.source_env = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
+        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
 
     def threaded_setup(self):
         self.exec_start_commands()
@@ -190,21 +196,68 @@ class ChildCommandServer(StubServerMixin):
         if not HTTP_MENU:
             return {}
         return {
-            "/menu" : self.http_menu_request,
-            "/menu-icon" : self.http_menu_icon_request,
+            "/menu"         : self.http_menu_request,
+            "/menu-icon"    : self.http_menu_icon_request,
             "/desktop-menu" : self.http_desktop_menu_request,
+            "/displays"     : self.http_displays_request,
+            "/sessions"     : self.http_sessions_request,
             }
 
-    def http_menu_request(self, handler):
-        def err(code=500):
-            handler.send_response(code)
-            return None
-        xdg_menu = self._get_xdg_menu_data() or {}
-        #from xpra.util import print_nested_dict
-        #print_nested_dict(noicondata(xdg_menu))
+    def send_json_response(self, handler, data):
         import json
-        ji = json.dumps(noicondata(xdg_menu))
-        return self.send_http_response(handler, ji, "application/json")
+        return self.send_http_response(handler, json.dumps(data), "application/json")
+
+    def http_sessions_request(self, handler):
+        sessions = self.get_xpra_sessions()
+        return self.send_json_response(handler, sessions)
+
+    def get_xpra_sessions(self):
+        results = self.dotxpra.socket_details()
+        log("http_sessions_request(..) socket_details=%s", results)
+        sessions = {}
+        for socket_dir, values in results.items():
+            for state, display, sockpath in values:
+                if state is not DotXpra.UNKNOWN:
+                    session = {
+                        "state"         : state,
+                        "socket-dir"    : socket_dir,
+                        "socket-path"   : sockpath,
+                        }
+                    try:
+                        s = os.stat(sockpath)
+                    except OSError as e:
+                        log("'%s' path cannot be accessed: %s", sockpath, e)
+                    else:
+                        session.update({
+                            "uid"   : s.st_uid,
+                            "gid"   : s.st_gid,
+                            })
+                        username = get_username_for_uid(s.st_uid)
+                        if username:
+                            session["username"] = username
+                    sessions[display] = session
+        return sessions
+
+    def http_displays_request(self, handler):
+        from xpra.scripts.main import find_X11_displays
+        if POSIX:
+            #add ":" prefix to display name,
+            #and remove xpra sessions
+            sessions = self.get_xpra_sessions()
+            displays = {}
+            for k, v in find_X11_displays().items():
+                display = ":%s" % k
+                if display in sessions:
+                    continue
+                displays[display] = v
+        else:
+            displays = {"Main" : {}}
+        log("http_displays_request displays=%s", displays)
+        return self.send_json_response(handler, displays)
+
+    def http_menu_request(self, handler):
+        xdg_menu = self._get_xdg_menu_data() or {}
+        return self.send_json_response(handler, noicondata(xdg_menu))
 
     def http_desktop_menu_request(self, handler):
         from xdg.DesktopEntry import DesktopEntry
@@ -221,9 +274,7 @@ class ChildCommandServer(StubServerMixin):
                     log("http_desktop_menu_request(%s)", handler, exc_info=True)
                     log.error("Error loading desktop entry '%s':", filename)
                     log.error(" %s", e)
-        import json
-        ji = json.dumps(noicondata(xdg_sessions))
-        return self.send_http_response(handler, ji, "application/json")
+        return self.send_json_response(handler, noicondata(xdg_sessions))
 
     def http_menu_icon_request(self, handler):
         def err(code=500):
