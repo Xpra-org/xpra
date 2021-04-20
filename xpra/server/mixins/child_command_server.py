@@ -196,11 +196,11 @@ class ChildCommandServer(StubServerMixin):
         if not HTTP_MENU:
             return {}
         return {
-            "/menu"         : self.http_menu_request,
-            "/menu-icon"    : self.http_menu_icon_request,
-            "/desktop-menu" : self.http_desktop_menu_request,
-            "/displays"     : self.http_displays_request,
-            "/sessions"     : self.http_sessions_request,
+            "/Menu"         : self.http_menu_request,
+            "/MenuIcon"    : self.http_menu_icon_request,
+            "/DesktopMenu" : self.http_desktop_menu_request,
+            "/Displays"     : self.http_displays_request,
+            "/Sessions"     : self.http_sessions_request,
             }
 
     def send_json_response(self, handler, data):
