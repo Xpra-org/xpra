@@ -520,7 +520,6 @@ class StartSession(Gtk.Window):
         log("do_run(%s) cmd=%s", attach, cmd)
         proc = exec_command(cmd)
         if proc:
-            from xpra.make_thread import start_thread
             start_thread(self.wait_for_subprocess, "wait-%i" % proc.pid, daemon=True, args=(proc,))
 
     def wait_for_subprocess(self, proc):
