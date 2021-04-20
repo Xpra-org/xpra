@@ -274,10 +274,13 @@ def get_encodings():
     return ("jpeg", )
 
 
+class NVJPEG_Exception(Exception):
+    pass
+
 def errcheck(int r, fnname="", *args):
     if r:
         fstr = fnname % (args)
-        raise Exception("%s failed: %s" % (fstr, ERR_STRS.get(r, r)))
+        raise NVJPEG_Exception("%s failed: %s" % (fstr, ERR_STRS.get(r, r)))
 
 
 def compress_file(filename, save_to="./out.jpeg"):
@@ -319,7 +322,25 @@ def encode(image, int quality=50, speed=50):
     finally:
         cuda_ctx.pop()
 
+errors = []
+def get_errors():
+    global errors
+    return errors
+
 def device_encode(device, image, int quality=50, speed=50):
+    global errors
+    try:
+        r = do_device_encode(device, image, quality, speed)
+        if errors:
+            #reset error counter:
+            errors = []
+        return r
+    except NVJPEG_Exception as e:
+        errors.append(str(e))
+        return None
+
+
+cdef do_device_encode(device, image, int quality, int speed):
     cdef nvjpegHandle_t nv_handle = NULL
     cdef nvjpegEncoderState_t nv_enc_state = NULL
     cdef nvjpegEncoderParams_t nv_enc_params = NULL

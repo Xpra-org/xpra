@@ -2526,7 +2526,18 @@ class WindowSource(WindowIconSource):
         s = options.get("speed") or self.get_speed(coding)
         log("nvjpeg_encode%s", (coding, image, options))
         with cdd:
-            data, w, h, stride = self.enc_nvjpeg.device_encode(cdd, image, q, s)
+            r = self.enc_nvjpeg.device_encode(cdd, image, q, s)
+            if r is None:
+                errors = self.enc_nvjpeg.get_errors()
+                MAX_FAILURES = 3
+                if len(errors)<=MAX_FAILURES:
+                    return fallback(errors[-1])
+                log.warn("Warning: nvjpeg has failed too many times and is now disabled")
+                for e in errors:
+                    log(" %s", e)
+                self.enc_nvjpeg = None
+                return fallback("nvjpeg is now disabled")
+            data, w, h, stride = r
         cpixels = Compressed(coding, data, False)
         #cpixels = Compressed(coding, data.tobytes(), True)
         return "jpeg", cpixels, {}, w, h, stride, 24
