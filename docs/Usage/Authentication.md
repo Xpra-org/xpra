@@ -89,7 +89,7 @@ For more information on the different socket types, see [network examples](./Net
 
 ### Password File
 
-* with the `file` module, the password-file contains a single password, the whole file is the password (including any trailing newline characters)
+* with the `file` module, the password-file contains a single password, the whole file is the password (including any trailing newline characters). To write a password to a file without the trailing newline character, you can use `echo -n "thepassword" > password.txt`
 * with `multifile`, the password-file contains a list of authentication values, see [proxy server](./ProxyServer) - this module is deprecated in favour of the `sqlite` module which is much easier to configure
 
 ### Usernames
