@@ -304,10 +304,10 @@ def get_vcs_props():
         props["BRANCH"] = branch
 
     #use the number of changes since the last tag:
-    proc = subprocess.Popen("git describe --always --tags", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("git describe --long --always --tags", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     out, _ = proc.communicate()
     if proc.returncode!=0:
-        print("'git describe --always --tags' failed with return code %s" % proc.returncode)
+        print("'git describe --long --always --tags' failed with return code %s" % proc.returncode)
         return  props
     if not out:
         print("could not get version information")
