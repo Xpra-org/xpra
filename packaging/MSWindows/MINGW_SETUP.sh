@@ -63,3 +63,7 @@ echo "https://github.com/jgm/pandoc/releases/latest"
 echo
 echo "for a more seamless theme, install https://b00merang.weebly.com/windows-10.html"
 echo " (see ticket #2762)"
+echo
+echo "to support NVIDIA hardware accelerated encoders NVENC and NVJPEG,"
+echo "install their headers and libraries"
+echo "then create a pkgconfig file so the build system will detect them"

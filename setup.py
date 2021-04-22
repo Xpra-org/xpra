@@ -2046,7 +2046,7 @@ toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
 CUDA_BIN = "%s/cuda" % share_xpra
-if nvenc_ENABLED and cuda_kernels_ENABLED:
+if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
     #find nvcc:
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
     CUDA_VERSIONS = ["11.3", "11.2", "11.1", "11.0", "10.2", "10.1", "10.0", "9.2", "9.1", "9.0", "8.0", "7.5", ]
@@ -2112,79 +2112,80 @@ if nvenc_ENABLED and cuda_kernels_ENABLED:
     if WIN32:
         cuda_path = os.path.dirname(nvcc)           #strip nvcc.exe
         cuda_path = os.path.dirname(cuda_path)      #strip /bin/
-    #first compile the cuda kernels
-    #(using the same cuda SDK for both nvenc modules for now..)
-    #TODO:
-    # * compile directly to output directory instead of using data files?
-    # * detect which arches we want to build for? (does it really matter much?)
-    kernels = ("ARGB_to_NV12", "ARGB_to_YUV444", "BGRA_to_NV12", "BGRA_to_YUV444")
-    for kernel in kernels:
-        cuda_src = "fs/share/xpra/cuda/%s.cu" % kernel
-        cuda_bin = "fs/share/xpra/cuda/%s.fatbin" % kernel
-        if os.path.exists(cuda_bin) and (cuda_rebuild_ENABLED is False):
-            continue
-        reason = should_rebuild(cuda_src, cuda_bin)
-        if not reason:
-            continue
-        print("rebuilding %s: %s" % (kernel, reason))
-        cmd = [nvcc,
-               '-fatbin',
-               #"-cubin",
-               #"-arch=compute_30", "-code=compute_30,sm_30,sm_35",
-               #"-gencode=arch=compute_50,code=sm_50",
-               #"-gencode=arch=compute_52,code=sm_52",
-               #"-gencode=arch=compute_52,code=compute_52",
-               "-c", cuda_src,
-               "-o", cuda_bin]
-        #GCC 8.1 has compatibility issues with CUDA 9.2,
-        #so revert to C++03:
-        if get_gcc_version()>=[8, 1]:
-            cmd.append("-std=c++03")
-        #GCC 6 uses C++11 by default:
-        elif get_gcc_version()>=[6, 0]:
-            cmd.append("-std=c++11")
-        CL_VERSION = os.environ.get("CL_VERSION")
-        if CL_VERSION:
-            cmd += ["--use-local-env", "--cl-version", CL_VERSION]
-            #-ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\cl.exe"
-            cmd += ["--machine", "32"]
-        if WIN32:
-            #cmd += ["--compiler-bindir", "C:\\msys64\\mingw64\\bin\\g++.exe"]
-            #cmd += ["--input-drive-prefix", "/"]
-            #cmd += ["--dependency-drive-prefix", "/"]
-            cmd += ["-I%s" % os.path.abspath("win32")]
-        comp_code_options = [(35, 35)]
-        #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
-        if version!=(0,) and version<(7, 5):
-            print("CUDA version %s is very unlikely to work" % (version,))
-            print("try upgrading to version 7.5 or later")
-        if version>=(7, 5):
-            comp_code_options.append((50, 50))
-            comp_code_options.append((52, 52))
-            comp_code_options.append((53, 53))
-        if version>=(8, 0):
-            comp_code_options.append((60, 60))
-            comp_code_options.append((61, 61))
-            comp_code_options.append((62, 62))
-        if version>=(9, 0):
-            comp_code_options.append((70, 70))
-        if version>=(10, 0):
-            comp_code_options.append((75, 75))
-        if version>=(11, 0):
-            comp_code_options.append((80, 80))
-        if version>=(11, 1):
-            comp_code_options.append((86, 86))
-        for arch, code in comp_code_options:
-            cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
-        print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
-        print(" %s" % " ".join("'%s'" % x for x in cmd))
-        c, stdout, stderr = get_status_output(cmd)
-        if c!=0:
-            print("Error: failed to compile CUDA kernel %s" % kernel)
-            print(stdout or "")
-            print(stderr or "")
-            sys.exit(1)
-    add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
+    if (nvenc_ENABLED and cuda_kernels_ENABLED):
+        #first compile the cuda kernels
+        #(using the same cuda SDK for both nvenc modules for now..)
+        #TODO:
+        # * compile directly to output directory instead of using data files?
+        # * detect which arches we want to build for? (does it really matter much?)
+        kernels = ("ARGB_to_NV12", "ARGB_to_YUV444", "BGRA_to_NV12", "BGRA_to_YUV444")
+        for kernel in kernels:
+            cuda_src = "fs/share/xpra/cuda/%s.cu" % kernel
+            cuda_bin = "fs/share/xpra/cuda/%s.fatbin" % kernel
+            if os.path.exists(cuda_bin) and (cuda_rebuild_ENABLED is False):
+                continue
+            reason = should_rebuild(cuda_src, cuda_bin)
+            if not reason:
+                continue
+            print("rebuilding %s: %s" % (kernel, reason))
+            cmd = [nvcc,
+                   '-fatbin',
+                   #"-cubin",
+                   #"-arch=compute_30", "-code=compute_30,sm_30,sm_35",
+                   #"-gencode=arch=compute_50,code=sm_50",
+                   #"-gencode=arch=compute_52,code=sm_52",
+                   #"-gencode=arch=compute_52,code=compute_52",
+                   "-c", cuda_src,
+                   "-o", cuda_bin]
+            #GCC 8.1 has compatibility issues with CUDA 9.2,
+            #so revert to C++03:
+            if get_gcc_version()>=[8, 1]:
+                cmd.append("-std=c++03")
+            #GCC 6 uses C++11 by default:
+            elif get_gcc_version()>=[6, 0]:
+                cmd.append("-std=c++11")
+            CL_VERSION = os.environ.get("CL_VERSION")
+            if CL_VERSION:
+                cmd += ["--use-local-env", "--cl-version", CL_VERSION]
+                #-ccbin "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\cl.exe"
+                cmd += ["--machine", "32"]
+            if WIN32:
+                #cmd += ["--compiler-bindir", "C:\\msys64\\mingw64\\bin\\g++.exe"]
+                #cmd += ["--input-drive-prefix", "/"]
+                #cmd += ["--dependency-drive-prefix", "/"]
+                cmd += ["-I%s" % os.path.abspath("win32")]
+            comp_code_options = [(35, 35)]
+            #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
+            if version!=(0,) and version<(7, 5):
+                print("CUDA version %s is very unlikely to work" % (version,))
+                print("try upgrading to version 7.5 or later")
+            if version>=(7, 5):
+                comp_code_options.append((50, 50))
+                comp_code_options.append((52, 52))
+                comp_code_options.append((53, 53))
+            if version>=(8, 0):
+                comp_code_options.append((60, 60))
+                comp_code_options.append((61, 61))
+                comp_code_options.append((62, 62))
+            if version>=(9, 0):
+                comp_code_options.append((70, 70))
+            if version>=(10, 0):
+                comp_code_options.append((75, 75))
+            if version>=(11, 0):
+                comp_code_options.append((80, 80))
+            if version>=(11, 1):
+                comp_code_options.append((86, 86))
+            for arch, code in comp_code_options:
+                cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
+            print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
+            print(" %s" % " ".join("'%s'" % x for x in cmd))
+            c, stdout, stderr = get_status_output(cmd)
+            if c!=0:
+                print("Error: failed to compile CUDA kernel %s" % kernel)
+                print(stdout or "")
+                print(stderr or "")
+                sys.exit(1)
+        add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 if nvenc_ENABLED:
@@ -2236,22 +2237,31 @@ if webp_ENABLED:
 
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:
-    pkgc = {}
-    for v in ("11.3", "11.2", "11.1", "11.0", ):
-        nvjpeg_pkgconfig = pkgconfig("nvjpeg-%s" % v)
-        if nvjpeg_pkgconfig:
-            break
-    for v in ("11.3", "11.2", "11.1", "11.0", ):
-        cuda_pkgconfig = pkgconfig("cuda-%s" % v)
-        if cuda_pkgconfig:
-            break
-    for k, v in cuda_pkgconfig.items():
-        add_to_keywords(pkgc, k, *v)
-    for k, v in nvjpeg_pkgconfig.items():
-        add_to_keywords(pkgc, k, *v)
+    if WIN32:
+        nvjpeg_pkgconfig = pkgconfig()
+        assert cuda_path
+        cuda_include = os.path.join(cuda_path, "include")
+        cuda_bin = os.path.join(cuda_path, "bin")
+        add_to_keywords(nvjpeg_pkgconfig, 'extra_compile_args', "-I%s" % cuda_include)
+        add_to_keywords(nvjpeg_pkgconfig, 'extra_link_args', "-L%s" % cuda_bin, "-lnvjpeg64_11")
+    else:
+        nvjpeg_pkgconfig = {}
+        for v in ("11.4", "11.3", "11.2", "11.1", "11.0", ):
+            nvjpeg_pkgconfig = pkgconfig("nvjpeg-%s" % v)
+            if nvjpeg_pkgconfig:
+                break
+        for v in ("11.3", "11.2", "11.1", "11.0", ):
+            cuda_pkgconfig = pkgconfig("cuda-%s" % v)
+            if cuda_pkgconfig:
+                break
+        assert cuda_pkgconfig, "failed to locate cuda pkgconfig"
+        for k, v in cuda_pkgconfig.items():
+            add_to_keywords(nvjpeg_pkgconfig, k, *v)
+        for k, v in nvjpeg_pkgconfig.items():
+            add_to_keywords(nvjpeg_pkgconfig, k, *v)
     cython_add(Extension("xpra.codecs.nvjpeg.encoder",
                          ["xpra/codecs/nvjpeg/encoder.pyx"],
-                         **pkgc))
+                         **nvjpeg_pkgconfig))
 
 jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
 toggle_packages(jpeg, "xpra.codecs.jpeg")
