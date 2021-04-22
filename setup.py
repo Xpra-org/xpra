@@ -640,7 +640,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         flag_map = {'-I': 'include_dirs',
                     '-L': 'library_dirs',
                     '-l': 'libraries'}
-        for token in s.split():
+        for token in shlex.split(s):
             if token in ignored_tokens:
                 pass
             elif token[:2] in ignored_flags:
@@ -664,7 +664,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             if isinstance(package_options, str):
                 options = [package_options]     #got given just one string
             else:
-                assert isinstance(package_options, list)
+                assert isinstance(package_options, (tuple, list))
                 options = package_options       #got given a list of options
             for option in options:
                 cmd = ["pkg-config", "--exists", option]
@@ -679,6 +679,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         if verbose_ENABLED and list(pkgs_options)!=list(package_names):
             print("exec_pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
         pkg_config_cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
+        if verbose_ENABLED:
+            print("pkg_config_cmd=%s" % (pkg_config_cmd,))
         r, pkg_config_out, err = get_status_output(pkg_config_cmd)
         if r!=0:
             sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(cmd), err))
@@ -1743,7 +1745,7 @@ else:
 
     if OSX:
         #simply adding the X11 path to PKG_CONFIG_PATH breaks things in mysterious ways,
-        #so instead we have to query each package seperately and merge the results:
+        #so instead we have to query each package separately and merge the results:
         def osx_pkgconfig(*pkgs_options, **ekw):
             kw = dict(ekw)
             for pkg in pkgs_options:
