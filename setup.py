@@ -14,6 +14,7 @@ if sys.version_info<(3, 6):
     raise Exception("xpra no longer supports Python versions older than 3.6")
 
 import glob
+import shlex
 import shutil
 import os.path
 import subprocess
@@ -629,7 +630,6 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     #for distros that don't patch distutils,
     #we have to add the python cflags:
     if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat()):
-        import shlex
         import sysconfig
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', cflag)
