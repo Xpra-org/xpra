@@ -185,6 +185,7 @@ class WindowSource(WindowIconSource):
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
         self.send_window_size = encoding_options.boolget("send-window-size", False)
+        self.decoder_speed = typedict(self.encoding_options.dictget("decoder-speed") or {})
         self.batch_config = batch_config
         #auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
@@ -366,6 +367,7 @@ class WindowSource(WindowIconSource):
         self.full_frames_only = False
         self.suspended = False
         self.strict = STRICT_MODE
+        self.decoder_speed = {}
         #
         self.decode_error_refresh_timer = None
         self.may_send_timer = None
@@ -470,6 +472,7 @@ class WindowSource(WindowIconSource):
                   "core"            : self.core_encodings,
                   "auto-refresh"    : self.client_refresh_encodings,
                   "csc_modes"       : self.full_csc_modes or {},
+                  "decoder-speed"   : self.decoder_speed,
                   }
         larm = self.last_auto_refresh_message
         if larm:
@@ -693,6 +696,7 @@ class WindowSource(WindowIconSource):
         self.supports_transparency = HAS_ALPHA and properties.boolget("encoding.transparency", self.supports_transparency)
         self.encodings = properties.strtupleget("encodings", self.encodings)
         self.core_encodings = properties.strtupleget("encodings.core", self.core_encodings)
+        self.decoder_speed = typedict(properties.dictget("decoder-speed", self.decoder_speed))
         rgb_formats = properties.strtupleget("encodings.rgb_formats", self.rgb_formats)
         if not self.supports_transparency:
             #remove rgb formats with alpha
