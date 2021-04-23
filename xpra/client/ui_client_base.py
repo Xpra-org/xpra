@@ -230,7 +230,7 @@ class UIXpraClient(ClientBaseClass):
 
     def get_vrefresh(self):
         #this method is overriden in the GTK client
-        from xpra.platform.gui import get_vrefresh
+        from xpra.platform.gui import get_vrefresh  #pylint: disable=import-outside-toplevel
         return get_vrefresh()
 
 
