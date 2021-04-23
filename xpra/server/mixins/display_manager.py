@@ -270,6 +270,18 @@ class DisplayManager(StubServerMixin):
         if ss is None:
             return
         ss.desktop_size = (width, height)
+        if len(packet)>=11:
+            vrefresh = packet[10]
+            log("new vrefresh=%s", vrefresh)
+            #update clientdisplay mixin:
+            if hasattr(ss, "vrefresh") and getattr(ss, "refresh")!=vrefresh:
+                ss.vrefresh = vrefresh
+                #update all batch configs:
+                if hasattr(ss, "all_window_sources"):
+                    for window_source in ss.all_window_sources():
+                        bc = window_source.batch_config
+                        if bc:
+                            bc.match_vrefresh(vrefresh)
         if len(packet)>=10:
             #added in 0.16 for scaled client displays:
             xdpi, ydpi = packet[8:10]

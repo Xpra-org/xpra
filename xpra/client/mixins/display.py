@@ -8,6 +8,7 @@ import os
 from xpra.exit_codes import EXIT_INTERNAL_ERROR
 from xpra.platform.features import REINIT_WINDOWS
 from xpra.platform.gui import (
+    get_vrefresh,
     get_antialias_info, get_icc_info, get_display_icc_info, show_desktop, get_cursor_size,
     get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
     )
@@ -74,6 +75,7 @@ class DisplayClient(StubClientMixin):
         self.desktop_scaling = opts.desktop_scaling
         self.dpi = int(opts.dpi)
         self.can_scale = opts.desktop_scaling not in FALSE_OPTIONS
+        scalinglog("can_scale(%s)=%s", opts.desktop_scaling, self.can_scale)
         if self.can_scale:
             self.parse_scaling(opts.desktop_scaling)
 
@@ -82,6 +84,7 @@ class DisplayClient(StubClientMixin):
         from xpra.client.scaling_parser import parse_scaling
         self.initial_scaling = parse_scaling(desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
         self.xscale, self.yscale = self.initial_scaling
+        scalinglog("scaling(%s)=%s", self.initial_scaling, (self.xscale, self.yscale))
 
     def cleanup(self):
         ssct = self.screen_size_change_timer
@@ -112,13 +115,14 @@ class DisplayClient(StubClientMixin):
         caps = {
             "randr_notify"  : True,
             "show-desktop"  : True,
+            "vrefresh"      : self.get_vrefresh(),
             }
         wm_name = get_wm_name()
         if wm_name:
             caps["wm_name"] = wm_name.encode("utf8")
 
         self._last_screen_settings = self.get_screen_settings()
-        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, _, _ = self._last_screen_settings
+        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h = self._last_screen_settings[:7]
         if u_root_w and u_root_h:
             caps["desktop_size"] = self.cp(u_root_w, u_root_h)
         if ndesktops:
@@ -187,8 +191,12 @@ class DisplayClient(StubClientMixin):
             "values"    : (int(1000*self.xscale), int(1000*self.yscale)),
             }
 
+    def get_vrefresh(self):
+        return get_vrefresh()
+
     def get_screen_caps(self) -> dict:
         caps = {
+            "vrefresh"      : self.get_vrefresh(),
             "antialias"    : get_antialias_info(),
             "cursor" : {
                 "size"  : int(2*get_cursor_size()/(self.xscale+self.yscale)),
@@ -472,7 +480,9 @@ class DisplayClient(StubClientMixin):
         xdpi = self.cx(xdpi)
         ydpi = self.cy(ydpi)
         log("get_screen_settings() scaled: xdpi=%s, ydpi=%s", xdpi, ydpi)
-        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi)
+        vrefresh = self.get_vrefresh()
+        log("get_screen_settings() vrefresh=%s", vrefresh)
+        return (root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh)
 
     def update_screen_size(self):
         self.screen_size_change_timer = None

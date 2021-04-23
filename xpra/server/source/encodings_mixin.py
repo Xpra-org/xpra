@@ -26,8 +26,6 @@ statslog = Logger("stats")
 
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 DEFAULT_VREFRESH = envint("XPRA_DEFAULT_VREFRESH", 100)
-MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 30)
-MAX_VREFRESH = envint("XPRA_MIN_VREFRESH", 250)
 
 
 """
@@ -52,7 +50,6 @@ class EncodingsMixin(StubSourceMixin):
         self.default_batch_config = DamageBatchConfig()
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
 
-        self.vrefresh = -1
         self.supports_transparency = False
         self.encoding = None                        #the default encoding for all windows
         self.encodings = ()                         #all the encodings supported by the client
@@ -260,24 +257,17 @@ class EncodingsMixin(StubSourceMixin):
         log("compressors: zlib=%s, lz4=%s, lzo=%s, brotli=%s",
             self.zlib, self.lz4, self.lzo, self.brotli)
 
-        self.vrefresh = c.intget("vrefresh", -1)
-
         delay = DamageBatchConfig.START_DELAY
-        vrefresh = DEFAULT_VREFRESH
-        if MIN_VREFRESH<=self.vrefresh<=MAX_VREFRESH:
-            #looks like a valid vrefresh value, use it:
-            vrefresh = self.vrefresh
-            delay = 1000//vrefresh
-        ms_per_frame = max(5, 1000//vrefresh - 5)
-        default_min_delay = max(DamageBatchConfig.MIN_DELAY, ms_per_frame)
         dbc = self.default_batch_config
         dbc.always      = bool(batch_value("always", DamageBatchConfig.ALWAYS))
-        dbc.min_delay   = batch_value("min_delay", default_min_delay, 0, 1000)
+        dbc.min_delay   = batch_value("min_delay", DamageBatchConfig.MIN_DELAY, 0, 1000)
         dbc.max_delay   = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
         dbc.max_events  = batch_value("max_events", DamageBatchConfig.MAX_EVENTS)
         dbc.max_pixels  = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
         dbc.time_unit   = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
-        dbc.delay       = batch_value("delay", delay, 0)
+        self.vrefresh = c.intget("vrefresh", -1)
+        dbc.match_vrefresh(self.vrefresh)
+        dbc.delay       = batch_value("delay", delay, dbc.min_delay)
         log("default batch config: %s", dbc)
 
         #encodings:
@@ -477,7 +467,6 @@ class EncodingsMixin(StubSourceMixin):
                 "auto_refresh"      : self.auto_refresh_delay,
                 "lz4"               : self.lz4,
                 "lzo"               : self.lzo,
-                "vertical-refresh"  : self.vrefresh,
                 }
         ieo = dict(self.icons_encoding_options)
         ieo.pop("default.icons", None)

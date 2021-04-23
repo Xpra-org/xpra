@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,6 +10,7 @@ import os
 
 from collections import deque
 from xpra.simple_stats import get_list_stats
+from xpra.util import envint
 from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
@@ -17,6 +18,9 @@ from xpra.log import Logger
 #for the various statistics we collect:
 #(cannot be lower than DamageBatchConfig.MAX_EVENTS)
 NRECS = 100
+
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 30)
+MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 250)
 
 
 log = Logger("damage")
@@ -114,6 +118,13 @@ class DamageBatchConfig:
                 fdetails[""] = int(100.0*factor), int(100.0*weight)
                 info[name] = fdetails
         return info
+
+
+    def match_vrefresh(self, vrefresh=60):
+        if MIN_VREFRESH<=vrefresh<=MAX_VREFRESH:
+            #looks like a valid vrefresh value, use it:
+            ms_per_frame = max(5, 1000//vrefresh - 5)
+            self.min_delay = max(self.min_delay, ms_per_frame)
 
 
     def clone(self):

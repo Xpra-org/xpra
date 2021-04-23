@@ -17,7 +17,7 @@ from queue import Queue
 from gi.repository import GLib
 
 from xpra.platform.gui import (
-    get_vrefresh, get_window_min_size, get_window_max_size,
+    get_window_min_size, get_window_max_size,
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
     )
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
@@ -309,7 +309,6 @@ class WindowClient(StubClientMixin):
             "double_click.distance"     : get_double_click_distance(),
             #features:
             "bell"                      : self.client_supports_bell,
-            "vrefresh"                  : self.get_vrefresh(),
             "windows"                   : self.windows_enabled,
             "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
             #system tray forwarding:
@@ -321,9 +320,6 @@ class WindowClient(StubClientMixin):
             "eos"                       : True,
             })
         return caps
-
-    def get_vrefresh(self):
-        return get_vrefresh()
 
     def get_window_caps(self) -> dict:
         return {

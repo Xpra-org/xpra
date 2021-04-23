@@ -21,6 +21,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.init_state()
 
     def init_state(self):
+        self.vrefresh = -1
         self.icc = {}
         self.display_icc = {}
         self.randr_notify = False
@@ -37,6 +38,7 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def get_info(self) -> dict:
         info = {
+            "vertical-refresh"  : self.vrefresh,
             "desktop_size"  : self.desktop_size or "",
             "desktops"      : self.desktops,
             "desktop_names" : self.desktop_names,
@@ -51,6 +53,7 @@ class ClientDisplayMixin(StubSourceMixin):
         return info
 
     def parse_client_caps(self, c : typedict):
+        self.vrefresh = c.intget("vrefresh", -1)
         self.randr_notify = c.boolget("randr_notify")
         self.desktop_size = c.intpair("desktop_size")
         if self.desktop_size is not None:
