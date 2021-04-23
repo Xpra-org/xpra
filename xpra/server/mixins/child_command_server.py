@@ -12,7 +12,7 @@ from xpra.platform.features import COMMAND_SIGNALS
 from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import (
-    monotonic_time, load_binary_file, bytestostr, get_username_for_uid,
+    monotonic_time, load_binary_file, bytestostr,
     OSX, WIN32, POSIX,
     )
 from xpra.util import envint, csv, envbool
@@ -204,7 +204,7 @@ class ChildCommandServer(StubServerMixin):
             }
 
     def send_json_response(self, handler, data):
-        import json
+        import json  #pylint: disable=import-outside-toplevel
         return self.send_http_response(handler, json.dumps(data), "application/json")
 
     def http_sessions_request(self, handler):
@@ -212,46 +212,12 @@ class ChildCommandServer(StubServerMixin):
         return self.send_json_response(handler, sessions)
 
     def get_xpra_sessions(self):
-        results = self.dotxpra.socket_details()
-        log("http_sessions_request(..) socket_details=%s", results)
-        sessions = {}
-        for socket_dir, values in results.items():
-            for state, display, sockpath in values:
-                if state is not DotXpra.UNKNOWN:
-                    session = {
-                        "state"         : state,
-                        "socket-dir"    : socket_dir,
-                        "socket-path"   : sockpath,
-                        }
-                    try:
-                        s = os.stat(sockpath)
-                    except OSError as e:
-                        log("'%s' path cannot be accessed: %s", sockpath, e)
-                    else:
-                        session.update({
-                            "uid"   : s.st_uid,
-                            "gid"   : s.st_gid,
-                            })
-                        username = get_username_for_uid(s.st_uid)
-                        if username:
-                            session["username"] = username
-                    sessions[display] = session
-        return sessions
+        from xpra.scripts.main import get_xpra_sessions
+        return get_xpra_sessions(self.dotxpra)
 
     def http_displays_request(self, handler):
-        from xpra.scripts.main import find_X11_displays
-        if POSIX:
-            #add ":" prefix to display name,
-            #and remove xpra sessions
-            sessions = self.get_xpra_sessions()
-            displays = {}
-            for k, v in find_X11_displays().items():
-                display = ":%s" % k
-                if display in sessions:
-                    continue
-                displays[display] = v
-        else:
-            displays = {"Main" : {}}
+        from xpra.scripts.main import get_displays
+        displays = get_displays()
         log("http_displays_request displays=%s", displays)
         return self.send_json_response(handler, displays)
 

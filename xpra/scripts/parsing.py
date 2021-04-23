@@ -242,6 +242,7 @@ def get_usage():
                         "launcher",
                         "gui",
                         "start-gui",
+                        "displays",
                       ]
     if supports_mdns:
         command_options.append("list-mdns")

@@ -30,7 +30,7 @@ from xpra.exit_codes import (
     EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
     )
 from xpra.os_util import (
-    get_util_logger, getuid, getgid,
+    get_util_logger, getuid, getgid, get_username_for_uid,
     monotonic_time, bytestostr, use_tty,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
@@ -165,6 +165,7 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
+        "displays",
         "splash", "qrcode",
         "opengl-test",
         "test-connect",
@@ -455,6 +456,9 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "sessions":
         check_gtk()
         return run_sessions_gui(error_cb, options)
+    elif mode == "displays":
+        check_gtk()
+        return run_displays(options)
     elif mode == "launcher":
         check_gtk()
         from xpra.client.gtk_base.client_launcher import main as launcher_main
@@ -3028,6 +3032,61 @@ def run_list_mdns(error_cb, extra_args):
     else:
         from xpra.util import engs
         print("%i service%s found" % (len(found), engs(found)))
+
+
+def run_displays(opts):
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
+    displays = get_displays(dotxpra)
+    print("Found %i displays:" % len(displays))
+    for display, descr in sorted(displays.items()):
+        print("%4s    %s" % (display, descr))
+
+def get_displays(dotxpra):
+    if OSX or not POSIX:
+        return {"Main" : {}}
+    log = get_util_logger()
+    #add ":" prefix to display name,
+    #and remove xpra sessions
+    xpra_sessions = get_xpra_sessions(dotxpra)
+    displays = {}
+    for k, v in find_X11_displays().items():
+        display = ":%s" % k
+        if display in xpra_sessions:
+            continue
+        uid, gid = v[:2]
+        displays[display] = {"uid" : uid, "gid" : gid}
+    log("get_displays displays=%s", displays)
+    return displays
+
+
+def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,)):
+    results = dotxpra.socket_details()
+    log = get_util_logger()
+    log("get_xpra_sessions(%s) socket_details=%s", dotxpra, results)
+    sessions = {}
+    for socket_dir, values in results.items():
+        for state, display, sockpath in values:
+            if state in ignore_state:
+                continue
+            session = {
+                "state"         : state,
+                "socket-dir"    : socket_dir,
+                "socket-path"   : sockpath,
+                }
+            try:
+                s = os.stat(sockpath)
+            except OSError as e:
+                log("'%s' path cannot be accessed: %s", sockpath, e)
+            else:
+                session.update({
+                    "uid"   : s.st_uid,
+                    "gid"   : s.st_gid,
+                    })
+                username = get_username_for_uid(s.st_uid)
+                if username:
+                    session["username"] = username
+            sessions[display] = session
+    return sessions
 
 
 def run_list(error_cb, opts, extra_args):
