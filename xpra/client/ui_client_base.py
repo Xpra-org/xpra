@@ -219,12 +219,11 @@ class UIXpraClient(ClientBaseClass):
 
         if MOUSE_DELAY_AUTO:
             try:
-                v = self.get_vrefresh()
-                if v<=0:
-                    #some platforms don't detect the vrefresh correctly
-                    #(ie: macos in virtualbox?), so use a sane default:
-                    v = 60
-                self._mouse_position_delay = 1000//v//2
+                #some platforms don't detect the vrefresh correctly
+                #(ie: macos in virtualbox?), so use a sane default minimum
+                #discount by 5ms to ensure we have time to hit the target
+                v = max(60, self.get_vrefresh())
+                self._mouse_position_delay = max(5, 1000//v//2 - 5)
                 log("mouse delay: %s", self._mouse_position_delay)
             except Exception:
                 log("failed to calculate automatic delay", exc_info=True)
