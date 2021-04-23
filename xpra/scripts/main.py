@@ -165,7 +165,7 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
-        "displays", "wminfo",
+        "displays", "wminfo", "wmname",
         "splash", "qrcode",
         "opengl-test",
         "test-connect",
@@ -467,6 +467,16 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         from xpra.x11.gtk_x11.wm_check import get_wm_info
         for k,v in get_wm_info().items():
             print("%s=%s" % (k, v))
+        return 0
+    elif mode == "wmname":
+        check_gtk()
+        assert POSIX and not OSX
+        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+        init_gdk_display_source()
+        from xpra.x11.gtk_x11.wm_check import get_wm_info
+        name = get_wm_info().get("name", "")
+        if name:
+            print(name)
         return 0
     elif mode == "launcher":
         check_gtk()
@@ -3048,7 +3058,19 @@ def run_displays(opts):
     displays = get_displays(dotxpra)
     print("Found %i displays:" % len(displays))
     for display, descr in sorted(displays.items()):
-        print("%4s    %s" % (display, descr))
+        if POSIX and not OSX:
+            #get the window manager info:
+            try:
+                from xpra.platform.paths import get_xpra_command
+                cmd = get_xpra_command() + ["wmname"]
+                proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+                out = proc.communicate(None, 5)[0]
+            except Exception as e:
+                print("failed to query wminfo: %s" % (e, ))
+            else:
+                if out:
+                    descr["wmname"] = out.decode().splitlines()[0]
+        print("%4s    %s" % (display, csv("%s=%s" % (k,v) for k,v in descr.items())))
 
 def get_displays(dotxpra):
     if OSX or not POSIX:
