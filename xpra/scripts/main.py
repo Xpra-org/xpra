@@ -487,7 +487,6 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         from xpra.gtk_common import gui
         return gui.main()
     elif mode == "start-gui":
-        print("sharing=%s" % (options.sharing,))
         check_gtk()
         from xpra.gtk_common import start_gui
         return start_gui.main(options)
