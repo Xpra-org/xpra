@@ -68,7 +68,7 @@ window-close = auto
 # - enable desktop scaling, but start with no scaling activated:
 #desktop-scaling = 1
 #desktop-scaling = on
-desktop-scaling = off
+desktop-scaling = on
 
 # Make desktop or shadow ervers show up in fullscreen mode:
 #desktop-fullscreen = yes
