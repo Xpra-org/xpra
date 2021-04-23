@@ -165,7 +165,7 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
-        "displays",
+        "displays", "wminfo",
         "splash", "qrcode",
         "opengl-test",
         "test-connect",
@@ -459,6 +459,15 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "displays":
         check_gtk()
         return run_displays(options)
+    elif mode == "wminfo":
+        check_gtk()
+        assert POSIX and not OSX
+        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+        init_gdk_display_source()
+        from xpra.x11.gtk_x11.wm_check import get_wm_info
+        for k,v in get_wm_info().items():
+            print("%s=%s" % (k, v))
+        return 0
     elif mode == "launcher":
         check_gtk()
         from xpra.client.gtk_base.client_launcher import main as launcher_main
