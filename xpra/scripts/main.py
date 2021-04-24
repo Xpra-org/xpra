@@ -3062,7 +3062,9 @@ def run_displays(opts):
             try:
                 from xpra.platform.paths import get_xpra_command
                 cmd = get_xpra_command() + ["wmname"]
-                proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+                env = os.environ.copy()
+                env["DISPLAY"] = display
+                proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
                 out = proc.communicate(None, 5)[0]
             except Exception as e:
                 print("failed to query wminfo: %s" % (e, ))
