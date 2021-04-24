@@ -6,7 +6,7 @@
 
 from xpra.util import envbool
 from xpra.gtk_common.error import xsync
-from xpra.x11.gtk_x11.prop import prop_get
+from xpra.x11.gtk_x11.prop import prop_get, raw_prop_get
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
@@ -29,10 +29,22 @@ def get_wm_info():
             "WM_S0"     : X11Window.XGetSelectionOwner(WM_S0) or 0,
             "_NEW_WM_CM_S0" : X11Window.XGetSelectionOwner(_NEW_WM_CM_S0) or 0,
             }
-        ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
-        if ewmh_wm:
-            info["_NET_SUPPORTING_WM_CHECK"] = ewmh_wm.get_xid()
-            info["name"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
+        ewmh_xid = raw_prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=False, raise_xerrors=False)
+        if ewmh_xid:
+            ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
+            if ewmh_wm:
+                info["_NET_SUPPORTING_WM_CHECK"] = ewmh_wm.get_xid()
+                info["name"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
+            else:
+                info["MIA"] = True
+                info["name"] = prop_get(root, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
+        for name, prop_name, prop_type in (
+            ("xpra-server-pid", "_XPRA_SERVER_PID", "u32"),
+            ("xpra-server-version", "XPRA_SERVER", "latin1"),
+            ):
+            v = prop_get(root, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
+            if v:
+                info[name] = v
     log("get_wm_info()=%s", info)
     return info
 

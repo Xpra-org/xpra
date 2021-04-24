@@ -135,14 +135,24 @@ def prop_type_get(target, key):
 
 # May return None.
 def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
+    data = raw_prop_get(target, key, etype, ignore_errors, raise_xerrors)
+    if data is None:
+        return None
+    return do_prop_decode(target, key, etype, data, ignore_errors)
+
+def _etypestr(etype):
     if isinstance(etype, (list, tuple)):
         scalar_type = etype[0]
-        def etypestr():
-            return "array of %s" % scalar_type
+        return "array of %s" % scalar_type
+    return "%s" % etype
+
+def raw_prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
+    def etypestr():
+        return _etypestr(etype)
+    if isinstance(etype, (list, tuple)):
+        scalar_type = etype[0]
     else:
         scalar_type = etype
-        def etypestr():
-            return "%s" % etype
     atom = PROP_TYPES[scalar_type][1]
     try:
         buffer_size = PROP_SIZES.get(scalar_type, 64*1024)
@@ -164,14 +174,17 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
             log.info("Missing property or wrong property type %s (%s)", key, etypestr())
             log.info(" %s", e)
         return None
+    return data
+
+def do_prop_decode(target, key, etype, data, ignore_errors=False):
     try:
         with XSyncContext():
             return prop_decode(target, etype, data)
     except :
         if ignore_errors:
-            log("prop_get%s", (target, key, etype, ignore_errors, raise_xerrors), exc_info=True)
+            log("prop_get%s", (target, key, etype, ignore_errors), exc_info=True)
             return None
-        log.warn("Error parsing property '%s' (%s)", key, etypestr())
+        log.warn("Error parsing property '%s' (%s)", key, _etypestr(etype))
         log.warn(" this may be a misbehaving application, or bug in Xpra")
         try:
             log.warn(" data length=%i", len(data))
