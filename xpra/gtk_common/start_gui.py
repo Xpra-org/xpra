@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+import time
 import os.path
 import subprocess
 
@@ -172,7 +173,6 @@ class StartSession(Gtk.Window):
         self.port_entry.set_max_length(5)
         self.address_box.pack_start(xal(self.port_entry, 0), False)
 
-        # For Shadow mode only:
         self.display_box = Gtk.HBox(True, 20)
         options_box.pack_start(self.display_box, False, True, 20)
         self.display_label = l("Display:")
@@ -182,8 +182,10 @@ class StartSession(Gtk.Window):
         self.display_entry.set_placeholder_text("optional")
         self.display_entry.set_max_length(10)
         self.display_entry.set_tooltip_text("To use a specific X11 display number")
+        self.display_combo = sf(Gtk.ComboBoxText())
         self.display_box.pack_start(self.display_label, True)
         self.display_box.pack_start(self.display_entry, True, False)
+        self.display_box.pack_start(self.display_combo, True, False)
 
         # Label:
         self.entry_box = Gtk.HBox(True, 20)
@@ -265,9 +267,13 @@ class StartSession(Gtk.Window):
         self.runattach_btn.set_sensitive(False)
 
         vbox.show_all()
+        self.display_combo.hide()
         self.add(vbox)
         #load encodings in the background:
-        self.loader_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
+        self.load_codecs_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
+        #poll the list of X11 displays in the background:
+        self.display_list = ()
+        self.load_displays_thread = start_thread(self.load_displays, "load-displays", daemon=True)
 
     def load_codecs(self):
         from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS  #pylint: disable=import-outside-toplevel
@@ -277,6 +283,38 @@ class StartSession(Gtk.Window):
         vh.init()
         from xpra.codecs.loader import load_codecs  #pylint: disable=import-outside-toplevel
         load_codecs()
+
+    def load_displays(self):
+        while self.exit_code is None:
+            try:
+                from subprocess import Popen, PIPE
+                cmd = get_xpra_command() + ["displays"]
+                proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+                out = proc.communicate(None, 5)[0]
+            except Exception as e:
+                log("failed to query the list of displays", exc_info=True)
+            else:
+                if out:
+                    new_display_list = []
+                    for line in out.decode().splitlines():
+                        if line.lower().startswith("#") or line.lower().startswith("found"):
+                            continue
+                        new_display_list.append(line.lstrip(" ").split(" ")[0])
+                if self.display_list!=new_display_list:
+                    self.display_list = new_display_list
+                    def populate_display_combo():
+                        current = self.display_combo.get_active_text()
+                        model = self.display_combo.get_model()
+                        if model:
+                            model.clear()
+                        selected = 0
+                        for i, display in enumerate(new_display_list):
+                            self.display_combo.append_text(display)
+                            if display==current:
+                                selected = i
+                        self.display_combo.set_active(selected)
+                        self.display_combo.show_all()
+                    GLib.idle_add(populate_display_combo)
 
     def set_options(self, options):
         #cook some attributes,
@@ -311,9 +349,9 @@ class StartSession(Gtk.Window):
     def configure_network(self, *_args):
         self.run_dialog(NetworkWindow)
     def configure_encoding(self, *_args):
-        if self.loader_thread.is_alive():
+        if self.load_codecs_thread.is_alive():
             log("waiting for loader thread to complete")
-            self.loader_thread.join()
+            self.load_codecs_thread.join()
         self.run_dialog(EncodingWindow)
     def configure_keyboard(self, *_args):
         self.run_dialog(KeyboardWindow)
@@ -343,6 +381,12 @@ class StartSession(Gtk.Window):
             self.category_box.hide()
             self.command_box.hide()
             self.exit_with_children_cb.hide()
+            if localhost and self.display_list:
+                self.display_entry.hide()
+                self.display_combo.show()
+            else:
+                self.display_entry.show()
+                self.display_combo.hide()
         else:
             self.exit_with_children_cb.show()
             if xdg and localhost:
@@ -574,10 +618,13 @@ class StartSession(Gtk.Window):
             if ot is bool:
                 value = parse_bool(k, value)
             if value!=default_value:
-                log.warn("%s=%s (%s) - not %s (%s)", k, value, type(value), default_value, type(default_value))
+                log.info("%s=%s (%s) - not %s (%s)", k, value, type(value), default_value, type(default_value))
                 cmd.append("--%s=%s" % (k, value))
         localhost = self.localhost_btn.get_active()
-        display = self.display_entry.get_text().lstrip(":")
+        if self.display_entry.is_visible():
+            display = self.display_entry.get_text().lstrip(":")
+        else:
+            display = self.display_combo.get_active_text()
         if localhost:
             uri = ":"+display if display else ""
         else:
