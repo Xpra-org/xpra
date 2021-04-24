@@ -3053,15 +3053,16 @@ def run_list_mdns(error_cb, extra_args):
 
 
 def run_displays(opts):
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
-    displays = get_displays(dotxpra)
+    #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
+    displays = get_displays()
     print("Found %i displays:" % len(displays))
     for display, descr in sorted(displays.items()):
+        state = "LIVE"
         if POSIX and not OSX:
             #get the window manager info:
             try:
                 from xpra.platform.paths import get_xpra_command
-                cmd = get_xpra_command() + ["wmname"]
+                cmd = get_xpra_command() + ["wminfo"]
                 env = os.environ.copy()
                 env["DISPLAY"] = display
                 proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
@@ -3069,17 +3070,29 @@ def run_displays(opts):
             except Exception as e:
                 print("failed to query wminfo: %s" % (e, ))
             else:
+                #parse out:
                 if out:
-                    descr["wmname"] = out.decode().splitlines()[0]
-        print("%4s    %s" % (display, csv("%s=%s" % (k,v) for k,v in descr.items())))
+                    wminfo = {}
+                    for line in out.decode().splitlines():
+                        parts = line.split("=", 1)
+                        if len(parts)==2:
+                            wminfo[parts[0]] = parts[1]
+                    if wminfo.get("MIA"):
+                        state = "DEAD"
+                    wmname = wminfo.get("name")
+                    if wmname:
+                        descr["wmname"] = wmname
+        print("%4s    %-4s    %s" % (display, state, csv("%s=%s" % (k,v) for k,v in descr.items())))
 
-def get_displays(dotxpra):
+def get_displays(dotxpra=None):
     if OSX or not POSIX:
         return {"Main" : {}}
     log = get_util_logger()
     #add ":" prefix to display name,
     #and remove xpra sessions
-    xpra_sessions = get_xpra_sessions(dotxpra)
+    xpra_sessions = {}
+    if dotxpra:
+        xpra_sessions = get_xpra_sessions(dotxpra)
     displays = {}
     for k, v in find_X11_displays().items():
         display = ":%s" % k
