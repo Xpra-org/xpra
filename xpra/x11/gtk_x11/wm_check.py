@@ -41,19 +41,22 @@ def wm_check(wm_name="xpra", upgrading=False):
     info = get_wm_info()
     display_name = info.get("display")
     name = info.get("name")
-    ewmh_xid = info.get("EWMH")
+    wm_so = info.get("WM_S0")
+    cwm_so = info.get("_NEW_WM_CM_S0")
+    ewmh_xid = info.get("EWMH", 0)
+    if not upgrading and not (ewmh_xid or wm_so or cwm_so):
+        log("no window manager on %s", display_name)
+        return True
     found_name = False
     if upgrading and name and name==wm_name:
         log.info("found previous Xpra instance")
-        found_name = True
-    elif not name:
+        return True
+    if not name:
         log.warn("Warning: no window manager found")
         log.warn(" on display %s using EWMH window %#x", display_name, ewmh_xid)
     else:
         log.warn("Warning: found an existing window manager")
         log.warn(" on display %s using EWMH window %#x: '%s'", display_name, ewmh_xid, name)
-    wm_so = info.get("WM_S0")
-    cwm_so = info.get("_NEW_WM_CM_S0")
     if not wm_so and not cwm_so:
         if FORCE_REPLACE_WM:
             log.warn("XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
