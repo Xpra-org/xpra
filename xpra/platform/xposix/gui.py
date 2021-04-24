@@ -122,6 +122,7 @@ def get_native_tray_classes():
             if saved_env.get("XDG_CURRENT_DESKTOP")=="GNOME":
                 traylog.warn(" With gnome-shell, you may also need some extensions:")
                 traylog.warn(" 'top icons plus' and / or 'appindicator'")
+    traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
     return c
 
 
