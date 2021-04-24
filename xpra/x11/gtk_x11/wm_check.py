@@ -33,7 +33,6 @@ def get_wm_info():
         if ewmh_wm:
             info["_NET_SUPPORTING_WM_CHECK"] = ewmh_wm.get_xid()
             info["name"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
-            info["EWMH"] = ewmh_wm.get_xid()
     log("get_wm_info()=%s", info)
     return info
 
@@ -43,7 +42,7 @@ def wm_check(wm_name="xpra", upgrading=False):
     name = info.get("name")
     wm_so = info.get("WM_S0")
     cwm_so = info.get("_NEW_WM_CM_S0")
-    ewmh_xid = info.get("EWMH", 0)
+    ewmh_xid = info.get("_NET_SUPPORTING_WM_CHECK", 0)
     if not upgrading and not (ewmh_xid or wm_so or cwm_so):
         log("no window manager on %s", display_name)
         return True
