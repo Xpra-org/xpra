@@ -35,9 +35,13 @@ osx/jhbuild/image
 
 # generated during build:
 /src/build
+/build
 /src/install
+/install
 /src/MANIFEST
+/MANIFEST
 /src/dist
+/dist
 *.dll
 *.log
 *.exe
