@@ -17,7 +17,6 @@ from xpra.os_util import monotonic_time, load_binary_file
 from xpra.log import Logger
 
 log = Logger("cuda")
-log.critical(True)
 
 MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 
