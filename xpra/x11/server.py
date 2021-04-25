@@ -15,6 +15,7 @@ from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict, AdHocStruct
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.server import server_features
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import (
     get_default_root_window, get_xwindow, pixbuf_new_from_data, is_realized,
@@ -638,7 +639,6 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         x, y, nw, nh = self._desktop_manager.window_geometry(window)
         resize_counter = self._desktop_manager.get_resize_counter(window, 1)
-        from xpra.server.source.windows_mixin import WindowsMixin
         wsources = [ss for ss in self._server_sources.values() if isinstance(ss, WindowsMixin)]
         for ss in wsources:
             ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
