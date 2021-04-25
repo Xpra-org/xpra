@@ -54,8 +54,9 @@ class EncodingServer(StubServerMixin):
         load_codec("enc_pillow")
         ae = self.allowed_encodings
         if "jpeg" in ae:
-            #try to load the fast jpeg encoder:
+            #try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
+            load_codec("enc_nvjpeg")
         if "webp" in ae:
             #try to load the fast webp encoder:
             load_codec("enc_webp")

@@ -14,7 +14,7 @@ log = Logger("codec", "loader")
 
 #these codecs may well not load because we
 #do not require the libraries to be installed
-NOWARN = ["nvenc", "enc_x265", "enc_ffmpeg"]
+NOWARN = ["nvenc", "nvjpeg", "enc_x265", "enc_ffmpeg"]
 
 SELFTEST = envbool("XPRA_CODEC_SELFTEST", True)
 FULL_SELFTEST = envbool("XPRA_CODEC_FULL_SELFTEST", False)
@@ -145,6 +145,7 @@ CODEC_OPTIONS = {
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encoder", "encode"),
     "enc_webp"      : ("webp encoder",      "webp",         "encoder", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
+    "enc_nvjpeg"    : ("nvjpeg encoder",    "nvjpeg",       "encoder", "encode"),
     #video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
     "enc_x264"      : ("x264 encoder",      "enc_x264",     "encoder", "Encoder"),
@@ -224,7 +225,7 @@ def has_codec(name):
 
 
 CSC_CODECS = "csc_swscale", "csc_libyuv"
-ENCODER_CODECS = "enc_pillow", "enc_webp", "enc_jpeg"
+ENCODER_CODECS = "enc_pillow", "enc_webp", "enc_jpeg", "enc_nvjpeg"
 ENCODER_VIDEO_CODECS = "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg"
 DECODER_CODECS = "dec_pillow", "dec_webp", "dec_jpeg"
 DECODER_VIDEO_CODECS = "dec_vpx", "dec_avcodec2"

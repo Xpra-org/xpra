@@ -438,7 +438,7 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     return memoryview(output_buf)
 
 
-def argb_swap(image, rgb_formats, supports_transparency):
+def argb_swap(image, rgb_formats, supports_transparency=False):
     """ use the argb codec to do the RGB byte swapping """
     pixel_format = image.get_pixel_format()
     #try to fallback to argb module

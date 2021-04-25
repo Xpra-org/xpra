@@ -14,6 +14,7 @@ from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.server_core import ClientException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
+from xpra.codecs.loader import has_codec
 from xpra.net.compression import use_lz4, use_lzo, use_brotli
 from xpra.os_util import monotonic_time, strtobytes
 from xpra.server.background_worker import add_work_item
@@ -74,6 +75,7 @@ class EncodingsMixin(StubSourceMixin):
         #new encoders, so we must make a deep copy to preserve the original
         #which may be used by other clients (other ServerSource instances)
         self.video_helper = getVideoHelper().clone()
+        self.cuda_device_context = None
 
 
     def init_from(self, _protocol, server):
@@ -94,7 +96,10 @@ class EncodingsMixin(StubSourceMixin):
         self.queue_encode(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
-
+        cdd = self.cuda_device_context
+        if cdd:
+            self.cuda_device_context = None
+            cdd.free()
 
     def all_window_sources(self):
         #we can't assume that the window mixin is loaded:
@@ -358,6 +363,12 @@ class EncodingsMixin(StubSourceMixin):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
+        #are we going to need a cuda context?
+        common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
+        if "jpeg" in common_encodings and has_codec("enc_nvjpeg"):
+            from xpra.codecs.cuda_common.cuda_context import get_device_context
+            self.cuda_device_context = get_device_context(self.encoding_options)
+            log("cuda_device_context=%s", self.cuda_device_context)
         #check for mmap:
         if getattr(self, "mmap_size", 0)==0:
             others = tuple(x for x in self.core_encodings

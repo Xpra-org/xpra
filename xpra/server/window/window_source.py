@@ -130,6 +130,7 @@ class WindowSource(WindowIconSource):
                     wid, window, batch_config, auto_refresh_delay,
                     av_sync, av_sync_delay,
                     video_helper,
+                    cuda_device_context,
                     server_core_encodings, server_encodings,
                     encoding, encodings, core_encodings, window_icon_encodings,
                     encoding_options, icons_encoding_options,
@@ -185,6 +186,7 @@ class WindowSource(WindowIconSource):
         self.max_soft_expired = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
         self.send_window_size = encoding_options.boolget("send-window-size", False)
+        self.decoder_speed = typedict(self.encoding_options.dictget("decoder-speed") or {})
         self.supports_delta = ()
         if not window.is_tray() and DELTA:
             self.supports_delta = [x for x in encoding_options.strlistget("supports_delta", []) if x in ("png", "rgb24", "rgb32")]
@@ -197,6 +199,7 @@ class WindowSource(WindowIconSource):
         self.base_auto_refresh_delay = auto_refresh_delay
         self.last_auto_refresh_message = None
         self.video_helper = video_helper
+        self.cuda_device_context = cuda_device_context
         if window.is_shadow():
             self.max_delta_size = -1
 
@@ -326,6 +329,12 @@ class WindowSource(WindowIconSource):
         self.enc_jpeg = get_codec("enc_jpeg")
         if "jpeg" in self.server_core_encodings and self.enc_jpeg:
             self._encoders["jpeg"] = self.jpeg_encode
+        #prefer nvjpeg over all the other jpeg encoders:
+        self.enc_nvjpeg = None
+        if self.cuda_device_context:
+            self.enc_nvjpeg = get_codec("enc_nvjpeg")
+            if self.enc_nvjpeg:
+                self._encoders["jpeg"] = self.nvjpeg_encode
         if self._mmap and self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
         self.full_csc_modes = typedict()
@@ -353,6 +362,7 @@ class WindowSource(WindowIconSource):
         self.delta_pixel_data = ()
         self.suspended = False
         self.strict = STRICT_MODE
+        self.decoder_speed = typedict()
         #
         self.decode_error_refresh_timer = None
         self.may_send_timer = None
@@ -460,6 +470,7 @@ class WindowSource(WindowIconSource):
                   "core"            : self.core_encodings,
                   "auto-refresh"    : self.client_refresh_encodings,
                   "csc_modes"       : self.full_csc_modes or {},
+                  "decoder-speed"   : dict(self.decoder_speed),
                   }
         larm = self.last_auto_refresh_message
         if larm:
@@ -525,6 +536,9 @@ class WindowSource(WindowIconSource):
         info["damage.fps"] = int(self.get_damage_fps())
         if self.pixel_format:
             info["pixel-format"] = self.pixel_format
+        cdd = self.cuda_device_context
+        if cdd:
+            info["cuda-device"] = cdd.get_info()
         return info
 
     def get_damage_fps(self):
@@ -921,13 +935,15 @@ class WindowSource(WindowIconSource):
         return self.get_auto_encoding(w, h, speed, quality)
 
     def get_auto_encoding(self, w, h, speed, quality, *_args):
-        if w*h<self._rgb_auto_threshold:
-            return "rgb24"
         co = self.common_encodings
         depth = self.image_depth
         if depth>24 and "rgb32" in co and self.client_bit_depth>24:
             #the only encoding that can do higher bit depth at present
             return "rgb32"
+        if w*h<self._rgb_auto_threshold:
+            return "rgb24"
+        if self.enc_nvjpeg and "jpeg" in co and w>=16 and h>=16 and quality<100:
+            return "jpeg"
         if depth in (24, 32) and "webp" in co and 16383>=w>=2 and 16383>=h>=2:
             return "webp"
         if "png" in co and ((quality>=80 and speed<80) or depth<=16):
@@ -2470,6 +2486,45 @@ class WindowSource(WindowIconSource):
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
         return self.enc_jpeg.encode(image, q, s, options)
+
+    def nvjpeg_encode(self, coding, image, options):
+        assert coding=="jpeg"
+        def fallback(reason):
+            log("nvjpeg_encode: %s", reason)
+            if self.enc_jpeg:
+                return self.jpeg_encode(coding, image, options)
+            if self.enc_pillow:
+                return self.pillow_encode(coding, image, options)
+            return None
+        cdd = self.cuda_device_context
+        if not cdd:
+            return fallback("no cuda device context")
+        w = image.get_width()
+        h = image.get_height()
+        if w<16 or h<16:
+            return fallback("image size %ix%i is too small" % (w, h))
+        pixel_format = image.get_pixel_format()
+        if pixel_format!="RGB" and not argb_swap(image, ("RGB", )):
+            return fallback("cannot handle %s" % pixel_format)
+        q = options.get("quality") or self.get_quality(coding)
+        s = options.get("speed") or self.get_speed(coding)
+        log("nvjpeg_encode%s", (coding, image, options))
+        with cdd:
+            r = self.enc_nvjpeg.device_encode(cdd, image, q, s)
+            if r is None:
+                errors = self.enc_nvjpeg.get_errors()
+                MAX_FAILURES = 3
+                if len(errors)<=MAX_FAILURES:
+                    return fallback(errors[-1])
+                log.warn("Warning: nvjpeg has failed too many times and is now disabled")
+                for e in errors:
+                    log(" %s", e)
+                self.enc_nvjpeg = None
+                return fallback("nvjpeg is now disabled")
+            data, w, h, stride = r
+        cpixels = compression.Compressed(coding, data, False)
+        #cpixels = Compressed(coding, data.tobytes(), True)
+        return "jpeg", cpixels, {}, w, h, stride, 24
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:

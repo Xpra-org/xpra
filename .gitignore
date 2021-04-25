@@ -108,6 +108,7 @@ tests/unittests/test-file*
 /xpra/codecs/jpeg/encoder.c
 /xpra/codecs/libav_common/av_log.c
 /xpra/codecs/nvenc/encoder.c
+/xpra/codecs/nvjpeg/encoder.c
 /xpra/codecs/nvfbc/fbc_capture_linux.cpp
 /xpra/codecs/nvfbc/fbc_capture_win.cpp
 /xpra/codecs/v4l2/pusher.c

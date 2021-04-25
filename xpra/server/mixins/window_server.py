@@ -207,6 +207,7 @@ class WindowServer(StubServerMixin):
 
     def _do_send_new_window_packet(self, ptype, window, geometry):
         wid = self._window_to_id[window]
+        from xpra.server.source.windows_mixin import WindowsMixin
         for ss in tuple(self._server_sources.values()):
             if not isinstance(ss, WindowsMixin):
                 continue
