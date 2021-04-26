@@ -461,6 +461,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "displays":
         check_gtk()
         return run_displays()
+    elif mode == "clean-sockets":
+        return run_clean_sockets(options, args)
     elif mode=="recover":
         return run_recover(script_file, error_cb, options, args, defaults)
     elif mode == "wminfo":
@@ -3062,6 +3064,24 @@ def run_list_mdns(error_cb, extra_args):
         from xpra.util import engs
         print("%i service%s found" % (len(found), engs(found)))
 
+
+def run_clean_sockets(opts, args):
+    no_gtk()
+    matching_display = None
+    if args:
+        if len(args)==1:
+            matching_display = args[0]
+        else:
+            raise InitInfo("too many arguments for 'clean' mode")
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
+    results = dotxpra.socket_details(check_uid=getuid(),
+                                     matching_state=DotXpra.UNKNOWN,
+                                     matching_display=matching_display)
+    if matching_display and not results:
+        raise InitInfo("no UNKNOWN socket for display '%s'" % (matching_display,))
+    return clean_sockets(dotxpra, results)
+
+
 def run_recover(script_file, error_cb, options, args, defaults):
     assert POSIX and not OSX
     no_gtk()
@@ -3218,7 +3238,7 @@ def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,)):
     return sessions
 
 
-def run_list(error_cb, opts, extra_args):
+def run_list(error_cb, opts, extra_args, clean=True):
     no_gtk()
     if extra_args:
         error_cb("too many arguments for mode")
@@ -3232,61 +3252,66 @@ def run_list(error_cb, opts, extra_args):
     for socket_dir, values in results.items():
         sys.stdout.write("%s:\n" % socket_dir)
         for state, display, sockpath in values:
-            may_cleanup_socket(state, display, sockpath)
+            if clean:
+                may_cleanup_socket(state, display, sockpath)
             if state is DotXpra.UNKNOWN:
                 unknown.append((socket_dir, display, sockpath))
-    #now, re-probe the "unknown" ones:
-    #but only re-probe the ones we own:
+    if clean:
+        #now, re-probe the "unknown" ones:
+        clean_sockets(dotxpra, unknown)
+    return 0
+
+def clean_sockets(dotxpra, sockets, timeout=LIST_REPROBE_TIMEOUT):
+    #only clean the ones we own:
     reprobe = []
-    for x in unknown:
+    for x in sockets:
         try:
             stat_info = os.stat(x[2])
             if stat_info.st_uid==getuid():
                 reprobe.append(x)
         except OSError:
             pass
-    if reprobe:
-        sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set(x[0] for x in unknown))))
-        counter = 0
-        timeout = LIST_REPROBE_TIMEOUT
-        while reprobe and counter<timeout:
-            sleep(1)
-            counter += 1
-            probe_list = list(reprobe)
-            unknown = []
-            for v in probe_list:
-                socket_dir, display, sockpath = v
-                state = dotxpra.get_server_state(sockpath, 1)
-                if state is DotXpra.DEAD:
-                    may_cleanup_socket(state, display, sockpath)
-                elif state is DotXpra.UNKNOWN:
-                    unknown.append(v)
+    if not reprobe:
+        return 0
+    sys.stdout.write("Re-probing unknown sessions in: %s\n" % csv(list(set(x[0] for x in sockets))))
+    counter = 0
+    while reprobe and counter<timeout:
+        time.sleep(1)
+        counter += 1
+        probe_list = list(reprobe)
+        unknown = []
+        for v in probe_list:
+            socket_dir, display, sockpath = v
+            state = dotxpra.get_server_state(sockpath, 1)
+            if state is DotXpra.DEAD:
+                may_cleanup_socket(state, display, sockpath)
+            elif state is DotXpra.UNKNOWN:
+                unknown.append(v)
+            else:
+                sys.stdout.write("\t%s session at %s (%s)\n" % (state, display, socket_dir))
+        reprobe = unknown
+        if reprobe and timeout==LIST_REPROBE_TIMEOUT:
+            #if all the remaining sockets are old,
+            #we don't need to poll for very long,
+            #as they're very likely to be dead:
+            newest = 0
+            for x in reprobe:
+                sockpath = x[2]
+                try:
+                    mtime = os.stat(sockpath).st_mtime
+                except Exception:
+                    pass
                 else:
-                    sys.stdout.write("\t%s session at %s (%s)\n" % (state, display, socket_dir))
-            reprobe = unknown
-            if reprobe and timeout==LIST_REPROBE_TIMEOUT:
-                #if all the remaining sockets are old,
-                #we don't need to poll for very long,
-                #as they're very likely to be dead:
-                newest = 0
-                import time
-                for x in reprobe:
-                    sockpath = x[2]
-                    try:
-                        mtime = os.stat(sockpath).st_mtime
-                    except Exception:
-                        pass
-                    else:
-                        newest = max(mtime, newest)
-                elapsed = time.time()-newest
-                if elapsed>60*5:
-                    #wait maximum 3 seconds for old sockets
-                    timeout = min(LIST_REPROBE_TIMEOUT, 3)
-        #now cleanup those still unknown:
-        clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
-        for state, display, sockpath in unknown:
-            state = dotxpra.get_server_state(sockpath)
-            may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
+                    newest = max(mtime, newest)
+            elapsed = time.time()-newest
+            if elapsed>60*5:
+                #wait maximum 3 seconds for old sockets
+                timeout = min(LIST_REPROBE_TIMEOUT, 3)
+    #now cleanup those still unknown:
+    clean_states = [DotXpra.DEAD, DotXpra.UNKNOWN]
+    for state, display, sockpath in unknown:
+        state = dotxpra.get_server_state(sockpath)
+        may_cleanup_socket(state, display, sockpath, clean_states=clean_states)
     return 0
 
 
