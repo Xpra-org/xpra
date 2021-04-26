@@ -12,7 +12,7 @@ if [ "${DO_XPRA}" == "1" ]; then
 	#go make a snapshot:
 	pushd ../..
 	rm -f pkgs/xpra-*.tar.xz
-	python3 ./setup.py sdist --formats=xztar
+	python3 ./setup.py sdist --formats=xztar || die "failed to create xpra source snapshot"
 	mv dist/xpra-*.tar.xz ./packaging/buildah/pkgs/
 	popd
 fi
@@ -21,7 +21,7 @@ if [ "${DO_XPRA_HTML5}" == "1" ]; then
 	if [ -e "html5" ]; then
 		rm -f pkgs/xpra-html5-*.tar.xz
 		pushd html5
-		python3 ./setup.py sdist --formats=xztar
+		python3 ./setup.py sdist --formats=xztar || die "failed to create xpra-html5 source snapshot"
 		popd
 		cp html5/dist/xpra-html5-*.tar.xz ./pkgs/
 		cp html5/packaging/rpm/xpra-html5.spec ../rpm/
