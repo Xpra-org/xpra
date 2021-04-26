@@ -9,7 +9,16 @@ fi
 
 #set to "1" to skip installing many of the dependencies,
 #these can be installed automatically during the build instead
-MINIMAL="0"
+MINIMAL=${MINIMAL:-0}
+#set to "0" to avoid building the NVIDIA proprietary codecs NVENC and NVJPEG,
+#this is only enabled by default on x86_64:
+if [ -z "${NVIDIA_CODECS}" ]; then
+	if [ `arch` == "x86_64" ]; then
+		NVIDIA_CODECS=1
+	else
+		NVIDIA_CODECS=0
+	fi
+fi
 
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
@@ -80,8 +89,10 @@ for DISTRO in $RPM_DISTROS; do
 	buildah config --workingdir /src $IMAGE_NAME
 	buildah copy $IMAGE_NAME "./xpra-build.repo" "/etc/yum.repos.d/"
 	buildah run $IMAGE_NAME createrepo "/src/repo/"
-	buildah copy $IMAGE_NAME "./nvenc-rpm.pc" "/usr/lib64/pkgconfig/nvenc.pc"
-	buildah copy $IMAGE_NAME "./cuda.pc" "/usr/lib64/pkgconfig/cuda.pc"
+	if [ "${NVIDIA_CODECS}" == "1" ]; then
+		buildah copy $IMAGE_NAME "./nvenc-rpm.pc" "/usr/lib64/pkgconfig/nvenc.pc"
+		buildah copy $IMAGE_NAME "./cuda.pc" "/usr/lib64/pkgconfig/cuda.pc"
+	fi
 	buildah commit $IMAGE_NAME $IMAGE_NAME
 done
 
@@ -139,7 +150,9 @@ for DISTRO in $DEB_DISTROS; do
 	#we don't need a local repo yet:
 	#DISTRO_NAME=`echo $DISTRO | awk -F: '{print $2}'`
 	#buildah run $IMAGE_NAME bash -c 'echo "deb file:///repo $DISTRO_NAME main" > /etc/apt/sources.list.d/xpra-build.list'
-	buildah copy $IMAGE_NAME "./nvenc-deb.pc" "/usr/lib/pkgconfig/nvenc.pc"
-	buildah copy $IMAGE_NAME "./cuda.pc" "/usr/lib/pkgconfig/cuda.pc"
+	if [ "${NVIDIA_CODECS}" == "1" ]; then
+		buildah copy $IMAGE_NAME "./nvenc-deb.pc" "/usr/lib/pkgconfig/nvenc.pc"
+		buildah copy $IMAGE_NAME "./cuda.pc" "/usr/lib/pkgconfig/cuda.pc"
+	fi
 	buildah commit $IMAGE_NAME $IMAGE_NAME
 done
