@@ -3064,20 +3064,23 @@ def run_list_mdns(error_cb, extra_args):
         print("%i service%s found" % (len(found), engs(found)))
 
 def run_recover(script_file, error_cb, options, args, mode, defaults):
-    no_gtk()
     assert POSIX and not OSX
-    try:
-        display_descr = pick_display(error_cb, options, args)
-        args = []
-    except Exception:
-        display_descr = {}
+    no_gtk()
+    display_descr = {}
+    ALL = len(args)==1 and args[0].lower()=="all"
+    if not ALL:
+        try:
+            display_descr = pick_display(error_cb, options, args)
+            args = []
+        except Exception:
+            pass
     if display_descr:
         display = display_descr.get("display")
         #args are enough to identify the display,
         #get the display_info so we know the mode:
         descr = get_display_info(display)
     else:
-        if args:
+        if args and not ALL:
             print("Cannot match display from arguments %r" % (args,))
             return EXIT_NO_DISPLAY
         displays = get_displays_info()
@@ -3087,27 +3090,31 @@ def run_recover(script_file, error_cb, options, args, mode, defaults):
             print("No dead displays found, see 'xpra displays'")
             return EXIT_NO_DISPLAY
         if len(dead_displays)>1:
+            if ALL:
+                from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
+                for display in dead_displays:
+                    cmd = get_xpra_command()+["recover", display]
+                    Popen(cmd)
+                return 0
             print("More than one 'DEAD' display found, see 'xpra displays'")
             print(" use 'xpra start' or 'xpra start-desktop' on the display to rescue")
             return EXIT_NO_DISPLAY
         display = dead_displays[0]
         descr = displays[display]
-        args = [display]
+    args = [display]
     #figure out what mode was used:
     mode = descr.get("mode", "seamless")
     for m in ("seamless", "desktop", "proxy", "shadow"):
         if mode.find(m)>=0:
             mode = m
             break
-    print("Recovering display '%s' as a '%s' server" % (display, mode))
+    print("Recovering display '%s' as a %s server" % (display, mode))
     mode_cmd = {
         "seamless"  : "start",
         "desktop"   : "start-desktop",
         }.get(mode, mode)
     #use the existing display:
     options.use_display = "yes"
-    #from xpra.util import repr_ellipsized
-    #print("run_server%s" % ((script_file, error_cb, repr_ellipsized(options), args, mode_cmd, repr_ellipsized(defaults)),))
     no_gtk()
     return run_server(script_file, error_cb, options, args, mode_cmd, defaults)
 
