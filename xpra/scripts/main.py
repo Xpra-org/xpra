@@ -17,6 +17,7 @@ import signal
 import shlex
 import traceback
 
+from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
     csv, envbool, envint, nonl, pver, parse_simple_dict, noerr,
@@ -1837,7 +1838,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
     return app
 
 
-def make_progress_process():
+def make_progress_process(title="Xpra"):
     #start the splash subprocess
     from xpra.platform.paths import get_nodock_command
     cmd = get_nodock_command()+["splash"]
@@ -1851,6 +1852,7 @@ def make_progress_process():
             return
         progress_process.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
         progress_process.stdin.flush()
+    progress(0, title)
     progress(10, "initializing")
     return progress_process
 
@@ -1919,7 +1921,7 @@ def run_opengl_probe():
 def make_client(error_cb, opts):
     progress_process = None
     if opts.splash is not False:
-        progress_process = make_progress_process()
+        progress_process = make_progress_process("Xpra Client %s" % XPRA_VERSION)
 
     try:
         from xpra.platform.gui import init as gui_init
@@ -2156,7 +2158,15 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
                 return True
         if is_splash_enabled(options.splash):
             # use splash screen to show server startup progress:
-            progress = make_progress_process()
+            title = "Xpra %s Server %s" % ({
+                "start"             : "Seamless",
+                "start-desktop"     : "Desktop",
+                "upgrade"           : "Seamless",
+                "upgrade-desktop"   : "Desktop",
+                "shadow"            : "Shadow",
+                "proxy"             : "Proxy",
+                }.get(mode, ""), XPRA_VERSION)
+            progress = make_progress_process(title)
             def stop_progress_process():
                 if progress.poll() is not None:
                     return

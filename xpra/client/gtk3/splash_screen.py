@@ -59,9 +59,9 @@ class SplashScreen(Gtk.Window):
         if icon:
             self.set_icon(icon)
             hbox.pack_start(Gtk.Image.new_from_pixbuf(icon), False, False, 20)
-        label = Gtk.Label(label=title)
-        label.modify_font(Pango.FontDescription("sans 18"))
-        hbox.pack_start(label, True, True, 20)
+        self.title_label = Gtk.Label(label=title)
+        self.title_label.modify_font(Pango.FontDescription("sans 18"))
+        hbox.pack_start(self.title_label, True, True, 20)
         vbox.add(hbox)
         self.labels = []
         for i in range(LINES):
@@ -119,6 +119,8 @@ class SplashScreen(Gtk.Window):
             GLib.source_remove(tt)
 
     def pulse(self):
+        if not self.current_label_text:
+            return True
         if self.pct<100:
             pulse_char = PULSE_CHARS[self.pulse_counter % len(PULSE_CHARS)]
         else:
@@ -148,18 +150,26 @@ class SplashScreen(Gtk.Window):
             except ValueError:
                 pass
             else:
-                self.show_progress_value(pct)
+                if pct>0:
+                    self.show_progress_value(pct)
         if len(parts)>=2:
-            self.current_label_text = parts[1]
-            if self.pct!=pct:
-                for i in range(len(self.labels)-1):
-                    next_line = self.labels[i+1].get_label()
-                    for c in PULSE_CHARS:
-                        next_line = next_line.replace(c, DONE_CHAR)
-                    self.labels[i].set_label(next_line)
+            text = parts[1]
+            if pct==0:
+                self.set_title(text)
+                self.title_label.set_text(text)
+                self.current_label_text = ""
+            else:
+                self.current_label_text = text
+                if self.pct!=pct:
+                    for i in range(len(self.labels)-1):
+                        next_line = self.labels[i+1].get_label()
+                        for c in PULSE_CHARS:
+                            next_line = next_line.replace(c, DONE_CHAR)
+                        self.labels[i].set_label(next_line)
             self.pulse_counter = 0
         self.pct = pct
-        self.pulse()
+        if pct>0:
+            self.pulse()
 
     def show_progress_value(self, pct):
         self.cancel_progress_timer()
