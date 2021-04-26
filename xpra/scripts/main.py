@@ -459,7 +459,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         return run_sessions_gui(error_cb, options)
     elif mode == "displays":
         check_gtk()
-        return run_displays(options)
+        return run_displays()
     elif mode == "wminfo":
         check_gtk()
         assert POSIX and not OSX
@@ -3062,7 +3062,7 @@ def run_list_mdns(error_cb, extra_args):
         print("%i service%s found" % (len(found), engs(found)))
 
 
-def run_displays(opts):
+def run_displays():
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
     displays = get_displays()
     print("Found %i displays:" % len(displays))
@@ -3080,7 +3080,7 @@ def run_displays(opts):
             except Exception as e:
                 print("failed to query wminfo: %s" % (e, ))
             else:
-                #parse out:
+                #parse wminfo output:
                 if out:
                     wminfo = {}
                     for line in out.decode().splitlines():
