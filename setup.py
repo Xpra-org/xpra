@@ -2106,15 +2106,19 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         vnum = get_nvcc_version(filename)
         if vnum:
             nvcc_versions[vnum] = filename
-    assert nvcc_versions, "cannot find nvcc compiler!"
-    #choose the most recent one:
-    version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
-    if len(nvcc_versions)>1:
-        print(" using version %s from %s" % (version, nvcc))
+    if nvcc_versions:
+        #choose the most recent one:
+        version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
+        if len(nvcc_versions)>1:
+            print(" using version %s from %s" % (version, nvcc))
+    else:
+        version = nvcc = None
     if WIN32:
-        cuda_path = os.path.dirname(nvcc)           #strip nvcc.exe
+        if nvcc:
+            cuda_path = os.path.dirname(nvcc)       #strip nvcc.exe
         cuda_path = os.path.dirname(cuda_path)      #strip /bin/
     if (nvenc_ENABLED and cuda_kernels_ENABLED):
+        assert nvcc_versions, "cannot find nvcc compiler!"
         #first compile the cuda kernels
         #(using the same cuda SDK for both nvenc modules for now..)
         #TODO:
