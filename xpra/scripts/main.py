@@ -10,7 +10,7 @@ import sys
 import os.path
 import stat
 import socket
-from time import sleep
+import time
 import logging
 from subprocess import Popen, PIPE, TimeoutExpired
 import signal
@@ -89,7 +89,7 @@ def main(script_file, cmdline):
         sys.stderr.write("Warning: the python optimize flag is set to %i\n" % sys.flags.optimize)
         sys.stderr.write(" xpra is very likely to crash\n")
         sys.stderr.write("************************************************************\n")
-        sleep(5)
+        time.sleep(5)
 
     from xpra.platform import clean as platform_clean, command_error, command_info
     if len(cmdline)==1:
@@ -167,6 +167,7 @@ def configure_logging(options, mode):
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "displays", "wminfo", "wmname", "recover",
+        "clean-sockets",
         "splash", "qrcode",
         "opengl-test",
         "test-connect",
@@ -1254,7 +1255,6 @@ def socket_connect(dtype, host, port):
         if retry==0:
             werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, CONNECT_TIMEOUT))
         retry += 1
-        import time
         time.sleep(1)
     raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s:%s" % (host, port))
 
@@ -1529,7 +1529,6 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
                     if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
                         #found a final state
                         break
-                    import time
                     time.sleep(0.1)
                 dir_servers = socket_details()
         sockpath = single_display_match(dir_servers, error_cb,
@@ -2570,12 +2569,12 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
             log("found live server '%s'", display_name)
             #give it a bit of time:
             #FIXME: poll until the server is ready instead
-            sleep(1)
+            time.sleep(1)
             return proc, "named-pipe://%s" % display_name, display_name
         log("get_display_state(%s)=%s (waiting)", display_name, state)
         if proc.poll() not in (None, 0):
             raise Exception("shadow subprocess command returned %s", proc.returncode)
-        sleep(0.10)
+        time.sleep(0.10)
         elapsed = monotonic_time()-start
     proc.terminate()
     raise Exception("timeout: failed to identify the new shadow server '%s'" % display_name)
@@ -2774,7 +2773,7 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                         return socket_path, display
             except Exception as e:
                 warn("error during server process detection: %s" % e)
-        sleep(0.10)
+        time.sleep(0.10)
     raise InitException("failed to identify the new server display!")
 
 def run_proxy(error_cb, opts, script_file, args, mode, defaults):
@@ -2864,13 +2863,13 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             for _ in range(25):
                 if not os.path.exists(sockfile):
                     break
-                sleep(0.2)
+                time.sleep(0.2)
             #next 5 seconds: actually try to connect
             for _ in range(5):
                 final_state = sockdir.get_server_state(sockfile, 1)
                 if final_state is DotXpra.DEAD:
                     break
-                sleep(1)
+                time.sleep(1)
         if final_state is DotXpra.DEAD:
             print("xpra at %s has exited." % display)
             return 0
