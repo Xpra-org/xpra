@@ -462,7 +462,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         check_gtk()
         return run_displays()
     elif mode=="recover":
-        return run_recover(script_file, error_cb, options, args, mode, defaults)
+        return run_recover(script_file, error_cb, options, args, defaults)
     elif mode == "wminfo":
         check_gtk()
         assert POSIX and not OSX
@@ -623,7 +623,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "showconfig":
         return run_showconfig(options, args)
     elif mode == "showsetting":
-        return run_showsetting(options, args)
+        return run_showsetting(args)
     else:
         from xpra.scripts.parsing import get_usage
         if mode!="help":
@@ -3062,7 +3062,7 @@ def run_list_mdns(error_cb, extra_args):
         from xpra.util import engs
         print("%i service%s found" % (len(found), engs(found)))
 
-def run_recover(script_file, error_cb, options, args, mode, defaults):
+def run_recover(script_file, error_cb, options, args, defaults):
     assert POSIX and not OSX
     no_gtk()
     display_descr = {}
@@ -3446,7 +3446,7 @@ def vstr(otype, v) -> str:
         return csv(vstr(otype, x) for x in v)
     return str(v)
 
-def run_showsetting(options, args):
+def run_showsetting(args):
     if not args:
         raise InitException("specify a setting to display")
 
