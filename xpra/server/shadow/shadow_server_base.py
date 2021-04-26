@@ -91,7 +91,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         log("get_wm_name()=%s", self.session_name)
 
     def get_server_mode(self):
-        return "GTK3 shadow"
+        return "shadow"
 
     def print_screen_info(self):
         if not server_features.display:

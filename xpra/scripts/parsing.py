@@ -220,6 +220,8 @@ def get_usage():
         command_options += ["start [DISPLAY]",
                            "start-desktop [DISPLAY]",
                            "upgrade [DISPLAY]",
+                           "upgrade-desktop [DISPLAY]",
+                           "recover [DISPLAY]",
                            ]
     if supports_shadow:
         command_options.append("shadow [DISPLAY]")

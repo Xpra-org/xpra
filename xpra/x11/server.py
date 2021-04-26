@@ -328,7 +328,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def get_server_mode(self):
-        return "GTK3 X11"
+        return "X11 seamless"
 
 
     def server_event(self, *args):

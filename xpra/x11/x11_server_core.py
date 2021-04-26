@@ -294,6 +294,8 @@ class X11ServerCore(GTKServerBase):
 
     def save_uuid(self):
         save_uuid(str(self.uuid))
+        #save mode:
+        prop_set(get_default_root_window(), "_XPRA_SERVER_MODE", "latin1", self.get_server_mode())
 
     def set_keyboard_repeat(self, key_repeat):
         if key_repeat:

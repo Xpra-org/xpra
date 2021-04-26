@@ -449,7 +449,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
 
     def get_server_mode(self):
-        return "GTK3 X11 desktop"
+        return "X11 desktop"
 
     def make_hello(self, source):
         capabilities = super().make_hello(source)
