@@ -367,7 +367,7 @@ class WindowSource(WindowIconSource):
         self.full_frames_only = False
         self.suspended = False
         self.strict = STRICT_MODE
-        self.decoder_speed = {}
+        self.decoder_speed = typedict()
         #
         self.decode_error_refresh_timer = None
         self.may_send_timer = None
@@ -472,7 +472,7 @@ class WindowSource(WindowIconSource):
                   "core"            : self.core_encodings,
                   "auto-refresh"    : self.client_refresh_encodings,
                   "csc_modes"       : self.full_csc_modes or {},
-                  "decoder-speed"   : self.decoder_speed,
+                  "decoder-speed"   : dict(self.decoder_speed),
                   }
         larm = self.last_auto_refresh_message
         if larm:
