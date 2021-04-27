@@ -1570,7 +1570,7 @@ class GTKTrayMenuBase(object):
             dialog.destroy()
             if response == SHUTDOWN:
                 self.client.send_shutdown_server()
-        self.shutdown = self.menuitem("Shutdown Server", "shutdown.png", cb=ask_shutdown_confirm)
+        self.shutdown = self.menuitem("Shutdown Session", "shutdown.png", cb=ask_shutdown_confirm)
         def enable_shutdown(*args):
             log("enable_shutdown%s can_shutdown_server=%s", args, self.client.server_client_shutdown)
             set_sensitive(self.shutdown, self.client.server_client_shutdown)
