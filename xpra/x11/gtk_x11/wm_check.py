@@ -34,10 +34,9 @@ def get_wm_info():
             ewmh_wm = prop_get(root, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True, raise_xerrors=False)
             if ewmh_wm:
                 info["_NET_SUPPORTING_WM_CHECK"] = ewmh_wm.get_xid()
-                info["name"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
+                info["wmname"] = prop_get(ewmh_wm, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
             else:
-                info["MIA"] = True
-                info["name"] = prop_get(root, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
+                info["wmname"] = prop_get(root, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
         for name, prop_name, prop_type in (
             ("xpra-server-pid", "_XPRA_SERVER_PID", "u32"),
             ("xpra-server-version", "XPRA_SERVER", "latin1"),

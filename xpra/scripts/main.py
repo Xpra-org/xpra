@@ -20,7 +20,7 @@ import traceback
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
-    csv, envbool, envint, nonl, pver, parse_simple_dict, noerr,
+    csv, envbool, envint, nonl, pver, parse_simple_dict, noerr, sorted_nicely,
     DEFAULT_PORT, DEFAULT_PORTS,
     )
 from xpra.exit_codes import (
@@ -167,7 +167,7 @@ def configure_logging(options, mode):
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
         "displays", "wminfo", "wmname", "recover",
-        "clean-sockets",
+        "clean-displays", "clean-sockets",
         "splash", "qrcode",
         "opengl-test",
         "test-connect",
@@ -460,7 +460,9 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         return run_sessions_gui(error_cb, options)
     elif mode == "displays":
         check_gtk()
-        return run_displays()
+        return run_displays(args)
+    elif mode == "clean-displays":
+        return run_clean_displays(args)
     elif mode == "clean-sockets":
         return run_clean_sockets(options, args)
     elif mode=="recover":
@@ -2384,7 +2386,7 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     if current_display:
         return current_display
     if len(displays)!=1:
-        raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(sorted(displays)))
+        raise InitExit(1, "too many live X11 displays to choose from: %s" % csv(sorted_nicely(displays)))
     return displays[0]
 
 
@@ -3122,7 +3124,7 @@ def run_recover(script_file, error_cb, options, args, defaults):
         descr = displays[display]
     args = [display]
     #figure out what mode was used:
-    mode = descr.get("mode", "seamless")
+    mode = descr.get("xpra-server-mode", "seamless")
     for m in ("seamless", "desktop", "proxy", "shadow"):
         if mode.find(m)>=0:
             mode = m
@@ -3137,19 +3139,123 @@ def run_recover(script_file, error_cb, options, args, defaults):
     no_gtk()
     return run_server(script_file, error_cb, options, args, mode_cmd, defaults)
 
-def run_displays():
+def run_displays(args):
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
-    displays = get_displays_info()
+    displays = get_displays_info(args)
     print("Found %i displays:" % len(displays))
-    for display, descr in sorted(displays.items()):
+    if args:
+        print(" matching %s" % csv(args))
+    SHOW = {
+        "xpra-server-mode"  : "mode",
+        "uid"               : "uid",
+        "gid"               : "gid",
+        }
+    for display, descr in sorted_nicely(displays.items()):
         state = descr.pop("state", "LIVE")
-        print("%4s    %-4s    %s" % (display, state, csv("%s=%s" % (k,v) for k,v in descr.items())))
+        info_str = ""
+        if "wmname" in descr:
+            info_str += descr.get("wmname")+": "
+        info_str += csv("%s=%s" % (v, descr.get(k)) for k,v in SHOW.items() if k in descr)
+        print("%4s    %-4s    %s" % (display, state, info_str))
 
+def run_clean_displays(args):
+    if not POSIX or OSX:
+        raise InitInfo("clean-displays is not supported on this platform")
+    displays = get_displays_info()
+    dead_displays = tuple(display for display, descr in displays.items() if descr.get("state")=="DEAD")
+    if not dead_displays:
+        print("No dead displays found")
+        if args:
+            print(" matching %s" % csv(args))
+        return 0
+    inodes_display = {}
+    for display in sorted_nicely(dead_displays):
+        descr = displays.get(display)
+        #find the X11 server PID
+        inodes = []
+        sockpath = "/tmp/.X11-unix/X%s" % (display.lstrip(":"))
+        with open("/proc/net/unix", "r") as f:
+            for line in f:
+                parts = line.rstrip("\n\r").split(" ")
+                if not parts or len(parts)<8:
+                    continue
+                if parts[-1]==sockpath or parts[-1]=="@%s" % sockpath:
+                    try:
+                        inode = int(parts[-2])
+                    except ValueError:
+                        continue
+                    else:
+                        inodes.append(inode)
+                        inodes_display[inode] = display
+    #now find the processes that own these inodes
+    display_pids = {}
+    for f in os.listdir("/proc"):
+        try:
+            pid = int(f)
+        except ValueError:
+            continue
+        if pid==1:
+            #pid 1 is our friend, don't try to kill it
+            continue
+        procpath = os.path.join("/proc", f)
+        if not os.path.isdir(procpath):
+            continue
+        fddir = os.path.join(procpath, "fd")
+        if not os.path.exists(fddir) or not os.path.isdir(fddir):
+            continue
+        try:
+            fds = os.listdir(fddir)
+        except PermissionError:
+            continue
+        for fd in fds:
+            fdpath = os.path.join(fddir, fd)
+            if not os.path.islink(fdpath):
+                continue
+            try:
+                ref = os.readlink(fdpath)
+            except PermissionError:
+                continue
+            if not ref:
+                continue
+            for inode, display in inodes_display.items():
+                if ref=="socket:[%i]" % inode:
+                    cmd = ""
+                    try:
+                        cmdline = os.path.join(procpath, "cmdline")
+                        cmd = open(cmdline, "r").read()
+                    except Exception:
+                        pass
+                    display_pids[display] = (pid, cmd)
+    if not display_pids:
+        print("No pids found for dead displays %s" % (csv(sorted_nicely(dead_displays)),))
+        if args:
+            print(" matching %s" % csv(args))
+        return
+    print("Found %i dead displays pids:" % len(display_pids))
+    if args:
+        print(" matching %s" % csv(args))
+    for display, (pid, cmd) in display_pids.items():
+        print("%4s    %-8s    %s" % (display, pid, cmd))
+    print()
+    WAIT = 5
+    print("These displays will be forcibly terminated in %i seconds" % (WAIT,))
+    print("Press Control-C to abort")
+    for _ in range(WAIT):
+        sys.stdout.write(".")
+        sys.stdout.flush()
+        time.sleep(1)
+    for display, (pid, cmd) in display_pids.items():
+        try:
+            os.kill(pid, signal.SIGINT)
+        except OSError as e:
+            print("Unable to send SIGINT to %i: %s" % (pid, e))
+    print("")
+    print("Done")
 
-def get_displays_info():
-    displays = get_displays()
+def get_displays_info(display_names=None):
+    displays = get_displays(None, display_names)
     displays_info = {}
-    for display, descr in sorted(displays.items()):
+    for display, descr in sorted_nicely(displays.items()):
         #descr already contains the uid, gid
         displays_info[display] = descr
         #add wminfo:
@@ -3178,17 +3284,12 @@ def get_display_info(display):
                     parts = line.split("=", 1)
                     if len(parts)==2:
                         wminfo[parts[0]] = parts[1]
-                if wminfo.get("MIA"):
+                if not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
                     display_info["state"] = "DEAD"
-                wmname = wminfo.get("name")
-                if wmname:
-                    display_info["wmname"] = wmname
-                mode = wminfo.get("xpra-server-mode")
-                if mode:
-                    display_info["mode"] = mode
+                display_info.update(wminfo)
     return display_info
 
-def get_displays(dotxpra=None):
+def get_displays(dotxpra=None, display_names=None):
     if OSX or not POSIX:
         return {"Main" : {}}
     log = get_util_logger()
@@ -3201,6 +3302,8 @@ def get_displays(dotxpra=None):
     for k, v in find_X11_displays().items():
         display = ":%s" % k
         if display in xpra_sessions:
+            continue
+        if display_names and display not in display_names:
             continue
         uid, gid = v[:2]
         displays[display] = {"uid" : uid, "gid" : gid}
