@@ -813,14 +813,14 @@ checks the unix domain socket peer credentials using \fISO_PEERCRED\fP.
 This authentication module is only available on some Posix compliant
 operating systems. This module will verify that the operating system
 provides the uid and gid of the process that initiated the connection.
-Access can be restricted by supplying in CSV format the list of valid
+Access can be restricted by supplying a colon separated list of valid
 \fIuid\fPs and \fIgid\fPs that are allowed to connect.
 Those id values may be specified using numerical values or using
 the usernames / group names.
 This module is different from the others in that it will not require
 the client to supply a username or password, as those are ignored.
 Environment variables and pseudo-environment variables may also be used
-as values, ie: \fB--auth=peercred:uid=\\$UID\fP.
+as values, eg: \fB--auth=peercred:uid=\\$UID:fred,gid=xpra\fP.
 
 .IP \fBpam\fP
 validates the username and password using the PAM system

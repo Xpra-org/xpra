@@ -31,7 +31,7 @@ class Authenticator(SysAuthenticator):
             allow_uids = []
             if allow_owner:
                 allow_uids.append(getuid())
-            for x in uids.split(","):
+            for x in uids.split(":"):
                 if not x.strip():
                     continue
                 x = osexpand(x.strip())
@@ -47,7 +47,7 @@ class Authenticator(SysAuthenticator):
             log("peercred: allow_uids(%s)=%s", uids, allow_uids)
         if gids:
             allow_gids = []
-            for x in gids.split(","):
+            for x in gids.split(":"):
                 if not x.strip():
                     continue
                 x = osexpand(x.strip())
