@@ -1630,7 +1630,14 @@ class ServerCore:
             for auth, _, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["connection"] = conn
-                authenticator = aclass(username, **opts)
+                try:
+                    for o in ("self", "username"):
+                        if o in opts:
+                            raise Exception("illegal authentication module options '%s'" % o)
+                    authenticator = aclass(username, **opts)
+                except Exception:
+                    authlog("%s%s", aclass, (username, opts), exc_info=True)
+                    raise
                 authlog("authenticator %i: %s(%s, %s)=%s", i, auth, username, opts, authenticator)
                 authenticators.append(authenticator)
                 i += 1
