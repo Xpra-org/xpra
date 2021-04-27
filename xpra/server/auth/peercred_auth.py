@@ -41,7 +41,7 @@ class Authenticator(SysAuthenticator):
                     import pwd
                     try:
                         pw = pwd.getpwnam(x)
-                        uids.append(pw.pw_uid)
+                        allow_uids.append(pw.pw_uid)
                     except KeyError:
                         log.warn("Warning: unknown username '%s'", x)
             log("peercred: allow_uids(%s)=%s", uids, allow_uids)
