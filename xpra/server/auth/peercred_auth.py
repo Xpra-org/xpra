@@ -1,12 +1,13 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
-from xpra.os_util import get_peercred, get_group_id, osexpand, POSIX
+from xpra.os_util import get_peercred, get_group_id, osexpand, getuid, POSIX
+from xpra.scripts.config import TRUE_OPTIONS
 from xpra.util import csv, typedict
 
 
@@ -21,13 +22,18 @@ class Authenticator(SysAuthenticator):
         self.gid = -1
         self.peercred_check = False
         connection = kwargs.get("connection", None)
-        uids = kwargs.pop("uid", None)
-        gids = kwargs.pop("gid", None)
+        uids = kwargs.pop("uid", "")
+        gids = kwargs.pop("gid", "")
+        allow_owner= kwargs.pop("allow-owner", "yes").lower() in TRUE_OPTIONS
         allow_uids = None
         allow_gids = None
-        if uids:
+        if uids or allow_owner:
             allow_uids = []
+            if allow_owner:
+                allow_uids.append(getuid())
             for x in uids.split(","):
+                if not x.strip():
+                    continue
                 x = osexpand(x.strip())
                 try:
                     allow_uids.append(int(x))
@@ -42,6 +48,8 @@ class Authenticator(SysAuthenticator):
         if gids:
             allow_gids = []
             for x in gids.split(","):
+                if not x.strip():
+                    continue
                 x = osexpand(x.strip())
                 try:
                     allow_gids.append(int(x))
@@ -75,6 +83,7 @@ class Authenticator(SysAuthenticator):
             else:
                 log("peercred: invalid connection '%s' (not a socket connection)", connection)
         except Exception as e:
+            log("peercred", exc_info=True)
             log.error("Error: cannot get peer uid")
             log.error(" %s", e)
         super().__init__(username, **kwargs)
