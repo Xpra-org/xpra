@@ -226,7 +226,7 @@ class TopClient:
             for sessions in sd.values():
                 for state, display, path in sessions:
                     displays.setdefault(display, []).append((state, path))
-            self.stdscr.addstr(hpos, 0, "found %i display%s" % (len(displays), engs(displays)))
+            self.stdscr.addstr(hpos, 0, "found %i display%s:" % (len(displays), engs(displays)))
             self.position = min(len(displays), self.position)
             self.selected_session = None
             hpos += 1
@@ -269,7 +269,7 @@ class TopClient:
         info = [display]
         valid_path = None
         for state, path in state_paths:
-            sinfo = "%40s : %s" % (path, state)
+            sinfo = "%50s : %s" % (path, state)
             if POSIX:
                 from pwd import getpwuid
                 from grp import getgrgid
