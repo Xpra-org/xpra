@@ -15,6 +15,7 @@ import platform
 import threading
 from weakref import WeakKeyDictionary
 from time import sleep, time
+from threading import Thread, Lock
 
 from xpra.version_util import (
     XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full,
@@ -38,8 +39,12 @@ from xpra.net.net_util import (
     )
 from xpra.net.protocol import Protocol, sanity_checks
 from xpra.net.digest import get_salt, gendigest, choose_digest
-from xpra.platform import set_name
-from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
+from xpra.platform import set_name, threaded_server_init
+from xpra.platform.paths import (
+    get_app_dir, get_system_conf_dirs, get_user_conf_dirs,
+    get_icon_filename,
+    )
+from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
     register_SIGUSR_signals,
     get_frame_info, get_info_env, get_sysconfig_info,
@@ -47,9 +52,10 @@ from xpra.os_util import (
     strtobytes, bytestostr, get_hex_uuid,
     getuid, monotonic_time, hexstr,
     WIN32, POSIX, BITS,
-    parse_encoded_bin_data,
+    parse_encoded_bin_data, load_binary_file,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
+from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module
 from xpra.make_thread import start_thread
 from xpra.util import (
@@ -82,6 +88,7 @@ LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", True)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
+INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 
 ENCRYPTED_SOCKET_TYPES = os.environ.get("XPRA_ENCRYPTED_SOCKET_TYPES", "tcp,ws")
 
@@ -140,6 +147,7 @@ class ServerCore:
         self.original_desktop_display = None
         self.session_type = "unknown"
         self.display_name = ""
+        self.dotxpra = None
 
         self._closing = False
         self._upgrading = False
@@ -193,6 +201,11 @@ class ServerCore:
         self.server_idle_timer = None
         self.bandwidth_limit = 0
 
+        self.init_thread = None
+        self.init_thread_callbacks = []
+        self.init_thread_lock = Lock()
+        self.menu_provider = None
+
         self.init_uuid()
         sanity_checks()
 
@@ -229,7 +242,7 @@ class ServerCore:
         self.tcp_encryption = opts.tcp_encryption
         self.tcp_encryption_keyfile = opts.tcp_encryption_keyfile
         if self.encryption or self.tcp_encryption:
-            from xpra.net.crypto import crypto_backend_init
+            from xpra.net.crypto import crypto_backend_init  #pylint: disable=import-outside-toplevel
             crypto_backend_init()
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
@@ -245,6 +258,8 @@ class ServerCore:
         self.init_ssl(opts)
         if self.pidfile:
             self.pidinode = write_pidfile(self.pidfile)
+        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
+        self.menu_provider = get_menu_provider()
 
 
     def init_ssl(self, opts):
@@ -266,6 +281,9 @@ class ServerCore:
         self.init_aliases()
         self.init_dbus_server()
         self.init_control_commands()
+        #for things that can take longer:
+        self.init_thread = Thread(target=self.threaded_init)
+        self.init_thread.start()
 
 
     ######################################################################
@@ -348,6 +366,43 @@ class ServerCore:
         register_SIGUSR_signals(self.idle_add)
 
 
+    def threaded_init(self):
+        log("threaded_init() servercore start")
+        #platform specific init:
+        threaded_server_init()
+        #populate the platform info cache:
+        get_platform_info()
+        #run the init callbacks:
+        with self.init_thread_lock:
+            for cb in self.init_thread_callbacks:
+                try:
+                    cb()
+                except Exception as e:
+                    log("threaded_init()", exc_info=True)
+                    log.error("Error in initialization thread callback %s", cb)
+                    log.error(" %s", e)
+        log("threaded_init() servercore end")
+
+    def after_threaded_init(self, callback):
+        with self.init_thread_lock:
+            if self.init_thread is None or self.init_thread.is_alive():
+                self.init_thread_callbacks.append(callback)
+            else:
+                callback()
+
+    def wait_for_threaded_init(self):
+        if not self.init_thread:
+            #looks like we didn't make it as far as calling setup()
+            log("wait_for_threaded_init() no init thread")
+            return
+        log("wait_for_threaded_init() %s.is_alive()=%s", self.init_thread, self.init_thread.is_alive())
+        if self.init_thread.is_alive():
+            log.info("waiting for initialization thread to complete")
+            self.init_thread.join(INIT_THREAD_TIMEOUT)
+            if self.init_thread.is_alive():
+                log.warn("Warning: initialization thread is still active")
+
+
     def run(self):
         self.install_signal_handlers(self.signal_quit)
         def start_ready_callbacks():
@@ -398,6 +453,8 @@ class ServerCore:
             self.stop_dbus_server()
         if self.pidfile:
             self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
+        if self.menu_provider:
+            self.menu_provider.cleanup()
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
@@ -1300,14 +1357,9 @@ class ServerCore:
                proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_attributes))
         proto._invalid_header(proto, data, msg)
 
+
     ######################################################################
     # http / websockets:
-    def get_http_scripts(self):
-        return {
-            "/Status"       : self.http_status_request,
-            "/Info"         : self.http_info_request,
-            }
-
     def start_http_socket(self, socktype, conn, socket_options, is_ssl=False, peek_data=""):
         frominfo = pretty_socket(conn.remote)
         line1 = peek_data.split(b"\n")[0]
@@ -1370,10 +1422,87 @@ class ServerCore:
         except Exception as ce:
             wslog("error closing connection following error: %s", ce)
 
+
+    def get_http_scripts(self):
+        return {
+            "/Status"           : self.http_status_request,
+            "/Info"             : self.http_info_request,
+            "/Sessions"         : self.http_sessions_request,
+            "/Displays"         : self.http_displays_request,
+            "/Menu"             : self.http_menu_request,
+            "/MenuIcon"         : self.http_menu_icon_request,
+            "/DesktopMenu"      : self.http_desktop_menu_request,
+            "/DesktopMenuIcon"  : self.http_desktop_menu_icon_request,
+            }
+
+    def http_err(self, handler, code=500):
+        handler.send_response(code)
+        return None
+
+    def send_json_response(self, handler, data):
+        import json  #pylint: disable=import-outside-toplevel
+        return self.send_http_response(handler, json.dumps(data), "application/json")
+
+    def send_icon(self, handler, icon_type, icon_data):
+        if not icon_data:
+            icon_data = load_binary_file(get_icon_filename("transparent.png"))
+            icon_type = "png"
+            httplog("using fallback transparent icon")
+        mime_type = "application/octet-stream"
+        if icon_type in ("png", "jpeg", "svg", "webp"):
+            mime_type = "image/%s" % icon_type
+        return self.send_http_response(handler, icon_data, mime_type)
+
+    def http_menu_request(self, handler):
+        xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
+        return self.send_json_response(handler, xdg_menu or "not available")
+
+    def http_desktop_menu_request(self, handler):
+        xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
+        return self.send_json_response(handler, xsessions or "not available")
+
+    def http_menu_icon_request(self, handler):
+        def invalid_path():
+            httplog("invalid menu-icon request path '%s'", handler.path)
+            return self.http_err(404)
+        parts = handler.path.split("/MenuIcon/", 1)
+        #ie: "/menu-icon/a/b" -> ['', 'a/b']
+        if len(parts)<2:
+            return invalid_path()
+        path = parts[1].split("/")
+        #ie: "a/b" -> ['a', 'b']
+        if len(path)<2:
+            return invalid_path()
+        category_name, app_name = path[:2]
+        icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
+        return self.send_icon(handler, icon_type, icon_data)
+
+    def http_desktop_menu_icon_request(self, handler):
+        def invalid_path():
+            httplog("invalid menu-icon request path '%s'", handler.path)
+            return self.http_err(handler, 404)
+        parts = handler.path.split("/DesktopMenuIcon/", 1)
+        #ie: "/menu-icon/wmname" -> ['', 'sessionname']
+        if len(parts)<2:
+            return invalid_path()
+        #in case the sessionname is followed by a slash:
+        sessionname = parts[1].split("/")[0]
+        icon_type, icon_data = self.menu_provider.get_desktop_menu_icon(sessionname)
+        return self.send_icon(handler, icon_type, icon_data)
+
+    def http_displays_request(self, handler):
+        from xpra.scripts.main import get_displays
+        displays = get_displays()
+        log("http_displays_request displays=%s", displays)
+        return self.send_json_response(handler, displays)
+
+    def http_sessions_request(self, handler):
+        from xpra.scripts.main import get_xpra_sessions
+        sessions = get_xpra_sessions(self.dotxpra)
+        return self.send_json_response(handler, sessions)
+
     def http_info_request(self, handler):
-        import json
-        ji = json.dumps(self.get_http_info())
-        return self.send_http_response(handler, ji, "application/json")
+        self.send_json_response(handler, self.get_http_info())
 
     def get_http_info(self) -> dict:
         return {

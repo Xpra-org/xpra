@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from threading import Thread, Lock
 
 from xpra.server.server_core import ServerCore
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
@@ -15,7 +14,7 @@ from xpra.server.background_worker import add_work_item
 from xpra.net.common import may_log_packet
 from xpra.os_util import monotonic_time, bytestostr, strtobytes, WIN32
 from xpra.util import (
-    typedict, flatten_dict, updict, merge_dicts, envbool, envint,
+    typedict, flatten_dict, updict, merge_dicts, envbool,
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
     NEW_CLIENT, DONE, SESSION_BUSY,
     )
@@ -82,7 +81,6 @@ screenlog = Logger("screen")
 log("ServerBaseClass%s", SERVER_BASES)
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
-INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 MDNS_CLIENT_COUNT = envbool("XPRA_MDNS_CLIENT_COUNT", True)
 
 
@@ -109,9 +107,6 @@ class ServerBase(ServerBaseClass):
         self.ui_driver = None
         self.sharing = None
         self.lock = None
-        self.init_thread = None
-        self.init_thread_callbacks = []
-        self.init_thread_lock = Lock()
 
         self.idle_timeout = 0
         #duplicated from Server Source...
@@ -163,50 +158,17 @@ class ServerBase(ServerBaseClass):
             c.setup(self)
             end = monotonic_time()
             log("%3ims in %s.setup", 1000*(end-start), c)
-        self.init_thread = Thread(target=self.threaded_init)
-        self.init_thread.start()
 
     def threaded_init(self):
-        log("threaded_init() start")
-        from xpra.platform import threaded_server_init
-        threaded_server_init()
+        super().threaded_init()
+        log("threaded_init() serverbase start")
         for c in SERVER_BASES:
             if c!=ServerCore:
                 try:
                     c.threaded_setup(self)
                 except Exception:
                     log.error("Error during threaded setup of %s", c, exc_info=True)
-        #populate the platform info cache:
-        from xpra.version_util import get_platform_info
-        get_platform_info()
-        with self.init_thread_lock:
-            for cb in self.init_thread_callbacks:
-                try:
-                    cb()
-                except Exception as e:
-                    log("threaded_init()", exc_info=True)
-                    log.error("Error in initialization thread callback %s", cb)
-                    log.error(" %s", e)
-        log("threaded_init() end")
-
-    def after_threaded_init(self, callback):
-        with self.init_thread_lock:
-            if not self.init_thread or not self.init_thread.is_alive():
-                callback()
-            else:
-                self.init_thread_callbacks.append(callback)
-
-    def wait_for_threaded_init(self):
-        if not self.init_thread:
-            #looks like we didn't make it as far as calling setup()
-            log("wait_for_threaded_init() no init thread")
-            return
-        log("wait_for_threaded_init() %s.is_alive()=%s", self.init_thread, self.init_thread.is_alive())
-        if self.init_thread.is_alive():
-            log.info("waiting for initialization thread to complete")
-            self.init_thread.join(INIT_THREAD_TIMEOUT)
-            if self.init_thread.is_alive():
-                log.warn("Warning: initialization thread is still active")
+        log("threaded_init() serverbase end")
 
 
     def server_is_ready(self):

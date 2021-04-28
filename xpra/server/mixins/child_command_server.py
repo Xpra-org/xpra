@@ -5,44 +5,28 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
+import shlex
 import os.path
 
 from xpra.platform.features import COMMAND_SIGNALS
-from xpra.platform.paths import get_icon_filename
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import (
-    monotonic_time, load_binary_file, bytestostr,
+    monotonic_time, bytestostr,
     OSX, WIN32, POSIX,
     )
-from xpra.util import envint, csv, envbool
+from xpra.util import envint, csv, ellipsizer
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
+from xpra.server.menu_provider import get_menu_provider
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
-from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
 
 log = Logger("exec")
 httplog = Logger("http")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
-MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
-EXPORT_XDG_MENU_DATA = envbool("XPRA_EXPORT_XDG_MENU_DATA", True)
-HTTP_MENU = envbool("XPRA_EXPORT_HTTP_MENU_DATA", EXPORT_XDG_MENU_DATA)
-
-
-def noicondata(menu_data):
-    newdata = {}
-    for k,v in menu_data.items():
-        if k in ("IconData", b"IconData"):
-            continue
-        if isinstance(v, dict):
-            newdata[k] = noicondata(v)
-        else:
-            newdata[k] = v
-    return newdata
 
 
 class ChildCommandServer(StubServerMixin):
@@ -73,15 +57,12 @@ class ChildCommandServer(StubServerMixin):
         self.children_started = []
         self.child_reaper = None
         self.reaper_exit = self.reaper_exit_check
-        self.watch_manager = None
-        self.watch_notifier = None
-        self.xdg_menu_reload_timer = None
-        self.dotxpra = None
         #does not belong here...
         if not hasattr(self, "_upgrading"):
             self._upgrading = False
         if not hasattr(self, "session_name"):
             self.session_name = ""
+        self.menu_provider = None
 
     def init(self, opts):
         self.exit_with_children = opts.exit_with_children
@@ -96,12 +77,13 @@ class ChildCommandServer(StubServerMixin):
         self.start_on_last_client_exit   = opts.start_on_last_client_exit
         self.start_child_on_last_client_exit = opts.start_child_on_last_client_exit
         if opts.exec_wrapper:
-            import shlex
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
         self.child_reaper = getChildReaper()
         self.source_env = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
-        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
+        #may already have been initialized by servercore:
+        self.menu_provider = self.menu_provider or get_menu_provider()
+        self.menu_provider.on_reload.append(self.send_updated_menu)
 
     def threaded_setup(self):
         self.exec_start_commands()
@@ -109,55 +91,7 @@ class ChildCommandServer(StubServerMixin):
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
-        if POSIX and not OSX and self.start_new_commands and EXPORT_XDG_MENU_DATA:
-            try:
-                self.setup_menu_watcher()
-            except Exception as e:
-                log("threaded_setup()", exc_info=True)
-                log.error("Error setting up menu watcher:")
-                log.error(" %s", e)
-            from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-            #start loading in a thread,
-            #so server startup can complete:
-            start_thread(load_xdg_menu_data, "load-xdg-menu-data", True)
-
-
-    def setup_menu_watcher(self):
-        try:
-            import pyinotify
-        except ImportError as e:
-            log("setup_menu_watcher() cannot import pyinotify", exc_info=True)
-            log.warn("Warning: cannot watch for application menu changes without pyinotify:")
-            log.warn(" %s", e)
-            return
-        self.watch_manager = pyinotify.WatchManager()
-        def menu_data_updated(create, pathname):
-            log("menu_data_updated(%s, %s)", create, pathname)
-            self.schedule_xdg_menu_reload()
-        class EventHandler(pyinotify.ProcessEvent):
-            def process_IN_CREATE(self, event):
-                menu_data_updated(True, event.pathname)
-            def process_IN_DELETE(self, event):
-                menu_data_updated(False, event.pathname)
-        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  #@UndefinedVariable pylint: disable=no-member
-        handler = EventHandler()
-        self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
-        self.watch_notifier.setDaemon(True)
-        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share/applications:/usr/local/share/applications").split(":")
-        watched = []
-        for data_dir in data_dirs:
-            menu_dir = os.path.join(data_dir, "applications")
-            if not os.path.exists(menu_dir) or menu_dir in watched:
-                continue
-            wdd = self.watch_manager.add_watch(menu_dir, mask)
-            watched.append(menu_dir)
-            log("watch_notifier=%s, watch=%s", self.watch_notifier, wdd)
-        self.watch_notifier.start()
-        if watched:
-            log.info("watching for applications menu changes in:")
-            for wd in watched:
-                log.info(" '%s'", wd)
-
+        self.menu_provider.setup()
 
     def cleanup(self):
         if self.terminate_children and self._upgrading!=EXITING_CODE:
@@ -165,22 +99,8 @@ class ChildCommandServer(StubServerMixin):
         def noop():
             pass
         self.reaper_exit = noop
+        self.menu_provider.cleanup()
         reaper_cleanup()
-        xmrt = self.xdg_menu_reload_timer
-        if xmrt:
-            self.xdg_menu_reload_timer = None
-            self.source_remove(xmrt)
-        wn = self.watch_notifier
-        if wn:
-            self.watch_notifier = None
-            wn.stop()
-        watch_manager = self.watch_manager
-        if watch_manager:
-            self.watch_manager = None
-            try:
-                watch_manager.close()
-            except OSError:
-                log("error closing watch manager %s", watch_manager, exc_info=True)
 
 
     def get_server_features(self, _source) -> dict:
@@ -192,114 +112,12 @@ class ChildCommandServer(StubServerMixin):
             "xdg-menu-update"           : POSIX and not OSX,
             }
 
-    def get_http_scripts(self) -> dict:
-        if not HTTP_MENU:
-            return {}
-        return {
-            "/Menu"         : self.http_menu_request,
-            "/MenuIcon"    : self.http_menu_icon_request,
-            "/DesktopMenu" : self.http_desktop_menu_request,
-            "/Displays"     : self.http_displays_request,
-            "/Sessions"     : self.http_sessions_request,
-            }
-
-    def send_json_response(self, handler, data):
-        import json  #pylint: disable=import-outside-toplevel
-        return self.send_http_response(handler, json.dumps(data), "application/json")
-
-    def http_sessions_request(self, handler):
-        sessions = self.get_xpra_sessions()
-        return self.send_json_response(handler, sessions)
-
-    def get_xpra_sessions(self):
-        from xpra.scripts.main import get_xpra_sessions
-        return get_xpra_sessions(self.dotxpra)
-
-    def http_displays_request(self, handler):
-        from xpra.scripts.main import get_displays
-        displays = get_displays()
-        log("http_displays_request displays=%s", displays)
-        return self.send_json_response(handler, displays)
-
-    def http_menu_request(self, handler):
-        xdg_menu = self._get_xdg_menu_data() or {}
-        return self.send_json_response(handler, noicondata(xdg_menu))
-
-    def http_desktop_menu_request(self, handler):
-        from xdg.DesktopEntry import DesktopEntry
-        xsessions_dir = "%s/share/xsessions" % sys.prefix
-        xdg_sessions = {}
-        if os.path.exists(xsessions_dir):
-            for f in os.listdir(xsessions_dir):
-                filename = os.path.join(xsessions_dir, f)
-                de = DesktopEntry(filename)
-                try:
-                    from xpra.platform.xposix.xdg_helper import load_xdg_entry
-                    xdg_sessions[de.getName()] = load_xdg_entry(de)
-                except Exception as e:
-                    log("http_desktop_menu_request(%s)", handler, exc_info=True)
-                    log.error("Error loading desktop entry '%s':", filename)
-                    log.error(" %s", e)
-        return self.send_json_response(handler, noicondata(xdg_sessions))
-
-    def http_menu_icon_request(self, handler):
-        def err(code=500):
-            handler.send_response(code)
-            return None
-        def invalid_path():
-            httplog("invalid menu-icon request path '%s'", handler.path)
-            return err()
-        parts = handler.path.split("/menu-icon/", 1)
-        #ie: "/menu-icon/a/b" -> ['', 'a/b']
-        if len(parts)<2:
-            return invalid_path()
-        path = parts[1].split("/")
-        #ie: "a/b" -> ['a', 'b']
-        if len(path)<2:
-            return invalid_path()
-        xdg_menu = self._get_xdg_menu_data() or {}
-        category_name, app_name = path[:2]
-        category = xdg_menu.get(category_name)
-        if not category:
-            httplog("invalid menu category '%s'", category_name)
-            return err()
-        entries = category.get("Entries")
-        if not entries:
-            httplog("no entries for category '%s'", category_name)
-            return err()
-        app = entries.get(app_name)
-        if not app:
-            httplog("no matching application for '%s' in category '%s'",
-                app_name, category_name)
-            return err()
-        icon_data = app.get("IconData")
-        icon_type = app.get("IconType")
-        mime_type = "application/octet-stream"
-        if icon_type in ("png", "jpeg", "svg",):
-            mime_type = "image/%s" % icon_type
-        if not icon_data:
-            icon_data = load_binary_file(get_icon_filename("transparent.png"))
-            mime_type = "image/png"
-        httplog("menu-icon for %s/%s : %i bytes of %s",
-            category_name, app_name, len(icon_data or b""), mime_type)
-        return self.send_http_response(handler, icon_data, mime_type)
-
 
     def _get_xdg_menu_data(self, force_reload=False):
-        if not EXPORT_XDG_MENU_DATA:
-            return None
         if not self.start_new_commands:
             return None
-        if OSX:
-            return None
-        if POSIX:
-            from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-            return load_xdg_menu_data(force_reload)
-        if WIN32:
-            from xpra.platform.win32.menu_helper import load_menu
-            return load_menu()
-        log.error("Error: unsupported platform!")
-        return None
+        return self.menu_provider.get_menu_data(force_reload)
+
 
     def get_caps(self, source) -> dict:
         caps = {}
@@ -309,19 +127,7 @@ class ChildCommandServer(StubServerMixin):
         if getattr(source, "wants_features", False) and getattr(source, "ui_client", False):
             caps["xdg-menu"] = {}
             if not source.xdg_menu_update:
-                #we have to send it now:
-                xdg_menu = self._get_xdg_menu_data()
-                log("%i entries sent in hello", len(xdg_menu or ()))
-                if xdg_menu:
-                    l = len(str(xdg_menu))
-                    #arbitrary: don't use more than half
-                    #of the maximum size of the hello packet:
-                    if l>2*1024*1024:
-                        from xpra.platform.xposix.xdg_helper import remove_icons
-                        xdg_menu = remove_icons(xdg_menu)
-                        log.info("removed icons to reduce the size of the xdg menu data")
-                        log.info("size reduced from %i to %i", l, len(str(xdg_menu)))
-                    caps["xdg-menu"] = xdg_menu
+                log.warn("Warning: outdated client does not support xdg-menu update")
             caps["subcommands"] = get_subcommands()
         return caps
 
@@ -338,20 +144,12 @@ class ChildCommandServer(StubServerMixin):
         log("%i entries sent in initial data", len(xdg_menu))
         ss.send_setting_change("xdg-menu", xdg_menu)
 
-    def schedule_xdg_menu_reload(self):
-        xmrt = self.xdg_menu_reload_timer
-        if xmrt:
-            self.source_remove(xmrt)
-        self.xdg_menu_reload_timer = self.timeout_add(MENU_RELOAD_DELAY*1000, self.xdg_menu_reload)
-
-    def xdg_menu_reload(self):
-        self.xdg_menu_reload_timer = None
-        log("xdg_menu_reload()")
-        xdg_menu = self._get_xdg_menu_data(True)
+    def send_updated_menu(self, xdg_menu):
+        log("send_updated_menu(%s)", ellipsizer(xdg_menu))
         for source in tuple(self._server_sources.values()):
             if source.xdg_menu_update:
                 source.send_setting_change("xdg-menu", xdg_menu or {})
-        return False
+
 
     def get_info(self, _proto) -> dict:
         info = {
@@ -364,10 +162,9 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "start-after-connect-done"  : self.start_after_connect_done,
             "start-new"                 : self.start_new_commands,
+            "start-menu"                : self.menu_provider.get_menu_data(remove_icons=True) or {},
+            "start-desktop-menu"        : self.menu_provider.get_desktop_sessions(remove_icons=True) or {},
             }
-        md = self._get_xdg_menu_data()
-        if md:
-            info["start-menu"] = noicondata(md)
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
         return {"commands": info}
