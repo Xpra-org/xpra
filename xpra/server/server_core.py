@@ -1502,7 +1502,7 @@ class ServerCore:
         return self.send_json_response(handler, sessions)
 
     def http_info_request(self, handler):
-        self.send_json_response(handler, self.get_http_info())
+        return self.send_json_response(handler, self.get_http_info())
 
     def get_http_info(self) -> dict:
         return {
