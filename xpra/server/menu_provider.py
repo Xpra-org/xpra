@@ -65,7 +65,7 @@ class MenuProvider:
 
     def setup_menu_watcher(self):
         try:
-            self.setup_menu_watcher()
+            self.do_setup_menu_watcher()
         except Exception as e:
             log("threaded_setup()", exc_info=True)
             log.error("Error setting up menu watcher:")
