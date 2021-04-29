@@ -3311,10 +3311,10 @@ def get_displays(dotxpra=None, display_names=None):
     return displays
 
 
-def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,)):
-    results = dotxpra.socket_details()
+def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,), matching_display=None):
+    results = dotxpra.socket_details(matching_display=matching_display)
     log = get_util_logger()
-    log("get_xpra_sessions(%s) socket_details=%s", dotxpra, results)
+    log("get_xpra_sessions%s socket_details=%s", (dotxpra, ignore_state, matching_display), results)
     sessions = {}
     for socket_dir, values in results.items():
         for state, display, sockpath in values:

@@ -13,6 +13,7 @@ import socket
 import signal
 import platform
 import threading
+from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time
 from threading import Thread, Lock
@@ -1439,17 +1440,21 @@ class ServerCore:
         handler.send_response(code)
         return None
 
+    def http_query_dict(self, path):
+        return dict(parse_qsl(urlparse(path).query))
+
     def send_json_response(self, handler, data):
         import json  #pylint: disable=import-outside-toplevel
         return self.send_http_response(handler, json.dumps(data), "application/json")
 
     def send_icon(self, handler, icon_type, icon_data):
         if not icon_data:
-            icon_data = load_binary_file(get_icon_filename("transparent.png"))
+            icon_filename = get_icon_filename("noicon.png")
+            icon_data = load_binary_file(icon_filename)
             icon_type = "png"
             httplog("using fallback transparent icon")
         mime_type = "application/octet-stream"
-        if icon_type in ("png", "jpeg", "svg", "webp"):
+        if icon_type in ("png", "jpeg", "svg", "webp", "svg"):
             mime_type = "image/%s" % icon_type
         return self.send_http_response(handler, icon_data, mime_type)
 
@@ -1465,15 +1470,19 @@ class ServerCore:
         def invalid_path():
             httplog("invalid menu-icon request path '%s'", handler.path)
             return self.http_err(404)
-        parts = handler.path.split("/MenuIcon/", 1)
+        parts = unquote(handler.path).split("/MenuIcon/", 1)
         #ie: "/menu-icon/a/b" -> ['', 'a/b']
         if len(parts)<2:
             return invalid_path()
         path = parts[1].split("/")
         #ie: "a/b" -> ['a', 'b']
+        category_name = path[0]
         if len(path)<2:
-            return invalid_path()
-        category_name, app_name = path[:2]
+            #only the category is present
+            app_name = None
+        else:
+            app_name = path[1]
+        httplog("http_menu_icon_request: category_name=%s, app_name=%s", category_name, app_name)
         icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
         return self.send_icon(handler, icon_type, icon_data)
 
@@ -1481,25 +1490,32 @@ class ServerCore:
         def invalid_path():
             httplog("invalid menu-icon request path '%s'", handler.path)
             return self.http_err(handler, 404)
-        parts = handler.path.split("/DesktopMenuIcon/", 1)
+        parts = unquote(handler.path).split("/DesktopMenuIcon/", 1)
         #ie: "/menu-icon/wmname" -> ['', 'sessionname']
         if len(parts)<2:
             return invalid_path()
         #in case the sessionname is followed by a slash:
         sessionname = parts[1].split("/")[0]
+        httplog("http_desktop_menu_icon_request: sessionname=%s", sessionname)
         icon_type, icon_data = self.menu_provider.get_desktop_menu_icon(sessionname)
         return self.send_icon(handler, icon_type, icon_data)
 
     def http_displays_request(self, handler):
-        from xpra.scripts.main import get_displays
-        displays = get_displays()
+        displays = self.get_displays()
         log("http_displays_request displays=%s", displays)
         return self.send_json_response(handler, displays)
 
+    def get_displays(self):
+        from xpra.scripts.main import get_displays  #pylint: disable=import-outside-toplevel
+        return get_displays(self.dotxpra)
+
     def http_sessions_request(self, handler):
-        from xpra.scripts.main import get_xpra_sessions
-        sessions = get_xpra_sessions(self.dotxpra)
+        sessions = self.get_xpra_sessions()
         return self.send_json_response(handler, sessions)
+
+    def get_xpra_sessions(self):
+        from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
+        return get_xpra_sessions(self.dotxpra)
 
     def http_info_request(self, handler):
         return self.send_json_response(handler, self.get_http_info())
@@ -1561,7 +1577,7 @@ class ServerCore:
         sock.settimeout(1)
 
         #now start forwarding:
-        from xpra.scripts.fdproxy import XpraProxy
+        from xpra.scripts.fdproxy import XpraProxy  #pylint: disable=import-outside-toplevel
         p = XpraProxy(frominfo, conn, tcp_server_connection, self.tcp_proxy_quit)
         self._tcp_proxy_clients.append(p)
         proxylog.info("client connection from %s forwarded to proxy server on %s:%s", frominfo, host, port)

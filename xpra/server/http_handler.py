@@ -223,7 +223,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             content = script(self)
             return content
         path = self.translate_path(self.path)
-        if not path:
+        if not path or not os.path.exists(path):
             self.send_error(404, "Path not found")
             return None
         if os.path.isdir(path):

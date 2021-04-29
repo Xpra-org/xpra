@@ -186,6 +186,16 @@ class ServerBase(ServerBaseClass):
 
 
     ######################################################################
+    # override http scripts to expose just the current session / display
+    def get_displays(self):
+        from xpra.scripts.main import get_displays  #pylint: disable=import-outside-toplevel
+        return get_displays(self.dotxpra, display_names=(os.environ.get("DISPLAY"), ))
+
+    def get_xpra_sessions(self):
+        from xpra.scripts.main import get_xpra_sessions #pylint: disable=import-outside-toplevel
+        return get_xpra_sessions(self.dotxpra, matching_display=os.environ.get("DISPLAY"))
+
+    ######################################################################
     # shutdown / exit commands:
     def _process_exit_server(self, _proto, _packet):
         log.info("Exiting in response to client request")

@@ -361,6 +361,23 @@ def do_load_xdg_menu_data():
     return menu_data
 
 
+def load_desktop_sessions():
+    xsessions_dir = "%s/share/xsessions" % sys.prefix
+    xsessions = {}
+    if os.path.exists(xsessions_dir):
+        from xdg.DesktopEntry import DesktopEntry
+        for f in os.listdir(xsessions_dir):
+            filename = os.path.join(xsessions_dir, f)
+            de = DesktopEntry(filename)
+            try:
+                xsessions[de.getName()] = load_xdg_entry(de)
+            except Exception as e:
+                log("get_desktop_sessions(%s)", remove_icons, exc_info=True)
+                log.error("Error loading desktop entry '%s':", filename)
+                log.error(" %s", e)
+    return xsessions
+
+
 def main():
     from xpra.platform import program_context
     with program_context("XDG-Menu-Helper", "XDG Menu Helper"):
@@ -379,9 +396,19 @@ def main():
         else:
             menu = load_xdg_menu_data()
             if menu:
+                print()
+                print("application menu:")
                 print_nested_dict(menu, vformat={"IconData" : icon_fmt})
             else:
-                print("no menu data found")
+                print("no application menu data found")
+            #try desktop sessions:
+            sessions = load_desktop_sessions()
+            if sessions:
+                print()
+                print("session menu:")
+                print_nested_dict(sessions, vformat={"IconData" : icon_fmt})
+            else:
+                print("no session menu data found")
     return 0
 
 if __name__ == "__main__":

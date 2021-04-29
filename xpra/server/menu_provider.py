@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
 import os.path
 
 from gi.repository import GLib
@@ -173,6 +172,8 @@ class MenuProvider:
         if not category:
             log("get_menu_icon: invalid menu category '%s'", category_name)
             return None, None
+        if app_name is None:
+            return category.get("IconType"), category.get("IconData")
         entries = category.get("Entries")
         if not entries:
             log("get_menu_icon: no entries for category '%s'", category_name)
@@ -188,20 +189,8 @@ class MenuProvider:
     def get_desktop_sessions(self, remove_icons=False):
         if not POSIX or OSX:
             return None
-        xsessions_dir = "%s/share/xsessions" % sys.prefix
-        xsessions = {}
-        if os.path.exists(xsessions_dir):
-            from xdg.DesktopEntry import DesktopEntry
-            from xpra.platform.xposix.xdg_helper import load_xdg_entry
-            for f in os.listdir(xsessions_dir):
-                filename = os.path.join(xsessions_dir, f)
-                de = DesktopEntry(filename)
-                try:
-                    xsessions[de.getName()] = load_xdg_entry(de)
-                except Exception as e:
-                    log("get_desktop_sessions(%s)", remove_icons, exc_info=True)
-                    log.error("Error loading desktop entry '%s':", filename)
-                    log.error(" %s", e)
+        from xpra.platform.xposix.xdg_helper import load_desktop_sessions
+        xsessions = load_desktop_sessions()
         if remove_icons:
             xsessions = noicondata(xsessions)
         return xsessions
