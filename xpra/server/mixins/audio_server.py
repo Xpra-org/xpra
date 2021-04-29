@@ -112,7 +112,7 @@ class AudioServer(StubServerMixin):
         def err(code=500):
             handler.send_response(code)
             return None
-        from xpra.server.http_handler import parse_url
+        from xpra.net.http_handler import parse_url
         args = parse_url(handler)
         if not args:
             return err()
