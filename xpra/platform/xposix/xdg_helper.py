@@ -370,7 +370,24 @@ def load_desktop_sessions():
             filename = os.path.join(xsessions_dir, f)
             de = DesktopEntry(filename)
             try:
-                xsessions[de.getName()] = load_xdg_entry(de)
+                entry = load_xdg_entry(de)
+                if getattr(entry, "IconData", None) is None:
+                    #try one of ours:
+                    name = de.getName().lower()
+                    options = [name]
+                    for split in (" on ", " session", " classic"):
+                        if name.find(split)>0:     #ie: "gnome on xorg"
+                            options.append(name.split(split)[0])   # -> "gnome"
+                    from xpra.platform.paths import get_icon_filename
+                    for name in options:
+                        fn = get_icon_filename(name)
+                        if fn:
+                            try:
+                                entry["IconData"] = load_binary_file(fn)
+                                entry["IconType"] = os.path.splitext(fn)[1]
+                            except Exception:
+                                pass
+                xsessions[de.getName()] = entry
             except Exception as e:
                 log("get_desktop_sessions(%s)", remove_icons, exc_info=True)
                 log.error("Error loading desktop entry '%s':", filename)
