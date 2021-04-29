@@ -1464,7 +1464,7 @@ class ServerCore:
         return self.send_http_response(handler, json.dumps(data), "application/json")
 
     def send_icon(self, handler, icon_type, icon_data):
-        httplog("send_icon%s", (handler, icon_type, icon_data))
+        httplog("send_icon%s", (handler, icon_type, ellipsizer(icon_data)))
         if not icon_data:
             icon_filename = get_icon_filename("noicon.png")
             icon_data = load_binary_file(icon_filename)
