@@ -56,7 +56,7 @@ class MenuProvider:
         from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
         #start loading in a thread,
         #so server startup can complete:
-        start_thread(load_xdg_menu_data, "load-xdg-menu-data", True)
+        start_thread(load_xdg_menu_data, "load-xdg-menu-data", True, (False, False))
 
     def cleanup(self):
         self.cancel_xdg_menu_reload()

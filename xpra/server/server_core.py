@@ -382,6 +382,7 @@ class ServerCore:
                     log("threaded_init()", exc_info=True)
                     log.error("Error in initialization thread callback %s", cb)
                     log.error(" %s", e)
+        self.menu_provider.setup()
         log("threaded_init() servercore end")
 
     def after_threaded_init(self, callback):

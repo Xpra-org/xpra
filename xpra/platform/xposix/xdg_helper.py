@@ -291,8 +291,10 @@ def remove_icons(menu_data):
 
 load_lock = Lock()
 xdg_menu_data = None
-def load_xdg_menu_data(force_reload=False):
+def load_xdg_menu_data(force_reload=False, wait_for_lock=True):
     global xdg_menu_data, large_icons
+    if not wait_for_lock and load_lock.locked():
+        return xdg_menu_data
     with load_lock:
         if not xdg_menu_data or force_reload:
             large_icons = []
