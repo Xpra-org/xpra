@@ -783,7 +783,6 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                 installpath = bytestostr(lines[-1])
                 xpra_cmd = "%s\\%s" % (installpath, xpra_cmd)
                 xpra_cmd = xpra_cmd.replace("\\", "\\\\")
-                log("using '%s'", xpra_cmd)
         elif xpra_cmd.endswith(".exe"):
             #assume this path exists
             pass
@@ -795,9 +794,10 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             if r[0]:
                 #use the actual path returned by 'which':
                 try:
-                    xpra_cmd = r[0].decode().rstrip("\n\r")
+                    xpra_cmd = r[0].decode().splitlines()[-1].rstrip("\n\r ").lstrip("\t ")
                 except Exception:
                     pass
+        log("adding xpra_cmd='%s'", xpra_cmd)
         if xpra_cmd in tried:
             continue
         tried.add(xpra_cmd)
