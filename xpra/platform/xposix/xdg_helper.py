@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,27 +10,23 @@ using python-xdg
 """
 
 import os
-import re
 import sys
 import glob
-from io import BytesIO
+
 from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
 from threading import Lock
 
-from xpra.util import envbool, envint, print_nested_dict, first_time, engs, ellipsizer
+from xpra.util import envbool, print_nested_dict, first_time, engs
 from xpra.os_util import load_binary_file, monotonic_time, OSEnvContext
+from xpra.codecs import icon_util
 from xpra.log import Logger, add_debug_category
 
 log = Logger("exec", "menu")
 
 LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)
 EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
-MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 65536)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 
-large_icons = []
-
-INKSCAPE_RE = b'\\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
 
 def isvalidtype(v):
     if isinstance(v, (list, tuple, generator)):
@@ -73,102 +69,6 @@ def export(entry, properties):
         props["IconType"] = ext
     return props
 
-_Rsvg = None
-def load_Rsvg():
-    global _Rsvg
-    if _Rsvg is None:
-        import gi
-        try:
-            gi.require_version('Rsvg', '2.0')
-            from gi.repository import Rsvg
-            log("load_Rsvg() Rsvg=%s", Rsvg)
-            _Rsvg = Rsvg
-        except (ValueError, ImportError) as e:
-            if first_time("no-rsvg"):
-                log.warn("Warning: cannot resize svg icons,")
-                log.warn(" the Rsvg bindings were not found:")
-                log.warn(" %s", e)
-            _Rsvg = False
-    return _Rsvg
-
-
-def load_icon_from_file(filename):
-    log("load_icon_from_file(%s)", filename)
-    if filename.endswith("xpm"):
-        from PIL import Image
-        try:
-            img = Image.open(filename)
-            buf = BytesIO()
-            img.save(buf, "PNG")
-            pngicondata = buf.getvalue()
-            buf.close()
-            return pngicondata, "png"
-        except ValueError as e:
-            log("Image.open(%s)", filename, exc_info=True)
-        except Exception as e:
-            log("Image.open(%s)", filename, exc_info=True)
-            log.error("Error loading '%s':", filename)
-            log.error(" %s", e)
-        #fallback to PixbufLoader:
-        try:
-            from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
-            data = load_binary_file(filename)
-            from gi.repository import GdkPixbuf
-            loader = GdkPixbuf.PixbufLoader()
-            loader.write(data)
-            loader.close()
-            pixbuf = loader.get_pixbuf()
-            pngicondata = pixbuf_save_to_memory(pixbuf, "png")
-            return pngicondata, "png"
-        except Exception as e:
-            log("pixbuf error loading %s", filename, exc_info=True)
-            log.error("Error loading '%s':", filename)
-            log.error(" %s", e)
-    icondata = load_binary_file(filename)
-    if not icondata:
-        return None
-    if filename.endswith("svg") and len(icondata)>MAX_ICON_SIZE//2:
-        #try to resize it
-        size = len(icondata)
-        pngdata = svg_to_png(filename, icondata)
-        if pngdata:
-            log("reduced size of SVG icon %s, from %i bytes to %i bytes as PNG",
-                     filename, size, len(pngdata))
-            icondata = pngdata
-            filename = filename[:-3]+"png"
-    log("got icon data from '%s': %i bytes", filename, len(icondata))
-    if len(icondata)>MAX_ICON_SIZE and first_time("icon-size-warning-%s" % filename):
-        global large_icons
-        large_icons.append((filename, len(icondata)))
-    return icondata, os.path.splitext(filename)[1].lstrip(".")
-
-def svg_to_png(filename, icondata, w=128, h=128):
-    Rsvg = load_Rsvg()
-    if not Rsvg:
-        return None
-    try:
-        from cairo import ImageSurface, Context, FORMAT_ARGB32  #pylint: disable=no-name-in-module
-        #'\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
-        img = ImageSurface(FORMAT_ARGB32, 128, 128)
-        ctx = Context(img)
-        handle = Rsvg.Handle.new_from_data(icondata)
-        handle.render_cairo(ctx)
-        buf = BytesIO()
-        img.write_to_png(buf)
-        icondata = buf.getvalue()
-        buf.close()
-        return icondata
-    except Exception:
-        log("svg_to_png%s", (icondata, w, h), exc_info=True)
-        if re.findall(INKSCAPE_RE, icondata):
-            #try again after stripping the bogus inkscape attributes
-            #as some rsvg versions can't handle that (ie: Debian Bullseye)
-            icondata = re.sub(INKSCAPE_RE, b"", icondata)
-            return svg_to_png(filename, icondata, w, h)
-        log.error("Error: failed to convert svg icon")
-        log.error(" '%s':", filename)
-        log.error(" %i bytes, %s", len(icondata), ellipsizer(icondata))
-
 
 def load_icon_from_theme(icon_name, theme=None):
     if not EXPORT_ICONS or not icon_name:
@@ -177,7 +77,7 @@ def load_icon_from_theme(icon_name, theme=None):
     filename = IconTheme.getIconPath(icon_name, theme=theme)
     if not filename:
         return None
-    return load_icon_from_file(filename)
+    return icon_util.load_icon_from_file(filename)
 
 def load_glob_icon(submenu_data, main_dirname="categories"):
     if not LOAD_GLOB or not EXPORT_ICONS:
@@ -211,7 +111,7 @@ def find_icon(main_dirname, icondirs, name):
         log("glob(%s) matches %i filenames", pathname, len(filenames))
         if filenames:
             for f in filenames:
-                icondata = load_icon_from_file(f)
+                icondata = icon_util.load_icon_from_file(f)
                 if icondata:
                     log("found icon for '%s' with glob '%s': %s", name, pathname, f)
                     return icondata
@@ -292,12 +192,12 @@ def remove_icons(menu_data):
 load_lock = Lock()
 xdg_menu_data = None
 def load_xdg_menu_data(force_reload=False, wait_for_lock=True):
-    global xdg_menu_data, large_icons
+    global xdg_menu_data
     if not wait_for_lock and load_lock.locked():
         return xdg_menu_data
     with load_lock:
         if not xdg_menu_data or force_reload:
-            large_icons = []
+            icon_util.large_icons.clear()
             start = monotonic_time()
             xdg_menu_data = do_load_xdg_menu_data()
             end = monotonic_time()
@@ -305,16 +205,16 @@ def load_xdg_menu_data(force_reload=False, wait_for_lock=True):
                 l = sum(len(x) for x in xdg_menu_data.values())
                 log.info("%s %i start menu entries from %i sub-menus in %.1f seconds",
                          "reloaded" if force_reload else "loaded", l, len(xdg_menu_data), end-start)
-            if large_icons:
-                log.warn("Warning: found %i large icon%s:", len(large_icons), engs(large_icons))
-                for filename, size in large_icons:
+            if icon_util.large_icons:
+                log.warn("Warning: found %i large icon%s:", len(icon_util.large_icons), engs(icon_util.large_icons))
+                for filename, size in icon_util.large_icons:
                     log.warn(" '%s' (%i KB)", filename, size//1024)
                 log.warn(" more bandwidth will be used by the start menu data")
     return xdg_menu_data
 
 def do_load_xdg_menu_data():
     try:
-        from xdg.Menu import parse, Menu
+        from xdg.Menu import parse, Menu  #pylint: disable=import-outside-toplevel
     except ImportError:
         log("do_load_xdg_menu_data()", exc_info=True)
         if first_time("no-python-xdg"):
@@ -367,6 +267,7 @@ def load_desktop_sessions():
     xsessions_dir = "%s/share/xsessions" % sys.prefix
     xsessions = {}
     if os.path.exists(xsessions_dir):
+        from xpra.platform.paths import get_icon_filename
         from xdg.DesktopEntry import DesktopEntry
         for f in os.listdir(xsessions_dir):
             filename = os.path.join(xsessions_dir, f)
@@ -380,7 +281,6 @@ def load_desktop_sessions():
                     for split in (" on ", " session", " classic"):
                         if name.find(split)>0:     #ie: "gnome on xorg"
                             options.append(name.split(split)[0])   # -> "gnome"
-                    from xpra.platform.paths import get_icon_filename
                     for name in options:
                         fn = get_icon_filename(name)
                         if fn:
@@ -398,7 +298,7 @@ def load_desktop_sessions():
 
 
 def main():
-    from xpra.platform import program_context
+    from xpra.platform import program_context  #pylint: disable=import-outside-toplevel
     with program_context("XDG-Menu-Helper", "XDG Menu Helper"):
         for x in list(sys.argv):
             if x in ("-v", "--verbose"):
@@ -410,7 +310,7 @@ def main():
         if len(sys.argv)>1:
             for x in sys.argv[1:]:
                 if os.path.isabs(x):
-                    v = load_icon_from_file(x)
+                    v = icon_util.load_icon_from_file(x)
                     print("load_icon_from_file(%s)=%s" % (x, v))
         else:
             menu = load_xdg_menu_data()
