@@ -393,6 +393,10 @@ def do_parse_cmdline(cmdline, defaults):
                           dest="html", default=defaults.html,
                           metavar="on|off|[HOST:]PORT",
                           help="Enable the web server and the html5 client. Default: '%default'.")
+        group.add_option("--http-scripts", action="store",
+                          dest="http_scripts", default=defaults.http_scripts,
+                          metavar="off|all|SCRIPTS",
+                          help="Enable the builtin web server scripts. Default: '%default'.")
     else:
         ignore({"tcp_proxy" : "",
                 "html"      : ""})

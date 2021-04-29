@@ -91,6 +91,10 @@ ssl = auto
 #html = /var/www/htdocs/
 html = auto
 
+# Which builtin http scripts to allow:
+#http-scripts=no
+#http-scripts=Status,Info
+http-scripts = all
 
 ########################################################################
 # RFB upgrades

@@ -164,6 +164,7 @@ class ServerCore:
         self._accept_timeout = SOCKET_TIMEOUT + 1
         self.ssl_mode = None
         self._html = False
+        self._http_scripts = {}
         self._www_dir = None
         self._http_headers_dirs = ()
         self._aliases = {}
@@ -607,6 +608,29 @@ class ServerCore:
             httplog.warn("Warning: the built in html server is enabled,")
             httplog.warn(" disabling the tcp-proxy option")
             self._tcp_proxy = False
+        if opts.http_scripts.lower() not in FALSE_OPTIONS:
+            SCRIPT_OPTIONS = {
+                "/Status"           : self.http_status_request,
+                "/Info"             : self.http_info_request,
+                "/Sessions"         : self.http_sessions_request,
+                "/Displays"         : self.http_displays_request,
+                "/Menu"             : self.http_menu_request,
+                "/MenuIcon"         : self.http_menu_icon_request,
+                "/DesktopMenu"      : self.http_desktop_menu_request,
+                "/DesktopMenuIcon"  : self.http_desktop_menu_icon_request,
+                }
+            if opts.http_scripts.lower() in ("all", "*"):
+                self._http_scripts = SCRIPT_OPTIONS
+            else:
+                for script in opts.http_scripts.split(","):
+                    if not script.startswith("/"):
+                        script = "/"+script
+                    handler = SCRIPT_OPTIONS.get(script)
+                    if not handler:
+                        httplog.warn("Warning: unknown script '%s'", script)
+                    else:
+                        self._http_scripts[script] = handler
+        httplog("http_scripts(%s)=%s", opts.http_scripts, self._http_scripts)
 
 
     ######################################################################
@@ -1426,18 +1450,9 @@ class ServerCore:
 
 
     def get_http_scripts(self):
-        return {
-            "/Status"           : self.http_status_request,
-            "/Info"             : self.http_info_request,
-            "/Sessions"         : self.http_sessions_request,
-            "/Displays"         : self.http_displays_request,
-            "/Menu"             : self.http_menu_request,
-            "/MenuIcon"         : self.http_menu_icon_request,
-            "/DesktopMenu"      : self.http_desktop_menu_request,
-            "/DesktopMenuIcon"  : self.http_desktop_menu_icon_request,
-            }
+        return self._http_scripts
 
-    def http_err(self, handler, code=500):
+    def http_err(self, handler, code=500):  #pylint: disable=useless-return
         handler.send_response(code)
         return None
 
