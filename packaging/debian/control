@@ -83,6 +83,7 @@ Recommends: python3-dbus
         ,python3-dns
 #the start-session GUI:
         ,python3-xdg
+        ,python3-pyinotify
 #hope that this will allow our status icon to be shown:
         ,gir1.2-appindicator3-0.1
 #to be able to resize large svg icons:
@@ -147,7 +148,6 @@ Suggests: openssh-server
         ,gnome-shell-extension-top-icons-plus
         ,gnome-shell-extension-appindicator
 # for webcam support:
-        ,python3-pyinotify
         ,python3-opencv
 # only useful when connecting using a JSON / YAML only client:
         ,python3-yaml
