@@ -99,7 +99,7 @@ class MenuProvider:
         handler = EventHandler()
         self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
         self.watch_notifier.setDaemon(True)
-        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share/applications:/usr/local/share/applications").split(":")
+        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share:/usr/local/share").split(":")
         watched = []
         for data_dir in data_dirs:
             menu_dir = os.path.join(data_dir, "applications")
