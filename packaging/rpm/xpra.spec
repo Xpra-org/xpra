@@ -246,6 +246,7 @@ Recommends:			python3-pyu2f
 Recommends:			python3-pyxdg
 Recommends:         python3-psutil
 Recommends:         python3-qrencode
+Suggests:			python3-opencv
 #without this, the system tray is unusable!
 %if 0%{?el8}
 Recommends:			gnome-shell-extension-topicons-plus
