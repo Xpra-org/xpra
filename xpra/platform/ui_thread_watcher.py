@@ -103,7 +103,7 @@ class UI_thread_watcher:
         else:
             elapsed = 0
         self.ui_wakeup_timer = None
-        log("UI_thread_wakeup() elapsed=%.2fms", 1000*elapsed)
+        log("UI_thread_wakeup(%s) elapsed=%.2fms", scheduled_at, 1000*elapsed)
         self.last_UI_thread_time = monotonic_time()
         #UI thread was blocked?
         if self.UI_blocked:
