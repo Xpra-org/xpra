@@ -27,6 +27,7 @@ function fetch() {
 	if [ -e "${REAL_FILENAME}" ]; then
 		echo "found ${REAL_FILENAME}"
 	else
+		echo "downloading $FILENAME"
 		curl --output "${REAL_FILENAME}" -L "${REAL_URL}/${REAL_FILENAME}"
 	fi
 }
