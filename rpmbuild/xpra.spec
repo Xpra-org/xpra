@@ -134,7 +134,13 @@ Summary:			Common files for xpra server packages
 Group:				Networking
 BuildArch:			noarch
 Requires:			xpra-common >= %{version}-%{release}
+%if 0%{?fedora}>=34
+Suggests:			xmodmap
+Suggests:			xrandr
+Requires:			xrdb
+%else
 Requires:			xorg-x11-server-utils
+%endif
 Requires:			xorg-x11-drv-dummy
 Requires:			xorg-x11-xauth
 Requires:			selinux-policy
