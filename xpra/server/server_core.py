@@ -1541,12 +1541,16 @@ class ServerCore:
 
     def http_displays_request(self, handler):
         displays = self.get_displays()
-        log("http_displays_request displays=%s", displays)
-        return self.send_json_response(handler, displays)
+        WHITELIST = ("state", "wmname", "xpra-server-mode")
+        displays_info = {}
+        for display, info in displays.items():
+            displays_info[display] = dict((k,v) for k,v in info.items() if k in WHITELIST)
+        httplog("http_displays_request info(%s)=%s", displays, displays_info)
+        return self.send_json_response(handler, displays_info)
 
     def get_displays(self):
-        from xpra.scripts.main import get_displays  #pylint: disable=import-outside-toplevel
-        return get_displays(self.dotxpra)
+        from xpra.scripts.main import get_displays_info #pylint: disable=import-outside-toplevel
+        return get_displays_info(self.dotxpra)
 
     def http_sessions_request(self, handler):
         sessions = self.get_xpra_sessions()
