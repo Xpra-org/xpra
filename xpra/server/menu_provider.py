@@ -10,6 +10,7 @@ from gi.repository import GLib
 
 from xpra.os_util import (
     OSX, WIN32, POSIX,
+    osexpand,
     )
 from xpra.util import envint, envbool
 from xpra.make_thread import start_thread
@@ -99,10 +100,10 @@ class MenuProvider:
         handler = EventHandler()
         self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
         self.watch_notifier.setDaemon(True)
-        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share:/usr/local/share").split(":")
+        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share:/usr/local/share:~/.local/share/applications:~/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share").split(":")
         watched = []
         for data_dir in data_dirs:
-            menu_dir = os.path.join(data_dir, "applications")
+            menu_dir = os.path.join(osexpand(data_dir), "applications")
             if not os.path.exists(menu_dir) or menu_dir in watched:
                 continue
             wdd = self.watch_manager.add_watch(menu_dir, mask)
