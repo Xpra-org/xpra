@@ -3,6 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+from xpra.util import envint
+
 #X11 constants we use for gravity:
 NorthWestGravity = 1
 NorthGravity     = 2
@@ -37,5 +40,6 @@ CLOBBER_USE_DISPLAY = 0x2
 MAX_WINDOW_SIZE = 2**15-2**13
 
 
-from xpra.util import envint
 SPLASH_EXIT_DELAY = envint("XPRA_SPLASH_EXIT_DELAY", 4)
+
+DEFAULT_XDG_DATA_DIRS = "/usr/share:/usr/local/share:~/.local/share/applications:~/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share"

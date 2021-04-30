@@ -8,6 +8,7 @@ import os.path
 
 from gi.repository import GLib
 
+from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import (
     OSX, WIN32, POSIX,
     osexpand,
@@ -100,7 +101,7 @@ class MenuProvider:
         handler = EventHandler()
         self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
         self.watch_notifier.setDaemon(True)
-        data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/share:/usr/local/share:~/.local/share/applications:~/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share").split(":")
+        data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
         watched = []
         for data_dir in data_dirs:
             menu_dir = os.path.join(osexpand(data_dir), "applications")

@@ -90,7 +90,8 @@ def find_ppd_file(short_name, filename):
         log("using environment override for %s ppd file: %s", short_name, ev)
         return ev
     paths = []
-    for p in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":"):
+    from xpra.common import DEFAULT_XDG_DATA_DIRS
+    for p in os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":"):
         if os.path.exists(p) and os.path.isdir(p):
             paths.append(os.path.join(p, "cups", "model"))      #used on Fedora and others
             paths.append(os.path.join(p, "ppd", "cups-pdf"))    #used on Fedora and others

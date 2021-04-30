@@ -36,9 +36,10 @@ def do_get_install_prefix():
 
 def do_get_resources_dir():
     #is there a better/cleaner way?
+    from xpra.common import DEFAULT_XDG_DATA_DIRS
     from xpra.platform.paths import get_install_prefix
     options = [get_install_prefix(), sys.exec_prefix] + \
-               os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")
+               os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
     for x in options:
         p = os.path.join(x, "share", "xpra")
         if os.path.exists(p) and os.path.isdir(p):

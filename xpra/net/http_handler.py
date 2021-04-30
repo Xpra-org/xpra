@@ -10,6 +10,7 @@ import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler, SimpleHTTPRequestHandler
 
+from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.util import envbool, std, csv, AdHocStruct, repr_ellipsized
 from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
@@ -83,7 +84,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         words = path.split('/')
         words = filter(None, words)
         path = self.web_root
-        xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share")
+        xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
         www_dir_options = [self.web_root]+[os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
         for p in www_dir_options:
             if os.path.exists(p) and os.path.isdir(p):
