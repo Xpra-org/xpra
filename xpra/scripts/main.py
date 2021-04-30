@@ -3319,12 +3319,16 @@ def run_list_sessions(args, options):
     sessions = get_xpra_sessions(dotxpra)
     print("Found %i xpra sessions:" % len(sessions))
     for display, attrs in sessions.items():
-        username = attrs.get("username") or attrs.get("uid") or ""
-        print("%4s    %8s    %s" % (display, attrs.get("state"), username))
+        print("%4s    %-8s    %-12s    %-16s    %s" % (
+            display,
+            attrs.get("state"),
+            attrs.get("session-type", ""),
+            attrs.get("username") or attrs.get("uid") or "",
+            attrs.get("session-name", "")))
     return 0
 
 
-def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,), matching_display=None):
+def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,), matching_display=None, query=True):
     results = dotxpra.socket_details(matching_display=matching_display)
     log = get_util_logger()
     log("get_xpra_sessions%s socket_details=%s", (dotxpra, ignore_state, matching_display), results)
@@ -3350,6 +3354,19 @@ def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,), matching_display
                 username = get_username_for_uid(s.st_uid)
                 if username:
                     session["username"] = username
+            if query:
+                try:
+                    from xpra.platform.paths import get_xpra_command
+                    cmd = get_xpra_command()+["id", sockpath]
+                    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+                    out = proc.communicate(None, timeout=1)[0]
+                    if proc.returncode==0:
+                        for line in out.decode().splitlines():
+                            parts = line.split("=", 1)
+                            if len(parts)==2:
+                                session[parts[0]] = parts[1]
+                except OSError:
+                    pass
             sessions[display] = session
     return sessions
 
