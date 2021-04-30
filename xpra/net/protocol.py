@@ -152,6 +152,7 @@ class Protocol:
         self.make_frame_header = self.noframe_header
         self._write_queue = Queue(1)
         self._read_queue = Queue(20)
+        self._pre_read = None
         self._process_read = self.read_queue_put
         self._read_queue_put = self.read_queue_put
         # Invariant: if .source is None, then _source_has_more == False
@@ -715,7 +716,7 @@ class Protocol:
     def _read_thread_loop(self):
         self._io_thread_loop("read", self._read)
     def _read(self):
-        buf = self._conn.read(self.read_buffer_size)
+        buf = self.con_read()
         #log("read thread: got data of size %s: %s", len(buf), repr_ellipsized(buf))
         #add to the read queue (or whatever takes its place - see steal_connection)
         self._process_read(buf)
@@ -727,6 +728,12 @@ class Protocol:
             return False
         self.input_raw_packetcount += 1
         return True
+
+    def con_read(self):
+        if self._pre_read:
+            return self._pre_read.pop(0)
+        return self._conn.read(self.read_buffer_size)
+
 
     def _internal_error(self, message="", exc=None, exc_info=False):
         #log exception info with last log message

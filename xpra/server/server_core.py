@@ -27,7 +27,8 @@ from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE
 from xpra.net.socket_util import (
-    hosts, mdns_publish, peek_connection, PEEK_TIMEOUT_MS,
+    hosts, mdns_publish, peek_connection,
+    PEEK_TIMEOUT_MS, UNIXDOMAIN_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
     )
 from xpra.net.bytestreams import (
@@ -1038,6 +1039,8 @@ class ServerCore:
             #rfb does not send any data, waits for a server packet
             #so don't bother waiting for something that should never come:
             timeout = 0
+        elif socktype=="unix-domain":
+            timeout = UNIXDOMAIN_PEEK_TIMEOUT_MS
         peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
         log("socket peek=%s", ellipsizer(peek_data, limit=512))
@@ -1153,9 +1156,24 @@ class ServerCore:
 
         #get the new socket object as we may have wrapped it with ssl:
         sock = getattr(conn, "_socket", sock)
+        pre_read = None
+        if socktype=="unix-domain" and not peek_data:
+            #try to read from this socket,
+            #so short lived probes don't go through the whole protocol instantation
+            try:
+                sock.settimeout(0.001)
+                data = conn.read(1)
+                if not data:
+                    netlog("%s connection already closed", socktype)
+                    return
+                pre_read = [data, ]
+                netlog("pre_read data=%r", data)
+            except Exception:
+                netlog.error("Error reading from %s", conn, exc_info=True)
+                return
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, socket_info)
-        proto = self.make_protocol(socktype, conn, socket_options)
+        proto = self.make_protocol(socktype, conn, socket_options, pre_read=pre_read)
         if socktype=="tcp" and not peek_data and self._rfb_upgrade>0:
             t = self.timeout_add(self._rfb_upgrade*1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
@@ -1250,7 +1268,7 @@ class ServerCore:
             self.source_remove(t)
 
 
-    def make_protocol(self, socktype, conn, socket_options, protocol_class=Protocol):
+    def make_protocol(self, socktype, conn, socket_options, protocol_class=Protocol, pre_read=None):
         """ create a new xpra Protocol instance and start it """
         def xpra_protocol_class(conn):
             """ adds xpra protocol tweaks after creating the instance """
@@ -1258,13 +1276,14 @@ class ServerCore:
             protocol.large_packets.append(b"info-response")
             protocol.receive_aliases.update(self._aliases)
             return protocol
-        return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class)
+        return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)
 
-    def do_make_protocol(self, socktype, conn, socket_options, protocol_class):
+    def do_make_protocol(self, socktype, conn, socket_options, protocol_class, pre_read):
         """ create a new Protocol instance and start it """
         netlog("make_protocol(%s, %s, %s, %s)", socktype, conn, socket_options, protocol_class)
         socktype = socktype.lower()
         protocol = protocol_class(conn)
+        protocol.pre_read = pre_read
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
