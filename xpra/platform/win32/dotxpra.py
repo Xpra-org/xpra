@@ -71,7 +71,13 @@ class DotXpra:
         np = self.get_all_namedpipes()
         if not np:
             return {}
-        return {PIPE_PREFIX.rstrip("\\"): [(LIVE, display, pipe_name) for display, pipe_name in np.items()]}
+        return {
+            PIPE_PREFIX.rstrip("\\") : [
+                (LIVE, display, pipe_name) for display, pipe_name in np.items() if (
+                    matching_display is None or display in matching_display
+                    )
+                ]
+            }
 
     def get_all_namedpipes(self):
         log = get_util_logger()
