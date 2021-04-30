@@ -166,7 +166,7 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
-        "displays", "wminfo", "wmname", "recover",
+        "displays", "list-sessions", "wminfo", "wmname", "recover",
         "clean-displays", "clean-sockets",
         "splash", "qrcode",
         "opengl-test",
@@ -455,6 +455,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "mdns-gui" and supports_mdns:
         check_gtk()
         return run_mdns_gui(error_cb, options)
+    elif mode == "list-sessions":
+        return run_list_sessions(args, options)
     elif mode == "sessions":
         check_gtk()
         return run_sessions_gui(error_cb, options)
@@ -3141,7 +3143,7 @@ def run_recover(script_file, error_cb, options, args, defaults):
 
 def run_displays(args):
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
-    displays = get_displays_info(args)
+    displays = get_displays_info(None, args)
     print("Found %i displays:" % len(displays))
     if args:
         print(" matching %s" % csv(args))
@@ -3252,8 +3254,8 @@ def run_clean_displays(args):
     print("")
     print("Done")
 
-def get_displays_info(display_names=None):
-    displays = get_displays(None, display_names)
+def get_displays_info(dotxpra=None, display_names=None):
+    displays = get_displays(dotxpra, display_names)
     displays_info = {}
     for display, descr in sorted_nicely(displays.items()):
         #descr already contains the uid, gid
@@ -3309,6 +3311,17 @@ def get_displays(dotxpra=None, display_names=None):
         displays[display] = {"uid" : uid, "gid" : gid}
     log("get_displays displays=%s", displays)
     return displays
+
+def run_list_sessions(args, options):
+    dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+    if args:
+        raise InitInfo("too many arguments for 'list-sessions' mode")
+    sessions = get_xpra_sessions(dotxpra)
+    print("Found %i xpra sessions:" % len(sessions))
+    for display, attrs in sessions.items():
+        username = attrs.get("username") or attrs.get("uid") or ""
+        print("%4s    %8s    %s" % (display, attrs.get("state"), username))
+    return 0
 
 
 def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,), matching_display=None):
