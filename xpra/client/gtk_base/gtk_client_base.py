@@ -1263,6 +1263,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             elif self.client_supports_opengl:
                 opengllog("OpenGL supported with %s, but not enabled", driver_info)
             self.opengl_props["enabled"] = self.opengl_enabled
+            if self.opengl_enabled and not warnings and OSX:
+                #non-opengl is slow on MacOS:
+                self.opengl_force = True
         except ImportError as e:
             err("OpenGL accelerated rendering is not available:", e)
         except RuntimeError as e:
