@@ -2047,6 +2047,7 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
         check_gtk()
+        bypass_no_gtk()
         assert not display_is_remote
         #maybe the server is already running
         #and we don't need to bother trying to start it:
@@ -2392,7 +2393,13 @@ def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     return displays[0]
 
 
+no_gtk_bypass = False
+def bypass_no_gtk(v=True):
+    global no_gtk_bypass
+    no_gtk_bypass = v
 def no_gtk():
+    if no_gtk_bypass:
+        return
     if OSX:
         #we can't verify on macos because importing GtkosxApplication
         #will import Gtk, and we need GtkosxApplication early to find the paths

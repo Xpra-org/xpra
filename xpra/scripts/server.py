@@ -14,7 +14,11 @@ import os.path
 import atexit
 import traceback
 
-from xpra.scripts.main import info, warn, no_gtk, validate_encryption, parse_env, configure_env
+from xpra.scripts.main import (
+    info, warn,
+    no_gtk, bypass_no_gtk,
+    validate_encryption, parse_env, configure_env,
+    )
 from xpra.scripts.config import InitException, FALSE_OPTIONS, parse_bool
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
 from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK
@@ -673,7 +677,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     xvfb = None
     xvfb_pid = None
     uinput_uuid = None
-    check_gtk = no_gtk
     if start_vfb and use_display is None:
         #use-display='auto' so we have to figure out
         #if we have to start the vfb or not:
@@ -683,9 +686,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             progress(20, "connecting to the display")
             if verify_display(None, display_name, log_errors=False, timeout=1)==0:
                 start_vfb = False
-                def noop():
-                    pass
-                check_gtk = noop
+                #we have loaded gtk:
+                bypass_no_gtk()
     if start_vfb:
         progress(20, "starting a virtual display")
         assert not proxying and xauth_data
@@ -824,7 +826,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     dbus_pid, dbus_env = 0, {}
     if not shadowing and POSIX and not OSX and not clobber:
-        check_gtk()
+        no_gtk()
         assert starting or starting_desktop or proxying
         try:
             from xpra.server.dbus.dbus_start import start_dbus
@@ -837,7 +839,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     if not proxying:
         if POSIX and not OSX:
-            check_gtk()
+            no_gtk()
             if starting or starting_desktop or shadowing:
                 r = verify_display(xvfb, display_name, shadowing)
                 if r:
