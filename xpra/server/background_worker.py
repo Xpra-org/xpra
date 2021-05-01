@@ -36,6 +36,8 @@ class Worker_Thread(Thread):
         if force:
             if items:
                 log.warn("Worker stop: %s items in the queue will not be run!", len(items))
+                for x in list(self.items.queue):
+                    log.warn(" - %s", x)
                 self.items.put(None)
                 self.items = Queue()
             self.exit = True
