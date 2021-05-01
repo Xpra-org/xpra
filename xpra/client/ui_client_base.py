@@ -19,7 +19,7 @@ from xpra.child_reaper import reaper_cleanup
 from xpra.platform.info import get_sys_info
 from xpra.os_util import (
     platform_name, bytestostr, strtobytes,
-    BITS, POSIX, is_Wayland,
+    BITS, POSIX, WIN32, OSX, is_Wayland,
     get_frame_info, get_info_env, get_sysconfig_info,
     )
 from xpra.util import (
@@ -27,6 +27,7 @@ from xpra.util import (
     merge_dicts,
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
+from xpra.scripts.config import parse_bool
 from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_OK, EXIT_CONNECTION_LOST
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client import mixin_features
@@ -174,7 +175,7 @@ class UIXpraClient(ClientBaseClass):
 
         self.title = opts.title
         self.session_name = bytestostr(opts.session_name)
-        self.xsettings_enabled = opts.xsettings
+        self.xsettings_enabled = not (OSX or WIN32) and parse_bool("xsettings", opts.xsettings, True)
         self.readonly = opts.readonly
         self.client_supports_sharing = opts.sharing is True
         self.client_lock = opts.lock is True

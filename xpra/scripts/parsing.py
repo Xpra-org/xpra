@@ -710,7 +710,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Forward application global menus. Default: %s." % enabled_str(defaults.global_menus))
     legacy_bool_parse("xsettings")
     if POSIX:
-        group.add_option("--xsettings", action="store", metavar="yes|no",
+        group.add_option("--xsettings", action="store", metavar="auto|yes|no",
                           dest="xsettings", default=defaults.xsettings,
                           help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
     else:

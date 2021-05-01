@@ -11,6 +11,7 @@ import os
 from xpra.os_util import bytestostr, strtobytes, hexstr
 from xpra.util import typedict, envbool, iround
 from xpra.gtk_common.error import xswallow, xsync, xlog
+from xpra.scripts.config import parse_bool
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
@@ -66,7 +67,11 @@ class X11ServerBase(X11ServerCore):
 
     def do_init(self, opts):
         super().do_init(opts)
-        self._xsettings_enabled = opts.xsettings
+        #the server class sets the default value for 'xsettings_enabled'
+        #it is overriden in the seamless server (enabled by default),
+        #and we let the options have the final say here:
+        self._xsettings_enabled = parse_bool("xsettings", opts.xsettings, self._xsettings_enabled)
+        log("xsettings_enabled(%s)=%s", opts.xsettings, self._xsettings_enabled)
         if self._xsettings_enabled:
             from xpra.x11.xsettings import XSettingsHelper
             self._default_xsettings = XSettingsHelper().get_settings()

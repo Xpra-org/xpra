@@ -197,6 +197,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         GObject.GObject.__init__(self)
         X11ServerBase.__init__(self, clobber)
         self.session_type = "seamless"
+        self._xsettings_enabled = True
 
     def init(self, opts):
         self.wm_name = opts.wm_name
