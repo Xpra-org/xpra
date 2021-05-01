@@ -19,6 +19,7 @@ from threading import Lock
 from xpra.util import envbool, print_nested_dict, first_time, engs
 from xpra.os_util import load_binary_file, monotonic_time, OSEnvContext
 from xpra.codecs import icon_util
+from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger, add_debug_category
 
 log = Logger("exec", "menu")
@@ -79,27 +80,32 @@ def load_icon_from_theme(icon_name, theme=None):
         return None
     return icon_util.load_icon_from_file(filename)
 
-def load_glob_icon(submenu_data, main_dirname="categories"):
+def get_xdg_icon_dirs():
     if not LOAD_GLOB or not EXPORT_ICONS:
         return None
     #doesn't work with IconTheme.getIconPath,
     #so do it the hard way:
     from xdg import IconTheme
-    icondirs = getattr(IconTheme, "icondirs", [])
+    return getattr(IconTheme, "icondirs", [])
+
+def load_glob_icon(submenu_data, main_dirname="categories"):
+    if not LOAD_GLOB or not EXPORT_ICONS:
+        return None
+    icondirs = get_xdg_icon_dirs()
     if not icondirs:
         return None
     for x in ("Icon", "Name", "GenericName"):
         name = submenu_data.get(x)
         if name:
-            icondata = find_icon(main_dirname, icondirs, name)
-            if icondata:
-                return icondata
+            v = find_icon((main_dirname, "*"), icondirs, name)
+            if v:
+                return v
     return None
 
-def find_icon(main_dirname, icondirs, name):
+def find_icon(dirnames, icondirs, name):
     extensions = ("png", "svg", "xpm")
     pathnames = []
-    for dn in (main_dirname, "*"):
+    for dn in dirnames:
         for d in icondirs:
             for ext in extensions:
                 pathnames += [
@@ -111,10 +117,10 @@ def find_icon(main_dirname, icondirs, name):
         log("glob(%s) matches %i filenames", pathname, len(filenames))
         if filenames:
             for f in filenames:
-                icondata = icon_util.load_icon_from_file(f)
-                if icondata:
+                v = icon_util.load_icon_from_file(f)
+                if v:
                     log("found icon for '%s' with glob '%s': %s", name, pathname, f)
-                    return icondata
+                    return v
     return None
 
 
@@ -267,7 +273,6 @@ def load_desktop_sessions():
     xsessions_dir = "%s/share/xsessions" % sys.prefix
     xsessions = {}
     if os.path.exists(xsessions_dir):
-        from xpra.platform.paths import get_icon_filename
         from xdg.DesktopEntry import DesktopEntry
         for f in os.listdir(xsessions_dir):
             filename = os.path.join(xsessions_dir, f)
@@ -275,26 +280,46 @@ def load_desktop_sessions():
             try:
                 entry = load_xdg_entry(de)
                 if getattr(entry, "IconData", None) is None:
-                    #try one of ours:
-                    name = de.getName().lower()
-                    options = [name]
-                    for split in (" on ", " session", " classic"):
-                        if name.find(split)>0:     #ie: "gnome on xorg"
-                            options.append(name.split(split)[0])   # -> "gnome"
-                    for name in options:
-                        fn = get_icon_filename(name)
-                        if fn:
-                            try:
-                                entry["IconData"] = load_binary_file(fn)
-                                entry["IconType"] = os.path.splitext(fn)[1]
-                            except Exception:
-                                pass
+                    names = get_icon_names_for_session(de.getName().lower())
+                    v = find_session_icon(*names)
+                    if v:
+                        entry["IconData"] = v[0]
+                        entry["IconType"] = v[1]
                 xsessions[de.getName()] = entry
             except Exception as e:
                 log("get_desktop_sessions(%s)", remove_icons, exc_info=True)
                 log.error("Error loading desktop entry '%s':", filename)
                 log.error(" %s", e)
     return xsessions
+
+def get_icon_names_for_session(name):
+    ALIASES = {
+        "deepin"    : ["deepin-launcher", "deepin-show-desktop"],
+        "xfce"      : ["org.xfce.xfdesktop", ]
+        }
+    names = [name]+ALIASES.get(name, [])
+    for split in (" on ", " session", " classic"):
+        if name.find(split)>0:     #ie: "gnome on xorg"
+            short_name = name.split(split)[0]
+            names += [short_name] + ALIASES.get(short_name, [])   # -> "gnome"
+    return names
+
+def find_session_icon(*names):
+    icondirs = None
+    for name in names:
+        fn = get_icon_filename(name)
+        if fn:
+            data = load_binary_file(fn)
+            if data:
+                return data, os.path.splitext(fn)[1]
+        if icondirs is None:
+            icondirs = get_xdg_icon_dirs()
+        if icondirs:
+            #v = find_icon(("categories", "apps", "places", "*"), icondirs, name)
+            v = find_icon(("*", ), icondirs, name)
+            if v:
+                return v
+    return None
 
 
 def main():

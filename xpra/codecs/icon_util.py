@@ -45,7 +45,7 @@ def load_Rsvg():
 
 
 def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
-    log("load_icon_from_file(%s)", filename)
+    log("load_icon_from_file(%s, %i)", filename, max_size)
     if filename.endswith("xpm"):
         from PIL import Image  #pylint: disable=import-outside-toplevel
         try:
