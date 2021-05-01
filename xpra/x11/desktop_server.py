@@ -38,7 +38,6 @@ RandR = RandRBindings()
 
 windowlog = Logger("server", "window")
 geomlog = Logger("server", "window", "geometry")
-settingslog = Logger("x11", "xsettings")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
 iconlog = Logger("icon")
@@ -274,11 +273,11 @@ DesktopServerBaseClass = type('DesktopServerBaseClass', DESKTOPSERVER_BASES, {})
 log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 
-"""
-    A server class for RFB / VNC-like desktop displays,
-    used with the "start-desktop" subcommand.
-"""
 class XpraDesktopServer(DesktopServerBaseClass):
+    """
+        A server class for RFB / VNC-like desktop displays,
+        used with the "start-desktop" subcommand.
+    """
     __gsignals__ = {
         "xpra-xkb-event"        : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
