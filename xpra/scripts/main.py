@@ -20,7 +20,8 @@ import traceback
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
-    csv, envbool, envint, nonl, pver, parse_simple_dict, noerr, sorted_nicely,
+    csv, envbool, envint, nonl, pver,
+    parse_simple_dict, noerr, sorted_nicely, typedict,
     DEFAULT_PORT, DEFAULT_PORTS,
     )
 from xpra.exit_codes import (
@@ -3018,8 +3019,13 @@ def run_list_mdns(error_cb, extra_args):
     from xpra.net.mdns import XPRA_MDNS_TYPE
     try:
         from xpra.net.mdns.avahi_listener import AvahiListener
+        listener_class = AvahiListener
     except ImportError:
-        error_cb("sorry, 'list-mdns' is not supported on this platform yet")
+        try:
+            from xpra.net.mdns.zeroconf_listener import ZeroconfListener
+            listener_class = ZeroconfListener
+        except ImportError:
+            error_cb("sorry, 'list-mdns' requires an mdns module")
     from xpra.net.net_util import if_indextoname
     from xpra.dbus.common import loop_init
     from gi.repository import GLib
@@ -3032,19 +3038,22 @@ def run_list_mdns(error_cb, extra_args):
             recs = found[uq]
             for i, rec in enumerate(recs):
                 iface, _, _, host, address, port, text = rec
-                uuid = text.get("uuid")
-                display = text.get("display", "")
-                mode = text.get("mode", "")
-                username = text.get("username", "")
-                session = text.get("session")
-                dtype = text.get("type")
+                uuid = text.strget("uuid")
+                display = text.strget("display", "")
+                mode = text.strget("mode", "")
+                username = text.strget("username", "")
+                session = text.strget("session")
+                dtype = text.strget("type")
                 if i==0:
                     print("* user '%s' on '%s'" % (username, host))
                     if session:
                         print(" %s session '%s', uuid=%s" % (dtype, session, uuid))
                     elif uuid:
                         print(" uuid=%s" % uuid)
-                print(" + %s endpoint on host %s, port %i, interface %s" % (mode, address, port, iface))
+                iinfo = ""
+                if iface:
+                    iinfo = ", interface %s" % iface
+                print(" + %s endpoint on host %s, port %i%s" % (mode, address, port, iinfo))
                 dstr = ""
                 if display.startswith(":"):
                     dstr = display[1:]
@@ -3052,15 +3061,15 @@ def run_list_mdns(error_cb, extra_args):
                 print("   \"%s\"" % uri)
             shown.add(uq)
     def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text):
-        text = text or {}
+        text = typedict(text or {})
         iface = interface
-        if if_indextoname:
+        if if_indextoname and iface is not None:
             iface = if_indextoname(interface)
-        username = text.get("username", "")
-        uq = text.get("uuid", len(found)), username, host
-        found.setdefault(uq, []).append((iface, name, domain, host, address, port, text))
+        username = text.strget("username", "")
+        uq = text.strget("uuid", len(found)), username, host
+        found.setdefault(uq, []).append((iface or "", name, domain, host, address, port, text))
         GLib.timeout_add(1000, show_new_found)
-    listener = AvahiListener(XPRA_MDNS_TYPE, mdns_add=mdns_add)
+    listener = listener_class(XPRA_MDNS_TYPE, mdns_add=mdns_add)
     print("Looking for xpra services via mdns")
     try:
         GLib.idle_add(listener.start)
