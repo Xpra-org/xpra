@@ -2101,9 +2101,7 @@ class WindowSource(WindowIconSource):
             refresh_exclude = self.get_refresh_exclude()    #pylint: disable=assignment-from-none
             refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s",
                        1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
-            log.enable_debug()
             WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
-            log.disable_debug()
         return False
 
     def get_refresh_encoding(self, w, h, speed, quality, coding):
