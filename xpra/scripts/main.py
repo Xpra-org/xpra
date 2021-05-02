@@ -2046,24 +2046,35 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 def run_server(script_file, error_cb, options, args, mode, defaults):
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
-    if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
+    if mode in ("start", "start-desktop") and parse_bool("attach", options.attach) is True:
         check_gtk()
         bypass_no_gtk()
         assert not display_is_remote
-        #maybe the server is already running
-        #and we don't need to bother trying to start it:
-        try:
-            display = pick_display(error_cb, options, args)
-        except Exception:
-            pass
-        else:
-            dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-            display_name = display.get("display_name")
-            if display_name:
-                state = dotxpra.get_display_state(display_name)
-                if state==DotXpra.LIVE:
-                    noerr(sys.stdout.write, "existing live display found, attaching")
-                    return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+        if args:
+            #maybe the server is already running for the display specified
+            #then we don't even need to bother trying to start it:
+            try:
+                display = pick_display(error_cb, options, args)
+            except Exception:
+                pass
+            else:
+                dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+                display_name = display.get("display_name")
+                if display_name:
+                    state = dotxpra.get_display_state(display_name)
+                    if state==DotXpra.LIVE:
+                        noerr(sys.stdout.write, "existing live display found, attaching")
+                        return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+        if options.resize_display.lower() in TRUE_OPTIONS:
+            #now that we have loaded gtk,
+            #we can tell the server what size to resize to:
+            from xpra.gtk_common.gtk_util import get_root_size
+            root_w, root_h = get_root_size()
+            from xpra.client.scaling_parser import parse_scaling
+            scaling = parse_scaling(options.desktop_scaling, root_w, root_h)
+            #but don't bother if scaling is involved:
+            if scaling==(1, 1):
+                options.resize_display = "%ix%i" % (root_w, root_h)
 
     if (
         mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and not supports_server
