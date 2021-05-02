@@ -135,9 +135,9 @@
 		autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s %(autogenargs)s"
 		autogenargs="--enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-install-docs --enable-realtime-only --enable-runtime-cpu-detect --disable-libyuv --disable-avx512 --disable-unit-tests"
 		autogen-sh="configure">
-		<branch module="/webmproject/libvpx/archive/v1.9.0/libvpx-1.9.0.tar.gz"
-			version="1.9.0" checkoutdir="libvpx-1.9.0"
-			hash="sha256:d279c10e4b9316bf11a570ba16c3d55791e1ad6faa4404c67422eb631782c80a"
+		<branch module="/webmproject/libvpx/archive/refs/tags/v1.10.0.tar.gz"
+			version="1.10.0" checkoutdir="libvpx-1.10.0"
+			hash="sha256:85803ccbdbdd7a3b03d930187cb055f1353596969c1f92ebec2db839fa4f834a"
 			repo="github.com"/>
 		<dependencies>
 			<dep package="yasm"/>
