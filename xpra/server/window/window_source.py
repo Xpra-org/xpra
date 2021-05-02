@@ -612,7 +612,7 @@ class WindowSource(WindowIconSource):
         if not self.is_OR and not self.is_tray and "icons" in self.window.get_property_names():
             self.send_window_icon()
 
-    def refresh(self, options):
+    def refresh(self, options=None):
         assert self.ui_thread == threading.current_thread()
         w, h = self.window.get_dimensions()
         self.damage(0, 0, w, h, options)
