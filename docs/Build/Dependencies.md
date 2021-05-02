@@ -43,7 +43,7 @@ See [Network](../Network/README.md)
 See [authentication modules](../Usage/Authentication.md)
 | Project | Source Download Link | Purpose | Client or Server | Notes |
 |---------|----------------------|---------|------------------|:------|
-|[python-gssapi](https://github.com/sigmaris/python-gssapi)|https://pypi.org/project/python-gssapi|GSSAPI|server|[#1691](../../issues/1691)|
+|[python-gssapi](https://github.com/sigmaris/python-gssapi)|https://pypi.org/project/gssapi/|GSSAPI|server|[#1691](../../issues/1691)|
 |[python-kerberos](https://github.com/apple/ccs-pykerberos)|https://pypi.org/project/kerberos/|Kerberos|server|[#1691](../../issues/1691)|
 |[python-ldap](https://www.python-ldap.org)|https://pypi.org/project/python-ldap/|LDAP|server|[#1691](../../issues/1691)|
 |[python-ldap3](https://github.com/cannatag/ldap3)|https://pypi.org/project/ldap3/|LDAP v3|server|[#1691](../../issues/1691)|
@@ -62,8 +62,8 @@ See [authentication modules](../Usage/Authentication.md)
 |[python-deprecation](http://deprecation.readthedocs.io/)|https://pypi.org/project/deprecation/|required by python-lz4: r17749|
 |[python-pkgconfig](https://github.com/matze/pkgconfig)|https://pypi.org/project/pkgconfig/|required by python-lz4: r17748|
 |[python-setuptools-scm](https://github.com/pypa/setuptools_scm/)|https://pypi.org/project/setuptools-scm/|required by python-lz4: r15282|
-|[nose](https://nose.readthedocs.io/en/latest/)|https://pypi.org/project/nose/]|required by python-lz4: r8676|
-|[pyasn1](https://github.com/etingof/pyasn1)|https://pypi.org/project/pyasn1/]|unspecified: r5829|
+|[nose](https://nose.readthedocs.io/en/latest/)|https://pypi.org/project/nose/|required by python-lz4: r8676|
+|[pyasn1](https://github.com/etingof/pyasn1)|https://pypi.org/project/pyasn1/|unspecified: r5829|
 |[asn1crypto](https://github.com/wbond/asn1crypto)|https://pypi.org/project/asn1crypto/|required by python-cryptography: r17856|
 |[python-packaging](https://github.com/pypa/packaging)|https://pypi.org/project/packaging/|required by python-cryptography: r15310|
 |[pyparsing](https://github.com/pyparsing/pyparsing/)|https://pypi.org/project/pyparsing/|required by python-cryptography: r15310|
@@ -90,7 +90,7 @@ See [picture encodings](../Usage/Encodings.md)
 |[libpng](http://www.libpng.org/pub/png/libpng.html)|ftp://ftp.simplesystems.org/pub/libpng/png/src/libpng16/|png encoding|both|
 |[libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo)|https://sourceforge.net/projects/libjpeg-turbo/files/|jpeg encoding|both|
 |[python-pillow](https://python-pillow.github.io/)|https://pypi.python.org/pypi/Pillow|png,jpeg,webp encoding and decoding, format conversion - **Required**|both|
-|[opencv](http://opencv.org/)|http://opencv.org/downloads.html|[Webcam capture](./Webcam)]|client|
+|[opencv](http://opencv.org/)|https://opencv.org/releases/|[Webcam capture](./Webcam)]|client|
 |[libyuv](https://chromium.googlesource.com/libyuv/libyuv/)|https://chromium.googlesource.com/libyuv/libyuv/|[Colourspace Conversion](./CSC)|both|
 |[pycuda](https://mathema.tician.de/software/pycuda/)|https://pypi.python.org/pypi/pycuda|[NVENC](./NVENC)|server|
 |[cuda](http://www.nvidia.com/object/cuda_home_new.html)|https://developer.nvidia.com/cuda-toolkit|[NVENC](./NVENC)|server|
