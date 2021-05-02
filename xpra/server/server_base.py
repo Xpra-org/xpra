@@ -367,7 +367,7 @@ class ServerBase(ServerBaseClass):
             ss.close()
             raise
         self._server_sources[proto] = ss
-        add_work_item(self.mdns_update, False)
+        add_work_item(self.mdns_update)
         #process ui half in ui thread:
         send_ui = ui_client and not is_request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
@@ -770,7 +770,7 @@ class ServerBase(ServerBaseClass):
         source = self._server_sources.pop(protocol, None)
         if source:
             self.cleanup_source(source)
-            add_work_item(self.mdns_update, False)
+            add_work_item(self.mdns_update)
         for c in SERVER_BASES:
             c.cleanup_protocol(self, protocol)
         return source

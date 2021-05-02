@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 
+from weakref import WeakSet
 from threading import Thread, Lock
 from queue import Queue
 
@@ -24,6 +25,7 @@ class Worker_Thread(Thread):
         self.items = Queue()
         self.exit = False
         self.setDaemon(True)
+        self.daemon_work_items = WeakSet()
 
     def __repr__(self):
         return "Worker_Thread(items=%s, exit=%s)" % (self.items.qsize(), self.exit)
@@ -31,13 +33,14 @@ class Worker_Thread(Thread):
     def stop(self, force=False):
         if self.exit:
             return
-        items = tuple(x for x in self.items.queue if x is not None)
+        items = tuple(x for x in self.items.queue if x is not None and x not in self.daemon_work_items)
         log("Worker_Thread.stop(%s) %i items still in work queue: %s", force, len(items), items)
         if force:
             if items:
                 log.warn("Worker stop: %s items in the queue will not be run!", len(items))
                 for x in list(self.items.queue):
-                    log.warn(" - %s", x)
+                    if x:
+                        log.warn(" - %s", x)
                 self.items.put(None)
                 self.items = Queue()
             self.exit = True
@@ -46,13 +49,15 @@ class Worker_Thread(Thread):
                 log.info("waiting for %s items in work queue to complete", len(items))
         self.items.put(None)
 
-    def add(self, item, allow_duplicates=True):
+    def add(self, item, allow_duplicates=True, daemon=False):
         if self.items.qsize()>10:
             log.warn("Worker_Thread.items queue size is %s", self.items.qsize())
         if not allow_duplicates:
             if item in self.items.queue:
                 return
         self.items.put(item)
+        if daemon:
+            self.daemon_work_items.add(item)
 
     def run(self):
         log("Worker_Thread.run() starting")
@@ -85,10 +90,10 @@ def get_worker(create=True):
             singleton.start()
     return singleton
 
-def add_work_item(item, allow_duplicates=True):
+def add_work_item(item, allow_duplicates=False, daemon=True):
     w = get_worker(True)
-    log("add_work_item(%s, %s) worker=%s", item, allow_duplicates, w)
-    w.add(item, allow_duplicates)
+    log("add_work_item(%s, %s, %s) worker=%s", item, allow_duplicates, daemon, w)
+    w.add(item, allow_duplicates, daemon)
 
 def stop_worker(force=False):
     w = get_worker(False)
