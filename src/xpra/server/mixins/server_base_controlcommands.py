@@ -93,7 +93,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("scaling",               "set a specific scaling value",     min_args=1, validation=[parse_scaling_value]),
             ArgsControlCommand("auto-refresh",          "set a specific auto-refresh value", min_args=1, validation=[float]),
             ArgsControlCommand("refresh",               "refresh some or all windows",      min_args=0),
-            ArgsControlCommand("encoding",              "picture encoding",                 min_args=1, max_args=1),
+            ArgsControlCommand("encoding",              "picture encoding",                 min_args=2),
             ArgsControlCommand("video-region-enabled",  "enable video region",              min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region-detection","enable video detection",           min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region-exclusion-zones","set window regions to exclude from video regions: 'WID,(x,y,w,h),(x,y,w,h),..', ie: '1 (0,10,100,20),(200,300,20,20)'",  min_args=2, max_args=2, validation=[int, parse_4intlist]),
