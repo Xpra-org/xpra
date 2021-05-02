@@ -619,11 +619,7 @@ class GTKTrayMenuBase(MenuHelper):
 
     def make_encodingssubmenu(self):
         server_encodings = list(self.client.server_encodings)
-        all_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
-        encodings = [x for x in all_encodings if x not in self.client.server_encodings_problematic]
-        if not encodings:
-            #all we have, show the "bad" hidden ones then!
-            encodings = all_encodings
+        encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
         encodings.insert(0, "auto")
         server_encodings.insert(0, "auto")
         encodings_submenu = make_encodingsmenu(self.get_current_encoding,

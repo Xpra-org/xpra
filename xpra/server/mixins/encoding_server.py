@@ -89,7 +89,6 @@ class EncodingServer(StubServerMixin):
              "core"                 : self.core_encodings,
              "allowed"              : self.allowed_encodings,
              "lossless"             : self.lossless_encodings,
-             "problematic"          : [x for x in self.core_encodings if x in PROBLEMATIC_ENCODINGS],
              "with_speed"           : tuple(set({"rgb32" : "rgb", "rgb24" : "rgb"}.get(x, x)
                                                 for x in self.core_encodings if x in (
                                                     "h264", "vp8", "vp9",

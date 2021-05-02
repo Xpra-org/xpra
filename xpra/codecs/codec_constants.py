@@ -34,9 +34,6 @@ HELP_ORDER = (
     "scroll",
     )
 
-#those are currently so useless that we don't want the user to select them by mistake
-PROBLEMATIC_ENCODINGS = ()
-
 
 #value: how much smaller the output is
 LOSSY_PIXEL_FORMATS = {

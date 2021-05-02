@@ -45,7 +45,6 @@ class FakeApplication:
         self.server_clipboard = False
         self.server_bandwidth_limit_change = 0
         self.server_encodings = ["png", "rgb"]
-        self.server_encodings_problematic = []
         self.server_encodings_with_quality = []
         self.server_encodings_with_speed = []
         self.server_start_new_commands = True

@@ -77,7 +77,6 @@ class Encodings(StubClientMixin):
 
         self.server_encodings = []
         self.server_core_encodings = []
-        self.server_encodings_problematic = PROBLEMATIC_ENCODINGS
         self.server_encodings_with_speed = ()
         self.server_encodings_with_quality = ()
         self.server_encodings_with_lossless_mode = ()
@@ -162,8 +161,6 @@ class Encodings(StubClientMixin):
     def _parse_server_capabilities(self, c):
         self.server_encodings = c.strtupleget("encodings", DEFAULT_ENCODINGS)
         self.server_core_encodings = c.strtupleget("encodings.core", self.server_encodings)
-        #server is telling us to try to avoid those:
-        self.server_encodings_problematic = c.strtupleget("encodings.problematic", PROBLEMATIC_ENCODINGS)
         #old servers only supported x264:
         self.server_encodings_with_speed = c.strtupleget("encodings.with_speed", ("h264",))
         self.server_encodings_with_quality = c.strtupleget("encodings.with_quality", ("jpeg", "webp", "h264"))
