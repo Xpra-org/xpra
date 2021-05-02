@@ -14,13 +14,13 @@
 %global debug_package %{nil}
 
 Name:           python3-pycuda
-Version:        2020.1
-Release:        3
+Version:        2021.1
+Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source0:       	https://files.pythonhosted.org/packages/46/61/47d3235a4c13eec5a5f03594ddb268f4858734e02980afbcd806e6242fa5/pycuda-%{version}.tar.gz
+Source0:       	https://files.pythonhosted.org/packages/5a/56/4682a5118a234d15aa1c8768a528aac4858c7b04d2674e18d586d3dfda04/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -77,6 +77,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Sun May 02 2021 Antoine Martin <antoine@xpra.org> - 2021.1-1
+- new upstream release
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 2020.1-3
 - verify source checksum
 
