@@ -44,7 +44,7 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "effa3b99b55af67f3afba9b0d1b64b4a0add4dd6a33bdd6786df1aa4cc8761a5" ]; then
+if [ "${sha256}" != "ab87312d0fc349d9c17294a087bb9615cffcf966ad7b115f5b051008a48dd6ed" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi 
