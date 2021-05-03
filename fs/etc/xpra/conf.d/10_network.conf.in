@@ -37,7 +37,7 @@ lock = auto
 #compressors = all
 #compressors = none
 #compressors = zlib
-compressors = lz4, lzo, zlib, brotli
+compressors = none, lz4, lzo, zlib, brotli
 
 # Default compression (0 to 9):
 compression_level = 1
