@@ -3613,9 +3613,17 @@ def run_showconfig(options, args):
         k = name_to_field(opt)
         dv = getattr(d, k)
         cv = getattr(options, k, dv)
+        cmpv = [dv]
         if isinstance(dv, tuple) and isinstance(cv, list):
-            dv = list(dv)
-        if cv!=dv:
+            #defaults may have a tuple,
+            #but command line parsing will create a list:
+            cmpv.append(list(dv))
+        if isinstance(dv, str) and dv.find("\n")>0:
+            #newline is written with a "\" continuation character,
+            #so we don't read the newline back when loading the config files
+            import re
+            cmpv.append(re.sub("\\\\\n *", " ", dv))
+        if cv not in cmpv:
             w("%-20s  (used)   = %-32s  %s", opt, vstr(otype, cv), type(cv))
             w("%-20s (default) = %-32s  %s", opt, vstr(otype, dv), type(dv))
         else:
