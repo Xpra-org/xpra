@@ -7,7 +7,7 @@
 import sys
 import os
 
-from xpra.util import csv
+from xpra.util import csv, sorted_nicely
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
@@ -890,7 +890,12 @@ def get_defaults():
     ssl_protocol = "TLSv1_2"
 
     if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
-        fake_xinerama = "auto"
+        #try to find it quickly:
+        try:
+            import glob
+            fake_xinerama = sorted_nicely(glob.glob("/usr/lib*/libfakeXinerama.so.*"))[-1]
+        except Exception:
+            fake_xinerama = "auto"
     else:
         fake_xinerama = "no"
 
@@ -943,7 +948,7 @@ def get_defaults():
                     "remote-logging"    : "both",
                     "lpadmin"           : "/usr/sbin/lpadmin",
                     "lpinfo"            : "/usr/sbin/lpinfo",
-                    "add-printer-options" : ["-E", "-o printer-is-shared=false", "-u allow:$USER"],
+                    "add-printer-options" : ["-u allow:$USER", "-E", "-o printer-is-shared=false"],
                     "pdf-printer"       : "",
                     "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
                     "debug"             : "",

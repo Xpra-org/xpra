@@ -3613,6 +3613,8 @@ def run_showconfig(options, args):
         k = name_to_field(opt)
         dv = getattr(d, k)
         cv = getattr(options, k, dv)
+        if isinstance(dv, tuple) and isinstance(cv, list):
+            dv = list(dv)
         if cv!=dv:
             w("%-20s  (used)   = %-32s  %s", opt, vstr(otype, cv), type(cv))
             w("%-20s (default) = %-32s  %s", opt, vstr(otype, dv), type(dv))
