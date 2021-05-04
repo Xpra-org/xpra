@@ -243,13 +243,16 @@ def do_load_xdg_menu_data():
                 if prefix is not None:
                     os.environ["XDG_MENU_PREFIX"] = prefix
                 try:
-                    log("parsing xdg menu data for prefix %r", prefix)
+                    log("parsing xdg menu data for prefix %r with XDG_CONFIG_DIRS=%s",
+                        prefix, os.environ.get("XDG_CONFIG_DIRS"))
                     menu = parse()
                     break
                 except Exception as e:
                     log("do_load_xdg_menu_data()", exc_info=True)
                     error = e
                     menu = None
+            if menu:
+                break
     if menu is None:
         if error:
             log.error("Error parsing xdg menu data:")
