@@ -300,6 +300,8 @@ def do_load_xdg_menu_data():
                     log("do_load_xdg_menu_data()", exc_info=True)
                     error = e
                     menu = None
+            if menu:
+                break
     if menu is None:
         if error:
             log.error("Error parsing xdg menu data:")
