@@ -153,7 +153,7 @@ def get_xauthority_path(display_name, username, uid, gid):
         filename = ".Xauthority"
     return os.path.join(pathexpand(d), filename)
 
-def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid=None):
+def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid=None):
     if not POSIX:
         raise InitException("starting an Xvfb is not supported on %s" % os.name)
     if OSX:
@@ -163,21 +163,7 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
 
     cleanups = []
     log = get_vfb_logger()
-    log("start_Xvfb%s", (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, xauth_data, uinput_uuid))
-    xauthority = get_xauthority_path(display_name, username, uid, gid)
-    os.environ["XAUTHORITY"] = xauthority
-    if not os.path.exists(xauthority):
-        log("creating XAUTHORITY=%s with data=%s", xauthority, xauth_data)
-        try:
-            with open(xauthority, "a") as f:
-                if getuid()==0 and (uid!=0 or gid!=0):
-                    os.fchown(f.fileno(), uid, gid)
-        except Exception as e:
-            #trying to continue anyway!
-            log.error("Error trying to create XAUTHORITY file %s:", xauthority)
-            log.error(" %s", e)
-    else:
-        log("found existing XAUTHORITY file '%s'", xauthority)
+    log("start_Xvfb%s", (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid))
     use_display_fd = display_name[0]=='S'
 
     subs = {}
@@ -323,8 +309,6 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
             log("xvfb_cmd=%s", xvfb_cmd)
             xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
                          stdin=PIPE, preexec_fn=preexec)
-
-        xauth_add(xauthority, display_name, xauth_data, uid, gid)
     except Exception as e:
         if xvfb and xvfb.poll() is None:
             log.error(" stopping vfb process with pid %i", xvfb.pid)

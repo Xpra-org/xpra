@@ -2336,45 +2336,57 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
     displays = {}
     if os.path.exists(X11_SOCKET_DIR) and os.path.isdir(X11_SOCKET_DIR):
         for x in os.listdir(X11_SOCKET_DIR):
-            socket_path = os.path.join(X11_SOCKET_DIR, x)
             if not x.startswith("X"):
-                warn("path '%s' does not look like an X11 socket" % socket_path)
+                warn("path '%s' does not look like an X11 socket" % x)
                 continue
             try:
-                v = int(x[1:])
+                display_no = int(x[1:])
             except ValueError:
                 warn("'%s' does not parse as a display number" % x)
                 continue
-            try:
-                #arbitrary: only shadow automatically displays below 10..
-                if max_display_no and v>max_display_no:
-                    #warn("display no %i too high (max %i)" % (v, max_display_no))
-                    continue
-                #check that this is a socket
-                sstat = os.stat(socket_path)
-                if match_uid is not None and sstat.st_uid!=match_uid:
-                    #print("display socket %s does not match uid %i (uid=%i)" % (socket_path, match_uid, sstat.st_uid))
-                    continue
-                if match_gid is not None and sstat.st_gid!=match_gid:
-                    #print("display socket %s does not match gid %i (gid=%i)" % (socket_path, match_gid, sstat.st_gid))
-                    continue
-                is_socket = stat.S_ISSOCK(sstat.st_mode)
-                if not is_socket:
-                    warn("display path '%s' is not a socket!" % socket_path)
-                    continue
-                try:
-                    if VERIFY_X11_SOCKET_TIMEOUT:
-                        sockpath = os.path.join(X11_SOCKET_DIR, "X%i" % v)
-                        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                        sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
-                        sock.connect(sockpath)
-                except OSError:
-                    pass
-                else:
-                    displays[v] = (sstat.st_uid, sstat.st_gid, )
-            except Exception as e:
-                warn("failure on %s: %s" % (socket_path, e))
+            #arbitrary: only shadow automatically displays below 10..
+            if max_display_no and display_no>max_display_no:
+                #warn("display no %i too high (max %i)" % (v, max_display_no))
+                continue
+            stat = stat_X11_display(display_no)
+            if not stat:
+                continue
+            uid = stat.get("uid", -1)
+            gid = stat.get("gid", -1)
+            if match_uid is not None and uid!=match_uid:
+                #print("display socket %s does not match uid %i (uid=%i)" % (socket_path, match_uid, sstat.st_uid))
+                continue
+            if match_gid is not None and gid!=match_gid:
+                #print("display socket %s does not match gid %i (gid=%i)" % (socket_path, match_gid, sstat.st_gid))
+                continue
+            displays[display_no] = (uid, gid, )
     return displays
+
+def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
+    socket_path = os.path.join(X11_SOCKET_DIR, "X%i" % display_no)
+    try:
+        #check that this is a socket
+        sstat = os.stat(socket_path)
+        is_socket = stat.S_ISSOCK(sstat.st_mode)
+        if not is_socket:
+            warn("display path '%s' is not a socket!" % socket_path)
+            return {}
+        try:
+            if timeout>0:
+                sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
+                sock.connect(socket_path)
+        except OSError:
+            return {}
+        else:
+            return {
+                "uid"   : sstat.st_uid,
+                "gid"   : sstat.st_gid,
+                }
+    except Exception as e:
+        warn("failure on %s: %s" % (socket_path, e))
+    return {}
+
 
 def guess_X11_display(dotxpra, current_display, uid=getuid(), gid=getgid()):
     displays = [":%s" % x for x in find_X11_displays(max_display_no=10, match_uid=uid, match_gid=gid)]

@@ -12,12 +12,14 @@
 import sys
 import os.path
 import atexit
+import datetime
 import traceback
 
 from xpra.scripts.main import (
     info, warn,
     no_gtk, bypass_no_gtk,
     validate_encryption, parse_env, configure_env,
+    stat_X11_display,
     )
 from xpra.scripts.config import InitException, FALSE_OPTIONS, parse_bool
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
@@ -26,6 +28,7 @@ from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
     force_quit,
+    get_rand_chars,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
     )
@@ -594,7 +597,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         # environment:
         write_runner_shell_scripts(script)
 
-    import datetime
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "")=="1"
     if start_vfb or log_to_file:
@@ -677,36 +679,74 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     xvfb = None
     xvfb_pid = None
     uinput_uuid = None
-    if start_vfb and use_display is None:
-        #use-display='auto' so we have to figure out
-        #if we have to start the vfb or not:
-        if not display_name:
-            use_display = False
+    xauthority = None
+    if start_vfb or clobber:
+        #XAUTHORITY
+        from xpra.x11.vfb_util import (
+            start_Xvfb, check_xvfb_process, parse_resolution,
+            get_xauthority_path,
+            xauth_add,
+            )
+        xauthority = get_xauthority_path(display_name, username, uid, gid)
+        os.environ["XAUTHORITY"] = xauthority
+        if not os.path.exists(xauthority):
+            log("creating XAUTHORITY file '%s'", xauthority)
+            try:
+                with open(xauthority, "a") as f:
+                    if getuid()==0 and (uid!=0 or gid!=0):
+                        os.fchown(f.fileno(), uid, gid)
+            except Exception as e:
+                #trying to continue anyway!
+                log.error("Error trying to create XAUTHORITY file %s:", xauthority)
+                log.error(" %s", e)
         else:
-            progress(20, "connecting to the display")
-            if verify_display(None, display_name, log_errors=False, timeout=1)==0:
-                start_vfb = False
-                #we have loaded gtk:
-                bypass_no_gtk()
+            log("found existing XAUTHORITY file '%s'", xauthority)
+        #resolve use-display='auto':
+        if use_display is None:
+            #figure out if we have to start the vfb or not:
+            if not display_name:
+                use_display = False
+            else:
+                progress(20, "connecting to the display")
+                display_no = int(display_name[1:])
+                stat = stat_X11_display(display_no)
+                log("stat_X11_display(%i)=%s", display_no, stat)
+                if not stat:
+                    #no X11 socket to connect to, so we have to start one:
+                    start_vfb = True
+                elif verify_display(None, display_name, log_errors=False, timeout=1)==0:
+                    #accessed OK:
+                    start_vfb = False
+                    #we have already loaded gtk in 'verify_display':
+                    bypass_no_gtk()
+                else:
+                    #verify failed but we can stat the X11 server socket...
+                    #perhaps we need to re-add an xauth entry
+                    xauth_add(xauthority, display_name, xauth_data, uid, gid)
+                    if verify_display(None, display_name, log_errors=False, timeout=1)!=0:
+                        warn("display %s is not accessible" % (display_name,))
+                    else:
+                        #now OK!
+                        start_vfb = False
     if start_vfb:
         progress(20, "starting a virtual display")
         assert not proxying and xauth_data
         pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
-        from xpra.x11.vfb_util import start_Xvfb, check_xvfb_process, parse_resolution
         from xpra.server.server_util import has_uinput
         uinput_uuid = None
         if has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing:
-            from xpra.os_util import get_rand_chars
             uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
         vfb_geom = ""
         try:
             vfb_geom = parse_resolution(opts.resize_display)
         except Exception:
             pass
+
         xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
-                                                  uid, gid, username, xauth_data, uinput_uuid)
+                                                  uid, gid, username, uinput_uuid)
         for f in cleanups:
             add_cleanup(f)
+        xauth_add(xauthority, display_name, xauth_data, uid, gid)
         xvfb_pid = xvfb.pid
         #always update as we may now have the "real" display name:
         os.environ["DISPLAY"] = display_name
@@ -718,14 +758,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         def check_xvfb(timeout=0):
             return check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb)
     else:
-        if POSIX and clobber:
-            #if we're meant to be using a private XAUTHORITY file,
-            #make sure to point to it:
-            from xpra.x11.vfb_util import get_xauthority_path
-            xauthority = get_xauthority_path(display_name, username, uid, gid)
-            if os.path.exists(xauthority):
-                log("found XAUTHORITY=%s", xauthority)
-                os.environ["XAUTHORITY"] = xauthority
         def check_xvfb(timeout=0):  #pylint: disable=unused-argument
             return True
 
