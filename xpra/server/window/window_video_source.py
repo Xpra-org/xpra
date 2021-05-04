@@ -16,6 +16,7 @@ from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PI
 from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB, LOSSLESS_WINDOW_TYPES,
+    DOWNSCALE_THRESHOLD,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
@@ -1487,8 +1488,23 @@ class WindowVideoSource(WindowSource):
                     sscaling = {}
                     mrs = get_min_required_scaling()
                     min_ratio = mrs[0]/mrs[1]
+                    denom_mult = 1
+                    if crs:
+                        #if the client will be downscaling to paint the window
+                        #use this downscaling as minimum value:
+                        crsw, crsh = crs
+                        if crsw>0 and crsh>0 and width-crsw>DOWNSCALE_THRESHOLD and height-crsh>DOWNSCALE_THRESHOLD:
+                            if width/crsw>height/crsh:
+                                denom_mult = width/crsw
+                            else:
+                                denom_mult = height/crsh
                     for num, denom in SCALING_OPTIONS:
+                        if denom_mult>1 and 0.5<(num/denom)<1:
+                            #skip ratios like 2/3
+                            #since we want a whole multiple of the client scaling value
+                            continue
                         #scaled pixels per second value:
+                        denom *= denom_mult
                         spps = pps*(num**2)/(denom**2)
                         ratio = target/spps
                         #ideal ratio is 1, measure distance from 1:
@@ -1502,8 +1518,8 @@ class WindowVideoSource(WindowSource):
                             #higher than minimum, should not be used unless we have no choice:
                             score = int(score*100)
                         sscaling[score] = (num, denom)
-                    scalinglog("calculate_scaling%s wid=%i, pps=%s, target=%s, scores=%s",
-                               (width, height, max_w, max_h), self.wid, pps, target, sscaling)
+                    scalinglog("calculate_scaling%s wid=%i, pps=%s, target=%s, denom_mult=%s, scores=%s",
+                               (width, height, max_w, max_h), self.wid, pps, target, denom_mult, sscaling)
                     if sscaling:
                         highscore = sorted(sscaling.keys())[0]
                         scaling = sscaling[highscore]
