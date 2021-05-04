@@ -243,6 +243,7 @@ def do_load_xdg_menu_data():
                 if prefix is not None:
                     os.environ["XDG_MENU_PREFIX"] = prefix
                 try:
+                    log("parsing xdg menu data for prefix %r", prefix)
                     menu = parse()
                     break
                 except Exception as e:
@@ -257,15 +258,22 @@ def do_load_xdg_menu_data():
             log.error(" or an invalid system menu configuration")
         return None
     menu_data = {}
-    for submenu in menu.getEntries():
-        if isinstance(submenu, Menu) and submenu.Visible:
-            name = submenu.getName()
-            try:
-                menu_data[name] = load_xdg_menu(submenu)
-            except Exception as e:
-                log("load_xdg_menu_data()", exc_info=True)
-                log.error("Error loading submenu '%s':", name)
-                log.error(" %s", e)
+    entries = tuple(menu.getEntries())
+    log("%s.getEntries()=%s", menu, entries)
+    for submenu in entries:
+        name = submenu.getName()
+        if not isinstance(submenu, Menu):
+            log("entry '%s' is not a submenu", name)
+            continue
+        if not submenu.Visible:
+            log("submenu '%s' is not visible", name)
+            continue
+        try:
+            menu_data[name] = load_xdg_menu(submenu)
+        except Exception as e:
+            log("load_xdg_menu_data()", exc_info=True)
+            log.error("Error loading submenu '%s':", name)
+            log.error(" %s", e)
     return menu_data
 
 
