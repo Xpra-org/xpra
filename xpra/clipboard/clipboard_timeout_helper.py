@@ -13,9 +13,13 @@ from xpra.platform.features import CLIPBOARD_GREEDY
 log = Logger("clipboard")
 
 CONVERT_TIMEOUT = envint("XPRA_CLIPBOARD_CONVERT_TIMEOUT", 100)
-REMOTE_TIMEOUT = envint("XPRA_CLIPBOARD_REMOTE_TIMEOUT", 1500)
-assert 0<CONVERT_TIMEOUT<5000
-assert 0<REMOTE_TIMEOUT<5000
+if not 0<CONVERT_TIMEOUT<=5000:
+    log.warn("Warning: invalid value for 'XPRA_CLIPBOARD_CONVERT_TIMEOUT'")
+    CONVERT_TIMEOUT = max(0, min(5000, CONVERT_TIMEOUT))
+REMOTE_TIMEOUT = envint("XPRA_CLIPBOARD_REMOTE_TIMEOUT", 2500)
+if not 0<REMOTE_TIMEOUT<=5000:
+    log.warn("Warning: invalid value for 'XPRA_CLIPBOARD_REMOTE_TIMEOUT'")
+    REMOTE_TIMEOUT = max(0, min(5000, REMOTE_TIMEOUT))
 
 
 class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
