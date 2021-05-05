@@ -347,7 +347,7 @@ mv ./libgst*.dll ./lib/gstreamer-1.0/
 #but the main gstreamer lib does:
 mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
 #and the gstreamer support libraries look like plugins but those are actual DLLs:
-mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
+mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/gstreamer-1.0/libwavpack* ./lib/
 #move most DLLs to /lib
 mv *dll lib/
 #but keep the core DLLs (python, gcc, etc):
