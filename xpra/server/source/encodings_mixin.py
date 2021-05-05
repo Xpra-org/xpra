@@ -362,9 +362,15 @@ class EncodingsMixin(StubSourceMixin):
         common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
         from xpra.codecs.loader import has_codec
         if "jpeg" in common_encodings and has_codec("enc_nvjpeg"):
-            from xpra.codecs.cuda_common.cuda_context import get_device_context
-            self.cuda_device_context = get_device_context(self.encoding_options)
-            log("cuda_device_context=%s", self.cuda_device_context)
+            try:
+                from xpra.codecs.cuda_common.cuda_context import get_device_context
+                self.cuda_device_context = get_device_context(self.encoding_options)
+                log("cuda_device_context=%s", self.cuda_device_context)
+            except Exception as e:
+                log("failed to get a cuda device contenxt using encoding options %s",
+                    self.encoding_options, exc_info=True)
+                log.error("Error: failed to allocate a CUDA context")
+                log.error(" NVJPEG will not be available")
 
     def print_encoding_info(self):
         log("print_encoding_info() core-encodings=%s, server-core-encodings=%s",
