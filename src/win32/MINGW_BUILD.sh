@@ -292,7 +292,7 @@ mv ./libgst*.dll ./lib/gstreamer-1.0/
 #but the main gstreamer lib does:
 mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
 #and the gstreamer support libraries look like plugins but those are actual DLLs:
-mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
+mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/gstreamer-1.0/libwavpack* ./lib/
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	#move most DLLs to /lib
 	mv *dll lib/
