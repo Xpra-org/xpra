@@ -1,5 +1,6 @@
 # Xpra Documentation Index
 
+[FAQ](./FAQ.md)
 
 ## [Usage](./Usage/README.md)
 
