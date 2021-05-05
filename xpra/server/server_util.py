@@ -26,10 +26,23 @@ def source_env(source=()):
 def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     import json
     import subprocess
+    from xpra.log import Logger
+    log = Logger("exec")
     source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", file_to_source_path)
     dump = '/usr/bin/python -c "import os, json;print(json.dumps(dict(os.environ)))"'
-    pipe = subprocess.Popen(['/bin/bash', '-c', '%s && %s' % (source, dump)], stdout=subprocess.PIPE)
-    return json.loads(pipe.stdout.read())
+    try:
+        proc = subprocess.Popen(['/bin/bash', '-c', '%s && %s' % (source, dump)], stdout=subprocess.PIPE)
+        out = proc.communicate()[0]
+        if proc.returncode!=0:
+            log.warn("Error %i running source script for '%s'", proc.returncode, file_to_source_path)
+    except OSError:
+        log("env_from_sourcing%s", (file_to_source_path, include_unexported_variables), exc_info=True)
+    log("json(%s)=%r", file_to_source_path, out)
+    try:
+        return json.loads(out)
+    except json.decoder.JSONDecodeError:
+        log.error("Error decoding json output from sourcing script '%s'", file_to_source_path, exc_info=True)
+        return {}
 
 
 if PYTHON3:
