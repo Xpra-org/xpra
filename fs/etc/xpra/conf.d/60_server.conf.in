@@ -15,10 +15,10 @@ log-file = $DISPLAY.log
 start-via-proxy = no
 
 # Scripts that can modify the environment of the server:
-# source = /etc/xpra/server.env
+#source = /etc/xpra/server.env
 
 # Scripts that can modify the environment of the commands started by the server:
-# source-start = /etc/profile
+#source-start = /etc/profile
 # This one is useful for avoiding delays when running gnome applications:
 #source-start = gnome-keyring-daemon -s
 
