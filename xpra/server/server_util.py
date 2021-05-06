@@ -35,13 +35,19 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         proc = subprocess.Popen(['/bin/bash', '-c', '%s && %s' % (source, dump)], stdout=subprocess.PIPE)
         out = proc.communicate()[0]
         if proc.returncode!=0:
-            log.warn("Error %i running source script for '%s'", proc.returncode, file_to_source_path)
-    except OSError:
+            log.error("Error %i running source script '%s'", proc.returncode, file_to_source_path)
+    except OSError as e:
         log("env_from_sourcing%s", (file_to_source_path, include_unexported_variables), exc_info=True)
+        log(" stdout=%r (%s)", out, type(out))
+        log.error("Error running source script '%s'", proc.returncode, file_to_source_path)
+        log.error(" %s", e)
+        return {}
     log("json(%s)=%r", file_to_source_path, out)
+    if not out:
+        return {}
     try:
-        return json.loads(out)
-    except json.decoder.JSONDecodeError:
+        return json.loads(out.decode())
+    except (json.decoder.JSONDecodeError, UnicodeDecodeError):
         log.error("Error decoding json output from sourcing script '%s'", file_to_source_path, exc_info=True)
         return {}
 
