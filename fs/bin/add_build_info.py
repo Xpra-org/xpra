@@ -297,6 +297,8 @@ def get_vcs_props():
             branch_out = out.decode("utf-8").splitlines()
             if branch_out:
                 branch = branch_out[0]
+                if branch.startswith("* "):
+                    branch = branch[2:]
                 break
     if not branch:
         print("Warning: could not get branch information")
