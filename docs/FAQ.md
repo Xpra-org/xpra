@@ -45,6 +45,8 @@ Or you may want to add each application individually using a `start` option for 
 
 
 ## Problems
+### Some gnome applications take a long time to start (ie: `gnome-terminal`)
+Try adding `--source-start=gnome-keyring-daemon` to your server. (see [gnome-terminal takes too long to launch](https://github.com/Xpra-org/xpra/issues/3109), not supported with older versions so use `--start=gnome-keyring-daemon` instead)
 ### My xpra seamless or desktop session has crashed! Can I recover it?
 Generally yes, as long as the virtual display server (vfb) has not crashed.\
 If the xpra server is completely gone, you can start a new one to re-use the existing display.\
