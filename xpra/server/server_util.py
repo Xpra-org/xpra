@@ -7,7 +7,13 @@ import sys
 import os.path
 
 from xpra.util import envbool
-from xpra.os_util import OSX, POSIX, shellsub, getuid, get_util_logger, osexpand, umask_context
+from xpra.os_util import (
+    OSX, POSIX,
+    which,
+    shellsub, getuid,
+    get_util_logger,
+    osexpand, umask_context,
+    )
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
@@ -29,27 +35,67 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     import subprocess
     from xpra.log import Logger
     log = Logger("exec")
-    source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", file_to_source_path)
-    dump = '/usr/bin/python -c "import os, json;print(json.dumps(dict(os.environ)))"'
+    filename = file_to_source_path
+    if not os.path.exists(file_to_source_path):
+        filename = which(file_to_source_path)
+        if not filename:
+            log.error("Error: cannot find file '%s' to source")
+            return {}
+    if not os.path.isabs(filename):
+        filename = os.path.abspath(filename)
+    #figure out if this is a script to source,
+    #or if we're meant to execute it directly
     try:
-        proc = subprocess.Popen(['/bin/bash', '-c', '%s && %s' % (source, dump)], stdout=subprocess.PIPE)
+        with open(filename, 'rb') as f:
+            first_line = f.readline()
+    except OSError as e:
+        log.error("Error: failed to read from '%s'", filename)
+        log.error(" %s", e)
+        first_line = b""
+    if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
+        cmd = [filename]
+        def decode(out):
+            env = {}
+            for line in out.splitlines():
+                parts = line.split("=", 1)
+                if len(parts)==2:
+                    env[parts[0]] = parts[1]
+            log("decode(%r)=%s", out, env)
+            return env
+    else:
+        source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", filename)
+        dump = '/usr/bin/python -c "import os, json;print(json.dumps(dict(os.environ)))"'
+        cmd = ['/bin/bash', '-c', '%s && %s' % (source, dump)]
+        def decode(out):
+            try:
+                env = json.loads(out)
+                log("json loads(%r)=%s", out, env)
+                return env
+            except json.decoder.JSONDecodeError:
+                log.error("Error decoding json output from sourcing script '%s'",
+                          file_to_source_path, exc_info=True)
+                return {}
+    try:
+        log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         out = proc.communicate()[0]
         if proc.returncode!=0:
-            log.error("Error %i running source script '%s'", proc.returncode, file_to_source_path)
+            log.error("Error %i running source script '%s'", proc.returncode, filename)
     except OSError as e:
-        log("env_from_sourcing%s", (file_to_source_path, include_unexported_variables), exc_info=True)
+        log("env_from_sourcing%s", (filename, include_unexported_variables), exc_info=True)
         log(" stdout=%r (%s)", out, type(out))
         log.error("Error running source script '%s'", proc.returncode, file_to_source_path)
         log.error(" %s", e)
         return {}
-    log("json(%s)=%r", file_to_source_path, out)
+    log("stdout(%s)=%r", filename, out)
     if not out:
         return {}
     try:
-        return json.loads(out.decode())
-    except (json.decoder.JSONDecodeError, UnicodeDecodeError):
-        log.error("Error decoding json output from sourcing script '%s'", file_to_source_path, exc_info=True)
+        out = out.decode()
+    except UnicodeDecodeError:
+        log.error("Error decoding output from '%s'", filename, exc_info=True)
         return {}
+    return decode(out)
 
 
 def sh_quotemeta(s):
