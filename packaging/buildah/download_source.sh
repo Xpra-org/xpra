@@ -15,35 +15,38 @@ function specver() {
 }
 function fetch() {
 	SPECNAME=$1
-	FILENAME=$2
-	URL=$3
 	VERSION=$(specver $SPECNAME)
 	if [ -z "${VERSION}" ]; then
 		echo "no ${version} found in $SPECNAME"
 		exit 1
 	fi
-	REAL_FILENAME="${FILENAME/\%\{version\}/$VERSION}"
+	URL=`rpmspec -P ../rpm/$SPECNAME.spec | grep "Source.*:" | awk '{print $2}'`
+	if [ -z "${URL}" ]; then
+		echo "no Source URL found in $SPECNAME"
+		exit 1
+	fi
+	FILENAME=`echo $URL | awk -F/ '{print $NF}'`
 	REAL_URL="${URL/\%\{version\}/$VERSION}"
-	if [ -e "${REAL_FILENAME}" ]; then
-		echo "found ${REAL_FILENAME}"
+	if [ -e "${FILENAME}" ]; then
+		echo "found ${FILENAME}"
 	else
-		echo "downloading $FILENAME"
-		curl --output "${REAL_FILENAME}" -L "${REAL_URL}/${REAL_FILENAME}"
+		echo "downloading $FILENAME from ${REAL_URL}"
+		curl --output "${FILENAME}" -L "${REAL_URL}"
 	fi
 }
 pushd pkgs
 X264_COMMIT=`grep "%define commit" ../rpm/x264-xpra.spec  | awk '{print $3}'`
-fetch "x264-xpra"        "${X264_COMMIT}.zip"                    "https://github.com/mirror/x264/archive"
-fetch "ffmpeg-xpra"      "ffmpeg-%{version}.tar.xz"              "http://www.ffmpeg.org/releases"
-fetch "gstreamer1-plugin-timestamp" "gst-plugin-timestamp-%{version}.tar.xz" "https://xpra.org/src"
-fetch "libfakeXinerama"  "libfakeXinerama-%{version}.tar.bz2"    "https://xpra.org/src"
-fetch "python3-cairo"    "pycairo-%{version}.tar.gz"             "https://github.com/pygobject/pycairo/releases/download/v%{version}"
-fetch "python3-pycuda"   "pycuda-%{version}.tar.gz"              "https://files.pythonhosted.org/packages/46/61/47d3235a4c13eec5a5f03594ddb268f4858734e02980afbcd806e6242fa5"
-fetch "python3-pynvml"   "nvidia-ml-py-%{version}.tar.gz"        "https://files.pythonhosted.org/packages/4c/e7/f6fef887708f601cda64c8fd48dcb80a0763cb6ee4eaf89939bdc165ce41"
-fetch "python3-pyopengl" "PyOpenGL-%{version}.tar.gz"            "https://files.pythonhosted.org/packages/b8/73/31c8177f3d236e9a5424f7267659c70ccea604dab0585bfcd55828397746"
-fetch "python3-pyopengl" "PyOpenGL-accelerate-%{version}.tar.gz" "https://files.pythonhosted.org/packages/a2/3c/f42a62b7784c04b20f8b88d6c8ad04f4f20b0767b721102418aad94d8389"
-fetch "python3-pytools"  "pytools-%{version}.tar.gz"             "https://files.pythonhosted.org/packages/16/ed/f4b298876b9b624150cc01830075f7cb0b9e09c1abfc46daef14811f3eed"
-fetch "python3-pytools"  "pytools-%{version}.tar.gz"             "https://files.pythonhosted.org/packages/16/ed/f4b298876b9b624150cc01830075f7cb0b9e09c1abfc46daef14811f3eed"
+fetch "x264-xpra"
+fetch "ffmpeg-xpra"
+fetch "gstreamer1-plugin-timestamp"
+fetch "libfakeXinerama"
+fetch "python3-cairo"
+fetch "python3-pycuda"
+fetch "python3-pynvml"
+fetch "python3-pyopengl"
+fetch "python3-pyopengl"
+fetch "python3-pytools"
+fetch "python3-pytools"
 #libyuv (use github mirror to download an archive)
-fetch "libyuv"           "19d71f6b351fe992ae34b114eebd872c383a6bdb.zip" "https://github.com/lemenkov/libyuv/archive/"
+fetch "libyuv"
 popd
