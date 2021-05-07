@@ -765,7 +765,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         with xswallow:
             self.last_raised = wid
             window.raise_window()
-        window.give_client_focus()
+            window.give_client_focus()
         if server_source and modifiers is not None:
             make_keymask_match = getattr(server_source, "make_keymask_match", None)
             if make_keymask_match:
