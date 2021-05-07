@@ -9,7 +9,7 @@ from gi.repository import GObject, Gtk, Gdk
 from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
-from xpra.gtk_common.error import XError, XSwallowContext
+from xpra.gtk_common.error import XError, XSwallowContext, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
@@ -808,12 +808,15 @@ class WindowModel(BaseWindowModel):
     def give_client_focus(self):
         """The focus manager has decided that our client should receive X
         focus.  See world_window.py for details."""
+        log("give_client_focus() corral_window=%s", self.corral_window)
         if self.corral_window:
-            with xswallow:
+            with xlog:
                 self.do_give_client_focus()
 
     def do_give_client_focus(self):
-        focuslog("Giving focus to %#x", self.xid)
+        protocols = self.get_property("protocols")
+        focuslog("Giving focus to %#x, input_field=%s, FORCE_XSETINPUTFOCUS=%s, protocols=%s",
+                 self.xid, self._input_field, FORCE_XSETINPUTFOCUS, protocols)
         # Have to fetch the time, not just use CurrentTime, both because ICCCM
         # says that WM_TAKE_FOCUS must use a real time and because there are
         # genuine race conditions here (e.g. suppose the client does not
@@ -836,7 +839,7 @@ class WindowModel(BaseWindowModel):
         if bool(self._input_field) or FORCE_XSETINPUTFOCUS:
             focuslog("... using XSetInputFocus")
             X11Window.XSetInputFocus(self.xid, now)
-        if "WM_TAKE_FOCUS" in self.get_property("protocols"):
+        if "WM_TAKE_FOCUS" in protocols:
             focuslog("... using WM_TAKE_FOCUS")
             send_wm_take_focus(self.client_window, now)
         self.set_active()
