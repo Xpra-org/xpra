@@ -43,7 +43,7 @@ class WindowServer(StubServerMixin):
                 w, h = pv
                 assert w>=0 and h>0 and w<32768 and h<32768
                 return w, h
-            except:
+            except Exception:
                 return default_value
         self.window_min_size = parse_window_size(opts.min_size, (0, 0))
         self.window_max_size = parse_window_size(opts.max_size, (2**15-1, 2**15-1))
