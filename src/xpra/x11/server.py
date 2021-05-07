@@ -776,6 +776,7 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         focuslog("focus: giving focus to %s", window)
         with xswallow:
+            self.last_raised = wid
             window.raise_window()
         window.give_client_focus()
         if server_source and modifiers is not None:
