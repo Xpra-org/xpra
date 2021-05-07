@@ -1396,6 +1396,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         protocols = []
         if XGetWMProtocols(self.display, xwindow, &protocols_return, &count_return):
             while i<count_return:
-                protocols.append(self.XGetAtomName(protocols_return[i]))
+                protocol = self.XGetAtomName(protocols_return[i])
+                protocols.append(protocol.decode("latin1"))
                 i += 1
         return protocols
