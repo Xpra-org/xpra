@@ -217,16 +217,24 @@ class WindowModel(BaseWindowModel):
         geom = X11Window.geometry_with_border(self.xid)
         if geom is None:
             raise Unmanageable("window %#x disappeared already" % self.xid)
-        w, h = geom[2:4]
+        nx, ny, w, h = geom[:4]
         hints = self.get_property("size-hints")
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = self.calc_constrained_size(w, h, hints)
-        self._updateprop("geometry", (x, y, nw, nh))
-        geomlog("setup() resizing windows to %sx%s", nw, nh)
-        #don't trigger a resize unless we have to:
-        if ow!=nw or oh!=nh:
+        if ox==nx==0 and oy==ny==0:
+            pos = hints.get("position")
+            if pos:
+                nx, ny = pos
+        self._updateprop("geometry", (nx, ny, nw, nh))
+        geomlog("setup() resizing windows to %sx%s, moving to %i,%i", nw, nh, nx, ny)
+        #don't trigger a move or resize unless we have to:
+        if (ox,oy)!=(nx,ny) and (ow,oh)!=(nw,nh):
+            self.corral_window.move_resize(nx, ny, nw, nh)
+        elif (ox,oy)!=(nx,ny):
+            self.corral_window.move(nx, ny)
+        elif (ow,oh)!=(nw,nh):
             self.corral_window.resize(nw, nh)
-        if w!=nw or h!=nh:
+        if (ow,oh)!=(nw,nh):
             self.client_window.resize(nw, nh)
         self.client_window.show_unraised()
         #this is here to trigger X11 errors if any are pending
