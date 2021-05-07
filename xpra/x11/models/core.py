@@ -1,11 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import signal
+from socket import gethostname
 from gi.repository import GObject, Gdk, GLib
 
 from xpra.util import envbool, first_time
@@ -770,7 +771,6 @@ class CoreX11WindowModel(WindowModelStub):
     def force_quit(self):
         pid = self.get_property("pid")
         machine = self.get_property("client-machine")
-        from socket import gethostname
         localhost = gethostname()
         log("force_quit() pid=%s, machine=%s, localhost=%s", pid, machine, localhost)
         def XKill():
@@ -778,20 +778,22 @@ class CoreX11WindowModel(WindowModelStub):
                 X11Window.XKillClient(self.xid)
         if pid > 0 and machine is not None and machine == localhost:
             if pid==os.getpid():
-                log.warn("force_quit() refusing to kill ourselves!")
+                log.warn("Warning: force_quit is refusing to kill ourselves!")
                 return
             if self._kill_count==0:
                 #first time around: just send a SIGINT and hope for the best
                 try:
                     os.kill(pid, signal.SIGINT)
-                except OSError:
-                    log.warn("failed to kill(SIGINT) client with pid %s", pid)
+                except OSError as e:
+                    log.warn("Warning: failed to kill(SIGINT) client with pid %s", pid)
+                    log.warn(" %s", e)
             else:
                 #the more brutal way: SIGKILL + XKill
                 try:
                     os.kill(pid, signal.SIGKILL)
-                except OSError:
-                    log.warn("failed to kill(SIGKILL) client with pid %s", pid)
+                except OSError as e:
+                    log.warn("Warning: failed to kill(SIGKILL) client with pid %s", pid)
+                    log.warn(" %s", e)
                 XKill()
             self._kill_count += 1
             return
