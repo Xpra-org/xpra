@@ -734,7 +734,7 @@ class CoreX11WindowModel(WindowModelStub):
     ################################
 
     def request_close(self):
-        if b"WM_DELETE_WINDOW" in self.get_property("protocols"):
+        if "WM_DELETE_WINDOW" in self.get_property("protocols"):
             with xswallow:
                 send_wm_delete_window(self.client_window)
         else:
