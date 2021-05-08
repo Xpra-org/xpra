@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -23,13 +23,13 @@ def get_listener_class():
             from xpra.net.mdns.avahi_listener import AvahiListener
             log("AvahiListener=%s", AvahiListener)
             return AvahiListener
-        except ImportError as e:
-            log("failed to import AvahiListener: %s", e)
+        except ImportError:
+            log("failed to import AvahiListener", exc_info=True)
     if ZEROCONF:
         try:
             from xpra.net.mdns.zeroconf_listener import ZeroconfListener
             log("ZeroconfListener=%s", ZeroconfListener)
             return ZeroconfListener
-        except ImportError as e:
-            log("failed to import ZeroconfListener: %s", e)
+        except ImportError:
+            log("failed to import ZeroconfListener", exc_info=True)
     return None
