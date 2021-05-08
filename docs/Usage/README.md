@@ -54,6 +54,20 @@ xpra attach tcp://SERVERHOST:10000/
 
 Beware: this TCP socket is insecure, see [authentication](./Authentication.md).
 </details>
+<details>
+  <summary>Attach with session files</summary>
+  Typing the same attach commands over and over again can be tedious, especially if you tweak the command line options.
+
+  Instead, you can create session files and just double-click on them to connect to the session:
+  ```shell
+cat > ~/Desktop/example.xpra
+mode=ssh
+host=YOURSERVER
+speaker=off
+```
+  These session files accept all the same options that you would normally specify on the command line.  
+The [html5 client](https://github.com/Xpra-org/xpra-html5) can also generate them.
+</details>
 
 ***
 
