@@ -1893,7 +1893,7 @@ if gtk_x11_ENABLED:
                 ))
     cython_add(Extension("xpra.x11.gtk3.gdk_bindings",
                 ["xpra/x11/gtk3/gdk_bindings.pyx", "xpra/x11/gtk3/gdk_x11_macros.c"],
-                **pkgconfig("gdk-3.0")
+                **pkgconfig("gdk-3.0", "xdamage")
                 ))
 
 if client_ENABLED and gtk3_ENABLED:
