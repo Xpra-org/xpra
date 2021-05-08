@@ -67,9 +67,9 @@
 
 	<distutils id="python3-ifaddr" python3="1">
 		<branch repo="pypi.python.org"
-			module="/packages/9f/54/d92bda685093ebc70e2057abfa83ef1b3fb0ae2b6357262a3e19dfe96bb8/ifaddr-0.1.6.tar.gz"
-			hash="sha256:c19c64882a7ad51a394451dabcbbed72e98b5625ec1e79789924d5ea3e3ecb93"
-			version="0.1.6"/>
+			module="/packages/3d/fc/4ce147e3997cd0ea470ad27112087545cf83bf85015ddb3054673cb471bb/ifaddr-0.1.7.tar.gz"
+			hash="sha256:1f9e8a6ca6f16db5a37d3356f07b6e52344f6f9f7e806d618537731669eb1a94
+			version="0.1.7"/>
 		<after>
 			<dep package="python3"/>
 		</after>
@@ -77,9 +77,9 @@
 
 	<distutils id="python3-zeroconf" python3="1">
 		<branch repo="files.pythonhosted.org"
-			module="/packages/4b/21/a09b4a8fdd0f9068c8134de31c4258f43c1c35352e89bdcb8994dae180d9/zeroconf-0.28.8.tar.gz"
-			hash="sha256:4be24a10aa9c73406f48d42a8b3b077c217b0e8d7ed1e57639630da520c25959"
-			version="0.28.8"/>
+			module="/packages/13/67/4b5036d2bbbdfbde0bc1c31581280416e1915f7390715c27eca46dbfff8d/zeroconf-0.30.0.tar.gz"
+			hash="sha256:7a5a6366ae05a48db04dfd5c8882ee98a13f2d0e1fc6d09a5f1bd0a3d1d109c7"
+			version="0.30.0"/>
 		<dependencies>
 			<dep package="python3-ifaddr"/>
 			<dep package="python3-enum-compat"/>
