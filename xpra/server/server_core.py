@@ -271,6 +271,9 @@ class ServerCore:
         self._ssl_attributes = get_ssl_attributes(opts, True)
         netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 
+    def validate(self):
+        return True
+
     def server_ready(self):
         return True
 

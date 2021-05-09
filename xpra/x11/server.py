@@ -218,7 +218,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             with xlog:
                 set_initial_resolution(self.initial_resolution or DEFAULT_VFB_RESOLUTION)
 
-    def server_ready(self):
+    def validate(self):
         if not X11Window.displayHasXComposite():
             log.error("Xpra 'start' subcommand runs as a compositing manager")
             log.error(" it cannot use a display which lacks the XComposite extension!")

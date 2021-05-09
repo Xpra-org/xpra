@@ -876,33 +876,34 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         log("gui_init()")
         gui_init()
 
-    progress(50, "creating local sockets")
-    #setup unix domain socket:
-    netlog = get_network_logger()
-    local_sockets = setup_local_sockets(opts.bind,
-                                        opts.socket_dir, opts.socket_dirs,
-                                        display_name, clobber,
-                                        opts.mmap_group, opts.socket_permissions,
-                                        username, uid, gid)
-    netlog("setting up local sockets: %s", local_sockets)
-    sockets.update(local_sockets)
-    if POSIX and (starting or upgrading or starting_desktop or upgrading_desktop):
-        #all unix domain sockets:
-        ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
-        if ud_paths:
-            #choose one so our xdg-open override script can use to talk back to us:
-            if opts.forward_xdg_open:
-                for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
-                    xdg_override = os.path.join(x, "xdg-open")
-                    if os.path.exists(xdg_override):
-                        os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
-                        os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
-                        break
-        else:
-            log.warn("Warning: no local server sockets,")
-            if opts.forward_xdg_open:
-                log.warn(" forward-xdg-open cannot be enabled")
-            log.warn(" non-embedded ssh connections will not be available")
+    def init_local_sockets():
+        progress(60, "initializing local sockets")
+        #setup unix domain socket:
+        netlog = get_network_logger()
+        local_sockets = setup_local_sockets(opts.bind,
+                                            opts.socket_dir, opts.socket_dirs,
+                                            display_name, clobber,
+                                            opts.mmap_group, opts.socket_permissions,
+                                            username, uid, gid)
+        netlog("setting up local sockets: %s", local_sockets)
+        sockets.update(local_sockets)
+        if POSIX and (starting or upgrading or starting_desktop or upgrading_desktop):
+            #all unix domain sockets:
+            ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
+            if ud_paths:
+                #choose one so our xdg-open override script can use to talk back to us:
+                if opts.forward_xdg_open:
+                    for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
+                        xdg_override = os.path.join(x, "xdg-open")
+                        if os.path.exists(xdg_override):
+                            os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
+                            os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
+                            break
+            else:
+                log.warn("Warning: no local server sockets,")
+                if opts.forward_xdg_open:
+                    log.warn(" forward-xdg-open cannot be enabled")
+                log.warn(" non-embedded ssh connections will not be available")
 
     set_server_features(opts)
 
@@ -917,7 +918,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if uinput_uuid:
             save_uinput_id(uinput_uuid)
 
-    progress(60, "initializing server")
+    progress(40, "initializing server")
     if shadowing:
         app = make_shadow_server()
     elif proxying:
@@ -934,7 +935,9 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.exec_cwd = opts.chdir or cwd
         app.display_name = display_name
         app.init(opts)
-        progress(70, "initializing sockets")
+        if not app.validate():
+            return 1
+        init_local_sockets()
         app.init_sockets(sockets)
         app.init_dbus(dbus_pid, dbus_env)
         if not shadowing and not proxying:
