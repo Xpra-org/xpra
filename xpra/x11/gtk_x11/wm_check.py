@@ -51,7 +51,7 @@ def get_wm_info():
 def wm_check(wm_name="xpra", upgrading=False):
     info = get_wm_info()
     display_name = info.get("display")
-    name = info.get("name")
+    name = info.get("wmname")
     wm_so = info.get("WM_S0")
     cwm_so = info.get("_NEW_WM_CM_S0")
     ewmh_xid = info.get("_NET_SUPPORTING_WM_CHECK", 0)
