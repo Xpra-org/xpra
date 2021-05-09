@@ -753,11 +753,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if display_name!=odisplay_name and pam:
             pam.set_items({"XDISPLAY" : display_name})
 
-        def check_xvfb(timeout=0):
-            return check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb)
-    else:
-        def check_xvfb(timeout=0):  #pylint: disable=unused-argument
-            return True
+    def check_xvfb(timeout=0):
+        return check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb)
 
     if POSIX and not OSX and displayfd>0:
         from xpra.platform.displayfd import write_displayfd
