@@ -399,6 +399,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         "start", "start-desktop",
         "shadow", "attach", "listen",
         "upgrade", "upgrade-desktop",
+        "recover",
         "request-start", "request-start-desktop", "request-shadow",
         ):
         options.encodings = validated_encodings(options.encodings)
@@ -659,7 +660,6 @@ def find_session_by_name(opts, session_name):
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         id_sessions[socket_path] = proc
     now = monotonic_time()
-    import time
     while any(proc.poll() is None for proc in id_sessions.values()) and monotonic_time()-now<10:
         time.sleep(0.5)
     session_uuid_to_path = {}
