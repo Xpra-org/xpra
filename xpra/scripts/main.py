@@ -433,8 +433,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                     noerr(sys.stdout.write, "existing live display found, attaching")
                     return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
 
-    if (mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and supports_server) or \
-        (mode=="shadow" and supports_shadow) or (mode=="proxy" and supports_proxy):
+    if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow", "proxy"):
         return run_server(script_file, error_cb, options, args, mode, defaults)
     elif mode in (
         "attach", "listen", "detach",
