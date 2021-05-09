@@ -427,7 +427,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
         opts.bind_rfb = []
 
-    if not shadowing and not starting_desktop:
+    if not (shadowing or starting_desktop or upgrading_desktop):
         opts.rfb_upgrade = 0
 
     if upgrading or upgrading_desktop or shadowing:
