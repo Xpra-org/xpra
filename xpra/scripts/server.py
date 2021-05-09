@@ -423,18 +423,16 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         warn(" but 'exit-with-children' is not enabled,")
         warn(" use 'start' instead")
 
-    if opts.bind_rfb and (proxying or starting):
-        get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
-        opts.bind_rfb = []
-
     if not (shadowing or starting_desktop or upgrading_desktop):
         opts.rfb_upgrade = 0
+        if opts.bind_rfb:
+            get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
+            opts.bind_rfb = []
 
-    if upgrading or upgrading_desktop or shadowing:
+    if (upgrading or upgrading_desktop or shadowing) and opts.pulseaudio is None:
         #there should already be one running
         #so change None ('auto') to False
-        if opts.pulseaudio is None:
-            opts.pulseaudio = False
+        opts.pulseaudio = False
 
     #get the display name:
     if shadowing and not extra_args:
