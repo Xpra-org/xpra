@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-import time
 import os.path
 import subprocess
 
@@ -606,7 +605,7 @@ class StartSession(Gtk.Window):
         cmd.append("--attach=%s" % attach)
         #process session_config if we have one:
         for k in (
-            "splash", "headerbar", "notifications", "system-tray", "cursors", "bell", "modal-windows",
+            "splash", "border", "headerbar", "notifications", "system-tray", "cursors", "bell", "modal-windows",
             "pixel-depth", "mousewheel",
             ):
             fn = k.replace("-", "_")
@@ -858,12 +857,19 @@ class FeaturesWindow(SessionOptions):
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
         tb = self.table()
+        self.bool_cb(tb, "Splash Screen", "splash", "Show a splash screen during startup")
+        self.radio_cb(tb, "Border", "border", "Show a colored border around xpra windows to differentiate them", None, {
+            "auto"  : ("auto,5:off", "auto"),
+            "none"  : FALSE_OPTIONS,
+            "blue"  : ("blue",),
+            "red"   : ("red",),
+            "green" : ("green", )
+            })
         self.radio_cb(tb, "Header Bar", "headerbar", None, None, {
-            "yes"   : TRUE_OPTIONS,
+            "auto"  : ["auto"]+list(TRUE_OPTIONS),
             "no"    : FALSE_OPTIONS,
             "force" : ("force",),
             })
-        self.bool_cb(tb, "Splash Screen", "splash")
         self.sep(tb)
         #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notifications.md")
         self.bool_cb(tb, "Xpra's System Tray", "tray")
