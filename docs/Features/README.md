@@ -12,7 +12,7 @@
 * [System tray](./System-Tray.md)
 * [Notifications](./Notifications.md)
 
-## Display Characteristics
+## [Display Characteristics](./Display.md)
 * [Image Depth](./Image-Depth.md)
 * [DPI](./DPI.md)
 
