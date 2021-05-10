@@ -1911,10 +1911,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if max(bw, bh)>=32000:
             raise Exception("invalid window backing size %ix%i" % (bw, bh))
         if b:
+            prev_render_size = b.render_size
             b.init(ww, wh, bw, bh)
+            if prev_render_size!=b.render_size:
+                self._client_properties["encoding.render-size"] = b.render_size
         else:
             self.new_backing(bw, bh)
-        self._client_properties["encoding.render-size"] = b.render_size
 
     def resize(self, w, h, resize_counter=0):
         ww, wh = self.get_size()
