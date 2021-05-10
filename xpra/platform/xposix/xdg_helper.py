@@ -264,10 +264,10 @@ def do_load_xdg_menu_data():
     entries = tuple(menu.getEntries())
     log("%s.getEntries()=%s", menu, entries)
     for submenu in entries:
-        name = submenu.getName()
         if not isinstance(submenu, Menu):
-            log("entry '%s' is not a submenu", name)
+            log("entry '%s' is not a submenu", submenu)
             continue
+        name = submenu.getName()
         if not submenu.Visible:
             log("submenu '%s' is not visible", name)
             continue
