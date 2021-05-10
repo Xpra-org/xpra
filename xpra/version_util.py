@@ -59,13 +59,13 @@ def revision_str() -> str:
 def make_revision_str(revision, local_modifications, branch, commit) -> str:
     rstr = ""
     try:
-        rstr += "r"+revision
+        rstr += "r%s" % revision
         if local_modifications>0:
             rstr += "M"
         if branch=="master" and commit:
             rstr += " (%s)" % commit
     except TypeError:
-        pass
+        get_util_logger().debug("make_revision_str%s", (revision, local_modifications, branch, commit), exc_info=True)
     return rstr
 
 
