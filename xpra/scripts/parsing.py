@@ -290,45 +290,47 @@ def do_parse_cmdline(cmdline, defaults):
                 " or ".join(["'%s'" % x for x in get_server_modes()]))
     parser.add_option_group(group)
     #we support remote start, so we need those even if we don't have server support:
+    def dcsv(v):
+        return csv(v or ["none"])
     group.add_option("--start", action="append",
                       dest="start", metavar="CMD", default=list(defaults.start or []),
-                      help="program to spawn in server (may be repeated). Default: %default.")
+                      help="program to spawn in server (may be repeated). Default: %s." % dcsv(defaults.start))
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
                       help="program to spawn in server,"
                       +" taken into account by the exit-with-children option"
                       +" (may be repeated to run multiple commands)."
-                      +" Default: %default.")
+                      +" Default: %s." % dcsv(defaults.start_child))
     group.add_option("--start-after-connect", action="append",
                       dest="start_after_connect", default=defaults.start_after_connect,
                       help="program to spawn in server after the first client has connected (may be repeated)."
-                      +" Default: %default.")
+                      +" Default: %s." % dcsv(defaults.start_after_connect))
     group.add_option("--start-child-after-connect", action="append",
                       dest="start_child_after_connect", default=defaults.start_child_after_connect,
                       help="program to spawn in server after the first client has connected,"
                       +" taken into account by the exit-with-children option"
                       +" (may be repeated to run multiple commands)."
-                      +" Default: %default.")
+                      +" Default: %s." % dcsv(defaults.start_child_after_connect))
     group.add_option("--start-on-connect", action="append",
                       dest="start_on_connect", default=defaults.start_on_connect,
                       help="program to spawn in server every time a client connects (may be repeated)."
-                      +" Default: %default.")
+                      +" Default: %s." % dcsv(defaults.start_on_connect))
     group.add_option("--start-child-on-connect", action="append",
                       dest="start_child_on_connect", default=defaults.start_child_on_connect,
                       help="program to spawn in server every time a client connects,"
                       +" taken into account by the exit-with-children option (may be repeated)."
-                      +" Default: %default.")
+                      +" Default: %s." % dcsv(defaults.start_child_on_connect))
     group.add_option("--start-on-last-client-exit", action="append",
                       dest="start_on_last_client_exit", default=defaults.start_on_last_client_exit,
                       help="program to spawn in server every time a client disconnects"
                       +" and there are no other clients left (may be repeated)."
-                      +" Default: %default.")
+                      +" Default: %s." % dcsv(defaults.start_on_last_client_exit))
     group.add_option("--start-child-on-last-client-exit", action="append",
                       dest="start_child_on_last_client_exit", default=defaults.start_child_on_last_client_exit,
                       help="program to spawn in server every time a client disconnects"
                       +" and there are no other clients left,"
                       +" taken into account by the exit-with-children option (may be repeated)."
-                      +" Default: %default.")
+                      +" Default: %s." % dcsv(defaults.start_child_on_last_client_exit))
     group.add_option("--exec-wrapper", action="store",
                       dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                       help="Wrapper for executing commands. Default: %default.")
@@ -543,7 +545,7 @@ def do_parse_cmdline(cmdline, defaults):
                           metavar="SOCKET",
                           help="Listen for connections over %s." % ("named pipes" if WIN32 else "unix domain sockets")
                           +" You may specify this option multiple times to listen on different locations."
-                          +" Default: %s" % csv(defaults_bind))
+                          +" Default: %s" % dcsv(defaults_bind))
         group.add_option("--bind-tcp", action="append",
                           dest="bind_tcp", default=list(defaults.bind_tcp or []),
                           metavar="[HOST]:[PORT]",
@@ -778,7 +780,7 @@ def do_parse_cmdline(cmdline, defaults):
     parser.add_option_group(group)
     group.add_option("--encodings", action="store",
                       dest="encodings", default=defaults.encodings,
-                      help="Specify which encodings are allowed. Default: %s." % csv(defaults.encodings))
+                      help="Specify which encodings are allowed. Default: %s." % dcsv(defaults.encodings))
     group.add_option("--encoding", action="store",
                       metavar="ENCODING", default=defaults.encoding,
                       dest="encoding", type="str",
@@ -795,7 +797,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--csc-modules", action="store",
                       dest="csc_modules", default=defaults.csc_modules,
                       help="Specify which colourspace conversion modules to enable,"
-                      +" to get a list of all the options specify 'help'. Default: %default.")
+                      +" to get a list of all the options specify 'help'. Default: %s." % dcsv(defaults.csc_modules))
     group.add_option("--video-decoders", action="store",
                       dest="video_decoders", default=defaults.video_decoders,
                       help="Specify which video decoders to enable,"
@@ -837,10 +839,10 @@ def do_parse_cmdline(cmdline, defaults):
                       + " Default: %default.")
     group.add_option("--compressors", action="store",
                       dest="compressors", default=csv(defaults.compressors),
-                      help="The packet compressors to enable. Default: %default.")
+                      help="The packet compressors to enable. Default: %s." % dcsv(defaults.compressors))
     group.add_option("--packet-encoders", action="store",
                       dest="packet_encoders", default=csv(defaults.packet_encoders),
-                      help="The packet encoders to enable. Default: %default.")
+                      help="The packet encoders to enable. Default: %s." % dcsv(defaults.packet_encoders))
     replace_option("--compression-level", "--compression_level")
     replace_option("--compress", "--compression_level")
     group.add_option("-z", "--compression_level", action="store",
@@ -1122,32 +1124,32 @@ def do_parse_cmdline(cmdline, defaults):
                       help="The username supplied by the client for authentication. Default: '%default'.")
     group.add_option("--auth", action="append",
                       dest="auth", default=list(defaults.auth or []),
-                      help="The authentication module to use (default: '%default')")
+                      help="The authentication module to use (default: %s)" % dcsv(defaults.auth))
     group.add_option("--tcp-auth", action="append",
                       dest="tcp_auth", default=list(defaults.tcp_auth or []),
-                      help="The authentication module to use for TCP sockets (default: '%default')")
+                      help="The authentication module to use for TCP sockets (default: %s)" % dcsv(defaults.tcp_auth))
     group.add_option("--udp-auth", action="append",
                       dest="udp_auth", default=list(defaults.udp_auth or []),
-                      help="The authentication module to use for UDP sockets (default: '%default')")
+                      help="The authentication module to use for UDP sockets (default: %s)" % dcsv(defaults.udp_auth))
     group.add_option("--ws-auth", action="append",
                       dest="ws_auth", default=list(defaults.ws_auth or []),
-                      help="The authentication module to use for Websockets (default: '%default')")
+                      help="The authentication module to use for Websockets (default: %s)" % dcsv(defaults.ws_auth))
     group.add_option("--wss-auth", action="append",
                       dest="wss_auth", default=list(defaults.wss_auth or []),
-                      help="The authentication module to use for Secure Websockets (default: '%default')")
+                      help="The authentication module to use for Secure Websockets (default: %s)" % dcsv(defaults.wss_auth))
     group.add_option("--ssl-auth", action="append",
                       dest="ssl_auth", default=list(defaults.ssl_auth or []),
-                      help="The authentication module to use for SSL sockets (default: '%default')")
+                      help="The authentication module to use for SSL sockets (default: %s)" % dcsv(defaults.ssl_auth))
     group.add_option("--ssh-auth", action="append",
                       dest="ssh_auth", default=list(defaults.ssh_auth or []),
-                      help="The authentication module to use for SSH sockets (default: '%default')")
+                      help="The authentication module to use for SSH sockets (default: %s)" % dcsv(defaults.ssh_auth))
     group.add_option("--rfb-auth", action="append",
                       dest="rfb_auth", default=list(defaults.rfb_auth or []),
-                      help="The authentication module to use for RFB sockets (default: '%default')")
+                      help="The authentication module to use for RFB sockets (default: %s)" % dcsv(defaults.rfb_auth))
     if vsock:
         group.add_option("--vsock-auth", action="append",
                          dest="vsock_auth", default=list(defaults.vsock_auth or []),
-                         help="The authentication module to use for vsock sockets (default: '%default')")
+                         help="The authentication module to use for vsock sockets (default: '%s')" % dcsv(defaults.vsock_auth))
     else:
         ignore({"vsock-auth" : defaults.vsock_auth})
     group.add_option("--min-port", action="store",
