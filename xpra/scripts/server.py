@@ -754,6 +754,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             pam.set_items({"XDISPLAY" : display_name})
 
     def check_xvfb(timeout=0):
+        if xvfb is None:
+            return True
         return check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb)
 
     if POSIX and not OSX and displayfd>0:
