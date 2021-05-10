@@ -38,7 +38,7 @@ def webp_encode(image, supports_transparency, quality, speed, content_type):
         if not WEBP_PILLOW:
             log.warn("Warning: using PIL fallback for webp")
             log.warn(" enc_webp=%s, stride=%s, pixel format=%s", enc_webp, stride, image.get_pixel_format())
-        for x in ("webp", "png"):
+        for x in ("webp", "png", "jpeg"):
             if x in enc_pillow.get_encodings():
                 return enc_pillow.encode(x, image, quality, speed, supports_transparency)
     raise Exception("BUG: cannot use 'webp' encoding and none of the PIL fallbacks are available!")
