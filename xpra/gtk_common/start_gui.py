@@ -1014,6 +1014,20 @@ class KeyboardWindow(SessionOptions):
         self.combo(tb, "Keyboard Layout", "keyboard-layout", layouts)
         self.bool_cb(tb, "State Synchronization", "keyboard-sync")
         self.bool_cb(tb, "Raw Mode", "keyboard-raw")
+        self.combo(tb, "Input Method", "input-method", {
+            "none"  : "default",
+            "keep"  : "unchanged",
+            "xim"   : "xim",
+            "IBus"  : "IBus",
+            "SCIM"  : "SCIM",
+            "uim"   : "uim",
+            })
+        self.combo(tb, "Shortcut Modifiers", "shortcut-modifiers", {
+            "auto"  : "auto",
+            "shift + control"   : "Shift+Control",
+            "control + alt"     : "Control+Alt",
+            "shift + alt"       : "Shift+Alt",
+            })
         self.vbox.show_all()
 
 
