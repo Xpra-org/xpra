@@ -697,12 +697,13 @@ class SessionOptions(Gtk.Window):
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         cb = Gtk.Switch()
-        #cb = Gtk.CheckButton()
-        cb.set_active(str(value).lower() not in FALSE_OPTIONS)
+        active = str(value).lower() not in FALSE_OPTIONS
+        cb.set_active(active)
         al = xal(cb, xalign=0)
         table.attach(al, 1)
         setattr(self, "%s_widget" % fn, cb)
         setattr(self, "%s_widget_type" % fn, "bool")
+        setattr(self, "%s_values" % fn, [value if not active else False, value if active else True])
         self.widgets.append(option_name)
         table.inc()
         return cb
@@ -800,8 +801,7 @@ class SessionOptions(Gtk.Window):
         fn = option_name.replace("-", "_")
         widget_type = getattr(self, "%s_widget_type" % fn)
         if widget_type=="bool":
-            widget = getattr(self, "%s_widget" % fn)
-            values = (widget.get_active(), )
+            values = self.valuesfromswitch(option_name)
         elif widget_type=="radio":
             values = self.valuesfromradio(option_name)
         elif widget_type=="combo":
@@ -822,6 +822,12 @@ class SessionOptions(Gtk.Window):
             log.info("changed: %s=%r (%s) - was %r (%s)", fn, value, type(value), current_value, type(current_value))
             setattr(self.options, fn, value)
 
+    def valuesfromswitch(self, option_name):
+        fn = option_name.replace("-", "_")
+        widget = getattr(self, "%s_widget" % fn)
+        values = getattr(self, "%s_values" % fn)
+        value = values[int(widget.get_active())]
+        return (value, )
 
     def valuesfromradio(self, option_name):
         fn = option_name.replace("-", "_")
