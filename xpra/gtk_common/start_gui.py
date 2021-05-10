@@ -819,7 +819,7 @@ class SessionOptions(Gtk.Window):
                     return
             #pick the first one:
             value = values[0]
-            log.info("changed: %s=%s (%s) - was %s (%s)", fn, value, type(value), current_value, type(current_value))
+            log.info("changed: %s=%r (%s) - was %r (%s)", fn, value, type(value), current_value, type(current_value))
             setattr(self.options, fn, value)
 
 
@@ -894,13 +894,12 @@ class FeaturesWindow(SessionOptions):
             "invert-z" : "invert Z axis",
             "invert-all" : "invert all axes",
             })
-        #tb.attach(Gtk.Label("Window Border"), 0)
-        #tb = self.table_tab("clipboard.png", "Clipboard")[0]
-        #tb.attach(Gtk.Label("Enabled"), 0)
-        #self.clipboard_enabled = Gtk.CheckButton()
-        #tb.attach(self.clipboard_enabled, 1)
-        #tb.inc()
-        #tb.attach(Gtk.Label("Direction"), 0)
+        self.combo(tb, "Clipboard", "clipboard-direction", {
+            "both"      : "enabled",
+            "to-server" : "to server only",
+            "to-client" : "to client only",
+            "disabled"  : "disabled",
+            })
         self.vbox.show_all()
 
 
