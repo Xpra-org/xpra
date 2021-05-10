@@ -231,11 +231,12 @@ class StartSession(Gtk.Window):
         hbox.add(xal(self.exit_with_client_cb, 0.5))
         self.exit_with_client_cb.set_active(False)
         # session options:
-        hbox = Gtk.HBox(False, 20)
+        hbox = Gtk.HBox(False, 12)
         hbox.pack_start(l("Options:"), True, False)
         for label_text, icon_name, tooltip_text, cb in (
             ("Features",    "features.png", "Session features", self.configure_features),
             ("Network",     "connect.png",  "Network options", self.configure_network),
+            ("Display",     "display.png",  "Display settings", self.configure_display),
             ("Encodings",   "encoding.png", "Picture compression", self.configure_encoding),
             ("Keyboard",    "keyboard.png", "Keyboard layout and options", self.configure_keyboard),
             ("Audio",       "speaker.png",  "Audio forwarding options", self.configure_audio),
@@ -347,6 +348,8 @@ class StartSession(Gtk.Window):
         self.run_dialog(FeaturesWindow)
     def configure_network(self, *_args):
         self.run_dialog(NetworkWindow)
+    def configure_display(self, *_args):
+        self.run_dialog(DisplayWindow)
     def configure_encoding(self, *_args):
         if self.load_codecs_thread.is_alive():
             log("waiting for loader thread to complete")
@@ -757,7 +760,9 @@ class SessionOptions(Gtk.Window):
                 index = i
         if index is not None:
             c.set_active(index)
-        table.attach(c, 1)
+        al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=1.0)
+        al.add(c)
+        table.attach(al, 1)
         setattr(self, "%s_widget" % fn, c)
         setattr(self, "%s_widget_type" % fn, "combo")
         setattr(self, "%s_options" % fn, options)
@@ -879,13 +884,7 @@ class FeaturesWindow(SessionOptions):
         #self.bool_cb(tb, "Cursors", "cursors")
         #self.bool_cb(tb, "Bell", "bell")
         self.bool_cb(tb, "Modal Windows", "modal-windows")
-        pixel_depths = {0   : "auto"}
-        if self.run_mode=="shadow":
-            pixel_depths[8] = 8
-        for pd in (16, 24, 30, 32):
-            pixel_depths[pd] = pd
         self.sep(tb)
-        self.combo(tb, "Pixel Depth", "pixel-depth", pixel_depths)
         #"https://github.com/Xpra-org/xpra/blob/master/docs/Features/Image-Depth.md")
         self.combo(tb, "Mouse Wheel", "mousewheel", {
             "on" : "on",
@@ -940,6 +939,46 @@ class NetworkWindow(SessionOptions):
         #open-files
         #open-url
         #file-size-limit
+        self.vbox.show_all()
+
+
+class DisplayWindow(SessionOptions):
+    def __init__(self, *args):
+        super().__init__("Display Settings", "display.png", *args)
+
+    def populate_form(self):
+        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Display.md",
+                       label="Open Display Documentation", icon_name=None)
+        self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
+
+        tb = self.table()
+        pixel_depths = {0   : "auto"}
+        if self.run_mode=="shadow":
+            pixel_depths[8] = 8
+        for pd in (16, 24, 30, 32):
+            pixel_depths[pd] = pd
+        self.combo(tb, "Pixel Depth", "pixel-depth", pixel_depths)
+        self.combo(tb, "DPI", "dpi", {
+            0       : "auto",
+            72      : "72",
+            96      : "96",
+            144     : "144",
+            192     : "192",
+            })
+        self.combo(tb, "Desktop Scaling", "desktop-scaling", {
+            "on"    : "auto",
+            "no"    : "disabled",
+            "50%"   : "50%",
+            "100%"  : "100%",
+            "150%"  : "150%",
+            "200%"  : "200%",
+            })
+        self.radio_cb(tb, "OpenGL Acceleration", "opengl", None, None, {
+            "probe" : "probe",
+            "auto"  : ["auto"]+list(TRUE_OPTIONS),
+            "no"    : FALSE_OPTIONS,
+            "force" : ("force",),
+            })
         self.vbox.show_all()
 
 
