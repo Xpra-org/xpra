@@ -272,6 +272,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
             except AlreadyOwned:
                 log("Error: cannot create our window manager", exc_info=True)
                 display = os.environ.get("DISPLAY", "")
+                #make sure we don't kill the vfb since we don't own it:
+                from xpra.server import EXITING_CODE
+                self._upgrading = EXITING_CODE
                 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
                 raise InitException("another window manager is active on display '%s'" % display) from None
         if server_features.windows:
