@@ -1821,13 +1821,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         cx = self._client.cx
         cy = self._client.cy
         sx, sy, sw, sh = cx(x), cy(y), cx(w), cy(h)
+        if self._backing is None:
+            #we may have cleared the backing, so we must re-create one:
+            self._set_backing_size(w, h)
         packet = ["map-window", self._id, sx, sy, sw, sh, props, state]
         self.send(*packet)
         self._pos = (x, y)
         self._size = (w, h)
-        if self._backing is None:
-            #we may have cleared the backing, so we must re-create one:
-            self._set_backing_size(w, h)
         if not self._override_redirect:
             htf = self.has_toplevel_focus()
             focuslog("mapped: has-toplevel-focus=%s", htf)
@@ -1843,6 +1843,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 frame = wfs.get("frame")
         return frame
 
+
+    def may_send_client_properties(self):
+        #if there are client properties the server should know about,
+        #we currently have no other way to send them to the server:
+        if self._client_properties:
+            self.send_configure_event(True)
 
     def send_configure(self):
         self.send_configure_event()
@@ -1862,7 +1868,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         ox, oy = self._pos
         dx, dy = x-ox, y-oy
         self._pos = (x, y)
-        self.send_configure_event(skip_geometry)
         if dx!=0 or dy!=0:
             #window has moved, also move any child OR window:
             for window in self._override_redirect_windows:
@@ -1872,6 +1877,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self._size, (w, h), self._backing, self._iconified)
         self._size = (w, h)
         self._set_backing_size(w, h)
+        self.send_configure_event(skip_geometry)
         if self._backing and not self._iconified:
             geomlog("configure event: size unchanged, queueing redraw")
             self.repaint(0, 0, w, h)
@@ -1939,6 +1945,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         geomlog("backing offsets=%s, window offset=%s", self._backing.offsets, self.window_offset)
         self._set_backing_size(w, h)
         self.repaint(0, 0, ww, wh)
+        self.may_send_client_properties()
 
     def center_backing(self, w, h):
         ww, wh = self.get_size()
@@ -2038,6 +2045,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         window.move_resize(ax, ay, w, h)
         #re-init the backing with the new size
         self._set_backing_size(w, h)
+        self.repaint(0, 0, w, h)
+        self.may_send_client_properties()
 
 
     def noop_destroy(self):
