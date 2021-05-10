@@ -33,6 +33,8 @@ from xpra.log import Logger
 
 log = Logger("client", "util")
 
+SCREEN_SIZES = os.environ.get("XPRA_SCREEN_SIZES", "1024x768,1600x1200,1920x1080,2560x1600,3840x2160").split(",")
+
 try:
     import xdg
 except ImportError:
@@ -962,6 +964,17 @@ class DisplayWindow(SessionOptions):
             pixel_depths[8] = 8
         for pd in (16, 24, 30, 32):
             pixel_depths[pd] = pd
+        if self.run_mode=="start-desktop":
+            size_options = {
+                "yes"    : "auto",
+                }
+            for size in SCREEN_SIZES:
+                try:
+                    w, h = size.split("x")
+                    size_options["%sx%s" % (w, h)] = "%s x %s" % (w, h)
+                except (TypeError, ValueError, IndexError):
+                     size_options[size] = size
+            self.combo(tb, "Screen Size", "resize-display", size_options)
         self.combo(tb, "Pixel Depth", "pixel-depth", pixel_depths)
         self.combo(tb, "DPI", "dpi", {
             0       : "auto",
