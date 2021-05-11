@@ -471,24 +471,9 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode=="recover":
         return run_recover(script_file, error_cb, options, args, defaults)
     elif mode == "wminfo":
-        check_gtk()
-        assert POSIX and not OSX
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-        init_gdk_display_source()
-        from xpra.x11.gtk_x11.wm_check import get_wm_info
-        for k,v in get_wm_info().items():
-            print("%s=%s" % (k, v))
-        return 0
+        return run_wminfo(args)
     elif mode == "wmname":
-        check_gtk()
-        assert POSIX and not OSX
-        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-        init_gdk_display_source()
-        from xpra.x11.gtk_x11.wm_check import get_wm_info
-        name = get_wm_info().get("name", "")
-        if name:
-            print(name)
-        return 0
+        return run_wmname(args)
     elif mode == "launcher":
         check_gtk()
         from xpra.client.gtk_base.client_launcher import main as launcher_main
@@ -3365,6 +3350,32 @@ def run_list_sessions(args, options):
             attrs.get("session-type", ""),
             attrs.get("username") or attrs.get("uid") or "",
             attrs.get("session-name", "")))
+    return 0
+
+def display_wm_info(args):
+    assert POSIX and not OSX, "wminfo is not supported on this platform"
+    no_gtk()
+    if len(args)==1:
+        os.environ["DISPLAY"] = args[0]
+    elif not args and os.environ.get("DISPLAY"):
+        #just use the current one
+        pass
+    else:
+        raise InitExit(EXIT_NO_DISPLAY, "you must specify a display")
+    from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+    init_gdk_display_source()
+    from xpra.x11.gtk_x11.wm_check import get_wm_info
+    return get_wm_info()
+
+def run_wminfo(args):
+    for k,v in display_wm_info(args).items():
+        print("%s=%s" % (k, v))
+    return 0
+
+def run_wmname(args):
+    name = display_wm_info(args).get("name", "")
+    if name:
+        print(name)
     return 0
 
 
