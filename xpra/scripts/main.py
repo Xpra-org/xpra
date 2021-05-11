@@ -3183,7 +3183,7 @@ def run_displays(args):
         if "wmname" in descr:
             info_str += descr.get("wmname")+": "
         info_str += csv("%s=%s" % (v, descr.get(k)) for k,v in SHOW.items() if k in descr)
-        print("%4s    %-4s    %s" % (display, state, info_str))
+        print("%4s    %-8s    %s" % (display, state, info_str))
 
 def run_clean_displays(args):
     if not POSIX or OSX:
@@ -3305,7 +3305,7 @@ def get_display_info(display):
             print("failed to query wminfo: %s" % (e, ))
         else:
             #parse wminfo output:
-            if out:
+            if out and proc.returncode==0:
                 wminfo = {}
                 for line in out.decode().splitlines():
                     parts = line.split("=", 1)
@@ -3314,6 +3314,8 @@ def get_display_info(display):
                 if not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
                     display_info["state"] = "DEAD"
                 display_info.update(wminfo)
+            elif proc.returncode!=0:
+                display_info.update({"state" : "UNKNOWN"})
     return display_info
 
 def get_displays(dotxpra=None, display_names=None):
