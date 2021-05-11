@@ -214,13 +214,20 @@ class WindowModel(BaseWindowModel):
         if geom is None:
             raise Unmanageable("window %#x disappeared already" % self.xid)
         nx, ny, w, h = geom[:4]
+        #after reparenting, the coordinates of the client window should be 0,0
+        #use the coordinates of the corral window:
+        if nx==ny==0:
+            nx, ny = x, y
         hints = self.get_property("size-hints")
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = self.calc_constrained_size(w, h, hints)
-        if ox==nx==0 and oy==ny==0:
-            pos = hints.get("position")
-            if pos:
-                nx, ny = pos
+        pos = hints.get("position")
+        if pos==(0, 0) and (nx!=0 or ny!=0):
+            #never override with 0,0
+            hints.pop("position")
+            pos = None
+        if ox==0 and oy==0 and pos:
+            nx, ny = pos
         self._updateprop("geometry", (nx, ny, nw, nh))
         geomlog("setup() resizing windows to %sx%s, moving to %i,%i", nw, nh, nx, ny)
         #don't trigger a move or resize unless we have to:
@@ -301,7 +308,11 @@ class WindowModel(BaseWindowModel):
         #but allow size hints to override it if specified
         x, y, w, h = geom[:4]
         size_hints = self.get_property("size-hints")
-        ax, ay = size_hints.get("position", (x, y))
+        ax, ay = size_hints.get("position", (0, 0))
+        if ax==ay==0 and (x!=0 or y!=0):
+            #don't override with 0,0
+            size_hints.pop("position", None)
+            ax, ay = x, y
         aw, ah = size_hints.get("size", (w, h))
         geomlog("initial X11 position and size: requested(%s, %s, %s)=%s",
                 (x, y, w, h), size_hints, geom, (ax, ay, aw, ah))
@@ -310,7 +321,8 @@ class WindowModel(BaseWindowModel):
         set_if_unset("requested-size", (aw, ah))
         #it may have been set already:
         v = self.get_property("set-initial-position")
-        self._internal_set_property("set-initial-position", v or ("position" in size_hints))
+        if not v and ("position" in size_hints):
+            self._internal_set_property("set-initial-position", True)
         self.update_children()
 
     def do_unmanaged(self, wm_exiting):
