@@ -370,16 +370,18 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
                 setuidgid(uid, gid)
         xauth_cmd = ["xauth"]+xauth_args
         start = monotonic_time()
+        log = get_vfb_logger()
+        log("xauth command: %s", xauth_cmd)
         code = call(xauth_cmd, preexec_fn=preexec)
         end = monotonic_time()
         if code!=0 and (end-start>=10):
-            log = get_vfb_logger()
             log.warn("Warning: xauth command took %i seconds and failed" % (end-start))
             #took more than 10 seconds to fail, check for stale locks:
             import glob
             if glob.glob("%s-*" % filename):
                 log.warn("Warning: trying to clean some stale xauth locks")
                 xauth_cmd = ["xauth", "-b"]+xauth_args
+                log("xauth command: %s", xauth_cmd)
                 code = call(xauth_cmd, preexec_fn=preexec)
         if code!=0:
             raise OSError("non-zero exit code: %s" % code)
