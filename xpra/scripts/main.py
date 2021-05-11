@@ -3129,7 +3129,7 @@ def run_recover(script_file, error_cb, options, args, defaults):
     no_gtk()
     display_descr = {}
     ALL = len(args)==1 and args[0].lower()=="all"
-    if not ALL:
+    if not ALL and len(args)==1:
         try:
             display_descr = pick_display(error_cb, options, args)
             args = []
@@ -3141,9 +3141,14 @@ def run_recover(script_file, error_cb, options, args, defaults):
         #get the display_info so we know the mode:
         descr = get_display_info(display)
     else:
-        if args and not ALL:
-            print("Cannot match display from arguments %r" % (args,))
-            return EXIT_NO_DISPLAY
+        def recover_many(displays):
+            from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
+            for display in displays:
+                cmd = get_xpra_command()+["recover", display]
+                Popen(cmd)
+            return 0
+        if len(args)>1:
+            return recover_many(args)
         displays = get_displays_info()
         #find the 'DEAD' ones:
         dead_displays = tuple(display for display, descr in displays.items() if descr.get("state")=="DEAD")
@@ -3152,13 +3157,10 @@ def run_recover(script_file, error_cb, options, args, defaults):
             return EXIT_NO_DISPLAY
         if len(dead_displays)>1:
             if ALL:
-                from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
-                for display in dead_displays:
-                    cmd = get_xpra_command()+["recover", display]
-                    Popen(cmd)
-                return 0
+                return recover_many(dead_displays)
             print("More than one 'DEAD' display found, see 'xpra displays'")
-            print(" use 'xpra start' or 'xpra start-desktop' on the display to rescue")
+            print(" you can use 'xpra recover all',")
+            print(" or specify a display")
             return EXIT_NO_DISPLAY
         display = dead_displays[0]
         descr = displays[display]
