@@ -720,6 +720,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 else:
                     #verify failed but we can stat the X11 server socket...
                     #perhaps we need to re-add an xauth entry
+                    if not xauth_data:
+                        xauth_data = get_hex_uuid()
+                        if pam:
+                            pam.set_items({"XAUTHDATA" : xauth_data})
                     xauth_add(xauthority, display_name, xauth_data, uid, gid)
                     if verify_display(None, display_name, log_errors=False, timeout=1)!=0:
                         warn("display %s is not accessible" % (display_name,))
