@@ -571,7 +571,8 @@ keymd5(host_key),
                         log("authenticated using agent and key '%s'", keymd5(agent_key))
                         break
                 except SSHException:
-                    log("agent key '%s' rejected", keymd5(agent_key), exc_info=True)
+                    log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), username)
+                    log("%s%s", transport.auth_publickey, (username, agent_key), exc_info=True)
             if not transport.is_authenticated():
                 log.info("agent authentication failed, tried %i key%s", len(agent_keys), engs(agent_keys))
 
@@ -584,7 +585,14 @@ keymd5(host_key),
             log("trying '%s'", keyfile_path)
             key = None
             import paramiko
-            for pkey_classname in ("RSA", "DSS", "ECDSA", "Ed25519"):
+            try_key_formats = ()
+            for kf in ("RSA", "DSS", "ECDSA", "Ed25519"):
+                if keyfile_path.lower().endswith(kf.lower()):
+                    try_key_formats = (kf, )
+                    break
+            if not try_key_formats:
+                try_key_formats = ("RSA", "DSS", "ECDSA", "Ed25519")
+            for pkey_classname in try_key_formats:
                 pkey_class = getattr(paramiko, "%sKey" % pkey_classname, None)
                 if pkey_class is None:
                     log("no %s key type", pkey_classname)
