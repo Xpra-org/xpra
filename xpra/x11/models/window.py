@@ -175,11 +175,13 @@ class WindowModel(BaseWindowModel):
     def setup(self):
         super().setup()
 
-        ox, oy, ow, oh = self.client_window.get_geometry()[:4]
+        ogeom = self.client_window.get_geometry()
+        ox, oy, ow, oh = ogeom[:4]
         # We enable PROPERTY_CHANGE_MASK so that we can call
         # x11_get_server_time on this window.
         # clamp this window to the desktop size:
         x, y = self._clamp_to_desktop(ox, oy, ow, oh)
+        geomlog("setup() clamp_to_desktop(%s)=%s", ogeom, (x, y))
         self.corral_window = GDKX11Window(self.parking_window,
                                         x=x, y=y, width=ow, height=oh,
                                         window_type=Gdk.WindowType.CHILD,
@@ -208,10 +210,10 @@ class WindowModel(BaseWindowModel):
         X11Window.Reparent(self.xid, cxid, 0, 0)
         self.client_reparented = True
 
-        geomlog("setup() geometry")
         geom = X11Window.geometry_with_border(self.xid)
         if geom is None:
             raise Unmanageable("window %#x disappeared already" % self.xid)
+        geomlog("setup() geometry=%s, ogeom=%s", geom, ogeom)
         nx, ny, w, h = geom[:4]
         #after reparenting, the coordinates of the client window should be 0,0
         #use the coordinates of the corral window:
