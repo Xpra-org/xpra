@@ -274,9 +274,10 @@ class ProxyServer(ServerCore):
         generic_request = c.strget("request")
         def is_req(mode):
             return generic_request==mode or c.boolget("%s_request" % mode)
-        if any(is_req(x) for x in ("screenshot", "event", "print", "exit")):
-            self.send_disconnect(proto, "invalid request")
-            return
+        for x in ("screenshot", "event", "print", "exit"):
+            if is_req(x):
+                self.send_disconnect(proto, "error: invalid request, '%s' is not supported by the proxy server" % x)
+                return
         if is_req("stop"):
             #global kill switch:
             if not CAN_STOP_PROXY:
