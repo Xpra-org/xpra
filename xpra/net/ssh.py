@@ -11,7 +11,11 @@ import signal
 from time import sleep
 from subprocess import PIPE, Popen
 
-from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
+from xpra.scripts.main import (
+    InitException, InitExit,
+    shellquote, host_target_string,
+    get_pinentry_command, run_pinentry_getpin, run_pinentry_confirm,
+    )
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform import get_username
 from xpra.scripts.config import parse_bool
@@ -36,6 +40,7 @@ INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "")    #"xpra initenv"
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
+PINENTRY = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
 
 VERIFY_HOSTKEY = envbool("XPRA_SSH_VERIFY_HOSTKEY", True)
 VERIFY_STRICT = envbool("XPRA_SSH_VERIFY_STRICT", False)
@@ -97,6 +102,10 @@ def dialog_run(dialog) -> int:
     return code[0]
 
 def dialog_pass(title="Password Input", prompt="enter password", icon="") -> str:
+    if PINENTRY:
+        pinentry_cmd = get_pinentry_command()
+        if pinentry_cmd:
+            return run_pinentry_getpin(pinentry_cmd, title, prompt)
     from xpra.client.gtk_base.pass_dialog import PasswordInputDialogWindow
     dialog = PasswordInputDialogWindow(title, prompt, icon)
     try:
@@ -116,14 +125,18 @@ def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)) -> in
     return r
 
 
-def confirm_key(info=()) -> bool:
+def confirm_key(info=(), title="Confirm Key", prompt="Are you sure you want to continue connecting?") -> bool:
     if SKIP_UI:
         return False
     from xpra.platform.paths import get_icon_filename
+    if PINENTRY:
+        pinentry_cmd = get_pinentry_command()
+        if pinentry_cmd:
+            messages = list(info)+["", prompt]
+            return run_pinentry_confirm(pinentry_cmd, title, "%0A".join(messages))
     if use_gui_prompt():
         icon = get_icon_filename("authentication", "png") or ""
-        prompt = "Are you sure you want to continue connecting?"
-        code = dialog_confirm("Confirm Key", prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
+        code = dialog_confirm(title, prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
         log("dialog return code=%s", code)
         r = code==200
         log.info("host key %sconfirmed", ["not ", ""][r])
@@ -141,7 +154,7 @@ def input_pass(prompt) -> str:
     if SKIP_UI:
         return None
     from xpra.platform.paths import get_icon_filename
-    if use_gui_prompt():
+    if PINENTRY or use_gui_prompt():
         icon = get_icon_filename("authentication", "png") or ""
         return dialog_pass("Password Input", prompt, icon)
     from getpass import getpass
@@ -513,7 +526,7 @@ keymd5(host_key),
             else:
                 assert (not keys) or (host_key.get_name() not in keys)
                 if not keys:
-                    log.warn("Warning: unknown SSH host")
+                    log.warn("Warning: unknown SSH host '%s'", host)
                 else:
                     log.warn("Warning: unknown %s SSH host key", keyname())
                 qinfo = [

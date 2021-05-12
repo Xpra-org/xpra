@@ -18,7 +18,7 @@ from xpra.util import (
     )
 from xpra.os_util import (
     bytestostr, strtobytes, hexstr, monotonic_time, load_binary_file,
-    WIN32, OSX, POSIX, is_Wayland, is_gnome, is_kde, which,
+    WIN32, OSX, POSIX, is_Wayland,
     )
 from xpra.simple_stats import std_unit
 from xpra.exit_codes import EXIT_PASSWORD_REQUIRED
@@ -272,28 +272,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         authlog = Logger("auth")
         self.show_progress(100, "authentication")
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
-        authlog("do_process_challenge_prompt%s PINENTRY=%s", (packet, prompt), PINENTRY)
-        if PINENTRY.lower() not in FALSE_OPTIONS:
-            pinentry_cmd = PINENTRY
-            def find_pinentry_bin():
-                if is_gnome():
-                    return which("pinentry-gnome3")
-                if is_kde():
-                    return which("pinentry-qt")
-                return None
-            if PINENTRY=="" or PINENTRY.lower()=="auto":
-                #figure out if we should use it:
-                if WIN32 or OSX:
-                    #not enabled by default on those platforms
-                    pinentry_cmd = None
-                else:
-                    pinentry_cmd = find_pinentry_bin()
-            if PINENTRY.lower() in TRUE_OPTIONS:
-                pinentry_cmd = find_pinentry_bin()
-            if pinentry_cmd:
-                start_thread(self.handle_challenge_with_pinentry,
-                             "pinentry", True, (packet, prompt, pinentry_cmd))
-                return True
+        from xpra.scripts.main import get_pinentry_command
+        pinentry_cmd = get_pinentry_command(PINENTRY)
+        authlog("do_process_challenge_prompt%s get_pinentry_command(%s)=%s",
+                (packet, prompt), PINENTRY, pinentry_cmd)
+        if pinentry_cmd:
+            start_thread(self.handle_challenge_with_pinentry,
+                         "pinentry", True, (packet, prompt, pinentry_cmd))
+            return True
         return self.do_process_challenge_prompt_dialog(packet, prompt)
 
     def stop_pinentry(self):
@@ -306,7 +292,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def handle_challenge_with_pinentry(self, packet, prompt="password", cmd="pinentry"):
         authlog = Logger("auth")
         authlog("handle_challenge_with_pinentry%s", (packet, prompt, cmd))
-        from xpra.scripts.main import do_run_pinentry
         try:
             proc = Popen([cmd], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         except OSError:
@@ -322,23 +307,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     cinfo = conn.get_info()
                     endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
                     q += " for %s" % endpoint
-            messages = [
-                "SETPROMPT Xpra Server Authentication:",
-                "SETDESC %s:" % q,
-                "GETPIN",
-                ]
-            def get_input():
-                if not messages:
-                    return None
-                return messages.pop(0)
-            def process_output(message, output):
-                if message=="GETPIN":
-                    if output.startswith(b"D "):
-                        password = output[2:].rstrip(b"\n\r").decode()
-                        self.idle_add(self.send_challenge_reply, packet, password)
-                    else:
-                        self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
-            do_run_pinentry(proc, get_input, process_output)
+            def got_pin(value):
+                self.idle_add(self.send_challenge_reply, packet, value)
+            def no_pin():
+                self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
+            from xpra.scripts.main import pinentry_getpin
+            pinentry_getpin(proc, "Xpra Server Authentication:", q, got_pin, no_pin)
             return True
         return self.do_process_challenge_prompt_dialog(packet, prompt)
 
