@@ -650,12 +650,14 @@ class ProxyServer(ServerCore):
 
 
     def get_info(self, proto, *_args):
-        info = ServerCore.get_server_info(self)
-        info.setdefault("server", {})["type"] = "Python/GLib/proxy"
-        #only show more info if we have authenticated
-        #as the user running the proxy server process:
-        if proto and proto.authenticators:
-            sessions = []
+        authenticated = proto and proto.authenticators
+        if not authenticated:
+            info = super().get_server_info()
+        else:
+            #only show more info if we have authenticated
+            #as the user running the proxy server process:
+            info = super().get_info(proto)
+            sessions = ()
             for authenticator in proto.authenticators:
                 auth_sessions = authenticator.get_sessions()
                 if auth_sessions:
@@ -684,4 +686,5 @@ class ProxyServer(ServerCore):
                         i += 1
                     info["instances"] = instances_info
                     info["proxies"] = len(instances)
+        info.setdefault("server", {})["type"] = "Python/GLib/proxy"
         return info
