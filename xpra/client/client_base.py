@@ -153,7 +153,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.encryption = opts.encryption or opts.tcp_encryption
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.init_challenge_handlers(opts.challenge_handlers)
-        self.init_aliases()
+        #this is now done in UI client only,
+        #most simple clients are just wasting time doing this
+        #self.init_aliases()
         if self.INSTALL_SIGNAL_HANDLERS:
             self.install_signal_handlers()
 
