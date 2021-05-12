@@ -18,7 +18,7 @@ from xpra.gtk_common.gtk_util import (
     TableBuilder,
     )
 from xpra.util import repr_ellipsized
-from xpra.os_util import POSIX, OSX, WIN32, platform_name
+from xpra.os_util import POSIX, OSX, WIN32, is_Wayland, platform_name
 from xpra.simple_stats import std_unit_dec
 from xpra.scripts.config import (
     get_defaults, parse_bool,
@@ -323,6 +323,7 @@ class StartSession(Gtk.Window):
         #so they won't trigger "changes" messages later
         #- we don't show "auto" as an option, convert to either true or false:
         options.splash = (str(options.splash) or "").lower() not in FALSE_OPTIONS
+        options.xsettings = (str(options.xsettings) or "").lower() not in FALSE_OPTIONS
         self.session_options = options
 
 
@@ -908,6 +909,8 @@ class FeaturesWindow(SessionOptions):
             "to-client" : "to client only",
             "disabled"  : "disabled",
             })
+        if POSIX and not OSX and not is_Wayland():
+            self.bool_cb(tb, "XSettings", "xsettings")
         self.vbox.show_all()
 
 
