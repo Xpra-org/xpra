@@ -105,7 +105,7 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/e
           "-logfile", "%s/Xorg.${DISPLAY}.log" % log_dir,
           #must be specified with some Xorg versions (ie: arch linux)
           #this directory can store xorg config files, it does not need to be created:
-          "-configdir", get_Xdummy_confdir(),
+          "-configdir", '"%s"' % get_Xdummy_confdir(),
           "-config", xorg_conf
           ]
     return cmd
