@@ -872,6 +872,7 @@ class FeaturesWindow(SessionOptions):
 
         tb = self.table()
         self.bool_cb(tb, "Splash Screen", "splash", "Show a splash screen during startup")
+        self.bool_cb(tb, "Read only", "readonly", "Mouse and keyboard events will be ignored")
         self.radio_cb(tb, "Border", "border", "Show a colored border around xpra windows to differentiate them", None, {
             "auto"  : ("auto,5:off", "auto"),
             "none"  : FALSE_OPTIONS,
