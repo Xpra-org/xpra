@@ -8,6 +8,7 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
+import signal
 from subprocess import Popen, PIPE, call
 import os.path
 
@@ -21,6 +22,7 @@ from xpra.os_util import (
     POSIX, OSX,
     )
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
+from xpra.log import Logger
 
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
@@ -56,7 +58,6 @@ vfb_logger = None
 def get_vfb_logger():
     global vfb_logger
     if not vfb_logger:
-        from xpra.log import Logger
         vfb_logger = Logger("server", "x11", "screen")
     return vfb_logger
 
@@ -322,7 +323,6 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
 def kill_xvfb(xvfb_pid):
     log = get_vfb_logger()
     log.info("killing xvfb with pid %s", xvfb_pid)
-    import signal
     try:
         os.kill(xvfb_pid, signal.SIGTERM)
     except OSError as e:
