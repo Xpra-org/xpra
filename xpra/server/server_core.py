@@ -256,13 +256,15 @@ class ServerCore:
         self.dbus_control = opts.dbus_control
         self.pidfile = opts.pidfile
         self.mdns = opts.mdns
+        if opts.start_new_commands:
+            #must be initialized before calling init_html_proxy
+            self.menu_provider = get_menu_provider()
         self.init_html_proxy(opts)
         self.init_auth(opts)
         self.init_ssl(opts)
         if self.pidfile:
             self.pidinode = write_pidfile(self.pidfile)
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
-        self.menu_provider = get_menu_provider()
 
 
     def init_ssl(self, opts):
@@ -387,7 +389,8 @@ class ServerCore:
                     log("threaded_init()", exc_info=True)
                     log.error("Error in initialization thread callback %s", cb)
                     log.error(" %s", e)
-        self.menu_provider.setup()
+        if self.menu_provider:
+            self.menu_provider.setup()
         log("threaded_init() servercore end")
 
     def after_threaded_init(self, callback):
@@ -613,23 +616,27 @@ class ServerCore:
             httplog.warn(" disabling the tcp-proxy option")
             self._tcp_proxy = False
         if opts.http_scripts.lower() not in FALSE_OPTIONS:
-            SCRIPT_OPTIONS = {
+            script_options = {
                 "/Status"           : self.http_status_request,
                 "/Info"             : self.http_info_request,
                 "/Sessions"         : self.http_sessions_request,
                 "/Displays"         : self.http_displays_request,
+                }
+            if self.menu_provider:
+                #we have menu data we can expose:
+                script_options.update({
                 "/Menu"             : self.http_menu_request,
                 "/MenuIcon"         : self.http_menu_icon_request,
                 "/DesktopMenu"      : self.http_desktop_menu_request,
                 "/DesktopMenuIcon"  : self.http_desktop_menu_icon_request,
-                }
+                })
             if opts.http_scripts.lower() in ("all", "*"):
-                self._http_scripts = SCRIPT_OPTIONS
+                self._http_scripts = script_options
             else:
                 for script in opts.http_scripts.split(","):
                     if not script.startswith("/"):
                         script = "/"+script
-                    handler = SCRIPT_OPTIONS.get(script)
+                    handler = script_options.get(script)
                     if not handler:
                         httplog.warn("Warning: unknown script '%s'", script)
                     else:

@@ -81,9 +81,10 @@ class ChildCommandServer(StubServerMixin):
         self.child_reaper = getChildReaper()
         self.source_env = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
-        #may already have been initialized by servercore:
-        self.menu_provider = self.menu_provider or get_menu_provider()
-        self.menu_provider.on_reload.append(self.send_updated_menu)
+        if self.start_new_commands:
+            #may already have been initialized by servercore:
+            self.menu_provider = self.menu_provider or get_menu_provider()
+            self.menu_provider.on_reload.append(self.send_updated_menu)
 
     def threaded_setup(self):
         self.exec_start_commands()
@@ -91,7 +92,8 @@ class ChildCommandServer(StubServerMixin):
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
-        self.menu_provider.setup()
+        if self.menu_provider:
+            self.menu_provider.setup()
 
     def cleanup(self):
         if self.terminate_children and self._upgrading!=EXITING_CODE:
@@ -99,7 +101,8 @@ class ChildCommandServer(StubServerMixin):
         def noop():
             pass
         self.reaper_exit = noop
-        self.menu_provider.cleanup()
+        if self.menu_provider:
+            self.menu_provider.cleanup()
         reaper_cleanup()
 
 
@@ -116,6 +119,7 @@ class ChildCommandServer(StubServerMixin):
     def _get_xdg_menu_data(self, force_reload=False):
         if not self.start_new_commands:
             return None
+        assert self.menu_provider
         return self.menu_provider.get_menu_data(force_reload)
 
 
@@ -162,9 +166,13 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "start-after-connect-done"  : self.start_after_connect_done,
             "start-new"                 : self.start_new_commands,
-            "start-menu"                : self.menu_provider.get_menu_data(remove_icons=True) or {},
-            "start-desktop-menu"        : self.menu_provider.get_desktop_sessions(remove_icons=True) or {},
             }
+        mp = self.menu_provider
+        if mp:
+            info.update({
+            "start-menu"                : mp.get_menu_data(remove_icons=True) or {},
+            "start-desktop-menu"        : mp.get_desktop_sessions(remove_icons=True) or {},
+            })
         for i,procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
         return {"commands": info}
