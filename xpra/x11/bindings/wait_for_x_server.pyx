@@ -24,16 +24,16 @@ cdef extern from "X11/Xlib.h":
 def wait_for_x_server(display_name, int timeout):
     cdef Display * d
     cdef char* name
-    cdef double start = monotonic_time()
     if display_name is not None:
         name = display_name
     else:
         name = NULL
-    first_time = True
-    while first_time or (monotonic_time() - start) < timeout:
-        if not first_time:
-            sleep(0.2)
-        first_time = False
+    t = 100
+    cdef double start = monotonic_time()
+    while (monotonic_time() - start) < timeout:
+        if t>0:
+            sleep(t/1000)
+            t = t//2
         d = XOpenDisplay(name)
         if d is not NULL:
             XCloseDisplay(d)
