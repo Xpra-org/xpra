@@ -31,11 +31,11 @@ def wait_for_x_server(display_name, int timeout):
     t = 100
     cdef double start = monotonic_time()
     while (monotonic_time() - start) < timeout:
-        if t>0:
-            sleep(t/1000)
-            t = t//2
         d = XOpenDisplay(name)
         if d is not NULL:
             XCloseDisplay(d)
             return
+        if t>0:
+            sleep(t/1000)
+            t = t//2
     raise RuntimeError("could not connect to X server on display '%s' after %i seconds" % (bytestostr(display_name), timeout))
