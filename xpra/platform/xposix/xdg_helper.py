@@ -229,11 +229,11 @@ def do_load_xdg_menu_data():
         return None
     menu = None
     error = None
-    with OSEnvContext():
-        #see ticket #2340,
-        #invalid values for XDG_CONFIG_DIRS can cause problems,
-        #so try unsetting it if we can't load the menus with it:
-        for cd in (False, True):
+    #see ticket #2340,
+    #invalid values for XDG_CONFIG_DIRS can cause problems,
+    #so try unsetting it if we can't load the menus with it:
+    for cd in (False, True):
+        with OSEnvContext():
             if cd:
                 os.environ.pop("XDG_CONFIG_DIRS", None)
             #see ticket #2174,
@@ -251,8 +251,8 @@ def do_load_xdg_menu_data():
                     log("do_load_xdg_menu_data()", exc_info=True)
                     error = e
                     menu = None
-            if menu:
-                break
+        if menu:
+            break
     if menu is None:
         if error:
             log.error("Error parsing xdg menu data:")
