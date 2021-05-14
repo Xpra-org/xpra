@@ -960,30 +960,32 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_gibberish(self, packet):
         log("process_gibberish(%s)", ellipsizer(packet))
         message, data = packet[1:3]
+        from xpra.net.socket_util import guess_packet_type
+        packet_type = guess_packet_type(data)
         p = self._protocol
-        show_as_text = p and p.input_packetcount==0 and len(data)<128 and all(c in string.printable for c in bytestostr(data))
-        if show_as_text:
-            #looks like the first packet back is just text, print it:
-            data = bytestostr(data)
-            if data.find("\n")>=0:
-                for x in data.splitlines():
-                    netlog.warn(x)
-            else:
-                netlog.error("Error: failed to connect, received")
-                netlog.error(" %s", repr_ellipsized(data))
+        pcount = p.input_packetcount==0 if p else 0
+        if pcount<=1:
+            netlog.error("Error: failed to connect")
         else:
-            from xpra.net.socket_util import guess_packet_type
-            packet_type = guess_packet_type(data)
-            log("guess_packet_type(%r)=%s", data, packet_type)
-            if packet_type and packet_type!="xpra":
-                netlog.error("Error: received a %s packet", packet_type)
-                netlog.error(" this is not an xpra server?")
+            netlog.error("Error: received an invalid packet")
+        if packet_type and packet_type=="xpra":
+            netlog.error(" xpra server bug or mangled packet")
+        if packet_type and packet_type!="xpra":
+            netlog.error(" this is a '%s' packet,", packet_type)
+            netlog.error(" not from an xpra server?")
+        else:
+            netlog.error(" received uninterpretable nonsense: %r", message)
+        data = bytestostr(data).strip("\n\r")
+        show_as_text = pcount<=1 and len(data)<128 and all((c in string.printable) or c in ("\n\r") for c in data)
+        if show_as_text:
+            if data.find("\n")>=0:
+                netlog.error(" data:")
+                for x in data.split("\n"):
+                    netlog.error("  %r", x.split("\0")[0])
             else:
-                netlog.error("Error: received uninterpretable nonsense: %s", message)
-            if p:
-                netlog.error(" packet no %i data: %s", p.input_packetcount, repr_ellipsized(data))
-            else:
-                netlog.error(" data: %s", repr_ellipsized(data))
+                netlog.error(" data: %r", data)
+        else:
+            netlog.error(" packet no %i data: %s", pcount, nonl(repr_ellipsized(data)))
         self.quit(EXIT_PACKET_FAILURE)
 
     def _process_invalid(self, packet):
