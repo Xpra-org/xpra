@@ -36,7 +36,7 @@ from xpra.gtk_common.gtk_util import (
     DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
     BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
     POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
-    WINDOW_EVENT_MASK,
+    WINDOW_EVENT_MASK, SMOOTH_SCROLL_MASK,
     )
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
 from xpra.client.client_window_base import ClientWindowBase
@@ -2120,6 +2120,10 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
 
     def _do_scroll_event(self, event):
         if self._client.readonly:
+            return
+        if SMOOTH_SCROLL_MASK and event.direction==SMOOTH_SCROLL_MASK:
+            mouselog("smooth scroll event: %s", event)
+            self._client.wheel_event(self._id, event.delta_x, event.delta_y)
             return
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",
