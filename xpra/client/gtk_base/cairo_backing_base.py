@@ -20,6 +20,8 @@ from xpra.log import Logger
 
 log = Logger("paint", "cairo")
 
+COPY_OLD_BACKING = envbool("XPRA_CAIRO_COPY_OLD_BACKING", True)
+
 FORMATS = {-1   : "INVALID"}
 for attr in dir(cairo):
     if attr.startswith("FORMAT_"):
@@ -99,7 +101,7 @@ class CairoBackingBase(WindowBackingBase):
             cr.set_source_rgba(1, 1, 1, 1)
         cr.rectangle(0, 0, bw, bh)
         cr.fill()
-        if old_backing is not None:
+        if COPY_OLD_BACKING and old_backing is not None:
             oldw, oldh = old_backing.get_width(), old_backing.get_height()
             sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
             cr.translate(dx-sx, dy-sy)
