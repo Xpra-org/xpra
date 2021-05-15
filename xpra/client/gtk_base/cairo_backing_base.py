@@ -91,8 +91,12 @@ class CairoBackingBase(WindowBackingBase):
         backing = ImageSurface(FORMAT_ARGB32, bw, bh)
         self._backing = backing
         cr = Context(backing)
-        cr.set_operator(OPERATOR_CLEAR)
-        cr.set_source_rgba(1, 1, 1, 1)
+        if self._alpha_enabled:
+            cr.set_operator(OPERATOR_CLEAR)
+            cr.set_source_rgba(1, 1, 1, 0)
+        else:
+            cr.set_operator(OPERATOR_SOURCE)
+            cr.set_source_rgba(1, 1, 1, 1)
         cr.rectangle(0, 0, bw, bh)
         cr.fill()
         if old_backing is not None:
