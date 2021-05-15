@@ -106,7 +106,7 @@ class CairoBackingBase(WindowBackingBase):
             sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
             cr.translate(dx-sx, dy-sy)
             cr.rectangle(sx, sy, w, h)
-            cr.fill()
+            cr.clip()
             cr.set_operator(OPERATOR_SOURCE)
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
