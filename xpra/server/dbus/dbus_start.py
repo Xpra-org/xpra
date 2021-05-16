@@ -90,6 +90,7 @@ def get_saved_dbus_env():
         except Exception as e:
             log.error("failed to load dbus environment variable '%s':\n" % k)
             log.error(" %s\n" % e)
+    log("get_saved_dbus_env()=%s", env)
     return env
 
 def save_dbus_env(env):
