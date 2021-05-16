@@ -19,7 +19,7 @@ from xpra.scripts.main import (
     info, warn,
     no_gtk, bypass_no_gtk,
     validate_encryption, parse_env, configure_env,
-    stat_X11_display,
+    stat_X11_display, get_xpra_sessions,
     )
 from xpra.scripts.config import InitException, FALSE_OPTIONS, parse_bool
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
@@ -475,6 +475,31 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 # We will try to find one automaticaly
                 # Use the temporary magic value 'S' as marker:
                 display_name = 'S' + str(os.getpid())
+
+    if upgrading or upgrading_desktop:
+        assert display_name, "no display found to upgrade"
+        #try to stop the existing server if it exists:
+        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+        sessions = get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN, DotXpra.DEAD), matching_display=display_name, query=True)
+        session = sessions.get(display_name)
+        if session:
+            from xpra.platform.paths import get_xpra_command
+            cmd = get_xpra_command()+["exit"]
+            socket_path = session.get("socket-path")
+            if socket_path:
+                cmd += ["socket://%s" % socket_path]
+            else:
+                cmd += [display_name]
+            env = os.environ.copy()
+            #don't wait too long:
+            env["XPRA_CONNECT_TIMEOUT"] = "5"
+            from subprocess import Popen  #pylint: disable=import-outside-toplevel
+            try:
+                p = Popen(cmd, env=env)
+                p.wait()
+            except OSError as e:
+                noerr(sys.stderr.write, "Error: failed to 'exit' the server to upgrade\n")
+                noerr(sys.stderr.write, " %s\n" % e)
 
     if not (shadowing or proxying or upgrading or upgrading_desktop) and \
     opts.exit_with_children and not has_child_arg:
