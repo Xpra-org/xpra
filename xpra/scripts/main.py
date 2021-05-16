@@ -3276,7 +3276,7 @@ def run_displays(args):
 
 def run_clean_displays(args):
     if not POSIX or OSX:
-        raise InitInfo("clean-displays is not supported on this platform")
+        raise InitExit(EXIT_UNSUPPORTED, "clean-displays is not supported on this platform")
     displays = get_displays_info()
     dead_displays = tuple(display for display, descr in displays.items() if descr.get("state")=="DEAD")
     if not dead_displays:
@@ -3286,7 +3286,6 @@ def run_clean_displays(args):
         return 0
     inodes_display = {}
     for display in sorted_nicely(dead_displays):
-        descr = displays.get(display)
         #find the X11 server PID
         inodes = []
         sockpath = "/tmp/.X11-unix/X%s" % (display.lstrip(":"))
