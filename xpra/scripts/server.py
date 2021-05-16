@@ -726,9 +726,11 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         else:
             log("found existing XAUTHORITY file '%s'", xauthority)
         #resolve use-display='auto':
-        if use_display is None:
+        if use_display is None or upgrading or upgrading_desktop:
             #figure out if we have to start the vfb or not:
             if not display_name:
+                if upgrading or upgrading_desktop:
+                    error_cb("no displays found to upgrade")
                 use_display = False
             else:
                 progress(20, "connecting to the display")
@@ -736,6 +738,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 stat = stat_X11_display(display_no)
                 log("stat_X11_display(%i)=%s", display_no, stat)
                 if not stat:
+                    if upgrading or upgrading_desktop:
+                        error_cb("cannot access display '%s'" % (display_name,))
                     #no X11 socket to connect to, so we have to start one:
                     start_vfb = True
                 elif verify_display(None, display_name, log_errors=False, timeout=1)==0:
