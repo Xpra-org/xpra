@@ -39,7 +39,13 @@ xpra \- viewer for remote, persistent X applications
 [\fB--socket-dir\fP=\fIDIR\fP]
 [\fB--socket-dirs\fP=\fIDIRS\fP]
 .HP
+\fBxpra\fP \fBdisplays\fP \fI[:DISPLAY]\fP
+.HP
+\fBxpra\fP \fBclean-displays\fP \fI[:DISPLAY]\fP
+.HP
 \fBxpra\fP \fBlist\fP [\fB--socket-dir\fP=\fIDIR\fP]
+.HP
+\fBxpra\fP \fBlist-sessions\fP [\fB--socket-dir\fP=\fIDIR\fP]
 .HP
 \fBxpra\fP \fBlist-windows\fP [\fB--socket-dir\fP=\fIDIR\fP]
 .HP
@@ -56,6 +62,9 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBupgrade-desktop\fP \fI[:DISPLAY]\fP [...any options accepted by
 \fBxpra start-desktop\fP...]
+.HP
+\fBxpra\fP \fBrecover\fP \fI[:DISPLAY]\fP [...any options accepted by
+\fBxpra start\fP...]
 .PD
 .\" --------------------------------------------------------------------
 .SH DESCRIPTION
@@ -142,8 +151,27 @@ and connect to it.
 Start an xfce session in a nested X11 server on an automatically
 assigned display number.
 .TP
+\fBxpra displays\fP
+Lists all the displays currently running on the system.
+This includes interactive desktop sessions as well as any
+virtual display (xvfb) whether or not they are being used
+by an xpra server.
+The displays in \fIDEAD\fP state can be recovered using
+\fIxpra recover\fP.
+.TP
+\fBxpra clean-displays\fP
+Terminate any displays left in \fIDEAD\fP state.
+.TP
+\fBxpra clean-sockets\fP
+Delete any server sockets belonging to dead servers.
+.TP
 \fBxpra list\fP
 Show a list of xpra servers you have running on the current host.
+This will also run \fIclean-sockets\fP.
+.TP
+\fBxpra list-session\fP
+Show a list of xpra servers, with extra information about each
+session if it can be collected.
 .TP
 \fBxpra list-windows\fP
 Show a list of xpra servers you have running on the current host,
@@ -311,6 +339,12 @@ command will exit and need to be restarted.
 Same as \fIupgrade\fP but for servers started using \fIstart-desktop\fP.
 It is possible to upgrade seamless server into a desktop server
 and vice versa.
+.SS xpra recover
+Similar to \fIupgrade\fP and \fIupgrade-desktop\fP: but without needing
+to specify if the server to recover is a seamless server or a desktop
+server. Unlike the \fIupgrade\fP subcommands, \fIrecover\fP can also
+detect which displays need recovering. That is, displays which were
+previously used by an xpra server but this server has gone missing.
 .SS xpra shadow
 This command shadows an existing X11 display. If there is only one
 X11 display active and its number is below 10, it can be auto-detected.
