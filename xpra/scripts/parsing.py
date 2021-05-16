@@ -241,6 +241,7 @@ def get_usage():
                         "shell [DISPLAY]",
                         "showconfig",
                         "list",
+                        "list-sessions",
                         "list-windows",
                         "sessions",
                         "launcher",
