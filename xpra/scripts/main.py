@@ -3379,38 +3379,41 @@ def get_displays_info(dotxpra=None, display_names=None):
     return displays_info
 
 def get_display_info(display):
-    display_info = {}
-    display_info["state"] = "LIVE"
-    if POSIX and not OSX:
-        #get the window manager info:
-        try:
-            from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
-            cmd = get_xpra_command() + ["wminfo"]
-            env = os.environ.copy()
-            env["DISPLAY"] = display
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
-            out = proc.communicate(None, 5)[0]
-        except Exception as e:
-            print("failed to query wminfo: %s" % (e, ))
-        else:
-            #parse wminfo output:
-            if out and proc.returncode==0:
-                wminfo = {}
-                for line in out.decode().splitlines():
-                    parts = line.split("=", 1)
-                    if len(parts)==2:
-                        wminfo[parts[0]] = parts[1]
-                display_info.update(wminfo)
-                mode = wminfo.get("xpra-server-mode", "")
-                #seamless servers and non-xpra servers should have a window manager:
-                if (not mode or mode.find("seamless")>=0) and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
-                    display_info["state"] = "DEAD"
-                #check if the xpra server process still exists:
-                pid = wminfo.get("xpra-server-pid")
-                if pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid):
-                    display_info["state"] = "DEAD"
-            elif proc.returncode!=0:
-                display_info.update({"state" : "UNKNOWN"})
+    log = Logger("util")
+    display_info = {"state" : "LIVE"}
+    if OSX or not POSIX:
+        return display_info
+    #get the window manager info:
+    try:
+        from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
+        cmd = get_xpra_command() + ["wminfo"]
+        env = os.environ.copy()
+        env["DISPLAY"] = display
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
+        out = proc.communicate(None, 5)[0]
+    except Exception as e:
+        log("get_display_info(%s)", display, exc_info=True)
+        log.error("Error querying wminfo for display '%s': %s", display, e)
+        return display_info
+    #parse wminfo output:
+    if out and proc.returncode==0:
+        wminfo = {}
+        for line in out.decode().splitlines():
+            parts = line.split("=", 1)
+            if len(parts)==2:
+                wminfo[parts[0]] = parts[1]
+        log("get_display_info(%s) wminfo=%s", display, wminfo)
+        display_info.update(wminfo)
+        mode = wminfo.get("xpra-server-mode", "")
+        #seamless servers and non-xpra servers should have a window manager:
+        if (not mode or mode.find("seamless")>=0) and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
+            display_info["state"] = "DEAD"
+        #check if the xpra server process still exists:
+        pid = wminfo.get("xpra-server-pid")
+        if pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid):
+            display_info["state"] = "DEAD"
+    elif proc.returncode!=0:
+        display_info.update({"state" : "UNKNOWN"})
     return display_info
 
 def get_displays(dotxpra=None, display_names=None):
