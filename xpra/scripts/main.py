@@ -3197,6 +3197,8 @@ def run_clean_sockets(opts, args):
 
 
 def run_recover(script_file, error_cb, options, args, defaults):
+    if not POSIX or OSX:
+        raise InitExit(EXIT_UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
     assert POSIX and not OSX
     no_gtk()
     display_descr = {}
