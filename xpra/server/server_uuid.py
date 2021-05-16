@@ -9,7 +9,7 @@ from xpra.gtk_common.gtk_util import get_default_root_window
 
 
 def save_uuid(uuid):
-    prop_set(get_default_root_window(), "_XPRA_SERVER_UUID", "latin1", uuid)
+    prop_set(get_default_root_window(), "XPRA_SERVER_UUID", "latin1", uuid)
 
 def get_uuid():
-    return prop_get(get_default_root_window(), "_XPRA_SERVER_UUID", "latin1", ignore_errors=True)
+    return prop_get(get_default_root_window(), "XPRA_SERVER_UUID", "latin1", ignore_errors=True)

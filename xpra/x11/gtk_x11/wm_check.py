@@ -38,9 +38,10 @@ def get_wm_info():
             else:
                 info["wmname"] = prop_get(root, "_NET_WM_NAME", "utf8", ignore_errors=True, raise_xerrors=False) or ""
         for name, prop_name, prop_type in (
-            ("xpra-server-pid", "_XPRA_SERVER_PID", "u32"),
+            ("xpra-server-pid", "XPRA_SERVER_PID", "u32"),
+            ("xpra-vfb-pid", "XPRA_XVFB_PID", "u32"),
             ("xpra-server-version", "XPRA_SERVER", "latin1"),
-            ("xpra-server-mode", "_XPRA_SERVER_MODE", "latin1"),
+            ("xpra-server-mode", "XPRA_SERVER_MODE", "latin1"),
             ):
             v = prop_get(root, prop_name, prop_type, ignore_errors=True, raise_xerrors=False)
             if v:

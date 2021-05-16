@@ -78,14 +78,17 @@ class X11ServerBase(X11ServerCore):
             log("_default_xsettings=%s", self._default_xsettings)
             self.init_all_server_settings()
 
+    def save_pid(self):
+        from xpra.scripts.server import _save_int
+        _save_int(b"XPRA_SERVER_PID", os.getpid())
 
     def init_display_pid(self, pid):
         if pid:
             from xpra.scripts.server import _save_int
-            _save_int(b"_XPRA_SERVER_PID", pid)
+            _save_int(b"XPRA_XVFB_PID", pid)
         else:
             from xpra.scripts.server import _get_int
-            pid = _get_int(b"_XPRA_SERVER_PID")
+            pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")
             if not pid:
                 log.info("xvfb pid not found")
             else:

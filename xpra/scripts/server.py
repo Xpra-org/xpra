@@ -98,10 +98,11 @@ def _get_str(prop_name):
 
 
 def save_xvfb_pid(pid):
-    _save_int("_XPRA_SERVER_PID", pid)
+    _save_int("XPRA_XVFB_PID", pid)
 
 def get_xvfb_pid():
-    return _get_int("_XPRA_SERVER_PID")
+    #lookup the legacy name too:
+    return _get_int("XPRA_XVFB_PID") or _get_int("_XPRA_SERVER_PID")
 
 
 def save_uinput_id(uuid):
@@ -948,6 +949,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.init_dbus(dbus_pid, dbus_env)
         if not shadowing and not proxying:
             app.init_display_pid(xvfb_pid)
+            app.save_pid()
         app.original_desktop_display = desktop_display
         del opts
         if not app.server_ready():

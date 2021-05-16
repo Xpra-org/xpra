@@ -3398,9 +3398,15 @@ def get_display_info(display):
                     parts = line.split("=", 1)
                     if len(parts)==2:
                         wminfo[parts[0]] = parts[1]
-                if not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
-                    display_info["state"] = "DEAD"
                 display_info.update(wminfo)
+                mode = wminfo.get("xpra-server-mode", "")
+                #seamless servers and non-xpra servers should have a window manager:
+                if (not mode or mode.find("seamless")>=0) and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
+                    display_info["state"] = "DEAD"
+                #check if the xpra server process still exists:
+                pid = wminfo.get("xpra-server-pid")
+                if pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid):
+                    display_info["state"] = "DEAD"
             elif proc.returncode!=0:
                 display_info.update({"state" : "UNKNOWN"})
     return display_info

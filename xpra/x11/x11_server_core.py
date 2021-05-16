@@ -147,9 +147,7 @@ class X11ServerCore(GTKServerBase):
             self.save_mode()
 
     def save_mode(self):
-        #save mode:
-        prop_set(get_default_root_window(), "_XPRA_SERVER_MODE", "latin1", self.get_server_mode())
-        log.error("_XPRA_SERVER_MODE=%s", self.get_server_mode())
+        prop_set(get_default_root_window(), "XPRA_SERVER_MODE", "latin1", self.get_server_mode())
 
     def init_fake_xinerama(self):
         if self.fake_xinerama in FALSE_OPTIONS:
