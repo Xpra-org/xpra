@@ -344,7 +344,7 @@ class X11ServerCore(GTKServerBase):
             "fakeXinerama"          : bool(self.libfakeXinerama_so),
             "libfakeXinerama"       : self.libfakeXinerama_so or "",
             })
-        log("X11ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
+        log("X11ServerCore.do_get_info took %ims", (monotonic_time()-start)*1000)
         return info
 
     def get_ui_info(self, proto, wids=None, *args) -> dict:
