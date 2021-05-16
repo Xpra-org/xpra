@@ -329,9 +329,9 @@ def set_server_features(opts):
     server_features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")
 
 
-def make_desktop_server(clobber):
+def make_desktop_server():
     from xpra.x11.desktop_server import XpraDesktopServer
-    return XpraDesktopServer(clobber)
+    return XpraDesktopServer()
 
 def make_server(clobber):
     from xpra.x11.server import XpraServer
@@ -888,17 +888,39 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         os.chdir(opts.chdir)
 
     dbus_pid, dbus_env = 0, {}
-    if not shadowing and POSIX and not OSX and not clobber:
-        no_gtk()
-        assert starting or starting_desktop or proxying
-        try:
-            from xpra.server.dbus.dbus_start import start_dbus
-        except ImportError as e:
-            log("dbus components are not installed: %s", e)
-        else:
-            dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
-            if dbus_env:
-                os.environ.update(dbus_env)
+    if not shadowing and POSIX and not OSX:
+        dbuslog = Logger("dbus")
+        if not start_vfb:
+            #try to retrieve it:
+            from xpra.scripts.main import exec_wminfo
+            wminfo = exec_wminfo(display_name)
+            try:
+                dbus_pid = int(wminfo.get("dbus-pid", 0))
+            except ValueError:
+                pass
+            dbus_address = wminfo.get("dbus-address")
+            if dbus_pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % dbus_pid):
+                dbuslog("dbus pid %s is no longer valid")
+                dbus_pid = 0
+            if dbus_pid and dbus_address:
+                dbus_env["DBUS_SESSION_BUS_PID"] = str(dbus_pid)
+                dbus_env["DBUS_SESSION_BUS_ADDRESS"] = dbus_address
+                dbus_window = wminfo.get("dbus-window")
+                if dbus_window:
+                    dbus_env["DBUS_SESSION_BUS_WINDOW_ID"] = dbus_window
+                dbuslog("retrieved dbus environment: %s", dbus_env)
+        if not dbus_env:
+            no_gtk()
+            assert starting or starting_desktop or proxying
+            try:
+                from xpra.server.dbus.dbus_start import start_dbus
+            except ImportError as e:
+                dbuslog("dbus components are not installed: %s", e)
+            else:
+                dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
+                if dbus_env:
+                    dbuslog("started new dbus instance: %s", dbus_env)
+                    os.environ.update(dbus_env)
 
     if not proxying:
         if POSIX and not OSX:
@@ -964,7 +986,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             app = make_server(clobber)
         else:
             assert starting_desktop or upgrading_desktop
-            app = make_desktop_server(clobber)
+            app = make_desktop_server()
         app.init_virtual_devices(devices)
 
     try:

@@ -3382,26 +3382,9 @@ def get_display_info(display):
     display_info = {"state" : "LIVE"}
     if OSX or not POSIX:
         return display_info
-    #get the window manager info:
-    try:
-        from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
-        cmd = get_xpra_command() + ["wminfo"]
-        env = os.environ.copy()
-        env["DISPLAY"] = display
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
-        out = proc.communicate(None, 5)[0]
-    except Exception as e:
-        log("get_display_info(%s)", display, exc_info=True)
-        log.error("Error querying wminfo for display '%s': %s", display, e)
-        return display_info
-    #parse wminfo output:
-    if out and proc.returncode==0:
-        wminfo = {}
-        for line in out.decode().splitlines():
-            parts = line.split("=", 1)
-            if len(parts)==2:
-                wminfo[parts[0]] = parts[1]
-        log("get_display_info(%s) wminfo=%s", display, wminfo)
+    wminfo = exec_wminfo(display)
+    if wminfo:
+        log("wminfo(%s)=%s", display, wminfo)
         display_info.update(wminfo)
         mode = wminfo.get("xpra-server-mode", "")
         #seamless servers and non-xpra servers should have a window manager:
@@ -3411,7 +3394,7 @@ def get_display_info(display):
         pid = wminfo.get("xpra-server-pid")
         if pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid):
             display_info["state"] = "DEAD"
-    elif proc.returncode!=0:
+    else:
         display_info.update({"state" : "UNKNOWN"})
     return display_info
 
@@ -3477,6 +3460,29 @@ def run_wmname(args):
         print(name)
     return 0
 
+def exec_wminfo(display):
+    log = Logger("util")
+    #get the window manager info by executing the "wminfo" subcommand:
+    try:
+        from xpra.platform.paths import get_xpra_command  #pylint: disable=import-outside-toplevel
+        cmd = get_xpra_command() + ["wminfo"]
+        env = os.environ.copy()
+        env["DISPLAY"] = display
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
+        out = proc.communicate(None, 5)[0]
+    except Exception as e:
+        log("exec_wminfo(%s)", display, exc_info=True)
+        log.error("Error querying wminfo for display '%s': %s", display, e)
+        return {}
+    #parse wminfo output:
+    if proc.returncode!=0 or not out:
+        return {}
+    wminfo = {}
+    for line in out.decode().splitlines():
+        parts = line.split("=", 1)
+        if len(parts)==2:
+            wminfo[parts[0]] = parts[1]
+    return wminfo
 
 def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,), matching_display=None, query=True):
     results = dotxpra.socket_details(matching_display=matching_display)

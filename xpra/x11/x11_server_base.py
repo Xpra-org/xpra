@@ -51,9 +51,8 @@ class X11ServerBase(X11ServerCore):
         (see XpraServer or DesktopServer for actual implementations)
     """
 
-    def __init__(self, clobber):
-        self.clobber = clobber
-        X11ServerCore.__init__(self)
+    def __init__(self):
+        super().__init__()
         self._default_xsettings = {}
         self._settings = {}
         self.double_click_time = 0
@@ -80,7 +79,7 @@ class X11ServerBase(X11ServerCore):
 
     def save_pid(self):
         from xpra.scripts.server import _save_int
-        _save_int(b"XPRA_SERVER_PID", os.getpid())
+        _save_int(b"XPRA_SERVER_gPID", os.getpid())
 
     def init_display_pid(self, pid):
         if pid:
@@ -121,33 +120,15 @@ class X11ServerBase(X11ServerCore):
 
 
     def init_dbus(self, dbus_pid, dbus_env):
-        try:
-            from xpra.server.dbus import dbus_start
-            assert dbus_start
-        except ImportError as e:
-            log("init_dbus(%s, %s)", dbus_pid, dbus_env, exc_info=True)
-            log.warn("Warning: cannot initialize dbus")
-            log.warn(" %s", e)
-            return
-        from xpra.server.dbus.dbus_start import (
-            get_saved_dbus_pid, get_saved_dbus_env,
-            save_dbus_pid, save_dbus_env,
-            )
-        super().init_dbus(dbus_pid, dbus_env)
-        if self.clobber:
-            #get the saved pids and env
-            self.dbus_pid = get_saved_dbus_pid()
-            self.dbus_env = get_saved_dbus_env()
-            dbuslog("retrieved existing dbus attributes: %s, %s", self.dbus_pid, self.dbus_env)
-            if self.dbus_env:
-                os.environ.update(self.dbus_env)
-        else:
+        dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
+        if dbus_pid and dbus_env:
+            os.environ.update(dbus_env)
+            self.dbus_pid = dbus_pid
+            self.dbus_env = dbus_env
             #now we can save values on the display
             #(we cannot access gtk3 until dbus has started up)
-            if self.dbus_pid:
-                save_dbus_pid(self.dbus_pid)
-            if self.dbus_env:
-                save_dbus_env(self.dbus_env)
+            from xpra.server.dbus.dbus_start import save_dbus_env
+            save_dbus_env(dbus_env)
 
 
     def last_client_exited(self):

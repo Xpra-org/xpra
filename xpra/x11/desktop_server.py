@@ -284,8 +284,8 @@ class XpraDesktopServer(DesktopServerBaseClass):
         "xpra-motion-event"     : one_arg_signal,
         }
 
-    def __init__(self, clobber=False):
-        X11ServerBase.__init__(self, clobber)
+    def __init__(self):
+        X11ServerBase.__init__(self)
         for c in DESKTOPSERVER_BASES:
             if c!=X11ServerBase:
                 c.__init__(self)
