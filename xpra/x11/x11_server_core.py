@@ -143,6 +143,13 @@ class X11ServerCore(GTKServerBase):
         with xlog:
             self.x11_filter = init_x11_filter()
         assert self.x11_filter
+        with xlog:
+            self.save_mode()
+
+    def save_mode(self):
+        #save mode:
+        prop_set(get_default_root_window(), "_XPRA_SERVER_MODE", "latin1", self.get_server_mode())
+        log.error("_XPRA_SERVER_MODE=%s", self.get_server_mode())
 
     def init_fake_xinerama(self):
         if self.fake_xinerama in FALSE_OPTIONS:
@@ -294,8 +301,6 @@ class X11ServerCore(GTKServerBase):
 
     def save_uuid(self):
         save_uuid(str(self.uuid))
-        #save mode:
-        prop_set(get_default_root_window(), "_XPRA_SERVER_MODE", "latin1", self.get_server_mode())
 
     def set_keyboard_repeat(self, key_repeat):
         if key_repeat:
