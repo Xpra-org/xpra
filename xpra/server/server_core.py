@@ -2252,6 +2252,11 @@ class ServerCore:
             info["session"] = {"name" : self.session_name}
         if self.child_reaper:
             info.update(self.child_reaper.get_info())
+        if self.dbus_pid:
+            up("dbus", {
+                "pid"   : self.dbus_pid,
+                "env"   : self.dbus_env,
+                })
         end = monotonic_time()
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
