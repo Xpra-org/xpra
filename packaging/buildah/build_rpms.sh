@@ -58,7 +58,11 @@ while read p; do
 		MATCHES=`$DNF repoquery "$dep" --repo xpra-local-build 2> /dev/null | wc -l`
 		if [ "${MATCHES}" == "0" ]; then
 			echo " * missing ${dep}"
-			MISSING="${MISSING} ${dep}"
+			if [[ $dep == *debuginfo* ]]; then
+				echo " (ignored debuginfo)"
+			else
+				MISSING="${MISSING} ${dep}"
+			fi
 		else
 			echo " * found   ${dep}"
 		fi
