@@ -57,6 +57,12 @@ while read p; do
 	while read -r dep; do
 		MATCHES=`$DNF repoquery "$dep" --repo xpra-local-build 2> /dev/null | wc -l`
 		if [ "${MATCHES}" == "0" ]; then
+			#sometimes rpmspec gets confused,
+			#try to find the source package instead:
+			srcdep="${dep/$ARCH/src}"
+			MATCHES=`$DNF repoquery "$srcdep" --repo xpra-local-source 2> /dev/null | wc -l`
+		fi
+		if [ "${MATCHES}" == "0" ]; then
 			echo " * missing ${dep}"
 			if [[ $dep == *debuginfo* ]]; then
 				echo " (ignored debuginfo)"
