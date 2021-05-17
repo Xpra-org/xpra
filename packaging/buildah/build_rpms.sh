@@ -61,6 +61,11 @@ while read p; do
 			#try to find the source package instead:
 			srcdep="${dep/$ARCH/src}"
 			MATCHES=`$DNF repoquery "$srcdep" --repo xpra-local-source 2> /dev/null | wc -l`
+			if [ "${MATCHES}" != "0" ]; then
+				echo " * found   ${srcdep}"
+			fi
+		else
+			echo " * found   ${dep}"
 		fi
 		if [ "${MATCHES}" == "0" ]; then
 			echo " * missing ${dep}"
@@ -69,8 +74,6 @@ while read p; do
 			else
 				MISSING="${MISSING} ${dep}"
 			fi
-		else
-			echo " * found   ${dep}"
 		fi
 	done < <(rpmspec -q --rpms ${SPECFILE} 2> /dev/null)
 	if [ ! -z "${MISSING}" ]; then
