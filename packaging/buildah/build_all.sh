@@ -5,6 +5,11 @@ die() { echo "$*" 1>&2 ; exit 1; }
 DO_XPRA=${DO_XPRA:-1}
 DO_XPRA_HTML5=${DO_XPRA_HTML5:-1}
 
+BASH="bash"
+if [ "${DEBUG:-0}" == "1" ]; then
+	BASH="bash -x"
+fi
+
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
@@ -87,7 +92,7 @@ for DISTRO in $DISTROS; do
 				--volume ${BUILDAH_DIR}/pkgs:/src/pkgs:ro,z \
 				--volume ${BUILDAH_DIR}/../rpm:/src/rpm:ro,z \
 				--volume ${BUILDAH_DIR}/../debian:/src/debian:O \
-				$TEMP_IMAGE /src/build.sh
+				$TEMP_IMAGE $BASH /src/build.sh
 	#			--volume /var/cache/dnf:/var/cache/dnf:O \
 	#buildah run \
 	#			--volume $REPO_PATH:/src/repo:noexec,nodev,z \
