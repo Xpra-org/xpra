@@ -1,7 +1,15 @@
 # Changelog
 
-## [4.2]
-* work in progress
+## [4.2] 2021-05-18
+* [use pinentry for password prompts](https://github.com/Xpra-org/xpra/issues/3002) and [ssh prompts](https://github.com/Xpra-org/xpra/commit/2d2022d184f31f53c2328b5e5ca804e5ea46ff6c)
+* [nvjpeg encoder](https://github.com/Xpra-org/xpra/issues/2984) - also requires [this commit](https://github.com/Xpra-org/xpra-html5/commit/cd846f0055276ecd9b021767a13be05a16e833eb) to the [html5 client](https://github.com/Xpra-org/xpra-html5/)
+* [gui for starting remote sessions](https://github.com/Xpra-org/xpra/issues/3070)
+* new subcommands: `recover`, `displays`, `list-sessions`, `clean-displays`, `clean-sockets` - [#3098](https://github.com/Xpra-org/xpra/issues/3098), [#3099](https://github.com/Xpra-org/xpra/issues/3099)
+* many fixes: [window initial position](https://github.com/Xpra-org/xpra/issues/2008), [focus](https://github.com/Xpra-org/xpra/issues/2852), non-opengl paint corruption, [slow rendering on MacOS](https://github.com/Xpra-org/xpra/commit/5ad0e767441454758b111f1c80baf49c10b964e8), build scripts, [handle smooth scroll events with wayland clients](https://github.com/Xpra-org/xpra/issues/3127), always lossy screen updates for terminals, [clipboard timeout](https://github.com/Xpra-org/xpra/issues/3086), [peercred auth options](https://github.com/Xpra-org/xpra/commit/e401e650c18974288d71cebc6491970698560a9f)
+* support multiple clients using mmap simultaneously [with non-default file paths](https://github.com/Xpra-org/xpra/commit/ef936f461996915547141e8d02c15a57516d5ff0)
+* [only synchronize xsettings with seamless servers](https://github.com/Xpra-org/xpra/commit/f7cbb40230ed5170859f5b5ea6cbd27ded3d3d02)
+* automatic desktop scaling is now [disabled](https://github.com/Xpra-org/xpra/commit/092800cbe44716fb0adaf842de5bc95a6329527a)
+* workaround for [gnome applications starting slowly](https://github.com/Xpra-org/xpra/issues/3109)
 
 ## [4.1] 2021-02-26
 * Overhauled container based [build system](https://github.com/Xpra-org/xpra/tree/master/packaging/buildah)
