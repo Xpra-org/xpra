@@ -607,6 +607,25 @@ fi
 
 
 %changelog
+* Tue May 18 2021 Antoine Martin <antoine@xpra.org> 4.2-1
+- use pinentry for password prompts and ssh prompts
+- nvjpeg encoder
+- gui for starting remote sessions
+- new subcommands: `recover`, `displays`, `list-sessions`, `clean-displays`, `clean-sockets`
+- many fixes:
+   window initial position
+   focus issues
+   non-opengl paint corruption
+   slow rendering on MacOS
+   handle smooth scroll events with wayland clients
+   always lossless screen updates for terminals
+   clipboard timeout
+   peercred auth options
+- support multiple clients using mmap simultaneously with non-default file paths
+- only synchronize xsettings with seamless servers
+- automatic desktop scaling is now disabled
+- workaround for gnome applications starting slowly (documentation)
+
 * Sat Feb 27 2021 Antoine Martin <antoine@xpra.org> 4.1-1
 - Overhauled container based build system
 - Splash screen
