@@ -301,19 +301,18 @@ def select_device(preferred_device_id=-1, min_compute=0):
     log("select_device(%s, %s)", preferred_device_id, min_compute)
     for device_id in (preferred_device_id, get_pref("device-id")):
         if device_id is not None and device_id>=0:
-            #try to honour the device specified:
-            try:
-                device, context, tpct = load_device(device_id)
-            finally:
+            dct = load_device(device_id)
+            if dct:
+                device, context, tpct = dct
                 context.pop()
                 context.detach()
-            if min_compute>0:
-                compute = compute_capability(device)
-                if compute<min_compute:
-                    log.warn("Warning: GPU device %i only supports compute %#x", device_id, compute)
-            if tpct<MIN_FREE_MEMORY:
-                log.warn("Warning: GPU device %i is low on memory: %i%%", device_id, tpct)
-            return device_id, device
+                if min_compute>0:
+                    compute = compute_capability(device)
+                    if compute<min_compute:
+                        log.warn("Warning: GPU device %i only supports compute %#x", device_id, compute)
+                if tpct<MIN_FREE_MEMORY:
+                    log.warn("Warning: GPU device %i is low on memory: %i%%", device_id, tpct)
+                return device_id, device
     load_balancing = get_pref("load-balancing")
     log("load-balancing=%s", load_balancing)
     if load_balancing=="round-robin":
@@ -364,8 +363,11 @@ def select_best_free_memory(min_compute=0):
         log("will test %s device%s from %s list: %s", len(device_list), engs(device_list), list_name, device_list)
         for device_id in device_list:
             context = None
+            dct = load_device(device_id)
+            if not dct:
+                continue
             try:
-                device, context, tpct = load_device(device_id)
+                device, context, tpct = dct
                 compute = compute_capability(device)
                 if compute<min_compute:
                     log("ignoring device %s: compute capability %#x (minimum %#x required)",
@@ -393,10 +395,23 @@ def select_best_free_memory(min_compute=0):
 
 def load_device(device_id):
     log("load_device(%i)", device_id)
-    device = driver.Device(device_id)
+    try:
+        device = driver.Device(device_id)
+    except Exception as e:
+        log("load_device(%s)", device_id, exc_info=True)
+        log.error("Error: allocating CUDA device %s", device_id)
+        log.error(" %s", e)
+        return None
     log("select_device: testing device %s: %s", device_id, device_info(device))
     cf = driver.ctx_flags
-    context = device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
+    flags = cf.SCHED_YIELD | cf.MAP_HOST
+    try:
+        context = device.make_context(flags=flags)
+    except Exception as e:
+        log("%s.make_context(%s)", flags, exc_info=True)
+        log.error("Error: cannot create CUDA context for device %s", device_id)
+        log.error(" %s", e)
+        return None
     log("created context=%s", context)
     free, total = driver.mem_get_info()
     log("memory: free=%sMB, total=%sMB",  int(free/1024/1024), int(total/1024/1024))
