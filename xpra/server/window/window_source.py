@@ -1018,7 +1018,7 @@ class WindowSource(WindowIconSource):
         damage requests for a window.
         Damage methods will check this value via 'is_cancelled(sequence)'.
         """
-        damagelog("cancel_damage(%i) wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s",
+        damagelog("cancel_damage(%s) wid=%s, dropping delayed region %s, %s queued encodes, and all sequences up to %s",
                   limit, self.wid, self._damage_delayed, len(self.encode_queue), self._sequence)
         #for those in flight, being processed in separate threads, drop by sequence:
         self._damage_cancelled = limit or self._sequence
