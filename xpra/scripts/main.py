@@ -3338,6 +3338,7 @@ def run_clean_displays(args):
                     try:
                         cmdline = os.path.join(procpath, "cmdline")
                         cmd = open(cmdline, "r").read()
+                        cmd = shlex.join(cmd.split("\0"))
                     except Exception:
                         pass
                     display_pids[display] = (pid, cmd)
