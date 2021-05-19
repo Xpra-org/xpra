@@ -235,7 +235,9 @@ def do_load_xdg_menu_data():
     for cd in (False, True):
         with OSEnvContext():
             if cd:
-                os.environ.pop("XDG_CONFIG_DIRS", None)
+                if not os.environ.pop("XDG_CONFIG_DIRS", ""):
+                    #was already unset
+                    continue
             #see ticket #2174,
             #things may break if the prefix is not set,
             #and it isn't set when logging in via ssh
