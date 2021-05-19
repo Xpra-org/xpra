@@ -7,7 +7,7 @@
 import os.path
 import array
 
-from xpra.util import iround, first_time, envint
+from xpra.util import iround, first_time, envint, envbool
 from xpra.os_util import (
     strtobytes, bytestostr,
     WIN32, OSX, PYTHON2, POSIX,
@@ -354,6 +354,9 @@ if is_gtk3():
     WINDOW_EVENT_MASK = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
             | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
             | em.PROPERTY_CHANGE_MASK | em.SCROLL_MASK
+    SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
+    if SMOOTH_SCROLL:
+        WINDOW_EVENT_MASK |= em.SMOOTH_SCROLL_MASK
     del em
 
     WINDOW_NAME_TO_HINT = {
