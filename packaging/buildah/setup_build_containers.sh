@@ -23,7 +23,7 @@ fi
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
-RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:8}
+RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:7 CentOS:8}
 for DISTRO in $RPM_DISTROS; do
 	DISTRO_LOWER="${DISTRO,,}"
 	if [[ "$DISTRO_LOWER" == "xx"* ]];then
@@ -34,6 +34,10 @@ for DISTRO in $RPM_DISTROS; do
 	podman image exists $IMAGE_NAME
 	if [ "$?" == "0" ]; then
 		continue
+	fi
+	PM="dnf"
+	if [ "${DISTRO}" == "CentOS:7" ]; then
+		PM="yum"
 	fi
 	echo
 	echo "********************************************************************************"
@@ -57,29 +61,34 @@ for DISTRO in $RPM_DISTROS; do
 			buildah run $IMAGE_NAME dnf config-manager --set-disabled $repo
 		done
 	fi
-	buildah run $IMAGE_NAME dnf update -y
-	buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
-	buildah run $IMAGE_NAME dnf install -y redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
+	buildah run $IMAGE_NAME $PM update -y
+	buildah run $IMAGE_NAME $PM install -y redhat-rpm-config rpm-build rpmdevtools createrepo_c rsync
+	if [ "${PM}" == "dnf" ]; then
+		buildah run $IMAGE_NAME dnf install -y 'dnf-command(builddep)'
+	fi
 	if [ "${MINIMAL}" == "0" ]; then
-		buildah run $IMAGE_NAME dnf install -y gcc gcc-c++ make cmake
+		buildah run $IMAGE_NAME ${PM} install -y gcc gcc-c++ make cmake
 	fi
 	if [[ "${DISTRO_LOWER}" == "fedora"* ]]; then
 		RNUM=`echo $DISTRO | awk -F: '{print $2}'`
 		dnf -y makecache --releasever=$RNUM --setopt=cachedir=/var/cache/dnf/$RNUM
-		buildah run $IMAGE_NAME dnf install -y rpmspectool
+		buildah run $IMAGE_NAME ${PM} install -y rpmspectool
 		if [ "${MINIMAL}" == "0" ]; then
 			#these are required by the xpra-html5 build:
-			buildah run $IMAGE_NAME dnf install -y brotli js-jquery desktop-backgrounds-compat
+			buildah run $IMAGE_NAME ${PM} install -y brotli js-jquery desktop-backgrounds-compat
 		fi
 	else
-		#some of the packages we need for building are in the "PowerTools" repository:
-		buildah run $IMAGE_NAME dnf config-manager --set-enabled powertools
-		#no "rpmspectool" package on CentOS 8, use setuptools to install it:
-		buildah run $IMAGE_NAME dnf install -y python3-setuptools
-		buildah run $IMAGE_NAME easy_install-3.6 python-rpm-spec
+		#centos8:
+		if [ "${PM}" == "dnf" ]; then
+			#some of the packages we need for building are in the "PowerTools" repository:
+			buildah run $IMAGE_NAME dnf config-manager --set-enabled powertools
+			#no "rpmspectool" package on CentOS 8, use setuptools to install it:
+			buildah run $IMAGE_NAME dnf install -y python3-setuptools
+			buildah run $IMAGE_NAME easy_install-3.6 python-rpm-spec
+		fi
 		if [ "${MINIMAL}" == "0" ]; then
 			#these are required by the xpra-html5 build:
-			buildah run $IMAGE_NAME dnf install -y brotli centos-backgrounds centos-logos
+			buildah run $IMAGE_NAME ${PM} install -y brotli centos-backgrounds centos-logos
 		fi
 	fi
 	buildah run $IMAGE_NAME rpmdev-setuptree
@@ -88,7 +97,7 @@ for DISTRO in $RPM_DISTROS; do
 	buildah run $IMAGE_NAME mkdir -p "/src/repo/" "/src/rpm" "/src/debian" "/src/pkgs" "/usr/lib64/xpra/pkgconfig"
 	buildah config --workingdir /src $IMAGE_NAME
 	buildah copy $IMAGE_NAME "./xpra-build.repo" "/etc/yum.repos.d/"
-	buildah run $IMAGE_NAME createrepo "/src/repo/"
+	buildah run $IMAGE_NAME createrepo_c "/src/repo/"
 	if [ "${NVIDIA_CODECS}" == "1" ]; then
 		buildah copy $IMAGE_NAME "./nvenc-rpm.pc" "/usr/lib64/pkgconfig/nvenc.pc"
 		buildah copy $IMAGE_NAME "./cuda.pc" "/usr/lib64/pkgconfig/cuda.pc"

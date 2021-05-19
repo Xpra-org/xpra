@@ -1,6 +1,11 @@
 #!/bin/bash
 
-DNF="${DNF:-dnf}"
+dnf --version >& /dev/null
+if [ "$?" == "0" ]; then
+	DNF="${DNF:-dnf}"
+else
+	DNF="${DNF:-yum}"
+fi
 
 if [ `id -u` != "0" ]; then
 	if [ "${DNF}" == "dnf" ]; then
@@ -13,7 +18,7 @@ for dir in "./repo/SRPMS" "./repo/$ARCH"; do
 	echo "* (re)creating repodata in $dir"
 	mkdir $dir 2> /dev/null
 	rm -fr $dir/repodata
-	createrepo $dir > /dev/null
+	createrepo_c $dir > /dev/null
 done
 
 #if we are going to build xpra,
@@ -54,20 +59,22 @@ while read p; do
 	echo " $p"
 	SPECFILE="./rpm/$p.spec"
 	MISSING=""
+	rpmspec -q --rpms ${SPECFILE}
 	while read -r dep; do
-		MATCHES=`$DNF repoquery "$dep" --repo xpra-local-build 2> /dev/null | wc -l`
-		if [ "${MATCHES}" == "0" ]; then
-			#sometimes rpmspec gets confused,
-			#try to find the source package instead:
-			srcdep="${dep/$ARCH/src}"
-			MATCHES=`$DNF repoquery "$srcdep" --repo xpra-local-source 2> /dev/null | wc -l`
-			if [ "${MATCHES}" != "0" ]; then
-				echo " * found   ${srcdep}"
-			fi
+		if [ "$DNF" == "yum" ]; then
+			MATCHES=`repoquery "$dep" --repoid=xpra-local-build 2> /dev/null | wc -l`
 		else
-			echo " * found   ${dep}"
+			MATCHES=`$DNF repoquery "$dep" --repo xpra-local-build 2> /dev/null | wc -l`
+			if [ "${MATCHES}" == "0" ]; then
+				#sometimes rpmspec gets confused,
+				#try to find the source package instead:
+				srcdep="${dep/$ARCH/src}"
+				MATCHES=`$DNF repoquery "$srcdep" --repo xpra-local-source 2> /dev/null | wc -l`
+			fi
 		fi
-		if [ "${MATCHES}" == "0" ]; then
+		if [ "${MATCHES}" != "0" ]; then
+			echo " * found   ${srcdep}"
+		else
 			echo " * missing ${dep}"
 			if [[ $dep == *debuginfo* ]]; then
 				echo " (ignored debuginfo)"
@@ -79,7 +86,12 @@ while read p; do
 	if [ ! -z "${MISSING}" ]; then
 		echo " need to rebuild $p to get:${MISSING}"
 		echo " - installing build dependencies"
-		$DNF builddep -y ${SPECFILE} > builddep.log
+		yum-builddep --version >& /dev/null
+		if [ "$?" == "0" ]; then
+			yum-builddep -y ${SPECFILE} > builddep.log
+		else
+			$DNF builddep -y ${SPECFILE} > builddep.log
+		fi
 		if [ "$?" != "0" ]; then
 			echo "-------------------------------------------"
 			echo "builddep failed:"
@@ -105,7 +117,7 @@ while read p; do
 		#update the local repo:
 		echo " - re-creating repository metadata"
 		for dir in "./repo/SRPMS" "./repo/$ARCH"; do
-			createrepo $dir >& createrepo.log
+			createrepo_c $dir >& createrepo.log
 			if [ "$?" != "0" ]; then
 				echo "-------------------------------------------"
 				echo "'createrepo $dir' failed"
