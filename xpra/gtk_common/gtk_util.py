@@ -25,6 +25,7 @@ alphalog = Logger("gtk", "alpha")
 SHOW_ALL_VISUALS = False
 #try to get workarea from GTK:
 GTK_WORKAREA = envbool("XPRA_GTK_WORKAREA", True)
+SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
 
 GTK_VERSION_INFO = {}
 def get_gtk_version_info() -> dict:
@@ -199,6 +200,9 @@ em = Gdk.EventMask
 WINDOW_EVENT_MASK = em.STRUCTURE_MASK | em.KEY_PRESS_MASK | em.KEY_RELEASE_MASK \
         | em.POINTER_MOTION_MASK | em.BUTTON_PRESS_MASK | em.BUTTON_RELEASE_MASK \
         | em.PROPERTY_CHANGE_MASK | em.SCROLL_MASK | em.SMOOTH_SCROLL_MASK
+if SMOOTH_SCROLL:
+    WINDOW_EVENT_MASK |= em.SMOOTH_SCROLL_MASK
+
 del em
 
 
