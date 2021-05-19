@@ -960,7 +960,7 @@ def get_defaults():
                     "exec-wrapper"      : "",
                     "dbus-launch"       : "dbus-launch --sh-syntax --close-stderr",
                     "webcam"            : ["auto", "no"][OSX or WIN32],
-                    "mousewheel"        : "on",
+                    "mousewheel"        : ["on", "invert-x"][OSX],
                     "input-devices"     : "auto",
                     "shortcut-modifiers": "auto",
                     "open-files"        : "auto",

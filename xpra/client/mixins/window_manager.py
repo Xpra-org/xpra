@@ -66,7 +66,6 @@ for s in OR_FORCE_GRAB_STR.split(","):
         OR_FORCE_GRAB.setdefault(parts[0], []).append(parts[1])
 
 SKIP_DUPLICATE_BUTTON_EVENTS = envbool("XPRA_SKIP_DUPLICATE_BUTTON_EVENTS", True)
-REVERSE_HORIZONTAL_SCROLLING = envbool("XPRA_REVERSE_HORIZONTAL_SCROLLING", OSX)
 
 DYNAMIC_TRAY_ICON = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
 ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
@@ -413,8 +412,6 @@ class WindowClient(StubClientMixin):
         #this is a different entry point for mouse wheel events,
         #which provides finer grained deltas (if supported by the server)
         #accumulate deltas:
-        if REVERSE_HORIZONTAL_SCROLLING:
-            deltax = -deltax
         self.wheel_deltax += deltax
         self.wheel_deltay += deltay
         button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
