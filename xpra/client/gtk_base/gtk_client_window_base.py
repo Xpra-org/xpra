@@ -2141,7 +2141,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         if event.direction==Gdk.ScrollDirection.SMOOTH:
             mouselog("smooth scroll event: %s", event)
-            self._client.wheel_event(self._id, event.delta_x, event.delta_y)
+            self._client.wheel_event(self._id, event.delta_x, -event.delta_y)
             return
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",
