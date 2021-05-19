@@ -102,8 +102,10 @@ while read p; do
 		mkdir -p "rpmbuild/SOURCES" "rpmbuild/RPMS" 2> /dev/null
 		#specfiles and patches
 		cp ./rpm/* "rpmbuild/SOURCES/"
+		cp ./rpm/* "$HOME/rpmbuild/SOURCES/"
 		#source packages
 		cp ./pkgs/* "rpmbuild/SOURCES/"
+		cp ./pkgs/* "$HOME/rpmbuild/SOURCES/"
 		echo " - building RPM package(s)"
 		rpmbuild --define "_topdir `pwd`/rpmbuild/" -ba $SPECFILE >& rpmbuild.log
 		if [ "$?" != "0" ]; then
