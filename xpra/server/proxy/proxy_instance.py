@@ -32,7 +32,7 @@ log = Logger("proxy")
 enclog = Logger("encoding")
 
 
-PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 10)
+PROXY_QUEUE_SIZE = envint("XPRA_PROXY_QUEUE_SIZE", 0)
 #for testing only: passthrough as RGB:
 PASSTHROUGH_RGB = envbool("XPRA_PROXY_PASSTHROUGH_RGB", False)
 VIDEO_TIMEOUT = 5                  #destroy video encoder after N seconds of idle state
