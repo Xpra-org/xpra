@@ -1402,8 +1402,8 @@ def get_spec(encoding, colorspace):
     assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     #undocumented and found the hard way, see:
-    #https://www.xpra.org/trac/ticket/1046#comment:6
-    #https://xpra.org/trac/ticket/1550#comment:13
+    #https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
+    #https://github.com/Xpra-org/xpra/issues/1550
     min_w, min_h = 128, 128
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
     global MAX_SIZE

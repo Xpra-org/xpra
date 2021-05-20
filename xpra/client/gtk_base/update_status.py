@@ -142,7 +142,7 @@ class UpdateStatusWindow:
     def download(self, *_args):
         self.hide()
         import webbrowser
-        webbrowser.open_new_tab("https://xpra.org/trac/wiki/Download")
+        webbrowser.open_new_tab("https://github.com/Xpra-org/xpra/wiki/Download")
 
 
 def main():

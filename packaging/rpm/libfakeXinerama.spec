@@ -9,7 +9,7 @@
 Name:           libfakeXinerama
 Version:        0.1.0
 Release:        4%{?dist}
-URL:            https://www.xpra.org/trac/wiki/FakeXinerama
+URL:            https://github.com/Xpra-org/libfakeXinerama
 Summary:        Fake Xinerama library for exposing virtual screens to X11 client applications
 License:        MIT
 Group:          System Environment/Libraries

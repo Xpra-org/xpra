@@ -14,7 +14,7 @@ log = Logger("webcam")
 
 #on Debian and Ubuntu, the v4l2loopback device is created with exclusive_caps=1,
 #so we cannot check the devices caps for the "VIDEO_CAPTURE" flag.
-#see https://xpra.org/trac/ticket/1596
+#https://github.com/Xpra-org/xpra/issues/1596
 CHECK_VIRTUAL_CAPTURE = envbool("XPRA_CHECK_VIRTUAL_CAPTURE", not (is_Ubuntu() or is_Debian()))
 
 

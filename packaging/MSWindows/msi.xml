@@ -12,7 +12,7 @@
     <ProductName Detect="executable" Value="Xpra" />
     <Comments Detect="executable" Value="This installation was built with Inno Setup." />
     <Contact Detect="" Value="" />
-    <HelpLink Detect="" Value="https://xpra.org/trac/wiki/Usage" />
+    <HelpLink Detect="" Value="https://github.com/Xpra-org/xpra/tree/master/docs" />
     <UpdateLink Detect="" Value="" />
     <AboutLink Detect="" Value="https://xpra.org/" />
   </Installer>
