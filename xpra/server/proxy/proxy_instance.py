@@ -295,7 +295,7 @@ class ProxyInstance:
     ################################################################################
 
     def queue_client_packet(self, packet):
-        log("queueing client packet: %s", bytestostr(packet[0]))
+        log("queueing client packet: %s (queue size=%s)", bytestostr(packet[0]), self.client_packets.qsize())
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
@@ -338,12 +338,12 @@ class ProxyInstance:
             return
         #the packet types below are forwarded:
         if packet_type=="disconnect":
-            reason = bytestostr(packet[1])
-            log("got disconnect from client: %s", reason)
+            reasons = tuple(bytestostr(x) for x in packet[1:])
+            log("got disconnect from client: %s", csv(reasons))
             if self.exit:
                 self.client_protocol.close()
             else:
-                self.stop(None, "disconnect from client", reason)
+                self.stop(None, "disconnect from client", *reasons)
         elif packet_type=="send-file":
             if packet[6]:
                 packet[6] = Compressed("file-data", packet[6])
@@ -354,7 +354,7 @@ class ProxyInstance:
 
 
     def queue_server_packet(self, packet):
-        log("queueing server packet: %s", bytestostr(packet[0]))
+        log("queueing server packet: %s (queue size=%s)", bytestostr(packet[0]), self.server_packets.qsize())
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
@@ -385,27 +385,32 @@ class ProxyInstance:
 
     def cancel_server_ping_timer(self):
         spt = self.server_ping_timer
+        log("cancel_server_ping_timer() server_ping_timer=%s", spt)
         if spt:
             self.server_ping_timer = None
             self.source_remove(spt)
 
     def cancel_client_ping_timer(self):
         cpt = self.client_ping_timer
+        log("cancel_client_ping_timer() client_ping_timer=%s", cpt)
         if cpt:
             self.client_ping_timer = None
             self.source_remove(cpt)
 
     def schedule_server_ping(self):
+        log("schedule_server_ping()")
         self.cancel_server_ping_timer()
         self.server_last_ping_echo = monotonic_time()
         self.server_ping_timer = self.timeout_add(PING_INTERVAL, self.send_server_ping)
 
     def schedule_client_ping(self):
+        log("schedule_client_ping()")
         self.cancel_client_ping_timer()
         self.client_last_ping_echo = monotonic_time()
         self.client_ping_timer = self.timeout_add(PING_INTERVAL, self.send_client_ping)
 
     def send_server_ping(self):
+        log("send_server_ping() server_last_ping=%s", self.server_last_ping)
         #if we've already sent one, check for the echo:
         if self.server_last_ping:
             delta = self.server_last_ping-self.server_last_ping_echo
@@ -421,6 +426,7 @@ class ProxyInstance:
         return True
 
     def send_client_ping(self):
+        log("send_client_ping() client_last_ping=%s", self.client_last_ping)
         #if we've already sent one, check for the echo:
         if self.client_last_ping:
             delta = self.client_last_ping-self.client_last_ping_echo
