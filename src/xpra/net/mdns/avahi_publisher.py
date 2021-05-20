@@ -137,7 +137,7 @@ class AvahiPublisher(object):
             return "interface %i" % self.interface
         return "all interfaces"
 
-    def get_info(self) -> dict:
+    def get_info(self):
         return "%s %s:%s on %s" % (self.name, self.host, self.port, self.iface())
 
     def __repr__(self):
