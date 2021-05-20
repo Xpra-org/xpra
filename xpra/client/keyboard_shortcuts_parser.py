@@ -85,7 +85,10 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
     #accept "," or "+" as delimiter:
     for s in strs:
         #example for s: Control+F8:some_action()
-        parts = s.split(":", 1)
+        if s.find("=")>s.find(":"):
+            parts = s.split("=", 1)
+        else:
+            parts = s.split(":", 1)
         if len(parts)!=2:
             log.error("Error: invalid key shortcut '%s'", s)
             continue
