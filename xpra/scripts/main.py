@@ -2245,6 +2245,8 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
             #make sure that the display isn't the one we're running against,
             #unless we're shadowing it
             return xdisplay!=display or mode=="shadow"
+        if mode=="proxy":
+            return False
         if os.environ.get("XDG_SESSION_DESKTOP"):
             return True
     if is_splash_enabled(options.splash):
