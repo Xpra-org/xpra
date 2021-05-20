@@ -41,7 +41,7 @@ if [ "${DO_DOWNLOAD}" == "1" ]; then
 	./download_source.sh
 fi
 
-RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:8}
+RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:7 CentOS:8}
 DEB_DISTROS=${DEB_DISTROS:-Ubuntu:bionic Ubuntu:focal Ubuntu:hirsute Debian:stretch Debian:buster Debian:bullseye Debian:sid}
 if [ -z "${DISTROS}" ]; then
 	DISTROS="$RPM_DISTROS $DEB_DISTROS"
