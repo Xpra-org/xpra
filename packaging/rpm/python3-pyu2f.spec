@@ -50,7 +50,7 @@ rm -rf %{buildroot}
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 0.1.5-3
 - verify source checksum
 
-* Wed Feb 17 2020 Antoine Martin <antoine@xpra.org> - 0.1.5-2
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 0.1.5-2
 - add missing python3-devel build dependency, was causing python3_sitelib macro to fail
 
 * Sat Oct 31 2020 Antoine Martin <antoine@xpra.org> - 0.1.5-1
