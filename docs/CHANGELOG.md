@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.3] 2021-05-21
+* TODO
+
 ## [4.2] 2021-05-18
 * [use pinentry for password prompts](https://github.com/Xpra-org/xpra/issues/3002) and [ssh prompts](https://github.com/Xpra-org/xpra/commit/2d2022d184f31f53c2328b5e5ca804e5ea46ff6c)
 * [nvjpeg encoder](https://github.com/Xpra-org/xpra/issues/2984) - also requires [this commit](https://github.com/Xpra-org/xpra-html5/commit/cd846f0055276ecd9b021767a13be05a16e833eb) to the [html5 client](https://github.com/Xpra-org/xpra-html5/)
