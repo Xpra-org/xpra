@@ -446,6 +446,7 @@ class EncodingsMixin(StubSourceMixin):
                 log.warn(" but it only supports: %s" % csv(self.encodings))
             if encoding not in self.server_encodings:
                 log.error("Error: encoding %s is not supported by this server", encoding)
+                log.error(" server encodings: %s", csv(self.server_encodings))
                 encoding = None
         if not encoding:
             encoding = "auto"
