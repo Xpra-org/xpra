@@ -154,6 +154,8 @@ Requires:			python3-rencode
 Requires:			python3-numpy
 Requires:			libyuv
 Requires:			libvpx
+#this is a downstream package with the codecs separated - it should not be installed:
+Conflicts:			xpra-codecs-freeworld
 Conflicts:			libvpx-xpra
 Obsoletes:          libvpx-xpra < 1.8
 Requires:			x264-xpra
