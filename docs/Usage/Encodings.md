@@ -17,8 +17,8 @@ Generally, if any tuning is needed, instead of trying to guess what should be us
   <summary>pseudo encodings</summary>
 
 The following pseudo encodings just control which actual encodings can be selected by the engine:
-* `auto` which is the default, allows all options\
-* `grayscale` does the same, but without sending colours - which saves some bandwidth (this saving is not always significant)\
+* `auto` which is the default, allows all options
+* `grayscale` does the same, but without sending colours - which saves some bandwidth (this saving is not always significant)
 * `scroll` will try harder to send the screen updates using a list of motion vectors, if possible
 
 You can select the pseudo-encoding using the `--encoding=ENC` switch.
