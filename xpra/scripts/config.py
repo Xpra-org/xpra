@@ -310,7 +310,7 @@ def read_config(conf_file):
         lines = []
         no = 0
         for line in f:
-            sline = line.strip().rstrip('\r\n').strip()
+            sline = line.strip().strip('\r\n').strip()
             no += 1
             if not sline:
                 debug("%4s empty line", no)
