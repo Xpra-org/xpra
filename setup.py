@@ -863,7 +863,7 @@ def build_xpra_conf(install_dir):
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
-            'xvfb_command'          : xvfb_cmd_str(xvfb_command),
+            'xvfb_command'          : xvfb_cmd_str(xvfb_command, wrap=True),
             'fake_xinerama'         : fake_xinerama,
             'ssh_command'           : "auto",
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
