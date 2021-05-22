@@ -121,10 +121,10 @@ def hosts(host_str):
         return ["0.0.0.0", "::"]
     return [host_str]
 
-def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connection_cb=None, options=None):
+def add_listen_socket(socktype, sock, info, new_connection_cb, options=None):
     log = get_network_logger()
     log("add_listen_socket(%s, %s, %s, %s, %s, %s)",
-        socktype, sock, info, new_connection_cb, new_udp_connection_cb, options)
+        socktype, sock, info, new_connection_cb, options)
     try:
         #ugly that we have different ways of starting sockets,
         #TODO: abstract this into the socket class
@@ -134,19 +134,15 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, new_udp_connectio
             sock.start()
             return None
         sources = []
-        if socktype=="udp":
-            assert new_udp_connection_cb, "UDP sockets cannot be handled here"
-            new_udp_connection_cb(sock)
-        else:
-            from gi.repository import GLib
-            sock.listen(5)
-            def io_in_cb(sock, flags):
-                log("io_in_cb(%s, %s)", sock, flags)
-                return new_connection_cb(socktype, sock)
-            source = GLib.io_add_watch(sock, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
-            sources.append(source)
+        from gi.repository import GLib
+        sock.listen(5)
+        def io_in_cb(sock, flags):
+            log("io_in_cb(%s, %s)", sock, flags)
+            return new_connection_cb(socktype, sock)
+        source = GLib.io_add_watch(sock, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
+        sources.append(source)
         upnp_cleanup = []
-        if socktype in ("udp", "tcp", "ws", "wss", "ssh", "ssl"):
+        if socktype in ("tcp", "ws", "wss", "ssh", "ssl"):
             upnp = (options or {}).get("upnp", "no")
             if upnp.lower() in TRUE_OPTIONS:
                 from xpra.net.upnp import upnp_add
@@ -298,7 +294,6 @@ def guess_packet_type(data):
 
 def create_sockets(opts, error_cb):
     bind_tcp = parse_bind_ip(opts.bind_tcp)
-    bind_udp = parse_bind_ip(opts.bind_udp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
     bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
     bind_ws  = parse_bind_ip(opts.bind_ws, 80)
@@ -314,13 +309,6 @@ def create_sockets(opts, error_cb):
             error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
         for host in hosts(host_str):
             sock = setup_tcp_socket(host, iport, socktype)
-            host, iport = sock[2]
-            sockets[sock] = options
-    def add_udp_socket(socktype, host_str, iport, options):
-        if iport!=0 and iport<min_port:
-            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        for host in hosts(host_str):
-            sock = setup_udp_socket(host, iport, socktype)
             host, iport = sock[2]
             sockets[sock] = options
     # Initialize the TCP sockets before the display,
@@ -352,9 +340,6 @@ def create_sockets(opts, error_cb):
         log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():
             add_tcp_socket(socktype, host, iport, options)
-    log("setting up UDP sockets: %s", csv(bind_udp.items()))
-    for (host, iport), options in bind_udp.items():
-        add_udp_socket("udp", host, iport, options)
     log("setting up vsock sockets: %s", csv(bind_vsock.items()))
     for (cid, iport), options in bind_vsock.items():
         sock = setup_vsock_socket(cid, iport)
@@ -413,40 +398,6 @@ def setup_tcp_socket(host, iport, socktype="tcp"):
     log("%s: %s:%s : %s", socktype, host, iport, socket)
     log.info("created %s socket '%s:%s'", socktype, host, iport)
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
-
-def create_udp_socket(host, iport):
-    if host.find(":")<0:
-        listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sockaddr = (host, iport)
-    else:
-        assert socket.has_ipv6, "specified an IPv6 address but this is not supported"
-        res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_DGRAM)
-        listener = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-        sockaddr = res[0][-1]
-    listener.bind(sockaddr)
-    return listener
-
-def setup_udp_socket(host, iport, socktype="udp"):
-    log = get_network_logger()
-    try:
-        udp_socket = create_udp_socket(host, iport)
-    except Exception as e:
-        log("create_udp_socket%s", (host, iport), exc_info=True)
-        raise InitExit(EXIT_SOCKET_CREATION_ERROR,
-                       "failed to setup %s socket on %s:%s %s" % (socktype, host, iport, e)) from None
-    def cleanup_udp_socket():
-        log.info("closing %s socket %s:%s", socktype, host, iport)
-        try:
-            udp_socket.close()
-        except OSError:
-            pass
-    if iport==0:
-        iport = udp_socket.getsockname()[1]
-        log.info("allocated UDP port %i for %s", iport, host)
-    log("%s: %s:%s : %s", socktype, host, iport, socket)
-    log.info("created UDP socket %s:%s", host, iport)
-    return socktype, udp_socket, (host, iport), cleanup_udp_socket
-
 
 def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
     ip_sockets = {}

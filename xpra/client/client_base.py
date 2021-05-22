@@ -331,8 +331,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def setup_connection(self, conn):
         netlog("setup_connection(%s) timeout=%s, socktype=%s", conn, conn.timeout, conn.socktype)
-        if conn.socktype=="udp":
-            self.add_packet_handler("udp-control", self._process_udp_control, False)
         protocol_class = get_client_protocol_class(conn.socktype)
         protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol = protocol
@@ -357,11 +355,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, protocol)
         return protocol
-
-    def _process_udp_control(self, packet):
-        #send it back to the protocol object:
-        self._protocol.process_control(*packet[1:])
-
 
     def init_aliases(self):
         i = 1

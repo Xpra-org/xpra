@@ -16,9 +16,9 @@ class ConnectionClosedException(Exception):
 MAX_PACKET_SIZE = envint("XPRA_MAX_PACKET_SIZE", 16*1024*1024)
 FLUSH_HEADER = envbool("XPRA_FLUSH_HEADER", True)
 
-SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "udp")
+SOCKET_TYPES = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock")
 
-IP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh", "udp")
+IP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
 TCP_SOCKTYPES = ("tcp", "ssl", "ws", "wss", "ssh")
 
 
@@ -43,7 +43,6 @@ PACKET_TYPES = [
     "notify_show", "notify_close",
     "rpc-reply", "startup-complete", "setting-change", "control",
     "encodings",
-    "udp-control",
     ]
 
 def get_log_packets(exclude=False):

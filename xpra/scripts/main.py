@@ -1076,7 +1076,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         return desc
-    elif protocol in ("tcp", "ssl", "udp", "ws", "wss"):
+    elif protocol in ("tcp", "ssl", "ws", "wss"):
         desc.update({
                      "type"     : protocol,
                      })
@@ -1209,10 +1209,7 @@ def connect_or_fail(display_desc, opts):
 
 
 def socket_connect(dtype, host, port):
-    if dtype=="udp":
-        socktype = socket.SOCK_DGRAM
-    else:
-        socktype = socket.SOCK_STREAM
+    socktype = socket.SOCK_STREAM
     family = 0  #any
     try:
         addrinfo = socket.getaddrinfo(host, port, family, socktype)
@@ -1229,9 +1226,8 @@ def socket_connect(dtype, host, port):
             sockaddr = addr[-1]
             family = addr[0]
             sock = socket.socket(family, socktype)
-            if dtype!="udp":
-                from xpra.net.bytestreams import SOCKET_TIMEOUT
-                sock.settimeout(SOCKET_TIMEOUT)
+            from xpra.net.bytestreams import SOCKET_TIMEOUT
+            sock.settimeout(SOCKET_TIMEOUT)
             log = Logger("network")
             try:
                 log("socket.connect(%s)", sockaddr)
@@ -1354,17 +1350,13 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             )
         return conn
 
-    if dtype in ("tcp", "ssl", "ws", "wss", "udp"):
+    if dtype in ("tcp", "ssl", "ws", "wss"):
         host = display_desc["host"]
         port = display_desc["port"]
         sock = socket_connect(dtype, host, port)
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, socket_options=display_desc)
 
-        if dtype=="udp":
-            #mmap mode requires all packets to be received,
-            #so we can free up the mmap chunks regularly
-            opts.mmap = False
         if dtype in ("ssl", "wss"):
             strict_host_check = display_desc.get("strict-host-check")
             if strict_host_check is False:

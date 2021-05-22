@@ -660,7 +660,6 @@ OPTION_TYPES = {
                     "bind"              : list,
                     "bind-vsock"        : list,
                     "bind-tcp"          : list,
-                    "bind-udp"          : list,
                     "bind-ws"           : list,
                     "bind-wss"          : list,
                     "bind-ssl"          : list,
@@ -669,7 +668,6 @@ OPTION_TYPES = {
                     "auth"              : list,
                     "vsock-auth"        : list,
                     "tcp-auth"          : list,
-                    "udp-auth"          : list,
                     "ws-auth"           : list,
                     "wss-auth"          : list,
                     "ssl-auth"          : list,
@@ -699,7 +697,7 @@ START_COMMAND_OPTIONS = [
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     ]
-BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb"]
+BIND_OPTIONS = ["bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb"]
 
 #keep track of the options added since v3,
 #so we can generate command lines that work with older supported versions:
@@ -775,8 +773,8 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "splash",
     "printing", "file-transfer", "open-command", "open-files", "open-url", "start-new-commands",
     "mmap", "mmap-group", "mdns",
-    "auth", "vsock-auth", "tcp-auth", "udp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth",
-    "bind", "bind-vsock", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss", "bind-ssh", "bind-rfb",
+    "auth", "vsock-auth", "tcp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth",
+    "bind", "bind-vsock", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-ssh", "bind-rfb",
     "rfb-upgrade", "bandwidth-limit",
     "start", "start-child", "source", "source-start",
     "start-after-connect", "start-child-after-connect",
@@ -1064,7 +1062,6 @@ def get_defaults():
                     "bind"              : ["auto"],
                     "bind-vsock"        : [],
                     "bind-tcp"          : [],
-                    "bind-udp"          : [],
                     "bind-ws"           : [],
                     "bind-wss"          : [],
                     "bind-ssl"          : [],
@@ -1073,7 +1070,6 @@ def get_defaults():
                     "auth"              : [],
                     "vsock-auth"        : [],
                     "tcp-auth"          : [],
-                    "udp-auth"          : [],
                     "ws-auth"           : [],
                     "wss-auth"          : [],
                     "ssl-auth"          : [],

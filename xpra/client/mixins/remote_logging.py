@@ -50,7 +50,7 @@ class RemoteLogging(StubClientMixin):
             c.boolget("remote-logging") or c.boolget("remote-logging.receive")):
             #check for debug:
             from xpra.log import is_debug_enabled
-            conflict = tuple(v for v in ("network", "crypto", "udp", "websocket") if is_debug_enabled(v))
+            conflict = tuple(v for v in ("network", "crypto", "websocket") if is_debug_enabled(v))
             if conflict:
                 log.warn("Warning: cannot enable remote logging")
                 log.warn(" because debug logging is enabled for: %s", csv(conflict))

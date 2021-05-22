@@ -283,7 +283,6 @@ STRUCT_KNOWN_FILTERS = {
                 "protocol"      : "Packet input and output (formatting, parsing, sending and receiving)",
                 "websocket"     : "WebSocket layer",
                 "named-pipe"    : "Named pipe",
-                "udp"           : "UDP",
                 "crypto"        : "Encryption",
                 "auth"          : "Authentication",
                 "upnp"           : "UPnP",

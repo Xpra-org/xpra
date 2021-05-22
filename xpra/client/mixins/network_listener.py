@@ -46,8 +46,6 @@ class NetworkListener(StubClientMixin):
     def init(self, opts):
         def err(msg):
             raise InitException(msg)
-        #don't listen on udp sockets for now:
-        opts.bind_udp = ()
         self.sockets = create_sockets(opts, err)
         if opts.bind:
             try:

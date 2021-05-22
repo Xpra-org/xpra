@@ -156,8 +156,6 @@ class ServerCore:
         #networking bits:
         self._socket_info = {}
         self._potential_protocols = []
-        self._udp_listeners = []
-        self._udp_protocols = {}
         self._tcp_proxy_clients = []
         self._tcp_proxy = ""
         self._rfb_upgrade = 0
@@ -456,7 +454,6 @@ class ServerCore:
         self.do_cleanup()
         self.cleanup_protocols(protocols, reason, True)
         self._potential_protocols = []
-        self.cleanup_udp_listeners()
         self.cleanup_sockets()
         self.cleanup_dbus_server()
         if not self._upgrading:
@@ -907,7 +904,6 @@ class ServerCore:
         self._default_packet_handlers = {
             "hello":                                self._process_hello,
             "disconnect":                           self._process_disconnect,
-            "udp-control":                          self._process_udp_control,
             Protocol.CONNECTION_LOST:               self._process_connection_lost,
             Protocol.GIBBERISH:                     self._process_gibberish,
             Protocol.INVALID:                       self._process_invalid,
@@ -921,11 +917,6 @@ class ServerCore:
         for key in packet_types:
             self._aliases[i] = key
             i += 1
-
-    def cleanup_udp_listeners(self):
-        for udpl in self._udp_listeners:
-            udpl.close()
-        self._udp_listeners = []
 
     def cleanup_all_protocols(self, reason):
         protocols = self.get_all_protocols()
@@ -945,15 +936,9 @@ class ServerCore:
     def add_listen_socket(self, socktype, sock, options):
         info = self.socket_info.get(sock)
         netlog("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
-        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, self._new_udp_connection, options)
+        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
-
-    def _new_udp_connection(self, sock):
-        from xpra.net.udp_protocol import UDPListener
-        socket_options = self.socket_options.get(sock, {})
-        udpl = UDPListener(sock, self.process_udp_packet, socket_options)
-        self._udp_listeners.append(udpl)
 
     def _new_connection(self, socktype, listener, handle=0):
         """
@@ -1754,10 +1739,6 @@ class ServerCore:
             if not proto.is_closed():
                 self._log_disconnect(proto, "Connection lost")
             self._potential_protocols.remove(proto)
-        #remove from UDP protocol map:
-        uuid = getattr(proto, "uuid", None)
-        if uuid:
-            self._udp_protocols.pop(uuid, None)
         self.cleanup_protocol(proto)
 
     def _process_gibberish(self, proto, packet):
@@ -2292,8 +2273,8 @@ class ServerCore:
             add_listener(socktype, info)
             if not SHOW_NETWORK_ADDRESSES:
                 continue
-            if socktype not in ("tcp", "ssl", "ws", "wss", "ssh", "udp"):
-                #we expose addresses only for TCP and UDP sockets
+            if socktype not in ("tcp", "ssl", "ws", "wss", "ssh"):
+                #we expose addresses only for TCP sockets
                 continue
             upnp_address = options.get("upnp-address")
             if upnp_address:
@@ -2364,33 +2345,3 @@ class ServerCore:
     def handle_rfb_connection(self, conn):
         log.error("Error: RFB protocol is not supported by this server")
         conn.close()
-
-
-    def _process_udp_control(self, proto, packet):
-        proto.process_control(*packet[1:])
-
-    def process_udp_packet(self, udp_listener, uuid, seqno, synchronous, chunk, chunks, data, bfrom, options):
-        #log.info("process_udp_packet%s", (udp_listener, uuid, seqno, synchronous, chunk, chunks, len(data), bfrom, options))
-        protocol = self._udp_protocols.get(uuid)
-        if not protocol:
-            from xpra.net.udp_protocol import UDPServerProtocol, UDPSocketConnection
-            def udp_protocol_class(conn):
-                protocol = UDPServerProtocol(self, conn, self.process_packet)
-                protocol.uuid = uuid
-                protocol.large_packets.append(b"info-response")
-                protocol.receive_aliases.update(self._aliases)
-                return protocol
-            socktype = "udp"
-            host, port = bfrom
-            sock = udp_listener._socket
-            sockname = sock.getsockname()
-            conn = UDPSocketConnection(sock, sockname, (host, port), (host, port), socktype, None, options)
-            conn.timeout = SOCKET_TIMEOUT
-            protocol = self.do_make_protocol(socktype, conn, options, udp_protocol_class)
-            self._udp_protocols[uuid] = protocol
-        else:
-            #update remote address in case the client is roaming:
-            conn = protocol._conn
-            if conn:
-                conn.remote = bfrom
-        protocol.process_udp_data(uuid, seqno, synchronous, chunk, chunks, data, bfrom)

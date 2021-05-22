@@ -105,7 +105,7 @@ class TestMain(unittest.TestCase):
         e("tcp://host:0/")
         e("tcp://host:65536/")
         t("tcp://username@host/", {"username" : "username", "password" : None})
-        for socktype in ("tcp", "udp", "ws", "wss", "ssl", "ssh"):
+        for socktype in ("tcp", "ws", "wss", "ssl", "ssh"):
             #e(socktype+"://a/b/c/d")
             t(socktype+"://username:password@host:10000/DISPLAY?key1=value1", {
                 "type"      : socktype,
@@ -225,9 +225,6 @@ class TestMain(unittest.TestCase):
             "port"              : 100000,
             "strict-host-check" : False,
             })
-        #udp never fails when opening the connection:
-        conn = connect_to({"type" : "udp", "host" : "localhost", "port" : 20000, "display_name" : ":200"}, AdHocStruct())
-        conn.close()
 
 
     def _test_subcommand(self, args, timeout=60, **kwargs):

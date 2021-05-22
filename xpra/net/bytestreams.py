@@ -342,7 +342,6 @@ class SocketConnection(Connection):
             i = s
         log("%s.close() for socket=%s", self, i)
         Connection.close(self)
-        #meaningless for udp:
         try:
             s.settimeout(0)
         except IOError:

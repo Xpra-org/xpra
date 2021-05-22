@@ -143,7 +143,6 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 |protocol|packet input and output|
 |websocket|WebSocket layer|
 |named-pipe|Named pipe|
-|udp|UDP|
 |crypto|[encryption](../Network/Encryption.md)
 |auth|[authentication](./Authentication.md)
 |upnp|UPnP|

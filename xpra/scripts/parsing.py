@@ -553,12 +553,6 @@ def do_parse_cmdline(cmdline, defaults):
                           help="Listen for connections over TCP."
                           + " Use --tcp-auth to secure it."
                           + " You may specify this option multiple times with different host and port combinations")
-        group.add_option("--bind-udp", action="append",
-                          dest="bind_udp", default=list(defaults.bind_udp or []),
-                          metavar="[HOST]:[PORT]",
-                          help="Listen for connections over UDP."
-                          + " Use --udp-auth to secure it."
-                          + " You may specify this option multiple times with different host and port combinations")
         group.add_option("--bind-ws", action="append",
                           dest="bind_ws", default=list(defaults.bind_ws or []),
                           metavar="[HOST]:[PORT]",
@@ -593,7 +587,6 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({
             "bind"      : defaults.bind,
             "bind-tcp"  : defaults.bind_tcp,
-            "bind-udp"  : defaults.bind_udp,
             "bind-ws"   : defaults.bind_ws,
             "bind-wss"  : defaults.bind_wss,
             "bind-ssl"  : defaults.bind_ssl,
@@ -1129,9 +1122,6 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--tcp-auth", action="append",
                       dest="tcp_auth", default=list(defaults.tcp_auth or []),
                       help="The authentication module to use for TCP sockets (default: %s)" % dcsv(defaults.tcp_auth))
-    group.add_option("--udp-auth", action="append",
-                      dest="udp_auth", default=list(defaults.udp_auth or []),
-                      help="The authentication module to use for UDP sockets (default: %s)" % dcsv(defaults.udp_auth))
     group.add_option("--ws-auth", action="append",
                       dest="ws_auth", default=list(defaults.ws_auth or []),
                       help="The authentication module to use for Websockets (default: %s)" % dcsv(defaults.ws_auth))
@@ -1155,7 +1145,7 @@ def do_parse_cmdline(cmdline, defaults):
         ignore({"vsock-auth" : defaults.vsock_auth})
     group.add_option("--min-port", action="store",
                       dest="min_port", default=defaults.min_port,
-                      help="The minimum port number allowed when creating UDP or TCP sockets (default: '%default')")
+                      help="The minimum port number allowed when creating TCP sockets (default: '%default')")
     ignore({"password"           : defaults.password})
     if POSIX:
         group.add_option("--mmap-group", action="store",

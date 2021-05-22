@@ -270,14 +270,12 @@ the client can find at least one of the directories used by
 the unix domain sockets (see \fIbind\fP, \fIsocket-dir\fP and
 \fIsocket-dirs\fP).
 
-If the xpra server was given the \fB--bind-tcp\fP, \fB--bind-ssl\fP
-\fB--bind-udp\fP=\fI[HOST]:PORT\fP,
-\fB--bind-ws\fP, \fB--bind-wss\fP or \fB--bind-vsock\fP option
-when started then you can also connect
-to it using a display of the form \fBtcp://HOST:PORT[/DISPLAY]\fP,
-\fBudp://HOST:PORT[/DISPLAY]\fP, \fBssl://HOST:PORT[/DISPLAY]\fP,
-\fBws://HOST:PORT[/DISPLAY]\fP, \fBwss://HOST:PORT[/DISPLAY]\fP or
-\fBvsock://HOST:PORT[/DISPLAY]\fP.
+If the xpra server was given the \fB--bind-tcp\fP=\fI[HOST]:PORT\fP
+(or \fB--bind-ssl\fP, \fB--bind-ws\fP, \fB--bind-wss\fP, \fB--bind-vsock\fP)
+option when started then you can also connect to it using a display of
+the form \fBtcp://HOST:PORT[/DISPLAY]\fP,
+\fBssl://HOST:PORT[/DISPLAY]\fP, \fBws://HOST:PORT[/DISPLAY]\fP,
+\fBwss://HOST:PORT[/DISPLAY]\fP or \fBvsock://HOST:PORT[/DISPLAY]\fP.
 .\" --------------------------------------------------------------------
 .SH SUBCOMMANDS
 .SS xpra start
@@ -661,7 +659,7 @@ use a dialog.
 .TP
 
 \fB--min-port\fP=\fIPORT\fP
-The minimum port number allowed when creating UDP and TCP sockets.
+The minimum port number allowed when creating TCP sockets.
 You can use a lower value to allow unprivileged users to bind to
 privileged ports when starting sessions via the system wide proxy server.
 The default value is 1024 which is the standard value for privileged ports.
@@ -736,19 +734,7 @@ if the \fBhtml\fP switch is enabled.
 TCP sockets may also be upgraded to SSL sockets if the
 \fBssl\fP switch is enabled.
 .TP
-\fB--bind-udp\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
-Create a UDP socket for each \fB--bind-udp\fP option specified.
-If the host portion is omitted, then 127.0.0.1 (localhost) will be
-used.  If you wish to accept connections on all interfaces, pass
-0.0.0.0 for the host portion.
 
-Using this switch without using the \fIudp-auth\fP option is not recommended,
-and is a major security risk (especially when passing 0.0.0.0)!
-Anyone at all may connect to this port and access your session.
-UDP sessions are trivial to hijack for anyone able to sniff
-even just a single packet, it should only be used in very specific
-use-cases, and never over unsecured networks.
-.TP
 \fB--bind-ws\fP=\fI[HOST]:PORT[,PROPERTIES]\fP
 Create an HTTP / Websocket listener.
 See \fBbind-tcp\fP for host restrictions,
@@ -888,10 +874,6 @@ using the python \fIldap3\fP library.
 \fB--tcp-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies
 to TCP sockets (sockets defined using the \fBbind-tcp\fP switch).
-.TP
-\fB--udp-auth\fP=\fIMODULE\fP
-Just like the \fBtcp-auth\fP switch, except this one only applies
-to UDP sockets (sockets defined using the \fBbind-udp\fP switch).
 .TP
 \fB--ws-auth\fP=\fIMODULE\fP
 Just like the \fBauth\fP switch, except this one only applies

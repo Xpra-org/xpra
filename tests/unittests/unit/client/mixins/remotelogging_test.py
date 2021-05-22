@@ -16,7 +16,7 @@ class MixinsTest(ClientMixinTest):
 
 	def test_remotelogging(self):
 		from xpra.log import Logger, is_debug_enabled
-		for x in ("network", "crypto", "udp"):
+		for x in ("network", "crypto"):
 			if is_debug_enabled(x):
 				#remote logging will be disabled,
 				#so we have to skip this test

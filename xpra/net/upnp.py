@@ -31,7 +31,7 @@ def upnp_add(socktype, info, options):
         #(in case this causes errors)
         remote_host = options.get("upnp-remote-host", "")
         external_port = int(options.get("upnp-external-port", internal_port))
-        protocol = "UDP" if socktype=="udp" else "TCP"
+        protocol = "TCP"
         duration = int(options.get("upnp-duration", 600))
 
         upnp = upnpy.UPnP()
