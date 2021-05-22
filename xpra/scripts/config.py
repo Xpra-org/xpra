@@ -184,7 +184,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
     return Xorg_suid_check()
 
 
-def xvfb_cmd_str(xvfb):
+def xvfb_cmd_str(xvfb, wrap=False):
     xvfb_str = ""
     while xvfb:
         s = ""
@@ -201,7 +201,10 @@ def xvfb_cmd_str(xvfb):
             else:
                 s += " "+v
         if xvfb_str:
-            xvfb_str += " \\\n    "
+            if wrap:
+                xvfb_str += " \\\n    "
+            else:
+                xvfb_str += " "
         xvfb_str += s
     return xvfb_str
 
