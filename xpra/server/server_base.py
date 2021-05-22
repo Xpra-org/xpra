@@ -111,7 +111,6 @@ class ServerBase(ServerBaseClass):
         self.idle_timeout = 0
         #duplicated from Server Source...
         self.client_shutdown = CLIENT_CAN_SHUTDOWN
-        self.http_stream_check_timers = {}
 
         self.init_packet_handlers()
         self.init_aliases()
@@ -179,7 +178,6 @@ class ServerBase(ServerBaseClass):
     def do_cleanup(self):
         self.server_event("exit")
         self.wait_for_threaded_init()
-        self.cancel_http_stream_check_timers()
         for c in SERVER_BASES:
             if c!=ServerCore:
                 c.cleanup(self)
@@ -740,17 +738,6 @@ class ServerBase(ServerBaseClass):
             scripts.update(c.get_http_scripts(self))
         httplog("scripts=%s", scripts)
         return scripts
-
-    def cancel_http_stream_check_timers(self):
-        for ts in tuple(self.http_stream_check_timers.keys()):
-            v = self.http_stream_check_timers.pop(ts, None)
-            if v:
-                timer, stop = v
-                self.source_remove(timer)
-                try:
-                    stop()
-                except Exception:
-                    httplog("error on %s", stop, exc_info=True)
 
 
     ######################################################################
