@@ -10,7 +10,6 @@ STRIP_DEFAULT="${STRIP_DEFAULT:=1}"
 STRIP_GSTREAMER_PLUGINS="${STRIP_GSTREAMER_PLUGINS:=$STRIP_DEFAULT}"
 STRIP_SOURCE="${STRIP_SOURCE:=0}"
 STRIP_OPENGL="${STRIP_OPENGL:=$STRIP_DEFAULT}"
-ZIP_MODULES="${ZIP_MODULES:=1}"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
 
 DO_TESTS="${DO_TESTS:-1}"
@@ -165,14 +164,14 @@ pushd ${LIBDIR} || exit 1
 ln -sf python3.${PYTHON_MINOR_VERSION} python
 cd python
 rmdir config
-if [ "${ZIP_MODULES}" != "1" ]; then
-	echo "unzip site-packages"
-	if [ -e "site-packages.zip" ]; then
-		unzip -nq site-packages.zip
-		rm site-packages.zip
-	else
-		unzip -nq ../python3${PYTHON_MINOR_VERSION}.zip
-	fi
+echo "unzip site-packages"
+if [ -e "site-packages.zip" ]; then
+	unzip -nq site-packages.zip
+	rm site-packages.zip
+fi
+if [ -e "../python3${PYTHON_MINOR_VERSION}.zip" ]; then
+	unzip -nq ../python3${PYTHON_MINOR_VERSION}.zip
+	rm ../python3${PYTHON_MINOR_VERSION}.zip
 fi
 popd
 
@@ -272,11 +271,9 @@ if [ "$STRIP_OPENGL" == "1" ]; then
 fi
 echo " * remove numpy"
 rm -fr $LIBDIR/python/numpy
-if [ "${ZIP_MODULES}" == "1" ]; then
-	pushd $LIBDIR/python
-	zip --move -ur site-packages.zip OpenGL
-	popd
-fi
+pushd $LIBDIR/python
+zip --move -ur site-packages.zip OpenGL
+popd
 echo " * add gobject-introspection (py2app refuses to do it)"
 rsync -rpl $PYTHON_PACKAGES/gi $LIBDIR/python/
 mkdir $LIBDIR/girepository-1.0
@@ -370,6 +367,25 @@ ls image
 find ./image -name ".svn" | xargs rm -fr
 #not sure why these get bundled at all in the first place!
 find ./image -name "*.la" -exec rm -f {} \;
+
+echo "*******************************************************************************"
+echo "Remove extra Pillow plugins"
+pushd $LIBDIR/python/PIL
+RMP=""
+KMP=""
+for file_name in `ls *Image*`; do
+	plugin_name=`echo $file_name | sed 's+\.py.*++g'`
+	echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageCms|ImageColor|ImageFile|ImageFilter|ImageGrab|ImageMode|ImageOps|ImagePalette|Jpeg|Png|Ppm|Xpm" >& /dev/null
+	if [ "$?" == "0" ]; then
+		KMP="${KMP} $plugin_name"
+	else
+		RMP="${RMP} $plugin_name"
+		rm $file_name
+	fi
+done
+echo " removed: ${RMP}"
+echo " kept: ${KMP}"
+popd
 
 echo
 echo "*******************************************************************************"

@@ -362,21 +362,22 @@ done
 
 #remove PIL loaders we don't use:
 echo "* removing unnecessary PIL plugins:"
+pushd "./PIL"
 RMP=""
 KMP=""
-for x in `ls ./PIL/*Image*`; do
-	file_name=`echo $x | sed 's+.*PIL/++g'`
+for file_name in `ls *Image*`; do
 	plugin_name=`echo $file_name | sed 's+\.py.*++g'`
 	echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageCms|ImageColor|ImageFile|ImageFilter|ImageGrab|ImageMode|ImageOps|ImagePalette|Jpeg|Png|Ppm|Xpm" >& /dev/null
 	if [ "$?" == "0" ]; then
 		KMP="${KMP} $plugin_name"
 	else
 		RMP="${RMP} $plugin_name"
-		rm $x
+		rm $file_name
 	fi
 done
 echo " removed: ${RMP}"
 echo " kept: ${KMP}"
+popd
 
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
