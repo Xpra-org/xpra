@@ -360,6 +360,24 @@ for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
 done
 
+#remove PIL loaders we don't use:
+echo "* removing unnecessary PIL plugins:"
+RMP=""
+KMP=""
+for x in `ls ./PIL/*Image*`; do
+	file_name=`echo $x | sed 's+.*PIL/++g'`
+	plugin_name=`echo $file_name | sed 's+\.py.*++g'`
+	echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageCms|ImageColor|ImageFile|ImageFilter|ImageGrab|ImageMode|ImageOps|ImagePalette|Jpeg|Png|Ppm|Xpm" >& /dev/null
+	if [ "$?" == "0" ]; then
+		KMP="${KMP} $plugin_name"
+	else
+		RMP="${RMP} $plugin_name"
+		rm $x
+	fi
+done
+echo " removed: ${RMP}"
+echo " kept: ${KMP}"
+
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
 #remove source:
