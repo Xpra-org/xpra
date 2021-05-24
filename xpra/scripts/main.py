@@ -171,7 +171,6 @@ def configure_logging(options, mode):
         "clean-displays", "clean-sockets",
         "splash", "qrcode",
         "opengl-test",
-        "test-connect",
         "encoding", "webcam", "clipboard-test",
         "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
         "printing-info", "version-info", "gtk-info",
