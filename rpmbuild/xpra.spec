@@ -879,7 +879,7 @@ fi
 
 
 %changelog
-* Mon May 24 2020 Antoine Martin <antoine@xpra.org> 3.1-10xpra1
+* Mon May 24 2021 Antoine Martin <antoine@xpra.org> 3.1-10xpra1
 - critical fixes:
     proxy deadlock, subprocess leak, socket errors
     'scroll' detection with very large windows
