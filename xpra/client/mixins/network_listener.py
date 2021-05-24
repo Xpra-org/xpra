@@ -197,6 +197,18 @@ class NetworkListener(StubClientMixin):
                 return
             elif request=="version":
                 hello_reply({"version" : full_version_str()})
+            elif request in ("show-menu", "show-about", "show-session-info"):
+                fn = getattr(self, request.replace("-", "_"), None)
+                log.info("fn=%s", fn)
+                if not fn:
+                    hello_reply({"error" : "%s not found" % request})
+                else:
+                    from gi.repository import GLib
+                    GLib.idle_add(fn)
+                    hello_reply({})
+            elif request=="show-session-info":
+                self.show_session_info()
+                hello_reply({})
             elif request=="command":
                 command = caps.strtupleget("command_request")
                 log("command request: %s", command)

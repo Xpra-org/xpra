@@ -310,6 +310,16 @@ class IDXpraClient(InfoXpraClient):
         self.hello_extra["request"] = "id"
 
 
+class RequestXpraClient(CommandConnectClient):
+
+    def __init__(self, request, opts):
+        super().__init__(opts)
+        self.hello_extra["request"] = request
+
+    def do_command(self, caps : typedict):
+        self.quit(EXIT_OK)
+
+
 class ConnectTestXpraClient(CommandConnectClient):
     """ This client does one thing only:
         it queries the server with an 'info' request

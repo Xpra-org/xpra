@@ -172,6 +172,7 @@ def configure_logging(options, mode):
         "splash", "qrcode",
         "opengl-test",
         "autostart",
+        "show-menu", "show-about", "show-session-info"
         "encoding", "webcam", "clipboard-test",
         "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
         "printing-info", "version-info", "gtk-info",
@@ -440,6 +441,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         "screenshot", "version", "info", "id",
         "control", "_monitor", "shell", "print",
         "qrcode",
+        "show-menu", "show-about", "show-session-info",
         "connect-test", "request-start", "request-start-desktop", "request-shadow",
         ):
         return run_client(error_cb, options, args, mode)
@@ -1124,10 +1126,14 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     else:
         error_cb("unknown format for display name: %s" % display_name)
 
+
 def pick_display(error_cb, opts, extra_args):
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    return do_pick_display(dotxpra, error_cb, opts, extra_args)
+
+def do_pick_display(dotxpra, error_cb, opts, extra_args):
     if not extra_args:
         # Pick a default server
-        dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         dir_servers = dotxpra.socket_details(matching_state=DotXpra.LIVE)
         try:
             sockdir, display, sockpath = single_display_match(dir_servers, error_cb)
@@ -1708,6 +1714,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
     if opts.quality!=-1 and (opts.quality < 0 or opts.quality > 100):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     if mode=="screenshot":
         from xpra.client.gobject_client_base import ScreenshotXpraClient
         app = ScreenshotXpraClient(opts, screenshot_filename)
@@ -1717,6 +1724,11 @@ def get_client_app(error_cb, opts, extra_args, mode):
     elif mode=="id":
         from xpra.client.gobject_client_base import IDXpraClient
         app = IDXpraClient(opts)
+    elif mode in ("show-menu", "show-about", "show-session-info"):
+        from xpra.client.gobject_client_base import RequestXpraClient
+        #search the client sockets:
+        dotxpra = DotXpra(None, opts.client_socket_dirs)
+        app = RequestXpraClient(request=mode, opts=opts)
     elif mode=="connect-test":
         from xpra.client.gobject_client_base import ConnectTestXpraClient
         app = ConnectTestXpraClient(opts)
@@ -1764,7 +1776,7 @@ def get_client_app(error_cb, opts, extra_args, mode):
     try:
         if mode!="listen":
             app.show_progress(60, "connecting to server")
-        display_desc = pick_display(error_cb, opts, extra_args)
+        display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args)
         connect_to_server(app, display_desc, opts)
     except Exception:
         app.cleanup()
