@@ -28,6 +28,7 @@ from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
     force_quit,
+    which,
     get_rand_chars,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_status_output, strtobytes, bytestostr, get_util_logger, osexpand,
@@ -185,6 +186,12 @@ def sanitize_env():
 
 def configure_imsettings_env(input_method):
     im = (input_method or "").lower()
+    if im=="auto":
+        ibus_daemon = which("ibus-daemon")
+        if ibus_daemon:
+            im = "ibus"
+        else:
+            im = "none"
     if im in ("none", "no"):
         #the default: set DISABLE_IMSETTINGS=1, fallback to xim
         #that's because the 'ibus' 'immodule' breaks keyboard handling
@@ -201,6 +208,7 @@ def configure_imsettings_env(input_method):
         warn("using input method settings: %s" % str(v))
         warn("unknown input method specified: %s" % input_method)
         warn(" if it is correct, you may want to file a bug to get it recognized")
+    return im
 
 def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, imsettings_module, xmodifiers):
     #for more information, see imsettings:
@@ -683,7 +691,15 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             os.environ["XDG_SESSION_TYPE"] = "x11"
         if not starting_desktop:
             os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
-        configure_imsettings_env(opts.input_method)
+        if configure_imsettings_env(opts.input_method)=="ibus":
+            ibus_daemon = which("ibus-daemon")
+            assert ibus_daemon
+            #start ibus-daemon unless already specified in 'start':
+            if not any(x.find("ibus-daemon")>=0 for x in opts.start):
+                IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
+                                                     "ibus-daemon --xim -v -r --panel=disable")
+                if IBUS_DAEMON_COMMAND:
+                    opts.start.insert(0, IBUS_DAEMON_COMMAND)
     if display_name[0] != 'S':
         os.environ["DISPLAY"] = display_name
         if POSIX:

@@ -1076,6 +1076,7 @@ class KeyboardWindow(SessionOptions):
         self.bool_cb(tb, "State Synchronization", "keyboard-sync")
         self.bool_cb(tb, "Raw Mode", "keyboard-raw")
         self.combo(tb, "Input Method", "input-method", {
+            "auto"  : "auto",
             "none"  : "default",
             "keep"  : "unchanged",
             "xim"   : "xim",

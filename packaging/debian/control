@@ -119,6 +119,8 @@ Recommends: python3-dbus
 #bullseye:        ,libx264-160
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
+# preferred input method:
+        ,ibus
 # AES encryption:
         ,python3-cryptography
 #webp

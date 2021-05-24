@@ -274,6 +274,7 @@ Recommends:			dbus-x11
 Recommends:			gtk3-immodule-xim
 Recommends:			python3-setproctitle
 Recommends:			librsvg2
+Recommends:			ibus
 %if %{with_cuda}
 Recommends:			python3-pynvml
 Recommends:			python3-pycuda

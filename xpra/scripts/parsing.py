@@ -1064,7 +1064,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--input-method", action="store",
                       dest="input_method", default=defaults.input_method,
                       help="Which X11 input method to configure for client applications started with start or"
-                      + "start-child (Default: '%default', options: none, keep, xim, IBus, SCIM, uim)")
+                      + "start-child (Default: '%default', options: auto, none, keep, xim, IBus, SCIM, uim)")
     group.add_option("--dpi", action="store",
                       dest="dpi", default=defaults.dpi,
                       help="The 'dots per inch' value that client applications should try to honour,"

@@ -16,7 +16,8 @@ wm-name = Xpra
 #input-method=IBus
 #input-method=SCIM
 #input-method=uim
-input-method=none
+# this will use ibus if present:
+input-method=auto
 
 # Paint the windows on the xvfb so that
 # screen grabs and screen recorders will work

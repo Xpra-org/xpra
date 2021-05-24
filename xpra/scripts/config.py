@@ -953,7 +953,7 @@ def get_defaults():
                     "pdf-printer"       : "",
                     "postscript-printer": DEFAULT_POSTSCRIPT_PRINTER,
                     "debug"             : "",
-                    "input-method"      : "none",
+                    "input-method"      : "auto",
                     "sound-source"      : "",
                     "html"              : "auto",
                     "http-scripts"      : "all",
