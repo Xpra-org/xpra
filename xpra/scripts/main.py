@@ -1956,8 +1956,12 @@ def run_opengl_probe():
         proc.kill()
         stdout, stderr = proc.communicate()
         r = None
-    log("xpra opengl stdout=%r", stdout)
-    log("xpra opengl stderr=%r", stderr)
+    log("xpra opengl stdout:")
+    for line in stdout.decode().splitlines():
+        log(" %s", line)
+    log("xpra opengl stderr:")
+    for line in stderr.decode().splitlines():
+        log(" %s", line)
     log("OpenGL probe command returned %s for command=%s", r, cmd)
     end = monotonic_time()
     log("probe took %ims", 1000*(end-start))
