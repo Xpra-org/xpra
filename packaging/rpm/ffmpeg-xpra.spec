@@ -179,6 +179,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon May 24 2021 Antoine Martin <antoine@xpra.org> 4.4-1
+- new upstream release
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> 4.3.1-5
 - verify source checksum
 
