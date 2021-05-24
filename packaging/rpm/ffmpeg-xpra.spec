@@ -46,7 +46,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "06b10a183ce5371f915c6bb15b7b1fffbe046e8275099c96affc29e17645d909" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q -n %{real_name}-%{version}
 
 
