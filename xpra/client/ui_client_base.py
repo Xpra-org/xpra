@@ -591,7 +591,7 @@ class UIXpraClient(ClientBaseClass):
 
 
     def get_control_commands_caps(self):
-        caps = ["show_session_info", "show_bug_report", "debug", "show_menu"]
+        caps = ["show_session_info", "show_bug_report", "show_menu", "name", "debug"]
         for x in compression.get_enabled_compressors():
             caps.append("enable_"+x)
         for x in packet_encoding.get_enabled_encoders():
