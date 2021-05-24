@@ -591,7 +591,7 @@ class UIXpraClient(ClientBaseClass):
 
 
     def get_control_commands_caps(self):
-        caps = ["show_session_info", "show_bug_report", "debug"]
+        caps = ["show_session_info", "show_bug_report", "debug", "show_menu"]
         for x in compression.get_enabled_compressors():
             caps.append("enable_"+x)
         for x in packet_encoding.get_enabled_encoders():
@@ -601,12 +601,15 @@ class UIXpraClient(ClientBaseClass):
 
     def _process_control(self, packet):
         command = bytestostr(packet[1])
+        log("_process_control(%s)", packet)
         if command=="show_session_info":
             args = packet[2:]
             log("calling %s%s on server request", self.show_session_info, args)
             self.show_session_info(*args)
         elif command=="show_bug_report":
             self.show_bug_report()
+        elif command=="show_menu":
+            self.show_menu()
         elif command in ("enable_%s" % x for x in compression.get_enabled_compressors()):
             compressor = command.split("_")[1]
             log.info("switching to %s on server request", compressor)
