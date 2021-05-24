@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
 import os
 
-from xpra.util import csv, sorted_nicely
+from xpra.util import csv, sorted_nicely, remove_dupes
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
@@ -1306,7 +1306,6 @@ def _csvstr(value):
     raise Exception("don't know how to convert %s to a csv list!" % type(value))
 
 def _nodupes(s):
-    from xpra.util import remove_dupes
     return remove_dupes(x.strip().lower() for x in s.split(","))
 
 def fixup_video_all_or_none(options):
@@ -1367,24 +1366,42 @@ def fixup_pings(options):
         options.pings = 5
 
 def fixup_encodings(options):
-    try:
-        from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
-    except ImportError:
-        return
+    from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
+    estr = _csvstr(options.encodings)
     RENAME = {"jpg" : "jpeg"}
     if options.encoding:
         options.encoding = RENAME.get(options.encoding, options.encoding)
-    estr = _csvstr(options.encodings)
-    if estr=="all":
-        #replace with an actual list
-        options.encodings = list(PREFERRED_ENCODING_ORDER)
-        return
     encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
+    while True:
+        try:
+            i = encodings.index("all")
+        except ValueError:
+            break
+        else:
+            #replace 'all' with the actual value:
+            encodings = encodings[:i]+list(PREFERRED_ENCODING_ORDER)+encodings[i+1:]
+    #if the list only has items to exclude (ie: '-scroll,-jpeg')
+    #then 'all' is implied:
+    if all(True for e in encodings if e.startswith("-")):
+        encodings = list(PREFERRED_ENCODING_ORDER)+encodings
     if "rgb" in encodings:
         if "rgb24" not in encodings:
             encodings.append("rgb24")
         if "rgb32" not in encodings:
             encodings.append("rgb32")
+    encodings = remove_dupes(encodings)
+    #now we have a list of encodings, but some of them may be prefixed with "-"
+    for rm in tuple(e for e in encodings if e.startswith("-")):
+        while True:
+            try:
+                encodings.remove(rm)
+            except ValueError:
+                break
+        while True:
+            try:
+                encodings.remove(rm[1:])
+            except ValueError:
+                break
     options.encodings = encodings
 
 def fixup_compression(options):
