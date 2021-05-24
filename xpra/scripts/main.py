@@ -2048,7 +2048,8 @@ def make_client(error_cb, opts):
                 probe, info = run_opengl_probe()
                 if opts.opengl=="nowarn":
                     #just on or off from here on:
-                    opts.opengl = ["off", "on"][info.get("safe", False)]
+                    safe = info.get("safe", "False").lower() in TRUE_OPTIONS
+                    opts.opengl = ["off", "on"][safe]
                 else:
                     opts.opengl = "probe-%s" % probe
                 r = probe   #ie: "success"
