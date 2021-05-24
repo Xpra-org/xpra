@@ -1769,6 +1769,8 @@ toggle_modules(WIN32, "xpra/scripts/win32_service")
 if data_ENABLED:
     add_data_files(share_xpra,                      ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
+    if LINUX:
+        add_data_files(share_xpra,                  ["fs/share/xpra/autostart.desktop"])
     ICONS = glob.glob("fs/share/xpra/icons/*.png")
     if OSX:
         ICONS += glob.glob("fs/share/xpra/icons/*.icns")

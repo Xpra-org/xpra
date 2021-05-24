@@ -171,6 +171,7 @@ def configure_logging(options, mode):
         "clean-displays", "clean-sockets",
         "splash", "qrcode",
         "opengl-test",
+        "autostart",
         "encoding", "webcam", "clipboard-test",
         "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
         "printing-info", "version-info", "gtk-info",
@@ -351,7 +352,7 @@ def use_systemd_run(s):
 
 def run_mode(script_file, error_cb, options, args, mode, defaults):
     #configure default logging handler:
-    if POSIX and getuid()==0 and options.uid==0 and mode!="proxy" and not NO_ROOT_WARNING:
+    if POSIX and getuid()==0 and options.uid==0 and mode not in ("proxy", "autostart", "showconfig") and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
 
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
@@ -525,6 +526,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode=="opengl-test":
         check_gtk()
         return run_glprobe(options, True)
+    elif mode=="autostart":
+        return run_autostart(args)
     elif mode=="encoding":
         from xpra.codecs import loader
         return loader.main(args)
@@ -2498,6 +2501,27 @@ def no_gtk():
         return
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
+
+def run_autostart(args):
+    def err(msg):
+        print(msg)
+        print("Usage: %s enable|disable|status" % (sys.argv[0]))
+        return 1
+    if len(args)!=1:
+        return err("invalid number of arguments")
+    arg = args[0].lower()
+    if arg not in ("enable", "disable", "status"):
+        return err("invalid argument '%s'" % arg)
+    from xpra.platform.features import AUTOSTART
+    if not AUTOSTART:
+        print("autostart is not supported on this platform")
+        return 1
+    from xpra.platform.autostart import set_autostart, get_status
+    if arg=="status":
+        print(get_status())
+    else:
+        set_autostart(arg=="enable")
+    return 0
 
 def run_qrcode(args):
     from xpra.client.gtk3 import qrcode_client
