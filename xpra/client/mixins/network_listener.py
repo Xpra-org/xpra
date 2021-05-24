@@ -104,7 +104,7 @@ class NetworkListener(StubClientMixin):
     def add_listen_socket(self, socktype, sock, options):
         info = self.socket_info.get(sock)
         log("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
-        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, None, options)
+        cleanup = add_listen_socket(socktype, sock, info, self._new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
