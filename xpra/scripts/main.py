@@ -2039,14 +2039,18 @@ def make_client(error_cb, opts):
         app = XpraClient()
         app.progress_process = progress_process
 
-        if opts.opengl=="probe":
+        if opts.opengl in ("probe", "nowarn"):
             if os.environ.get("XDG_SESSION_TYPE")=="wayland":
                 Logger("opengl").debug("wayland session detected, OpenGL disabled")
                 opts.opengl = "no"
             else:
                 app.show_progress(20, "validating OpenGL configuration")
                 probe, info = run_opengl_probe()
-                opts.opengl = "probe-%s" % probe
+                if opts.opengl=="nowarn":
+                    #just on or off from here on:
+                    opts.opengl = ["off", "on"][info.get("safe", False)]
+                else:
+                    opts.opengl = "probe-%s" % probe
                 r = probe   #ie: "success"
                 if info:
                     renderer = info.get("renderer")
