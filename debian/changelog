@@ -1,3 +1,101 @@
+xpra (3.1-1) UNRELEASED; urgency=low
+  * critical fixes:
+    - proxy deadlock, subprocess leak, socket errors
+    - 'scroll' detection with very large windows
+    - windows not getting focus
+    - unnecessary screen update latency
+    - crash caused by notifications
+    - screen resizing with invalid DPI values
+  * screen update fixes:
+    - cairo rendering artifacts
+    - lossy screen updates when 'scroll' encoding is used
+    - video subregion detection error
+    - wayland client geometry repaint
+    - recover speed more quickly
+    - expire delayed regions on schedule
+    - mmap does not need refreshing
+  * misc fixes:
+    - concurrency runtime errors
+    - cuda error handling
+    - xdg menu loading failures
+    - 'encoding' control command
+    - invalid default value for $XDG_DATA_DIRS
+    - parsing of peercred options
+    - spurious errors if file transfers are disabled
+    - validation of display numbers
+    - sessions started by the proxy miss $HOME and $USER
+    - tray menu clipboard errors
+    - environment variables not honoured via xpra launcher
+    - URL forwarding errors with Python 3 clients
+    - dangerous default argument corruption
+    - honour XPRA_NOMD5 in window border code
+    - warning message format under VirtualBox on MS Windows
+    - honour the XPRA_XDG_EXPORT_ICONS environment variable
+    - ensure passwords are not logged using 'auth' debug logging
+    - xdg-open stdout / stderr formatting
+  * build, packaging, platform and test fixes:
+    - compilation errors with newer GCC versions
+    - support Python 3.9
+    - printing diagnostic script errors with Python 3
+    - updated supported distributions
+    - updated build and runtime dependencies
+    - MacOS Big Sur compatibility
+    - SELinux policy tweaks
+    - ignore 'bell' audio device
+    - never pollute /root/.xpra or /root/.config/
+    - point to the correct systemd service configuration file path
+    - remove hard dependency on 'gnome-shell'
+    - invalid permissions on some scripts and data files
+  * MS Windows fixes:
+    - test errors due to low precision clock
+    - clipboard cleanup errors
+    - bubble notifications not showing up
+    - missing / transparent icons in the system tray
+    - overflow errors accessing window handles
+    - use an up to date PDFium library
+    - non-ascii key lookup with shadow servers
+    - client sub-layout detection
+    - client handling of 'Control' key combinations
+  * keyboard fixes:
+    - key symbol lookup
+    - invalid key modifier detection
+    - stuck keys
+    - mismapped key groups
+  * network fixes:
+    - handling of jittery connections
+    - silence mdns warnings
+    - socket creation errors with missing directories
+    - failures to enable packet compression
+    - connection errors when a non-ui client is already connected
+    - try harder not to leave 'xpra _proxy' zombies behind
+    - ssh connection errors with proxycommand or proxyhost port numbers
+    - ensure some packets are not delayed unnecessarily
+    - file transfers with non-ascii filenames
+    - automatically shrink large SVG icons
+  * HTML5 client:
+    - sends audio 'stop' before it is allowed to do so
+    - can specify the display to connect to
+    - show complete disconnection message
+  * enhancements and changes:
+    - allow exit-with-children with any start-child argument
+    - nvjpeg encoder
+    - latest 'xpra top' client
+    - updated window class mappings
+    - support smooth scrolling - ie: touchpads
+    - faster server startup
+    - increase default refresh rate
+    - honour initial window position hint
+    - 'source-start' now handles executables that print the new environment
+    - drop Python 2 / GTK 2 builds on MS Windows
+    - add new common screen resolutions for Xdummy
+    - add 'map' and 'unmap' control commands
+    - debug logging tweaks, remove confusing messages
+    - the socket type can be specified with systemd socket activation
+    - stop supporting legacy salt digest modes
+    - always verify SSL hostname
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 24 May 2021 22:30:56 +0700
+
 xpra (3.0.12-1) UNRELEASED; urgency=low
   * fix NVENC encoder (profile errors, cleanup race condition)
   * fix unmanaged X11 message call which could cause GTK to crash when it fails
