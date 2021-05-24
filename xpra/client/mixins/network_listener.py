@@ -7,7 +7,7 @@
 import os
 import sys
 
-from xpra import __version__ as VERSION
+from xpra.version_util import full_version_str
 from xpra.util import envint, envfloat, typedict, DETACH_REQUEST, PROTOCOL_ERROR
 from xpra.os_util import bytestostr, get_machine_id
 from xpra.net.bytestreams import log_new_connection
@@ -196,7 +196,7 @@ class NetworkListener(StubClientMixin):
                 proto.send_disconnect([DETACH_REQUEST], done_callback=protocol_closed)
                 return
             elif request=="version":
-                hello_reply({"version" : VERSION})
+                hello_reply({"version" : full_version_str()})
             elif request=="command":
                 command = caps.strtupleget("command_request")
                 log("command request: %s", command)
