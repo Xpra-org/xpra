@@ -1,14 +1,15 @@
+%define _disable_source_fetch 0
 %define api_version		1.0
 
 Summary:	OpenGL Extension to GTK
 Name:		gtkglext
 Version:	1.2.0
-Release:	22%{?dist}
+Release:	23%{?dist}
 
 License:	LGPLv2+ or GPLv2+
 Group:		System Environment/Libraries
 URL:		http://gtkglext.sourceforge.net/
-Source0:	ftp://ftp.gnome.org/pub/gnome/sources/gtkglext/1.2/gtkglext-%{version}.tar.bz2
+Source0:	https://download.gnome.org/sources/gtkglext/1.2/gtkglext-%{version}.tar.bz2
 # Upstream changes, addressing BZ 677457
 Patch0:		gtkglext-1.2.0-bz677457.diff
 # config.{sub,guess} from automake-1.13.4, addressing BZ 925512
@@ -58,6 +59,11 @@ The gtkglext-devel package contains the header files, static libraries,
 and developer docs for GtkGLExt.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "16bd736074f6b14180f206b7e91263fc721b49912ea3258ab5f094cfa5497f51" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n gtkglext-%{version}
 %patch0 -p1
 %patch1 -p1
@@ -94,6 +100,9 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 %doc %{_datadir}/gtk-doc/html/*
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 1.2.0-23
+- verify source checksum
+
 * Wed Aug 28 2013 Ralf Corsépius <corsepiu@fedoraproject.org> - 1.2.0-22
 - Update config.sub|guess from automake-1.13.4 for aarch64
   (Add gtkglext-1.2.0-config.diff; RHBZ#925512).
