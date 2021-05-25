@@ -10,7 +10,7 @@ Group: Development/Languages
 URL: http://yasm.tortall.net/
 Source: https://github.com/yasm/yasm/archive/v%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-BuildRequires: bison, byacc, xmlto, gettext-devel
+BuildRequires: bison, byacc, xmlto, gettext-devel, autoconf, automake
 
 %description
 Yasm is a complete rewrite of the NASM assembler under the "new" BSD License
