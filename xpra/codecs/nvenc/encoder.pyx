@@ -1478,7 +1478,7 @@ class NVENCException(Exception):
         self.function = fn
         self.code = code
         self.api_message = nvencStatusInfo(code)
-        msg = "%s - returned %i"
+        msg = "%s - returned %i" % (fn, code)
         if self.api_message:
             msg += ": %s" % self.api_message
         super().__init__(msg)
