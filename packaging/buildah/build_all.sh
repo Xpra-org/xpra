@@ -11,14 +11,24 @@ if [ "${DEBUG:-0}" == "1" ]; then
 fi
 
 BUILDAH_DIR=`dirname $(readlink -f $0)`
-pushd ${BUILDAH_DIR}
+cd ${BUILDAH_DIR}
+
+PACKAGING="$BUILDAH_DIR/packaging"
+if [ ! -e "${PACKAGING}" ]; then
+	#by default, build from the current tree
+	#(the parent directory, which contains "debian" and "rpm")
+	#this symlink can be changed and will be left alone
+	ln -sf "../" "${PACKAGING}"
+fi
 
 if [ "${DO_XPRA}" == "1" ]; then
 	#go make a snapshot:
-	pushd ../..
+	pushd "${PACKAGING}"
+	pushd ..
 	rm -f pkgs/xpra-*.tar.xz
 	python3 ./setup.py sdist --formats=xztar || die "failed to create xpra source snapshot"
-	mv dist/xpra-*.tar.xz ./packaging/buildah/pkgs/
+	mv dist/xpra-*.tar.xz ${BUILDAH_DIR}/pkgs/
+	popd
 	popd
 fi
 
@@ -88,19 +98,10 @@ for DISTRO in $DISTROS; do
 	mkdir -p $REPO_PATH >& /dev/null
 	buildah run \
 				--volume ${BUILDAH_DIR}/opt:/opt:ro,z \
-				--volume $REPO_PATH:/src/repo:noexec,nodev,z \
 				--volume ${BUILDAH_DIR}/pkgs:/src/pkgs:ro,z \
-				--volume ${BUILDAH_DIR}/../rpm:/src/rpm:ro,z \
-				--volume ${BUILDAH_DIR}/../debian:/src/debian:O \
+				--volume $REPO_PATH:/src/repo:noexec,nodev,z \
+				--volume ${PACKAGING}/rpm:/src/rpm:ro,z \
+				--volume ${PACKAGING}/debian:/src/debian:O \
 				$TEMP_IMAGE $BASH /src/build.sh
-	#			--volume /var/cache/dnf:/var/cache/dnf:O \
-	#buildah run \
-	#			--volume $REPO_PATH:/src/repo:noexec,nodev,z \
-	#			--volume ${BUILDAH_DIR}/opt:/opt:ro,z \
-	#			--volume ${BUILDAH_DIR}/pkgs:/src/pkgs:ro,z \
-	#			--volume ${BUILDAH_DIR}/../rpm:/src/rpm:ro,z \
-	#			--volume ${BUILDAH_DIR}/../debian:/src/debian:ro,z \
-	#			--volume /var/cache/dnf:/var/cache/dnf:O \
-	#			$TEMP_IMAGE bash
 	buildah rm "${TEMP_IMAGE}"
 done
