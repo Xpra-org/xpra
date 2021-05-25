@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Xpra
+Comment=Pre-start an Xpra session
+Exec=xpra start --attach=yes --splash=no --opengl=nowarn
+Icon=xpra
+NoDisplay=false
+Type=Application
+StartupNotify=false
+Categories=Network;RemoteAccess;
