@@ -569,14 +569,14 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
             else:
                 sockpath = dotxpra.osexpand(sockpath)
-                if os.path.isabs(sockpath):
-                    pass
-                elif sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
+                if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
                     assert display_name is not None
                     sockpath = os.path.abspath(sockpath)
                     if not os.path.exists(sockpath):
                         os.makedirs(sockpath)
                     sockpath = norm_makepath(sockpath, display_name)
+                elif os.path.isabs(sockpath):
+                    pass
                 else:
                     sockpath = dotxpra.socket_path(sockpath)
                 sockpaths[sockpath] = options
