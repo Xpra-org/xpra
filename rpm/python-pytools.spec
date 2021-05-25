@@ -41,7 +41,7 @@ Small tool functions such as ::
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "3645ed839cf4d79cb4bf030f37ddaeecd7fe5e2d6698438cc36c24a1d5168809" ]; then
+if [ "${sha256}" != "ebbcc38c7a30b1a0ce1a74816c85db9f2556bb4d5b9a71f85f5d88f69ddcb96b" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
