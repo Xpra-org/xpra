@@ -36,7 +36,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "3712bb869307233491e4c570732d6073c0dc3d99adfdb9977396a3fdf84e95b9" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q -n %{tarball}-%{version}
 %patch2 -p1
 %patch3 -p1

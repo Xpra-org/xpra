@@ -23,7 +23,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "5bb321e5d4f8b3a51f56fc6a35c143f1b72ce0d748b43d8b623596e8215f01f7" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q
 
 %package -n python3-cairo

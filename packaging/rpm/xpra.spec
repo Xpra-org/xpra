@@ -300,7 +300,7 @@ This package contains the python3 xpra server.
 #if [ "${sha256}" != "ffff" ]; then
 #	echo "invalid checksum for %{SOURCE0}"
 #	exit 1
-#fi 
+#fi
 rm -rf $RPM_BUILD_DIR/xpra-%{version}
 xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 

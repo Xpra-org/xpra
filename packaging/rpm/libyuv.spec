@@ -51,7 +51,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "5906ff00c8956df09c0187549a3fd5cf0da40859846f49d565cc9abfca93f29a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %autosetup -p1 -n libyuv-%{COMMIT}
 
 cat > %{name}.pc << EOF

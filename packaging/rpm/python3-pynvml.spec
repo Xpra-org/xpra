@@ -29,7 +29,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "5aa6dd23a140b1ef2314eee5ca154a45397b03e68fd9ebc4f72005979f511c73" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q -n nvidia-ml-py-%{version}
 
 %build

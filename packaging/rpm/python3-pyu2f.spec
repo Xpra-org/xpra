@@ -29,7 +29,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "a3caa3a11842fc7d5746376f37195e6af5f17c0a15737538bb1cebf656fb306b" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q -n pyu2f-0.1.5
 
 %build
