@@ -81,9 +81,10 @@ for DISTRO in $DISTROS; do
 	if [ "${RPM}" == "1" ]; then
 		REPO_PATH="${BUILDAH_DIR}/repo/"`echo $DISTRO | sed 's+:+/+g'`
 		for rpm_list in "./${FULL_DISTRO_NAME}-rpms.txt" "./${DISTRO_NAME}-rpms.txt" "./rpms.txt"; do
-			if [ -r "${rpm_list}" ]; then
-				echo " using rpm package list from ${rpm_list}"
-				buildah copy $TEMP_IMAGE "$rpm_list" "/src/rpms.txt"
+			if [ -r "${PACKAGING}/rpm/${rpm_list}" ]; then
+				rpm_list_path=`readlink -e ${PACKAGING}/rpm/${rpm_list}`
+				echo " using rpm package list from ${rpm_list_path}"
+				buildah copy $TEMP_IMAGE "${rpm_list_path}" "/src/rpms.txt"
 				break
 			fi
 		done
