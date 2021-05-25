@@ -1,5 +1,6 @@
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%define _disable_source_fetch 0
 
 #this spec file is for both Fedora and CentOS
 #only Fedora has Python3 at present:
@@ -42,6 +43,11 @@ Getting network addresses from Python3
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "2dee9ffdd16292878336a58d04a20f0ffe95555465fee7c9bd23b3490ef2abf3" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n netifaces-%{version}
 
 %if 0%{?with_python3}

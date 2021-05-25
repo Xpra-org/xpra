@@ -7,18 +7,19 @@
 %{!?__python3: %define __python3 python3}
 %{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%define _disable_source_fetch 0
 
 #this is a pure python package so debug is meaningless here:
 %define debug_package %{nil}
 
 Name:           python2-pynvml
-Version:        10.418.84
+Version:        11.450.51
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source:        	https://files.pythonhosted.org/packages/cc/fd/9fc4779fedc95ed1c4fab9242888598b5da82fd062b639cca624299116e4/nvidia-ml-py-%{version}.tar.gz
+Source:        	https://files.pythonhosted.org/packages/4c/e7/f6fef887708f601cda64c8fd48dcb80a0763cb6ee4eaf89939bdc165ce41/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
@@ -36,6 +37,11 @@ Python Bindings for the NVIDIA Management Library
 %endif
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "5aa6dd23a140b1ef2314eee5ca154a45397b03e68fd9ebc4f72005979f511c73" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n nvidia-ml-py-%{version}
 %if 0%{?fedora}%{?el8}
 rm -fr %{py3dir}
@@ -80,6 +86,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 11.450.51-1
+- new upstream release
+
 * Fri Dec 06 2019 Antoine Martin <antoine@xpra.org> - 10.418.84-1
 - new upstream release
 

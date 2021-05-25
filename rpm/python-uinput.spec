@@ -10,7 +10,7 @@
 
 Name:           python2-uinput
 Version:        0.11.2
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
 
 License:        GPLv3
@@ -55,6 +55,11 @@ allows attaching userspace device drivers into kernel.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "99392b676c77b5795b86b7d75274db33fe754fd1e06fb3d58b167c797dc47f0c" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n python-uinput-%{version}
 
 # Use unversioned .so
@@ -108,6 +113,9 @@ chmod a-x examples/*
 
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 0.11.2-4
+- verify source checksum
+
 * Tue Jul 03 2018 Antoine Martin <antoine@xpra.org> - 0.11.2-3
 - use python2 explicitly
 

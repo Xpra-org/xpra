@@ -1,12 +1,7 @@
 # Remove private provides from .so files in the python_sitearch directory
 %global __provides_exclude_from ^%{python2_sitearch}/.*\\.so$
 %{!?__python2: %define __python2 python2}
-%{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-
-#this spec file is for Python 2.7 builds only
-#ie: Fedora and CentOS 8.x
 
 %define _disable_source_fetch 0
 
@@ -20,8 +15,12 @@ Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
 Patch0:         python-rencode-readdmissingpyx.patch
 Patch1:         python-rencode-nowheelreq.patch
 Patch2:         python-rencode-rename.patch
+%if 0%{?el7}
+BuildRequires:  python2-setuptools
+%endif
 BuildRequires:  python2-devel
 BuildRequires:  python2-Cython
+BuildRequires:  gcc
 BuildRequires:  python2-pbr
 
 %description
@@ -42,6 +41,11 @@ fi
 %patch2 -p1
 
 %build
+%if 0%{?el7}
+#why do we need to force this?
+ls -al /bin/*ython*
+/bin/cythonize rencode/_rencode.pyx
+%endif
 CFLAGS="%{optflags}" %{__python2} setup.py build
 
 %install

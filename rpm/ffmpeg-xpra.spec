@@ -1,8 +1,10 @@
 %define _build_id_links none
+%define _disable_source_fetch 0
+%global __requires_exclude ^libx264.so.*$
 
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
-Version:     4.3.1
+Version:     4.4
 Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
@@ -17,8 +19,8 @@ Requires:    x264-xpra
 
 BuildRequires:	x264-xpra-devel
 BuildRequires:	yasm
-
-#%global __requires_exclude ^libx264.so.*$
+BuildRequires:	make
+BuildRequires:	gcc
 
 %description
 ffmpeg libraries for xpra
@@ -29,12 +31,19 @@ Summary:   Development package for %{real_name}
 Group:     Development/libraries
 Requires:  %{name} = %{version}-%{release}
 Requires:  pkgconfig
+Requires:  ffmpeg-xpra = %{version}
+AutoReq:   0
 
 %description devel
 This package contains the development files for %{name}.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "06b10a183ce5371f915c6bb15b7b1fffbe046e8275099c96affc29e17645d909" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n %{real_name}-%{version}
 
 
@@ -84,6 +93,7 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--enable-demuxer=m4v \
 	--enable-demuxer=matroska \
 	--enable-demuxer=ogg \
+	--enable-pthreads \
 	--enable-shared \
 	--enable-debug \
 	--disable-stripping \
@@ -155,5 +165,5 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Sun Jan 10 2020 Antoine Martin <antoine@xpra.org> 4.3.1-1
+* Mon May 24 2021 Antoine Martin <antoine@xpra.org> 4.4-1
 - new upstream release

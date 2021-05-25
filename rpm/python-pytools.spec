@@ -2,8 +2,8 @@
 %{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Name:           python2-pytools
-Version:        2019.1.1
-Release:        2%{?dist}
+Version:        2021.2.1
+Release:        1%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
@@ -40,6 +40,11 @@ Small tool functions such as ::
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "3645ed839cf4d79cb4bf030f37ddaeecd7fe5e2d6698438cc36c24a1d5168809" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n pytools-%{version}
 
 
@@ -63,6 +68,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 2021.2.1-1
+- new upstream release
+
 * Mon Oct 28 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
 - Fedora 31 rebuild
 

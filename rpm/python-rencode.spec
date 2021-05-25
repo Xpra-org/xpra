@@ -54,6 +54,11 @@ b-encodings.
 %endif
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "0ed61111f053ea37511da86ca7aed2a3cfda6bdaa1f54a237c4b86eea52f0733" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -qn rencode-%{version}
 %patch0 -p1
 %patch1 -p1
@@ -119,6 +124,9 @@ popd
 %endif
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-1.xpra2
+- verify source checksums
+
 * Mon Oct 22 2018 Antoine Martin <antoine@xpra.org> - 1.0.6-1.xpra1
 - new upstream release
 

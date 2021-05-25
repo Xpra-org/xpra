@@ -1,10 +1,12 @@
+%define _disable_source_fetch 0
+
 Name:           python2-pyxdg
-Version:        0.26
-Release:        5%{?dist}
-Summary:	Python2 library to access freedesktop.org standards
+Version:        0.27
+Release:        1%{?dist}
+Summary:		Python2 library to access freedesktop.org standards
 License:        LGPLv2
 URL:            http://freedesktop.org/Software/pyxdg
-Source0:        https://pypi.python.org/packages/source/r/PyXDG/pyxdg-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/6f/2e/2251b5ae2f003d865beef79c8fcd517e907ed6a69f58c32403cec3eba9b2/pyxdg-%{version}.tar.gz
 # https://gitlab.freedesktop.org/xdg/pyxdg/merge_requests/2
 Patch0:         pyxdg-0.26-fix-OnlyShowIn.patch
 Patch1:         pyxdg-0.26-getType-fix.patch
@@ -22,6 +24,11 @@ PyXDG is a python library to access freedesktop.org standards. This
 package contains a Python 2 version of PyXDG.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "80bd93aae5ed82435f20462ea0208fb198d8eec262e831ee06ce9ddb6b91c5a5" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n pyxdg-%{version}
 %patch0 -p1 -b .fixOnlyShowIn
 %patch1 -p1 -b .getType
@@ -44,6 +51,9 @@ nosetests-%{python2_version} || :
 %{python2_sitelib}/pyxdg-*.egg-info
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@nagafix.co.uk> - 0.27-1
+- new upstream release
+
 * Fri Sep 27 2019 Antoine Martin <antoine@nagafix.co.uk> - 0.26-4
 - adapt spec file to build only for python2
 

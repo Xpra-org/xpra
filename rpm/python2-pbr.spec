@@ -6,8 +6,8 @@
 %define _disable_source_fetch 0
 
 Name:           python2-pbr
-Version:        5.5.1
-Release:        1.xpra2%{?dist}
+Version:        5.6.0
+Release:        1.xpra1%{?dist}
 Summary:        PBR is a library that injects some useful and sensible default behaviors into your setuptools run
 License:        Apache Software License
 URL:            https://docs.openstack.org/pbr/latest/
@@ -22,7 +22,7 @@ PBR is a library that injects some useful and sensible default behaviors into yo
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "5fad80b613c402d5b7df7bd84812548b2a61e9977387a80a5fc5c396492b13c9" ]; then
+if [ "${sha256}" != "42df03e7797b796625b1029c0400279c7c34fd7df24a7d7818a1abb5b38710dd" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi 
@@ -40,6 +40,9 @@ mv %{buildroot}/usr/bin/pbr %{buildroot}/usr/bin/python2-pbr
 %{_bindir}/python2-pbr
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 5.6.0-1.xpra1
+- verify source checksum
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 5.5.1-1.xpra2
 - verify source checksum
 

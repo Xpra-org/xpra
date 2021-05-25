@@ -14,6 +14,7 @@
 %{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%define _disable_source_fetch 0
 
 
 Name:           python2-lz4
@@ -54,6 +55,11 @@ http://code.google.com/p/lz4/ by Yann Collet.
 %endif
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "b666e2d04648f656b6af7d863bc7e50bd72bc00c5c569f89ead010c29c5facb4" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n lz4-%{version}
 #only needed on centos (a fairly brutal solution):
 

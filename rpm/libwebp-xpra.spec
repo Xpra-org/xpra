@@ -1,12 +1,12 @@
 Name:	     libwebp-xpra
-Version:     1.1.0
+Version:     1.2.0
 Release:     1%{?dist}
 Summary:     WebP library and conversion tools for xpra
 
 Group:       Applications/Multimedia
 License:     BSD
 URL:	     https://developers.google.com/speed/webp/
-Source0:     http://downloads.webmproject.org/releases/webp/libwebp-%{version}.tar.gz
+Source0:     https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-%{version}.tar.gz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires: gcc
@@ -78,7 +78,10 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Mon Jan 14 2020 Antoine Martin <antoine@xpra.org> 1.1.0-1
+* Mon May 25 2020 Antoine Martin <antoine@xpra.org> 1.2.0-1
+- new upstream release
+
+* Tue Jan 14 2020 Antoine Martin <antoine@xpra.org> 1.1.0-1
 - new upstream release
 
 * Fri Jul 19 2019 Antoine Martin <antoine@xpra.org> 1.0.3-1

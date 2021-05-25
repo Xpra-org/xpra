@@ -106,6 +106,16 @@ Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
 %endif
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "4107ba0d0390da5766a08c242cf0cf3404c377ed293c5f6d701e457c57ba3424" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
+sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
+if [ "${sha256}" != "12e5518b0216a478527c7ce5ddce623c3d0517adeb87226da767772e8b7f2f06" ]; then
+	echo "invalid checksum for %{SOURCE1}"
+	exit 1
+fi
 %setup -q -c -n %{srcname}-%{version} -T -a0 -a1
 rm %{srcname}-%{version}/OpenGL/EGL/debug.py
 rm %{srcname}-%{version}/tests/osdemo.py

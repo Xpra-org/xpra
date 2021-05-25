@@ -4,13 +4,13 @@
 %define _disable_source_fetch 0
 
 Name:		python2-Cython
-Version:	0.29.21
-Release:	3%{?dist}
+Version:	0.29.23
+Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://files.pythonhosted.org/packages/6c/9f/f501ba9d178aeb1f5bf7da1ad5619b207c90ac235d9859961c11829d0160/Cython-%{version}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/d9/cd/0d2d90b27219c07f68f1c25bcc7b02dd27639d2180add9d4b73e70945869/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python2
 
@@ -62,6 +62,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> 0.29.23-1
+- verify source checksum
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> 0.29.21-3
 - verify source checksum
 

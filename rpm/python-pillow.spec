@@ -2,6 +2,7 @@
 %{!?python2_sitearch:%global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))" 2>/dev/null)}
 %global py2_incdir %{_includedir}/python%{python2_version}
 %global py3_incdir %{_includedir}/python%{python3_version}
+%define _disable_source_fetch 0
 
 %global lcms lcms
 %global libjpeg libjpeg
@@ -220,6 +221,11 @@ PIL image wrapper for Qt.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "db9ff0c251ed066d367f53b64827cc9e18ccea001b986d08c265e53625dab950" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q -n Pillow-%{version}
 %if %{with_python3}
 rm -rf %{py3dir}
