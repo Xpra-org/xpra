@@ -1,10 +1,11 @@
 %define _disable_source_fetch 0
 %define COMMIT 19d71f6b351fe992ae34b114eebd872c383a6bdb
+%define __cmake_in_source_build 1
 
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.1766.20201016gita4ec5cf%{?dist}
+Release:	0.1766.20201016gita4ec5cf.1%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
 #VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
@@ -19,13 +20,13 @@ Patch3:		libyuv-0003-Disable-static-library.patch
 Patch4:		libyuv-0004-Don-t-install-conversion-tool.patch
 Patch5:		libyuv-0005-Use-library-suffix-during-installation.patch
 Patch6:		libyuv-0006-Link-main-library-against-libjpeg.patch
+Patch7:		libyuv-0007-nojpeg.patch
 BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
 %if !0%{?el7}
 BuildRequires:	gtest-devel
 %endif
-BuildRequires:	libjpeg-devel
 
 
 %description
@@ -67,8 +68,8 @@ EOF
 
 
 %build
-%cmake .
-%make_build
+LIBYUV_DISABLE_JPEG=1 %cmake .
+LIBYUV_DISABLE_JPEG=1 %make_build
 
 %install
 %make_install
@@ -96,6 +97,9 @@ cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 
 %changelog
+* Tue May 25 2021 Antoine Martin <totaam@xpra.org> - 0-0.1766.20201016gita4ec5cf.1
+- don't use jpeg, which also fixes CentOS 7.x builds
+
 * Wed Apr 17 2019 Antoine Martin <totaam@xpra.org> - 0-0.1766.20201016gita4ec5cf
 - Use newer snapshot on github mirror
 
