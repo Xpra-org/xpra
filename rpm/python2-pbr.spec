@@ -11,7 +11,7 @@ Release:        1.xpra1%{?dist}
 Summary:        PBR is a library that injects some useful and sensible default behaviors into your setuptools run
 License:        Apache Software License
 URL:            https://docs.openstack.org/pbr/latest/
-Source0:        https://files.pythonhosted.org/packages/65/e2/8cb5e718a3a63e8c22677fde5e3d8d18d12a551a1bbd4557217e38a97ad0/pbr-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/35/8c/69ed04ae31ad498c9bdea55766ed4c0c72de596e75ac0d70b58aa25e0acf/pbr-%{version}.tar.gz
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 
