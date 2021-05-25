@@ -1,4 +1,5 @@
 %global python2dir %{_builddir}/python2-%{name}-%{version}-%{release}
+%define _disable_source_fetch 0
 
 Summary: D-Bus Python2 Bindings
 Name:    python2-dbus
@@ -14,9 +15,8 @@ Patch0: 0001-Move-python-modules-to-architecture-specific-directo.patch
 
 BuildRequires: dbus-devel
 BuildRequires: dbus-glib-devel
-BuildRequires: python2-docutils
 BuildRequires: python2-devel
-BuildRequires: python2dist(setuptools)
+BuildRequires: python2-setuptools
 # autoreconf and friends
 BuildRequires: autoconf-archive automake libtool
 Provides: dbus-python = %{version}-%{release}
@@ -28,6 +28,7 @@ Obsoletes: dbus-python < %{version}-%{release}
 D-Bus python bindings for use with python programs.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "11238f1d86c995d8aed2e22f04a1e3779f0d70e587caffeab4857f3c662ed5a4" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
@@ -38,7 +39,6 @@ fi
 autoreconf -vif
 
 %build
-%set_build_flags
 %py2_build
 %configure PYTHON="%{__python2}"
 %make_build

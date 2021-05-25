@@ -5,7 +5,7 @@ gstreamer1-plugin-timestamp
 Cython
 python2-pbr
 python2-rencode
-#python2-dbus
+python2-dbus
 python2-pyxdg
 python-pillow
 python-pynvml
