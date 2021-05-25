@@ -1378,6 +1378,9 @@ context_counter = AtomicInteger()
 context_gen_counter = AtomicInteger()
 cdef double last_context_failure = 0
 
+# per-device preset denylist - should be mutated with device_lock held
+bad_presets = {}
+
 def get_runtime_factor() -> float:
     global last_context_failure, context_counter
     device_count = len(init_all_devices())
@@ -1563,6 +1566,7 @@ cdef class Encoder:
         return self.codec
 
     cdef GUID get_preset(self, GUID codec) except *:
+        global bad_presets
         presets = self.query_presets(codec)
         options = {}
         #if a preset was specified, give it the best score possible (-1):
@@ -1604,6 +1608,10 @@ cdef class Encoder:
         log("get_preset(%s) speed=%s, quality=%s, lossless=%s, pixel_format=%s, options=%s", codecstr(codec), self.speed, self.quality, bool(self.lossless), self.pixel_format, options)
         for score in sorted(options.keys()):
             for preset, preset_guid in options.get(score):
+                if preset in bad_presets.get(self.cuda_device_id, []):
+                    log("skipping bad preset '%s' (speed=%s, quality=%s, lossless=%s, pixel_format=%s)", preset, self.speed, self.quality, self.lossless, self.pixel_format)
+                    continue
+
                 if preset and (preset in presets.keys()):
                     log("using preset '%s' for speed=%s, quality=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     return c_parseguid(preset_guid)
@@ -1691,6 +1699,7 @@ cdef class Encoder:
                 self.clean()
 
     def init_device(self, options : typedict):
+        global bad_presets
         cdef double start = monotonic_time()
         self.select_cuda_device(options)
         try:
@@ -1707,7 +1716,12 @@ cdef class Encoder:
             record_device_success(self.cuda_device_id)
         except Exception as e:
             log("init_cuda failed", exc_info=True)
-            record_device_failure(self.cuda_device_id)
+            if self.preset_name and isinstance(e, NVENCException) and e.code==NV_ENC_ERR_INVALID_PARAM:
+                log("adding preset '%s' to bad presets", self.preset_name)
+                bad_presets.setdefault(self.cuda_device_id, []).append(self.preset_name)
+            else:
+                record_device_failure(self.cuda_device_id)
+
             raise
         cdef double end = monotonic_time()
         self.ready = 1
