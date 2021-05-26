@@ -19,6 +19,13 @@ python2-pyu2f
 python2-uinput
 python3-pytools
 python3-puda
+python3-pynvml
+python3-cairo
+python3-pyopengl
+python3-pyu2f
+python3-pbr
+python3-rencode
+python3-uinput
 pangox-compat
 gtkglext
 pygtkglext
