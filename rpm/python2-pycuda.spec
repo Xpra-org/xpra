@@ -14,13 +14,13 @@
 %global debug_package %{nil}
 
 Name:           python2-pycuda
-Version:        2019.1.2
+Version:        2020.1
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-Source:        	https://files.pythonhosted.org/packages/5e/3f/5658c38579b41866ba21ee1b5020b8225cec86fe717e4b1c5c972de0a33c/pycuda-%{version}.tar.gz
+Source:        	https://files.pythonhosted.org/packages/46/61/47d3235a4c13eec5a5f03594ddb268f4858734e02980afbcd806e6242fa5/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pycuda
 Obsoletes:      python-pycuda
@@ -50,7 +50,7 @@ PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ada56ce98a41f9f95fe18809f38afbae473a5c62d346cfa126a2d5477f24cc8a" ]; then
+if [ "${sha256}" != "effa3b99b55af67f3afba9b0d1b64b4a0add4dd6a33bdd6786df1aa4cc8761a5" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -82,6 +82,9 @@ rm -rf %{buildroot}
 %{python2_sitearch}/pycuda*
 
 %changelog
+* Wed May 26 2021 Antoine Martin <antoine@xpra.org> - 2020.1-1
+- new upstream release
+
 * Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 2019.1.2-1
 - build for centos8
 - new upstream release
