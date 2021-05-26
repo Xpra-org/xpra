@@ -1,5 +1,0 @@
-fake-cuda
-libfakeXinerama
-xorg-x11-drv-dummy
-gstreamer1-plugin-timestamp
-xpra-html5
