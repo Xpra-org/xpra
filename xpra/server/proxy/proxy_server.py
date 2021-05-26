@@ -560,9 +560,9 @@ class ProxyServer(ServerCore):
     def start_new_session(self, username, _password, uid, gid, new_session_dict=None, displays=()):
         log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
         sns = typedict(new_session_dict or {})
-        mode = sns.get("mode", "start")
+        mode = sns.strget("mode", "start")
         assert mode in ("start", "start-desktop", "shadow"), "invalid start-new-session mode '%s'" % mode
-        display = sns.get("display")
+        display = sns.strget("display")
         if display in displays:
             raise Exception("display %s is already active!" % display)
         log("starting new server subprocess: mode=%s, display=%s", mode, display)
