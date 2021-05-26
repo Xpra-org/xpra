@@ -13,16 +13,13 @@ Group:          System Environment/Libraries
 URL:            http://www.k-3d.org/gtkglext/Main_Page
 Source:         https://download.gnome.org/sources/pygtkglext/1.1/%{name}-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/pygtkglext-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires:  make
+BuildRequires:  gcc
 BuildRequires:  gtkglext-devel
 BuildRequires:  python2-devel
 BuildRequires:  pygtk2-devel
 Requires:       pygtk2
-
-%if 0%{?fedora}
 Requires:       python2-pyopengl
-%else
-Requires:       PyOpenGL
-%endif
 
 %description
 Python bindings for GtkGLExt.
