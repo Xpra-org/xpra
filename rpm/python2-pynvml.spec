@@ -1,12 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 %{!?__python2: %global __python2 python2}
-%{!?__python3: %define __python3 python3}
 %{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%{!?python3_sitelib: %define python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %define _disable_source_fetch 0
 
 #this is a pure python package so debug is meaningless here:
@@ -26,16 +24,6 @@ Provides:       python-pynvml
 %description
 Python Bindings for the NVIDIA Management Library
 
-%if 0%{?fedora}%{?el8}
-%package -n python3-pynvml
-Summary:        Python3 wrapper for NVML
-License:        BSD
-Group:          Development/Libraries/Python
-
-%description -n python3-pynvml
-Python Bindings for the NVIDIA Management Library
-%endif
-
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "5aa6dd23a140b1ef2314eee5ca154a45397b03e68fd9ebc4f72005979f511c73" ]; then
@@ -43,31 +31,14 @@ if [ "${sha256}" != "5aa6dd23a140b1ef2314eee5ca154a45397b03e68fd9ebc4f72005979f5
 	exit 1
 fi
 %setup -q -n nvidia-ml-py-%{version}
-%if 0%{?fedora}%{?el8}
-rm -fr %{py3dir}
-mkdir %{py3dir}
-cp -r *py README.txt PKG-INFO %{py3dir}
-%endif
 
 %build
-%if 0%{?fedora}%{?el8}
-pushd %{py3dir}
-%{__python3} ./setup.py build
-popd
-%endif
 %{__python2} ./setup.py build
 
 %install
 %{__python2} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 rm -f %{buildroot}/%{python2_sitelib}/__pycache__/example.*
 rm -f %{buildroot}/%{python2_sitelib}/example.py*
-%if 0%{?fedora}%{?el8}
-pushd %{py3dir}
-%{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
-popd
-rm -f %{buildroot}/%{python3_sitelib}/__pycache__/example.*
-rm -f %{buildroot}/%{python3_sitelib}/example.py
-%endif
 
 %clean
 rm -rf %{buildroot}
@@ -76,14 +47,6 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 %{python2_sitelib}/pynvml.py*
 %{python2_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
-
-%if 0%{?fedora}%{?el8}
-%files -n python3-pynvml
-%defattr(-,root,root)
-%{python3_sitelib}/__pycache__/pynvml*
-%{python3_sitelib}/pynvml.py*
-%{python3_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
-%endif
 
 %changelog
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 11.450.51-1

@@ -1,13 +1,5 @@
 %{!?python2_sitearch: %define python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
-%{!?python3_sitearch: %define python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 %define _disable_source_fetch 0
-
-%global with_python3 1
-
-# No python3 on el6
-%if 0%{?el6}%{?el7}
-%global with_python3 0
-%endif
 
 Name:           python2-uinput
 Version:        0.11.2
@@ -26,34 +18,12 @@ BuildRequires:  python2-devel
 BuildRequires:  kernel-headers
 BuildRequires:  libudev-devel
 
-%if %{?with_python3}
-BuildRequires:  python3-devel
-%endif
-
-
 %filter_provides_in %{python2_sitearch}/.*\.so$
-%if %{?with_python3}
-%filter_provides_in %{python3_sitearch}/.*\.so$
-%endif
 %filter_setup
-
 
 %description
 Python-uinput is Python interface to the Linux uinput kernel module
 which allows attaching userspace device drivers into kernel.
-
-
-%if 0%{?with_python3}
-%package -n     python3-uinput
-Summary:        Pythonic API to the Linux uinput kernel module
-
-
-%description -n python3-uinput
-Python-uinput is Python interface to the Linux uinput kernel module
-which
-allows attaching userspace device drivers into kernel.
-%endif # with_python3
-
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -66,52 +36,18 @@ fi
 # Use unversioned .so
 sed -i "s/libudev.so.0/libudev.so/" setup.py
 
-%if 0%{?with_python3}
-rm -rf %{py3dir}
-cp -a . %{py3dir}
-find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
-%endif # with_python3
-
-
 %build
 CFLAGS="$RPM_OPT_FLAGS" %{__python2} setup.py build
 
-%if 0%{?with_python3}
-pushd %{py3dir}
-CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
-popd
-%endif # with_python3
-
-
 %install
-# Must do the subpackages' install first because the scripts in /usr/bin are
-# overwritten with every setup.py install (and we want the python2 version
-# to be the default for now).
-%if 0%{?with_python3}
-pushd %{py3dir}
-%{__python3} setup.py install --skip-build --root %{buildroot}
-popd
-%endif # with_python3
-
 %{__python2} setup.py install --skip-build --root %{buildroot}
-
 chmod a-x examples/*
-
 
 %files
 %doc COPYING NEWS README examples
 %{python2_sitearch}/python_uinput-%{version}-py?.?.egg-info
 %{python2_sitearch}/_libsuinput.so
 %{python2_sitearch}/uinput
-
-%if 0%{?with_python3}
-%files -n python3-uinput
-%doc COPYING NEWS README examples
-%{python3_sitearch}/python_uinput-%{version}-py?.?.egg-info
-%{python3_sitearch}/_libsuinput.*.so
-%{python3_sitearch}/uinput
-%endif # with_python3
-
 
 %changelog
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 0.11.2-4

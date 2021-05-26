@@ -1,12 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 %{!?__python2: %global __python2 python2}
-%{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}	
 %define _disable_source_fetch 0
 
@@ -28,16 +26,6 @@ BuildRequires:	python2-setuptools
 %description
 pyu2f provides functionality for interacting with a U2F device over USB.
 
-%if 0%{?fedora}%{?el8}
-%package -n python3-pyu2f
-Summary:        Python3 based U2F host library for Linux
-License:        BSD
-Group:          Development/Libraries/Python
-
-%description -n python3-pyu2f
-pyu2f provides functionality for interacting with a U2F device over USB.
-%endif
-
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "a3caa3a11842fc7d5746376f37195e6af5f17c0a15737538bb1cebf656fb306b" ]; then
@@ -48,21 +36,9 @@ fi
 
 %build
 %{__python2} ./setup.py build
-%if 0%{?fedora}%{?el8}
-rm -fr %{py3dir}
-cp -r . %{py3dir}
-pushd %{py3dir}
-%{__python3} ./setup.py build
-popd
-%endif
 
 %install
 %{__python2} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
-%if 0%{?fedora}%{?el8}
-pushd %{py3dir}
-%{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
-popd
-%endif
 
 %clean
 rm -rf %{buildroot}
@@ -71,13 +47,6 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 %{python2_sitelib}/pyu2f/*
 %{python2_sitelib}/pyu2f-%{version}-py2*.egg-info/*
-
-%if 0%{?fedora}%{?el8}
-%files -n python3-pyu2f
-%defattr(-,root,root)
-%{python3_sitelib}/pyu2f/*
-%{python3_sitelib}/pyu2f-%{version}-py3*.egg-info/*
-%endif
 
 %changelog
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 0.1.5-1
@@ -92,5 +61,5 @@ rm -rf %{buildroot}
 * Sat Mar 24 2018 Antoine Martin <antoine@xpra.org> - 0.1.4-1
 - new upstream release
 
-* Sat Mar 24 2018 Antoine Martin <antoine@xpra.org> - 0.1.2
+* Sat Mar 24 2018 Antoine Martin <antoine@xpra.org> - 0.1.2-1
 - initial packaging for xpra

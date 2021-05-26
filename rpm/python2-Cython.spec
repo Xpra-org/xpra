@@ -16,21 +16,16 @@ Requires:   python2
 
 BuildRequires:	python2-devel python2-setuptools
 
-%if !0%{?el8}%{?fedora}
-echo "only supported on Fedora and CentOS 8.x
-exit 1
-%endif
-
 %description
 This is a development version of Pyrex, a language
 for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "e57acb89bd55943c8d8bf813763d20b9099cc7165c0f16b707631a7654be9cad" ]; then
+if [ "${sha256}" != "6a0d31452f0245daacb14c979c77e093eb1a546c760816b5eed0047686baad8e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q -n Cython-%{version}
 find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python2}|'
 
@@ -63,7 +58,7 @@ rm -rf %{buildroot}
 
 %changelog
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> 0.29.23-1
-- verify source checksum
+- new upstream release
 
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> 0.29.21-3
 - verify source checksum

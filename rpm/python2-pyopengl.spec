@@ -33,8 +33,7 @@ Provides:       PyOpenGL-accelerate = %{version}-%{release}
 Conflicts:		PyOpenGL-accelerate < %{version}-%{release}
 
 %if 0%{?fedora}%{?el8}
-%global __provides_exclude_from ^(%{python3_sitearch}|%{python2_sitearch})/.*\\.so$
-%define with_python3 1
+%global __provides_exclude_from ^(%{python2_sitearch})/.*\\.so$
 Requires:       python2-numpy
 BuildRequires:  python2-setuptools
 BuildRequires:  python2-devel
@@ -53,31 +52,6 @@ implementation).
 PyOpenGL is inter-operable with a large number of external GUI libraries
 for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
 
-
-%if 0%{?with_python3}
-%package -n     python3-pyopengl
-Summary:        Python 3 bindings for OpenGL
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-BuildRequires:  python3-numpy
-Requires:       freeglut
-Requires:       python3-numpy
-Obsoletes:      python3-PyOpenGL < 3.1.2
-Obsoletes:      python3-PyOpenGL-accelerate < 3.1.2
-Provides:       python3-PyOpenGL = %{version}-%{release}
-Provides:       python3-PyOpenGL-accelerate = %{version}-%{release}
-
-%description -n python3-pyopengl
-PyOpenGL is the cross platform Python binding to OpenGL and related APIs. It
-includes support for OpenGL v1.1, GLU, GLUT v3.7, GLE 3 and WGL 4. It also
-includes support for dozens of extensions (where supported in the underlying
-implementation).
-
-PyOpenGL is inter-operable with a large number of external GUI libraries
-for Python including (Tkinter, wxPython, FxPy, PyGame, and Qt).
-%endif
-
-
 %package -n     python2-pyopengl-tk
 Summary:        %{srcname} Python 2.x Tk widget
 BuildArch:      noarch
@@ -90,21 +64,6 @@ Provides:       python-pyopengl-tk = %{version}-%{release}
 
 %description -n python2-pyopengl-tk
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 2.x.
-
-
-%if 0%{?with_python3}
-%package -n     python3-pyopengl-tk
-Summary:        %{srcname} Python 3.x Tk widget
-BuildArch:      noarch
-Requires:       python3-pyopengl = %{version}-%{release}
-Requires:       python3-tkinter
-# These can be removed in Fedora 27
-Obsoletes:      python3-PyOpenGL-Tk < 3.1.2
-Provides:       python3-PyOpenGL-Tk = %{version}-%{release}
-
-%description -n python3-pyopengl-tk
-%{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 3.x.
-%endif
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -126,9 +85,6 @@ rm %{srcname}-%{version}/tests/osdemo.py
 for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
     pushd $dir
 	%{__python2} setup.py build
-	%if 0%{?with_python3}
-	%{__python3} setup.py build
-    %endif
     popd
 done
 
@@ -137,28 +93,11 @@ done
 for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
     pushd $dir
 	%{__python2} setup.py install -O1 --skip-build --root %{buildroot}
-	%if 0%{?with_python3}
-	%{__python3} setup.py install -O1 --skip-build --root %{buildroot}
-    %endif
     popd
 done
 
 # Fix up perms on compiled object files
 find %{buildroot}%{python2_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 755 '{}' \;
-%if 0%{?with_python3}
-find %{buildroot}%{python3_sitearch}/OpenGL_accelerate/ -name *.so -exec chmod 755 '{}' \;
-
-# Remove shebangs - note that weirdly these files have a space between
-# the #! and the /, so this sed recipe is not the usual one
-pushd %{buildroot}%{python2_sitelib}/OpenGL/arrays
-sed -i -e '/^#! \//, 1d' buffers.py _buffers.py
-popd
-
-pushd %{buildroot}%{python3_sitelib}/OpenGL/arrays
-sed -i -e '/^#! \//, 1d' buffers.py _buffers.py
-popd
-%endif
-
 
 %files
 %{python2_sitelib}/%{srcname}-%{version}-py%{python2_version}.egg-info
@@ -167,25 +106,8 @@ popd
 %{python2_sitearch}/OpenGL_accelerate/
 %{python2_sitearch}/%{srcname}_accelerate-%{version}-py%{python2_version}.egg-info/
 
-%if 0%{?with_python3}
-%files -n python3-pyopengl
-%license %{srcname}-%{version}/license.txt
-%{python3_sitelib}/%{srcname}-%{version}-py%{python3_version}.egg-info
-%{python3_sitelib}/OpenGL/
-%exclude %{python3_sitelib}/OpenGL/Tk
-%{python3_sitearch}/OpenGL_accelerate/
-%{python3_sitearch}/%{srcname}_accelerate-%{version}-py%{python3_version}.egg-info/
-%endif
-
-
 %files -n python2-pyopengl-tk
 %{python2_sitelib}/OpenGL/Tk
-
-%if 0%{?with_python3}
-%files -n python3-pyopengl-tk
-%{python3_sitelib}/OpenGL/Tk
-%endif
-
 
 %changelog
 * Wed Jan 22 2020 Antoine Martin <antoine@xpra.org> - 3.1.5-1xpra1

@@ -1,8 +1,8 @@
 %{!?__python2: %global __python2 /usr/bin/python2}
 %{!?python2_sitearch:%global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))" 2>/dev/null)}
 %global py2_incdir %{_includedir}/python%{python2_version}
-%global py3_incdir %{_includedir}/python%{python3_version}
 %define _disable_source_fetch 0
+%global debug_package %{nil}
 
 %global lcms lcms
 %global libjpeg libjpeg
@@ -12,22 +12,19 @@
 %global with_qt4 1
 %global with_tk 1
 %if 0%{?el7}
-	%global with_python3 0
 	%global with_filter 1
 	%global with_webp 0
 	%global lcms lcms2
 	%global libjpeg libjpeg-turbo
 %endif
 %if 0%{?fedora}%{?el8}
-	%global with_python3 1
 	%global lcms lcms2
 	%global with_filter 1
 	%global with_webp 1
-        %global tkinter python2-tkinter
+    %global tkinter python2-tkinter
 %endif
 %if 0%{?el8}
 	#don't override the system python3 package:
-	%global with_python3 0
 	%global with_qt4 0
 	%global with_tk 0
 	%global with_filter 0
@@ -42,6 +39,14 @@ Summary:        Python image processing library
 License:        MIT
 URL:            http://python-imaging.github.com/Pillow/
 Source:         https://files.pythonhosted.org/packages/b3/d0/a20d8440b71adfbf133452d4f6e0fe80de2df7c2578c9b498fb812083383/Pillow-%{version}.tar.gz
+Provides:       python-imaging = %{version}-%{release}
+Obsoletes:      python-imaging <= 1.1.7-12
+Provides:       python2-imaging = %{version}-%{release}
+Obsoletes:      python2-imaging <= 1.1.7-12
+%if "%{?lcms}"!="%{nil}"
+Requires:		%{lcms}
+%endif
+
 %if 0%{?el7}
 Name:           python-pillow
 Provides:       python2-pillow = %{version}-%{release}
@@ -78,30 +83,8 @@ BuildRequires:  numpy
 BuildRequires:  python2-numpy
 %endif
 
-%if 0%{with_python3}
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-%if %{with_tk}
-BuildRequires:  python3-tkinter
-%endif
-%if 0%{with_qt4}
-BuildRequires:  python3-PyQt4
-%endif
-BuildRequires:  python3-numpy
-#BuildRequires:  python3-sphinx
-%endif
-
-Provides:       python-imaging = %{version}-%{release}
-Obsoletes:      python-imaging <= 1.1.7-12
-Provides:       python2-imaging = %{version}-%{release}
-Obsoletes:      python2-imaging <= 1.1.7-12
-%if "%{?lcms}"!="%{nil}"
-Requires:		%{lcms}
-%endif
-
 %if 0%{with_filter} > 0
 %filter_provides_in %{python2_sitearch}
-%filter_provides_in %{python3_sitearch}
 %filter_setup
 %endif
 
@@ -125,7 +108,6 @@ Obsoletes:      python-imaging-devel <= 1.1.7-12
 
 %description devel
 Development files for %{name}.
-
 
 %package doc
 Summary:        Documentation for %{name}
@@ -163,63 +145,6 @@ PIL image wrapper for Qt.
 %endif
 
 
-%if 0%{with_python3}
-%package -n python3-pillow
-Summary:        Python 3 image processing library
-Provides:       python3-imaging = %{version}-%{release}
-
-%description -n python3-pillow
-%{_description}
-
-
-%package -n python3-pillow-devel
-Summary:        Development files for python3-pillow
-Group:          Development/Libraries
-Requires:       python3-pillow%{?_isa} = %{version}-%{release}
-Requires:       python3-devel, libjpeg-devel, zlib-devel
-
-%description -n python3-pillow-devel
-Development files for python3-pillow.
-
-
-%package -n python3-pillow-doc
-Summary:        Documentation for python3-pillow
-Group:          Documentation
-Requires:       python3-pillow = %{version}-%{release}
-BuildArch:      noarch
-
-%description -n python3-pillow-doc
-Documentation for python3-pillow.
-
-
-%if %{with_tk}
-%package -n python3-pillow-tk
-Summary:        Tk interface for python3-pillow
-Group:          System Environment/Libraries
-Requires:       python3-pillow%{?_isa} = %{version}-%{release}
-Requires:       tkinter
-
-%description -n python3-pillow-tk
-Tk interface for python3-pillow.
-%endif
-
-%if 0%{with_qt4}
-%package -n python3-pillow-qt
-Summary:        PIL image wrapper for Qt
-Group:          System Environment/Libraries
-Obsoletes:      python3-pillow <= 2.0.0-5.git93a488e8
-Requires:       python3-pillow%{?_isa} = %{version}-%{release}
-Requires:       python3-PyQt4
-
-%description -n python3-pillow-qt
-PIL image wrapper for Qt.
-%endif
-%endif
-
-
-%global debug_package %{nil}
-
-
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "db9ff0c251ed066d367f53b64827cc9e18ccea001b986d08c265e53625dab950" ]; then
@@ -227,11 +152,6 @@ if [ "${sha256}" != "db9ff0c251ed066d367f53b64827cc9e18ccea001b986d08c265e53625d
 	exit 1
 fi
 %setup -q -n Pillow-%{version}
-%if %{with_python3}
-rm -rf %{py3dir}
-cp -a . %{py3dir}
-%endif
-
 
 %build
 # Build Python 2 modules
@@ -243,38 +163,10 @@ CFLAGS="$RPM_OPT_FLAGS" %{__python2} setup.py build
 find -name '*webp*' | xargs rm
 %endif
 
-%if %{with_python3}
-# Build Python 3 modules
-pushd %{py3dir}
-find -name '*.py' | xargs sed -i '1s|^#!.*python|#!%{__python3}|'
-CFLAGS="$RPM_OPT_FLAGS" %{__python3} setup.py build
-%if %{with_webp} == 0
-#couldn't find a better way to disable webp:
-#(--disable-webp is ignored)
-find -name '*webp*' | xargs rm
-%endif
-
-#building the html docs require a very specific version of sphinx, PITA
-#pushd docs
-#PYTHONPATH=$PWD/../build/%py3_libbuilddir make html SPHINXBUILD=sphinx-build-%python3_version
-#rm -f _build/html/.buildinfo
-#popd
-popd
-%endif
-
-
 %install
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT/%{py2_incdir}/Imaging
 %{__python2} setup.py install --skip-build --root $RPM_BUILD_ROOT
-
-%if %{with_python3}
-pushd %{py3dir}
-install -d $RPM_BUILD_ROOT/%{py3_incdir}/Imaging
-%{__python3} setup.py install --skip-build --root $RPM_BUILD_ROOT
-popd
-%endif
-
 # The scripts are packaged in %%doc
 rm -rf $RPM_BUILD_ROOT%{_bindir}
 
@@ -305,37 +197,6 @@ rm -rf $RPM_BUILD_ROOT%{_bindir}
 %if 0%{with_qt4}
 %files qt
 %{python2_sitearch}/PIL/ImageQt*
-%endif
-
-%if %{with_python3}
-%files -n python3-pillow
-%doc README.rst CHANGES.rst docs/COPYING
-%{python3_sitearch}/*
-# These are in subpackages
-%if %{with_tk}
-%exclude %{python3_sitearch}/PIL/_imagingtk*
-%exclude %{python3_sitearch}/PIL/ImageTk*
-%exclude %{python3_sitearch}/PIL/SpiderImagePlugin*
-%endif
-%if 0%{with_qt4}
-%exclude %{python3_sitearch}/PIL/ImageQt*
-%endif
-
-%files -n python3-pillow-devel
-%{py3_incdir}/Imaging/
-
-%if %{with_tk}
-%files -n python3-pillow-tk
-%{python3_sitearch}/PIL/_imagingtk*
-%{python3_sitearch}/PIL/ImageTk*
-%{python3_sitearch}/PIL/SpiderImagePlugin*
-%endif
-
-%if 0%{with_qt4}
-%files -n python3-pillow-qt
-%{python3_sitearch}/PIL/ImageQt*
-%endif
-
 %endif
 
 %changelog

@@ -1,0 +1,34 @@
+diff -ru ../nasm-2.15.03.ORIG/doc/psfonts.ph ./doc/psfonts.ph
+--- ../nasm-2.15.03.ORIG/doc/psfonts.ph	2020-07-17 20:04:07.000000000 -0500
++++ ./doc/psfonts.ph	2020-12-18 13:45:50.177731896 -0600
+@@ -4,22 +4,22 @@
+ #
+ 
+ # Font substitution lists, in order of preference
+-my @TText = ('SourceSansPro-Bold', 'ClearSans-Bold', 'LiberationSans-Bold',
++my @TText = ('SourceSansPro-Bold', 'SourceSans3-Bold', 'ClearSans-Bold', 'LiberationSans-Bold',
+ 	     'Arial-Bold', 'Helvetica-Bold');
+-my @TItal = ('SourceSansPro-BoldIt', 'ClearSans-BoldItalic', 'LiberationSans-BoldItalic',
++my @TItal = ('SourceSansPro-BoldIt', 'SourceSans3-BoldIt', 'ClearSans-BoldItalic', 'LiberationSans-BoldItalic',
+ 	     'Arial-BoldItalic', 'Helvetica-BoldItalic');
+ my @TCode = ('SourceCodePro-Bold', 'LiberationMono-Bold', 'Courier-Bold');
+-my @HText = ('SourceSansPro-Semibold', 'ClearSans-Bold', 'Arial-Bold', 'Helvetica-Bold');
+-my @HItal = ('SourceSansPro-SemiboldIt', 'ClearSans-BoldItalic',
++my @HText = ('SourceSansPro-Semibold', 'SourceSans3-Semibold', 'ClearSans-Bold', 'Arial-Bold', 'Helvetica-Bold');
++my @HItal = ('SourceSansPro-SemiboldIt', 'SourceSans3-SemiboldIt', 'ClearSans-BoldItalic',
+ 	     'Arial-BoldItalic', 'Helvetica-BoldItalic');
+ my @HCode = ('SourceCodePro-Semibold', 'LiberationMono-Bold', 'Courier-Bold');
+-my @BText = ('SourceSansPro-Regular', 'ClearSans', 'LiberationSans', 'Arial', 'Helvetica');
+-my @BItal = ('SourceSansPro-It', 'ClearSans-Italic', 'LiberationSans-Italic',
++my @BText = ('SourceSansPro-Regular', 'SourceSans3-Regular', 'ClearSans', 'LiberationSans', 'Arial', 'Helvetica');
++my @BItal = ('SourceSansPro-It', 'SourceSans3-It', 'ClearSans-Italic', 'LiberationSans-Italic',
+ 	     'Arial-Italic', 'Helvetica-Italic');
+ my @BCode = ('SourceCodePro-Regular', 'LiberationMono', 'Courier');
+-my @QText = ('SourceSansPro-It', 'ClearSans-Italic', 'LiberationSans-Italic',
++my @QText = ('SourceSansPro-It', 'SourceSans3-It', 'ClearSans-Italic', 'LiberationSans-Italic',
+ 	     'Arial-Italic', 'Helvetica-Italic');
+-my @QBold = ('SourceSansPro-BoldIt', 'ClearSans-BoldItalic', 'LiberationSans-BoldItalic', 'Arial-Bold', 'Helvetica-BoldItalic');
++my @QBold = ('SourceSansPro-BoldIt', 'SourceSans3-BoldIt', 'ClearSans-BoldItalic', 'LiberationSans-BoldItalic', 'Arial-Bold', 'Helvetica-BoldItalic');
+ my @QCode = ('SourceCodePro-Regular', 'LiberationMono', 'Courier');
+ my @XCode = ('SourceCodePro-Regular', 'LiberationMono', 'Courier');
+ 

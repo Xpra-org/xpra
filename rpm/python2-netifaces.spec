@@ -2,45 +2,29 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %define _disable_source_fetch 0
 
-#this spec file is for both Fedora and CentOS
-#only Fedora has Python3 at present:
-%if 0%{?fedora}
-%define with_python3 1
-%endif
-
-
-Summary: Getting network addresses from Python
-Vendor: http://alastairs-place.net/netifaces/
-Name: python2-netifaces
-Version: 0.10.9
-Release: 1%{?dist}
-License: GPL3
-Requires: python2
-Group: Networking
-Packager: Antoine Martin <antoine@xpra.org>
-URL: http://winswitch.org/
-Source: https://files.pythonhosted.org/packages/0d/18/fd6e9c71a35b67a73160ec80a49da63d1eed2d2055054cc2995714949132/netifaces-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-root
-BuildRequires: python2-devel, python2-setuptools
-Provides: netifaces = %{version}-%{release}
-Provides: python-netifaces = %{version}-%{release}
-Obsoletes: netifaces
-Obsoletes: python-netifaces
-Conflicts: netifaces < %{version}
-Conflicts: python-netifaces < %{version}
+Summary:	Getting network addresses from Python
+Vendor:		http://alastairs-place.net/netifaces/
+Name:		python2-netifaces
+Version:	0.10.9
+Release:	1%{?dist}
+License:	GPL3
+Group:		Networking
+Packager:	Antoine Martin <antoine@xpra.org>
+URL:		http://xpra.org/
+Source:		https://files.pythonhosted.org/packages/0d/18/fd6e9c71a35b67a73160ec80a49da63d1eed2d2055054cc2995714949132/netifaces-%{version}.tar.gz
+BuildRoot:	%{_tmppath}/%{name}-%{version}-root
+Requires:	python2
+BuildRequires: python2-devel
+BuildRequires: python2-setuptools
+Provides:	netifaces = %{version}-%{release}
+Provides:	python-netifaces = %{version}-%{release}
+Obsoletes:	netifaces
+Obsoletes:	python-netifaces
+Conflicts:	netifaces < %{version}
+Conflicts:	python-netifaces < %{version}
 
 %description
 Getting network addresses from Python
-
-%if 0%{?with_python3}
-%package -n python3-netifaces
-Summary: Getting network addresses from Python
-Group: Networking
-
-%description -n python3-netifaces
-Getting network addresses from Python3
-%endif
-
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -50,26 +34,11 @@ if [ "${sha256}" != "2dee9ffdd16292878336a58d04a20f0ffe95555465fee7c9bd23b3490ef
 fi
 %setup -q -n netifaces-%{version}
 
-%if 0%{?with_python3}
-rm -rf %{py3dir}
-cp -a . %{py3dir}
-%endif
-
 %build
 %{__python2} setup.py build
 
-%if 0%{?with_python3}
-pushd %{py3dir}
-%{__python3} setup.py build
-popd
-%endif
-
 %install
 %{__python2} setup.py install --root %{buildroot}
-
-%if 0%{?with_python3}
-%{__python3} setup.py install --root %{buildroot}
-%endif
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -78,13 +47,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %doc README.rst
 %{python2_sitearch}/netifaces*
-
-%if 0%{?with_python3}
-%files -n python3-netifaces
-%defattr(-,root,root)
-%{python3_sitearch}/netifaces*
-%endif
-
 
 %changelog
 * Fri Jan 11 2019 Antoine Martin <antoine@xpra.org> - 0.10.9-1

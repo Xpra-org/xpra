@@ -44,7 +44,7 @@ fi
 %if 0%{?el7}
 #why do we need to force this?
 ls -al /bin/*ython*
-/bin/cythonize rencode/_rencode.pyx
+python2-cythonize rencode/_rencode.pyx || cythonize rencode/_rencode.pyx
 %endif
 CFLAGS="%{optflags}" %{__python2} setup.py build
 

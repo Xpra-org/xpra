@@ -8,8 +8,6 @@ License:        LGPLv2
 URL:            http://freedesktop.org/Software/pyxdg
 Source0:        https://files.pythonhosted.org/packages/6f/2e/2251b5ae2f003d865beef79c8fcd517e907ed6a69f58c32403cec3eba9b2/pyxdg-%{version}.tar.gz
 # https://gitlab.freedesktop.org/xdg/pyxdg/merge_requests/2
-Patch0:         pyxdg-0.26-fix-OnlyShowIn.patch
-Patch1:         pyxdg-0.26-getType-fix.patch
 BuildArch:      noarch
 BuildRequires:	hicolor-icon-theme
 BuildRequires:	shared-mime-info
@@ -30,14 +28,12 @@ if [ "${sha256}" != "80bd93aae5ed82435f20462ea0208fb198d8eec262e831ee06ce9ddb6b9
 	exit 1
 fi
 %setup -q -n pyxdg-%{version}
-%patch0 -p1 -b .fixOnlyShowIn
-%patch1 -p1 -b .getType
 
 %build
-%py2_build
+%{__python2} setup.py build
 
 %install
-%py2_install
+%{__python2} setup.py install --skip-build --root %{buildroot}
 
 %check
 # icon-test currently fails
@@ -210,5 +206,3 @@ nosetests-%{python2_version} || :
 
 * Tue Dec 14 2004 Che
 - initial rpm release
-
-
