@@ -42,7 +42,7 @@ developing applications that use %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "552092b3b6c23f47f4beee05495d0f9a153781f62a1c4b7ec53857a37dfce046" ]; then
+if [ "${sha256}" != "7f0104347659a81cd5bd84007b97547d18a8a216f5df2629f379ea7f87a1410a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -97,7 +97,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Tue May 15 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra2
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra2
 - verify source checksum
 
 * Mon Nov 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra1
