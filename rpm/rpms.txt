@@ -1,0 +1,26 @@
+fake-cuda
+libfakeXinerama
+xorg-x11-drv-dummy
+gstreamer1-plugin-timestamp
+python2-Cython
+python2-pbr
+python2-rencode
+python2-pkgconfig
+python2-lz4
+python2-dbus
+python2-pyxdg
+python2-netifaces
+python2-pynvml
+python2-pytools
+#no boost-python2:
+#python2-pycuda
+python2-pyopengl
+python2-pyu2f
+python2-uinput
+python3-pytools
+python3-puda
+pangox-compat
+pygtkglext
+x264-xpra
+ffmpeg-xpra
+xpra
