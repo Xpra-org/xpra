@@ -1,3 +1,5 @@
+%define _disable_source_fetch 0
+
 Name:           lame
 Version:        3.100
 Release:        1%{?dist}
@@ -39,6 +41,11 @@ This package development files for %{name}.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "7d368575973024e851a6a91392dba39edb47dfd20ad5c0c65a560935b544ab3f" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q
 %patch1 -p1 -b .noexec
 
