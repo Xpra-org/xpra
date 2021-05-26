@@ -65,7 +65,7 @@ fi
 %build
 %{__python2} ./configure.py \
 	--cuda-enable-gl \
-	--cuda-root=/usr/local/cuda \
+	--cuda-root=/opt/cuda \
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
