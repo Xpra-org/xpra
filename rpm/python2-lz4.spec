@@ -1,21 +1,7 @@
-#
 # spec file for package python-lz4
-#
-# Copyright (c) 2013-2019
-#
-
-#this spec file is for both Fedora and CentOS
-#only Fedora has Python3 at present:
-%if 0%{?fedora}%{?el8}
-%define with_python3 1
-%endif
-
 %{!?__python2: %global __python2 python2}
-%{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %define _disable_source_fetch 0
-
 
 Name:           python2-lz4
 Version:        2.2.1
@@ -34,25 +20,9 @@ Provides:		python-lz4 = %{version}-%{release}
 Obsoletes:      python-lz4 < %{version}-%{release}
 Conflicts:		python-lz4 < %{version}-%{release}
 
-#Fedora 31 builds a package that cannot be installed if we let its automagic run:
-%if 0%{?fedora}>=31
-AutoReqProv: no
-%endif
-
 %description
 This package provides Python2 bindings for the lz4 compression library
 http://code.google.com/p/lz4/ by Yann Collet.
-
-%if 0%{?with_python3}
-%package -n python3-lz4
-Summary:        LZ4 Bindings for Python3
-Group:          Development/Languages/Python
-BuildRequires:  python3-pkgconfig
-
-%description -n python3-lz4
-This package provides Python3 bindings for the lz4 compression library
-http://code.google.com/p/lz4/ by Yann Collet.
-%endif
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -63,27 +33,12 @@ fi
 %setup -q -n lz4-%{version}
 #only needed on centos (a fairly brutal solution):
 
-%if 0%{?with_python3}
-rm -rf %{py3dir}
-cp -a . %{py3dir}
-%endif
-
 %build
 export CFLAGS="%{optflags}"
 %{__python2} setup.py build
 
-%if 0%{?with_python3}
-pushd %{py3dir}
-%{__python3} setup.py build
-popd
-%endif
-
 %install
 %{__python2} setup.py install --root %{buildroot}
-
-%if 0%{?with_python3}
-%{__python3} setup.py install --root %{buildroot}
-%endif
 
 %clean
 rm -rf %{buildroot}
@@ -92,12 +47,6 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %doc README.rst
 %{python2_sitearch}/lz4*
-
-%if 0%{?with_python3}
-%files -n python3-lz4
-%defattr(-,root,root)
-%{python3_sitearch}/lz4*
-%endif
 
 %changelog
 * Thu Sep 26 2019 Antoine Martin <antoine@xpra.org> - 2.2.1-2
