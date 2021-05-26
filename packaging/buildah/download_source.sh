@@ -23,7 +23,7 @@ function fetch() {
 	URLS=`rpmspec -P ../rpm/$SPECNAME.spec | grep "Source.*:" | awk '{print $2}'`
 	if [ -z "${URLS}" ]; then
 		echo "no Source URLs found in $SPECNAME"
-		exit 1
+		return
 	fi
 	for URL in $URLS; do
 		FILENAME=`echo $URL | awk -F/ '{print $NF}'`
@@ -35,17 +35,11 @@ function fetch() {
 		fi
 	done
 }
+pushd rpm
+SPECS=`ls *.spec | sed 's/.spec//g'`
+popd
 pushd pkgs
-fetch "x264-xpra"
-fetch "ffmpeg-xpra"
-fetch "gstreamer1-plugin-timestamp"
-fetch "libfakeXinerama"
-fetch "python3-cairo"
-fetch "python3-pycuda"
-fetch "python3-pynvml"
-fetch "python3-pyopengl"
-fetch "python3-pyopengl"
-fetch "python3-pytools"
-fetch "python3-pytools"
-fetch "libyuv"
+for SPEC in $SPECS; do
+	fetch $SPEC
+done
 popd
