@@ -14,7 +14,7 @@ python2-netifaces
 python2-pillow
 python2-pynvml
 python2-pytools
-python-pycuda
+python2-pycuda
 python2-pyopengl
 python2-pyu2f
 python2-uinput

@@ -1,12 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 %{!?__python2: %global __python2 python2}
-%{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %define _disable_source_fetch 0
 
 #we don't want to depend on libcuda via RPM dependencies
@@ -27,8 +25,12 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pycuda
 Obsoletes:      python-pycuda
 Conflicts:      python-pycuda
-
-BuildRequires:  cuda
+BuildRequires:  gcc-c++
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
+#BuildRequires:  cuda
+BuildRequires:  mesa-libGL-devel
+Requires:       python2-pytools
 %if 0%{?el7}
 BuildRequires:  boost-devel
 BuildRequires:  numpy
@@ -42,38 +44,9 @@ Requires:       python2-numpy
 Requires:       python2-decorator
 Requires:       python2-six
 %endif
-Requires:       python2-pytools
-
-BuildRequires:  gcc-c++
-BuildRequires:  python2-devel
-BuildRequires:  python2-setuptools
-%endif
 
 %description
 PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
-
-
-%if 0%{?fedora}%{?el8}
-%package -n python3-pycuda
-Summary:        Python3 wrapper CUDA
-License:        MIT
-Group:          Development/Libraries/Python
-
-Requires:       python3-decorator
-Requires:       python3-numpy
-Requires:       python3-pytools
-Requires:       python3-six
-
-BuildRequires:  gcc-c++
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-BuildRequires:  python3-numpy
-BuildRequires:  boost-python3-devel
-BuildRequires:  cuda
-
-%description -n python3-pycuda
-Python3 version.
-%endif
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -82,48 +55,23 @@ if [ "${sha256}" != "ada56ce98a41f9f95fe18809f38afbae473a5c62d346cfa126a2d5477f2
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
-%if 0%{?fedora}%{?el8}
-rm -fr %{py3dir}
-cp -a . %{py3dir}
-%endif
-
 
 %build
+CUDA_ROOT="/opt/cuda"
 %{__python2} ./configure.py \
 	--cuda-enable-gl \
-	--cuda-root=/opt/cuda \
-	--cudadrv-lib-dir=%{_libdir} \
+	--cuda-root=${CUDA_ROOT} \
+	--cudadrv-lib-dir=${CUDA_ROOT}/targets/x86_64-linux/lib/stubs/ \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
-	--no-cuda-enable-curand \
-	--boost-python-libname=boost_python27
+	--no-cuda-enable-curand
+#	--boost-python-libname=boost_python27
 #	--boost-thread-libname=boost_thread
 %{__python2} setup.py build
-%if 0%{?fedora}%{?el8}
-pushd %{py3dir}
-%{__python3} ./setup.py clean
-rm -f siteconf.py
-%{__python3} ./configure.py \
-	--cuda-enable-gl \
-	--cuda-root=/usr/local/cuda \
-	--cudadrv-lib-dir=%{_libdir} \
-	--boost-inc-dir=%{_includedir} \
-	--boost-lib-dir=%{_libdir} \
-	--no-cuda-enable-curand \
-	--boost-python-libname=boost_python37
-#	--boost-thread-libname=boost_thread
-%{__python3} setup.py build
-popd
-%endif
 make
 
 %install
 %{__python2} setup.py install --prefix=%{_prefix} --root=%{buildroot}
-%if 0%{?fedora}%{?el8}
-pushd %{py3dir}
-%{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
-popd
-%endif
 
 %clean
 rm -rf %{buildroot}
@@ -132,13 +80,6 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 %doc examples/ test/
 %{python2_sitearch}/pycuda*
-
-%if 0%{?fedora}%{?el8}
-%files -n python3-pycuda
-%defattr(-,root,root)
-%doc examples/ test/
-%{python3_sitearch}/pycuda*
-%endif
 
 %changelog
 * Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 2019.1.2-1
