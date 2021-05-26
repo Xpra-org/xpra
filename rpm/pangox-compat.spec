@@ -10,6 +10,8 @@ URL:            http://ftp.gnome.org/pub/GNOME/sources/pangox-compat/0.0/
 Source0:        http://ftp.gnome.org/pub/GNOME/sources/pangox-compat/0.0/%{name}-%{version}.tar.xz
 
 BuildRequires:  pango-devel
+BuildRequires:  make
+BuildRequires:  gcc
 
 %description
 This is a compatibility library providing the obsolete pangox library
