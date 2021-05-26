@@ -1,0 +1,13 @@
+Index: pangox.c
+===================================================================
+--- a/pangox.c	2021-05-26 22:35:57.565718901 +0700
++++ b/pangox.c	2021-05-26 22:36:23.490535592 +0700
+@@ -279,7 +279,7 @@
+ 
+   font_class->describe = pango_x_font_describe;
+   font_class->get_coverage = pango_x_font_get_coverage;
+-  font_class->find_shaper = pango_x_font_find_shaper;
++  //font_class->find_shaper = pango_x_font_find_shaper;
+   font_class->get_glyph_extents = pango_x_font_get_glyph_extents;
+   font_class->get_metrics = pango_x_font_get_metrics;
+   font_class->get_font_map = pango_x_font_get_font_map;

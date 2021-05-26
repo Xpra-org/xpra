@@ -8,6 +8,7 @@ Summary:        Compatibility library for pangox
 License:        LGPLv2+
 URL:            http://ftp.gnome.org/pub/GNOME/sources/pangox-compat/0.0/
 Source0:        http://ftp.gnome.org/pub/GNOME/sources/pangox-compat/0.0/%{name}-%{version}.tar.xz
+Patch0:			pango-no-find_shaper.patch
 
 BuildRequires:  pango-devel
 BuildRequires:  make
@@ -33,6 +34,8 @@ if [ "${sha256}" != "552092b3b6c23f47f4beee05495d0f9a153781f62a1c4b7ec53857a37df
 	exit 1
 fi
 xz -dc ../SOURCES/%{name}-%{version}.tar.xz | /usr/bin/tar --no-same-owner -xf -
+cd %{name}-%{version}
+%patch0 -p1
 
 %build
 cd %{name}-%{version}
