@@ -95,7 +95,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
 if PYTHON3:
     def sh_quotemeta(s):
         return b"'" + s.replace(b"'", b"'\\''") + b"'"
-    
+
     def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
         script = []
         script.append(b"#!/bin/sh\n")

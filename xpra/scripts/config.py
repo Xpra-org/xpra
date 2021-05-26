@@ -805,7 +805,7 @@ def get_default_systemd_run():
     #https://github.com/systemd/systemd/issues/3388
     #but with newer kernels, it is working again..
     #now that we test it before using it,
-    #it should be safe to leave it on auto: 
+    #it should be safe to leave it on auto:
     return "auto"
 
 def get_default_pulseaudio_command():
