@@ -1,31 +1,24 @@
+%define _disable_source_fetch 0
 %define _build_id_links none
+%define commit 544c61f082194728d0391fb280a6e138ba320a96
+%global debug_package %{nil}
 
 Name:	     x264-xpra
-Version:     20190929
-%define SNAPSHOTTYPE -stable
-%if 0%{?beta} < 1
+Version:     20210301
 Release:     1%{?dist}
-%else
-Release:     0%{?dist}
-%endif
 Summary:     x264 library for xpra
-
 Group:       Applications/Multimedia
 License:     GPL
 URL:	     http://www.videolan.org/developers/x264.html
-Source0:     http://download.videolan.org/pub/x264/snapshots/x264-snapshot-%{version}-2245%{?SNAPSHOTTYPE}.tar.bz2
+Source0:     https://github.com/mirror/x264/archive/%{commit}.zip
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+AutoReq:     0
+AutoProv:    0
 
-BuildRequires:	yasm
-
-
-%if 0%{?fedora}%{?el8}
-%global debug_package %{nil}
-%endif
-
-%if 0%{?fedora} || 0%{?rhel} >= 7
-BuildRequires: perl-Digest-MD5
-%endif
+BuildRequires:	nasm
+BuildRequires:	gcc
+BuildRequires:	make
+BuildRequires:	perl-Digest-MD5
 
 %description
 x264 library for xpra
@@ -35,13 +28,21 @@ Summary: Development files for the x264 library
 Group: Development/libraries
 Requires: %{name} = %{version}
 Requires: pkgconfig
+Requires: x264-xpra = %{version}
+AutoReq:     0
+AutoProv:    0
 
 %description devel
 This package contains the development files for %{name}.
 
 
 %prep
-%setup -q -n x264-snapshot-%{version}-2245%{?SNAPSHOTTYPE}
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "7e8950c4f29a7e96b58cf5506c8990c6dda1740d855f55fd2022f4e6faf3a18f" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
+%setup -q -n x264-%{commit}
 
 
 %build
@@ -49,6 +50,7 @@ This package contains the development files for %{name}.
     --prefix="%{_prefix}" \
     --libdir="%{_libdir}/xpra" \
     --includedir="%{_includedir}/xpra" \
+    --bit-depth=all \
     --enable-shared \
     --enable-static
 
@@ -58,8 +60,7 @@ make %{?_smp_mflags}
 %install
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
-
-# remove executable
+rm -f %{buildroot}/usr/share/bash-completion/completions/x264
 rm %{buildroot}/usr/bin/x264
 
 %post -p /sbin/ldconfig
@@ -82,65 +83,13 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
-* Sat Dec 23 2017 Antoine Martin <antoine@xpra.org> 20171222-1
-- use a newer snapshot
+* Mon Mar 01 2021 Antoine Martin <antoine@xpra.org> - 20210301-1
+- remove legacy CentOS 7 switches
+- build from github mirror snapshot
+- add missing dependency
 
-* Wed Jul 05 2017 Antoine Martin <antoine@xpra.org> 20170704-1
-- use a newer snapshot
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 20210110-2
+- verify source checksum
 
-* Thu Mar 02 2017 Antoine Martin <antoine@xpra.org> 20170301
-- new upstream release
-
-* Sun Nov 27 2016 Antoine Martin <antoine@xpra.org> 20161126
-- new upstream release
-
-* Wed Sep 07 2016 Antoine Martin <antoine@xpra.org> 20160906
-- new upstream release
-
-* Sat Jul 30 2016 Antoine Martin <antoine@xpra.org> 20160729
-- new upstream release
-
-* Tue Jul 05 2016 Antoine Martin <antoine@xpra.org> 20160704
-- new upstream release
-
-* Fri Apr 29 2016 Antoine Martin <antoine@xpra.org> 20160428
-- new upstream release
-
-* Tue Apr 19 2016 Antoine Martin <antoine@xpra.org> 20160419
-- new upstream release
-
-* Sat Feb 06 2016 Antoine Martin <antoine@xpra.org> 20160205
-- new upstream release
-
-* Wed Dec 02 2015 Antoine Martin <antoine@xpra.org> 20151202
-- new upstream release
-
-* Fri Nov 20 2015 Antoine Martin <antoine@xpra.org> 20151119
-- new upstream release
-
-* Thu Sep 10 2015 Antoine Martin <antoine@xpra.org> 20150909
-- new upstream release
-
-* Tue Jul 28 2015 Antoine Martin <antoine@xpra.org> 20150727
-- new upstream release
-
-* Tue Jul 14 2015 Antoine Martin <antoine@xpra.org> 20150713
-- new upstream release
-
-* Sun Jan 18 2015 Antoine Martin <antoine@xpra.org> 20141218
-- new upstream release
-
-* Tue Dec 09 2014 Antoine Martin <antoine@xpra.org> 20141208
-- new upstream release
-
-* Tue Oct 07 2014 Antoine Martin <antoine@xpra.org> 20141006
-- new upstream release
-
-* Wed Sep 10 2014 Antoine Martin <antoine@xpra.org> 20140909
-- version bump
-
-* Sun Jul 20 2014 Antoine Martin <antoine@xpra.org> 20140719
-- version bump
-
-* Mon Jul 14 2014 Matthew Gyurgyik <pyther@pyther.net>
-- initial package
+* Sun Jan 10 2021 Antoine Martin <antoine@xpra.org> - 20210110-1
+- use a newer snapshot from git

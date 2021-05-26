@@ -1,14 +1,18 @@
+%define _disable_source_fetch 0
+%define COMMIT 19d71f6b351fe992ae34b114eebd872c383a6bdb
+%define __cmake_in_source_build 1
+
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.35.20190401git4bd08cb%{?dist}
+Release:	0.1766.20201016gita4ec5cf.1%{?dist}
 License:	BSD
-Url:		https://chromium.googlesource.com/libyuv/libyuv
-VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
+URL:		https://chromium.googlesource.com/libyuv/libyuv
+#VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
 ## git clone https://chromium.googlesource.com/libyuv/libyuv
 ## cd libyuv
 ## git archive --format=tar --prefix=libyuv-0/ 4bd08cb | xz  > ../libyuv-0.tar.xz
-Source0:	%{name}-%{version}.tar.xz
+Source0:	https://github.com/lemenkov/%{name}/archive/%{COMMIT}.zip
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
 Patch2:		libyuv-0002-Link-against-shared-library.patch
@@ -16,12 +20,13 @@ Patch3:		libyuv-0003-Disable-static-library.patch
 Patch4:		libyuv-0004-Don-t-install-conversion-tool.patch
 Patch5:		libyuv-0005-Use-library-suffix-during-installation.patch
 Patch6:		libyuv-0006-Link-main-library-against-libjpeg.patch
+Patch7:		libyuv-0007-nojpeg.patch
+BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
 %if !0%{?el7}
 BuildRequires:	gtest-devel
 %endif
-BuildRequires:	libjpeg-devel
 
 
 %description
@@ -42,7 +47,12 @@ Additional header files for development with %{name}.
 
 
 %prep
-%autosetup -p1
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "5906ff00c8956df09c0187549a3fd5cf0da40859846f49d565cc9abfca93f29a" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
+%autosetup -p1 -n libyuv-%{COMMIT}
 
 cat > %{name}.pc << EOF
 prefix=%{_prefix}
@@ -58,15 +68,11 @@ EOF
 
 
 %build
-%if 0%{?el7}
-%{cmake} -DTEST=false
-%else
-%{cmake} -DTEST=true
-%endif
-
+LIBYUV_DISABLE_JPEG=1 %cmake .
+LIBYUV_DISABLE_JPEG=1 %make_build
 
 %install
-%{make_install}
+%make_install
 
 mkdir -p %{buildroot}%{_libdir}/pkgconfig
 cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
@@ -91,6 +97,12 @@ cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 
 %changelog
+* Tue May 25 2021 Antoine Martin <totaam@xpra.org> - 0-0.1766.20201016gita4ec5cf.1
+- don't use jpeg, which also fixes CentOS 7.x builds
+
+* Wed Apr 17 2019 Antoine Martin <totaam@xpra.org> - 0-0.1766.20201016gita4ec5cf
+- Use newer snapshot on github mirror
+
 * Wed Apr 17 2019 Peter Lemenkov <lemenkov@gmail.com> - 0-0.35.20190401git4bd08cb
 - Fix linkage against libjpeg
 

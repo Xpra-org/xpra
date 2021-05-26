@@ -1,12 +1,14 @@
+%define _disable_source_fetch 0
+
 Name:	     libwebp-xpra
-Version:     1.1.0
+Version:     1.2.0
 Release:     1%{?dist}
 Summary:     WebP library and conversion tools for xpra
 
 Group:       Applications/Multimedia
 License:     BSD
 URL:	     https://developers.google.com/speed/webp/
-Source0:     http://downloads.webmproject.org/releases/webp/libwebp-%{version}.tar.gz
+Source0:     https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-%{version}.tar.gz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires: gcc
@@ -29,6 +31,11 @@ This package contains the files required to develop programs that will encode
 WebP images.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "2fc8bbde9f97f2ab403c0224fb9ca62b2e6852cbc519e91ceaa7c153ffd88a0c" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %if ! 0%{?el7}
 echo "this package is only meant to be built for RHEL / CentOS 7.x"
 exit 1
@@ -78,7 +85,10 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Mon Jan 14 2020 Antoine Martin <antoine@xpra.org> 1.1.0-1
+* Mon May 25 2020 Antoine Martin <antoine@xpra.org> 1.2.0-1
+- new upstream release
+
+* Tue Jan 14 2020 Antoine Martin <antoine@xpra.org> 1.1.0-1
 - new upstream release
 
 * Fri Jul 19 2019 Antoine Martin <antoine@xpra.org> 1.0.3-1

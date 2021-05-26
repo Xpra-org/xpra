@@ -1,7 +1,9 @@
+%define _disable_source_fetch 0
+
 Summary: MPEG audio decoding library
 Name: libmad
 Version: 0.15.1b
-Release: 3%{?dist}
+Release: 3.1%{?dist}
 License: GPL
 Group: System Environment/Libraries
 URL: http://www.underbit.com/products/mad/
@@ -40,6 +42,11 @@ This package contains the header file as well as the static library needed
 to develop programs that will use libmad for mpeg audio decoding.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "bbfac3ed6bfbc2823d3775ebb931087371e142bb0e9bb1bee51a76a6e0078690" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup
 #%patch0 -p1 -b .multiarch
 #%patch1 -p1 -b .ppc
@@ -97,5 +104,8 @@ EOF
 %exclude %{_libdir}/libmad.la
 
 %changelog
-* Fri Oct 17 2014 Antoine Martin <antoine@xpra.org> 0.15.1b
+* Wed May 26 2021 Antoine Martin <antoine@xpra.org> 0.15.1b-3.1
+- initial xpra package
+
+* Fri Oct 17 2014 Antoine Martin <antoine@xpra.org> 0.15.1b-3
 - initial xpra package

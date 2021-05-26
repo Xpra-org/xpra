@@ -1,6 +1,8 @@
+%define _disable_source_fetch 0
+
 Name:           lame
 Version:        3.100
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Free MP3 audio compressor
 
 Group:          Applications/Multimedia
@@ -39,6 +41,11 @@ This package development files for %{name}.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q
 %patch1 -p1 -b .noexec
 
@@ -102,6 +109,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/lame.h
 
 %changelog
+* Wed May 26 2021 Antoine Martin <antoine@xpra.org> 3.100-2
+- verify source checksum
+
 * Thu Jan 24 2019 Antoine Martin <antoine@xpra.org> 3.100-1
 - new upstream release
 

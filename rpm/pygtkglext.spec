@@ -1,27 +1,25 @@
 %{!?__python2: %define __python2 python2}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%define _disable_source_fetch 0
 
 
 Name:           pygtkglext
 Version:        1.1.0
-Release:        32.xpra1%{?dist}
+Release:        31.xpra2%{?dist}
 Summary:        Python bindings for GtkGLExt
 License:        LGPLv2+
 Group:          System Environment/Libraries
 URL:            http://www.k-3d.org/gtkglext/Main_Page
-Source:         http://downloads.sourceforge.net/gtkglext/%{name}-%{version}.tar.bz2
+Source:         https://download.gnome.org/sources/pygtkglext/1.1/%{name}-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/pygtkglext-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires:  make
+BuildRequires:  gcc
 BuildRequires:  gtkglext-devel
 BuildRequires:  python2-devel
 BuildRequires:  pygtk2-devel
 Requires:       pygtk2
-
-%if 0%{?fedora}%{?el8}
 Requires:       python2-pyopengl
-%else
-Requires:       PyOpenGL
-%endif
 
 %description
 Python bindings for GtkGLExt.
@@ -40,6 +38,11 @@ developing applications that use %{name}.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "7f0104347659a81cd5bd84007b97547d18a8a216f5df2629f379ea7f87a1410a" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q
 iconv -f EUC-JP -t UTF8 AUTHORS > tmp
 mv tmp AUTHORS
@@ -91,8 +94,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Mon Nov 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-32.xpra1
-- CentOS 8.x dependency fix
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra2
+- verify source checksum
 
 * Mon Nov 04 2019 Antoine Martin <antoine@xpra.org> - 1.1.0-31.xpra1
 - Fedora 31 rebuild
