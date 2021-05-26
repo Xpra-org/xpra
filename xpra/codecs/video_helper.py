@@ -144,7 +144,7 @@ class VideoHelper:
             else:
                 notfound = tuple(x for x in (exclist+inclist) if x and x not in all_list)
                 if notfound:
-                    log.warn("Warning: ignoring unknown %s: %s", name, csv(notfound))    
+                    log.warn("Warning: ignoring unknown %s: %s", name, csv(notfound))
             return tuple(x for x in inclist if x not in exclist)
         self.video_encoders = filt("video encoders" , video_encoders,   ALL_VIDEO_ENCODER_OPTIONS)
         self.csc_modules    = filt("csc modules"    , csc_modules,      ALL_CSC_MODULE_OPTIONS)

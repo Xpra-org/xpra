@@ -71,21 +71,21 @@ cdef extern from "nvjpeg.h":
     ctypedef enum nvjpegOutputFormat_t:
         NVJPEG_OUTPUT_UNCHANGED
         # return planar luma and chroma, assuming YCbCr colorspace
-        NVJPEG_OUTPUT_YUV 
-        # return luma component only, if YCbCr colorspace, 
+        NVJPEG_OUTPUT_YUV
+        # return luma component only, if YCbCr colorspace
         # or try to convert to grayscale,
         # writes to 1-st channel of nvjpegImage_t
         NVJPEG_OUTPUT_Y
-        # convert to planar RGB 
+        # convert to planar RGB
         NVJPEG_OUTPUT_RGB
         # convert to planar BGR
-        NVJPEG_OUTPUT_BGR 
+        NVJPEG_OUTPUT_BGR
         # convert to interleaved RGB and write to 1-st channel of nvjpegImage_t
-        NVJPEG_OUTPUT_RGBI 
+        NVJPEG_OUTPUT_RGBI
         # convert to interleaved BGR and write to 1-st channel of nvjpegImage_t
         NVJPEG_OUTPUT_BGRI
         # maximum allowed value
-        NVJPEG_OUTPUT_FORMAT_MAX  
+        NVJPEG_OUTPUT_FORMAT_MAX
 
     ctypedef enum nvjpegInputFormat_t:
         NVJPEG_INPUT_RGB    # Input is RGB - will be converted to YCbCr before encoding
@@ -131,7 +131,7 @@ cdef extern from "nvjpeg.h":
 
     nvjpegStatus_t nvjpegGetProperty(libraryPropertyType_t type, int *value)
     nvjpegStatus_t nvjpegGetCudartProperty(libraryPropertyType_t type, int *value)
-    nvjpegStatus_t nvjpegCreate(nvjpegBackend_t backend, nvjpegDevAllocator_t *dev_allocator, nvjpegHandle_t *handle)   
+    nvjpegStatus_t nvjpegCreate(nvjpegBackend_t backend, nvjpegDevAllocator_t *dev_allocator, nvjpegHandle_t *handle)
     nvjpegStatus_t nvjpegCreateSimple(nvjpegHandle_t *handle)
     nvjpegStatus_t nvjpegCreateEx(nvjpegBackend_t backend,
         nvjpegDevAllocator_t *dev_allocator,
