@@ -1,3 +1,5 @@
+%define _disable_source_fetch 0
+
 Name:	     libwebp-xpra
 Version:     1.2.0
 Release:     1%{?dist}
@@ -29,6 +31,11 @@ This package contains the files required to develop programs that will encode
 WebP images.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "2fc8bbde9f97f2ab403c0224fb9ca62b2e6852cbc519e91ceaa7c153ffd88a0c" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %if ! 0%{?el7}
 echo "this package is only meant to be built for RHEL / CentOS 7.x"
 exit 1

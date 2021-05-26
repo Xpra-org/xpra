@@ -1,6 +1,8 @@
+%define _disable_source_fetch 0
+
 Name:		libjpeg-turbo
 Version:	1.2.90
-Release:	8%{?dist}
+Release:	8.1%{?dist}
 Summary:	A MMX/SSE2 accelerated library for manipulating JPEG image files
 
 Group:		System Environment/Libraries
@@ -96,6 +98,11 @@ This package contains header files necessary for developing programs which
 will manipulate JPEG files using the TurboJPEG library.
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "e42f3bdacaced1cbc3313ea33e0ec1f6e7247b9a15ca8faa532803f0b55756da" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
 %setup -q
 
 %patch0 -p1 -b .noinst
@@ -181,6 +188,9 @@ make test
 %{_libdir}/pkgconfig/libturbojpeg.pc
 
 %changelog
+* Wed May 26 2021 Antoine Martin <antoine@xpra.org> - 1.2.90-8.1
+- verify source checksum
+
 * Wed Mar 20 2019 Nikola Forró <nforro@redhat.com> - 1.2.90-8
 - Fix CVE-2018-14498 (#1687475)
 

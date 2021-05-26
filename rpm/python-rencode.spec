@@ -4,6 +4,7 @@
 %{!?__python3: %define __python3 python3}
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%define _disable_source_fetch 0
 
 #this spec file is for Fedora, openSUSE and CentOS
 #CentOS does not have Python3 support:

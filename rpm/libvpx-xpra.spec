@@ -1,3 +1,5 @@
+%define _disable_source_fetch 0
+
 Name:	     libvpx-xpra
 Version:     1.9.0
 Release:     1%{?dist}
@@ -11,11 +13,6 @@ BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
 #Requires:
-
-%if 0%{?el8}%{?fedora}
-echo "Fedora and RHEL8 should use system packages"
-exit 1
-%endif
 
 %description
 vpx library for xpra
@@ -35,6 +32,15 @@ This package contains the development files for %{name}.
 
 
 %prep
+sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+if [ "${sha256}" != "d279c10e4b9316bf11a570ba16c3d55791e1ad6faa4404c67422eb631782c80a" ]; then
+	echo "invalid checksum for %{SOURCE0}"
+	exit 1
+fi
+%if 0%{?el8}%{?fedora}
+echo "Fedora and RHEL8 should use system packages"
+exit 1
+%endif
 %setup -q -n libvpx-%{version}
 
 

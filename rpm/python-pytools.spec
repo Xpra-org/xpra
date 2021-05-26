@@ -1,5 +1,6 @@
 %{!?__python2: %define __python2 python2}
 %{!?python2_sitelib: %define python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
+%define _disable_source_fetch 0
 
 Name:           python2-pytools
 Version:        2021.2.1
