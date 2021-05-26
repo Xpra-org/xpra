@@ -12,7 +12,7 @@ BuildArch:      noarch
 BuildRequires:	hicolor-icon-theme
 BuildRequires:	shared-mime-info
 BuildRequires:  python2-devel
-BuildRequires:	python2-nose
+BuildRequires:  python2-setuptools
 %{?python_provide:%python_provide python2-pyxdg}
 Provides:       pyxdg = %{version}-%{release}
 Obsoletes:      pyxdg < 0.25-10
@@ -34,11 +34,6 @@ fi
 
 %install
 %{__python2} setup.py install --skip-build --root %{buildroot}
-
-%check
-# icon-test currently fails
-# https://bugs.freedesktop.org/show_bug.cgi?id=104846
-nosetests-%{python2_version} || :
 
 %files
 %license COPYING
