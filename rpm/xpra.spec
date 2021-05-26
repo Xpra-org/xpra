@@ -272,9 +272,6 @@ BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
 %if 0%{?run_tests}
 BuildRequires:		python2-rencode
-%if 0%{?fedora}
-BuildRequires:		python2-cryptography
-%endif
 %endif
 %description -n python2-xpra
 This package contains the python2 common build of xpra.
@@ -743,10 +740,8 @@ export XPRA_TEST_DEBUG=1
 
 %if 0%{?run_tests}
 pushd xpra-%{version}-python2/unittests
-%if 0%{?el8}
-#we don't have python2-cryptography on centos8 (yet?):
+#we don't have python2-cryptography, so can't run the tests:
 rm -fr unit/net/crypto_test.py unit/client/mixins/webcam_test.py
-%endif
 PYTHONPATH="%{buildroot}%{python2_sitearch}:." PATH="`pwd`/../scripts/:$PATH" XPRA_COMMAND="%{__python2} `pwd`/../scripts/xpra" XPRA_CONF_DIR="`pwd`/../etc/xpra" %{__python2} ./unit/run.py
 popd
 
