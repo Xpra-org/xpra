@@ -1,9 +1,7 @@
-# Remove private provides from .so files in the python_sitearch directory
-%global __provides_exclude_from ^%{python2_sitearch}/.*\\.so$
 %{!?__python2: %define __python2 python2}
 %{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-
 %define _disable_source_fetch 0
+%global debug_package %{nil}
 
 Name:           python2-pbr
 Version:        5.6.0
@@ -17,8 +15,6 @@ BuildRequires:  python2-setuptools
 
 %description
 PBR is a library that injects some useful and sensible default behaviors into your setuptools run. It started off life as the chunks of code that were copied between all of the OpenStack projects. Around the time that OpenStack hit 18 different projects each with at least 3 active branches, it seemed like a good time to make that code into a proper reusable library.
-
-%global debug_package %{nil}
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
