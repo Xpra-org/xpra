@@ -3,8 +3,8 @@
 %define _disable_source_fetch 0
 
 Name:           python2-pytools
-Version:        2021.2.1
-Release:        1%{?dist}
+Version:        2019.1.1
+Release:        3%{?dist}
 Summary:        A collection of tools for python
 
 Group:          Development/Languages
@@ -42,7 +42,7 @@ Small tool functions such as ::
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ebbcc38c7a30b1a0ce1a74816c85db9f2556bb4d5b9a71f85f5d88f69ddcb96b" ]; then
+if [ "${sha256}" != "ce2d702ae4ef10a70197b00b93141461140d00578f2a862fa946ca1446a300db" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -69,8 +69,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
-* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 2021.2.1-1
-- new upstream release
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 2019.1.1-3
+- verify source checksum
 
 * Mon Oct 28 2019 Antoine Martin <antoine@xpra.org> - 2019.1.1-2
 - Fedora 31 rebuild
