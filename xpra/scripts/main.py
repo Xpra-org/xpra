@@ -1791,21 +1791,17 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
     except RuntimeError as e:
         #exceptions at this point are still initialization exceptions
         raise InitException(e.args[0]) from None
-    ehelp = "help" in opts.encodings
-    if ehelp:
-        from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
-        opts.encodings = PREFERRED_ENCODING_ORDER
     app.show_progress(30, "client configuration")
     try:
         app.init(opts)
         if opts.encoding=="auto":
             opts.encoding = ""
-        if opts.encoding or ehelp:
+        if opts.encoding:
             err = opts.encoding and (opts.encoding not in app.get_encodings())
             einfo = ""
             if err and opts.encoding!="help":
                 einfo = "invalid encoding: %s\n" % opts.encoding
-            if opts.encoding=="help" or ehelp or err:
+            if opts.encoding=="help" or err:
                 from xpra.codecs.loader import encodings_help
                 encodings = ["auto"] + app.get_encodings()
                 raise InitInfo(einfo+"%s xpra client supports the following encodings:\n * %s" %
