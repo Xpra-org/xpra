@@ -463,59 +463,20 @@ Setting this value on the server provides a default value which
 may be overridden on the client.
 .TP
 \fB--encoding\fP=\fIENCODING\fP
-This specifies the image encoding to use,
-there are a number of encodings supported:
-\fBjpeg\fP, \fBpng\fP, \fBpng/P\fP, \fBpng/L\fP, \fBwebp\fP, \fBrgb\fP, \fBvp8\fP, \fBvp9\fP, \fBh264\fP and \fBh265\fP
-(some may not be available in your environment).
-The default option is \fBauto\fP which allows the server to
-select the best encoding automatically.
-
-.RS
-.IP \fBauto\fP
-default mode: the built-in heuristics will choose the most appropriate encoding
-.IP \fBpng\fP
-compressed and lossless, can be quite slow.
-.IP \fBpng/P\fP
-compressed and lossy: it uses a colour palette, which means better compression but still slow.
-.IP \fBpng/L\fP
-compressed and lossy: grayscale only using a palette.
-.IP \fBrgb\fP
-a raw pixel format (lossless) compressed with lz4, lzo or zlib (see \fIcompressors\fP)
-the compression ratio is lower, but it is by far the fastest encoding available.
-.IP \fBwebp\fP
-can be used in lossy or lossless mode,
-useful for graphical applications,
-it compresses better than jpeg and is reasonably fast except at high resolutions.
-.IP \fBjpeg\fP
-can be useful for graphical applications,
-it is lossy and usually very fast.
-.IP \fBvp8\fP
-lossy video encoding which always uses colour subsampling.
-Fast at encoding and decoding.
-.IP \fBvp9\fP
-Video encoding which supports both lossy and lossless modes,
-available if your ffmpeg library version is recent enough.
-.IP \fBh264\fP
-One of the best encoding available: it is fast, efficient
-and tunable via the quality and speed options.
-.IP \fBh265\fP
-Far too slow at encoding, avoid.
-.RE
-
-The default encoding which is automatically selected
-if you do not specify one
-will depend on what options are available on both
-the server and the client:
-\fBrgb\fP is always available (builtin),
-\fBjpeg\fP and \fBpng\fP require the Python Imaging Library,
-\fBvp8\fP, \fBvp9\fP, \fBwebp\fP, \fBh264\fP and \fBh265\fP
-all require their respective shared libraries,
-as well as the xpra codec that uses them.
-
-Note: when selecting a video encoding (usually \fBh264\fP, \fBvp8\fP or \fBvp9\fP),
-it will only be used if the screen is updating quickly enough,
-some of the smaller screen updates will also be sent using
-one of the other non-video encodings.
+Sets the preferred encoding to use.
+To see the list of encodings available, use \fI--encoding=help\fP.
+This can be used to select \fBgrayscale\fP or 8-bit modes like
+\fBpng/P\fP. On local connections or with extremelly fast network links,
+plain \fBrgb\fP is also a viable option.
+For everything else, the default value \fBauto\fP will select
+the best encoding automatically and you should use the
+\fBmin-speed\fP and \fBmin-quality\fP options instead for tuning.
+.TP
+\fB--encodings\fP=\fIENCODING\fP
+This specifies the image encodings enabled.
+This is the most misused command line option and should be left alone.
+The server engine needs to have multiple encodings available to
+work effectively.
 .TP
 
 \fB--video-scaling\fP=\fIon\fP|\fIoff\fP|\fISCALING\fP
