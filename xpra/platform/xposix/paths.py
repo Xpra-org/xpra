@@ -115,12 +115,15 @@ def do_get_user_conf_dirs(uid):
 
 def get_runtime_dir():
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
-    if runtime_dir or sys.platform.startswith("linux"):
-        return "$XDG_RUNTIME_DIR"
-    for d in ("/run/user", "/var/run/user"):
-        if os.path.exists(d) and os.path.isdir(d):
-            runtime_dir = d+"/$UID"
-            break
+    if runtime_dir:
+        return runtime_dir
+    if sys.platform.startswith("linux"):
+        for d in ("/run/user", "/var/run/user"):
+            if os.path.exists(d) and os.path.isdir(d):
+                runtime_dir = d+"/$UID"
+                break
+        if not runtime_dir:
+           return "$XDG_RUNTIME_DIR"
     return runtime_dir
 
 def _get_xpra_runtime_dir():
