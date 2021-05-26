@@ -14,6 +14,7 @@ Source:         https://files.pythonhosted.org/packages/98/52/94bb31d416e52c3c9c
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
+BuildRequires:  python2-setuptools_scm
 BuildRequires:  python2-pkgconfig
 Requires: 		lz4
 Provides:		python-lz4 = %{version}-%{release}
