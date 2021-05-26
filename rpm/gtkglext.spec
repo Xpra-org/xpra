@@ -4,7 +4,7 @@
 Summary:	OpenGL Extension to GTK
 Name:		gtkglext
 Version:	1.2.0
-Release:	23%{?dist}
+Release:	23.1%{?dist}
 
 License:	LGPLv2+ or GPLv2+
 Group:		System Environment/Libraries
@@ -27,6 +27,8 @@ BuildRequires:  pangox-compat-devel
 
 Requires(postun):	/sbin/ldconfig
 Requires(post):		/sbin/ldconfig
+
+Requires:	gtlglext-libs
 
 %description
 GtkGLExt is an OpenGL extension to GTK. It provides the GDK objects
@@ -86,8 +88,10 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 %postun libs
 /sbin/ldconfig
 
-%files libs
+%files
 %doc AUTHORS COPYING COPYING.LIB ChangeLog README TODO
+
+%files libs
 %{_libdir}/libgdkglext-x11-%{api_version}.so.*
 %{_libdir}/libgtkglext-x11-%{api_version}.so.*
 
@@ -100,6 +104,9 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 %doc %{_datadir}/gtk-doc/html/*
 
 %changelog
+* Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 1.2.0-23.1
+- also build a 'gtkglext' RPM so rpmspec does not get confused
+
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 1.2.0-23
 - verify source checksum
 
