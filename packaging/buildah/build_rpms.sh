@@ -78,6 +78,8 @@ while read p; do
 			echo " * missing ${dep}"
 			if [[ $dep == *debuginfo* ]]; then
 				echo " (ignored debuginfo)"
+			elif [[ $dep == *-doc-* ]]; then
+				echo " (ignored doc)"
 			else
 				MISSING="${MISSING} ${dep}"
 			fi
