@@ -497,7 +497,7 @@ This package contains the python3 xpra server.
 
 %prep
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
-bzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.bz2 | tar -xf -
+xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 pushd $RPM_BUILD_DIR/xpra-%{version}
 %if 0%{?el7}
 #remove some systemd configuration options:
