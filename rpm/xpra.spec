@@ -73,7 +73,7 @@ License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
 URL:				http://xpra.org/
 Packager:			Antoine Martin <antoine@xpra.org>
 Vendor:				http://xpra.org/
-Source:				xpra-%{version}.tar.bz2
+Source:				xpra-%{version}.tar.xz
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
