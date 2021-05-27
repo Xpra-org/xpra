@@ -1076,7 +1076,7 @@ def get_defaults():
                     "ssh-auth"          : [],
                     "rfb-auth"          : [],
                     "password-file"     : [],
-                    "source"            : [],
+                    "source"            : ["/etc/profile"],
                     "source-start"      : [],
                     "start"             : [],
                     "start-child"       : [],

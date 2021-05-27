@@ -16,6 +16,7 @@ start-via-proxy = no
 
 # Scripts that can modify the environment of the server:
 #source = /etc/xpra/server.env
+source = /etc/profile
 
 # Scripts that can modify the environment of the commands started by the server:
 #source-start = /etc/profile
