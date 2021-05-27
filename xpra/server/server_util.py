@@ -33,7 +33,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     if not os.path.exists(file_to_source_path):
         filename = which(file_to_source_path)
         if not filename:
-            log.error("Error: cannot find file '%s' to source")
+            log.error("Error: cannot find file '%s' to source", file_to_source_path)
             return {}
     if not os.path.isabs(filename):
         filename = os.path.abspath(filename)
