@@ -218,10 +218,7 @@ Requires:			turbojpeg
 Requires:			libyuv
 %if 0%{?fedora}%{?el8}
 Recommends:			python2-appindicator
-Requires:			python2-numpy
-%if 0%{?run_tests}
-BuildRequires:		python2-numpy
-%endif
+Recommends:			python2-numpy
 Recommends:			python2-paramiko
 Recommends:			python2-dns
 #Recommends:			python2-lzo
