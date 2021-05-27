@@ -23,7 +23,7 @@ fi
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
-RPM_DISTROS=${RPM_DISTROS:-Fedora:32 Fedora:33 Fedora:34 CentOS:7 CentOS:8}
+RPM_DISTROS=${RPM_DISTROS:-Fedora:33 Fedora:34 CentOS:7 CentOS:8}
 for DISTRO in $RPM_DISTROS; do
 	DISTRO_LOWER="${DISTRO,,}"
 	if [[ "$DISTRO_LOWER" == "xx"* ]];then
