@@ -319,9 +319,10 @@ def is_distribution_variant(variant=b"Debian") -> bool:
     except Exception:
         pass
     try:
-        if variant==b"RedHat" and get_linux_distribution()[0].startswith(variant):
+        d = get_linux_distribution()[0]
+        if d==variant:
             return True
-        if get_linux_distribution()[0]==variant:
+        if variant==b"RedHat" and d.startswith(variant):
             return True
     except Exception:
         pass
