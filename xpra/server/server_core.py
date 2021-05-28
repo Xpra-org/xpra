@@ -1072,12 +1072,14 @@ class ServerCore:
                         http = None
                     else:
                         http = wss.lower() in TRUE_OPTIONS
+                    netlog("socket option wss=%s, http=%s", wss, http)
                 else:
                     #no "wss" option, fallback to "ssl_mode" option:
                     if self.ssl_mode.lower()=="auto":
                         http = None
                     else:
                         http = self.ssl_mode.lower()=="wss"
+                    netlog("ssl-mode=%s, http=%s", self.ssl_mode, http)
             if http is None:
                 #look for HTTPS request to handle:
                 if line1.find(b"HTTP/")>0 or peek_data.find(b"\x08http/")>0:
@@ -1087,6 +1089,7 @@ class ServerCore:
                     peek_data = peek_connection(ssl_conn)
                     line1 = peek_data.split(b"\n")[0]
                     http = line1.find(b"HTTP/")>0
+                    netlog("looking for 'HTTP' in %r: %s", line1, http)
             if http:
                 if not self._html:
                     self.new_conn_err(conn, sock, socktype, socket_info, packet_type,
