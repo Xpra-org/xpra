@@ -167,6 +167,13 @@ BuildRequires:		dbus-x11
 BuildRequires:		tigervnc
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy
+%if 0%{?fedora}>=34
+BuildRequires:			xmodmap
+BuildRequires:			xrandr
+BuildRequires:			xrdb
+%else
+BuildRequires:			xorg-x11-server-utils
+%endif
 %endif
 Requires(post):  	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
