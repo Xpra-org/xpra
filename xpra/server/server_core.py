@@ -1038,11 +1038,11 @@ class ServerCore:
             timeout = UNIXDOMAIN_PEEK_TIMEOUT_MS
         peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
-        log("socket peek=%s", ellipsizer(peek_data, limit=512))
-        log("socket peek hex=%s", hexstr(peek_data[:128]))
-        log("socket peek line1=%s", ellipsizer(line1))
+        netlog("socket peek=%s", ellipsizer(peek_data, limit=512))
+        netlog("socket peek hex=%s", hexstr(peek_data[:128]))
+        netlog("socket peek line1=%s", ellipsizer(line1))
         packet_type = guess_packet_type(peek_data)
-        log("guess_packet_type(..)=%s", packet_type)
+        netlog("guess_packet_type(..)=%s", packet_type)
 
         def ssl_wrap():
             ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
