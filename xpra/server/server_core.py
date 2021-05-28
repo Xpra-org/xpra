@@ -1066,12 +1066,12 @@ class ServerCore:
                 http = True
             else:
                 assert socktype=="ssl"
-                wss = socket_options.get("wss", "").lower()
+                wss = socket_options.get("wss", None)
                 if wss is not None:
                     if wss=="auto":
                         http = None
                     else:
-                        http = wss in TRUE_OPTIONS
+                        http = wss.lower() in TRUE_OPTIONS
                 else:
                     #no "wss" option, fallback to "ssl_mode" option:
                     if self.ssl_mode.lower()=="auto":
