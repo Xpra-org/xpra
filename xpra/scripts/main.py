@@ -533,6 +533,17 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode=="encoding":
         from xpra.codecs import loader
         return loader.main(args)
+    elif mode=="applications-menu" or mode=="sessions-menu":
+        from xpra.server.menu_provider import MenuProvider
+        if mode=="applications-menu":
+            data = MenuProvider().get_menu_data(remove_icons=True)
+        else:
+            data = MenuProvider().get_desktop_sessions(remove_icons=True)
+        if not data:
+            print("no menu data available")
+        else:
+            from xpra.util import print_nested_dict
+            print_nested_dict(data)
     elif mode=="video":
         from xpra.codecs import video_helper
         return video_helper.main()
