@@ -324,7 +324,7 @@ def find_session_icon(*names):
         if fn:
             data = load_binary_file(fn)
             if data:
-                return data, os.path.splitext(fn)[1]
+                return data, os.path.splitext(fn)[1].lstrip(".")
         if icondirs is None:
             icondirs = get_xdg_icon_dirs()
         if icondirs:
