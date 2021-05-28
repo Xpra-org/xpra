@@ -29,7 +29,7 @@ from xpra.os_util import (
 
 if sys.version<'2.7':
     raise Exception("xpra no longer supports Python 2 versions older than 2.7")
-if sys.version[0]=='3' and sys.version<'3.4':
+if sys.version_info[:2]<(3, 4):
     raise Exception("xpra no longer supports Python 3 versions older than 3.4")
 #we don't support versions of Python without the new ssl code:
 if not hasattr(ssl, "SSLContext"):
