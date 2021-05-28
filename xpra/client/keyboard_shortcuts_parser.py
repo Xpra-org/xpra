@@ -84,6 +84,8 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
     #figure out the default shortcut modifiers
     #accept "," or "+" as delimiter:
     for s in strs:
+        if s=="none":
+            continue
         #example for s: Control+F8:some_action()
         if s.find("=")>s.find(":"):
             parts = s.split("=", 1)
