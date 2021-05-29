@@ -1489,7 +1489,7 @@ class ServerCore:
             httplog("using fallback transparent icon")
         mime_type = "application/octet-stream"
         if icon_type=="svg" and icon_data:
-            from xpra.codecs.icon_util import svg_to_png
+            from xpra.codecs.icon_util import svg_to_png  #pylint: disable=import-outside-toplevel
             icon_data = svg_to_png(None, icon_data, 48, 48)
         if icon_type in ("png", "jpeg", "svg", "webp"):
             mime_type = "image/%s" % icon_type
