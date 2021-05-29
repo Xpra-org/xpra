@@ -13,7 +13,8 @@
 #ifdef _WIN32
 #define _STDINT_H
 #endif
-#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__DragonFly__)
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__DragonFly__) \
+		&& !defined(__OpenBSD__)
 #include <malloc.h>
 #endif
 
