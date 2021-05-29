@@ -316,11 +316,16 @@ def get_vcs_props():
     out = out.decode('utf-8').splitlines()[0]
     #ie: out=v4.0.6-58-g6e6614571
     parts = out.split("-")
-    if len(parts)<3:
+    if len(parts)==1:
+        commit = parts[0]
+        print("could not get revision number - no tags?")
+        rev_str = "0"
+    elif len(parts)==3:
+        rev_str = parts[1]
+        commit = parts[2]
+    else:
         print("could not parse version information from string: %s" % out)
         return  props
-    rev_str = parts[1]
-    commit = parts[2]
     props["COMMIT"] = commit
     try:
         rev = int(rev_str)
