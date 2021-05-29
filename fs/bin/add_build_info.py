@@ -255,7 +255,6 @@ def record_build_info():
     set_prop(props, "COMPILER_VERSION", get_compiler_version())
     set_prop(props, "NVCC_VERSION", get_nvcc_version())
     set_prop(props, "LINKER_VERSION", get_linker_version())
-    set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
     #record pkg-config versions:
     PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
     for pkg in ("libc",
