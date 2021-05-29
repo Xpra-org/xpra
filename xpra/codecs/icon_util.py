@@ -19,7 +19,7 @@ from xpra.log import Logger
 
 log = Logger("menu")
 
-MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 65536)
+MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 0)
 
 INKSCAPE_RE = b'\\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
 
@@ -64,7 +64,7 @@ def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
     icondata = load_binary_file(filename)
     if not icondata:
         return None
-    if filename.endswith("svg") and len(icondata)>max_size:
+    if filename.endswith("svg") and max_size and len(icondata)>max_size:
         #try to resize it
         size = len(icondata)
         pngdata = svg_to_png(filename, icondata)
