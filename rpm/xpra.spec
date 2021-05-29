@@ -16,7 +16,7 @@
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265 --pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
 %{!?update_firewall: %define update_firewall 1}
-%{!?run_tests: %define run_tests 1}
+%{!?run_tests: %define run_tests 0}
 %{!?with_python3: %define with_python3 1}
 %{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
