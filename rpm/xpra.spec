@@ -275,6 +275,7 @@ BuildRequires:		turbojpeg-devel
 BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
 %if 0%{?run_tests}
+BuildRequires:		python2-pillow
 BuildRequires:		python2-rencode
 %endif
 %description -n python2-xpra
@@ -418,6 +419,7 @@ BuildRequires:		gobject-introspection-devel
 BuildRequires:		python3-cryptography
 BuildRequires:		python3-rencode
 BuildRequires:		python3-numpy
+BuildRequires:		python3-pillow
 %endif
 %description -n python3-xpra
 This package contains the python3 build of xpra.
