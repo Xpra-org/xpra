@@ -30,6 +30,8 @@ recursive-include selinux *
 recursive-include service *
 recursive-include tmpfiles.d *
 recursive-include sysusers.d *
+recursive-include packaging/debian *
+recursive-include packaging/rpm *
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
