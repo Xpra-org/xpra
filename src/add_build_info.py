@@ -15,15 +15,11 @@ import os.path
 import re
 import sys
 
-if sys.version > '3':
-    unicode = str           #@ReservedAssignment
-    def bytestostr(x):
-        if isinstance(x, bytes):
-            return x.decode("latin1")
-        return str(x)
-else:
-    def bytestostr(x):
-        return str(x)
+
+def bytestostr(x):
+    if isinstance(x, bytes):
+        return x.decode("latin1")
+    return str(x)
 
 
 def update_properties(props, filename):
@@ -36,7 +32,7 @@ def save_properties(props, filename):
     if os.path.exists(filename):
         try:
             os.unlink(filename)
-        except (OSError, IOError):
+        except OSError:
             print("WARNING: failed to delete %s" % filename)
     def u(v):
         try:
@@ -104,7 +100,7 @@ def get_cpuinfo():
     if platform.uname()[5]:
         return platform.uname()[5]
     if os.path.exists("/proc/cpuinfo"):
-        with open("/proc/cpuinfo", "rU") as f:
+        with open("/proc/cpuinfo", "r") as f:
             for line in f:
                 if line.startswith("model name"):
                     return line.split(": ")[1].replace("\n", "").replace("\r", "")
@@ -123,7 +119,7 @@ def get_status_output(*args, **kwargs):
 
 def get_output_lines(cmd, valid_exit_code=0):
     try:
-        returncode, stdout, stderr = get_status_output(cmd, stdin=None, shell=True)
+        returncode, stdout, stderr = get_status_output(cmd, shell=True)
         if returncode!=valid_exit_code:
             print("'%s' failed with return code %s" % (cmd, returncode))
             print("stderr: %s" % stderr)
@@ -225,106 +221,132 @@ def get_platform_name():
 
 
 BUILD_INFO_FILE = "./xpra/build_info.py"
-def record_build_info(is_build=True):
+def record_build_info():
     global BUILD_INFO_FILE
     props = get_properties(BUILD_INFO_FILE)
-    if is_build:
-        source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
-        if source_epoch:
-            #reproducible builds:
-            build_time = datetime.datetime.utcfromtimestamp(int(source_epoch))
-            build_date = build_time.date()
-        else:
-            #win32, macos and older build environments:
-            build_time = datetime.datetime.now()
-            build_date = datetime.date.today()
-            #also record username and hostname:
-            try:
-                import getpass
-                set_prop(props, "BUILT_BY", getpass.getuser())
-            except:
-                set_prop(props, "BUILT_BY", os.environ.get("USER"))
-            set_prop(props, "BUILT_ON", socket.gethostname())
-        set_prop(props, "BUILD_DATE", build_date.isoformat())
-        set_prop(props, "BUILD_TIME", build_time.strftime("%H:%M"))
-        set_prop(props, "BUILD_MACHINE", get_machineinfo())
-        set_prop(props, "BUILD_CPU", get_cpuinfo())
-        set_prop(props, "BUILD_BIT", platform.architecture()[0])
-        set_prop(props, "BUILD_OS", get_platform_name())
+    source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    if source_epoch:
+        #reproducible builds:
+        build_time = datetime.datetime.utcfromtimestamp(int(source_epoch))
+        build_date = build_time.date()
+    else:
+        #win32, macos and older build environments:
+        build_time = datetime.datetime.now()
+        build_date = datetime.date.today()
+        #also record username and hostname:
         try:
-            from Cython import __version__ as cython_version
+            import getpass
+            set_prop(props, "BUILT_BY", getpass.getuser())
         except:
-            cython_version = "unknown"
-        set_prop(props, "PYTHON_VERSION", ".".join(str(x) for x in sys.version_info[:3]))
-        set_prop(props, "CYTHON_VERSION", cython_version)
-        set_prop(props, "COMPILER_VERSION", get_compiler_version())
-        set_prop(props, "NVCC_VERSION", get_nvcc_version())
-        set_prop(props, "LINKER_VERSION", get_linker_version())
-        set_prop(props, "RELEASE_BUILD", not bool(os.environ.get("BETA", "")))
-        #record pkg-config versions:
-        PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
-        for pkg in ("libc",
-                    "vpx", "libvpx", "x264", "x265", "webp",
-                    "avcodec", "avutil", "swscale",
-                    "nvenc",
-                    "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
-                    "gtk+-3.0", "pycairo", "pygobject-2.0", "pygtk-2.0", ):
-            #fugly magic for turning the package atom into a legal variable name:
-            pkg_name = pkg.lstrip("lib").replace("+", "").split("-")[0]
-            cmd = [PKG_CONFIG, "--modversion", pkg]
-            returncode, out, _ = get_status_output(cmd)
-            if returncode==0:
-                set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
-
+            set_prop(props, "BUILT_BY", os.environ.get("USER"))
+        set_prop(props, "BUILT_ON", socket.gethostname())
+    set_prop(props, "BUILD_DATE", build_date.isoformat())
+    set_prop(props, "BUILD_TIME", build_time.strftime("%H:%M"))
+    set_prop(props, "BUILD_MACHINE", get_machineinfo())
+    set_prop(props, "BUILD_CPU", get_cpuinfo())
+    set_prop(props, "BUILD_BIT", platform.architecture()[0])
+    set_prop(props, "BUILD_OS", get_platform_name())
+    try:
+        from Cython import __version__ as cython_version
+    except:
+        cython_version = "unknown"
+    set_prop(props, "PYTHON_VERSION", ".".join(str(x) for x in sys.version_info[:3]))
+    set_prop(props, "CYTHON_VERSION", cython_version)
+    set_prop(props, "COMPILER_VERSION", get_compiler_version())
+    set_prop(props, "NVCC_VERSION", get_nvcc_version())
+    set_prop(props, "LINKER_VERSION", get_linker_version())
+    #record pkg-config versions:
+    PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
+    for pkg in ("libc",
+                "vpx", "x264", "x265", "webp", "yuv", "nvenc", "nvfbc",
+                "avcodec", "avutil", "swscale",
+                "nvenc",
+                "x11", "xrandr", "xtst", "xfixes", "xkbfile", "xcomposite", "xdamage", "xext",
+                "gobject-introspection-1.0",
+                "gtk+-3.0", "py3cairo", "pygobject-3.0", "gtk+-x11-3.0",
+                "python3",
+                ):
+        #fugly magic for turning the package atom into a legal variable name:
+        pkg_name = pkg.lstrip("lib").replace("+", "").replace("-", "_")
+        if pkg_name.split("_")[-1].rstrip("0123456789.")=="":
+            pkg_name = "_".join(pkg_name.split("_")[:-1])
+        cmd = [PKG_CONFIG, "--modversion", pkg]
+        returncode, out, _ = get_status_output(cmd)
+        if returncode==0:
+            set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
     save_properties(props, BUILD_INFO_FILE)
 
 
-def load_ignored_changed_files():
-    ignored = []
-    with open("./ignored_changed_files.txt", "rU") as f:
-        for line in f:
-            s = line.strip()
-            if not s:
-                continue
-            if s[0] in ('!', '#'):
-                continue
-            ignored.append(s)
-    return ignored
-
-def get_svn_props():
+def get_vcs_props():
     props = {
                 "REVISION" : "unknown",
                 "LOCAL_MODIFICATIONS" : "unknown"
             }
-    #find revision:
-    proc = subprocess.Popen("svnversion -n ..", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    (out, _) = proc.communicate()
+    branch = None
+    for cmd in (
+        r"git branch --show-current",
+        #when in detached state, the one above does not work, but this one does:
+        r"git branch --remote --verbose --no-abbrev --contains | sed -rne 's/^[^\/]*\/([^\ ]+).*$/\1/p'",
+        #if all else fails:
+        r"git branch | grep '* '",
+    ):
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        out, _ = proc.communicate()
+        if proc.returncode==0:
+            branch_out = out.decode("utf-8").splitlines()
+            if branch_out:
+                branch = branch_out[0]
+                if branch.startswith("* "):
+                    branch = branch[2:]
+                break
+    if not branch:
+        print("Warning: could not get branch information")
+    else:
+        props["BRANCH"] = branch
+
+    #use the number of changes since the last tag:
+    proc = subprocess.Popen("git describe --long --always --tags", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    out, _ = proc.communicate()
     if proc.returncode!=0:
-        print("'svnversion -n' failed with return code %s" % proc.returncode)
+        print("'git describe --long --always --tags' failed with return code %s" % proc.returncode)
         return  props
     if not out:
         print("could not get version information")
         return  props
-    out = out.decode('utf-8')
-    if out=="exported":
-        print("svn repository information is missing ('exported')")
+    out = out.decode('utf-8').splitlines()[0]
+    #ie: out=v4.0.6-58-g6e6614571
+    parts = out.split("-")
+    if len(parts)==1:
+        commit = parts[0]
+        print("could not get revision number - no tags?")
+        rev_str = "0"
+    elif len(parts)==3:
+        rev_str = parts[1]
+        commit = parts[2]
+    else:
+        print("could not parse version information from string: %s" % out)
         return  props
-    pos = out.find(":")
-    if pos>=0:
-        out = out[pos+1:]
-    rev_str = ""
-    for c in out:
-        if c in "0123456789":
-            rev_str += c
-    if not rev_str:
-        print("could not parse version information from string: %s (original version string: %s)" % (rev_str, out))
-        return  props
+    props["COMMIT"] = commit
+    try:
+        rev = int(rev_str)
+    except ValueError:
+        print("could not parse revision counter from string: %s (original version string: %s)" % (rev_str, out))
+        return props
 
-    rev = int(rev_str)
+    if branch=="master":
+        #fake a sequential revision number that continues where svn left off,
+        #by counting the commits and adding a magic value (5014)
+        proc = subprocess.Popen("git rev-list --count HEAD --first-parent",
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        out, _ = proc.communicate()
+        if proc.returncode!=0:
+            print("failed to get commit count using 'git rev-list --count HEAD'")
+            sys.exit(1)
+        rev = int(out.decode("utf-8").splitlines()[0]) + 5014
     props["REVISION"] = rev
     #find number of local files modified:
     changes = 0
-    proc = subprocess.Popen("svn status", stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("git status", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (out, _) = proc.communicate()
     if proc.poll()!=0:
         print("could not get status of local files")
@@ -332,46 +354,29 @@ def get_svn_props():
 
     lines = out.decode('utf-8').splitlines()
     for line in lines:
-        if not line.startswith("M"):
-            continue
-        parts = line.split(" ", 1)
-        if len(parts)!=2:
-            continue
-        filename = parts[1].strip()
-        ignore = False
-        for x in load_ignored_changed_files():
-            #use a normalized path ("/") that does not interfere with regexp:
-            norm_path = filename.replace(os.path.sep, "/")
-            if norm_path==x:
-                print("'%s' matches ignore list entry: '%s' exactly," % (filename, x))
-                print(" not counting it as a modified file")
-                ignore = True
-                break
-            rstr = r"^%s$" % x.replace("*", ".*")
-            regexp = re.compile(rstr)
-            if regexp.match(norm_path):
-                print("'%s' matches ignore list regexp: '%s', not counting it as a modified file" % (filename, x))
-                ignore = True
-                break
-        if ignore:
-            continue
-        changes += 1
-        print("WARNING: found modified file: %s" % filename)
+        sline = line.strip()
+        if sline.startswith("modified: ") or sline.startswith("new file:") or sline.startswith("deleted:"):
+            changes += 1
     props["LOCAL_MODIFICATIONS"] = changes
     return props
 
 SRC_INFO_FILE = "./xpra/src_info.py"
 def record_src_info():
-    update_properties(get_svn_props(), SRC_INFO_FILE)
+    update_properties(get_vcs_props(), SRC_INFO_FILE)
 
 def has_src_info():
     return os.path.exists(SRC_INFO_FILE) and os.path.isfile(SRC_INFO_FILE)
 
-def main():
-    if not has_src_info():
+def has_build_info():
+    return os.path.exists(BUILD_INFO_FILE) and os.path.isfile(BUILD_INFO_FILE)
+
+
+def main(args):
+    if not has_src_info() or "src" in args:
         record_src_info()
-    record_build_info(True)
+    if not has_build_info() or "build" in args:
+        record_build_info()
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
