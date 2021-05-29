@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@
 
 from xpra.util import first_time
 from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf #pylint: disable=syntax-error
-from xpra.buffers.membuf cimport object_as_buffer, object_as_write_buffer
+from xpra.buffers.membuf cimport object_as_buffer
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 
@@ -354,58 +354,6 @@ cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
         argb_out[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
     return memoryview(output_buf)
 
-
-def premultiply_argb_in_place(buf):
-    # b is a Python buffer object
-    cdef unsigned int * cbuf = <unsigned int *> 0
-    cdef Py_ssize_t cbuf_len = 0                #@DuplicateSignature
-    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert object_as_write_buffer(buf, <void **>&cbuf, &cbuf_len)==0
-    do_premultiply_argb_in_place(cbuf, cbuf_len)
-
-cdef do_premultiply_argb_in_place(unsigned int *buf, Py_ssize_t argb_len):
-    # cbuf contains non-premultiplied ARGB32 data in native-endian.
-    # We convert to premultiplied ARGB32 data, in-place.
-    cdef unsigned char a, r, g, b
-    cdef unsigned int argb
-    assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    cdef int i
-    for 0 <= i < argb_len / 4:
-        argb = buf[i]
-        a = (argb >> 24) & 0xff
-        r = (argb >> 16) & 0xff
-        r = r * a // 255
-        g = (argb >> 8) & 0xff
-        g = g * a // 255
-        b = (argb >> 0) & 0xff
-        b = b * a // 255
-        buf[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
-
-def unpremultiply_argb_in_place(buf):
-    # b is a Python buffer object
-    cdef unsigned int * cbuf = <unsigned int *> 0   #@DuplicateSignature
-    cdef Py_ssize_t cbuf_len = 0                    #@DuplicateSignature
-    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert object_as_write_buffer(buf, <void **>&cbuf, &cbuf_len)==0, "cannot convert %s to a writable buffer" % type(buf)
-    do_unpremultiply_argb_in_place(cbuf, cbuf_len)
-
-cdef do_unpremultiply_argb_in_place(unsigned int * buf, Py_ssize_t buf_len):
-    # cbuf contains premultiplied ARGB32 data in native-endian.
-    # We convert to non-premultiplied ARGB32 data, in-place.
-    cdef unsigned char a, r, g, b                   #@DuplicateSignature
-    cdef unsigned int argb                          #@DuplicateSignature
-    assert buf_len>0 and buf_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % buf_len
-    cdef int i                                      #@DuplicateSignature
-    for 0 <= i < buf_len // 4:
-        argb = buf[i]
-        a = (argb >> 24) & 0xff
-        if a==0:
-            buf[i] = 0
-            continue
-        r = clamp(((argb >> 16) & 0xff) * 255 // a)
-        g = clamp(((argb >> 8) & 0xff) * 255 // a)
-        b = clamp(((argb >> 0) & 0xff) * 255 // a)
-        buf[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
 
 def unpremultiply_argb(buf):
     # b is a Python buffer object

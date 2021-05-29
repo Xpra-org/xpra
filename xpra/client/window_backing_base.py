@@ -335,17 +335,6 @@ class WindowBackingBase:
         return full_csc_modes
 
 
-    def unpremultiply(self, img_data):
-        from xpra.codecs.argb.argb import unpremultiply_argb, unpremultiply_argb_in_place   #@UnresolvedImport
-        if not isinstance(img_data, str):
-            try:
-                unpremultiply_argb_in_place(img_data)
-                return img_data
-            except Exception:
-                log.warn("failed to unpremultiply %s (len=%s)" % (type(img_data), len(img_data)))
-        return unpremultiply_argb(img_data)
-
-
     def set_cursor_data(self, cursor_data):
         self.cursor_data = cursor_data
 

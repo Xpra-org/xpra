@@ -28,7 +28,6 @@ cdef extern from "memalign.h":
 cdef extern from "buffers.h":
     object _memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int _object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
-    int _object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "xxhash.h":
     ctypedef unsigned long long XXH64_hash_t
@@ -63,9 +62,6 @@ cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
 
 cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
     return _object_as_buffer(obj, buffer, buffer_len)
-
-cdef int object_as_write_buffer(object obj, void ** buffer, Py_ssize_t * buffer_len):
-    return _object_as_write_buffer(obj, buffer, buffer_len)
 
 
 def get_membuf(size_t l):
