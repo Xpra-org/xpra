@@ -7,10 +7,6 @@
 
 #include "Python.h"
 
-PyObject *_memory_as_pybuffer(void *ptr, Py_ssize_t buf_len, int readonly) {
-	return PyMemoryView_FromMemory(ptr, buf_len, readonly);
-}
-
 int _object_as_buffer(PyObject *obj, const void ** buffer, Py_ssize_t * buffer_len) {
     Py_buffer *rpybuf;
     if (PyMemoryView_Check(obj)) {

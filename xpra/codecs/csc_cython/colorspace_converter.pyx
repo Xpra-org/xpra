@@ -18,8 +18,11 @@ from xpra.codecs.codec_constants import csc_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
 from libc.stdint cimport uint8_t, uintptr_t # pylint: disable=syntax-error
-from xpra.buffers.membuf cimport memory_as_pybuffer, memalign, object_as_buffer
+from xpra.buffers.membuf cimport memalign, object_as_buffer
 
+
+cdef extern from "Python.h":
+    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
 cdef extern from "stdlib.h":
     void free(void *ptr)
@@ -613,7 +616,7 @@ cdef class ColorspaceConverter:
         cdef unsigned char i
         for i in range(3):
             strides.append(self.dst_strides[i])
-            planes.append(memory_as_pybuffer(<void *> ((<uintptr_t> buf) + self.offsets[i]), self.dst_sizes[i], True))
+            planes.append(PyMemoryView_FromMemory(<char *> ((<uintptr_t> buf) + self.offsets[i]), self.dst_sizes[i], True))
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, bpp, strides, ImageWrapper.PLANAR_3)
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
@@ -682,7 +685,7 @@ cdef class ColorspaceConverter:
         assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//2)
 
         #allocate output buffer:
-        cdef void *output_image = memalign(self.buffer_size)
+        cdef char *output_image = <char *> memalign(self.buffer_size)
         cdef unsigned int stride = self.dst_strides[0]
 
         if image.is_thread_safe():
@@ -723,10 +726,10 @@ cdef class ColorspaceConverter:
                 r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
         else:
             r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
-        return self.packed_image_wrapper(<void *> bgr48, 48)
+        return self.packed_image_wrapper(<char *> bgr48, 48)
 
-    cdef packed_image_wrapper(self, void *buf, unsigned char bpp=24):
-        pybuf = memory_as_pybuffer(buf, self.dst_sizes[0], True)
+    cdef packed_image_wrapper(self, char *buf, unsigned char bpp=24):
+        pybuf = PyMemoryView_FromMemory(buf, self.dst_sizes[0], True)
         out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, pybuf, self.dst_format, bpp, self.dst_strides[0], ImageWrapper.PACKED)
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
@@ -771,7 +774,7 @@ cdef class ColorspaceConverter:
             gbrp10_to_r210_copy(<uintptr_t> r210, gbrp10,
                                 w, h,
                                 src_stride, dst_stride)
-        return self.packed_image_wrapper(<void *> r210, 30)
+        return self.packed_image_wrapper(<char *> r210, 30)
 
 
     def YUV420P_to_RGBX(self, image):
@@ -852,7 +855,7 @@ cdef class ColorspaceConverter:
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
                             if Bpp==4:
                                 output_image[o + Xindex] = 255
-        return self.packed_image_wrapper(<void *> output_image, 24)
+        return self.packed_image_wrapper(<char *> output_image, 24)
 
 
     def GBRP_to_RGBX(self, image):
@@ -914,7 +917,7 @@ cdef class ColorspaceConverter:
                     output_image[o+Bdst] = Bptr[sx]
                     output_image[o+Xdst] = 255
                     o += 4
-        return self.packed_image_wrapper(<void *> output_image, 24)
+        return self.packed_image_wrapper(<char *> output_image, 24)
 
 
 def selftest(full=False):

@@ -17,8 +17,6 @@ ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 cdef void *memalign(size_t size) nogil
 
 
-cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
-
 cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil

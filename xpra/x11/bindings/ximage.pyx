@@ -7,7 +7,7 @@
 #cython: auto_pickle=False, language_level=3
 
 from xpra.os_util import bytestostr
-from xpra.buffers.membuf cimport memory_as_pybuffer, object_as_buffer  #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport object_as_buffer  #pylint: disable=syntax-error
 from xpra.monotonic_time cimport monotonic_time
 from xpra.x11.bindings.display_source import get_display_name
 from xpra.log import Logger
@@ -44,6 +44,9 @@ cdef inline unsigned int MIN(unsigned int a, unsigned int b):
 ###################################
 # Headers, python magic
 ###################################
+cdef extern from "Python.h":
+    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)
 
@@ -382,7 +385,7 @@ cdef class XImageWrapper:
         cdef void *pix_ptr = self.get_pixels_ptr()
         if pix_ptr==NULL:
             return None
-        return memory_as_pybuffer(pix_ptr, self.get_size(), False)
+        return PyMemoryView_FromMemory(<char *> pix_ptr, self.get_size(), False)
 
     def get_sub_image(self, unsigned int x, unsigned int y, unsigned int w, unsigned int h):
         assert w>0 and h>0, "invalid sub-image size: %ix%i" % (w, h)

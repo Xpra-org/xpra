@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign, memory_as_pybuffer  #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign   #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stdlib cimport free
@@ -17,6 +17,8 @@ from libc.stdlib cimport free
 cdef extern from *:
     ctypedef unsigned long size_t
 
+cdef extern from "Python.h":
+    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
 cdef extern from "webp/decode.h":
 
@@ -178,7 +180,7 @@ cdef class WebpBufferWrapper:
 
     def get_pixels(self):
         assert self.buffer_ptr>0, "WebpBufferWrapper has already been freed!"
-        return memory_as_pybuffer(<void *> self.buffer_ptr, self.size, True)
+        return PyMemoryView_FromMemory(<char *> self.buffer_ptr, self.size, True)
 
     def free(self):
         if self.buffer_ptr!=0:
@@ -289,16 +291,16 @@ def decompress_yuv(data, has_alpha=False):
     webp_check(WebPDecode(data, len(data), &config))
     if alpha:
         planes = (
-            memory_as_pybuffer(<void *> YUVA.y, y_size, True),
-            memory_as_pybuffer(<void *> YUVA.u, u_size, True),
-            memory_as_pybuffer(<void *> YUVA.v, v_size, True),
-            memory_as_pybuffer(<void *> YUVA.a, a_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.y, y_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.u, u_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.v, v_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.a, a_size, True),
             )
     else:
         planes = (
-            memory_as_pybuffer(<void *> YUVA.y, y_size, True),
-            memory_as_pybuffer(<void *> YUVA.u, u_size, True),
-            memory_as_pybuffer(<void *> YUVA.v, v_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.y, y_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.u, u_size, True),
+            PyMemoryView_FromMemory(<char *> YUVA.v, v_size, True),
             )
     img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
     img.cython_buffer = <uintptr_t> buf

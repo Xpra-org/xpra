@@ -11,12 +11,15 @@ log = Logger("csc", "libyuv")
 
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, object_as_buffer, memory_as_pybuffer #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, object_as_buffer #pylint: disable=syntax-error
 
 from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport uint8_t, uintptr_t
 from libc.stdlib cimport free
 
+
+cdef extern from "Python.h":
+    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
 cdef extern from "../../buffers/memalign.h":
     unsigned int MEMALIGN_ALIGNMENT
@@ -458,7 +461,7 @@ cdef class ColorspaceConverter:
             log("libyuv.ScalePlane %i times, took %.1fms", self.planes, 1000.0*elapsed)
             for i in range(self.planes):
                 strides.append(self.scaled_stride[i])
-                planes.append(memory_as_pybuffer(<void *> scaled_planes[i], self.scaled_size[i], True))
+                planes.append(PyMemoryView_FromMemory(<char *> scaled_planes[i], self.scaled_size[i], True))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> scaled_buffer
@@ -466,7 +469,7 @@ cdef class ColorspaceConverter:
             #use output buffer directly:
             for i in range(self.planes):
                 strides.append(self.out_stride[i])
-                planes.append(memory_as_pybuffer(<void *> out_planes[i], self.out_size[i], True))
+                planes.append(PyMemoryView_FromMemory(<char *> out_planes[i], self.out_size[i], True))
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> output_buffer

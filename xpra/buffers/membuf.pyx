@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,7 +26,6 @@ cdef extern from "memalign.h":
     int MEMALIGN_ALIGNMENT
 
 cdef extern from "buffers.h":
-    object _memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
     int _object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "xxhash.h":
@@ -56,9 +55,6 @@ cdef MemBuf makebuf(void *p, size_t l):
 cdef void *memalign(size_t size) nogil:
     return xmemalign(size)
 
-
-cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly):
-    return _memory_as_pybuffer(ptr, buf_len, readonly)
 
 cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
     return _object_as_buffer(obj, buffer, buffer_len)

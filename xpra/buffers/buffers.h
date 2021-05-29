@@ -7,6 +7,4 @@
 
 #include "Python.h"
 
-PyObject *_memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly);
 int _object_as_buffer(PyObject *obj, const void ** buffer, Py_ssize_t * buffer_len);
-int _object_as_write_buffer(PyObject *obj, void ** buffer, Py_ssize_t * buffer_len);

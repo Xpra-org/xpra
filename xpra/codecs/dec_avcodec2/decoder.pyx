@@ -16,12 +16,15 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer
+from xpra.buffers.membuf cimport memalign, object_as_buffer
 
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
 
+
+cdef extern from "Python.h":
+    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
 cdef extern from "register_compat.h":
     void register_all()
@@ -977,14 +980,14 @@ cdef class Decoder:
                 size = height * stride
                 outsize += size
 
-                out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, True))
+                out.append(PyMemoryView_FromMemory(<char *>av_frame.data[i], size, True))
                 strides.append(stride)
                 log("decompress_image() read back '%s' plane: %s bytes", cs[i:i+1], size)
         else:
             #RGB mode: "out" is a single buffer
             strides = av_frame.linesize[0]+av_frame.linesize[1]+av_frame.linesize[2]
             outsize = self.codec_ctx.height * strides
-            out = memory_as_pybuffer(<void *>av_frame.data[0], outsize, True)
+            out = PyMemoryView_FromMemory(<char *>av_frame.data[0], outsize, True)
             nplanes = 0
             log("decompress_image() read back '%s' buffer: %s bytes", cs, outsize)
 
