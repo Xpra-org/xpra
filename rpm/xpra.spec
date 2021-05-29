@@ -66,7 +66,7 @@ Name:				xpra
 Version:			%{version}
 #Fedora-is-screwing-our-repo "solution",
 #use a revision number which will be higher:
-Release:			10%{?revision_no}xpra1%{?dist}
+Release:			10.%{?revision_no}xpra1%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
@@ -877,7 +877,7 @@ fi
 
 
 %changelog
-* Fri Jan 01 2021 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
+* Fri Jan 01 2021 Antoine Martin <antoine@xpra.org> 3.0.13-10.0xpra1
 - fix screen refresh performance issues, especially on jittery links
 - fix virtual screen resizing errors with invalid DPI values
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
