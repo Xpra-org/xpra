@@ -81,6 +81,7 @@ def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
 
 def svg_to_png(filename, icondata, w=128, h=128):
     Rsvg = load_Rsvg()
+    log("svg_to_png%s Rsvg=%s", (filename, "%i bytes" % len(icondata), w, h), Rsvg)
     if not Rsvg:
         return None
     try:
@@ -90,10 +91,13 @@ def svg_to_png(filename, icondata, w=128, h=128):
         ctx = Context(img)
         handle = Rsvg.Handle.new_from_data(icondata)
         handle.render_cairo(ctx)
+        del handle
+        img.flush()
         buf = BytesIO()
         img.write_to_png(buf)
         icondata = buf.getvalue()
         buf.close()
+        img.finish()
         return icondata
     except Exception:
         log("svg_to_png%s", (icondata, w, h), exc_info=True)
