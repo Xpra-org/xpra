@@ -1050,8 +1050,8 @@ class WindowClient(StubClientMixin):
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
         resize_counter = -1
-        if len(packet)>4:
-            resize_counter = packet[4]
+        if len(packet)>6:
+            resize_counter = packet[6]
         window = self._id_to_window.get(wid)
         geomlog("_process_window_move_resize%s moving / resizing window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax, ay, aw, ah))
