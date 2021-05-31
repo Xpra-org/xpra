@@ -328,7 +328,7 @@ cdef extern from "libavcodec/avcodec.h":
         int thread_count
         int thread_type
         int active_thread_type
-        int thread_safe_callbacks
+        #int thread_safe_callbacks
         int profile
         int level
         AVRational framerate
@@ -407,8 +407,9 @@ cdef extern from "libavcodec/avcodec.h":
     void av_frame_free(AVFrame **frame)
     int avcodec_close(AVCodecContext *avctx)
     void av_frame_unref(AVFrame *frame) nogil
-    void av_init_packet(AVPacket *pkt) nogil
-    void av_packet_unref(AVPacket *pkt) nogil
+
+    AVPacket *av_packet_alloc() nogil
+    void av_packet_free(AVPacket **avpkt)
 
     void avcodec_free_context(AVCodecContext **avctx)
     AVCodec *avcodec_find_encoder_by_name(const char *name)
@@ -1015,18 +1016,17 @@ cdef int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *hw_device_ctx, int wi
     return 0
 
 cdef encode_frame(AVCodecContext *avctx, AVFrame *frame):
-    cdef AVPacket pkt
-    av_init_packet(&pkt)
-    pkt.data = NULL
-    pkt.size = 0
     err = avcodec_send_frame(avctx, frame)
     if err<0:
         log.error("Error: failed to send frame to encoder")
         log.error(" %s", av_error_str(err))
         return None
+    cdef AVPacket * pkt = av_packet_alloc()
+    pkt.data = NULL
+    pkt.size = 0
     data = []
     while True:
-        ret = avcodec_receive_packet(avctx, &pkt)
+        ret = avcodec_receive_packet(avctx, pkt)
         if ret:
             break
         pkt.stream_index = 0
@@ -1327,7 +1327,7 @@ cdef class Encoder:
         self.video_ctx.width = self.width
         self.video_ctx.height = self.height
         self.video_ctx.bit_rate = max(200000, self.width*self.height*4) #4 bits per pixel
-        self.video_ctx.thread_safe_callbacks = 1
+        #self.video_ctx.thread_safe_callbacks = 1
 
         cdef AVDictionary *opts = NULL
         cdef int r
@@ -1588,7 +1588,6 @@ cdef class Encoder:
 
     def compress_image(self, image, int quality=-1, int speed=-1, options=None):
         cdef int ret, i
-        cdef AVPacket avpkt
         cdef AVFrame *frame = NULL
         cdef AVFrame *hw_frame = NULL
         cdef Py_buffer py_buf[4]
@@ -1674,65 +1673,63 @@ cdef class Encoder:
             raise Exception("%i: %s" % (ret, av_error_str(ret)))
 
         buf_len = 1024+self.width*self.height
-        av_init_packet(&avpkt)
+        cdef AVPacket *avpkt = av_packet_alloc()
         avpkt.data = <uint8_t *> memalign(buf_len)
         avpkt.size = buf_len
         assert ret==0
-        while ret==0:
-            log("compress_image%s avcodec_receive_packet avpacket=%#x", (image, quality, speed, options), <uintptr_t> &avpkt)
-            with nogil:
-                ret = avcodec_receive_packet(self.video_ctx, &avpkt)
-            log("avcodec_receive_packet(..)=%i", ret)
-            if ret==-errno.EAGAIN:
-                log("ffmpeg avcodec_receive_packet EAGAIN")
-                break
-            if ret!=0:
-                if not image:
-                    log("avcodec_receive_packet returned error '%s' for flush request", av_error_str(ret))
-                else:
-                    log("avcodec_receive_packet returned error '%s' for image %s, returning existing buffer", av_error_str(ret), image)
-                break
-            if ret<0:
-                free(avpkt.data)
-                self.log_av_error(image, ret, options)
-                raise Exception(av_error_str(ret))
-            if ret>0:
-                free(avpkt.data)
-                self.log_av_error(image, ret, options, "no stream")
-                raise Exception("no stream")
-            log("avcodec_receive_packet returned %#x bytes of data, flags: %s", avpkt.size, flagscsv(PKT_FLAGS, avpkt.flags))
-            if avpkt.flags & AV_PKT_FLAG_CORRUPT:
-                free(avpkt.data)
-                self.log_error(image, "packet", options, "av packet is corrupt")
-                raise Exception("av packet is corrupt")
-
-            if self.muxer_format:
-                #give the frame to the muxer:
-                #(the muxer will append to self.buffers)
-                avpkt.stream_index = self.video_stream.index
-                r = av_write_frame(self.muxer_ctx, &avpkt)
-                log("av_write_frame packet returned %i", r)
+        try:
+            while ret==0:
+                log("compress_image%s avcodec_receive_packet avpacket=%#x", (image, quality, speed, options), <uintptr_t> &avpkt)
+                with nogil:
+                    ret = avcodec_receive_packet(self.video_ctx, avpkt)
+                log("avcodec_receive_packet(..)=%i", ret)
+                if ret==-errno.EAGAIN:
+                    log("ffmpeg avcodec_receive_packet EAGAIN")
+                    break
+                if ret!=0:
+                    if not image:
+                        log("avcodec_receive_packet returned error '%s' for flush request", av_error_str(ret))
+                    else:
+                        log("avcodec_receive_packet returned error '%s' for image %s, returning existing buffer", av_error_str(ret), image)
+                    break
                 if ret<0:
-                    free(avpkt.data)
                     self.log_av_error(image, ret, options)
                     raise Exception(av_error_str(ret))
-                #flush muxer:
-                while True:
-                    r = av_write_frame(self.muxer_ctx, NULL)
-                    log("av_write_frame flush returned %i", r)
-                    if r==1:
-                        break
+                if ret>0:
+                    self.log_av_error(image, ret, options, "no stream")
+                    raise Exception("no stream")
+                log("avcodec_receive_packet returned %#x bytes of data, flags: %s", avpkt.size, flagscsv(PKT_FLAGS, avpkt.flags))
+                if avpkt.flags & AV_PKT_FLAG_CORRUPT:
+                    self.log_error(image, "packet", options, "av packet is corrupt")
+                    raise Exception("av packet is corrupt")
+
+                if self.muxer_format:
+                    #give the frame to the muxer:
+                    #(the muxer will append to self.buffers)
+                    avpkt.stream_index = self.video_stream.index
+                    r = av_write_frame(self.muxer_ctx, avpkt)
+                    log("av_write_frame packet returned %i", r)
                     if ret<0:
                         free(avpkt.data)
                         self.log_av_error(image, ret, options)
                         raise Exception(av_error_str(ret))
-            else:
-                #process frame data without a muxer:
-                self.buffers.append(avpkt.data[:avpkt.size])
-        av_packet_unref(&avpkt)
-        free(avpkt.data)
-        if hw_frame:
-            av_frame_free(&hw_frame)
+                    #flush muxer:
+                    while True:
+                        r = av_write_frame(self.muxer_ctx, NULL)
+                        log("av_write_frame flush returned %i", r)
+                        if r==1:
+                            break
+                        if ret<0:
+                            self.log_av_error(image, ret, options)
+                            raise Exception(av_error_str(ret))
+                else:
+                    #process frame data without a muxer:
+                    self.buffers.append(avpkt.data[:avpkt.size])
+        finally:
+            free(avpkt.data)
+            av_packet_free(&avpkt)
+            if hw_frame:
+                av_frame_free(&hw_frame)
 
         #NV12 also uses YUV420P,
         #only with a different pixel layout

@@ -270,7 +270,7 @@ cdef extern from "libavcodec/avcodec.h":
         int width
         int height
         AVPixelFormat pix_fmt
-        int thread_safe_callbacks
+        #int thread_safe_callbacks
         int thread_count
         int thread_type
         int flags
@@ -294,7 +294,8 @@ cdef extern from "libavcodec/avcodec.h":
     int avcodec_close(AVCodecContext *avctx)
 
     #actual decoding:
-    void av_init_packet(AVPacket *pkt) nogil
+    AVPacket *av_packet_alloc() nogil
+    void av_packet_free(AVPacket **avpkt)
     void avcodec_get_frame_defaults(AVFrame *frame) nogil
     int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt) nogil
     int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame) nogil
@@ -768,7 +769,7 @@ cdef class Decoder:
         self.codec_ctx.pix_fmt = self.pix_fmt
         #self.codec_ctx.get_buffer2 = avcodec_get_buffer2
         #self.codec_ctx.release_buffer = avcodec_release_buffer
-        self.codec_ctx.thread_safe_callbacks = 1
+        #self.codec_ctx.thread_safe_callbacks = 1
         self.codec_ctx.thread_type = 2      #FF_THREAD_SLICE: allow more than one thread per frame
         self.codec_ctx.thread_count = 0     #auto
         self.codec_ctx.flags2 |= AV_CODEC_FLAG2_FAST    #may cause "no deblock across slices" - which should be fine
@@ -887,7 +888,6 @@ cdef class Decoder:
     def decompress_image(self, data, options=None):
         cdef int size
         cdef int nplanes
-        cdef AVPacket avpkt
         assert self.codec_ctx!=NULL, "no codec context! (not initialized or already closed)"
         assert self.codec!=NULL
 
@@ -920,12 +920,14 @@ cdef class Decoder:
         clear_frame(av_frame)
         #now safe to run without gil:
         cdef int ret = 0
+        cdef AVPacket *avpkt = NULL
         with nogil:
-            av_init_packet(&avpkt)
+            avpkt = av_packet_alloc()
             avpkt.data = <uint8_t *> (padded_buf)
             avpkt.size = buf_len
-            ret = avcodec_send_packet(self.codec_ctx, &avpkt)
+            ret = avcodec_send_packet(self.codec_ctx, avpkt)
         if ret!=0:
+            av_packet_free(&avpkt)
             free(padded_buf)
             log("%s.decompress_image(%s:%s, %s) avcodec_send_packet failure: %s", self, type(input), buf_len, options, av_error_str(ret))
             self.log_av_error(buf_len, ret, options)
@@ -933,6 +935,7 @@ cdef class Decoder:
         with nogil:
             ret = avcodec_receive_frame(self.codec_ctx, av_frame)
         free(padded_buf)
+        av_packet_free(&avpkt)
         if ret==-errno.EAGAIN:
             if options:
                 d = options.intget("delayed", 0)

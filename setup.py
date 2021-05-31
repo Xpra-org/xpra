@@ -2195,10 +2195,6 @@ if nvenc_ENABLED:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
         libraries.remove("nvidia-encode")
-    if not cython_version_compare("0.29"):
-        #older versions emit spurious warnings:
-        print("Warning: using workaround for outdated version of cython")
-        add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=sign-compare")
     cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
                          ["xpra/codecs/%s/encoder.pyx" % nvencmodule],
                          **nvenc_pkgconfig))
@@ -2206,8 +2202,6 @@ if nvenc_ENABLED:
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
     x264_pkgconfig = pkgconfig("x264")
-    if get_gcc_version()>=[6, 0]:
-        add_to_keywords(x264_pkgconfig, 'extra_compile_args', "-Wno-unused-variable")
     cython_add(Extension("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx"],
                 **x264_pkgconfig))
@@ -2263,9 +2257,6 @@ toggle_packages(jpeg, "xpra.codecs.jpeg")
 if jpeg:
     if jpeg_encoder_ENABLED:
         jpeg_pkgconfig = pkgconfig("libturbojpeg")
-        if not pkg_config_version("1.4", "libturbojpeg"):
-            #older versions don't have const argument:
-            remove_from_keywords(jpeg_pkgconfig, 'extra_compile_args', "-Werror")
         cython_add(Extension("xpra.codecs.jpeg.encoder",
                 ["xpra/codecs/jpeg/encoder.pyx"],
                 **jpeg_pkgconfig))
@@ -2280,8 +2271,6 @@ libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
 toggle_packages(libav_common, "xpra.codecs.libav_common")
 if libav_common:
     avutil_pkgconfig = pkgconfig("libavutil")
-    if get_gcc_version()>=[9, 0]:
-        add_to_keywords(avutil_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
     cython_add(Extension("xpra.codecs.libav_common.av_log",
                 ["xpra/codecs/libav_common/av_log.pyx"],
                 **avutil_pkgconfig))
@@ -2290,8 +2279,6 @@ if libav_common:
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("libavcodec", "libavutil", "libavformat")
-    if get_gcc_version()>=[9, 0]:
-        add_to_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/dec_avcodec2/register_compat.c"],
                 **avcodec2_pkgconfig))
@@ -2308,8 +2295,6 @@ if csc_libyuv_ENABLED:
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("libswscale", "libavutil")
-    if get_gcc_version()>=[9, 0]:
-        add_to_keywords(swscale_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
                 **swscale_pkgconfig))
@@ -2334,8 +2319,6 @@ if vpx_ENABLED:
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 if enc_ffmpeg_ENABLED:
     ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat", "libavutil")
-    if get_gcc_version()>=[9, 0]:
-        add_to_keywords(ffmpeg_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
     cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
                 ["xpra/codecs/enc_ffmpeg/encoder.pyx"],
                 **ffmpeg_pkgconfig))
