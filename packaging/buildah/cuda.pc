@@ -1,5 +1,5 @@
 cudaroot=/opt/cuda/
-libdir=${cudaroot}/targets/x86_64-linux/libstubs/
+libdir=${cudaroot}/targets/x86_64-linux/lib/stubs/
 includedir=${cudaroot}/targets/x86_64-linux/include
 
 Name: cuda
