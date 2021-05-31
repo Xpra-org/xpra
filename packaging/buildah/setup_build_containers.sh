@@ -104,13 +104,16 @@ for DISTRO in $DEB_DISTROS; do
 	buildah run $IMAGE_NAME apt-get update
 	buildah run $IMAGE_NAME apt-get upgrade -y
 	buildah run $IMAGE_NAME apt-get dist-upgrade -y
+	buildah run $IMAGE_NAME apt-get install -y software-properties-common
 	echo "${DISTRO}" | grep Ubuntu > /dev/null
 	if [ "$?" == "0" ]; then
 		#the codecs require the "universe" repository:
-		buildah run $IMAGE_NAME apt-get install -y software-properties-common
 		buildah run $IMAGE_NAME add-apt-repository universe -y
-		buildah run $IMAGE_NAME apt-get update
+		buildah run $IMAGE_NAME apt-add-repository restricted -y
+	else
+		buildah run $IMAGE_NAME apt-add-repository non-free -y
 	fi
+	buildah run $IMAGE_NAME apt-get update
 	#this is only used for building xpra,
 	#so add as many dependencies already:
 	#buildah run $IMAGE_NAME apt-get install -y gcc g++ debhelper devscripts
