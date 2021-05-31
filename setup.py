@@ -2047,13 +2047,13 @@ toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 CUDA_BIN = "%s/cuda" % share_xpra
 if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
     #find nvcc:
+    from xpra.util import sorted_nicely
     path_options = os.environ.get("PATH", "").split(os.path.pathsep)
-    CUDA_VERSIONS = ["11.3", "11.2", "11.1", "11.0", "10.2", "10.1", "10.0", "9.2", "9.1", "9.0", "8.0", "7.5", ]
     if WIN32:
         external_includes += ["pycuda"]
         nvcc_exe = "nvcc.exe"
         CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-        path_options = [os.path.join(CUDA_DIR, "v%s" % x, "bin") for x in CUDA_VERSIONS] + path_options
+        path_options += list(reversed(sorted_nicely(glob.glob("%s\\*\\bin"))))
         #pycuda may link against curand, find it and ship it:
         for p in path_options:
             if os.path.exists(p):
@@ -2062,11 +2062,8 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 break
     else:
         nvcc_exe = "nvcc"
-        for v in [""]+CUDA_VERSIONS:
-            suffix = ""
-            if v:
-                suffix = "-%s" % v
-            path_options += ["/usr/local/cuda%s/bin" % suffix, "/opt/cuda%s/bin" % suffix]
+        path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
+        path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     def which(cmd):
         try:
