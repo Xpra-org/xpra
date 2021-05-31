@@ -7,7 +7,7 @@
 
 from libc.stdint cimport uintptr_t
 from xpra.monotonic_time cimport monotonic_time
-from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from pycuda import driver
 
@@ -385,9 +385,7 @@ cdef do_device_encode(device, image, int quality, int speed):
     pixels = image.get_pixels()
     pfstr = bytestostr(image.get_pixel_format())
     #pfstr = bytestostr(image.get_pixel_format())
-    cdef const unsigned char* buf
-    cdef Py_ssize_t buf_len
-    assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
+    cdef Py_ssize_t buf_len = len(pixels)
     assert buf_len>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, buf_len, stride, height, stride*height)
     cdef double end = monotonic_time()
     log("prepared in %.1fms", 1000*(end-start))
