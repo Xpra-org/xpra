@@ -10,19 +10,20 @@ mkdir -p $REPO_ARCH_PATH
 
 
 #find the latest version we can build:
-XPRA_TAR_XZ=`ls pkgs/xpra-* | grep -v html5 | sort -n | tail -n 1`
+XPRA_TAR_XZ=`ls ./pkgs/xpra-*.tar.xz | grep -v html5 | sort -V | tail -n 1`
 if [ ! -z "${XPRA_TAR_XZ}" ]; then
+	dirname=`echo ${XPRA_TAR_XZ} | sed 's+./pkgs/++g' | sed 's/.tar.xz//'`
+	rm -fr "./${dirname}"
+	tar -Jxf ${XPRA_TAR_XZ}
+	pushd "./${dirname}"
+	ln -sf packaging/debian .
+
 	#the image should already have everything needed,
 	#unless something was added to the control file
 	#after the image had already been generated:
 	mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
 	#mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
 	rm -f xpra-build-deps*
-
-	rm -fr xpra-*
-	tar -Jxf ${XPRA_TAR_XZ}
-	pushd xpra-*
-	ln -sf packaging/debian .
 
 	#the control file has a few distribution specific entries
 	#ie:

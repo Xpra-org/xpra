@@ -42,7 +42,6 @@ else
 		exit 1
 	fi
 fi
-export XPRA_REVISION
 
 
 #read the name of the spec files we may want to build:
@@ -111,7 +110,7 @@ while read p; do
 		cp ./pkgs/* "rpmbuild/SOURCES/"
 		cp ./pkgs/* "$HOME/rpmbuild/SOURCES/"
 		echo " - building RPM package(s)"
-		rpmbuild --define "_topdir `pwd`/rpmbuild/" -ba $SPECFILE >& rpmbuild.log
+		rpmbuild --define "_topdir `pwd`/rpmbuild/" --define "xpra_revision_no ${XPRA_REVISION}" -ba $SPECFILE >& rpmbuild.log
 		if [ "$?" != "0" ]; then
 			echo "-------------------------------------------"
 			echo "rpmbuild failed:"

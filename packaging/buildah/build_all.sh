@@ -10,8 +10,21 @@ if [ "${DEBUG:-0}" == "1" ]; then
 	BASH="bash -x"
 fi
 
+#set to "0" to avoid building the NVIDIA proprietary codecs NVENC, NVFBC and NVJPEG,
+#this is only enabled by default on x86_64:
+if [ -z "${NVIDIA_CODECS}" ]; then
+	if [ `arch` == "x86_64" ]; then
+		NVIDIA_CODECS=1
+	else
+		NVIDIA_CODECS=0
+	fi
+fi
+
 BUILDAH_DIR=`dirname $(readlink -f $0)`
 cd ${BUILDAH_DIR}
+
+mkdir cache >& /dev/null
+rm -fr cache/ldconfig cache/libX11 cache/debconf
 
 PACKAGING="$BUILDAH_DIR/packaging"
 if [ ! -e "${PACKAGING}" ]; then
@@ -79,6 +92,7 @@ for DISTRO in $DISTROS; do
 	echo $DISTRO | egrep -iv "fedora|centos" >& /dev/null
 	RPM="$?"
 	if [ "${RPM}" == "1" ]; then
+		PKGCONFIG="/usr/lib64/pkgconfig"
 		REPO_PATH="${BUILDAH_DIR}/repo/"`echo $DISTRO | sed 's+:+/+g'`
 		for rpm_list in "./${FULL_DISTRO_NAME}-rpms.txt" "./${DISTRO_NAME}-rpms.txt" "./rpms.txt"; do
 			if [ -r "${PACKAGING}/rpm/${rpm_list}" ]; then
@@ -91,15 +105,25 @@ for DISTRO in $DISTROS; do
 		buildah copy $TEMP_IMAGE "./build_rpms.sh" "/src/build.sh"
 		echo "RPM: $REPO_PATH"
 	else
+		PKGCONFIG="/usr/lib/pkgconfig"
 		DISTRO_RELEASE=`echo $DISTRO | awk -F: '{print $2}'`
 		REPO_PATH="${BUILDAH_DIR}/repo/$DISTRO_RELEASE"
 		buildah copy $TEMP_IMAGE "./build_debs.sh" "/src/build.sh"
 		echo "DEB: $REPO_PATH"
 	fi
 	mkdir -p $REPO_PATH >& /dev/null
+
+	if [ "${NVIDIA_CODECS}" == "1" ]; then
+		buildah copy $IMAGE_NAME "./nvenc.pc" "${PKGCONFIG}/nvenc.pc"
+		buildah copy $IMAGE_NAME "./nvfbc.pc" "${PKGCONFIG}/nvfbc.pc"
+		buildah copy $IMAGE_NAME "./nvjpeg.pc" "${PKGCONFIG}/nvjpeg.pc"
+		buildah copy $IMAGE_NAME "./cuda.pc" "${PKGCONFIG}/cuda.pc"
+	fi
+
 	buildah run \
 				--volume ${BUILDAH_DIR}/opt:/opt:ro,z \
 				--volume ${BUILDAH_DIR}/pkgs:/src/pkgs:ro,z \
+				--volume ${BUILDAH_DIR}/cache:/var/cache:rw,z \
 				--volume $REPO_PATH:/src/repo:noexec,nodev,z \
 				--volume ${PACKAGING}/rpm:/src/rpm:ro,z \
 				--volume ${PACKAGING}/debian:/src/debian:O \
