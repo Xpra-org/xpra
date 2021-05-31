@@ -147,7 +147,7 @@ def do_get_bind_ifacemask(iface):
                         ipmasks.append((addr,mask))
                     except Exception as e:
                         log("do_get_bind_ifacemask(%s)", iface, exc_info=True)
-                        log.error("do_get_bind_ifacemask(%s) error on %s", iface, addr)
+                        log.error("Error converting address '%s' to binary, for interface %s", addr, iface)
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
     return ipmasks
 
