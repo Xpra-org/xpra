@@ -276,6 +276,7 @@ BuildRequires:		pygtk2-devel
 BuildRequires:		pygobject2-devel
 BuildRequires:		libyuv-devel
 BuildRequires:		turbojpeg-devel
+BuildRequires:		libvpx-devel
 BuildRequires:		x264-xpra-devel
 BuildRequires:		ffmpeg-xpra-devel
 %if 0%{?run_tests}
