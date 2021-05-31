@@ -155,7 +155,7 @@ cdef class pam_session:
 
     def start(self, password=False) -> bool:
         cdef pam_conv conv
-        cdef Py_buffer *view = NULL
+        cdef Py_buffer view
 
         if self.pam_handle!=NULL:
             log.error("Error: cannot open the pam session more than once!")
@@ -164,7 +164,7 @@ cdef class pam_session:
         if password:
             conv.conv = <void_p> &password_conv
             assert self.password, "no password to use for pam_start"
-            if PyObject_GetBuffer(self.password, view, PyBUF_ANY_CONTIGUOUS):
+            if PyObject_GetBuffer(self.password, &view, PyBUF_ANY_CONTIGUOUS):
                 raise Exception("failed to read password data")
             conv.appdata_ptr = view.buf
         else:
@@ -175,7 +175,7 @@ cdef class pam_session:
             pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
         finally:
             if view!=NULL:
-                PyBuffer_Release(view)
+                PyBuffer_Release(&view)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL
