@@ -18,7 +18,7 @@ function fetch() {
 	SPECNAME=`basename $SPECFILE`
 	VERSION=$(specver $SPECFILE)
 	if [ -z "${VERSION}" ]; then
-		echo "no ${version} found in $SPECNAME"
+		echo "no version found in $SPECNAME"
 		exit 1
 	fi
 	URLS=`rpmspec -P $SPECFILE | grep "^Source.*:" | awk '{print $2}'`
