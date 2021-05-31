@@ -111,6 +111,7 @@ BuildArch:			noarch
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 2.1
 BuildRequires:		libfakeXinerama
+BuildRequires:		which
 %description common
 This package contains the files which are shared between all the xpra packages.
 
