@@ -146,7 +146,8 @@ def do_get_bind_ifacemask(iface):
                         socket.inet_aton(addr)
                         ipmasks.append((addr,mask))
                     except Exception as e:
-                        log.error("do_get_bind_ifacemask(%s) error on %s", iface, addr, e)
+                        log("do_get_bind_ifacemask(%s)", iface, exc_info=True)
+                        log.error("do_get_bind_ifacemask(%s) error on %s", iface, addr)
     log("do_get_bind_ifacemask(%s)=%s", iface, ipmasks)
     return ipmasks
 
