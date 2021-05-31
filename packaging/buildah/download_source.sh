@@ -4,7 +4,7 @@ BUILDAH_DIR=`dirname $(readlink -f $0)`
 pushd ${BUILDAH_DIR}
 
 function specver() {
-	V=`rpmspec -q --qf "%{version}\n" "../../rpm/$1.spec" 2> /dev/null | sort -u`
+	V=`rpmspec -q --qf "%{version}\n" "$1" 2> /dev/null | sort -u`
 	if [ "$?" != "0" ]; then
 		exit 1
 	fi
@@ -14,13 +14,14 @@ function specver() {
 	echo $V
 }
 function fetch() {
-	SPECNAME=$1
-	VERSION=$(specver $SPECNAME)
+	SPECFILE=$1
+	SPECNAME=`basename $SPECFILE`
+	VERSION=$(specver $SPECFILE)
 	if [ -z "${VERSION}" ]; then
 		echo "no ${version} found in $SPECNAME"
 		exit 1
 	fi
-	URLS=`rpmspec -P ../rpm/$SPECNAME.spec | grep "Source.*:" | awk '{print $2}'`
+	URLS=`rpmspec -P $SPECFILE | grep "Source.*:" | awk '{print $2}'`
 	if [ -z "${URLS}" ]; then
 		echo "no Source URLs found in $SPECNAME"
 		return
@@ -35,11 +36,9 @@ function fetch() {
 		fi
 	done
 }
-pushd rpm
-SPECS=`ls *.spec | sed 's/.spec//g'`
-popd
+SPECS=`ls packaging/rpm/*.spec | sed 's/.spec//g'`
 pushd pkgs
 for SPEC in $SPECS; do
-	fetch $SPEC
+	fetch "${BUILDAH_DIR}/$SPEC.spec"
 done
 popd
