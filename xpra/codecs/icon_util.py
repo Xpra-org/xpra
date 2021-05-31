@@ -74,7 +74,7 @@ def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
             icondata = pngdata
             filename = filename[:-3]+"png"
     log("got icon data from '%s': %i bytes", filename, len(icondata))
-    if len(icondata)>max_size and first_time("icon-size-warning-%s" % filename):
+    if max_size>0 and len(icondata)>max_size and first_time("icon-size-warning-%s" % filename):
         global large_icons
         large_icons.append((filename, len(icondata)))
     return icondata, os.path.splitext(filename)[1].lstrip(".")
