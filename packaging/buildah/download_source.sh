@@ -21,7 +21,7 @@ function fetch() {
 		echo "no ${version} found in $SPECNAME"
 		exit 1
 	fi
-	URLS=`rpmspec -P $SPECFILE | grep "Source.*:" | awk '{print $2}'`
+	URLS=`rpmspec -P $SPECFILE | grep "^Source.*:" | awk '{print $2}'`
 	if [ -z "${URLS}" ]; then
 		echo "no Source URLs found in $SPECNAME"
 		return
