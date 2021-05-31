@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -399,8 +399,11 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     if width>WEBP_MAX_DIMENSION or height>WEBP_MAX_DIMENSION:
         raise Exception("this image is too big for webp: %ix%i" % (width, height))
     pixels = image.get_pixels()
+    cdef int alpha_int = int(supports_alpha and pixel_format.find("A")>=0)
+    cdef int threshold_delta = -int(content_type=="text")*20
+    cdef int use_argb = int(quality>=(SUBSAMPLING_THRESHOLD+threshold_delta))
 
-    cdef uint8_t *pic_buf
+    cdef const uint8_t *pic_buf
     cdef Py_ssize_t pic_buf_len = 0
     cdef WebPConfig config
     cdef WebPPreset preset = DEFAULT_PRESET
@@ -415,26 +418,6 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     log("webp.compress(%s, %i, %i, %s, %s) buf=%#x", image, width, height, supports_alpha, content_type, <uintptr_t> pic_buf)
     cdef int size = stride * height
     assert pic_buf_len>=size, "pixel buffer is too small: expected at least %s bytes but got %s" % (size, pic_buf_len)
-
-    cdef int threshold_delta = -int(content_type=="text")*20
-
-    cdef int i
-    cdef int alpha_int = int(supports_alpha and pixel_format.find("A")>=0)
-    cdef int use_argb = int(quality>=(SUBSAMPLING_THRESHOLD+threshold_delta))
-    if alpha_int==0 and Bpp==4:
-        #ensure webp will not decide to encode the alpha channel
-        #(this is stupid: we should be able to pass a flag instead)
-        i = 3
-        if size>524288:
-            #enough pixels that we should release the gil:
-            with nogil:
-                while i<size:
-                    pic_buf[i] = 0xff
-                    i += 4
-        else:
-            while i<size:
-                pic_buf[i] = 0xff
-                i += 4
 
     ret = WebPConfigInit(&config)
     if not ret:
@@ -486,11 +469,6 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
         info = get_config_info(&config)
         raise Exception("invalid webp configuration: %s" % info)
 
-    cdef WebPPicture pic
-    ret = WebPPictureInit(&pic)
-    if not ret:
-        raise Exception("failed to initialise webp picture")
-
     client_options = {
         #no need to expose speed
         #(not used for anything downstream)
@@ -498,19 +476,35 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
         "rgb_format"  : pixel_format,
         }
 
+    cdef WebPPicture pic
     memset(&pic, 0, sizeof(WebPPicture))
+    ret = WebPPictureInit(&pic)
+    if not ret:
+        raise Exception("failed to initialise webp picture")
     pic.width = width
     pic.height = height
     pic.use_argb = 1
-    pic.argb = <uint32_t*> pic_buf
     pic.argb_stride = stride//Bpp
-    if not use_argb:
+
+    log("webp.compress(%s, %i, %i, %s, %s) buf=%#x", image, width, height, supports_alpha, content_type, <uintptr_t> pic_buf)
+    #import the pixel data into WebPPicture
+    if use_argb:
+        if pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
+            ret = WebPPictureImportRGBX(&pic, pic_buf, stride)
+        elif pixel_format=="RGBA":
+            ret = WebPPictureImportRGBA(&pic, pic_buf, stride)
+        elif pixel_format=="BGRX" or (pixel_format=="BGRA" and not supports_alpha):
+            ret = WebPPictureImportBGRX(&pic, pic_buf, stride)
+        else:
+            assert pixel_format=="BGRA"
+            ret = WebPPictureImportBGRA(&pic, pic_buf, stride)
+    else:
+        pic.argb = <uint32_t*> pic_buf
         if WebPPictureARGBToYUVA(&pic, WEBP_YUV420A):
             client_options["subsampling"] = "YUV420P"
-            #redundant (changed by WebPPictureARGBToYUVA):
-            #pic.use_argb = 0
-        else:
-            raise Exception("failed to convert picture to YUV")
+    if not ret:
+        WebPPictureFree(&pic)
+        raise Exception("WebP importing image failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
 
     #TODO: custom writer that over-allocates memory
     cdef WebPMemoryWriter memory_writer
