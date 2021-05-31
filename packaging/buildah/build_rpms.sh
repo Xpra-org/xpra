@@ -25,7 +25,7 @@ done
 #make sure we expose the revision number
 #so the spec file can generate the expected file names
 #(ie: xpra-4.2-0.r29000)
-XPRA_REVISION=""
+XPRA_REVISION="0"
 XPRA_TAR_XZ=`ls -d pkgs/xpra-* | grep -v html5 | sort -V | tail -n 1`
 if [ -z "${XPRA_TAR_XZ}" ]; then
 	echo "Warning: xpra source not found"
