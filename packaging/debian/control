@@ -9,6 +9,13 @@ Build-Depends: debhelper (>= 8)
               ,libxdamage-dev
               ,libxtst-dev
               ,libxkbfile-dev
+#buster:              ,libnvidia-fbc1
+#bullseye:              ,libnvidia-fbc1
+#sid:              ,libnvidia-fbc1
+#bionic:              ,libnvidia-fbc1-460-server
+#focal:              ,libnvidia-fbc1-460-server
+#groovy:              ,libnvidia-fbc1-460-server
+#hirsute:              ,libnvidia-fbc1-460-server
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
