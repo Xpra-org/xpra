@@ -2,9 +2,6 @@
 
 die() { echo "$*" 1>&2 ; exit 1; }
 
-DO_XPRA=${DO_XPRA:-1}
-DO_XPRA_HTML5=${DO_XPRA_HTML5:-1}
-
 BASH="bash"
 if [ "${DEBUG:-0}" == "1" ]; then
 	BASH="bash -x"
@@ -32,31 +29,6 @@ if [ ! -e "${PACKAGING}" ]; then
 	#(the parent directory, which contains "debian" and "rpm")
 	#this symlink can be changed and will be left alone
 	ln -sf "../" "${PACKAGING}"
-fi
-
-if [ "${DO_XPRA}" == "1" ]; then
-	#go make a snapshot:
-	pushd "${PACKAGING}"
-	pushd ..
-	rm -f pkgs/xpra-*.tar.xz
-	python3 ./setup.py sdist --formats=xztar || die "failed to create xpra source snapshot"
-	mv dist/xpra-*.tar.xz ${BUILDAH_DIR}/pkgs/
-	popd
-	popd
-fi
-
-if [ "${DO_XPRA_HTML5}" == "1" ]; then
-	if [ -e "html5" ]; then
-		rm -f pkgs/xpra-html5-*.tar.xz
-		pushd html5
-		python3 ./setup.py sdist --formats=xztar || die "failed to create xpra-html5 source snapshot"
-		popd
-		cp html5/dist/xpra-html5-*.tar.xz ./pkgs/
-		cp html5/packaging/rpm/xpra-html5.spec ../rpm/
-	else
-		echo "html5 directory not found"
-		echo " skipped creating a source snapshot"
-	fi
 fi
 
 DO_DOWNLOAD="${DO_DOWNLOAD:-1}"
