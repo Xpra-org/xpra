@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@
 %{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
-%{!?revision_no: %define revision_no 1}
+%{!?xpra_revision_no: %define xpra_revision_no 1}
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265 --pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -66,7 +66,7 @@ Name:				xpra
 Version:			%{version}
 #Fedora-is-screwing-our-repo "solution",
 #use a revision number which will be higher:
-Release:			10.%{?revision_no}xpra1%{?dist}
+Release:			10.%{?xpra_revision_no}xpra1%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
