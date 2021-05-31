@@ -2053,7 +2053,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         external_includes += ["pycuda"]
         nvcc_exe = "nvcc.exe"
         CUDA_DIR = os.environ.get("CUDA_DIR", "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA")
-        path_options += list(reversed(sorted_nicely(glob.glob("%s\\*\\bin"))))
+        path_options += list(reversed(sorted_nicely(glob.glob("%s\\*\\bin" % CUDA_DIR))))
         #pycuda may link against curand, find it and ship it:
         for p in path_options:
             if os.path.exists(p):
