@@ -14,7 +14,9 @@ from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 
 cdef extern from "Python.h":
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "gtk-3.0/gdk/gdk.h":
     ctypedef void* GdkAtom
@@ -29,15 +31,15 @@ cdef extern from "gtk-3.0/gdk/gdkproperty.h":
 
 
 def gdk_atom_objects_from_gdk_atom_array(atom_string):
-    cdef const GdkAtom * array = <GdkAtom*> NULL
-    cdef GdkAtom atom
-    cdef gchar*  name
-    cdef Py_ssize_t array_len_bytes = 0
-    cdef uintptr_t gdk_atom_value = 0
-    assert PyObject_AsReadBuffer(atom_string, <const void**> &array, &array_len_bytes)==0
-    cdef unsigned int array_len = array_len_bytes // sizeof(GdkAtom)
+    cdef Py_buffer py_buf
+    if PyObject_GetBuffer(atom_string, &py_buf, PyBUF_ANY_CONTIGUOUS):
+        raise Exception("failed to read atom buffer of %s" % type(atom_string))
+    cdef unsigned int array_len = py_buf.len // sizeof(GdkAtom)
     objects = []
     cdef unsigned int i
+    cdef const GdkAtom * array = <GdkAtom*> py_buf.buf
+    cdef GdkAtom atom
+    cdef gchar*  name
     for i in range(array_len):
         atom = array[i]
         if atom==GDK_NONE:
