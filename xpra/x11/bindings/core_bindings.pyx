@@ -65,13 +65,6 @@ def X11CoreBindings():
         singleton = X11CoreBindingsInstance()
     return singleton
 
-#for debugging, we can hook this function which will log the caller:
-def caller_logger(*args):
-    import sys
-    f = sys._getframe(1)
-    c = f.f_code
-    log.info("noop: %s %s %s %s", c.co_name, f.f_back, c.co_filename, f.f_lineno)
-
 def noop(*args):
     pass
 
