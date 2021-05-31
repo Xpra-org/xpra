@@ -16,12 +16,14 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 Requires:	python2
 BuildRequires: python2-devel
 BuildRequires: python2-setuptools
+%if 0%{el7}
 Provides:	netifaces = %{version}-%{release}
 Provides:	python-netifaces = %{version}-%{release}
 Obsoletes:	netifaces
 Obsoletes:	python-netifaces
 Conflicts:	netifaces < %{version}
 Conflicts:	python-netifaces < %{version}
+%endif
 
 %description
 Getting network addresses from Python
