@@ -21,7 +21,7 @@ log = Logger("exec", "menu")
 
 LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)
 EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
-MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 65536)
+MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 0)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
 if PYTHON3:
     unicode = str           #@ReservedAssignment
@@ -136,7 +136,7 @@ def load_icon_from_file(filename):
         except Exception:
             log.error("Error: failed to convert svg icon", exc_info=True)
     log("got icon data from '%s': %i bytes", filename, len(icondata))
-    if len(icondata)>MAX_ICON_SIZE and first_time("icon-size-warning-%s" % filename):
+    if MAX_ICON_SIZE>0 and len(icondata)>MAX_ICON_SIZE and first_time("icon-size-warning-%s" % filename):
         log.warn("Warning: icon is quite large (%i KB):", len(icondata)//1024)
         log.warn(" '%s'", filename)
     return icondata, os.path.splitext(filename)[1].lstrip(".")
