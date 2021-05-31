@@ -14,6 +14,7 @@ from xpra.os_util import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer, sizeof
 
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
+from libc.string cimport memset
 
 ctypedef void* void_p  # @UndefinedVariable
 ctypedef const void* const_void_p  # @UndefinedVariable
@@ -156,6 +157,7 @@ cdef class pam_session:
     def start(self, password=False) -> bool:
         cdef pam_conv conv
         cdef Py_buffer view
+        memset(&view, 0, sizeof(Py_buffer))
 
         if self.pam_handle!=NULL:
             log.error("Error: cannot open the pam session more than once!")
@@ -174,7 +176,7 @@ cdef class pam_session:
         try:
             pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
         finally:
-            if view!=NULL:
+            if view.buf!=NULL:
                 PyBuffer_Release(&view)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
