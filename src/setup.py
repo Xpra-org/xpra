@@ -2302,14 +2302,9 @@ if nvjpeg_ENABLED:
     else:
         nvjpeg_pkgconfig = pkgconfig("nvjpeg")
         assert nvjpeg_pkgconfig, "failed to locate nvjpeg pkgconfig"
-        for v in ("11.3", "11.2", "11.1", "11.0", ):
-            cuda_pkgconfig = pkgconfig("cuda-%s" % v)
-            if cuda_pkgconfig:
-                break
+        cuda_pkgconfig = pkgconfig("cuda")
         assert cuda_pkgconfig, "failed to locate cuda pkgconfig"
         for k, v in cuda_pkgconfig.items():
-            add_to_keywords(nvjpeg_pkgconfig, k, *v)
-        for k, v in nvjpeg_pkgconfig.items():
             add_to_keywords(nvjpeg_pkgconfig, k, *v)
     cython_add(Extension("xpra.codecs.nvjpeg.encoder",
                          ["xpra/codecs/nvjpeg/encoder.pyx"],
