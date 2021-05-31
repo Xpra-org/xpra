@@ -21,7 +21,7 @@ BUILDAH_DIR=`dirname $(readlink -f $0)`
 cd ${BUILDAH_DIR}
 
 mkdir cache >& /dev/null
-rm -fr cache/ldconfig cache/libX11 cache/debconf
+rm -fr cache/ldconfig cache/libX11 cache/debconf cache/man
 
 PACKAGING="$BUILDAH_DIR/packaging"
 if [ ! -e "${PACKAGING}" ]; then
@@ -90,7 +90,12 @@ for DISTRO in $DISTROS; do
 		buildah copy $IMAGE_NAME "./nvfbc.pc" "${PKGCONFIG}/nvfbc.pc"
 		buildah copy $IMAGE_NAME "./nvjpeg.pc" "${PKGCONFIG}/nvjpeg.pc"
 		buildah copy $IMAGE_NAME "./cuda.pc" "${PKGCONFIG}/cuda.pc"
+		if [ "${RPM}" == "1" ]; then
+			#no libnvidia-fbc in the standard repos, so use the local one:
+			buildah copy $IMAGE_NAME /usr/lib64/libnvidia-fbc.so.*.* "/usr/lib64/libnvidia-fbc.so"
+		fi
 	fi
+	buildah commit $IMAGE_NAME $IMAGE_NAME
 
 	buildah run \
 				--volume ${BUILDAH_DIR}/opt:/opt:ro,z \
