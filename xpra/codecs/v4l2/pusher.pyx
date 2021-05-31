@@ -17,13 +17,18 @@ from xpra.os_util import path_permission_info
 from xpra.util import print_nested_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.codec_constants import get_subsampling_divs
-from xpra.buffers.membuf cimport memalign, object_as_buffer #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign   #pylint: disable=syntax-error
 
 
 from libc.stdint cimport uint32_t, uint8_t
 from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
 
+
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "sys/ioctl.h":
     int ioctl(int fd, unsigned long request, ...)
@@ -430,19 +435,8 @@ cdef class Pusher:
 
 
     def push_image(self, image):
-        cdef unsigned char *Ybuf
-        cdef unsigned char *Ubuf
-        cdef unsigned char *Vbuf
-        cdef unsigned int Ystride, Ustride, Vstride
-        cdef Py_ssize_t buf_len = 0
-
+        cdef int i
         divs = get_subsampling_divs(self.src_format)    #ie: YUV420P ->  (1, 1), (2, 2), (2, 2)
-        cdef int Ywdiv = divs[0][0]
-        cdef int Yhdiv = divs[0][1]
-        cdef int Uwdiv = divs[1][0]
-        cdef int Uhdiv = divs[1][1]
-        cdef int Vwdiv = divs[2][0]
-        cdef int Vhdiv = divs[2][1]
 
         iplanes = image.get_planes()
         assert iplanes==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % iplanes
@@ -451,23 +445,35 @@ cdef class Pusher:
         planes = image.get_pixels()
         assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
-        Ystride, Ustride, Vstride = input_strides
-        assert Ystride==self.rowstride//Ywdiv, "invalid stride for Y plane: %s but expected %i" % (Ystride, self.rowstride//Ywdiv)
-        assert Ustride==self.rowstride//Uwdiv, "invalid stride for U plane: %s but expected %s" % (Ustride, self.rowstride//Uwdiv)
-        assert Vstride==self.rowstride//Vwdiv, "invalid stride for V plane: %s but expected %s" % (Vstride, self.rowstride//Vwdiv)
-        assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
-        assert buf_len>=Ystride*(image.get_height()//Yhdiv), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*(image.get_height()//Yhdiv))
-        assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
-        assert buf_len>=Ustride*(image.get_height()//Uhdiv), "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*(image.get_height()//Uhdiv))
-        assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
-        assert buf_len>=Vstride*(image.get_height()//Vhdiv), "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*(image.get_height()//Vhdiv))
-        assert Ystride*(self.height//Yhdiv)+Ustride*(self.height//Uhdiv)+Vstride*(self.height//Vhdiv) <= self.framesize, "buffer %i is too small for %i + %i + %i" % (self.framesize, Ystride*(self.height//Yhdiv), Ustride*(self.height//Uhdiv), Vstride*(self.height//Vhdiv))
 
+        #validate rowstrides:
+        for i in range(3):
+            stride = self.rowstride//divs[i][0]
+            assert input_strides[i]==stride, "invalid stride for plane %s: %s but expected %i" % (i, input_strides[i], stride)
+
+        #allocate temporary buffer we use for writing to the device:
         cdef size_t l = self.framesize + self.rowstride
         cdef uint8_t* buf = <uint8_t*> memalign(l)
         assert buf!=NULL, "failed to allocate temporary output buffer"
+
+        cdef Py_buffer py_buf[3]
+        for i in range(3):
+            if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+            min_len = input_strides[i]*(image.get_height()//divs[i][1])
+            assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+
+        cdef unsigned char *Ybuf = <unsigned char *> py_buf[0].buf 
+        cdef unsigned char *Ubuf = <unsigned char *> py_buf[1].buf
+        cdef unsigned char *Vbuf = <unsigned char *> py_buf[2].buf
+        cdef unsigned int Ystride = input_strides[0]
+        cdef unsigned int Ustride = input_strides[1]
+        cdef unsigned int Vstride = input_strides[2]
+        cdef unsigned int Yhdiv = divs[0][1]
+        cdef unsigned int Uhdiv = divs[1][1]
+        cdef unsigned int Vhdiv = divs[2][1]
+
         cdef size_t s
-        cdef int i
         try:
             with nogil:
                 memset(buf, 0, l)
@@ -479,6 +485,8 @@ cdef class Pusher:
                 i += s
                 s = Vstride*(self.height//Vhdiv)
                 memcpy(buf+i, Vbuf, s)
+            for i in range(3):
+                PyBuffer_Release(&py_buf[i])
             self.device.write(buf[:self.framesize])
             self.device.flush()
         finally:

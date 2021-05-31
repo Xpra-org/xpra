@@ -10,9 +10,9 @@ log = Logger("encoder", "x265")
 
 from xpra.util import envbool
 from xpra.codecs.codec_constants import video_spec
-from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
+from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.monotonic_time cimport monotonic_time
 
 
@@ -24,6 +24,10 @@ cdef extern from "stdint.h":
 cdef extern from "inttypes.h":
     pass
 
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "x265.h":
 
@@ -495,10 +499,6 @@ cdef class Encoder:
         cdef x265_picture *pic_in = NULL
         cdef int nal_size, frame_size = 0
 
-        cdef uint8_t *pic_buf = NULL
-        cdef Py_ssize_t pic_buf_len = 0
-        cdef char *out
-
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
@@ -508,6 +508,7 @@ cdef class Encoder:
         assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
 
+        cdef char *out
         cdef double start = monotonic_time()
         data = []
         log("x265.compress_image(%s, %s)", image, options)
@@ -524,6 +525,9 @@ cdef class Encoder:
                 data.append(out[:nal[i].sizeBytes])
                 log("x265 header[%s]: %s bytes", i, nal[i].sizeBytes)
 
+        cdef Py_buffer py_buf[3]
+        for i in range(3):
+            memset(&py_buf[i], 0, sizeof(Py_buffer))
         cdef x265_picture *pic_out = x265_picture_alloc()
         assert pic_out!=NULL, "failed to allocate output picture"
         try:
@@ -531,12 +535,10 @@ cdef class Encoder:
             assert pic_in!=NULL, "failed to allocate input picture"
             try:
                 x265_picture_init(self.param, pic_in)
-                assert pixels, "failed to get pixels from %s" % image
-                assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
-                assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
                 for i in range(3):
-                    assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
-                    pic_in.planes[i] = pic_buf
+                    if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                        raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                    pic_in.planes[i] = py_buf.buf
                     pic_in.stride[i] = istrides[i]
                 pic_in.pts = image.get_timestamp()-self.first_frame_timestamp
                 with nogil:
@@ -560,6 +562,9 @@ cdef class Encoder:
                 frame_size += nal_size
                 data.append(out[:nal_size])
         finally:
+            for i in range(3):
+                if py_buf[i].buf:
+                    PyBuffer_Release(&py_buf[i])
             x265_picture_free(pic_out)
         client_options = {
                 "csc"       : self.src_format,

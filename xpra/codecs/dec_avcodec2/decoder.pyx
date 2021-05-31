@@ -16,7 +16,7 @@ from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.buffers.membuf cimport memalign, object_as_buffer
+from xpra.buffers.membuf cimport memalign, buffer_context
 
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.stdlib cimport free
@@ -884,9 +884,7 @@ cdef class Decoder:
         for k,v in self.get_info().items():
             log.error("   %20s = %s", k, pv(v))
 
-    def decompress_image(self, input, options=None):
-        cdef const unsigned char * buf = NULL
-        cdef Py_ssize_t buf_len = 0
+    def decompress_image(self, data, options=None):
         cdef int size
         cdef int nplanes
         cdef AVPacket avpkt
@@ -901,10 +899,16 @@ cdef class Decoder:
             return None
 
         #copy the whole input buffer into a padded C buffer:
-        assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
-        cdef unsigned char * padded_buf = <unsigned char *> memalign(buf_len+128)
-        assert padded_buf!=NULL, "failed to allocate %i bytes of memory" % (buf_len+128)
-        memcpy(padded_buf, buf, buf_len)
+        cdef Py_ssize_t buf_len = 0
+        cdef unsigned char * padded_buf = NULL
+        cdef const void * src
+        with buffer_context(data) as bc:
+            buf_len = len(bc)
+            src = <const void*> (<uintptr_t> int(bc))
+            padded_buf = <unsigned char *> memalign(buf_len+128)
+            if padded_buf==NULL:
+                raise Exception("failed to allocate %i bytes of memory" % (buf_len+128))
+            memcpy(padded_buf, src, buf_len)
         memset(padded_buf+buf_len, 0, 128)
 
         #note: plain RGB output, will redefine those:

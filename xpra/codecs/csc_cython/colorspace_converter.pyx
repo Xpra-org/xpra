@@ -18,11 +18,14 @@ from xpra.codecs.codec_constants import csc_spec, get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 
 from libc.stdint cimport uint8_t, uintptr_t # pylint: disable=syntax-error
-from xpra.buffers.membuf cimport memalign, object_as_buffer
+from xpra.buffers.membuf cimport memalign, buffer_context
 
 
 cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "stdlib.h":
     void free(void *ptr)
@@ -504,8 +507,6 @@ cdef class ColorspaceConverter:
         return self.do_RGB_to_YUV420P(image, 4, RGBX_R, RGBX_G, RGBX_B)
 
     cdef do_RGB_to_YUV420P(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex):
-        cdef Py_ssize_t pic_buf_len = 0
-        cdef const unsigned char *input_image
         cdef const unsigned int *input_r210
         cdef unsigned int x,y,o
         cdef unsigned int sx, sy, ox, oy
@@ -519,7 +520,6 @@ cdef class ColorspaceConverter:
         cdef unsigned int input_stride = image.get_rowstride()
         log("do_RGB_to_YUV420P(%s, %i, %i, %i, %i) input=%s, strides=%s", image, Bpp, Rindex, Gindex, Bindex, len(pixels), input_stride)
 
-        assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
         #allocate output buffer:
         cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
         cdef unsigned char *Y = output_image + self.offsets[0]
@@ -538,6 +538,12 @@ cdef class ColorspaceConverter:
         #we process 4 pixels at a time:
         cdef unsigned int workw = roundup(dst_width//2, 2)
         cdef unsigned int workh = roundup(dst_height//2, 2)
+
+        cdef Py_buffer py_buf
+        if PyObject_GetBuffer(pixels, &py_buf, PyBUF_ANY_CONTIGUOUS):
+            raise Exception("failed to read pixel data from %s" % type(pixels))
+        cdef const unsigned char *input_image = <const unsigned char *> py_buf.buf
+
         #from now on, we can release the gil:
         if self.src_format=="r210":
             assert Bpp==4
@@ -607,6 +613,7 @@ cdef class ColorspaceConverter:
                             Bsum /= sum
                             U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
                             V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
+        PyBuffer_Release(&py_buf)
         return self.planar3_image_wrapper(<void *> output_image)
 
     cdef planar3_image_wrapper(self, void *buf, unsigned char bpp=24):
@@ -634,9 +641,6 @@ cdef class ColorspaceConverter:
         cdef unsigned int input_stride = image.get_rowstride()
         log("r210_to_YUV444P10(%s) input=%s, strides=%s", image, len(pixels), input_stride)
 
-        cdef const void *input_image
-        cdef Py_ssize_t pic_buf_len = 0
-        assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
         #allocate output buffer:
         cdef void *output_image = memalign(self.buffer_size)
         cdef unsigned short *Y = <unsigned short *> ((<uintptr_t> output_image) + self.offsets[0])
@@ -647,17 +651,20 @@ cdef class ColorspaceConverter:
         cdef unsigned int Ustride = self.dst_strides[1]
         cdef unsigned int Vstride = self.dst_strides[2]
 
-        if image.is_thread_safe():
-            with nogil:
-                r210_to_YUV444P10_copy(Y, U, V, <uintptr_t> input_image,
+        cdef uintptr_t buf
+        with buffer_context(pixels) as bc:
+            buf = <uintptr_t> int(bc)
+            if image.is_thread_safe():
+                with nogil:
+                    r210_to_YUV444P10_copy(Y, U, V, buf,
+                                           self.dst_width, self.dst_height,
+                                           Ystride, Ustride, Vstride,
+                                           input_stride)
+            else:
+                r210_to_YUV444P10_copy(Y, U, V, buf,
                                        self.dst_width, self.dst_height,
                                        Ystride, Ustride, Vstride,
                                        input_stride)
-        else:
-            r210_to_YUV444P10_copy(Y, U, V, <uintptr_t> input_image,
-                                   self.dst_width, self.dst_height,
-                                   Ystride, Ustride, Vstride,
-                                   input_stride)
         return self.planar3_image_wrapper(output_image)
 
     def YUV444P10_to_r210(self, image):
@@ -667,38 +674,39 @@ cdef class ColorspaceConverter:
         log("YUV444P10_to_r210(%s) strides=%s", image, input_strides)
 
         #copy to local variables:
-        cdef unsigned int Ystride = input_strides[0]
-        cdef unsigned int Ustride = input_strides[1]
-        cdef unsigned int Vstride = input_strides[2]
         cdef unsigned int width = self.dst_width
         cdef unsigned int height = self.dst_height
-
-        cdef Py_ssize_t buf_len = 0
-        cdef const unsigned short *Ybuf
-        cdef const unsigned short *Ubuf
-        cdef const unsigned short *Vbuf
-        assert object_as_buffer(planes[0], <const void **> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
-        assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
-        assert object_as_buffer(planes[1], <const void **> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
-        assert buf_len>=Ustride*image.get_height()//2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()//2)
-        assert object_as_buffer(planes[2], <const void **> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
-        assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//2)
 
         #allocate output buffer:
         cdef char *output_image = <char *> memalign(self.buffer_size)
         cdef unsigned int stride = self.dst_strides[0]
 
+        cdef const unsigned short *YUVbuf[3]
+        cdef unsigned int YUVstrides[3]
+        cdef Py_buffer py_buf[3]
+        cdef const unsigned short * YUV[3]
+        cdef int i
+        for i in range(3):
+            YUVstrides[i] = input_strides[i]
+            if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+            YUV[i] = <const unsigned short *> py_buf[i].buf
+            min_len = YUVstrides[i]*image.get_height()
+            assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+
         if image.is_thread_safe():
             with nogil:
-                YUV444P10_to_r210_copy(<uintptr_t> output_image, Ybuf, Ubuf, Vbuf,
+                YUV444P10_to_r210_copy(<uintptr_t> output_image, YUV[0], YUV[1], YUV[2],
                                        width, height,
                                        stride,
-                                       Ystride, Ustride, Vstride)
+                                       YUVstrides[0], YUVstrides[1], YUVstrides[2])
         else:
-            YUV444P10_to_r210_copy(<uintptr_t> output_image, Ybuf, Ubuf, Vbuf,
+            YUV444P10_to_r210_copy(<uintptr_t> output_image, YUV[0], YUV[1], YUV[2],
                                    width, height,
                                    stride,
-                                   Ystride, Ustride, Vstride)
+                                   YUVstrides[0], YUVstrides[1], YUVstrides[2])
+        for i in range(3):
+            PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(output_image, 30)
 
 
@@ -707,10 +715,6 @@ cdef class ColorspaceConverter:
         pixels = image.get_pixels()
         input_stride = image.get_rowstride()
         log("r210_to_BGR48(%s) input=%s, strides=%s", image, len(pixels), input_stride)
-
-        cdef Py_ssize_t pic_buf_len = 0
-        cdef const unsigned int *r210
-        assert object_as_buffer(pixels, <const void**> &r210, &pic_buf_len)==0
 
         #allocate output buffer:
         cdef unsigned short *bgr48 = <unsigned short*> memalign(self.dst_sizes[0])
@@ -721,11 +725,15 @@ cdef class ColorspaceConverter:
         cdef unsigned int dst_stride = self.dst_strides[0]
 
         assert (dst_stride%2)==0
-        if image.is_thread_safe():
-            with nogil:
+
+        cdef const unsigned int *r210
+        with buffer_context(pixels) as bc:
+            r210 = <const unsigned int*> (<uintptr_t> int(bc))
+            if image.is_thread_safe():
+                with nogil:
+                    r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
+            else:
                 r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
-        else:
-            r210_to_BGR48_copy(bgr48, r210, w, h, src_stride, dst_stride)
         return self.packed_image_wrapper(<char *> bgr48, 48)
 
     cdef packed_image_wrapper(self, char *buf, unsigned char bpp=24):
@@ -754,16 +762,17 @@ cdef class ColorspaceConverter:
         assert dst_stride>=w*4
         assert self.dst_sizes[0]>=dst_stride*h
 
-        cdef Py_ssize_t pic_buf_len[3]
-        cdef uintptr_t gbrp10[3]
-        cdef unsigned int i
-        for i in range(3):
-            assert object_as_buffer(pixels[i], <const void**> &gbrp10[i], &pic_buf_len[i])==0
-            assert pic_buf_len[i]>0, "invalid pixel buffer size: %i" % (pic_buf_len[i])
-            assert (<unsigned long> pic_buf_len[i])>=src_stride*h, "input plane '%s' is too small: %i bytes" % ("GBR"[i], pic_buf_len[i])
-
         #allocate output buffer:
         cdef unsigned int *r210 = <unsigned int*> memalign(self.dst_sizes[0])
+
+        cdef uintptr_t gbrp10[3]
+        cdef unsigned int i
+        cdef Py_buffer py_buf[3]
+        for i in range(3):
+            if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+            gbrp10[i] = <uintptr_t> py_buf[i].buf
+            assert (<unsigned long> py_buf[i].len)>=src_stride*h, "input plane '%s' is too small: %i bytes" % ("GBR"[i], py_buf[i].len)
 
         if image.is_thread_safe():
             with nogil:
@@ -774,6 +783,8 @@ cdef class ColorspaceConverter:
             gbrp10_to_r210_copy(<uintptr_t> r210, gbrp10,
                                 w, h,
                                 src_stride, dst_stride)
+        for i in range(3):
+            PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(<char *> r210, 30)
 
 
@@ -790,12 +801,8 @@ cdef class ColorspaceConverter:
         return self.do_YUV420P_to_RGB(image, 3, BGR_R, BGR_G, BGR_B, 0)
 
     cdef do_YUV420P_to_RGB(self, image, const uint8_t Bpp, const uint8_t Rindex, const uint8_t Gindex, const uint8_t Bindex, const uint8_t Xindex):
-        cdef Py_ssize_t buf_len = 0
         cdef unsigned int x,y,o
         cdef unsigned int sx, sy, ox, oy
-        cdef unsigned char *Ybuf
-        cdef unsigned char *Ubuf
-        cdef unsigned char *Vbuf
         cdef unsigned char dx, dy
         cdef short Y, U, V
 
@@ -804,25 +811,28 @@ cdef class ColorspaceConverter:
         input_strides = image.get_rowstride()
         log("do_YUV420P_to_RGB(%s) strides=%s", (image, Bpp, Rindex, Gindex, Bindex, Xindex), input_strides)
 
+        #allocate output buffer:
+        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
+
         #copy to local variables:
         cdef unsigned int stride = self.dst_strides[0]
-        cdef unsigned int Ystride = input_strides[0]
-        cdef unsigned int Ustride = input_strides[1]
-        cdef unsigned int Vstride = input_strides[2]
         cdef unsigned int src_width = self.src_width
         cdef unsigned int src_height = self.src_height
         cdef unsigned int dst_width = self.dst_width
         cdef unsigned int dst_height = self.dst_height
-
-        assert object_as_buffer(planes[0], <const void**> &Ybuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[0])
-        assert buf_len>=Ystride*image.get_height(), "buffer for Y plane is too small: %s bytes, expected at least %s" % (buf_len, Ystride*image.get_height())
-        assert object_as_buffer(planes[1], <const void**> &Ubuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[1])
-        assert buf_len>=Ustride*image.get_height()//2, "buffer for U plane is too small: %s bytes, expected at least %s" % (buf_len, Ustride*image.get_height()//2)
-        assert object_as_buffer(planes[2], <const void**> &Vbuf, &buf_len)==0, "failed to convert %s to a buffer" % type(planes[2])
-        assert buf_len>=Vstride*image.get_height()//2, "buffer for V plane is too small: %s bytes, expected at least %s" % (buf_len, Vstride*image.get_height()//2)
-
-        #allocate output buffer:
-        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
+        cdef unsigned int Ystride = input_strides[0]
+        cdef unsigned int Ustride = input_strides[1]
+        cdef unsigned int Vstride = input_strides[2]
+        cdef Py_buffer py_buf[3]
+        cdef int i
+        for i in range(3):
+            if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+            min_len = input_strides[i]*image.get_height()
+            assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+        cdef unsigned char *Ybuf = <unsigned char *> py_buf[0].buf
+        cdef unsigned char *Ubuf = <unsigned char *> py_buf[1].buf
+        cdef unsigned char *Vbuf = <unsigned char *> py_buf[2].buf
 
         #we process 4 pixels at a time:
         cdef unsigned int workw = roundup(dst_width//2, 2)
@@ -855,6 +865,8 @@ cdef class ColorspaceConverter:
                             output_image[o + Bindex] = clamp(BY * Y + BU * U + BV * V)
                             if Bpp==4:
                                 output_image[o + Xindex] = 255
+        for i in range(3):
+            PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(<char *> output_image, 24)
 
 
@@ -866,14 +878,10 @@ cdef class ColorspaceConverter:
 
     cdef do_RGBP_to_RGB(self, image, const uint8_t Rsrc, const uint8_t Gsrc, const uint8_t Bsrc,
                                      const uint8_t Rdst, const uint8_t Gdst, const uint8_t Bdst, const uint8_t Xdst):
-        cdef Py_ssize_t buf_len = 0             #
         cdef unsigned int x,y,o
         cdef unsigned int sx, sy
-        cdef unsigned char *Gbuf
         cdef unsigned char *Gptr
-        cdef unsigned char *Bbuf
         cdef unsigned char *Bptr
-        cdef unsigned char *Rbuf
         cdef unsigned char *Rptr
         cdef unsigned char sum
 
@@ -881,6 +889,9 @@ cdef class ColorspaceConverter:
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
         log("do_RGBP_to_RGB(%s) strides=%s", (image, Rsrc, Gsrc, Bsrc, Rdst, Gdst, Bdst, Xdst), input_strides)
+
+        #allocate output buffer:
+        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
 
         #copy to local variables:
         cdef unsigned int Rstride = input_strides[Rsrc]
@@ -891,16 +902,16 @@ cdef class ColorspaceConverter:
         cdef unsigned int src_height = self.src_height
         cdef unsigned int dst_width = self.dst_width
         cdef unsigned int dst_height = self.dst_height
-
-        assert object_as_buffer(planes[Rsrc], <const void**> &Rbuf, &buf_len)==0
-        assert buf_len>=Rstride*image.get_height(), "buffer for R plane is too small: %s bytes, expected at least %s" % (buf_len, Rstride*image.get_height())
-        assert object_as_buffer(planes[Gsrc], <const void**> &Gbuf, &buf_len)==0
-        assert buf_len>=Gstride*image.get_height(), "buffer for G plane is too small: %s bytes, expected at least %s" % (buf_len, Gstride*image.get_height())
-        assert object_as_buffer(planes[Bsrc], <const void**> &Bbuf, &buf_len)==0
-        assert buf_len>=Bstride*image.get_height(), "buffer for B plane is too small: %s bytes, expected at least %s" % (buf_len, Bstride*image.get_height())
-
-        #allocate output buffer:
-        cdef unsigned char *output_image = <unsigned char*> memalign(self.buffer_size)
+        cdef Py_buffer py_buf[3]
+        cdef int i
+        for i in range(3):
+            if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                raise Exception("failed to read pixel data from %s" % type(planes[i]))
+            min_len = input_strides[i]*image.get_height()
+            assert py_buf.len>=min_len, "buffer for G plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
+        cdef unsigned char *Gbuf = <unsigned char*> py_buf[Gsrc].buf
+        cdef unsigned char *Bbuf = <unsigned char*> py_buf[Bsrc].buf
+        cdef unsigned char *Rbuf = <unsigned char*> py_buf[Rsrc].buf
 
         #from now on, we can release the gil:
         with nogil:
@@ -917,6 +928,8 @@ cdef class ColorspaceConverter:
                     output_image[o+Bdst] = Bptr[sx]
                     output_image[o+Xdst] = 255
                     o += 4
+        for i in range(3):
+            PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(<char *> output_image, 24)
 
 

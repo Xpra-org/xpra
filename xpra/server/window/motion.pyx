@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ from xpra.util import envbool, repr_ellipsized, csv
 from xpra.log import Logger
 log = Logger("encoding", "scroll")
 
-from xpra.buffers.membuf cimport memalign, object_as_buffer, xxh3      #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, xxh3, buffer_context #pylint: disable=syntax-error
 from xpra.rectangle import rectangle
 
 
@@ -105,25 +105,27 @@ cdef class ScrollData:
         if self.a2:
             self.a1 = self.a2
             self.a2 = NULL
+        cdef size_t row_len = width*bpp
         #allocate new checksum array:
         assert self.a2==NULL
         cdef size_t asize = height*(sizeof(uint64_t))
         self.a2 = <uint64_t*> memalign(asize)
         assert self.a2!=NULL, "checksum memory allocation failed"
         #checksum each line of the pixel array:
-        cdef uint8_t *buf = NULL
-        cdef Py_ssize_t buf_len = 0
         cdef Py_ssize_t min_buf_len = rowstride*height
-        assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
-        assert buf_len>=0 and buf_len>=min_buf_len, "buffer length=%i is too small for %ix%i with rowstride %i, should be %i" % (buf_len, width, height, rowstride, min_buf_len)
-        cdef size_t row_len = width*bpp
-        assert row_len<=rowstride, "invalid row length: %ix%i=%i but rowstride is %i" % (width, bpp, width*bpp, rowstride)
         cdef uint64_t *a2 = self.a2
         cdef uint16_t i
-        with nogil:
-            for i in range(height):
-                a2[i] = <uint64_t> xxh3(buf, row_len)
-                buf += rowstride
+        cdef uint8_t *buf
+        with buffer_context(pixels) as bc:
+            buf = <uint8_t*> (<uintptr_t> int(bc))
+            assert len(bc)>=min_buf_len, "buffer length=%i is too small for %ix%i with rowstride %i, should be %i" % (
+                    len(bc), width, height, rowstride, min_buf_len)
+            assert row_len<=rowstride, "invalid row length: %ix%i=%i but rowstride is %i" % (width, bpp, width*bpp, rowstride)
+            with nogil:
+                for i in range(height):
+                    a2[i] = <uint64_t> xxh3(buf, row_len)
+                    buf += rowstride
+
 
     def calculate(self, uint16_t max_distance=1000):
         """

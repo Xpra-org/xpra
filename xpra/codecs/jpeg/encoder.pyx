@@ -8,7 +8,9 @@
 from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
-from xpra.buffers.membuf cimport makebuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
+from libc.stdint cimport uintptr_t
+from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: disable=syntax-error
+
 from xpra.net.compression import Compressed
 from xpra.os_util import bytestostr
 
@@ -96,11 +98,8 @@ def encode(image, int quality=50, int speed=50):
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
     cdef const unsigned char* buf
-    cdef Py_ssize_t buf_len
     pixels = image.get_pixels()
     pfstr = bytestostr(image.get_pixel_format())
-    assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
-    assert buf_len>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, buf_len, stride, height, stride*height)
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
         raise Exception("invalid pixel format %s" % pfstr)
@@ -117,13 +116,17 @@ def encode(image, int quality=50, int speed=50):
     cdef int flags = 0
     cdef unsigned char *out = NULL
     cdef unsigned long out_size = 0
-    cdef int r
+    cdef int r = -1
+    cdef const unsigned char * src
     log("jpeg: encode with subsampling=%s for pixel format=%s with quality=%s", TJSAMP_STR.get(subsamp, subsamp), pfstr, quality)
     try:
-        with nogil:
-            r = tjCompress2(compressor, buf,
-                            width, stride, height, tjpf, &out,
-                            &out_size, subsamp, quality, flags)
+        with buffer_context(pixels) as bc:
+            assert len(bc)>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, len(bc), stride, height, stride*height)
+            src = <const unsigned char *> (<uintptr_t> int(bc))
+            with nogil:
+                r = tjCompress2(compressor, src,
+                                width, stride, height, tjpf, &out,
+                                &out_size, subsamp, quality, flags)
         if r!=0:
             log.error("Error: failed to compress jpeg image, code %i:", r)
             log.error(" %s", get_error_str())

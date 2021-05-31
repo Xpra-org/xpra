@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,7 +15,6 @@ log = Logger("encoder", "vpx")
 from xpra.codecs.codec_constants import video_spec, get_subsampling_divs
 from xpra.os_util import bytestostr, WIN32, OSX, POSIX, BITS
 from xpra.util import AtomicInteger, envint, envbool, typedict
-from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t
 from libc.stdlib cimport free, malloc
@@ -58,6 +57,11 @@ DEF USAGE_CONSTANT_QUALITY      = 0x3
 
 DEF VPX_CODEC_USE_HIGHBITDEPTH = 0x40000
 
+
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "vpx/vpx_codec.h":
     ctypedef const void *vpx_codec_iter_t
@@ -585,8 +589,6 @@ cdef class Encoder:
     def compress_image(self, image, quality=-1, speed=-1, options=None):
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
-        cdef uint8_t *pic_buf = NULL
-        cdef Py_ssize_t pic_buf_len = 0
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
@@ -598,14 +600,8 @@ cdef class Encoder:
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
         cdef unsigned int Bpp = 1 + int(self.src_format.endswith("P10"))
         divs = get_subsampling_divs(self.src_format)
-        for i in range(3):
-            xdiv, ydiv = divs[i]
-            assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0
-            pic_in[i] = pic_buf
-            strides[i] = istrides[i]
-            assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
-            assert pic_buf_len>=istrides[i]*self.height//ydiv
         cdef unsigned long bandwidth_limit = typedict(options or {}).intget("bandwidth-limit", self.bandwidth_limit)
+
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()
@@ -613,12 +609,29 @@ cdef class Encoder:
             self.set_encoding_speed(speed)
         if quality>=0:
             self.set_encoding_quality(quality)
-        return self.do_compress_image(pic_in, strides), {
-            "csc"       : self.src_format,
-            "frame"     : int(self.frames),
-            #"quality"  : min(99+self.lossless, self.quality),
-            #"speed"    : self.speed,
-            }
+
+        cdef Py_buffer py_buf[3]
+        for i in range(3):
+            memset(&py_buf[i], 0, sizeof(Py_buffer))
+        try:
+            for i in range(3):
+                xdiv, ydiv = divs[i]
+                if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                    raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
+                assert py_buf.len>=istrides[i]*self.height//ydiv
+                pic_in[i] = <uint8_t *> py_buf.buf
+                strides[i] = istrides[i]
+            return self.do_compress_image(pic_in, strides), {
+                "csc"       : self.src_format,
+                "frame"     : int(self.frames),
+                #"quality"  : min(99+self.lossless, self.quality),
+                #"speed"    : self.speed,
+                }
+        finally:
+            for i in range(3):
+                if py_buf[i].buf:
+                    PyBuffer_Release(&py_buf[i])
 
     cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3]):
         #actual compression (no gil):

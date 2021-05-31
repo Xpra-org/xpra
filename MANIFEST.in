@@ -3,8 +3,6 @@ include xpra/monotonic_ctime.h
 include xpra/monotonic_ctime.c
 include xpra/buffers/memalign.h
 include xpra/buffers/memalign.c
-include xpra/buffers/buffers.h
-include xpra/buffers/buffers.c
 include xpra/buffers/xxhash.h
 include xpra/buffers/xxhash.c
 include xpra/buffers/xxh3.h

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,13 +11,13 @@ cdef MemBuf getbuf(size_t l)
 cdef MemBuf padbuf(size_t l, size_t padding)
 cdef MemBuf makebuf(void *p, size_t l)
 
+cdef buffer_context(object obj)
+
 ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 
 
 cdef void *memalign(size_t size) nogil
 
-
-cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil
 
@@ -31,3 +31,4 @@ cdef class MemBuf:
     cdef void *dealloc_cb_arg
 
     cdef const void *get_mem(self)
+

@@ -21,12 +21,14 @@ from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uintptr_t
 
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
+
 cdef extern from "memalign.h":
     void *xmemalign(size_t size) nogil
     int MEMALIGN_ALIGNMENT
-
-cdef extern from "buffers.h":
-    int _object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len)
 
 cdef extern from "xxhash.h":
     ctypedef unsigned long long XXH64_hash_t
@@ -54,10 +56,6 @@ cdef MemBuf makebuf(void *p, size_t l):
 
 cdef void *memalign(size_t size) nogil:
     return xmemalign(size)
-
-
-cdef int object_as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len):
-    return _object_as_buffer(obj, buffer, buffer_len)
 
 
 def get_membuf(size_t l):
@@ -101,6 +99,52 @@ cdef MemBuf MemBuf_init(const void *p, size_t l,
     ret.dealloc_cb_p = dealloc_cb_p
     ret.dealloc_cb_arg = dealloc_cb_arg
     return ret
+
+
+cdef class BufferContext:
+    cdef Py_buffer py_buf
+    cdef object obj
+    def __init__(self, obj):
+        self.obj = obj
+        memset(&self.py_buf, 0, sizeof(Py_buffer))
+    def __enter__(self):
+        assert self.obj
+        assert self.py_buf.buf==NULL
+        if PyObject_GetBuffer(self.obj, &self.py_buf, PyBUF_ANY_CONTIGUOUS):
+            raise Exception("failed to access buffer of %s" % type(self.obj))
+        return self
+    def __exit__(self, *_args):
+        assert self.py_buf.buf!=NULL
+        PyBuffer_Release(&self.py_buf)
+    def __int__(self):
+        assert self.py_buf.buf
+        return int(<uintptr_t> self.py_buf.buf)
+    def __len__(self):
+        return self.py_buf.len
+    def __repr__(self):
+        return "BufferContext(%s)" % self.obj
+
+cdef class MemBufContext:
+    def __init__(self, membuf):
+        assert isinstance(membuf, MemBuf), "%s is not a MemBuf instance: %s" % (membuf, type(membuf))
+        self.membuf = membuf
+    def __enter__(self):
+        return self
+    def __exit__(self, *_args):
+        self.membuf = None
+    def __int__(self):
+        return self.membuf.get_mem()
+    def __len__(self):
+        return len(self.membuf)
+    def __repr__(self):
+        return "MemBufContext(%s)" % self.membuf
+ 
+
+cdef buffer_context(object obj):
+    assert obj, "no buffer"
+    if isinstance(obj, MemBuf):
+        return MemBufContext(obj)
+    return BufferContext(obj)
 
 
 cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil:

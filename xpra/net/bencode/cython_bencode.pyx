@@ -13,7 +13,13 @@
 
 __version__ = (b"Cython", 4, 0)
 
-from xpra.buffers.membuf cimport object_as_buffer  #pylint: disable=syntax-error
+
+cdef extern from "Python.h":
+    object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
+
 
 import codecs
 def b(x):
@@ -116,14 +122,16 @@ cdef decode(const unsigned char *x, unsigned int f, size_t l, unsigned char *wha
 
 def bdecode(x):
     xs = b(x)
-    cdef const unsigned char *s = NULL
-    cdef Py_ssize_t l = 0
-    assert object_as_buffer(xs, <const void **> &s, &l)==0, "failed to convert %s to a buffer" % type(x)
     cdef unsigned int f = 0
+    cdef Py_buffer py_buf
+    if PyObject_GetBuffer(xs, &py_buf, PyBUF_ANY_CONTIGUOUS):
+        raise Exception("failed to access buffer of %s" % type(xs))
     try:
-        return decode(s, f, l, "bencoded string")
+        return decode(<const unsigned char*> py_buf.buf, f, py_buf.len, "bencoded string")
     except (IndexError, KeyError):
         raise ValueError
+    finally:
+        PyBuffer_Release(&py_buf)
 
 # Encoding functions:
 

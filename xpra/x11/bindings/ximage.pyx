@@ -7,7 +7,6 @@
 #cython: auto_pickle=False, language_level=3
 
 from xpra.os_util import bytestostr
-from xpra.buffers.membuf cimport object_as_buffer  #pylint: disable=syntax-error
 from xpra.monotonic_time cimport monotonic_time
 from xpra.x11.bindings.display_source import get_display_name
 from xpra.log import Logger
@@ -46,6 +45,9 @@ cdef inline unsigned int MIN(unsigned int a, unsigned int b):
 ###################################
 cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "stdlib.h":
     int posix_memalign(void **memptr, size_t alignment, size_t size)
@@ -449,16 +451,19 @@ cdef class XImageWrapper:
 
     def set_pixels(self, pixels):
         """ overrides the context of the image with the given pixels buffer """
-        cdef const unsigned char * buf = NULL
-        cdef Py_ssize_t buf_len = 0
-        assert object_as_buffer(pixels, <const void**> &buf, &buf_len)==0
         if self.pixels!=NULL:
             if not self.sub:
                 free(self.pixels)
             self.pixels = NULL
+
+        cdef Py_buffer py_buf
+        if PyObject_GetBuffer(pixels, &py_buf, PyBUF_ANY_CONTIGUOUS):
+            raise Exception("failed to read pixel data from %s" % type(pixels))
+
         #Note: we can't free the XImage, because it may
         #still be used somewhere else (see XShmWrapper)
-        if posix_memalign(<void **> &self.pixels, 64, buf_len):
+        if posix_memalign(<void **> &self.pixels, 64, py_buf.len):
+            PyBuffer_Release(&py_buf)
             raise Exception("posix_memalign failed!")
         assert self.pixels!=NULL
         #from now on, we own the buffer,
@@ -472,7 +477,8 @@ cdef class XImageWrapper:
             #which needs to be freed from the UI thread
             #but our new buffer is just a malloc buffer,
             #which is safe from any thread
-        memcpy(self.pixels, buf, buf_len)
+        memcpy(self.pixels, py_buf.buf, py_buf.len)
+        PyBuffer_Release(&py_buf)
 
 
     def free(self):

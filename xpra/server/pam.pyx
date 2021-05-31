@@ -14,10 +14,15 @@ from xpra.os_util import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer, sizeof
 
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
-from xpra.buffers.membuf cimport object_as_buffer
 
 ctypedef void* void_p  # @UndefinedVariable
 ctypedef const void* const_void_p  # @UndefinedVariable
+
+
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "errno.h" nogil:
     int errno
@@ -150,7 +155,7 @@ cdef class pam_session:
 
     def start(self, password=False) -> bool:
         cdef pam_conv conv
-        cdef Py_ssize_t buffer_len
+        cdef Py_buffer *view = NULL
 
         if self.pam_handle!=NULL:
             log.error("Error: cannot open the pam session more than once!")
@@ -159,11 +164,18 @@ cdef class pam_session:
         if password:
             conv.conv = <void_p> &password_conv
             assert self.password, "no password to use for pam_start"
-            assert object_as_buffer(self.password, <const_void_p*> &conv.appdata_ptr, &buffer_len)==0
+            if PyObject_GetBuffer(self.password, view, PyBUF_ANY_CONTIGUOUS):
+                raise Exception("failed to read password data")
+            conv.appdata_ptr = view.buf
         else:
             conv.conv = <void_p> misc_conv
             conv.appdata_ptr = NULL
-        cdef int r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
+        cdef int r = 0
+        try:
+            pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
+        finally:
+            if view!=NULL:
+                PyBuffer_Release(view)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL

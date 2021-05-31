@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ log = Logger("decoder", "jpeg")
 
 from xpra.util import envbool, reverse_dict
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport getbuf, MemBuf, object_as_buffer  #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t
 from xpra.monotonic_time cimport monotonic_time
@@ -20,6 +20,11 @@ LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)
 ctypedef int TJSAMP
 ctypedef int TJPF
 ctypedef int TJCS
+
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "turbojpeg.h":
     TJSAMP  TJSAMP_444
@@ -124,27 +129,29 @@ def get_error_str():
     return str(err)
 
 def decompress_to_yuv(data):
-    cdef const uint8_t *buf
-    cdef Py_ssize_t buf_len
-    assert object_as_buffer(data, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(data)
-
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
         raise Exception("failed to instantiate a JPEG decompressor")
 
+    cdef Py_buffer py_buf
+    if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
+        raise Exception("failed to read compressed data from %s" % type(data))
+
+    cdef int r, w, h, subsamp, cs
     def close():
+        PyBuffer_Release(&py_buf)
         r = tjDestroy(decompressor)
         if r:
             log.error("Error: failed to destroy the JPEG decompressor, code %i:", r)
             log.error(" %s", get_error_str())
 
-    cdef int r, w, h, subsamp, cs
     r = tjDecompressHeader3(decompressor,
-                            <const unsigned char *> buf, buf_len,
+                            <const unsigned char *> py_buf.buf, py_buf.len,
                             &w, &h, &subsamp, &cs)
     if r:
         close()
         raise Exception("failed to decompress JPEG header: %s" % get_error_str())
+
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
     log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s",
@@ -177,7 +184,7 @@ def decompress_to_yuv(data):
         start = monotonic_time()
         with nogil:
             r = tjDecompressToYUVPlanes(decompressor,
-                                        buf, buf_len,
+                                        <const unsigned char*> py_buf.buf, py_buf.len,
                                         planes, w, strides, h, flags)
         if r:
             raise Exception("failed to decompress %s JPEG data to YUV: %s" % (subsamp_str, get_error_str()))
@@ -194,14 +201,17 @@ def decompress_to_rgb(rgb_format, data):
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
     cdef const uint8_t *buf
-    cdef Py_ssize_t buf_len
-    assert object_as_buffer(data, <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer" % type(data)
 
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
         raise Exception("failed to instantiate a JPEG decompressor")
 
+    cdef Py_buffer py_buf
+    if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
+        raise Exception("failed to read compressed data from %s" % type(data))
+
     def close():
+        PyBuffer_Release(&py_buf)
         r = tjDestroy(decompressor)
         if r:
             log.error("Error: failed to destroy the JPEG decompressor, code %i:", r)
@@ -209,7 +219,7 @@ def decompress_to_rgb(rgb_format, data):
 
     cdef int r, w, h, subsamp, cs
     r = tjDecompressHeader3(decompressor,
-                            <const unsigned char *> buf, buf_len,
+                            <const unsigned char *> py_buf.buf, py_buf.len,
                             &w, &h, &subsamp, &cs)
     if r:
         close()
@@ -231,7 +241,7 @@ def decompress_to_rgb(rgb_format, data):
         dst_buf = <unsigned char*> membuf.get_mem()
         with nogil:
             r = tjDecompress2(decompressor,
-                              buf, buf_len, dst_buf,
+                              <const unsigned char *> py_buf.buf, py_buf.len, dst_buf,
                               w, stride, h, pixel_format, flags)
         if r:
             raise Exception("failed to decompress %s JPEG data to %s: %s" % (subsamp_str, rgb_format, get_error_str()))

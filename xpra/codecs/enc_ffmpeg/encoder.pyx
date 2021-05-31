@@ -17,8 +17,9 @@ from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
 from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
 from xpra.os_util import bytestostr, strtobytes, LINUX
-from xpra.buffers.membuf cimport memalign, object_as_buffer
+from xpra.buffers.membuf cimport memalign
 
+from libc.string cimport memset #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int64_t, uint64_t
 from libc.stdlib cimport free
 
@@ -29,6 +30,10 @@ THREAD_COUNT= envint("XPRA_FFMPEG_THREAD_COUNT")
 AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
 
 
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "libavutil/mem.h":
     void av_free(void *ptr)
@@ -1582,14 +1587,21 @@ cdef class Encoder:
             log.error("  %s = %s", k, v)
 
     def compress_image(self, image, int quality=-1, int speed=-1, options=None):
-        cdef const unsigned char * buf = NULL
-        cdef Py_ssize_t buf_len = 0
-        cdef int ret
+        cdef int ret, i
         cdef AVPacket avpkt
         cdef AVFrame *frame = NULL
         cdef AVFrame *hw_frame = NULL
+        cdef Py_buffer py_buf[4]
         assert self.video_ctx!=NULL, "no codec context! (not initialized or already closed)"
         assert self.video_codec!=NULL, "no video codec!"
+
+        for i in range(4):
+            memset(&py_buf[i], 0, sizeof(Py_buffer))
+
+        def release_buffers():
+            for i in range(4):
+                if py_buf[i].buf:
+                    PyBuffer_Release(&py_buf[i])
 
         if image:
             assert image.get_pixel_format()==self.src_format, "invalid input format %s, expected %s" % (image.get_pixel_format, self.src_format)
@@ -1605,9 +1617,10 @@ cdef class Encoder:
                 raise Exception(av_error_str(ret))
             for i in range(4):
                 if i<self.nplanes:
-                    assert object_as_buffer(pixels[i], <const void**> &buf, &buf_len)==0, "unable to convert %s to a buffer (plane=%s)" % (type(pixels[i]), i)
+                    if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                        raise Exception("failed to read pixel data from %s" % type(pixels[i]))
                     #log("plane %s: %i bytes (%ix%i stride=%i)", ["Y", "U", "V"][i], buf_len, self.width, self.height, istrides[i])
-                    self.av_frame.data[i] = <uint8_t *> buf
+                    self.av_frame.data[i] = <uint8_t *> py_buf.buf
                     self.av_frame.linesize[i] = istrides[i]
                 else:
                     self.av_frame.data[i] = NULL
@@ -1634,17 +1647,20 @@ cdef class Encoder:
             hw_frame = av_frame_alloc()
             log("av_frame_alloc()=%#x", <uintptr_t> hw_frame)
             if hw_frame==NULL:
+                release_buffers()
                 log.error("Error: failed to allocate a hw frame")
                 return None
             ret = av_hwframe_get_buffer(self.video_ctx.hw_frames_ctx, hw_frame, 0)
             log("av_frame_get_buffer(%#x, %#x, 0)=%i", <uintptr_t> self.video_ctx.hw_frames_ctx, <uintptr_t> hw_frame, ret)
             if ret<0 or hw_frame.hw_frames_ctx==NULL:
+                release_buffers()
                 log.error("Error: failed to allocate a hw buffer")
                 log.error(" %s", av_error_str(ret))
                 return None
             ret = av_hwframe_transfer_data(hw_frame, frame, 0)
             log("av_hwframe_transfer_data(%#x, %#x, 0)=%i", <uintptr_t> hw_frame, <uintptr_t> frame, ret)
             if ret<0:
+                release_buffers()
                 log.error("Error: failed to transfer frame data to surface")
                 log.error(" %s", av_error_str(ret))
                 return None
@@ -1652,6 +1668,7 @@ cdef class Encoder:
         log("compress_image%s avcodec_send_frame frame=%#x", (image, quality, speed, options), <uintptr_t> frame)
         with nogil:
             ret = avcodec_send_frame(self.video_ctx, frame)
+        release_buffers()
         if ret!=0:
             self.log_av_error(image, ret, options)
             raise Exception("%i: %s" % (ret, av_error_str(ret)))

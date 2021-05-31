@@ -14,8 +14,8 @@ from xpra.util import envint, envbool, csv, typedict, AtomicInteger
 from xpra.os_util import bytestostr, strtobytes
 from xpra.codecs.codec_constants import video_spec
 from collections import deque
-from xpra.buffers.membuf cimport object_as_buffer   #pylint: disable=syntax-error
 
+from libc.string cimport memset
 from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
@@ -34,6 +34,10 @@ BLANK_VIDEO = envbool("XPRA_X264_BLANK_VIDEO")
 
 FAST_DECODE_MIN_SPEED = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char * format, va_list arg)
@@ -818,8 +822,6 @@ cdef class Encoder:
 
     def compress_image(self, image, int quality=-1, int speed=-1, options=None):
         cdef x264_picture_t pic_in
-        cdef uint8_t *pic_buf
-        cdef Py_ssize_t pic_buf_len = 0
         cdef int i
 
         assert image.get_width()>=self.width
@@ -850,30 +852,39 @@ cdef class Encoder:
         istrides = image.get_rowstride()
 
         x264_picture_init(&pic_in)
+        cdef Py_buffer py_buf[3]
+        for i in range(3):
+            pic_in.img.plane[i] = NULL
+            pic_in.img.i_stride[i] = 0
+            memset(&py_buf[i], 0, sizeof(Py_buffer))
 
-        if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
-            assert len(pixels)>0
-            assert istrides>0
-            assert object_as_buffer(pixels, <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer" % type(pixels)
-            pic_in.img.plane[0] = pic_buf
-            pic_in.img.i_stride[0] = istrides
-            for i in range(1, 3):
-                pic_in.img.plane[i] = NULL
-                pic_in.img.i_stride[i] = 0
-            self.bytes_in += pic_buf_len
-            pic_in.img.i_plane = 1
-        else:
-            assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
-            assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
+        try:
+            if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
+                assert len(pixels)>0
+                assert istrides>0
+                if PyObject_GetBuffer(pixels, &py_buf[0], PyBUF_ANY_CONTIGUOUS):
+                    raise Exception("failed to read pixel data from %s" % type(pixels))
+                pic_in.img.plane[0] = <uint8_t*> py_buf.buf
+                pic_in.img.i_stride[0] = istrides
+                self.bytes_in += py_buf.len
+                pic_in.img.i_plane = 1
+            else:
+                assert len(pixels)==3, "image pixels does not have 3 planes! (found %s)" % len(pixels)
+                assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
+                for i in range(3):
+                    if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                        raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                    pic_in.img.plane[i] = <uint8_t*> py_buf.buf
+                    pic_in.img.i_stride[i] = istrides[i]
+                    self.bytes_in += py_buf.len
+                pic_in.img.i_plane = 3
+            pic_in.img.i_csp = self.colorspace
+            pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
+            return self.do_compress_image(&pic_in, quality, speed)
+        finally:
             for i in range(3):
-                assert object_as_buffer(pixels[i], <const void**> &pic_buf, &pic_buf_len)==0, "unable to convert %s to a buffer (plane=%s)" % (type(pixels[i]), i)
-                pic_in.img.plane[i] = pic_buf
-                pic_in.img.i_stride[i] = istrides[i]
-            pic_in.img.i_plane = 3
-
-        pic_in.img.i_csp = self.colorspace
-        pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
-        return self.do_compress_image(&pic_in, quality, speed)
+                if py_buf[i].buf:
+                    PyBuffer_Release(&py_buf[i])
 
     cdef do_compress_image(self, x264_picture_t *pic_in, int quality=-1, int speed=-1):
         cdef x264_nal_t *nals = NULL

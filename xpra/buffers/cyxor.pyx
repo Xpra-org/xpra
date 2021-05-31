@@ -1,34 +1,48 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False, boundscheck=False, language_level=3
 
 from libc.stdint cimport uint32_t, uintptr_t  #pylint: disable=syntax-error
-from xpra.buffers.membuf cimport getbuf, object_as_buffer, MemBuf
-from libc.string cimport memcpy
+from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context
+from libc.string cimport memcpy, memset
+
+
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 
 def xor_str(a, b):
     assert len(a)==len(b), "cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b))
-    cdef Py_ssize_t alen = 0, blen = 0
-    cdef uintptr_t ap
-    cdef uintptr_t bp
-    cdef uintptr_t op
-    assert object_as_buffer(a, <const void **> &ap, &alen)==0, "cannot get buffer pointer for %s" % type(a)
-    assert object_as_buffer(b, <const void **> &bp, &blen)==0, "cannot get buffer pointer for %s" % type(b)
-    assert alen == blen, "python or cython bug? buffers don't have the same length?"
+    cdef Py_buffer py_bufa
+    memset(&py_bufa, 0, sizeof(Py_buffer))
+    if PyObject_GetBuffer(a, &py_bufa, PyBUF_ANY_CONTIGUOUS):
+        raise Exception("failed to read pixel data from %s" % type(a))
+    cdef Py_buffer py_bufb
+    memset(&py_bufb, 0, sizeof(Py_buffer))
+    if PyObject_GetBuffer(b, &py_bufb, PyBUF_ANY_CONTIGUOUS):
+        PyBuffer_Release(&py_bufa)
+        raise Exception("failed to read pixel data from %s" % type(b))
+    cdef Py_ssize_t alen = py_bufa.len
+    cdef Py_ssize_t blen = py_bufb.len
+    if alen!=blen:
+        PyBuffer_Release(&py_bufa)
+        PyBuffer_Release(&py_bufb)
+        raise Exception("python or cython bug? buffers don't have the same length?")
     cdef MemBuf out_buf = getbuf(alen)
-    op = <uintptr_t> out_buf.get_mem()
-    cdef unsigned char *acbuf = <unsigned char *> ap
-    cdef unsigned char *bcbuf = <unsigned char *> bp
+    cdef uintptr_t op = <uintptr_t> out_buf.get_mem()
+    cdef unsigned char *acbuf = <unsigned char *> py_bufa.buf
+    cdef unsigned char *bcbuf = <unsigned char *> py_bufb.buf
     cdef unsigned char *ocbuf = <unsigned char *> op
     cdef uint32_t *obuf = <uint32_t*> op
-    cdef uint32_t *abuf = <uint32_t*> ap
-    cdef uint32_t *bbuf = <uint32_t*> bp
+    cdef uint32_t *abuf = <uint32_t*> py_bufa.buf
+    cdef uint32_t *bbuf = <uint32_t*> py_bufb.buf
     cdef unsigned int i, j, steps, char_steps
-    if (ap % 4)!=0 or (bp % 4)!=0:
+    if (alen % 4)!=0 or (blen % 4)!=0:
         #unaligned access, use byte at a time slow path:
         char_steps = alen
         for 0 <= i < char_steps:
@@ -45,35 +59,32 @@ def xor_str(a, b):
             for 0 <= i < char_steps:
                 j = alen-char_steps+i
                 ocbuf[j] = acbuf[j] ^ bcbuf[j]
+    PyBuffer_Release(&py_bufa)
+    PyBuffer_Release(&py_bufb)
     return memoryview(out_buf)
 
 
 def hybi_unmask(data, unsigned int offset, unsigned int datalen):
-    cdef Py_ssize_t mlen = 0, dlen = 0
-    cdef uintptr_t mp, dp, op
-    cdef uintptr_t buf
-    assert object_as_buffer(data, <const void **> &buf, &dlen)==0, "cannot get buffer pointer for %s" % type(data)
-    assert (<unsigned int> dlen)>=offset+4+datalen, "buffer too small %i vs %i: offset=%i, datalen=%i" % (dlen, offset+4+datalen, offset, datalen)
-    mp = buf+offset
-    dp = buf+offset+4
-    return do_hybi_mask(mp, dp, datalen)
+    cdef uintptr_t mp
+    with buffer_context(data) as bc:
+        assert len(bc)>=offset+4+datalen, "buffer too small %i vs %i: offset=%i, datalen=%i" % (len(bc), offset+4+datalen, offset, datalen)
+        mp = (<uintptr_t> int(bc))+offset
+        return do_hybi_mask(mp, mp+4, datalen)
 
 def hybi_mask(mask, data):
-    cdef Py_ssize_t mlen = 0, dlen = 0
-    cdef uintptr_t mp, dp
-    assert object_as_buffer(data, <const void **> &dp, &dlen)==0, "cannot get buffer pointer for data %s" % type(data)
-    assert object_as_buffer(mask, <const void **> &mp, &mlen)==0, "cannot get buffer pointer for mask %s" % type(mask)
-    assert (<unsigned int> mlen)>=4, "mask buffer too small"
-    return do_hybi_mask(mp, dp, dlen)
+    with buffer_context(mask) as mbc:
+        if len(mbc)<4:
+            raise Exception("mask buffer too small: %i bytes" % len(mbc))
+        with buffer_context(data) as dbc:
+            return do_hybi_mask(<uintptr_t> int(mbc), <uintptr_t> int(dbc), len(dbc))
 
 cdef object do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
-    cdef uintptr_t op
     #we skip the first 'align' bytes in the output buffer,
     #to ensure that its alignment is the same as the input data buffer
     cdef unsigned int align = (<uintptr_t> dp) & 0x3
     cdef unsigned int initial_chars = (4-align) & 0x3
     cdef MemBuf out_buf = getbuf(datalen+align)
-    op = <uintptr_t> out_buf.get_mem()
+    cdef uintptr_t op = <uintptr_t> out_buf.get_mem()
     #char pointers:
     cdef unsigned char *mcbuf = <unsigned char *> mp
     cdef unsigned char *dcbuf = <unsigned char *> dp

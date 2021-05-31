@@ -13,11 +13,17 @@ from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
-from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer
+from xpra.buffers.membuf cimport padbuf, MemBuf
 
+from libc.string cimport memset #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t
 from xpra.monotonic_time cimport monotonic_time
 
+
+cdef extern from "Python.h":
+    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
+    void PyBuffer_Release(Py_buffer *view)
+    int PyBUF_ANY_CONTIGUOUS
 
 ctypedef long AVPixelFormat
 cdef extern from "libavcodec/version.h":
@@ -396,7 +402,6 @@ cdef class ColorspaceConverter:
 
 
     def convert_image(self, image):
-        cdef Py_ssize_t pic_buf_len = 0
         assert self.context!=NULL
         cdef const uint8_t *input_image[4]
         cdef uint8_t *output_image[4]
@@ -425,16 +430,6 @@ cdef class ColorspaceConverter:
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert len(planes)==iplanes, "expected %s planes but found %s" % (iplanes, len(pixels))
         assert len(strides)==iplanes, "expected %s rowstrides but found %s" % (iplanes, len(strides))
-        for i in range(4):
-            if i<iplanes:
-                input_stride[i] = strides[i]
-                assert object_as_buffer(planes[i], <const void**> &input_image[i], &pic_buf_len)==0
-            else:
-                #some versions of swscale check all 4 planes
-                #even when we only pass 1! see "check_image_pointers"
-                #(so we just copy the last valid plane in the remaining slots - ugly!)
-                input_stride[i] = input_stride[iplanes-1]
-                input_image[i] = input_image[iplanes-1]
 
         #allocate the output buffer(s):
         output_buf = []
@@ -447,11 +442,33 @@ cdef class ColorspaceConverter:
             else:
                 #the buffer may not be used, but is not allowed to be NULL:
                 output_image[i] = output_image[0]
+
+        cdef Py_buffer py_buf[4]
+        for i in range(4):
+            memset(&py_buf[i], 0, sizeof(Py_buffer))
         cdef int result
-        with nogil:
-            result = sws_scale(self.context, input_image, input_stride, 0, self.src_height, output_image, self.out_stride)
-        assert result!=0, "sws_scale failed!"
-        assert result==self.dst_height, "invalid output height: %s, expected %s" % (result, self.dst_height)
+        try:
+            for i in range(4):
+                #set input pointers
+                if i<iplanes:
+                    input_stride[i] = strides[i]
+                    if PyObject_GetBuffer(planes[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
+                        raise Exception("failed to read pixel data from %s" % type(pixels[i]))
+                    input_image[i] = <const uint8_t*> py_buf[i].buf
+                else:
+                    #some versions of swscale check all 4 planes
+                    #even when we only pass 1! see "check_image_pointers"
+                    #(so we just copy the last valid plane in the remaining slots - ugly!)
+                    input_stride[i] = input_stride[iplanes-1]
+                    input_image[i] = input_image[iplanes-1]
+            with nogil:
+                result = sws_scale(self.context, input_image, input_stride, 0, self.src_height, output_image, self.out_stride)
+            assert result!=0, "sws_scale failed!"
+            assert result==self.dst_height, "invalid output height: %s, expected %s" % (result, self.dst_height)
+        finally:
+            for i in range(4):
+                if py_buf[i].buf:
+                    PyBuffer_Release(&py_buf[i])
         #now parse the output:
         cdef int oplanes
         if self.dst_format.endswith("P"):

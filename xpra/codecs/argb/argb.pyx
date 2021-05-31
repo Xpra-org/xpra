@@ -7,26 +7,16 @@
 #cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
 from xpra.util import first_time
-from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf #pylint: disable=syntax-error
-from xpra.buffers.membuf cimport object_as_buffer
+from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
+from libc.string cimport memset
 
 import struct
 from xpra.log import Logger
 log = Logger("encoding")
 
 assert sizeof(int) == 4
-
-
-cdef int as_buffer(object obj, const void ** buffer, Py_ssize_t * buffer_len) except -1:
-    cdef size_t l
-    if isinstance(obj, MemBuf):
-        buffer[0] = <const void*> (<MemBuf> obj).get_mem()
-        l = len(obj)
-        buffer_len[0] = <Py_ssize_t> l
-        return 0
-    return object_as_buffer(obj, buffer, buffer_len)
 
 
 cdef inline unsigned char clamp(int v):
@@ -37,11 +27,10 @@ cdef inline unsigned char clamp(int v):
 
 def bgr565_to_rgbx(buf):
     assert len(buf) % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % len(buf)
-    # buf is a Python buffer object
-    cdef const uint16_t* cbuf = <const uint16_t*> 0
-    cdef Py_ssize_t cbuf_len = 0
-    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return bgr565data_to_rgbx(cbuf, cbuf_len)
+    cdef const uint16_t *rgb565
+    with buffer_context(buf) as bc:
+        rgb565 = <const uint16_t*> (<uintptr_t> int(bc))
+        return bgr565data_to_rgbx(rgb565, len(bc))
 
 cdef bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
@@ -59,11 +48,10 @@ cdef bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
 
 def bgr565_to_rgb(buf):
     assert len(buf) % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % len(buf)
-    # buf is a Python buffer object
-    cdef const uint16_t* cbuf = <const uint16_t*> 0
-    cdef Py_ssize_t cbuf_len = 0
-    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return bgr565data_to_rgb(cbuf, cbuf_len)
+    cdef const uint16_t* rgb565
+    with buffer_context(buf) as bc:
+        rgb565 = <const uint16_t*> (<uintptr_t> int(bc))
+        return bgr565data_to_rgb(rgb565, len(bc))
 
 cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
@@ -86,16 +74,13 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
 def r210_to_rgba(buf,
                  const unsigned int w, const unsigned int h,
                  const unsigned int src_stride, const unsigned int dst_stride):
-    assert buf, "no buffer"
     assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
     assert w*4<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
-    # buf is a Python buffer object
-    cdef unsigned int* cbuf = <unsigned int *> 0
-    cdef Py_ssize_t cbuf_len = 0
-    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
-    assert <unsigned int> cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
-    return r210data_to_rgba(cbuf, w, h, src_stride, dst_stride)
+    cdef unsigned int* r210
+    with buffer_context(buf) as bc:
+        assert len(bc)>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
+        r210 = <unsigned int*> (<uintptr_t> int(bc))
+        return r210data_to_rgba(r210, w, h, src_stride, dst_stride)
 
 cdef r210data_to_rgba(unsigned int* r210,
                       const unsigned int w, const unsigned int h,
@@ -124,13 +109,11 @@ def r210_to_rgbx(buf,
     assert buf, "no buffer"
     assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
     assert w*4<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
-    # buf is a Python buffer object
-    cdef unsigned int* cbuf = <unsigned int *> 0
-    cdef Py_ssize_t cbuf_len = 0
-    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
-    assert <unsigned int> cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
-    return r210data_to_rgbx(cbuf, w, h, src_stride, dst_stride)
+    cdef unsigned int* r210
+    with buffer_context(buf) as bc:
+        assert len(bc)>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
+        r210 = <unsigned int*> (<uintptr_t> int(bc))
+        return r210data_to_rgbx(r210, w, h, src_stride, dst_stride)
 
 cdef r210data_to_rgbx(unsigned int* r210,
                       const unsigned int w, const unsigned int h,
@@ -159,13 +142,11 @@ def r210_to_rgb(buf,
     assert buf, "no buffer"
     assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
     assert w*3<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
-    # buf is a Python buffer object
-    cdef unsigned int* cbuf = <unsigned int *> 0
-    cdef Py_ssize_t cbuf_len = 0
-    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    assert cbuf_len>0, "invalid buffer size: %i" % cbuf_len
-    assert <unsigned int> cbuf_len>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (cbuf_len, src_stride, h)
-    return r210data_to_rgb(cbuf, w, h, src_stride, dst_stride)
+    cdef unsigned int* r210
+    with buffer_context(buf) as bc:
+        assert len(bc)>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
+        r210 = <unsigned int*> (<uintptr_t> int(bc))
+        return r210data_to_rgb(r210, w, h, src_stride, dst_stride)
 
 #white:  3fffffff
 #red:    3ff00000
@@ -194,11 +175,10 @@ cdef r210data_to_rgb(unsigned int* r210,
 
 def argb_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    # buf is a Python buffer object
-    cdef const unsigned char * cbuf = <unsigned char *> 0
-    cdef Py_ssize_t cbuf_len = 0
-    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return argbdata_to_rgba(cbuf, cbuf_len)
+    cdef const unsigned char* argb
+    with buffer_context(buf) as bc:
+        argb = <const unsigned char*> (<uintptr_t> int(bc))
+        return argbdata_to_rgba(argb, len(bc))
 
 cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
     if argb_len <= 0:
@@ -218,11 +198,10 @@ cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
 
 def argb_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    # buf is a Python buffer object
-    cdef unsigned char * cbuf = <unsigned char *> 0     #@DuplicateSignature
-    cdef Py_ssize_t cbuf_len = 0                        #@DuplicateSignature
-    assert as_buffer(buf, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return argbdata_to_rgb(cbuf, cbuf_len)
+    cdef const unsigned char* argb
+    with buffer_context(buf) as bc:
+        argb = <const unsigned char*> (<uintptr_t> int(bc))
+        return argbdata_to_rgb(argb, len(bc))
 
 cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
     if argb_len <= 0:
@@ -245,11 +224,10 @@ cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
 
 def bgra_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    # buf is a Python buffer object
-    cdef unsigned char * bgra_buf = NULL    #@DuplicateSignature
-    cdef Py_ssize_t bgra_buf_len = 0        #@DuplicateSignature
-    assert as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return bgradata_to_rgb(bgra_buf, bgra_buf_len)
+    cdef const unsigned char* bgra
+    with buffer_context(buf) as bc:
+        bgra = <const unsigned char*> (<uintptr_t> int(bc))
+        return bgradata_to_rgb(bgra, len(bc))
 
 cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
     if bgra_len <= 0:
@@ -271,11 +249,10 @@ cdef bgradata_to_rgb(const unsigned char* bgra, const int bgra_len):
 
 def bgra_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    # buf is a Python buffer object
-    cdef unsigned char * bgra_buf2 = NULL
-    cdef Py_ssize_t bgra_buf_len2 = 0
-    assert as_buffer(buf, <const void**> &bgra_buf2, &bgra_buf_len2)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return bgradata_to_rgba(bgra_buf2, bgra_buf_len2)
+    cdef const unsigned char* bgra
+    with buffer_context(buf) as bc:
+        bgra = <const unsigned char*> (<uintptr_t> int(bc))
+        return bgradata_to_rgba(bgra, len(bc))
 
 cdef bgradata_to_rgba(const unsigned char* bgra, const int bgra_len):
     if bgra_len <= 0:
@@ -300,11 +277,10 @@ def rgba_to_bgra(buf):
 
 def bgra_to_rgbx(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    # buf is a Python buffer object
-    cdef unsigned char * bgra_buf = NULL
-    cdef Py_ssize_t bgra_buf_len = 0
-    assert as_buffer(buf, <const void**> &bgra_buf, &bgra_buf_len)==0, "cannot convert %s to a readable buffer" % type(buf)
-    return bgradata_to_rgbx(bgra_buf, bgra_buf_len)
+    cdef const unsigned char* bgra
+    with buffer_context(buf) as bc:
+        bgra = <const unsigned char*> (<uintptr_t> int(bc))
+        return bgradata_to_rgbx(bgra, len(bc))
 
 cdef bgradata_to_rgbx(const unsigned char* bgra, const int bgra_len):
     if bgra_len <= 0:
@@ -326,12 +302,12 @@ cdef bgradata_to_rgbx(const unsigned char* bgra, const int bgra_len):
 
 
 def premultiply_argb(buf):
-    # b is a Python buffer object
-    cdef unsigned int * argb = <unsigned int *> 0   #@DuplicateSignature
-    cdef Py_ssize_t argb_len = 0                    #@DuplicateSignature
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert as_buffer(buf, <const void **>&argb, &argb_len)==0
-    return do_premultiply_argb(argb, argb_len)
+    # b is a Python buffer object
+    cdef unsigned int *argb
+    with buffer_context(buf) as bc:
+        argb = <unsigned int*> (<uintptr_t> int(bc))
+        return do_premultiply_argb(argb, len(bc))
 
 cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
     # cbuf contains non-premultiplied ARGB32 data in native-endian.
@@ -356,12 +332,11 @@ cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
 
 
 def unpremultiply_argb(buf):
-    # b is a Python buffer object
-    cdef unsigned int * argb = <unsigned int *> 0   #@DuplicateSignature
-    cdef Py_ssize_t argb_len = 0                    #@DuplicateSignature
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
-    assert as_buffer(buf, <const void **>&argb, &argb_len)==0
-    return do_unpremultiply_argb(argb, argb_len)
+    cdef unsigned int *argb
+    with buffer_context(buf) as bc:
+        argb = <unsigned int*> (<uintptr_t> int(bc))
+        return do_unpremultiply_argb(argb, len(bc))
 
 
 #precalculate indexes in native endianness:

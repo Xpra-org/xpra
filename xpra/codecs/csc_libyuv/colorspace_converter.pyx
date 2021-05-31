@@ -11,7 +11,7 @@ log = Logger("csc", "libyuv")
 
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, object_as_buffer #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context   #pylint: disable=syntax-error
 
 from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport uint8_t, uintptr_t
@@ -156,8 +156,6 @@ class YUVImageWrapper(ImageWrapper):
             free(<void *> buf)
 
 def argb_to_gray(image):
-    cdef Py_ssize_t pic_buf_len = 0
-    cdef const uint8_t *input_image
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
     cdef int stride = image.get_rowstride()
@@ -165,18 +163,20 @@ def argb_to_gray(image):
     cdef int height = image.get_height()
     assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
     assert pixels, "failed to get pixels from %s" % image
-    assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
     #allocate output buffer:
     cdef int dst_stride = width*4
     cdef MemBuf output_buffer = getbuf(dst_stride*height)
     if not output_buffer:
         raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
-    cdef int result
-    with nogil:
-        result = ARGBGrayTo(input_image, stride,
-                            buf, dst_stride,
-                            width, height)
+    cdef int result = -1
+    cdef const uint8_t* src
+    with buffer_context(pixels) as bc:
+        src = <const uint8_t *> (<uintptr_t> int(bc))
+        with nogil:
+            result = ARGBGrayTo(src, stride,
+                                buf, dst_stride,
+                                width, height)
     assert result==0, "libyuv BGRAToI420 failed and returned %i" % result
     out = memoryview(output_buffer)
     gray_image = ImageWrapper(0, 0, width, height, out, image.get_pixel_format(), 24, dst_stride, image.get_bytesperpixel(), ImageWrapper.PACKED)
@@ -185,8 +185,6 @@ def argb_to_gray(image):
 
 
 def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilterNone):
-    cdef Py_ssize_t pic_buf_len = 0
-    cdef const uint8_t *input_image
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
     cdef int stride = image.get_rowstride()
@@ -196,19 +194,21 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
     assert bpp in (3, 4), "invalid bytes per pixel: %s" % bpp
     assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
     assert pixels, "failed to get pixels from %s" % image
-    assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
     #allocate output buffer:
     cdef int dst_stride = dst_width*4
     cdef MemBuf output_buffer = getbuf(dst_stride*dst_height)
     if not output_buffer:
         raise Exception("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
-    cdef int result
-    with nogil:
-        result = ARGBScale(input_image,
-                           stride, width, height,
-                           buf, dst_stride, dst_width, dst_height,
-                           filtermode)
+    cdef int result = -1
+    cdef const uint8_t* src
+    with buffer_context(pixels) as bc:
+        src = <const uint8_t *> (<uintptr_t> int(bc))
+        with nogil:
+            result = ARGBScale(src,
+                               stride, width, height,
+                               buf, dst_stride, dst_width, dst_height,
+                               filtermode)
     assert result==0, "libyuv ARGBScale failed and returned %i" % result
     out = memoryview(output_buffer)
     scaled_image = ImageWrapper(0, 0, dst_width, dst_height, out, image.get_pixel_format(), 24, dst_stride, bpp, ImageWrapper.PACKED)
@@ -390,13 +390,12 @@ cdef class ColorspaceConverter:
 
 
     def convert_image(self, image):
-        cdef Py_ssize_t pic_buf_len = 0
         cdef const uint8_t *input_image
         cdef uint8_t *output_buffer
         cdef uint8_t *out_planes[3]
         cdef uint8_t *scaled_buffer
         cdef uint8_t *scaled_planes[3]
-        cdef int i, result
+        cdef int i
         cdef double start = monotonic_time()
         cdef int iplanes = image.get_planes()
         assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
@@ -412,8 +411,6 @@ cdef class ColorspaceConverter:
         cdef int stride = image.get_rowstride()
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
-        #get pointer to input:
-        assert object_as_buffer(pixels, <const void**> &input_image, &pic_buf_len)==0
         if self.yuv_scaling:
             #re-use the same temporary buffer every time:
             output_buffer = self.output_buffer
@@ -425,18 +422,23 @@ cdef class ColorspaceConverter:
         for i in range(self.planes):
             #offsets are aligned, so this is safe and gives us aligned pointers:
             out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
-        with nogil:
-            if self.planes==2:
-                result = ARGBToNV12(input_image, stride,
-                                    out_planes[0], self.out_stride[0],
-                                    out_planes[1], self.out_stride[1],
-                                    width, height)
-            else:
-                result = ARGBToI420(input_image, stride,
-                                    out_planes[0], self.out_stride[0],
-                                    out_planes[1], self.out_stride[1],
-                                    out_planes[2], self.out_stride[2],
-                                    width, height)
+        #get pointer to input:
+        cdef int result = -1
+        cdef const uint8_t* src
+        with buffer_context(pixels) as bc:
+            src = <const uint8_t*> (<uintptr_t> int(bc))
+            with nogil:
+                if self.planes==2:
+                    result = ARGBToNV12(src, stride,
+                                        out_planes[0], self.out_stride[0],
+                                        out_planes[1], self.out_stride[1],
+                                        width, height)
+                else:
+                    result = ARGBToI420(src, stride,
+                                        out_planes[0], self.out_stride[0],
+                                        out_planes[1], self.out_stride[1],
+                                        out_planes[2], self.out_stride[2],
+                                        width, height)
         assert result==0, "libyuv BGRAToI420/NV12 failed and returned %i" % result
         cdef double elapsed = monotonic_time()-start
         log("libyuv.ARGBToI420/NV12 took %.1fms", 1000.0*elapsed)

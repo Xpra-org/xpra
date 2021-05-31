@@ -1791,10 +1791,9 @@ if annotate_ENABLED:
 
 
 #*******************************************************************************
-buffers_c = "xpra/buffers/buffers.c"
 memalign_c = "xpra/buffers/memalign.c"
 xxhash_c = "xpra/buffers/xxhash.c"
-membuffers_c = [memalign_c, buffers_c, xxhash_c]
+membuffers_c = [memalign_c, xxhash_c]
 
 if modules_ENABLED:
     add_packages("xpra.buffers")

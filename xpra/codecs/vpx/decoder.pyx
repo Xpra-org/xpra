@@ -12,13 +12,13 @@ log = Logger("decoder", "vpx")
 
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport padbuf, MemBuf, object_as_buffer #pylint: disable=syntax-error
 from xpra.os_util import bytestostr
 from xpra.util import envint
 
-from libc.stdint cimport uint8_t
+from libc.stdint cimport uintptr_t, uint8_t
 from libc.string cimport memset, memcpy
 from libc.stdlib cimport malloc
+from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
 from xpra.monotonic_time cimport monotonic_time
 
 
@@ -245,10 +245,8 @@ cdef class Decoder:
         self.encoding = ""
 
 
-    def decompress_image(self, input, options=None):
+    def decompress_image(self, data, options=None):
         cdef vpx_codec_iter_t iter = NULL
-        cdef const unsigned char * buf = NULL
-        cdef Py_ssize_t buf_len = 0
         cdef int i = 0
         cdef MemBuf output_buf
         cdef void *output
@@ -259,11 +257,14 @@ cdef class Decoder:
         assert self.context!=NULL
 
         cdef double start = monotonic_time()
-        assert object_as_buffer(input, <const void**> &buf, &buf_len)==0
-
-        cdef vpx_codec_err_t ret
-        with nogil:
-            ret = vpx_codec_decode(self.context, buf, buf_len, NULL, 0)
+        cdef vpx_codec_err_t ret = -1
+        cdef uint8_t* src
+        cdef Py_ssize_t src_len
+        with buffer_context(data) as bc:
+            src = <uint8_t*> (<uintptr_t> int(bc))
+            src_len = len(bc)
+            with nogil:
+                ret = vpx_codec_decode(self.context, src, src_len, NULL, 0)
         if ret!=VPX_CODEC_OK:
             log.error("Error: vpx_codec_decode: %s", self.codec_error_str())
             return None
