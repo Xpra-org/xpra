@@ -134,6 +134,7 @@ DEFAULT = True
 if "--minimal" in sys.argv:
     sys.argv.remove("--minimal")
     DEFAULT = False
+skip_build = "--skip-build" in sys.argv
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
@@ -210,7 +211,7 @@ debug_ENABLED           = False
 verbose_ENABLED         = False
 bundle_tests_ENABLED    = False
 tests_ENABLED           = False
-rebuild_ENABLED         = "--skip-build" not in sys.argv
+rebuild_ENABLED         = not skip_build
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = [
@@ -2212,9 +2213,9 @@ if nvjpeg_ENABLED:
         add_to_keywords(nvjpeg_pkgconfig, 'extra_link_args', "-L%s" % cuda_bin, "-lnvjpeg64_11")
     else:
         nvjpeg_pkgconfig = pkgconfig("nvjpeg")
-        assert nvjpeg_pkgconfig, "failed to locate nvjpeg pkgconfig"
+        assert skip_build or nvjpeg_pkgconfig, "failed to locate nvjpeg pkgconfig"
         cuda_pkgconfig = pkgconfig("cuda")
-        assert cuda_pkgconfig, "failed to locate cuda pkgconfig"
+        assert skip_build or cuda_pkgconfig, "failed to locate cuda pkgconfig"
         for k, v in cuda_pkgconfig.items():
             add_to_keywords(nvjpeg_pkgconfig, k, *v)
     cython_add(Extension("xpra.codecs.nvjpeg.encoder",
