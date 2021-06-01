@@ -2304,6 +2304,8 @@ if libav_common:
     avutil_pkgconfig = pkgconfig("libavutil")
     if get_gcc_version()>=[9, 0]:
         add_to_keywords(avutil_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
+    else:
+        add_to_keywords(avutil_pkgconfig, 'extra_compile_args', "-Wno-error=parentheses")
     cython_add(Extension("xpra.codecs.libav_common.av_log",
                 ["xpra/codecs/libav_common/av_log.pyx"],
                 **avutil_pkgconfig))
@@ -2314,6 +2316,8 @@ if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("libavcodec", "libavutil", "libavformat")
     if get_gcc_version()>=[9, 0]:
         add_to_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
+    else:
+        add_to_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Wno-error=parentheses")
     add_to_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/dec_avcodec2/register_compat.c"],
@@ -2335,6 +2339,8 @@ if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("libswscale", "libavutil")
     if get_gcc_version()>=[9, 0]:
         add_to_keywords(swscale_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
+    else:
+        add_to_keywords(swscale_pkgconfig, 'extra_compile_args', "-Wno-error=parentheses")
     cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
                 **swscale_pkgconfig))
@@ -2355,6 +2361,8 @@ if enc_ffmpeg_ENABLED:
     ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat", "libavutil")
     if get_gcc_version()>=[9, 0]:
         add_to_keywords(ffmpeg_pkgconfig, 'extra_compile_args', "-Wno-error=attributes")
+    else:
+        add_to_keywords(ffmpeg_pkgconfig, 'extra_compile_args', "-Wno-error=parentheses")
     add_to_keywords(ffmpeg_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
     cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
                 ["xpra/codecs/enc_ffmpeg/encoder.pyx"],
