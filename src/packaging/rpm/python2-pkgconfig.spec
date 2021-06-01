@@ -10,7 +10,6 @@ Summary:        A Python interface to the pkg-config command line tool
 License:        MIT
 URL:            https://github.com/matze/%{srcname}
 Source0:        https://files.pythonhosted.org/packages/ae/61/5a76ead90f9a62212c231b05231031e750f24e4dd2401d8c7f3f0527821b/%{srcname}-%{version}.tar.gz
-Summary:        A Python2 interface to the pkg-config ocmmand line tool
 BuildArch:      noarch
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
