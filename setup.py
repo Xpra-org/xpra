@@ -655,30 +655,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 add_to_keywords(kw, extra_name, token)
 
     if pkgs_options:
-        package_names = []
-        #find out which package name to use from potentially many options
-        #and bail out early with a meaningful error if we can't find any valid options
-        for package_options in pkgs_options:
-            #for this package options, find the ones that work
-            valid_option = None
-            if isinstance(package_options, str):
-                options = [package_options]     #got given just one string
-            else:
-                assert isinstance(package_options, (tuple, list))
-                options = package_options       #got given a list of options
-            for option in options:
-                cmd = ["pkg-config", "--exists", option]
-                r = get_status_output(cmd)[0]
-                if r==0:
-                    valid_option = option
-                    break
-            if not valid_option:
-                raise Exception("ERROR: cannot find a valid pkg-config entry for %s using PKG_CONFIG_PATH=%s" %
-                                (" or ".join(options), os.environ.get("PKG_CONFIG_PATH", "(empty)")))
-            package_names.append(valid_option)
-        if verbose_ENABLED and list(pkgs_options)!=list(package_names):
-            print("exec_pkgconfig(%s,%s) using package names=%s" % (pkgs_options, ekw, package_names))
-        pkg_config_cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
+        pkg_config_cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(pkgs_options),)]
         if verbose_ENABLED:
             print("pkg_config_cmd=%s" % (pkg_config_cmd,))
         r, pkg_config_out, err = get_status_output(pkg_config_cmd)
