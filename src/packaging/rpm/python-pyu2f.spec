@@ -75,7 +75,7 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Sun Jan 03 2020 Antoine Martin <antoine@xpra.org> - 0.1.4-4
+* Sun Jan 03 2021 Antoine Martin <antoine@xpra.org> - 0.1.4-4
 - don't conflict with the newer python3 Fedora or CentOS 8 builds
 
 * Wed Sep 25 2019 Antoine Martin <antoine@xpra.org> - 0.1.4-3
