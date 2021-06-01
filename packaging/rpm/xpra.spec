@@ -399,6 +399,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/applications/xpra-gui.desktop
 %{_datadir}/applications/xpra.desktop
 %{_datadir}/mime/packages/application-x-xpraconfig.xml
+%{_datadir}/xpra/autostart.desktop
 
 %files common-server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
