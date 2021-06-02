@@ -888,11 +888,16 @@ fi
 * Mon May 24 2021 Antoine Martin <antoine@xpra.org> 3.1-10.1xpra1
 - critical fixes:
     proxy deadlock, subprocess leak, socket errors
+    proxy start and display handling errors
     'scroll' detection with very large windows
+    attach failures with remote start
     windows not getting focus
     unnecessary screen update latency
+    crash / corruption in the webp encoder
+    crash caused by resizing large SVG icons
     crash caused by notifications
     screen resizing with invalid DPI values
+    audio silence detection with DEB packages
 - screen update fixes:
     cairo rendering artifacts
     lossy screen updates when 'scroll' encoding is used
@@ -903,6 +908,7 @@ fi
     mmap does not need refreshing
 - misc fixes:
     concurrency runtime errors
+    window resize counter was invalid / ignored
     cuda error handling
     xdg menu loading failures
     'encoding' control command
@@ -921,7 +927,9 @@ fi
     ensure passwords are not logged using 'auth' debug logging
     xdg-open stdout / stderr formatting
 - build, packaging, platform and test fixes:
-    compilation errors with newer GCC versions
+    compilation errors with newer GCC versions, CentOS 7
+    missing build dependencies
+    split Python 2 vs 3 packages
     support Python 3.9
     printing diagnostic script errors with Python 3
     updated supported distributions
@@ -933,6 +941,8 @@ fi
     point to the correct systemd service configuration file path
     remove hard dependency on 'gnome-shell'
     invalid permissions on some scripts and data files
+    update packging to get version information from git
+    OpenBSD build fix
 - MS Windows fixes:
     test errors due to low precision clock
     clipboard cleanup errors
