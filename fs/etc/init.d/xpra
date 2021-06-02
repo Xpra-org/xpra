@@ -5,6 +5,7 @@
 # Required-Stop:     $local_fs $network $named $time $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
+# Short-Description: Xpra proxy server
 # Description:       Xpra proxy server
 ### END INIT INFO
 
@@ -19,8 +20,30 @@ else
 	LOGDIR=/var/log/
 fi
 
+# Read configuration variable file if it is present
 [ -e /etc/sysconfig/xpra ] && . /etc/sysconfig/xpra
 [ -e /etc/default/xpra ] && . /etc/default/xpra
+# Load the VERBOSE setting and other rcS variables
+[ -f /etc/default/rcS ] && . /etc/default/rcS
+
+# Define LSB log_* functions.
+if [ -f /etc/init.d/functions ]; then
+  # Red Hat
+  . /etc/init.d/functions
+elif [ -f /etc/rc.d/init.d/functions ]; then
+  # Red Hat
+  . /etc/rc.d/init.d/functions
+elif [ -f /etc/rc.status ]; then
+  # SUSE
+  . /etc/rc.status
+  rc_reset
+  LC_ALL=en_US.UTF-8
+elif [ -f /lib/lsb/init-functions ]; then
+  # Debian
+  . /lib/lsb/init-functions
+else
+  exit 1
+fi
 
 start() {
   echo 'Starting service…' >&2
@@ -48,6 +71,17 @@ stop() {
   fi
 }
 
+status() {
+  # No pidfile, probably no daemon present
+  [ ! -f "$PIDFILE" ] && return 1
+  PID=`cat $PIDFILE 2> /dev/null`
+  if [ -z "$PID" ]; then
+    echo "Service not started"
+  else
+    echo "Service running with pid $PID…" >&2
+  fi
+}
+
 case "$1" in
   start)
     start
@@ -55,10 +89,13 @@ case "$1" in
   stop)
     stop
     ;;
-  restart)
+  status)
+    status
+    ;;
+  restart|force-reload)
     stop
     start
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart}"
+    echo "Usage: $0 {start|stop|restart|force-reload}"
 esac
