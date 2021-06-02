@@ -1,4 +1,4 @@
-![OpenGL](https://xpra.org/icons/opengl.png)
+![OpenGL](../images/icons/opengl.png)
 
 This documentation is about running OpenGL _applications_ in an xpra session and this has nothing to do with the [client's opengl acceleration](./Client-OpenGL.md).
 

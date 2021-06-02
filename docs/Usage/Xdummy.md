@@ -1,4 +1,4 @@
-# ![X11](https://xpra.org/icons/X11.png) Xdummy
+# ![X11](../images/icons/X11.png) Xdummy
 
 `Xdummy` is used with [seamless](./Seamless.md) servers on [posix platforms](https://github.com/Xpra-org/xpra/wiki/Platforms).
 

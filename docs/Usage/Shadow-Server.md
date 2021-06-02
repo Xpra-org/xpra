@@ -1,4 +1,4 @@
-![Server-Connected](https://xpra.org/icons/server-connected.png)
+![Server-Connected](../images/icons/server-connected.png)
 
 This feature refers to the ability of using an existing display server (an existing desktop session, usually connected to a real physical display) and use xpra to access it remotely.
 
@@ -20,7 +20,7 @@ The shadow server will be stopped once you disconnect.\
 Xpra must already be installed on the server.
 
 The xpra shadow server will be accessible like any other xpra server through its unix domain socket (ie: `xpra info ssh://HOST/DISPLAY`), and it will show a system tray menu whilst active, and a different icon when a client is connected:
-![shadow tray example](https://xpra.org/images/win32-shadow-tray-menu.png)
+![shadow tray example](../images/win32-shadow-tray-menu.png)
 </details>
 <details>
   <summary>via a shell session</summary>

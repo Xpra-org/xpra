@@ -1,4 +1,4 @@
-# ![Upload](https://xpra.org/icons/upload.png) File Transfers
+# ![Upload](../images/icons/upload.png) File Transfers
 
 This feature shares most of the code with [printer forwarding](./Printing.md).
 
@@ -10,7 +10,7 @@ For more details, see [#494](https://github.com/Xpra-org/xpra/issues/494) and [#
 ## Client to Server
 Assuming that file-transfers are enabled (which is the default - see configuration options below), the client can send files to the server using the system tray upload menu:
 
-![Upload Example](https://xpra.org/images/upload.png)
+![Upload Example](../images/upload.png)
 
 
 ## Server to Client

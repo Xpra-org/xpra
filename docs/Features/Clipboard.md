@@ -1,4 +1,4 @@
-# ![Clipboard](https://xpra.org/icons/clipboard.png) Clipboard
+# ![Clipboard](../images/icons/clipboard.png) Clipboard
 
 This feature allows you to copy from outside the xpra session and paste inside it, and vice versa.
 For various reasons, this doesn't always work quite as well as expected - see below for more details.

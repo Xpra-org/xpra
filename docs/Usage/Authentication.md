@@ -1,4 +1,4 @@
-# ![Authentication](https://xpra.org/icons/authentication.png) Authentication
+# ![Authentication](../images/icons/authentication.png) Authentication
 
 Xpra's authentication modules can be useful for:
 * securing socket connections

@@ -1,4 +1,4 @@
-# ![sound](https://xpra.org/icons/package.png) Building RPMs
+# ![sound](../images/icons/package.png) Building RPMs
 
 
 ## Build requirements
@@ -60,7 +60,7 @@ python3 ./setup.py install \
 ```
 </details>
 
-## ![RPM](https://xpra.org/icons/rpm.png)
+## ![RPM](../images/icons/rpm.png)
 The spec file can be found here:
 https://github.com/Xpra-org/xpra/tree/master/packaging/rpm/xpra.spec
 

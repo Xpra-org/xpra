@@ -20,7 +20,7 @@ If the proxy server has access to a hardware accelerated encoding device (ie: [N
 ## Diagram
 Here is an example architecture using the proxy server to provide access to a number of servers through a single port, also showing where NVENC hardware encoders and TCP proxying (apache, nginx, thttp,..) can all hook into:
 
-![Xpra Proxy Diagram](https://xpra.org/images/Xpra-Proxy.png)
+![Xpra Proxy Diagram](../images/Xpra-Proxy.png)
 
 
 <details>

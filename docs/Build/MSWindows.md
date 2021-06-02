@@ -1,4 +1,4 @@
-# ![MS Windows](https://xpra.org/icons/windows.png) Building MS Windows Binaries
+# ![MS Windows](../images/icons/windows.png) Building MS Windows Binaries
 
 ## Setup
 * install [MSYS2](https://www.msys2.org/) and update the system: run `pacman -Syu` until all the updates are applied

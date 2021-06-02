@@ -1,4 +1,4 @@
-# ![MacOS](https://xpra.org/icons/osx.png) Building MacOS Binaries
+# ![MacOS](../images/icons/osx.png) Building MacOS Binaries
 
 ## Setup
 Install [XCode](https://developer.apple.com/xcode/) and its command line tools.
