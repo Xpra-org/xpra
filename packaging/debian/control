@@ -189,4 +189,4 @@ Description: tool to detach/reattach running X programs
  windows inside your window manager rather than being contained within a single
  window.
  .
- This is the Python3 version (experimental).
+ This is the Python3 version.
