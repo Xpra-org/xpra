@@ -24,6 +24,7 @@ Source0:       	https://files.pythonhosted.org/packages/5a/56/4682a5118a234d15aa
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
+BuildRequires:  make
 BuildRequires:  gcc-c++
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
