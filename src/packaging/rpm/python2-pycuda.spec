@@ -22,6 +22,7 @@ License:        MIT
 Group:          Development/Libraries/Python
 Source:        	https://files.pythonhosted.org/packages/46/61/47d3235a4c13eec5a5f03594ddb268f4858734e02980afbcd806e6242fa5/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+BuildRequires:  make
 BuildRequires:  gcc-c++
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
