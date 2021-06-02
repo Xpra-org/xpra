@@ -17,7 +17,6 @@ recursive-include docs *
 recursive-include tests __init__.py perf scripts
 recursive-include tests/unittests run unit
 recursive-include packaging/debian *
-recursive-include packaging/docker *
 recursive-include packaging/MacOS *
 recursive-include packaging/MSWindows *
 recursive-include packaging/rpm *
@@ -29,3 +28,5 @@ global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
 prune dist
+prune cache
+prune opt
