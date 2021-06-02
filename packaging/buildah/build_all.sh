@@ -25,10 +25,8 @@ rm -fr cache/ldconfig cache/libX11 cache/debconf cache/man
 
 PACKAGING="$BUILDAH_DIR/packaging"
 if [ ! -e "${PACKAGING}" ]; then
-	#by default, build from the current tree
-	#(the parent directory, which contains "debian" and "rpm")
-	#this symlink can be changed and will be left alone
-	ln -sf "../" "${PACKAGING}"
+	echo "${PACKAGING} should point to the repository build definitions"
+	exit 1
 fi
 
 DO_DOWNLOAD="${DO_DOWNLOAD:-1}"
@@ -48,7 +46,7 @@ for DISTRO in $DISTROS; do
 	#ie: DISTRO_NAME="fedora-33"
 	FULL_DISTRO_NAME=`echo ${DISTRO,,} | sed 's/:/-/g'`
 	DISTRO_NAME=`echo ${DISTRO,,} | awk -F: '{print $1}'`
-	IMAGE_NAME="$FULL_DISTRO_NAME-xpra-build"
+	IMAGE_NAME="$FULL_DISTRO_NAME-repo-build"
 
 	#use a temp image:
 	TEMP_IMAGE="$IMAGE_NAME-temp"

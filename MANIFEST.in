@@ -20,10 +20,6 @@ recursive-include packaging/debian *
 recursive-include packaging/MacOS *
 recursive-include packaging/MSWindows *
 recursive-include packaging/rpm *
-include packaging/buildah/*.sh
-include packaging/buildah/*.pc
-include packaging/buildah/*.repo
-include packaging/buildah/*.txt
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
 prune build
