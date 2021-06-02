@@ -1,4 +1,4 @@
-v3.1 (2021-05-24)
+v3.1 (2021-06-02)
 	-- critical fixes:
 		- proxy deadlock, subprocess leak, socket errors
 		- proxy start and display handling errors
