@@ -13,6 +13,7 @@ Source0: https://files.pythonhosted.org/packages/62/7e/d4fb56a1695fa65da0c8d3071
 # borrow centos7 patch to use sitearch properly
 Patch0: 0001-Move-python-modules-to-architecture-specific-directo.patch
 
+BuildRequires: make
 BuildRequires: dbus-devel
 BuildRequires: dbus-glib-devel
 BuildRequires: python2-devel
