@@ -1,0 +1,11 @@
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Package: libcuda1
+Version: 1.0
+Maintainer: Antoine Martin <antoine@xpra.org>
+Architecture: all
+Multi-Arch: foreign
+Description: fake cuda package 
+ this allows us to install cuda using binary installers
+ and still statisfy the 'libcuda1' package dependency
