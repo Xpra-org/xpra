@@ -1,8 +1,0 @@
-prefix=/opt/Capture_Linux/NvFBC
-includedir=${prefix}/inc
-
-Name: nvfbc
-Description: NVFBC
-Version: 8.0
-Libs: -L/usr/lib64 -L/usr/lib
-Cflags: -I${includedir} -L/usr/lib64 -L/usr/lib -lnvidia-fbc

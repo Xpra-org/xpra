@@ -1,9 +1,0 @@
-cudaroot=/opt/cuda/
-libdir=${cudaroot}/targets/x86_64-linux/lib
-includedir=${cudaroot}/targets/x86_64-linux/include
-
-Name: nvjpeg
-Description: NVIDIA JPEG Library
-Version: 11.4
-Libs: -L${libdir} -lnvjpeg
-Cflags: -I${includedir}

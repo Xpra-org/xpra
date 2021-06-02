@@ -1,8 +1,0 @@
-prefix=/opt/nvenc
-includedir=${prefix}/Interface
-
-Name: nvenc
-Description: NVENC
-Version: 10
-Libs: -L/usr/lib64/nvidia -L/usr/lib/nvidia -lnvidia-encode
-Cflags: -I${includedir}
