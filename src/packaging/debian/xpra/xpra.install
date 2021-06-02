@@ -16,6 +16,9 @@ usr/share/applications/xpra-shadow.desktop
 usr/share/mime/packages/application-x-xpraconfig.xml
 usr/share/man/man1/xpra*
 usr/share/icons/*.png
+usr/share/xpra/COPYING
+usr/share/xpra/README*
+usr/share/xpra/bell.wav
 usr/share/xpra/icons/*.png
 usr/share/xpra/cuda/*
 usr/share/xpra/content-type/*
