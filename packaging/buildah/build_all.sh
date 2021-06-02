@@ -64,7 +64,7 @@ for DISTRO in $DISTROS; do
 	echo $DISTRO | egrep -iv "fedora|centos" >& /dev/null
 	RPM="$?"
 	if [ "${RPM}" == "1" ]; then
-		PKGCONFIG="/usr/lib64/pkgconfig"
+		LIB="/usr/lib64"
 		REPO_PATH="${BUILDAH_DIR}/repo/"`echo $DISTRO | sed 's+:+/+g'`
 		for rpm_list in "./${FULL_DISTRO_NAME}-rpms.txt" "./${DISTRO_NAME}-rpms.txt" "./rpms.txt"; do
 			if [ -r "${PACKAGING}/rpm/${rpm_list}" ]; then
@@ -74,26 +74,26 @@ for DISTRO in $DISTROS; do
 				break
 			fi
 		done
-		buildah copy $TEMP_IMAGE "./build_rpms.sh" "/src/build.sh"
+		BUILD_SCRIPT="build_rpms.sh"
 		echo "RPM: $REPO_PATH"
 	else
-		PKGCONFIG="/usr/lib/pkgconfig"
+		LIB="/usr/lib"
 		DISTRO_RELEASE=`echo $DISTRO | awk -F: '{print $2}'`
 		REPO_PATH="${BUILDAH_DIR}/repo/$DISTRO_RELEASE"
-		buildah copy $TEMP_IMAGE "./build_debs.sh" "/src/build.sh"
+		BUILD_SCRIPT="build_debs.sh"
 		echo "DEB: $REPO_PATH"
 	fi
+	buildah copy $TEMP_IMAGE "./${BUILD_SCRIPT}" "/src/${BUILD_SCRIPT}"
 	mkdir -p $REPO_PATH >& /dev/null
 
 	if [ "${NVIDIA_CODECS}" == "1" ]; then
+		PKGCONFIG="${LIB}/pkgconfig"
 		buildah copy $IMAGE_NAME "./nvenc.pc" "${PKGCONFIG}/nvenc.pc"
 		buildah copy $IMAGE_NAME "./nvfbc.pc" "${PKGCONFIG}/nvfbc.pc"
 		buildah copy $IMAGE_NAME "./nvjpeg.pc" "${PKGCONFIG}/nvjpeg.pc"
 		buildah copy $IMAGE_NAME "./cuda.pc" "${PKGCONFIG}/cuda.pc"
-		if [ "${RPM}" == "1" ]; then
-			#no libnvidia-fbc in the standard repos, so use the local one:
-			buildah copy $IMAGE_NAME /usr/lib64/libnvidia-fbc.so.*.* "/usr/lib64/libnvidia-fbc.so"
-		fi
+		#no libnvidia-fbc in the standard repos, so use the local one:
+		buildah copy $IMAGE_NAME /usr/lib64/libnvidia-fbc.so.*.* "$LIB/libnvidia-fbc.so"
 	fi
 	buildah commit $IMAGE_NAME $IMAGE_NAME
 
@@ -104,6 +104,6 @@ for DISTRO in $DISTROS; do
 				--volume $REPO_PATH:/src/repo:noexec,nodev,z \
 				--volume ${PACKAGING}/rpm:/src/rpm:ro,z \
 				--volume ${PACKAGING}/debian:/src/debian:O \
-				$TEMP_IMAGE $BASH /src/build.sh
+				$TEMP_IMAGE $BASH "/src/${BUILD_SCRIPT}"
 	buildah rm "${TEMP_IMAGE}"
 done
