@@ -30,13 +30,13 @@ echo "" >> "docs/CHANGELOG.md.new"
 tail -n +3 "docs/CHANGELOG.md" >> "docs/CHANGELOG.md.new"
 mv "docs/CHANGELOG.md.new" "docs/CHANGELOG.md"
 
-echo "xpra ($NEWV-1) UNRELEASED; urgency=low" > "./packaging/debian/changelog.new"
-echo "  * TODO" >> "./packaging/debian/changelog.new"
-echo "" >> "./packaging/debian/changelog.new"
-echo " -- Antoine Martin <antoine@nagafix.co.uk>  `date -R`" >> "./packaging/debian/changelog.new"
-echo "" >> "./packaging/debian/changelog.new"
-cat "./packaging/debian/changelog" >> "./packaging/debian/changelog.new"
-mv "./packaging/debian/changelog.new" "./packaging/debian/changelog"
+echo "xpra ($NEWV-1) UNRELEASED; urgency=low" > "./packaging/debian/xpra/changelog.new"
+echo "  * TODO" >> "./packaging/debian/xpra/changelog.new"
+echo "" >> "./packaging/debian/xpra/changelog.new"
+echo " -- Antoine Martin <antoine@nagafix.co.uk>  `date -R`" >> "./packaging/debian/xpra/changelog.new"
+echo "" >> "./packaging/debian/xpra/changelog.new"
+cat "./packaging/debian/xpra/changelog" >> "./packaging/debian/xpra/changelog.new"
+mv "./packaging/debian/xpra/changelog.new" "./packaging/debian/xpra/changelog"
 
 sed -i'' "s/%define version .*/%define version $NEWV/" "./packaging/rpm/xpra.spec"
 sed -i'' "/%changelog/a - TODO" "./packaging/rpm/xpra.spec"
@@ -47,7 +47,7 @@ sed -i'' "/%changelog/a \* $CHANGELOGDATE $AUTHOR $NEWV-10" "./packaging/rpm/xpr
 git commit -m "bump version" \
 	xpra/__init__.py \
 	packaging/rpm/xpra.spec \
-	packaging/debian/changelog \
+	packaging/debian/xpra/changelog \
 	packaging/buildah/build_rpms.sh \
 	packaging/buildah/build_debs.sh \
 	fs/lib/cups/xpraforwarder \
