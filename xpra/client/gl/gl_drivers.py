@@ -1,4 +1,4 @@
-#!/usr/bin/env python33
+#!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
