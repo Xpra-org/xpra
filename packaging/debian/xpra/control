@@ -60,12 +60,7 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,xvfb
         ,keyboard-configuration
 # fast JPEG client support:
-#bionic:        ,libturbojpeg
-#focal:        ,libturbojpeg
-#groovy:        ,libturbojpeg
-#hirsute:        ,libturbojpeg
-#buster:         ,libturbojpeg0
-#bullseye:         ,libturbojpeg0
+        ,libturbojpeg | libturbojpeg0
 # for notifications forwarding and dbus server / proxying:
 Recommends: python3-dbus
         ,xpra-html5
@@ -92,32 +87,12 @@ Recommends: python3-dbus
 #to be able to resize large svg icons:
         ,gir1.2-rsvg-2.0
 # ffmpeg based codecs:
-#bionic:        ,libavcodec57
-#bionic:        ,libswscale4
-#focal:        ,libavcodec58
-#focal:        ,libswscale5
-#groovy:        ,libavcodec58
-#groovy:        ,libswscale5
-#hirsute:        ,libavcodec58
-#hirsute:        ,libswscale5
-#buster:        ,libavcodec57
-#buster:        ,libswscale4
-#bullseye:        ,libavcodec58
-#bullseye:        ,libswscale5
+        ,libavcodec57 | libavcodec58
+        ,libswscale4 | libswscale5
 # vpx:
-#bionic:        ,libvpx5
-#focal:        ,libvpx6
-#groovy:        ,libvpx6
-#hirsute:        ,libvpx6
-#buster:        ,libvpx5
-#bullseye:        ,libvpx6
+        ,libvpx5 | libvpx6
 # x264:
-#bionic:        ,libx264-152
-#focal:        ,libx264-155
-#groovy:        ,libx264-160
-#hirsute:        ,libx264-160
-#buster:        ,libx264-155
-#bullseye:        ,libx264-160
+        ,libx264-152 | libx264-155 | libx264-160
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 # preferred input method:
