@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+DPKG_EXPORT_BUILDFLAGS = 1
+-include /usr/share/dpkg/default.mk
+
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	dh_clean
+
+override_dh_auto_test:
+	echo skipping tests
+
+override_dh_shlibdeps:
+	dh_shlibdeps -l /usr/lib/xpra
+
+override_dh_auto_configure:
+	./configure --prefix=/usr/lib/xpra \
+	    		--libdir="/usr/lib/xpra" \
+				--shlibdir="/usr/lib/xpra" \
+				--mandir="/usr/share/man/xpra" \
+				--incdir="/usr/include/xpra" \
+				--extra-cflags="-I/usr/include/xpra/" \
+				--extra-ldflags="-L/usr/lib/xpra" \
+				--enable-runtime-cpudetect \
+				--disable-avdevice \
+				--enable-pic \
+				--disable-zlib \
+				--disable-filters \
+				--disable-everything \
+				--disable-doc \
+				--disable-programs \
+				--disable-libxcb \
+				--enable-swscale \
+				--enable-libx264 \
+				--enable-libvpx \
+				--enable-gpl \
+				--enable-protocol=file \
+				--enable-decoder=h264 \
+				--enable-decoder=hevc \
+				--enable-decoder=vp8 \
+				--enable-decoder=vp9 \
+				--enable-decoder=mpeg4 \
+				--enable-encoder=libvpx_vp8 \
+				--enable-encoder=libvpx_vp9 \
+				--enable-encoder=mpeg4 \
+				--enable-encoder=libx264 \
+				--enable-muxer=mp4 \
+				--enable-muxer=webm \
+				--enable-muxer=matroska \
+				--enable-muxer=ogg \
+				--enable-demuxer=h264 \
+				--enable-demuxer=hevc \
+				--enable-demuxer=m4v \
+				--enable-demuxer=matroska \
+				--enable-demuxer=ogg \
+				--enable-shared \
+				--enable-debug \
+				--disable-stripping \
+				--disable-symver \
+				--enable-rpath

@@ -1,0 +1,15 @@
+Source: ffmpeg-xpra
+Section: libs
+Priority: optional
+Maintainer: Antoine Martin <antoine@xpra.org>
+Build-Depends: debhelper (>= 9), libvpx-dev, libx264-dev, yasm
+Standards-Version: 3.9.5
+Homepage: https://ffmpeg.org/
+
+Package: ffmpeg-xpra
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: ffmpeg libraries used by xpra
+ .
+ Private version of the ffmpeg libraries,
+ built specifically for use with xpra codecs.
