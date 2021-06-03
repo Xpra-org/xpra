@@ -1,0 +1,90 @@
+ffmpeg-xpra (4.4-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 03 JUn 2019 13:31:42 +0700
+
+ffmpeg-xpra (4.2.1-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 24 Sep 2019 23:18:50 +0700
+
+ffmpeg-xpra (4.0-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 21 Apr 2018 09:42:42 +0700
+
+ffmpeg-xpra (3.4.2-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 02 Apr 2018 13:23:17 +0700
+
+ffmpeg-xpra (3.4.1-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Dec 2017 17:47:31 +0700
+
+ffmpeg-xpra (3.3.4-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 09 Oct 2017 15:35:22 +0700
+
+ffmpeg-xpra (3.3.3-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 01 Aug 2017 15:42:43 +0700
+
+ffmpeg-xpra (3.3.2-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 04 Jul 2017 19:16:56 +0700
+
+ffmpeg-xpra (3.3-1) UNRELEASED; urgency=low
+
+  * new upstream release
+  * enable rpath
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 18 Apr 2017 18:48:29 +0700
+
+ffmpeg-xpra (3.2.4-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 15 Feb 2017 14:59:54 +0700
+
+ffmpeg-xpra (3.2.1-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 27 Nov 2016 11:37:20 +0700
+
+ffmpeg-xpra (3.2-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Sun, 30 Oct 2016 21:20:36 +0700
+
+ffmpeg-xpra (3.1.3-1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 17 Sep 2016 11:28:47 +0200
+
+ffmpeg-xpra (3.1.1-2) UNRELEASED; urgency=low
+
+  * Add swscale support
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 02 Aug 2016 23:01:53 +0200
+
+ffmpeg-xpra (3.1.1-1) UNRELEASED; urgency=low
+
+  * Initial release
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Jul 2016 12:13:39 +0200
