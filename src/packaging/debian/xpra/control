@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Antoine Martin <antoine@xpra.org>
 XS-Python-Version: all
 Build-Depends: debhelper (>= 8)
+              ,lsb-release
               ,libx11-dev
               ,libvpx-dev
               ,libxcomposite-dev
