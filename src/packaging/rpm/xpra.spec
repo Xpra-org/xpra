@@ -523,7 +523,9 @@ mv $RPM_BUILD_DIR/xpra-%{version} $RPM_BUILD_DIR/xpra-%{version}-python3
 %endif
 
 
+%if !0%{el7}
 %debug_package
+%endif
 
 
 %build
