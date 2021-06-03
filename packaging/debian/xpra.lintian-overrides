@@ -1,0 +1,6 @@
+# These files are part of Xpra internal logic
+executable-in-usr-lib usr/lib/cups/backend/xpraforwarder
+executable-in-usr-lib usr/lib/xpra/auth_dialog
+executable-in-usr-lib usr/lib/xpra/gnome-open
+executable-in-usr-lib usr/lib/xpra/gvfs-open
+executable-in-usr-lib usr/lib/xpra/xdg-open
