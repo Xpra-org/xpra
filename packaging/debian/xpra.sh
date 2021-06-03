@@ -15,11 +15,6 @@ tar -Jxf ${XPRA_TAR_XZ}
 pushd "./${dirname}"
 ln -sf packaging/debian/xpra ./debian
 
-#install build dependencies:
-mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
-#mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
-rm -f xpra-build-deps*
-
 #the control file has a few distribution specific entries
 #ie:
 # '#buster:         ,libturbojpeg0'
@@ -28,6 +23,11 @@ rm -f xpra-build-deps*
 CODENAME=`lsb_release -c | awk '{print $2}'`
 #ie: CODENAME=bionic
 perl -i.bak -pe "s/#${CODENAME}:/#${CODENAME}:\\n/g" debian/control
+
+#install build dependencies:
+mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
+#mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
+rm -f xpra-build-deps*
 
 #add revision to version number to changelog
 REVISION=`PYTHONPATH=. python3 -c 'from xpra.src_info import REVISION;print(REVISION)'`
