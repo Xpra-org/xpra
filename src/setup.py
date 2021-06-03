@@ -2080,7 +2080,7 @@ if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
     if WIN32:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
-    if not PYTHON3:
+    if not PYTHON3 and get_gcc_version()>=[8, 0]:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-error=register")
     platform = sys.platform.rstrip("0123456789")
     cython_add(Extension("xpra.codecs.nvfbc.fbc_capture_%s" % platform,
@@ -2355,7 +2355,7 @@ if csc_libyuv_ENABLED:
     if not PYTHON3:
         if is_CentOS():
             remove_from_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Werror")
-        else:
+        elif get_gcc_version()>=[8, 0]:
             add_to_keywords(libyuv_pkgconfig, 'extra_compile_args', "-Wno-error=register")
     cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
                 ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"],
