@@ -59,8 +59,6 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 #        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
         ,xvfb
         ,keyboard-configuration
-# fast JPEG client support:
-        ,libturbojpeg | libturbojpeg0
 # for notifications forwarding and dbus server / proxying:
 Recommends: python3-dbus
         ,xpra-html5
@@ -86,21 +84,12 @@ Recommends: python3-dbus
         ,gir1.2-appindicator3-0.1
 #to be able to resize large svg icons:
         ,gir1.2-rsvg-2.0
-# ffmpeg based codecs:
-        ,libavcodec57 | libavcodec58
-        ,libswscale4 | libswscale5
-# vpx:
-        ,libvpx5 | libvpx6
-# x264:
-        ,libx264-152 | libx264-155 | libx264-160
 # we use dbus for many things - this provides "dbus-launch":
         ,dbus-x11
 # preferred input method:
         ,ibus
 # AES encryption:
         ,python3-cryptography
-#webp
-        ,libwebp6
 # audio-related:
         ,gstreamer1.0-pulseaudio
         ,gstreamer1.0-alsa
