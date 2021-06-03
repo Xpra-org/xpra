@@ -3393,10 +3393,10 @@ def run_clean_displays(args):
         if args:
             print(" matching %s" % csv(args))
         return
-    print("Found %i dead displays pids:" % len(display_pids))
+    print("Found %i dead display pids:" % len(display_pids))
     if args:
         print(" matching %s" % csv(args))
-    for display, (pid, cmd) in display_pids.items():
+    for display, (pid, cmd) in sorted_nicely(display_pids.items()):
         print("%4s    %-8s    %s" % (display, pid, cmd))
     print()
     WAIT = 5
