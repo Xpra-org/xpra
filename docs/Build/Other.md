@@ -1,7 +1,7 @@
 **This page may well be out of date**, as these platforms are [not officially supported](https://github.com/Xpra-org/xpra/wiki/Platforms).
 
 
-# ![FreeBSD](https://xpra.org/icons/freebsd.png)
+# ![FreeBSD](../images/icons/freebsd.png)
 
 ## [FreeBSD Ports](https://www.freebsd.org/ports/)
 To install xpra using ports, just run:

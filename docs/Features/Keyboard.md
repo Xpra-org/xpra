@@ -1,4 +1,4 @@
-# ![Keyboard](https://xpra.org/icons/keyboard.png) Keyboard
+# ![Keyboard](../images/icons/keyboard.png) Keyboard
 
 Keyboard handling is an area that is constantly seeing improvements and bug fixes.
 That's because each platform does things slightly differently and xpra has to somehow convert this data into meaningful keyboard events on the remote end.

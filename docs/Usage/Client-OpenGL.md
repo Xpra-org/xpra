@@ -1,4 +1,4 @@
-![OpenGL](https://xpra.org/icons/opengl.png)
+![OpenGL](../images/icons/opengl.png)
 
 The native client can use OpenGL for better window rendering performance.
 

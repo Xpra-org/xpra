@@ -1,4 +1,4 @@
-# ![sound](https://xpra.org/icons/sound.png) Audio
+# ![sound](../images/icons/sound.png) Audio
 
 Unless you disable audio forwarding, you can start and stop it from the [system tray](./System-Tray.md) at any time.
 
@@ -10,13 +10,13 @@ If you want to turn off speaker forwarding, use the option `speaker=off` in your
 
 ## Screenshots
 * Audio information displayed on session info (with speaker enabled and running and microphone disabled):
-![session-info-audio screenshot](https://xpra.org/images/session-info-sound.png)
+![session-info-audio screenshot](../images/session-info-sound.png)
 
 * A Linux client's pavucontrol showing the Xpra application connected to the local pulseaudio server:
-![pavucontrol-client screenshot](https://xpra.org/images/pavucontrol-client.png)
+![pavucontrol-client screenshot](../images/pavucontrol-client.png)
 
 * pavucontrol running within the xpra session ("on the server"), showing xpra recording the session's audio:
-![pavucontrol-server screenshot](https://xpra.org/images/pavucontrol-server.png)
+![pavucontrol-server screenshot](../images/pavucontrol-server.png)
 
 ## Options
 <details>

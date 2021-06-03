@@ -1,4 +1,4 @@
-# ![Printer](https://xpra.org/icons/printer.png) Printing
+# ![Printer](../images/icons/printer.png) Printing
 
 This feature allows printers connected to the client to show as virtual printers on the server so that printing can transparently be forwarded back to the client's printer(s).
 

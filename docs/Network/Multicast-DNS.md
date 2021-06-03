@@ -1,4 +1,4 @@
-# ![Xpra Proxy Diagram](https://xpra.org/icons/mdns.png) Multicast DNS
+# ![Xpra Proxy Diagram](../images/icons/mdns.png) Multicast DNS
 
 By default, the xpra server will advertise the session it creates on the local network using [Multicast DNS](https://en.wikipedia.org/wiki/Multicast_DNS).
 
@@ -12,7 +12,7 @@ To use the GUI mdns session launcher, run:\
    `xpra mdns-gui`
 
 The user interface should look like this:
-![mdns gui](https://xpra.org/images/mdns-gui.png)
+![mdns gui](../images/mdns-gui.png)
 
 And you should be able to connect to those sessions simply by pressing the "connect" button.
 

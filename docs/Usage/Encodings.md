@@ -1,4 +1,4 @@
-# ![Encoding](https://xpra.org/icons/encoding.png) Encodings
+# ![Encoding](../images/icons/encoding.png) Encodings
 
 Xpra supports a wide variety of picture and video encodings for sending the window contents to the client fast and efficiently.\
 For some background information on picture encodings, see [https://images.guide/](https://images.guide/).

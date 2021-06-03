@@ -8,3 +8,4 @@ NoDisplay=true
 Type=Application
 StartupNotify=false
 Categories=Network;RemoteAccess;
+Keywords=X11;screen;forwarding;client;server

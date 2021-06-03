@@ -1,4 +1,4 @@
-# ![Debian](https://xpra.org/icons/debian.png)   ![Ubuntu](https://xpra.org/icons/ubuntu.png) Building DEB packages
+# ![Debian](../images/icons/debian.png)   ![Ubuntu](../images/icons/ubuntu.png) Building DEB packages
 
 The debian packaging files can be found here: [packaging/debian](../../packaging/debian).
 

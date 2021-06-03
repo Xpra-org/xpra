@@ -377,8 +377,16 @@ def convert_doc_dir(src, dst, fmt="html", force=False):
         elif fsrc.endswith(".md"):
             fdst = os.path.join(dst, x.replace("README", "index")[:-3]+"."+fmt)
             convert_doc(fsrc, fdst, fmt, force)
+        elif fsrc.endswith(".png"):
+            fdst = os.path.join(dst, x)
+            print("copying %s -> %s (%s)" % (fsrc, fdst, oct(0o644)))
+            os.makedirs(name=dst, mode=0o755, exist_ok=True)
+            data = load_binary_file(fsrc)
+            with open(fdst, "wb") as f:
+                f.write(data)
+                os.chmod(fdst, 0o644)
         else:
-            print("ignoring '%s'" % (f,))
+            print("ignoring '%s'" % fsrc)
 
 def convert_docs(fmt="html"):
     paths = [x for x in sys.argv[2:] if not x.startswith("--")]

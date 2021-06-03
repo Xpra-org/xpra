@@ -1,4 +1,4 @@
-![NVENC](https://xpra.org/icons/nvidia.png)
+![NVENC](../images/icons/nvidia.png)
 
 This encoder offers [the best latency](https://xpra.org/stats/NVENC/), which is most noticeable at higher resolutions.
 

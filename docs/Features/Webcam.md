@@ -1,4 +1,4 @@
-# ![Webcam](https://xpra.org/icons/webcam.png) Webcam
+# ![Webcam](../images/icons/webcam.png) Webcam
 
 This feature allows client webcams attached to be exposed to the applications running on the server.
 
