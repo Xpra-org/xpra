@@ -12,6 +12,7 @@ Source0:        http://downloads.sourceforge.net/sourceforge/lame/%{name}-%{vers
 Patch1:         %{name}-noexecstack.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
+BuildRequires:  make
 BuildRequires:  ncurses-devel
 BuildRequires:  pkgconfig
 %ifarch %{ix86}
