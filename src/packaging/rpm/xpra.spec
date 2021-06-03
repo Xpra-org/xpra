@@ -70,10 +70,10 @@ Release:			10.%{?xpra_revision_no}xpra1%{?dist}
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPL-2.0+ AND BSD-3-Clause AND LGPL-3.0+ AND MIT
-URL:				http://xpra.org/
+URL:				https://xpra.org/
 Packager:			Antoine Martin <antoine@xpra.org>
-Vendor:				http://xpra.org/
-Source:				xpra-%{version}.tar.xz
+Vendor:				https://xpra.org/
+Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #rpm falls over itself if we try to make the top-level package noarch:
 #BuildArch: noarch
 BuildRoot:			%{_tmppath}/%{name}-%{version}-root
@@ -497,6 +497,11 @@ This package contains the python3 xpra server.
 
 
 %prep
+#sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
+#if [ "${sha256}" != "ffff" ]; then
+#	echo "invalid checksum for %{SOURCE0}"
+#	exit 1
+#fi
 rm -rf $RPM_BUILD_DIR/xpra-%{version}-python2 $RPM_BUILD_DIR/xpra-%{version}
 xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 pushd $RPM_BUILD_DIR/xpra-%{version}
