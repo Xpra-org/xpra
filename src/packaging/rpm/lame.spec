@@ -13,6 +13,7 @@ Patch1:         %{name}-noexecstack.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildRequires:  make
+BuildRequires:  gcc
 BuildRequires:  ncurses-devel
 BuildRequires:  pkgconfig
 %ifarch %{ix86}
