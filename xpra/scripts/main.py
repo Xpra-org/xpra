@@ -2140,9 +2140,6 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop") and parse_bool("attach", options.attach) is True:
-        check_gtk()
-        bypass_no_gtk()
-        assert not display_is_remote
         if args:
             #maybe the server is already running for the display specified
             #then we don't even need to bother trying to start it:
@@ -2158,8 +2155,11 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
                     if state==DotXpra.LIVE:
                         noerr(sys.stdout.write, "existing live display found, attaching")
                         return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
-        if options.resize_display.lower() in TRUE_OPTIONS:
-            #now that we have loaded gtk,
+        #we can't load gtk on posix if the server is local,
+        #(as we would need to unload the initial display to attach to the new one)
+        if options.resize_display.lower() in TRUE_OPTIONS and (display_is_remote or OSX or not POSIX):
+            check_gtk()
+            bypass_no_gtk()
             #we can tell the server what size to resize to:
             from xpra.gtk_common.gtk_util import get_root_size
             root_w, root_h = get_root_size()
