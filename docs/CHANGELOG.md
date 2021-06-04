@@ -1,10 +1,25 @@
 # Changelog
 
 ## [4.2.1] 2021-06-04
-* TODO
-
-## [4.2.1]
-* TODO
+* build and packaging fixes:
+	* missing dependencies
+	* nvjpeg DEB packaging
+	* OpenBSD build fix
+	* compilation errors on Ubuntu Bionic
+	* DEB packages were missing some files (fixes audio silence detection)
+	* remove unused outdated code
+* proxy deadlocks when queues fill up too quickly
+* proxy server does not honour mode or display
+* invalid error when bind option points to a directory
+* default to ssl-mode if the 'wss' socket option is not specified
+* local start with explicit attach was broken on Posix
+* 'attach' option should not be forwarded to the server (which then fails)
+* webp encoder invalid memory access (corruption)
+* invalid window resize counter (used for resize loop prevention)
+* disable SVG icon resizing (potential crashes on some platforms)
+* missing icon errors when html5 client disconnects from system-wide proxy server
+* provide XDG_RUNTIME_DIR if it is not defined
+* minor cosmetic fixes
 
 ## [4.2] 2021-05-18
 * [use pinentry for password prompts](https://github.com/Xpra-org/xpra/issues/3002) and [ssh prompts](https://github.com/Xpra-org/xpra/commit/2d2022d184f31f53c2328b5e5ca804e5ea46ff6c)
