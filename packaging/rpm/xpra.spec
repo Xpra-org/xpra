@@ -136,7 +136,6 @@ BuildRequires:		tigervnc
 BuildRequires:		xorg-x11-server-Xorg
 BuildRequires:		xorg-x11-server-Xvfb
 BuildRequires:		xorg-x11-drv-dummy
-BuildRequires:		which
 %endif
 Requires(post):  	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
 Requires(postun):	/usr/sbin/semodule, /usr/sbin/semanage, /sbin/restorecon, /sbin/fixfiles
@@ -181,6 +180,7 @@ Recommends:         python3-ldap3
 Recommends:         python3-brotli
 #Suggests:           python3-cpuinfo
 Requires:			libwebp
+BuildRequires:		which
 BuildRequires:		libwebp-devel
 BuildRequires:		turbojpeg-devel
 BuildRequires:		libyuv-devel
