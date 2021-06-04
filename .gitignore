@@ -47,6 +47,8 @@ packaging/MacOS/xpra-html5
 /MANIFEST
 /dist
 *.dll
+*.orig
+*.bak
 *.log
 *.exe
 *.zip
