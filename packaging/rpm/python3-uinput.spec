@@ -27,7 +27,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "99392b676c77b5795b86b7d75274db33fe754fd1e06fb3d58b167c797dc47f0c" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q -n python-uinput-%{version}
 
 # Use unversioned .so

@@ -32,7 +32,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "02f1226a930a19a8bfdbedd1fc57c53ad9bdbf708c6694c0c662d1b5c198d972" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -n gst-plugin-timestamp-%{version}
 
 %build

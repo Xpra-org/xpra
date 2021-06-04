@@ -48,7 +48,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "ab87312d0fc349d9c17294a087bb9615cffcf966ad7b115f5b051008a48dd6ed" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -q -n pycuda-%{version}
 
 %build
