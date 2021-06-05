@@ -1949,7 +1949,7 @@ class WindowVideoSource(WindowSource):
         w = image.get_width()
         h = image.get_height()
         raw_scroll, non_scroll = {}, {0 : h}
-        if x+y>ww or y+h>wh:
+        if x+w>ww or y+h>wh:
             #window may have been resized
             pass
         else:
