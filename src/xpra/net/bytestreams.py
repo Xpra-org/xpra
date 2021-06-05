@@ -83,9 +83,16 @@ def set_continue_wait(v):
 CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
 
+if PYTHON2:
+    from io import BlockingIOError
+else:
+    assert BlockingIOError
+
 def can_retry(e):
     if isinstance(e, socket.timeout):
         return "socket.timeout"
+    if isinstance(e, BlockingIOError):
+        return True
     if isinstance(e, (IOError, OSError)):
         global CONTINUE_ERRNO
         code = e.args[0]
