@@ -91,6 +91,7 @@ CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", True)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
+HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
 
 ENCRYPTED_SOCKET_TYPES = os.environ.get("XPRA_ENCRYPTED_SOCKET_TYPES", "tcp,ws")
 
@@ -1438,8 +1439,12 @@ class ServerCore:
                 self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
+            redirect_https = False
+            if HTTP_HTTPS_REDIRECT and not req_info in ("ws", "wss"):
+                redirect_https = not is_ssl and self.ssl_mode.lower() in TRUE_OPTIONS
             WebSocketRequestHandler(sock, frominfo, new_websocket_client,
-                                    self._www_dir, self._http_headers_dirs, scripts)
+                                    self._www_dir, self._http_headers_dirs, scripts,
+                                    redirect_https)
             return
         except (IOError, ValueError) as e:
             httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)

@@ -24,9 +24,12 @@ class WebSocketRequestHandler(HTTPRequestHandler):
 
     def __init__(self, sock, addr, new_websocket_client,
                  web_root="/usr/share/xpra/www/",
-                 http_headers_dir="/etc/xpra/http-headers", script_paths=None):
+                 http_headers_dir="/etc/xpra/http-headers",
+                 script_paths=None,
+                 redirect_https=False):
         self.new_websocket_client = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
+        self.redirect_https = redirect_https
         super().__init__(sock, addr, web_root, http_headers_dir, script_paths)
 
     def handle_websocket(self):
@@ -75,13 +78,33 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                 log.error(" %s", e)
                 self.send_error(403, "failed to handle websocket: %s" % e)
             return
+        if self.redirect_https:
+            self.do_redirect_https()
+            return
         HTTPRequestHandler.do_GET(self)
 
     def do_HEAD(self):
         if self.only_upgrade:
             self.send_error(405, "Method Not Allowed")
             return
+        if self.redirect_https:
+            self.do_redirect_https()
+            return
         HTTPRequestHandler.do_HEAD(self)
+
+    def do_redirect_https(self):
+        if not self.headers["Host"]:
+            self.send_error(400, "Client did not send Host: header")
+            return
+        server_address = self.headers["Host"]
+        for upgrade_string in (
+            b"HTTP/1.1 301 Moved Permanently",
+            b"Connection: close",
+            b"Location: https://%s%s" % (bytes(server_address, "utf-8"), bytes(self.path, "utf-8")),
+            b"",
+            ):
+            self.wfile.write(b"%s\r\n" % upgrade_string)
+        self.wfile.flush()
 
     def handle_request(self):
         if self.only_upgrade:
