@@ -30,7 +30,7 @@ from xpra.queue_scheduler import QueueScheduler
 from xpra.version_util import XPRA_VERSION
 from xpra.make_thread import start_thread
 from xpra.version_util import full_version_str
-from xpra.net.socket_util import create_unix_domain_socket
+from xpra.net.socket_util import create_unix_domain_socket, handle_socket_error
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.log import Logger
@@ -220,7 +220,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         except Exception as e:
             log("create_unix_domain_socket failed for '%s'", sockpath, exc_info=True)
             log.error("Error: failed to setup control socket '%s':", sockpath)
-            log.error(" %s", e)
+            handle_socket_error(sockpath, 0o600, e)
             stop(e)
             return False
         self.control_socket = sock
