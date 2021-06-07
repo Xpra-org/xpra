@@ -889,7 +889,7 @@ fi
 - fix proxy disconnections under heavy load
 - fix crash / corruption in the webp encoder
 - fix unnecessary screen update latency
-- fix 'scroll' detection with very large windows
+- fix 'scroll' detection bugs
 - fix lossy screen updates when 'scroll' encoding is used
 - fix windows not getting focused
 - fix invalid / ignored window resize counter
