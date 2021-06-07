@@ -63,6 +63,7 @@ HAS_ALPHA = envbool("XPRA_ALPHA", True)
 FORCE_BATCH = envint("XPRA_FORCE_BATCH", True)
 STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE", False)
 MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
+DOWNSCALE = envbool("XPRA_DOWNSCALE", True)
 DOWNSCALE_THRESHOLD = envint("XPRA_DOWNSCALE_THRESHOLD", 20)
 INTEGRITY_HASH = envint("XPRA_INTEGRITY_HASH", False)
 MAX_SYNC_BUFFER_SIZE = envint("XPRA_MAX_SYNC_BUFFER_SIZE", 256)*1024*1024        #256MB
@@ -712,7 +713,7 @@ class WindowSource(WindowIconSource):
         #or convert to grayscale,
         #and for that we need to use the pillow encoder:
         grayscale = self.encoding=="grayscale"
-        if self.enc_pillow and (self.client_render_size or grayscale):
+        if self.enc_pillow and ((DOWNSCALE and self.client_render_size) or grayscale):
             crsw, crsh = self.client_render_size
             ww, wh = self.window_dimensions
             if grayscale or (ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD):
@@ -853,7 +854,7 @@ class WindowSource(WindowIconSource):
             max_rgb_threshold = min(max_rgb_threshold, max(bwl//1000, 1024))
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
         crs = self.client_render_size
-        if crs:
+        if crs and DOWNSCALE:
             ww, wh = self.window_dimensions
             if crs[0]<ww or crs[1]<wh:
                 #client will downscale, best to avoid sending rgb,
@@ -2556,7 +2557,7 @@ class WindowSource(WindowIconSource):
         w, h = image.get_width(), image.get_height()
         ww, wh = self.window_dimensions
         crs = self.client_render_size
-        if crs:
+        if crs and DOWNSCALE:
             crsw, crsh = crs
             #resize if the render size is smaller
             if ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD:

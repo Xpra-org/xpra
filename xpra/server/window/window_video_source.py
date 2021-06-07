@@ -1400,7 +1400,9 @@ class WindowVideoSource(WindowSource):
         q = self._current_quality
         s = self._current_speed
         now = monotonic_time()
-        crs = self.client_render_size
+        crs = None
+        if DOWNSCALE:
+            crs = self.client_render_size
         def get_min_required_scaling(default_value=(1, 1)):
             mw = max_w
             mh = max_h
