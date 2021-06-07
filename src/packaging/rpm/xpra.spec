@@ -36,7 +36,7 @@
 %define Recommends Recommends
 #we never want to depend on proprietary nvidia bits,
 #and we manage the codecs with a private library:
-%global __requires_exclude ^(libnvidia-|libavcodec|libavformat|libavutil|libswscale|libx264).*\\.so.*$
+%global __requires_exclude ^(libnvjpeg|libnvidia-|libavcodec|libavformat|libavutil|libswscale|libx264).*\\.so.*$
 
 # Python permits the !/usr/bin/python shebang for scripts that are cross
 # compatible between python2 and python3, but Fedora 28 does not.  Fedora
