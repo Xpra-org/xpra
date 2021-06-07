@@ -17,12 +17,13 @@ from ctypes.wintypes import (
 from ctypes.wintypes import (
     HANDLE, LPSTR, LPCWSTR, UINT, INT, BOOL, WORD, HGDIOBJ,
     LONG, LPVOID, HBITMAP, LPCSTR, LPWSTR, HWINSTA,
-    HINSTANCE, HMENU, ULONG, HHOOK, LPMSG,
+    HINSTANCE, HMENU, ULONG, HHOOK, MSG,
     HKL,
     )
 #imported from this module but not used here:
 assert GetLastError
 
+LPMSG = POINTER(MSG)
 LPCTSTR = LPCSTR
 LRESULT = c_long
 DEVMODE = c_void_p
