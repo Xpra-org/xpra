@@ -886,6 +886,7 @@ fi
 %changelog
 * Wed Jun 02 2021 Antoine Martin <antoine@xpra.org> 3.0.13-10.0xpra1
 - fix proxy deadlock, subprocess leak, socket errors
+- fix proxy disconnections under heavy load
 - fix crash / corruption in the webp encoder
 - fix unnecessary screen update latency
 - fix 'scroll' detection with very large windows
