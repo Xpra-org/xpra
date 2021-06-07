@@ -897,7 +897,7 @@ fi
     proxy deadlock, subprocess leak, socket errors
     proxy start and display handling errors
     proxy disconnections under heavy load
-    'scroll' detection with very large windows
+    'scroll' detection bugs
     attach failures with remote start
     windows not getting focus
     unnecessary screen update latency
