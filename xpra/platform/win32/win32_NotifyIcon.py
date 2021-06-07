@@ -9,8 +9,8 @@
 
 import os
 import ctypes
-from ctypes import POINTER, Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
-from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE
+from ctypes import Structure, byref, WinDLL, c_void_p, c_char, sizeof, create_string_buffer
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, WCHAR, DWORD, HMODULE
 
 from xpra.util import typedict, csv, nonl, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
@@ -54,7 +54,7 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
 #MAX_TIP_SIZE = 128
 MAX_TIP_SIZE = 64
 
-def getNOTIFYICONDATAClass(char_type=CHAR, tip_size=MAX_TIP_SIZE):
+def getNOTIFYICONDATAClass(char_type=c_char, tip_size=MAX_TIP_SIZE):
     class NOTIFYICONDATA(Structure):
         _fields_ = [
             ("cbSize",              DWORD),
@@ -185,7 +185,7 @@ def make_ICONINFO(w, h, rgb_data, rgb_format="BGRA"):
         if bitmap:
             DeleteObject(bitmap)
 
-def rgb_to_bitmap(rgb_data, bytes_per_pixel : int, w : int, h : int):
+def rgb_to_bitmap(rgb_data, bytes_per_pixel, w, h):
     log("rgb_to_bitmap%s", (rgb_data, bytes_per_pixel, w, h))
     assert bytes_per_pixel in (3, 4)        #only BGRA or BGR are supported
     assert w>0 and h>0
