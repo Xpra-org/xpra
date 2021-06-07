@@ -617,6 +617,8 @@ fi
    remove unused outdated code
 - proxy deadlocks when queues fill up too quickly
 - proxy server does not honour mode or display
+- proxy disconnections under heavy load
+- scroll detection bugs
 - invalid error when bind option points to a directory
 - default to ssl-mode if the 'wss' socket option is not specified
 - local start with explicit attach was broken on Posix
