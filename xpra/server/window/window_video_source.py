@@ -16,7 +16,7 @@ from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PI
 from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB, LOSSLESS_WINDOW_TYPES,
-    DOWNSCALE_THRESHOLD,
+    DOWNSCALE_THRESHOLD, DOWNSCALE,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
