@@ -49,6 +49,6 @@ if [ "$MATCH" != "0" ]; then
 else
 	debuild -us -uc -b
 	ls -la ../xpra*deb
-	mv ../xpra*deb ../xpra*changes "$REPO_ARCH_PATH"
+	mv ../python*xpra*deb ../xpra*deb ../python*xpra*changes ../xpra*changes "$REPO_ARCH_PATH"
 fi
 popd
