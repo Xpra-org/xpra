@@ -260,6 +260,11 @@ rm -fr "${DIST}/lib/comtypes/gen"
 pushd ${DIST} > /dev/null
 #why is it shipping those files??
 find lib/ -name "*dll.a" -exec rm {} \;
+if [ "${BITS}" == "32" ]; then
+	#no idea why this is needed on x86 only
+	cp lib/libgdk-*dll ./
+	cp lib/libepoxy*dll ./
+fi
 #only keep the actual loaders, not all the other crap cx_Freeze put there:
 #but keep librsvg
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders/librsvg* ./
