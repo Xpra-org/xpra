@@ -97,7 +97,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
 
     def server_message_queue(self):
-        while not self.exit:
+        while not self.exit and self.message_queue:
             log("waiting for server message on %s", self.message_queue)
             m = self.message_queue.get()
             log("received proxy server message: %s", m)
