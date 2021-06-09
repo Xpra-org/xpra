@@ -281,6 +281,10 @@ mv ./libgst*.dll ./lib/gstreamer-1.0/
 mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
 #and the gstreamer support libraries look like plugins but those are actual DLLs:
 mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
+GST_DLLS="audioconvert audioparsers audiorate audioresample audiotestsrc cutter directsound directsoundsrc faac faad flac isomp4 lame matroska mpg123 ogg opus opusparse speex volume vorbis wasapi wavenc wavpack wavparse"
+for x in ${GST_DLLS}; do
+	cp $MINGW_PREFIX/lib/gstreamer-1.0/libgst$x*.dll ./lib/
+done
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	#move most DLLs to /lib
 	mv *dll lib/
@@ -294,11 +298,13 @@ else
 fi
 #cx_Freeze forgets these!?
 ESSENTIALS="atk gtk intl glib pcre winpthread brotlienc croco pdfium lz4 gthread"
+#include avcodec by default (lots of dependencies):
+ESSENTIALS="${ESSENTIALS} avcodec avutil aom celt0 dav1d gsm iconv lzma mfx mp3lame opencore openjp2 opus speex theoradec theoraenc vorbis vpx vulkan webp x264 x265 swresample xvidcore zlib1"
 if [ "${PYTHON_MAJOR_VERSION}" == "2" ]; then
 	ESSENTIALS="${ESSENTIALS} pyglib gtkglext"
 fi
 for x in ${ESSENTIALS}; do
-	cp $MINGW_PREFIX/bin/lib$x-*dll ./
+	cp $MINGW_PREFIX/bin/lib$x*.dll ./
 done
 #remove all the pointless duplication:
 for x in `ls *dll`; do
