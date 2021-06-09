@@ -275,15 +275,17 @@ for x in openblas gfortran quadmath; do
 	mv -f ./lib/numpy/linalg/lib$x*.dll ./lib/
 done
 mv lib/nacl/libsodium*dll ./lib/
-#gstreamer uses its own lib dir, so this does not belong in the root:
+#start my moving everything out:
+mv ./lib/gstreamer-1.0/* ./lib/
+#this does not belong in the root:
 mv ./libgst*.dll ./lib/gstreamer-1.0/
-#but the main gstreamer lib does:
-mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
+#but the main gstreamer libs do:
+mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/gstreamer-1.0/libgstcoreelements.dll ./lib/
 #and the gstreamer support libraries look like plugins but those are actual DLLs:
 mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
 GST_DLLS="audioconvert audioparsers audiorate audioresample audiotestsrc cutter directsound directsoundsrc faac faad flac isomp4 lame matroska mpg123 ogg opus opusparse speex volume vorbis wasapi wavenc wavpack wavparse"
 for x in ${GST_DLLS}; do
-	cp $MINGW_PREFIX/lib/gstreamer-1.0/libgst$x*.dll ./lib/
+	cp $MINGW_PREFIX/lib/gstreamer-1.0/libgst$x*.dll ./lib/gstreamer-1.0/
 done
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	#move most DLLs to /lib
