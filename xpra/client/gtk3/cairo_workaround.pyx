@@ -37,7 +37,6 @@ cdef extern from "Python.h":
         pass
     void * PyCapsule_Import(const char *name, int no_block)
     object PyBuffer_FromMemory(void *ptr, Py_ssize_t size)
-    int PyObject_AsReadBuffer(object obj, void ** buffer, Py_ssize_t * buffer_len) except -1
 
 cdef extern from "cairo/cairo.h":
     ctypedef struct cairo_surface_t:
@@ -82,9 +81,31 @@ CAIRO_FORMAT = {
         CAIRO_FORMAT_RGB30      : "RGB30",
         }
 
+cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stride, int height):
+    cdef int y
+    cdef int stride = src_stride
+    with nogil:
+        if src_stride==dst_stride:
+            memcpy(<void*> dst, <void*> src, stride*height)
+        else:
+            if dst_stride<src_stride:
+                stride = dst_stride
+            for y in range(height):
+                memcpy(<void*> dst, <void*> src, stride)
+                src += src_stride
+                dst += dst_stride
+
+CAIRO_FORMATS = {
+    CAIRO_FORMAT_RGB24  : ("RGB", "RGBX", "BGR", "BGRX"),
+    CAIRO_FORMAT_ARGB32 : ("BGRX", "BGRA"),
+    CAIRO_FORMAT_RGB16_565  : ("BGR565", ),
+    CAIRO_FORMAT_RGB30  : ("r210", ),
+    }
+
 def set_image_surface_data(object image_surface, rgb_format, object pixel_data, int width, int height, int stride):
     #convert pixel_data to a C buffer:
-    cdef const unsigned char * cbuf = <unsigned char *> 0
+    cdef const unsigned char * cbuf = NULL
+    cdef const unsigned short * sbuf = NULL
     cdef Py_ssize_t cbuf_len = 0
     assert object_as_buffer(pixel_data, <const void**> &cbuf, &cbuf_len)==0, "cannot convert %s to a readable buffer" % type(pixel_data)
     assert cbuf_len>=height*stride, "pixel buffer is too small for %sx%s with stride=%s: only %s bytes, expected %s" % (width, height, stride, cbuf_len, height*stride)
@@ -93,20 +114,20 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
         raise TypeError("object %r is not a %r" % (image_surface, cairo.ImageSurface))
     cdef cairo_surface_t * surface = (<PycairoImageSurface *> image_surface).surface
     cairo_surface_flush(surface)
-    cdef unsigned char * data = cairo_image_surface_get_data(surface)
+    cdef unsigned char *cdata = cairo_image_surface_get_data(surface)
     #get surface attributes:
-    cdef cairo_format_t format = cairo_image_surface_get_format(surface)
+    cdef cairo_format_t cairo_format = cairo_image_surface_get_format(surface)
     cdef int istride    = cairo_image_surface_get_stride(surface)
     cdef int iwidth     = cairo_image_surface_get_width(surface)
     cdef int iheight    = cairo_image_surface_get_height(surface)
     assert iwidth>=width and iheight>=height, "invalid image surface: expected at least %sx%s but got %sx%s" % (width, height, iwidth, iheight)
-    assert istride>=iwidth*4, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
+    BPP = 2 if cairo_format==CAIRO_FORMAT_RGB16_565 else 4
+    assert istride>=iwidth*BPP, "invalid image stride: expected at least %s but got %s" % (iwidth*4, istride)
     #log("set_image_surface_data%s pixel buffer=%#x, surface=%#x, data=%#x, stride=%i, width=%i, height=%i", (image_surface, rgb_format, pixel_data, width, height, stride), <uintptr_t> cbuf, <uintptr_t> surface, <uintptr_t> data, istride, iwidth, iheight)
     cdef int x, y
     cdef int srci, dsti
-    cdef uintptr_t src, dst
     #just deal with the formats we care about:
-    if format==CAIRO_FORMAT_RGB24:
+    if cairo_format==CAIRO_FORMAT_RGB24:
         #cairo's RGB24 format is actually stored as BGR on little endian
         if rgb_format=="BGR":
             with nogil:
@@ -114,64 +135,81 @@ def set_image_surface_data(object image_surface, rgb_format, object pixel_data, 
                     for x in range(width):
                         srci = x*3 + y*stride
                         dsti = x*4 + y*istride
-                        data[dsti + 0] = cbuf[srci + 0]     #B
-                        data[dsti + 1] = cbuf[srci + 1]     #G
-                        data[dsti + 2] = cbuf[srci + 2]     #R
-                        data[dsti + 3] = 0                  #X
+                        cdata[dsti + 0] = cbuf[srci + 0]     #B
+                        cdata[dsti + 1] = cbuf[srci + 1]     #G
+                        cdata[dsti + 2] = cbuf[srci + 2]     #R
+                        cdata[dsti + 3] = 0                  #X
         elif rgb_format=="RGB":
             with nogil:
                 for y in range(height):
                     for x in range(width):
                         srci = x*3 + y*stride
                         dsti = x*4 + y*istride
-                        data[dsti + 0] = cbuf[srci + 2]     #B
-                        data[dsti + 1] = cbuf[srci + 1]     #G
-                        data[dsti + 2] = cbuf[srci + 0]     #R
-                        data[dsti + 3] = 0                  #X
+                        cdata[dsti + 0] = cbuf[srci + 2]     #B
+                        cdata[dsti + 1] = cbuf[srci + 1]     #G
+                        cdata[dsti + 2] = cbuf[srci + 0]     #R
+                        cdata[dsti + 3] = 0                  #X
         elif rgb_format=="BGRX":
             with nogil:
                 for y in range(height):
                     for x in range(width):
                         srci = x*4 + y*stride
                         dsti = x*4 + y*istride
-                        data[dsti + 0] = cbuf[srci + 0]     #B
-                        data[dsti + 1] = cbuf[srci + 1]     #G
-                        data[dsti + 2] = cbuf[srci + 2]     #R
-                        data[dsti + 3] = 0                  #X
+                        cdata[dsti + 0] = cbuf[srci + 0]     #B
+                        cdata[dsti + 1] = cbuf[srci + 1]     #G
+                        cdata[dsti + 2] = cbuf[srci + 2]     #R
+                        cdata[dsti + 3] = 0                  #X
         elif rgb_format=="RGBX":
             with nogil:
                 for y in range(height):
                     for x in range(width):
                         srci = x*4 + y*stride
                         dsti = x*4 + y*istride
-                        data[dsti + 0] = cbuf[srci + 2]     #B
-                        data[dsti + 1] = cbuf[srci + 1]     #G
-                        data[dsti + 2] = cbuf[srci + 0]     #R
-                        data[dsti + 3] = 0                  #X
+                        cdata[dsti + 0] = cbuf[srci + 2]     #B
+                        cdata[dsti + 1] = cbuf[srci + 1]     #G
+                        cdata[dsti + 2] = cbuf[srci + 0]     #R
+                        cdata[dsti + 3] = 0                  #X
         else:
-            raise ValueError("unhandled RGB format '%s'" % rgb_format)
-    elif format==CAIRO_FORMAT_ARGB32:
+            raise ValueError("unhandled pixel format for RGB24: '%s'" % rgb_format)
+    elif cairo_format==CAIRO_FORMAT_ARGB32:
         if rgb_format in ("RGBA", "RGBX"):
             with nogil:
                 for y in range(height):
                     for x in range(width):
-                        data[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #A
-                        data[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #R
-                        data[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
-                        data[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
+                        cdata[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #A
+                        cdata[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #R
+                        cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
+                        cdata[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
         elif rgb_format in ("BGRA", "BGRX"):
-            with nogil:
-                if stride==istride:
-                    memcpy(<void*> data, <void*> cbuf, stride*height)
-                else:
-                    for y in range(height):
-                        src = (<uintptr_t> cbuf) + y*stride
-                        dst = (<uintptr_t> data) + y*istride
-                        memcpy(<void*> dst, <void*> src, istride)
+            simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
         else:
-            raise ValueError("unhandled RGB format '%s'" % rgb_format)
+            raise ValueError("unhandled pixel format for ARGB32: '%s'" % rgb_format)
+    elif cairo_format==CAIRO_FORMAT_RGB30:
+        if rgb_format in ("r210"):
+            simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+        #UNTESTED!
+        #elif rgb_format in ("BGR48"):
+        #access 16-bit per pixel at a time:
+        #    sbuf = <unsigned short *> cbuf
+        #    #write one pixel at a time: 30-bit padded to 32
+        #    idata = <unsigned long*> cdata
+        #    with nogil:
+        #        for y in range(height):
+        #            srci = y*stride
+        #            dsti = y*istride
+        #            for x in range(width):
+        #                idata[dsti] = (sbuf[srci] & 0x3ff) + (sbuf[srci+1] & 0x3ff)<<10 + (sbuf[srci+2] & 0x3ff)<<20
+        #                srci += 3
+        #                dsti += 1
+        else:
+            raise ValueError("unhandled pixel format for RGB30 '%s'" % rgb_format)
+    elif cairo_format==CAIRO_FORMAT_RGB16_565:
+        if rgb_format in ("BGR565"):
+            simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+        else:
+            raise ValueError("unhandled pixel format for RGB16_565 '%s'" % rgb_format)
     else:
-        raise ValueError("unhandled cairo format '%s'" % format)
+        raise ValueError("unhandled cairo format '%s'" % cairo_format)
     cairo_surface_mark_dirty(surface)
 
 
