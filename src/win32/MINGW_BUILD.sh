@@ -293,7 +293,11 @@ else
 	pushd . > /dev/null
 fi
 #cx_Freeze forgets these!?
-for x in ark gtk intl glib pcre winpthread brotlienc croco pyglib pdfium lz4 gtkglext gthread; do
+ESSENTIALS="atk gtk intl glib pcre winpthread brotlienc croco pdfium lz4 gthread"
+if [ "${PYTHON_MAJOR_VERSION}" == "2" ]; then
+	ESSENTIALS="${ESSENTIALS} pyglib gtkglext"
+fi
+for x in ${ESSENTIALS}; do
 	cp $MINGW_PREFIX/bin/lib$x-*dll ./
 done
 #remove all the pointless duplication:
