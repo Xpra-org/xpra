@@ -310,9 +310,10 @@ else
 	mv lib/*dll ./
 	pushd . > /dev/null
 fi
-#cx_Freeze forgets these two!?
-cp $MINGW_PREFIX/bin/libatk-*dll ./
-cp $MINGW_PREFIX/bin/libgtk-*dll ./
+#cx_Freeze forgets these!?
+for x in ark gtk intl glib pcre winpthread brotlienc croco pyglib pdfium lz4 gtkglext gthread; do
+	cp $MINGW_PREFIX/bin/lib$x-*dll ./
+done
 #remove all the pointless duplication:
 for x in `ls *dll`; do
 	find ./ -mindepth 2 -name "${x}" -exec rm {} \;
