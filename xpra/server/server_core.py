@@ -1276,7 +1276,7 @@ class ServerCore:
             return protocol
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)
 
-    def do_make_protocol(self, socktype, conn, socket_options, protocol_class, pre_read):
+    def do_make_protocol(self, socktype, conn, socket_options, protocol_class, pre_read=None):
         """ create a new Protocol instance and start it """
         netlog("make_protocol(%s, %s, %s, %s)", socktype, conn, socket_options, protocol_class)
         socktype = socktype.lower()
