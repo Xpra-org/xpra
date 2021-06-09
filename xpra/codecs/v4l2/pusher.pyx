@@ -10,7 +10,6 @@ import time
 import os
 
 from xpra.log import Logger
-from _dbus_bindings import UInt32
 log = Logger("webcam")
 
 from xpra.os_util import path_permission_info
