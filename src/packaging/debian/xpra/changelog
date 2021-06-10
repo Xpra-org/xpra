@@ -1,4 +1,4 @@
-xpra (3.0.13-1) UNRELEASED; urgency=low
+xpra (3.0.14-1) UNRELEASED; urgency=low
   * fix proxy deadlock, subprocess leak, socket errors
   * fix proxy disconnections under heavy load
   * fix crash / corruption in the webp encoder
@@ -8,16 +8,38 @@ xpra (3.0.13-1) UNRELEASED; urgency=low
   * fix windows not getting focused
   * fix invalid / ignored window resize counter
   * fix attach failures with remote start
+  * fix 'encoding' control command
+  * fix warning and error messages, remove confusing permission message
+  * fix compatibility with newer versions of python-zeroconf, silence warnings
+  * fix compilation errors with newer versions of ffmpeg
+  * fix audio silence detection with DEB packages
+  * fix environment variables not honoured via xpra launcher
+  * fix parsing of peercred authentication module options
+  * fix invalid default value for $XDG_DATA_DIRS, used for loading menus
+  * fix application menu loading issues
+  * fix library missing when linking gdk bindings on some platforms
+  * fix OpenBSD builds
+  * fix URL forwarding errors with python3 clients
+  * fix invalid permissions on some scripts and data files
+  * fix incorrect mousewheel value shown in "xpra -h" output
+  * many minor packaging fixes and tweaks
+  * update packging to get version information from git
+  * minor SELinux fixes for ~/.xpra
+  * never pollute /root/.xpra or /root/.config/
+  * add new common screen resolutions for Xdummy
+
+xpra (3.0.13-1) UNRELEASED; urgency=low
   * fix screen refresh performance issues, especially on jittery links
   * fix virtual screen resizing errors with invalid DPI values
   * fix slow subcommands due to unnecessary calls to ldconfig on Linux
+  * fix server asynchronous packets getting delayed
   * fix dangerous default values potentially causing intractable bugs
   * fix ssh connection errors with proxycommand or proxyhost port numbers
   * fix connection errors when a non interactive client is already connected
+  * fix failures to enable packet compression
   * fix 'xpra _proxy' zombies getting left behind (ssh mode)
   * fix proxy instance zombies on server start failures
   * fix proxy instance control socket errors and process leak
-  * fix 'encoding' control command
   * fix capslock wrongly applied to numeric keys
   * fix keyboard sub-layout detection with MS Windows clients
   * fix control key combinations with MS Windows clients
@@ -25,23 +47,13 @@ xpra (3.0.13-1) UNRELEASED; urgency=low
   * fix errors accessing window handles on MS Windows (size hints, opengl, etc)
   * fix clipboard cleanup errors on MS Windows
   * fix warning message format when running MS Windows under VirtualBox
-  * fix warning and error messages, remove confusing permission message
-  * fix compatibility with newer versions of python-zeroconf, silence warnings
-  * fix server asynchronous packets getting delayed
-  * fix failures to enable packet compression
   * fix spurious refresh packets with mmap
   * fix mmap not used with some non-video areas
-  * fix compilation errors with newer versions of ffmpeg
-  * fix audio silence detection with DEB packages
   * fix duplicate / untimely audio-stop control packets with HTML5 client
   * fix http / websocket and ssl socket upgrade failures
   * fix ssh command option not being honourd with the client launcher
-  * fix environment variables not honoured via xpra launcher
   * fix sqlite authentication module not handling configuration options
-  * fix parsing of peercred authentication module options
   * fix opengl debug option for saving buffers as jpeg
-  * fix invalid default value for $XDG_DATA_DIRS, used for loading menus
-  * fix application menu loading issues
   * fix archlinux build path stripping
   * fix spurious "missing resolution" errors (often with HTML5 client resizing)
   * fix console errors with Internet Explorer
@@ -57,32 +69,22 @@ xpra (3.0.13-1) UNRELEASED; urgency=low
   * fix client failing to connect due to keymap changes (ie: Wayland)
   * fix client signal listener not forwarding signal messages
   * fix client not showing authentication prompt only once per connection
-  * fix library missing when linking gdk bindings on some platforms
-  * fix OpenBSD builds
   * fix Fedora 33 package dependency issues
-  * fix URL forwarding errors with python3 clients
   * fix file-transfer failures with small files
   * fix file-transfers with non-ascii filenames
   * fix file transfer errors with python3 builds
-  * fix invalid permissions on some scripts and data files
-  * fix incorrect mousewheel value shown in "xpra -h" output
-  * many minor packaging fixes and tweaks
-  * update packging to get version information from git
-  * minor SELinux fixes for ~/.xpra
   * better file transfer message format
   * add new NVENC presets from SDK v10, workaround deprecation warnings
   * honour XPRA_XDG_EXPORT_ICONS=0 env var in all cases
   * hide passwords from authentication debug logging
-  * never pollute /root/.xpra or /root/.config/
   * updated DEB packaging for Ubuntu Focal, Groovy and Debian Bullseye
   * use an up-to-date PDFium library on MS Windows
   * honour the NOMD5 flag with the automatic border colour option
-  * add new common screen resolutions for Xdummy
   * make it possible to override the Xorg binary path detection
   * re-add "~/.xpra" as socket-dir
   * typo in man page
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 02 Jun 2021 13:50:47 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 01 Jan 2021 22:12:34 +0700
 
 xpra (3.0.12-1) UNRELEASED; urgency=low
   * fix memory leak with 'scroll' encoding

@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.0.13
+%define version 3.0.14
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -884,7 +884,7 @@ fi
 
 
 %changelog
-* Wed Jun 02 2021 Antoine Martin <antoine@xpra.org> 3.0.13-10.0xpra1
+* Thu Jun 11 2021 Antoine Martin <antoine@xpra.org> 3.0.14-10.0xpra1
 - fix proxy deadlock, subprocess leak, socket errors
 - fix proxy disconnections under heavy load
 - fix crash / corruption in the webp encoder
@@ -894,16 +894,38 @@ fi
 - fix windows not getting focused
 - fix invalid / ignored window resize counter
 - fix attach failures with remote start
+- fix 'encoding' control command
+- fix warning and error messages, remove confusing permission message
+- fix compatibility with newer versions of python-zeroconf, silence warnings
+- fix compilation errors with newer versions of ffmpeg
+- fix audio silence detection with DEB packages
+- fix environment variables not honoured via xpra launcher
+- fix parsing of peercred authentication module options
+- fix invalid default value for $XDG_DATA_DIRS, used for loading menus
+- fix application menu loading issues
+- fix library missing when linking gdk bindings on some platforms
+- fix OpenBSD builds
+- fix URL forwarding errors with python3 clients
+- fix invalid permissions on some scripts and data files
+- fix incorrect mousewheel value shown in "xpra -h" output
+- many minor packaging fixes and tweaks
+- update packging to get version information from git
+- minor SELinux fixes for ~/.xpra
+- never pollute /root/.xpra or /root/.config/
+- add new common screen resolutions for Xdummy
+
+* Fri Jan 01 2021 Antoine Martin <antoine@xpra.org> 3.0.13-10xpra1
 - fix screen refresh performance issues, especially on jittery links
 - fix virtual screen resizing errors with invalid DPI values
 - fix slow subcommands due to unnecessary calls to ldconfig on Linux
+- fix server asynchronous packets getting delayed
 - fix dangerous default values potentially causing intractable bugs
 - fix ssh connection errors with proxycommand or proxyhost port numbers
 - fix connection errors when a non interactive client is already connected
+- fix failures to enable packet compression
 - fix 'xpra _proxy' zombies getting left behind (ssh mode)
 - fix proxy instance zombies on server start failures
 - fix proxy instance control socket errors and process leak
-- fix 'encoding' control command
 - fix capslock wrongly applied to numeric keys
 - fix keyboard sub-layout detection with MS Windows clients
 - fix control key combinations with MS Windows clients
@@ -911,23 +933,13 @@ fi
 - fix errors accessing window handles on MS Windows (size hints, opengl, etc)
 - fix clipboard cleanup errors on MS Windows
 - fix warning message format when running MS Windows under VirtualBox
-- fix warning and error messages, remove confusing permission message
-- fix compatibility with newer versions of python-zeroconf, silence warnings
-- fix server asynchronous packets getting delayed
-- fix failures to enable packet compression
 - fix spurious refresh packets with mmap
 - fix mmap not used with some non-video areas
-- fix compilation errors with newer versions of ffmpeg
-- fix audio silence detection with DEB packages
 - fix duplicate / untimely audio-stop control packets with HTML5 client
 - fix http / websocket and ssl socket upgrade failures
 - fix ssh command option not being honourd with the client launcher
-- fix environment variables not honoured via xpra launcher
 - fix sqlite authentication module not handling configuration options
-- fix parsing of peercred authentication module options
 - fix opengl debug option for saving buffers as jpeg
-- fix invalid default value for $XDG_DATA_DIRS, used for loading menus
-- fix application menu loading issues
 - fix archlinux build path stripping
 - fix spurious "missing resolution" errors (often with HTML5 client resizing)
 - fix console errors with Internet Explorer
@@ -943,27 +955,17 @@ fi
 - fix client failing to connect due to keymap changes (ie: Wayland)
 - fix client signal listener not forwarding signal messages
 - fix client not showing authentication prompt only once per connection
-- fix library missing when linking gdk bindings on some platforms
-- fix OpenBSD builds
 - fix Fedora 33 package dependency issues
-- fix URL forwarding errors with python3 clients
 - fix file-transfer failures with small files
 - fix file-transfers with non-ascii filenames
 - fix file transfer errors with python3 builds
-- fix invalid permissions on some scripts and data files
-- fix incorrect mousewheel value shown in "xpra -h" output
-- many minor packaging fixes and tweaks
-- update packging to get version information from git
-- minor SELinux fixes for ~/.xpra
 - better file transfer message format
 - add new NVENC presets from SDK v10, workaround deprecation warnings
 - honour XPRA_XDG_EXPORT_ICONS=0 env var in all cases
 - hide passwords from authentication debug logging
-- never pollute /root/.xpra or /root/.config/
 - updated DEB packaging for Ubuntu Focal, Groovy and Debian Bullseye
 - use an up-to-date PDFium library on MS Windows
 - honour the NOMD5 flag with the automatic border colour option
-- add new common screen resolutions for Xdummy
 - make it possible to override the Xorg binary path detection
 - re-add "~/.xpra" as socket-dir
 - typo in man page
