@@ -123,8 +123,7 @@ def hosts(host_str):
 
 def add_listen_socket(socktype, sock, info, new_connection_cb, options=None):
     log = get_network_logger()
-    log("add_listen_socket(%s, %s, %s, %s, %s, %s)",
-        socktype, sock, info, new_connection_cb, options)
+    log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options))
     try:
         #ugly that we have different ways of starting sockets,
         #TODO: abstract this into the socket class
@@ -156,7 +155,7 @@ def add_listen_socket(socktype, sock, info, new_connection_cb, options=None):
                     start_thread(c, "pnp-cleanup-%s" % c, daemon=True)
         return cleanup
     except Exception as e:
-        log("add_listen_socket(%s, %s)", socktype, sock, exc_info=True)
+        log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options), exc_info=True)
         log.error("Error: failed to listen on %s socket %s:", socktype, info or sock)
         log.error(" %s", e)
         return None
