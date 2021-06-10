@@ -1652,7 +1652,7 @@ cdef class Encoder:
         log("using %s %s compression at %s%% quality with pixel format %s",
             ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
 
-        self.threaded_init = options.get("threaded-init", THREADED_INIT)
+        self.threaded_init = options.boolget("threaded-init", THREADED_INIT)
         if self.threaded_init:
             start_thread(self.threaded_init_device, "threaded-init-device", daemon=True, args=(options,))
         else:
