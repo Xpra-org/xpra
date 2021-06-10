@@ -1037,7 +1037,9 @@ class ServerCore:
             timeout = 0
         elif socktype=="unix-domain":
             timeout = UNIXDOMAIN_PEEK_TIMEOUT_MS
-        peek_data = peek_connection(conn, timeout)
+        peek_data = b""
+        if timeout>0:
+            peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
         netlog("socket peek=%s", ellipsizer(peek_data, limit=512))
         netlog("socket peek hex=%s", hexstr(peek_data[:128]))
