@@ -6,7 +6,6 @@
 
 import os
 import time
-from ctypes import c_char_p
 
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
@@ -407,6 +406,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not bool(glStringMarkerGREMEDY):
             return
         s = str(msg)
+        from ctypes import c_char_p
         c_string = c_char_p(s)
         glStringMarkerGREMEDY(0, c_string)
 
