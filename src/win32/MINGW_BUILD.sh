@@ -278,11 +278,11 @@ mv lib/nacl/libsodium*dll ./lib/
 #start my moving everything out:
 mv ./lib/gstreamer-1.0/* ./lib/
 #this does not belong in the root:
-mv ./libgst*.dll ./lib/gstreamer-1.0/
-#but the main gstreamer libs do:
-mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/gstreamer-1.0/libgstcoreelements.dll ./lib/
+mv ./lib/libgst*.dll ./lib/gstreamer-1.0/
+#but the main gstreamer lib does:
+mv ./lib/gstreamer-1.0/libgstreamer*.dll ./lib/
 #and the gstreamer support libraries look like plugins but those are actual DLLs:
-mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/
+mv ./lib/gstreamer-1.0/libgst*-1.0-*.dll ./lib/gstreamer-1.0/libwavpack* ./lib/
 GST_DLLS="audioconvert audioparsers audiorate audioresample audiotestsrc cutter directsound directsoundsrc faac faad flac isomp4 lame matroska mpg123 ogg opus opusparse speex volume vorbis wasapi wavenc wavpack wavparse"
 for x in ${GST_DLLS}; do
 	cp $MINGW_PREFIX/lib/gstreamer-1.0/libgst$x*.dll ./lib/gstreamer-1.0/
