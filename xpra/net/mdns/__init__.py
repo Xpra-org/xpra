@@ -30,6 +30,6 @@ def get_listener_class():
             from xpra.net.mdns.zeroconf_listener import ZeroconfListener
             log("ZeroconfListener=%s", ZeroconfListener)
             return ZeroconfListener
-        except ImportError:
+        except (ImportError, OSError):
             log("failed to import ZeroconfListener", exc_info=True)
     return None
