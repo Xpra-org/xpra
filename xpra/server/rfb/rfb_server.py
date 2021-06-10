@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 from xpra.util import csv
 from xpra.os_util import POSIX, OSX, bytestostr
+from xpra.net.bytestreams import set_socket_timeout
 from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
@@ -15,6 +16,8 @@ from xpra.scripts.config import parse_bool, parse_number
 from xpra.log import Logger
 
 log = Logger("rfb")
+mouselog = Logger("rfb", "mouse")
+keylog = Logger("rfb", "keyboard")
 
 
 """
@@ -72,6 +75,7 @@ class RFBServer:
             return RFBProtocol(self, conn, auth,
                                self.process_rfb_packet, self.get_rfb_pixelformat, self.session_name or "Xpra Server")
         p = self.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
+        log("handle_rfb_connection(%s) protocol=%s", conn, p)
         p.send_protocol_handshake()
 
     def process_rfb_packet(self, proto, packet):
@@ -103,10 +107,9 @@ class RFBServer:
             return
         self.accept_protocol(proto)
         #use blocking sockets from now on:
-        from xpra.net.bytestreams import set_socket_timeout
         set_socket_timeout(proto._conn, None)
         accepted, share_count, disconnected = self.handle_sharing(proto, share=proto.share)
-        log("rfb handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
+        log("RFB handle sharing: accepted=%s, share count=%s, disconnected=%s", accepted, share_count, disconnected)
         if not accepted:
             return
         source = RFBSource(proto, proto.share)
@@ -128,6 +131,7 @@ class RFBServer:
             return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
+        mouselog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
         self._move_pointer(wid, (x, y))
         if buttons!=self.rfb_buttons:
             #figure out which buttons have changed:
@@ -135,6 +139,7 @@ class RFBServer:
                 mask = 2**button
                 if buttons & mask != self.rfb_buttons & mask:
                     pressed = bool(buttons & mask)
+                    mouselog(" %spressing %i", ["un",""][pressed], 1+button)
                     self.button_action((x, y), 1+button, pressed, -1)
             self.rfb_buttons = buttons
 
@@ -147,18 +152,19 @@ class RFBServer:
         pressed, p1, p2, key = packet[1:5]
         wid = self._get_rfb_desktop_wid()
         keyname = RFB_KEYNAMES.get(key)
+        keylog("RFB KeyEvent(%s, %s, %s, %s) keyname=%s, desktop wid=%s", pressed, p1, p2, key, keyname, wid)
         if not keyname:
             if 0<key<255:
                 keyname = chr(key)
             elif self.X11Keyboard:
                 keyname = self.X11Keyboard.keysym_str(key)
         if not keyname:
-            log.warn("rfb unknown KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
+            keylog.warn("rfb unknown KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
             return
         modifiers = []
         keyval = 0
         keycode, group = source.keyboard_config.get_keycode(0, keyname, pressed, modifiers, 0, keyname, 0)
-        log("rfb keycode(%s)=%s, %s", keyname, keycode, group)
+        keylog("RFB keycode(%s)=%s, %s", keyname, keycode, group)
         if keycode:
             is_mod = source.keyboard_config.is_modifier(keycode)
             self._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers, is_mod, True)
@@ -166,10 +172,10 @@ class RFBServer:
     def _process_rfb_SetEncodings(self, _proto, packet):
         n, encodings = packet[2:4]
         known_encodings = [RFBEncoding.ENCODING_STR.get(x) for x in encodings if x in RFBEncoding.ENCODING_STR]
-        log("%i encodings: %s", n, csv(known_encodings))
+        log("RFB %i encodings: %s", n, csv(known_encodings))
         unknown_encodings = [x for x in encodings if x not in RFBEncoding.ENCODING_STR]
         if unknown_encodings:
-            log("%i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
+            log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
 
     def _process_rfb_SetPixelFormat(self, _proto, packet):
         log("RFB: SetPixelFormat %s", packet)
@@ -186,4 +192,4 @@ class RFBServer:
     def _process_rfb_ClientCutText(self, _proto, packet):
         #l = packet[4]
         text = packet[5]
-        log("got rfb clipboard text: %r", text)
+        log("RFB got clipboard text: %r", text)
