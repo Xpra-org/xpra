@@ -2352,7 +2352,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options=None, int retry=0):
+    def compress_image(self, image, int quality=-1, int speed=-1, int retry=0):
         assert self.context, "context is not initialized"
         self.cuda_context.push()
         try:
@@ -2361,26 +2361,27 @@ cdef class Encoder:
                     self.set_encoding_quality(quality)
                 if speed>=0:
                     self.set_encoding_speed(speed)
-                return self.do_compress_image(image, options or {})
+                return self.do_compress_image(image)
             finally:
                 self.cuda_context.pop()
         except driver.LogicError as e:
-            log("compress_image%s", (image, quality, speed, options, retry), exc_info=True)
+            log("compress_image%s", (image, quality, speed, retry), exc_info=True)
             if retry>0:
                 raise
             log.warn("Warning: PyCUDA %s", e)
             del e
             self.clean()
             self.init_cuda()
-            return self.compress_image(image, options, retry+1)
+            return self.compress_image(image, retry+1)
 
-    cdef do_compress_image(self, image, options):
+    cdef do_compress_image(self, image):
         assert self.context, "context is not initialized"
         cdef unsigned int w = image.get_width()
         cdef unsigned int h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
         cdef unsigned int stride = image.get_rowstride()
-        log("compress_image(%s, %s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i", image, options, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
+        log("do_compress_image(%s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i",
+            image, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
