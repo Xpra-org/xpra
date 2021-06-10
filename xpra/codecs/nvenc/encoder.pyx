@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,19 +9,18 @@ from __future__ import absolute_import
 
 import binascii
 import os
-import sys
 import numpy
 from collections import deque, OrderedDict
 import ctypes
-from ctypes import cdll as loader, POINTER
+from ctypes import cdll, POINTER
 from threading import Lock
 from pycuda import driver
 
-from xpra.os_util import WIN32, OSX, LINUX, PYTHON3, bytestostr, strtobytes
+from xpra.os_util import WIN32, LINUX, PYTHON3, strtobytes, bytestostr
 from xpra.make_thread import start_thread
 from xpra.util import AtomicInteger, engs, csv, pver, envint, envbool, first_time, typedict
 from xpra.codecs.cuda_common.cuda_context import (
-    init_all_devices, get_devices, select_device, get_device_info, get_device_name,
+    init_all_devices, get_devices, select_device, get_device_name,
     get_cuda_info, get_pycuda_info, device_info, reset_state,
     get_CUDA_function, record_device_failure, record_device_success, CUDA_ERRORS_INFO,
     )
@@ -40,7 +39,6 @@ from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
 from xpra.monotonic_time cimport monotonic_time
 
-CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
 TEST_ENCODINGS = os.environ.get("XPRA_NVENC_ENCODINGS", "h264,h265").split(",")
 assert (x for x in TEST_ENCODINGS in ("h264", "h265")), "invalid list of encodings: %s" % (TEST_ENCODINGS,)
 assert len(TEST_ENCODINGS)>0, "no encodings enabled!"
@@ -48,6 +46,7 @@ DESIRED_PRESET = os.environ.get("XPRA_NVENC_PRESET", "")
 #NVENC requires compute capability value 0x30 or above:
 cdef int MIN_COMPUTE = 0x30
 
+cdef int SUPPORT_30BPP = envbool("XPRA_NVENC_SUPPORT_30BPP", True)
 cdef int YUV444_THRESHOLD = envint("XPRA_NVENC_YUV444_THRESHOLD", 85)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_NVENC_LOSSLESS_THRESHOLD", 100)
 cdef int NATIVE_RGB = int(not WIN32)
@@ -144,7 +143,11 @@ cdef extern from "nvEncodeAPI.h":
         NV_ENC_CAPS_SUPPORT_WEIGHTED_PREDICTION
         NV_ENC_CAPS_DYNAMIC_QUERY_ENCODER_CAPACITY
         NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE
-        NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP,
+        NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP
+        #added in 9.1:
+        #NV_ENC_CAPS_WIDTH_MIN
+        #NV_ENC_CAPS_HEIGHT_MIN
+        #NV_ENC_CAPS_SUPPORT_MULTIPLE_REF_FRAMES
 
 
     ctypedef enum NV_ENC_DEVICE_TYPE:
@@ -407,6 +410,14 @@ cdef extern from "nvEncodeAPI.h":
     #V4 ONLY PRESETS:
     GUID NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID
     GUID NV_ENC_PRESET_LOSSLESS_HP_GUID
+    #V10:
+    GUID NV_ENC_PRESET_P1_GUID  #FC0A8D3E-45F8-4CF8-80C7-298871590EBF
+    GUID NV_ENC_PRESET_P2_GUID  #F581CFB8-88D6-4381-93F0-DF13F9C27DAB
+    GUID NV_ENC_PRESET_P3_GUID  #36850110-3A07-441F-94D5-3670631F91F6
+    GUID NV_ENC_PRESET_P4_GUID  #90A7B826-DF06-4862-B9D2-CD6D73A08681
+    GUID NV_ENC_PRESET_P5_GUID  #21C6E6B4-297A-4CBA-998F-B6CBDE72ADE3
+    GUID NV_ENC_PRESET_P6_GUID  #8E75C279-6299-4AB6-8302-0B215A335CF5
+    GUID NV_ENC_PRESET_P7_GUID  #84848C12-6F71-4C13-931B-53E283F57974
 
     ctypedef struct NV_ENC_CAPS_PARAM:
         uint32_t    version
@@ -620,6 +631,14 @@ cdef extern from "nvEncodeAPI.h":
         uint32_t    reserved[278]       #[in]: Reserved and must be set to 0
         void        *reserved2[64]      #[in]: Reserved and must be set to NULL
 
+    ctypedef enum NV_ENC_TUNING_INFO:
+        NV_ENC_TUNING_INFO_UNDEFINED            #Undefined tuningInfo. Invalid value for encoding
+        NV_ENC_TUNING_INFO_HIGH_QUALITY         #Tune presets for latency tolerant encoding
+        NV_ENC_TUNING_INFO_LOW_LATENCY          #Tune presets for low latency streaming
+        NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY    #Tune presets for ultra low latency streaming
+        NV_ENC_TUNING_INFO_LOSSLESS             #Tune presets for lossless encoding
+        NV_ENC_TUNING_INFO_COUNT                #Count number of tuningInfos. Invalid value
+
 
     ctypedef struct NVENC_EXTERNAL_ME_HINT_COUNTS_PER_BLOCKTYPE:
         uint32_t    numCandsPerBlk16x16 #[in]: Specifies the number of candidates per 16x16 block.
@@ -830,6 +849,7 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCOUNT)      (void* encoder, GUID encodeGUID, uint32_t* encodePresetGUIDCount) nogil
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETGUIDS)      (void* encoder, GUID encodeGUID, GUID* presetGUIDs, uint32_t guidArraySize, uint32_t* encodePresetGUIDCount) nogil
     ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCONFIG)     (void* encoder, GUID encodeGUID, GUID  presetGUID, NV_ENC_PRESET_CONFIG* presetConfig) nogil
+    ctypedef NVENCSTATUS (*PNVENCGETENCODEPRESETCONFIGEX)   (void* encoder, GUID encodeGUID, GUID  presetGUID, NV_ENC_TUNING_INFO tuningInfo, NV_ENC_PRESET_CONFIG* presetConfig)
     ctypedef NVENCSTATUS (*PNVENCINITIALIZEENCODER)         (void* encoder, NV_ENC_INITIALIZE_PARAMS* createEncodeParams) nogil
     ctypedef NVENCSTATUS (*PNVENCCREATEINPUTBUFFER)         (void* encoder, NV_ENC_CREATE_INPUT_BUFFER* createInputBufferParams) nogil
     ctypedef NVENCSTATUS (*PNVENCDESTROYINPUTBUFFER)        (void* encoder, NV_ENC_INPUT_PTR inputBuffer) nogil
@@ -867,6 +887,7 @@ cdef extern from "nvEncodeAPI.h":
         PNVENCGETENCODEPRESETCOUNT      nvEncGetEncodePresetCount
         PNVENCGETENCODEPRESETGUIDS      nvEncGetEncodePresetGUIDs
         PNVENCGETENCODEPRESETCONFIG     nvEncGetEncodePresetConfig
+        PNVENCGETENCODEPRESETCONFIGEX   nvEncGetEncodePresetConfigEx
         PNVENCINITIALIZEENCODER         nvEncInitializeEncoder
         PNVENCCREATEINPUTBUFFER         nvEncCreateInputBuffer
         PNVENCDESTROYINPUTBUFFER        nvEncDestroyInputBuffer
@@ -994,6 +1015,17 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfuly mapped.",
       }
 
+OPEN_TRANSIENT_ERROR = (
+    NV_ENC_ERR_NO_ENCODE_DEVICE,
+    NV_ENC_ERR_UNSUPPORTED_DEVICE,
+    NV_ENC_ERR_INVALID_ENCODERDEVICE,
+    NV_ENC_ERR_INVALID_DEVICE,
+    NV_ENC_ERR_DEVICE_NOT_EXIST,
+    NV_ENC_ERR_OUT_OF_MEMORY,
+    NV_ENC_ERR_ENCODER_BUSY,
+    NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY,
+    )
+
 CAPS_NAMES = {
         NV_ENC_CAPS_NUM_MAX_BFRAMES             : "NUM_MAX_BFRAMES",
         NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES : "SUPPORTED_RATECONTROL_MODES",
@@ -1052,6 +1084,14 @@ PIC_TYPES = {
              NV_ENC_PIC_TYPE_UNKNOWN        : "UNKNOWN",
             }
 
+TUNING_STR = {
+        NV_ENC_TUNING_INFO_UNDEFINED            : "undefined",
+        NV_ENC_TUNING_INFO_HIGH_QUALITY         : "high-quality",
+        NV_ENC_TUNING_INFO_LOW_LATENCY          : "low-latency",
+        NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY    : "ultra-low-latency",
+        NV_ENC_TUNING_INFO_LOSSLESS             : "lossless",
+        }
+
 NvEncodeAPICreateInstance = None
 cuCtxGetCurrent = None
 
@@ -1063,7 +1103,7 @@ def init_nvencode_library():
         cuda_libname = "nvcuda.dll"
     else:
         #assert os.name=="posix"
-        load = ctypes.cdll.LoadLibrary
+        load = cdll.LoadLibrary
         nvenc_libname = "libnvidia-encode.so.1"
         cuda_libname = "libcuda.so"
     #CUDA:
@@ -1144,7 +1184,7 @@ cdef GUID c_parseguid(src) except *:
     for i, s in (0, 4), (1, 2), (2, 2), (3, 2), (4, 6):
         part = parts[i]
         binv = binascii.unhexlify(part)
-        log("c_parseguid bytes(%s)=%r", part, binv)
+        #log("c_parseguid bytes(%s)=%r", part, binv)
         v = 0
         for j in range(s):
             c = _ord(binv[j])
@@ -1173,6 +1213,7 @@ test_parse()
 
 cdef GUID CLIENT_KEY_GUID
 memset(&CLIENT_KEY_GUID, 0, sizeof(GUID))
+CLIENT_KEYS_STR = get_license_keys(NVENCAPI_MAJOR_VERSION) + get_license_keys()
 if CLIENT_KEYS_STR:
     #if we have client keys, parse them and keep the ones that look valid
     validated = []
@@ -1210,6 +1251,7 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)          : "high-444",
         },
     guidstr(NV_ENC_CODEC_HEVC_GUID) : {
+        guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN_GUID)              : "main",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN10_GUID)            : "main10",
         guidstr(NV_ENC_HEVC_PROFILE_FREXT_GUID)             : "frext",
@@ -1238,14 +1280,14 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID)            : "lossless",
     guidstr(NV_ENC_PRESET_LOSSLESS_HP_GUID)                 : "lossless-hp",
     "7ADD423D-D035-4F6F-AEA5-50885658643C"                  : "streaming",
-    #SDK 10 presets:
-    "FC0A8D3E-45F8-4CF8-80C7-298871590EBF"                  : "P1",
-    "F581CFB8-88D6-4381-93F0-DF13F9C27DAB"                  : "P2",
-    "36850110-3A07-441F-94D5-3670631F91F6"                  : "P3",
-    "90A7B826-DF06-4862-B9D2-CD6D73A08681"                  : "P4",
-    "21C6E6B4-297A-4CBA-998F-B6CBDE72ADE3"                  : "P5",
-    "8E75C279-6299-4AB6-8302-0B215A335CF5"                  : "P6",
-    "84848C12-6F71-4C13-931B-53E283F57974"                  : "P7",
+    #SDK 10:
+    guidstr(NV_ENC_PRESET_P1_GUID)  : "P1",
+    guidstr(NV_ENC_PRESET_P2_GUID)  : "P2",
+    guidstr(NV_ENC_PRESET_P3_GUID)  : "P3",
+    guidstr(NV_ENC_PRESET_P4_GUID)  : "P4",
+    guidstr(NV_ENC_PRESET_P5_GUID)  : "P5",
+    guidstr(NV_ENC_PRESET_P6_GUID)  : "P6",
+    guidstr(NV_ENC_PRESET_P7_GUID)  : "P7",
     }
 
 YUV444_PRESETS = ("high-444", "lossless", "lossless-hp",)
@@ -1280,6 +1322,13 @@ PRESET_QUALITY = {
     "low-latency"   : 20,
     "low-latency-hp": 0,
     "streaming"     : -1000,    #disabled for now
+    "P1"            : 10,
+    "P2"            : 25,
+    "P3"            : 40,
+    "P4"            : 55,
+    "P5"            : 70,
+    "P6"            : 85,
+    "P7"            : 100,
     }
 
 
@@ -1313,6 +1362,8 @@ def get_COLORSPACES(encoding):
         "XRGB" : out_cs,
         "ARGB" : out_cs,
         }
+    if SUPPORT_30BPP:
+        COLORSPACES["r210"] = ("GBRP10", )
     return COLORSPACES
 
 def get_input_colorspaces(encoding):
@@ -1330,6 +1381,8 @@ def get_output_colorspaces(encoding, input_colorspace):
 
 WIDTH_MASK = 0xFFFE
 HEIGHT_MASK = 0xFFFE
+
+bad_presets = {}
 
 #Note: these counters should be per-device, but
 #when we call get_runtime_factor(), we don't know which device is going to get used!
@@ -1362,13 +1415,13 @@ def get_spec(encoding, colorspace):
     assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
     #undocumented and found the hard way, see:
-    #https://www.xpra.org/trac/ticket/1046#comment:6
-    #https://xpra.org/trac/ticket/1550#comment:13
+    #https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
+    #https://github.com/Xpra-org/xpra/issues/1550
     min_w, min_h = 128, 128
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
     global MAX_SIZE
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-    has_lossless_mode = colorspace in ("XRGB", "ARGB", "BGRX", "BGRA" ) and encoding=="h264"
+    has_lossless_mode = colorspace in ("XRGB", "ARGB", "BGRX", "BGRA", "r210") and encoding=="h264"
     cs = video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED),
                       codec_class=Encoder, codec_type=get_type(),
                       quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
@@ -1376,7 +1429,7 @@ def get_spec(encoding, colorspace):
                       #using a hardware encoder for something this small is silly:
                       min_w=min_w, min_h=min_h,
                       max_w=max_w, max_h=max_h,
-                      can_scale=True,
+                      can_scale=colorspace!="r210",
                       width_mask=WIDTH_MASK, height_mask=HEIGHT_MASK)
     cs.get_runtime_factor = get_runtime_factor
     return cs
@@ -1429,16 +1482,17 @@ cdef uintptr_t cmalloc(size_t size, what) except 0:
     return <uintptr_t> ptr
 
 cdef nvencStatusInfo(NVENCSTATUS ret):
-    if ret in NV_ENC_STATUS_TXT:
-        return "%s: %s" % (ret, NV_ENC_STATUS_TXT[ret])
-    return str(ret)
+    return NV_ENC_STATUS_TXT.get(ret)
 
 class NVENCException(Exception):
     def __init__(self, code, fn):
         self.function = fn
         self.code = code
-        msg = "%s - returned %s" % (fn, nvencStatusInfo(code))
-        Exception.__init__(self, msg)
+        self.api_message = nvencStatusInfo(code)
+        msg = "%s - returned %i" % (fn, code)
+        if self.api_message:
+            msg += ": %s" % self.api_message
+        super().__init__(msg)
 
 cdef inline raiseNVENC(NVENCSTATUS ret, msg):
     if DEBUG_API:
@@ -1479,7 +1533,7 @@ cdef class Encoder:
     cdef uint64_t free_memory
     cdef uint64_t total_memory
     #NVENC:
-    cdef NV_ENCODE_API_FUNCTION_LIST *functionList               #@DuplicatedSignature
+    cdef NV_ENCODE_API_FUNCTION_LIST *functionList
     cdef void *context
     cdef GUID codec
     cdef NV_ENC_REGISTERED_PTR inputHandle
@@ -1523,31 +1577,52 @@ cdef class Encoder:
         return self.codec
 
     cdef GUID get_preset(self, GUID codec) except *:
+        global bad_presets
         presets = self.query_presets(codec)
         options = {}
         #if a preset was specified, give it the best score possible (-1):
         if DESIRED_PRESET:
             options[-1] = DESIRED_PRESET
-        #add all presets ranked by how far they are from the target speed and quality:
-        log("presets for %s: %s (pixel format=%s)", guidstr(codec), csv(presets.keys()), self.pixel_format)
-        for name, x in presets.items():
-            preset_speed = PRESET_SPEED.get(name, 50)
-            preset_quality = PRESET_QUALITY.get(name, 50)
-            is_lossless = name in LOSSLESS_PRESETS
-            log("preset %16s: speed=%5i, quality=%5i (lossless=%s - want lossless=%s)", name, preset_speed, preset_quality, is_lossless, bool(self.lossless))
-            if is_lossless and self.pixel_format!="YUV444P":
+        #for new style presets (P1 - P7),
+        #we only care about the quality here,
+        #the speed is set using the "tuning"
+        for i in range(1, 8):
+            name = "P%i" % i
+            guid = presets.get(name)
+            if not guid:
                 continue
-            if preset_speed>=0 and preset_quality>=0:
-                #quality (3) weighs more than speed (2):
-                v = 2 * abs(preset_speed-self.speed) + 3 * abs(preset_quality-self.quality)
-                if self.lossless!=is_lossless:
-                    v -= 100
-                l = options.setdefault(v, [])
-                if x not in l:
-                    l.append((name, x))
+            preset_quality = PRESET_QUALITY.get(name, 50)
+            distance = abs(self.quality-preset_quality)
+            l = options.setdefault(distance, []).append((name, guid))
+        #TODO: figure out why the new-style presets fail
+        options = {}
+        #no new-style presets found,
+        #fallback to older lookup code:
+        if not options:
+            #add all presets ranked by how far they are from the target speed and quality:
+            log("presets for %s: %s (pixel format=%s)", guidstr(codec), csv(presets.keys()), self.pixel_format)
+            for name, x in presets.items():
+                preset_speed = PRESET_SPEED.get(name, 50)
+                preset_quality = PRESET_QUALITY.get(name, 50)
+                is_lossless = name in LOSSLESS_PRESETS
+                log("preset %16s: speed=%5i, quality=%5i (lossless=%s - want lossless=%s)", name, preset_speed, preset_quality, is_lossless, bool(self.lossless))
+                if is_lossless and self.pixel_format!="YUV444P":
+                    continue
+                if preset_speed>=0 and preset_quality>=0:
+                    #quality (3) weighs more than speed (2):
+                    v = 2 * abs(preset_speed-self.speed) + 3 * abs(preset_quality-self.quality)
+                    if self.lossless!=is_lossless:
+                        v -= 100
+                    l = options.setdefault(v, [])
+                    if x not in l:
+                        l.append((name, x))
         log("get_preset(%s) speed=%s, quality=%s, lossless=%s, pixel_format=%s, options=%s", codecstr(codec), self.speed, self.quality, bool(self.lossless), self.pixel_format, options)
         for score in sorted(options.keys()):
             for preset, preset_guid in options.get(score):
+                if preset in bad_presets.get(self.cuda_device_id, []):
+                    log("skipping bad preset '%s' (speed=%s, quality=%s, lossless=%s, pixel_format=%s)", preset, self.speed, self.quality, self.lossless, self.pixel_format)
+                    continue
+
                 if preset and (preset in presets.keys()):
                     log("using preset '%s' for speed=%s, quality=%s, lossless=%s, pixel_format=%s", preset, self.speed, self.quality, self.lossless, self.pixel_format)
                     return c_parseguid(preset_guid)
@@ -1556,7 +1631,7 @@ cdef class Encoder:
     def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options={}):    #@DuplicatedSignature
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
-        assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX"), "invalid source format %s" % src_format
+        assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX", "r210"), "invalid source format %s" % src_format
         assert "YUV420P" in dst_formats or "YUV444P" in dst_formats
         self.width = width
         self.height = height
@@ -1580,6 +1655,7 @@ cdef class Encoder:
         self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
 
+        options = options or typedict()
         #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.profile_name = self._get_profile(options)
@@ -1587,7 +1663,7 @@ cdef class Encoder:
         log("using %s %s compression at %s%% quality with pixel format %s",
             ["lossy","lossless"][self.lossless], encoding, self.quality, self.pixel_format)
 
-        self.threaded_init = options.get("threaded-init", THREADED_INIT)
+        self.threaded_init = options.boolget("threaded-init", THREADED_INIT)
         if self.threaded_init:
             start_thread(self.threaded_init_device, "threaded-init-device", daemon=True, args=(options,))
         else:
@@ -1603,9 +1679,10 @@ cdef class Encoder:
             csc_mode = "YUV444P10"
 
         #use the environment as default if present:
-        profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, "")
+        profile = os.environ.get("XPRA_NVENC_PROFILE", "")
+        profile = os.environ.get("XPRA_NVENC_%s_PROFILE" % csc_mode, profile)
         #now see if the client has requested a different value:
-        profile = typedict(options).strget("h264.%s.profile" % csc_mode, profile)
+        profile = options.strget("h264.%s.profile" % csc_mode, profile)
         return profile
 
 
@@ -1617,6 +1694,15 @@ cdef class Encoder:
                 time.sleep(SLOW_DOWN_INIT)
             try:
                 self.init_device(options)
+            except NVENCException as e:
+                log("threaded_init_device(%s)", options, exc_info=True)
+                log.warn("Warning: failed to initialize NVENC device")
+                if not e.api_message:
+                    log.warn(" unknown error %i", e.code)
+                else:
+                    log.warn(" error %i:", e.code)
+                    log.warn(" '%s'", e.api_message)
+                self.clean()
             except Exception as e:
                 log("threaded_init_device(%s)", options, exc_info=True)
                 log.warn("Warning: failed to initialize device:")
@@ -1624,6 +1710,7 @@ cdef class Encoder:
                 self.clean()
 
     def init_device(self, options):
+        global bad_presets
         cdef double start = monotonic_time()
         self.select_cuda_device(options)
         try:
@@ -1640,7 +1727,12 @@ cdef class Encoder:
             record_device_success(self.cuda_device_id)
         except Exception as e:
             log("init_cuda failed", exc_info=True)
-            record_device_failure(self.cuda_device_id)
+            if self.preset_name and isinstance(e, NVENCException) and e.code==NV_ENC_ERR_INVALID_PARAM:
+                log("adding preset '%s' to bad presets", self.preset_name)
+                bad_presets.setdefault(self.cuda_device_id, []).append(self.preset_name)
+            else:
+                record_device_failure(self.cuda_device_id)
+
             raise
         cdef double end = monotonic_time()
         self.ready = 1
@@ -1666,6 +1758,8 @@ cdef class Encoder:
         nativergb = NATIVE_RGB and hasyuv444
         if nativergb and self.src_format in ("BGRX", "BGRA"):
             v = "BGRX"
+        elif self.src_format=="r210":
+            v = "r210"
         else:
             x,y = self.scaling
             hasyuv420 = YUV420_ENABLED and "YUV420P" in self.dst_formats
@@ -1686,26 +1780,23 @@ cdef class Encoder:
 
     def get_target_lossless(self, pixel_format, quality):
         global LOSSLESS_ENABLED, LOSSLESS_CODEC_SUPPORT
-        if pixel_format!="YUV444P":
+        if pixel_format not in ("YUV444P", "r210"):
             return False
         if not LOSSLESS_CODEC_SUPPORT.get(self.encoding, LOSSLESS_ENABLED):
             return False
         return quality>=LOSSLESS_THRESHOLD
 
     def init_cuda(self):
-        cdef unsigned int plane_size_div
-        cdef unsigned int max_input_stride
         cdef int result
         cdef uintptr_t context_pointer
 
         assert self.cuda_device_id>=0 and self.cuda_device, "no NVENC device found!"
         global last_context_failure
         d = self.cuda_device
-        cf = driver.ctx_flags
         log("init_cuda() pixel format=%s, device_id=%s", self.pixel_format, self.cuda_device_id)
         try:
             log("init_cuda cuda_device=%s (%s)", d, device_info(d))
-            self.cuda_context = d.make_context(flags=cf.SCHED_AUTO | cf.MAP_HOST)
+            self.cuda_context = d.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
             assert self.cuda_context, "failed to create a CUDA context for device %s" % device_info(d)
             log("init_cuda cuda_context=%s", self.cuda_context)
             self.cuda_info = get_cuda_info()
@@ -1744,6 +1835,13 @@ cdef class Encoder:
             assert NATIVE_RGB
             kernel_name = None
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_ARGB
+            plane_size_div= 1
+            wmult = 4
+            hmult = 1
+        elif self.pixel_format=="r210":
+            assert NATIVE_RGB
+            kernel_name = None
+            self.bufferFmt = NV_ENC_BUFFER_FORMAT_ARGB10
             plane_size_div= 1
             wmult = 4
             hmult = 1
@@ -1815,9 +1913,8 @@ cdef class Encoder:
 
     def init_encoder(self):
         cdef GUID codec = self.init_codec()
-        cdef NV_ENC_INITIALIZE_PARAMS *params = NULL
         cdef NVENCSTATUS r
-        params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
+        cdef NV_ENC_INITIALIZE_PARAMS *params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         try:
             self.init_params(codec, params)
@@ -1845,11 +1942,8 @@ cdef class Encoder:
 
     cdef init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
         #caller must free the config!
-        cdef GUID preset
-        cdef NV_ENC_CONFIG *config = NULL
-        cdef NV_ENC_PRESET_CONFIG *presetConfig = NULL  #@DuplicatedSignature
         assert self.context, "context is not initialized"
-        preset = self.get_preset(self.codec)
+        cdef GUID preset = self.get_preset(self.codec)
         self.preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset), guidstr(preset))
         log("init_params(%s) using preset=%s", codecstr(codec), presetstr(preset))
         profiles = self.query_profiles(codec)
@@ -1868,109 +1962,106 @@ cdef class Encoder:
         assert input_format in input_formats, "%s does not support %s (only: %s)" %  (self.codec_name, input_format, input_formats)
 
         assert memset(params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
-        config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
+        params.version = NV_ENC_INITIALIZE_PARAMS_VER
+        params.encodeGUID = codec
+        params.presetGUID = preset
+        params.encodeWidth = self.encoder_width
+        params.encodeHeight = self.encoder_height
+        params.maxEncodeWidth = self.encoder_width
+        params.maxEncodeHeight = self.encoder_height
+        params.darWidth = self.encoder_width
+        params.darHeight = self.encoder_height
+        params.enableEncodeAsync = 0            #not supported on Linux
+        params.enablePTD = 1                    #not supported in sync mode!?
+        params.frameRateNum = 30
+        params.frameRateDen = 1
 
-        presetConfig = self.get_preset_config(self.preset_name, codec, preset)
+        #apply preset:
+        cdef NV_ENC_PRESET_CONFIG *presetConfig = self.get_preset_config(self.preset_name, codec, preset)
         assert presetConfig!=NULL, "could not find preset %s" % self.preset_name
-        try:
-            assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
+        cdef NV_ENC_CONFIG *config = <NV_ENC_CONFIG*> cmalloc(sizeof(NV_ENC_CONFIG), "encoder config")
+        assert memcpy(config, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG))!=NULL
+        free(presetConfig)
+        config.profileGUID = profile
+        self.tune_preset(config)
+        params.encodeConfig = config
 
-            params.version = NV_ENC_INITIALIZE_PARAMS_VER
-            params.encodeGUID = codec
-            params.presetGUID = preset
-            params.encodeWidth = self.encoder_width
-            params.encodeHeight = self.encoder_height
-            params.maxEncodeWidth = self.encoder_width
-            params.maxEncodeHeight = self.encoder_height
-            params.darWidth = self.encoder_width
-            params.darHeight = self.encoder_height
-            params.enableEncodeAsync = 0            #not supported on Linux
-            params.enablePTD = 1                    #not supported in sync mode!?
-            params.reportSliceOffsets = 0
-            params.enableSubFrameWrite = 0
 
-            params.frameRateNum = 30
-            params.frameRateDen = 1
-            params.encodeConfig = config
-
-            #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
-            #config.rcParams.enableMinQP = 1
-            #config.rcParams.enableMaxQP = 1
-            config.profileGUID = profile
-            config.gopLength = NVENC_INFINITE_GOPLENGTH
-            config.frameIntervalP = 1
-            #0=max quality, 63 lowest quality
-            qpmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality)//100))
-            qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
-            config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
-            #config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
-            if True:
-                #const QP:
-                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
-                if self.preset_name.find("lossless")>=0:
-                    qp = 0
-                else:
-                    qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
-                config.rcParams.constQP.qpInterP = qp
-                config.rcParams.constQP.qpInterB = qp
-                config.rcParams.constQP.qpIntra = qp
+    cdef tune_preset(self, NV_ENC_CONFIG *config):
+        #config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
+        #config.rcParams.enableMinQP = 1
+        #config.rcParams.enableMaxQP = 1
+        config.gopLength = NVENC_INFINITE_GOPLENGTH
+        config.frameIntervalP = 1
+        #0=max quality, 63 lowest quality
+        qpmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality)//100))
+        qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*self.quality//100))
+        config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FRAME
+        #config.mvPrecision = NV_ENC_MV_PRECISION_FULL_PEL
+        if True:
+            #const QP:
+            config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP
+            if self.lossless:
+                qp = 0
             else:
-                config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR
-                config.rcParams.averageBitRate = 500000
-                config.rcParams.maxBitRate = 600000
-                #config.rcParams.vbvBufferSize = 0
-                #config.rcParams.vbvInitialDelay = 0
-                #config.rcParams.enableInitialRCQP = 1
-                #config.rcParams.initialRCQP.qpInterP  = qpmin
-                #config.rcParams.initialRCQP.qpIntra = qpmin
-                #config.rcParams.initialRCQP.qpInterB = qpmin
+                qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
+            config.rcParams.constQP.qpInterP = qp
+            config.rcParams.constQP.qpInterB = qp
+            config.rcParams.constQP.qpIntra = qp
+            log("constQP: %i", qp)
+        else:
+            config.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CBR
+            config.rcParams.averageBitRate = 500000
+            config.rcParams.maxBitRate = 600000
+            #config.rcParams.vbvBufferSize = 0
+            #config.rcParams.vbvInitialDelay = 0
+            #config.rcParams.enableInitialRCQP = 1
+            #config.rcParams.initialRCQP.qpInterP  = qpmin
+            #config.rcParams.initialRCQP.qpIntra = qpmin
+            #config.rcParams.initialRCQP.qpInterB = qpmin
 
-            if self.pixel_format=="BGRX":
-                chromaFormatIDC = 3
-            elif self.pixel_format=="NV12":
-                chromaFormatIDC = 1
-            elif self.pixel_format=="YUV444P":
-                chromaFormatIDC = 3
-            else:
-                raise Exception("unknown pixel format %s" % self.pixel_format)
+        if self.pixel_format=="BGRX":
+            chromaFormatIDC = 3
+        elif self.pixel_format=="r210":
+            chromaFormatIDC = 3
+        elif self.pixel_format=="NV12":
+            chromaFormatIDC = 1
+        elif self.pixel_format=="YUV444P":
+            chromaFormatIDC = 3
+        else:
+            raise Exception("unknown pixel format %s" % self.pixel_format)
+        log("chromaFormatIDC(%s)=%s", self.pixel_format, chromaFormatIDC)
 
-            if self.codec_name=="H264":
-                config.encodeCodecConfig.h264Config.chromaFormatIDC = chromaFormatIDC
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
-                config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
-                config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
-                #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
-                #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
-            else:
-                assert self.codec_name=="H265"
-                config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
-                #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
-                config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
-                config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
-                #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
-                #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
-        finally:
-            if presetConfig!=NULL:
-                free(presetConfig)
+        if self.codec_name=="H264":
+            config.encodeCodecConfig.h264Config.chromaFormatIDC = chromaFormatIDC
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourDescriptionPresentFlag = 0
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.videoSignalTypePresentFlag = 0
+            config.encodeCodecConfig.h264Config.idrPeriod = config.gopLength
+            config.encodeCodecConfig.h264Config.enableIntraRefresh = 0
+            #config.encodeCodecConfig.h264Config.maxNumRefFrames = 16
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
+            #config.encodeCodecConfig.h264Config.h264VUIParameters.videoFullRangeFlag = 1
+        else:
+            assert self.codec_name=="H265"
+            config.encodeCodecConfig.hevcConfig.chromaFormatIDC = chromaFormatIDC
+            #config.encodeCodecConfig.hevcConfig.level = NV_ENC_LEVEL_HEVC_5
+            config.encodeCodecConfig.hevcConfig.idrPeriod = config.gopLength
+            config.encodeCodecConfig.hevcConfig.enableIntraRefresh = 0
+            #config.encodeCodecConfig.hevcConfig.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
+            #config.encodeCodecConfig.hevcConfig.maxNumRefFramesInDPB = 16
+            #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
 
     def init_buffers(self):
         cdef NV_ENC_REGISTER_RESOURCE registerResource
-        cdef NV_ENC_CREATE_INPUT_BUFFER createInputBufferParams
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
-        cdef uintptr_t resource
-        cdef Py_ssize_t size
-        cdef unsigned char* cptr = NULL
-        cdef NVENCSTATUS r                  #
         assert self.context, "context is not initialized"
         #register CUDA input buffer:
         memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
         registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
         registerResource.resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
-        resource = int(self.cudaOutputBuffer)
+        cdef uintptr_t resource = int(self.cudaOutputBuffer)
         registerResource.resourceToRegister = <void *> resource
         registerResource.width = self.encoder_width
         registerResource.height = self.encoder_height
@@ -1978,6 +2069,7 @@ cdef class Encoder:
         registerResource.bufferFormat = self.bufferFmt
         if DEBUG_API:
             log("nvEncRegisterResource(%#x)", <uintptr_t> &registerResource)
+        cdef NVENCSTATUS r                  #
         with nogil:
             r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
         raiseNVENC(r, "registering CUDA input buffer")
@@ -2049,7 +2141,7 @@ cdef class Encoder:
         cdef double t = self.time
         info["total_time_ms"] = int(self.time*1000.0)
         if self.frames>0 and t>0:
-            pps = float(self.width) * float(self.height) * float(self.frames) / t
+            pps = self.width * self.height * self.frames / t
             info["pixels_per_second"] = int(pps)
         info["free_memory"] = int(self.free_memory)
         info["total_memory"] = int(self.total_memory)
@@ -2272,7 +2364,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, quality=-1, speed=-1, options={}, retry=0):
+    def compress_image(self, image, quality=-1, speed=-1, retry=0):
         assert self.context, "context is not initialized"
         self.cuda_context.push()
         try:
@@ -2281,27 +2373,26 @@ cdef class Encoder:
                     self.set_encoding_quality(quality)
                 if speed>=0:
                     self.set_encoding_speed(speed)
-                return self.do_compress_image(image, options)
+                return self.do_compress_image(image)
             finally:
                 self.cuda_context.pop()
         except driver.LogicError as e:
-            log("compress_image%s", (image, quality, speed, options, retry), exc_info=True)
+            log("compress_image%s", (image, quality, speed, retry), exc_info=True)
             if retry>0:
                 raise
             log.warn("Warning: PyCUDA %s", e)
             del e
             self.clean()
             self.init_cuda()
-            return self.compress_image(image, options, retry+1)
+            return self.compress_image(image, retry+1)
 
-    cdef do_compress_image(self, image, options={}):
-        cdef unsigned int stride, w, h
+    cdef do_compress_image(self, image):
         assert self.context, "context is not initialized"
-        w = image.get_width()
-        h = image.get_height()
+        cdef unsigned int w = image.get_width()
+        cdef unsigned int h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
-        stride = image.get_rowstride()
-        log("compress_image(%s, %s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i", image, options, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
+        cdef unsigned int stride = image.get_rowstride()
+        log("do_compress_image(%s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i", image, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & WIDTH_MASK)<=self.input_width, "invalid width: %s" % w
         assert (h & HEIGHT_MASK)<=self.input_height, "invalid height: %s" % h
@@ -2363,11 +2454,12 @@ cdef class Encoder:
         cdef unsigned long copy_len
         cdef unsigned long pix_len = len(pixels)
         assert pix_len>=(h*image_stride), "image pixel buffer is too small: expected at least %ix%i=%i bytes but got %i bytes" % (h, image_stride, h*image_stride, pix_len)
-        if image_stride<=self.inputPitch and not strict_stride:
+        if image_stride==self.inputPitch or (image_stride<self.inputPitch and not strict_stride):
             stride = image_stride
             copy_len = h*image_stride
             #assert pix_len<=input_size, "too many pixels (expected %s max, got %s) image: %sx%s stride=%s, input buffer: stride=%s, height=%s" % (input_size, pix_len, w, h, stride, self.inputPitch, self.input_height)
-            log("copying %s bytes from %s into %s (len=%i), in one shot", pix_len, type(pixels), type(self.inputBuffer), len(self.inputBuffer))
+            log("copying %s bytes from %s into %s (len=%i), in one shot",
+                pix_len, type(pixels), type(self.inputBuffer), len(self.inputBuffer))
             #log("target: %s, %s, %s", buf.shape, buf.size, buf.dtype)
             if isinstance(pixels, memoryview):
                 tmp = numpy.asarray(pixels, numpy.int8)
@@ -2387,7 +2479,8 @@ cdef class Encoder:
             #before uploading to the device... this is probably costly!
             stride = self.inputPitch
             min_stride = min(self.inputPitch, image_stride)
-            log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i, target stride=%i)", stride*h, type(pixels), type(self.inputBuffer), min_stride, image_stride, self.inputPitch)
+            log("copying %s bytes from %s into %s, %i stride at a time (from image stride=%i, target stride=%i)",
+                stride*h, type(pixels), type(self.inputBuffer), min_stride, image_stride, self.inputPitch)
             try:
                 for i in range(h):
                     x = i*self.inputPitch
@@ -2452,7 +2545,7 @@ cdef class Encoder:
                     return hex(int(v))
                 return int(v)
             log_args = tuple(lf(v) for v in args)
-            log("calling %s%s with block=%s, grid=%s", self.kernel_name, args, (blockw,blockh,1), (gridw, gridh))
+            log("calling %s%s with block=%s, grid=%s", self.kernel_name, log_args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
         self.cuda_context.synchronize()
         cdef double end = monotonic_time()
@@ -2485,8 +2578,7 @@ cdef class Encoder:
         raiseNVENC(r, "unmapping input resource")
 
     cdef nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0):
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
-        cdef NV_ENC_PIC_PARAMS picParams            #@DuplicatedSignature
+        cdef NV_ENC_PIC_PARAMS picParams
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         assert input_size>0, "invalid input size %i" % input_size
 
@@ -2519,7 +2611,12 @@ cdef class Encoder:
             picParams.codecPicParams.hevcPicParams.displayPOCSyntax = 2*self.frames
             picParams.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
         picParams.frameIdx = self.frames
-        picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
+        if timestamp>0:
+            if timestamp>=self.first_frame_timestamp:
+                picParams.inputTimeStamp = timestamp-self.first_frame_timestamp
+            else:
+                log.warn("Warning: image timestamp is older than the first frame")
+                log.warn(" %s vs %s", timestamp, self.first_frame_timestamp)
         #inputDuration = 0      #FIXME: use frame delay?
         #picParams.rcParams.rateControlMode = NV_ENC_PARAMS_RC_VBR     #FIXME: check NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES caps
         #picParams.rcParams.enableMinQP = 1
@@ -2535,7 +2632,7 @@ cdef class Encoder:
         #picParams.rcParams.maxQP.qpIntra = qmax
         #picParams.rcParams.averageBitRate = self.target_bitrate
         #picParams.rcParams.maxBitRate = self.max_bitrate
-
+        cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "error during picture encoding")
@@ -2564,6 +2661,7 @@ cdef class Encoder:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
         client_options = {
+                    "csc"       : self.src_format,
                     "frame"     : int(self.frames),
                     "pts"       : int(timestamp-self.first_frame_timestamp),
                     "speed"     : self.speed,
@@ -2589,8 +2687,8 @@ cdef class Encoder:
 
     cdef NV_ENC_PRESET_CONFIG *get_preset_config(self, name, GUID encode_GUID, GUID preset_GUID) except *:
         """ you must free it after use! """
-        cdef NV_ENC_PRESET_CONFIG *presetConfig     #@DuplicatedSignature
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NV_ENC_PRESET_CONFIG *presetConfig
+        cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
         presetConfig = <NV_ENC_PRESET_CONFIG*> cmalloc(sizeof(NV_ENC_PRESET_CONFIG), "preset config")
         memset(presetConfig, 0, sizeof(NV_ENC_PRESET_CONFIG))
@@ -2598,11 +2696,25 @@ cdef class Encoder:
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         if DEBUG_API:
             log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
-        r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
+        if len(name)==2 and name[0]=="P":
+            tuning = self.get_tuning()
+            log("tuning=%s (%i)", TUNING_STR.get(tuning, "unknown"), tuning)
+            r = self.functionList.nvEncGetEncodePresetConfigEx(self.context, encode_GUID, preset_GUID, tuning, presetConfig)
+        else:
+            r = self.functionList.nvEncGetEncodePresetConfig(self.context, encode_GUID, preset_GUID, presetConfig)
         if r!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
             return NULL
         return presetConfig
+
+    def get_tuning(self):
+        if self.lossless:
+            return NV_ENC_TUNING_INFO_LOSSLESS
+        if self.speed>80:
+            return NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY
+        if self.speed>50:
+            return NV_ENC_TUNING_INFO_LOW_LATENCY
+        return NV_ENC_TUNING_INFO_HIGH_QUALITY
 
     cdef object query_presets(self, GUID encode_GUID):
         cdef uint32_t presetCount
@@ -2611,7 +2723,7 @@ cdef class Encoder:
         cdef GUID preset_GUID
         cdef NV_ENC_PRESET_CONFIG *presetConfig
         cdef NV_ENC_CONFIG *encConfig
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
+        cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
         presets = {}
         if DEBUG_API:
@@ -2635,25 +2747,27 @@ cdef class Encoder:
                 preset_name = CODEC_PRESETS_GUIDS.get(guidstr(preset_GUID))
                 if DEBUG_API:
                     log("* %s : %s", guidstr(preset_GUID), preset_name or "unknown!")
-                presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
-                if presetConfig!=NULL:
-                    try:
-                        encConfig = &presetConfig.presetCfg
-                        if DEBUG_API:
-                            log("presetConfig.presetCfg=%s", <uintptr_t> encConfig)
-                        gop = {NVENC_INFINITE_GOPLENGTH : "infinite"}.get(encConfig.gopLength, encConfig.gopLength)
-                        log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
-                    finally:
-                        free(presetConfig)
                 if preset_name is None:
                     global UNKNOWN_PRESETS
                     if preset_name not in UNKNOWN_PRESETS:
                         UNKNOWN_PRESETS.append(guidstr(preset_GUID))
                         unknowns.append(guidstr(preset_GUID))
                 else:
+                    presetConfig = self.get_preset_config(preset_name, encode_GUID, preset_GUID)
+                    if presetConfig!=NULL:
+                        try:
+                            encConfig = &presetConfig.presetCfg
+                            if DEBUG_API:
+                                log("presetConfig.presetCfg=%s", <uintptr_t> encConfig)
+                            gop = {NVENC_INFINITE_GOPLENGTH : "infinite"}.get(encConfig.gopLength, encConfig.gopLength)
+                            log("* %-20s P frame interval=%i, gop length=%-10s", preset_name or "unknown!", encConfig.frameIntervalP, gop)
+                        finally:
+                            free(presetConfig)
                     presets[preset_name] = guidstr(preset_GUID)
             if len(unknowns)>0:
-                log.warn("Warning: found some unknown NVENC presets: %s", csv(unknowns))
+                log.warn("Warning: found some unknown NVENC presets:")
+                for x in unknowns:
+                    log.warn(" * %s", x)
         finally:
             free(preset_GUIDs)
         if DEBUG_API:
@@ -2663,19 +2777,18 @@ cdef class Encoder:
     cdef object query_profiles(self, GUID encode_GUID):
         cdef uint32_t profileCount
         cdef uint32_t profilesRetCount
-        cdef GUID* profile_GUIDs
         cdef GUID profile_GUID
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
         assert self.context, "context is not initialized"
         profiles = {}
         if DEBUG_API:
             log("nvEncGetEncodeProfileGUIDCount(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &profileCount)
+        cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncGetEncodeProfileGUIDCount(self.context, encode_GUID, &profileCount)
         raiseNVENC(r, "getting profile count")
         log("%s profiles:", profileCount)
         assert profileCount<2**8
-        profile_GUIDs = <GUID*> cmalloc(sizeof(GUID) * profileCount, "profile GUIDs")
+        cdef GUID* profile_GUIDs = <GUID*> cmalloc(sizeof(GUID) * profileCount, "profile GUIDs")
         PROFILES_GUIDS = CODEC_PROFILES_GUIDS.get(guidstr(encode_GUID), {})
         try:
             if DEBUG_API:
@@ -2696,20 +2809,19 @@ cdef class Encoder:
 
     cdef object query_input_formats(self, GUID encode_GUID):
         cdef uint32_t inputFmtCount
-        cdef NV_ENC_BUFFER_FORMAT* inputFmts
         cdef uint32_t inputFmtsRetCount
         cdef NV_ENC_BUFFER_FORMAT inputFmt
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
         assert self.context, "context is not initialized"
         input_formats = {}
         if DEBUG_API:
             log("nvEncGetInputFormatCount(%s, %#x)", codecstr(encode_GUID), <uintptr_t> &inputFmtCount)
+        cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncGetInputFormatCount(self.context, encode_GUID, &inputFmtCount)
         raiseNVENC(r, "getting input format count")
         log("%s input format type%s:", inputFmtCount, engs(inputFmtCount))
         assert inputFmtCount>0 and inputFmtCount<2**8
-        inputFmts = <NV_ENC_BUFFER_FORMAT*> cmalloc(sizeof(int) * inputFmtCount, "input formats")
+        cdef NV_ENC_BUFFER_FORMAT* inputFmts = <NV_ENC_BUFFER_FORMAT*> cmalloc(sizeof(int) * inputFmtCount, "input formats")
         try:
             if DEBUG_API:
                 log("nvEncGetInputFormats(%s, %#x, %i, %#x)", codecstr(encode_GUID), <uintptr_t> inputFmts, inputFmtCount, <uintptr_t> &inputFmtsRetCount)
@@ -2804,8 +2916,6 @@ cdef class Encoder:
 
     def open_encode_session(self):
         global context_counter, context_gen_counter, last_context_failure
-        cdef NVENCSTATUS r                          #@DuplicatedSignature
-        cdef int t
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
 
         assert self.functionList is NULL, "session already active"
@@ -2823,7 +2933,7 @@ cdef class Encoder:
         self.functionList.version = NV_ENCODE_API_FUNCTION_LIST_VER
         if DEBUG_API:
             log("NvEncodeAPICreateInstance(%#x)", <uintptr_t> self.functionList)
-        r = NvEncodeAPICreateInstance(<uintptr_t> self.functionList)
+        cdef NVENCSTATUS r = NvEncodeAPICreateInstance(<uintptr_t> self.functionList)
         raiseNVENC(r, "getting API function list")
         assert self.functionList.nvEncOpenEncodeSessionEx!=NULL, "looks like NvEncodeAPICreateInstance failed!"
 
@@ -2841,14 +2951,20 @@ cdef class Encoder:
         self.context = NULL
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)
-        if r==NV_ENC_ERR_UNSUPPORTED_DEVICE:
+        if DEBUG_API:
+            log("nvEncOpenEncodeSessionEx(..)=%s", r)
+        if r in OPEN_TRANSIENT_ERROR:
             last_context_failure = monotonic_time()
-            msg = "NV_ENC_ERR_UNSUPPORTED_DEVICE: could not open encode session (out of resources / no more codec contexts?)"
+            msg = "could not open encode session: %s" % (nvencStatusInfo(r) or r)
             log(msg)
             raise TransientCodecException(msg)
         if self.context==NULL:
+            if r!=0:
+                msg = nvencStatusInfo(r) or str(r)
+            else:
+                msg = "context is NULL"
             last_context_failure = monotonic_time()
-            raise TransientCodecException("cannot open encoding session, context is NULL, %i contexts are in use" % context_counter.get())
+            raise Exception("cannot open encoding session: %s, %i contexts are in use" % (msg, context_counter.get()))
         raiseNVENC(r, "opening session")
         context_counter.increase()
         context_gen_counter.increase()
@@ -2864,7 +2980,7 @@ def init_module():
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     cdef Encoder test_encoder
-    cdef uint32_t max_version
+    #cdef uint32_t max_version
     #cdef NVENCSTATUS r = NvEncodeAPIGetMaxSupportedVersion(&max_version)
     #raiseNVENC(r, "querying max version")
     #log(" maximum supported version: %s", max_version)
@@ -2901,10 +3017,10 @@ def init_module():
 
         for device_id in devices:
             log("testing encoder with device %s", device_id)
-            options = {
+            options = typedict({
                 "cuda_device"   : device_id,
                 "threaded-init" : False,
-                }
+                })
             try:
                 test_encoder = Encoder()
                 test_encoder.select_cuda_device(options)
