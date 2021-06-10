@@ -2449,7 +2449,7 @@ cdef class Encoder:
                     return hex(int(v))
                 return int(v)
             log_args = tuple(lf(v) for v in args)
-            log("calling %s%s with block=%s, grid=%s", self.kernel_name, args, (blockw,blockh,1), (gridw, gridh))
+            log("calling %s%s with block=%s, grid=%s", self.kernel_name, log_args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
         self.cuda_context.synchronize()
         cdef double end = monotonic_time()
