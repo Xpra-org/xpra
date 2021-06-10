@@ -297,7 +297,7 @@ class RFBProtocol:
         if not c:
             return None
         buf = c.read(READ_BUFFER_SIZE)
-        #log("read()=%s", repr_ellipsized(buf))
+        #log("read()=%i bytes (%s)", len(buf or b""), type(buf))
         if not buf:
             log("read thread: eof")
             #give time to the parse thread to call close itself
