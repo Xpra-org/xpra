@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from xpra.util import envbool
 
 XPRA_MDNS_TYPE = "_xpra._tcp."
@@ -26,6 +27,12 @@ def get_listener_class():
         except ImportError:
             log("failed to import AvahiListener", exc_info=True)
     if ZEROCONF:
+        #workaround for MacOS Big Sur which broke ctypes,
+        #ctypes is used in the ifaddr module which is imported by zeroconf:
+        if sys.platform.startswith("darwin"):
+            import xpra.platform    #pylint: disable=import-outside-toplevel
+            #on MacOS, an import side-effect is to patch the ctypes loader
+            assert xpra.platform
         try:
             from xpra.net.mdns.zeroconf_listener import ZeroconfListener
             log("ZeroconfListener=%s", ZeroconfListener)
