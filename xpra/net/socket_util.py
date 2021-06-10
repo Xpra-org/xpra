@@ -184,7 +184,7 @@ def accept_connection(socktype, listener, timeout=None, socket_options=None):
 
 def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
     log = get_network_logger()
-    log("peek_connection(%s, %i)", conn, timeout)
+    log("peek_connection(%s, %i, %i)", conn, timeout, size)
     peek_data = b""
     start = monotonic_time()
     elapsed = 0

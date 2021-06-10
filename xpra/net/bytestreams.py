@@ -328,6 +328,7 @@ class SocketConnection(Connection):
             log("changed %s socket to cork=%s", self.socktype, cork)
 
     def peek(self, n : int):
+        log("%s(%s, MSG_PEEK)", self._socket.recv, n)
         return self._socket.recv(n, socket.MSG_PEEK)
 
     def read(self, n : int):
@@ -608,9 +609,12 @@ class SSLSocketConnection(PeekableSocketConnection):
 
 def set_socket_timeout(conn, timeout=None):
     #FIXME: this is ugly, but less intrusive than the alternative?
-    log("set_socket_timeout(%s, %s)", conn, timeout)
     if isinstance(conn, SocketConnection):
+        sock = conn._socket
+        log("set_socket_timeout(%s, %s) applied to %s", conn, timeout, sock)
         conn._socket.settimeout(timeout)
+    else:
+        log("set_socket_timeout(%s, %s) ignored for %s", conn, timeout, type(conn))
 
 
 def log_new_connection(conn, socket_info=""):
