@@ -43,7 +43,7 @@ echo "**************************************************************************
 echo "Building and installing locally"
 pushd ../src
 
-svn upgrade ../.. >& /dev/null
+rm -f xpra/src_info.py xpra/build_info.py
 ${PYTHON} -c "from add_build_info import record_src_info;record_src_info()"
 rm -fr build/* dist/*
 ${PYTHON} ./setup.py clean
@@ -401,4 +401,4 @@ echo "Done"
 echo "*******************************************************************************"
 echo
 
-svn revert Info.plist Xpra.bundle
+git checkout Info.plist
