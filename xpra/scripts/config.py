@@ -599,7 +599,7 @@ OPTION_TYPES = {
                     "attach"            : bool,
                     "use-display"       : str,
                     "fake-xinerama"     : str,
-                    "resize_display"    : str,
+                    "resize-display"    : str,
                     "tray"              : bool,
                     "pulseaudio"        : bool,
                     "dbus-proxy"        : bool,
