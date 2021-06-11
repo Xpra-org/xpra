@@ -275,8 +275,8 @@ mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 #move libs that are likely to be common to the lib dir:
 for prefix in lib avcodec avformat avutil swscale swresample zlib1 xvidcore; do
 	#just in case they were not included yet by cx_Freeze:
-	cp $MINGW_PREFIX/bin/$x*.dll ./lib/
-	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
+	cp $MINGW_PREFIX/bin/${prefix}*.dll ./lib/
+	find lib/Xpra -name "${prefix}*.dll" -exec mv {} ./lib/ \;
 done
 if [ "${CLIENT_ONLY}" ]; then
 	rm -fr ./lib/numpy
