@@ -625,7 +625,8 @@ keymd5(host_key),
                         except SSHException as e:
                             log("from_private_key_file", exc_info=True)
                             log.info("cannot load key from file '%s':", keyfile_path)
-                            log.info(" %s", e)
+                            for emsg in str(e).split(". "):
+                                log.info(" %s.", emsg)
                     break
                 except Exception as e:
                     log("auth_publickey() loading as %s", pkey_classname, exc_info=True)
@@ -664,7 +665,8 @@ keymd5(host_key),
         except SSHException as e:
             log("auth_password(..)", exc_info=True)
             log.info("SSH password authentication failed:")
-            log.info(" %s", getattr(e, "message", e))
+            for emsg in getattr(e, "message", str(e)).split(";"):
+                log.info(" %s", emsg)
 
     def auth_interactive():
         log("trying interactive authentication")
@@ -686,7 +688,8 @@ keymd5(host_key),
         except SSHException as e:
             log("auth_interactive(..)", exc_info=True)
             log.info("SSH password authentication failed:")
-            log.info(" %s", getattr(e, "message", e))
+            for emsg in getattr(e, "message", str(e)).split(";"):
+                log.info(" %s", emsg)
 
     banner = transport.get_banner()
     if banner:
