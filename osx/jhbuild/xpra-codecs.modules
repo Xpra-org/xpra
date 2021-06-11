@@ -74,8 +74,8 @@
 			version="3.100"
 			hash="sha256:ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"
 			repo="winswitch.org">
-			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/lame-channels.patch" strip="1" />
-			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/lame-remove-init-old.patch" strip="0" />
+			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/v3.1.x/osx/jhbuild/patches/lame-channels.patch" strip="1" />
+			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/v3.1.x/osx/jhbuild/patches/lame-remove-init-old.patch" strip="0" />
 		</branch>
 		<dependencies>
 			<dep package="nasm"/>
@@ -87,7 +87,7 @@
 			version="0.4.0" checkoutdir="twolame-0.4.0"
 			hash="sha256:9f3f03bc9e1038d900f86002c7dce4b49109b3a61544800fc62d71dc51829f05"
 			repo="github.com">
-			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/twolame-nodoc.patch" strip="1"/>
+			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/v3.1.x/osx/jhbuild/patches/twolame-nodoc.patch" strip="1"/>
 		</branch>
 	</autotools>
 
@@ -209,8 +209,8 @@
 			version="aabcc477"
 			hash="sha256:490503d28d4b7c2c81f7495f4fab6974247f5d1e0722262f49c0fe9f21c4415a"
 			repo="xpra.org">
-			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/libyuv-nojpeg.patch" strip="1" />
-			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/libyuv-add-pkgconfig.patch" strip="1" />
+			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/v3.1.x/osx/jhbuild/patches/libyuv-nojpeg.patch" strip="1" />
+			<patch file="https://raw.githubusercontent.com/Xpra-org/xpra/v3.1.x/osx/jhbuild/patches/libyuv-add-pkgconfig.patch" strip="1" />
 		</branch>
 	</cmake>
 

@@ -13,5 +13,5 @@ if [ -e "$MANUAL" ]; then
 else
 	echo "Sorry, the manual page could not be found"
 	echo "Opening the version found in the source repository"
-	open "https://github.com/Xpra-org/xpra/blob/master/fs/share/man/man1/xpra.1"
+	open "https://github.com/Xpra-org/xpra/blob/v3.1.x/src/man/xpra.1"
 fi
