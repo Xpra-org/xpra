@@ -132,7 +132,7 @@ fi
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-svn revert Info.plist Xpra.bundle
+git checkout Info.plist
 sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
