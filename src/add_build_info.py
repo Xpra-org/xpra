@@ -357,7 +357,7 @@ def get_vcs_props():
         sline = line.strip()
         if sline.startswith("modified: ") or sline.startswith("new file:") or sline.startswith("deleted:"):
             filename = sline.split(":")[1].strip(" ")
-            if filename!="xpra":
+            if filename not in ("xpra", "../osx/Xpra.bundle"):
                 if changes==0:
                     print("local-modifications to:")
                 print(" - '%s'" % filename)
