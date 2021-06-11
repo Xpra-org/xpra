@@ -51,6 +51,7 @@ export PANGO_RC_FILE="$bundle_etc/pango/pangorc"
 export PANGO_LIBDIR="$bundle_lib"
 export PANGO_SYSCONFDIR="$bundle_etc"
 export GSETTINGS_SCHEMA_DIR="$bundle_data/glib-2.0/schemas/"
+export GTK_THEME=Adwaita
 
 export GST_BUNDLE_CONTENTS="$bundle_contents"
 

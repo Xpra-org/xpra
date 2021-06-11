@@ -295,6 +295,11 @@ fi
 for t in ${GI_MODULES}; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
 done
+echo " * add Adwaita theme"
+#gtk-mac-bundler doesn't do it properly, so do it ourselves:
+rsync -rpl ${JHBUILD_PREFIX}/share/icons/Adwaita ${RSCDIR}/share/icons/
+echo " * move GTK css"
+mv ${RSCDIR}/share/xpra/css ${RSCDIR}/
 #unused py2app scripts:
 rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh ${RSCDIR}/client_launcher.py
 
