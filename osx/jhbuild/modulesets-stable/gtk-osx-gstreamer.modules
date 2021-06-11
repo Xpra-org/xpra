@@ -9,91 +9,81 @@
   <repository type="tarball" name="github.com"
               href="https://github.com/"/>
 
-  <autotools id="liborc" autogen-sh="configure">
-    <branch module="orc/orc-0.4.29.tar.xz" version="0.4.29"
-            hash="sha256:4f8901f9144b5ec17dffdb33548b5f4c7f8049b0d1023be3462cdd64ec5a3ab2"/>
-  </autotools>
+  <meson id="liborc" mesonargs="-Dgtk_doc=disabled">
+    <branch module="orc/orc-0.4.32.tar.xz" version="0.4.32"
+            hash="sha256:a66e3d8f2b7e65178d786a01ef61f2a0a0b4d0b8370de7ce134ba73da4af18f0"/>
+  </meson>
 
   <autotools id="faad2" autogen-sh="autoreconf"
              autogenargs="-without-bmp --without-xmms --without-drm --without-mpeg4ip">
     <branch repo="github.com" version="2.10.0"
             module="/knik0/faad2/archive/2_10_0.tar.gz"
             hash="sha256:0c6d9636c96f95c7d736f097d418829ced8ec6dbd899cc6cc82b728480a84bfb">
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/faad2-2.7-ac-config-headers.patch" strip="1"/>
     </branch>
   </autotools>
 
-  <autotools id="gstreamer" autogenargs="--disable-tests" supports-non-srcdir-builds="no"
-    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gstreamer/gstreamer-1.16.2.tar.xz" version="1.16.2"
-            hash="sha256:e3f044246783fd685439647373fa13ba14f7ab0b346eadd06437092f8419e94e">
+  <meson id="gstreamer" mesonargs="-Dtests=disabled">
+    <branch module="gstreamer/gstreamer-1.18.4.tar.xz" version="1.18.4"
+            hash="sha256:9aeec99b38e310817012aa2d1d76573b787af47f8a725a65b833880a094dfbc5">
     </branch>
     <after>
       <dep package="glib"/>
     </after>
-  </autotools>
+  </meson>
 
-  <autotools id="gst-plugins-base" autogenargs="--disable-tests --disable-x --disable-xvideo --disable-examples" supports-non-srcdir-builds="no"
-    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-base/gst-plugins-base-1.16.2.tar.xz"
-            version="1.16.2"
-            hash="sha256:b13e73e2fe74a4166552f9577c3dcb24bed077021b9c7fa600d910ec6987816a"/>
+  <meson id="gst-plugins-base" mesonargs="-Dtests=disabled -Dx11=disabled -Dxvideo=disabled -Dexamples=disabled -Dgl=disabled">
+    <branch module="gst-plugins-base/gst-plugins-base-1.18.4.tar.xz"
+            version="1.18.4"
+            hash="sha256:29e53229a84d01d722f6f6db13087231cdf6113dd85c25746b9b58c3d68e8323"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="liborc"/>
     </dependencies>
-    <after>
-    </after>
-  </autotools>
+  </meson>
 
-  <autotools id="gst-plugins-good" autogenargs="--disable-tests --disable-x --disable-xvideo --disable-osx-video --disable-vpx" supports-non-srcdir-builds="no"
-    makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch module="gst-plugins-good/gst-plugins-good-1.16.2.tar.xz"
-            version="1.16.2"
-            hash="sha256:40bb3bafda25c0b739c8fc36e48380fccf61c4d3f83747e97ac3f9b0171b1319">
+  <meson id="gst-plugins-good" mesonargs="-Dtests=disabled -Dximagesrc=disabled -Dosxvideo=disabled -Dvpx=disabled">
+    <branch module="gst-plugins-good/gst-plugins-good-1.18.4.tar.xz"
+            version="1.18.4"
+            hash="sha256:b6e50e3a9bbcd56ee6ec71c33aa8332cc9c926b0c1fae995aac8b3040ebe39b0">
     </branch>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
     </dependencies>
-  </autotools>
+  </meson>
 
-  <autotools id="gst-plugins-ugly" autogenargs="--disable-tests"
-             supports-non-srcdir-builds="no" makeargs="ERROR_CFLAGS="
-             autogen-sh="configure">
-    <branch version="1.16.2"
-            module="gst-plugins-ugly/gst-plugins-ugly-1.16.2.tar.xz"
-            hash="sha256:5500415b865e8b62775d4742cbb9f37146a50caecfc0e7a6fc0160d3c560fbca"/>
+  <meson id="gst-plugins-ugly">
+    <branch version="1.18.4"
+            module="gst-plugins-ugly/gst-plugins-ugly-1.18.4.tar.xz"
+            hash="sha256:218df0ce0d31e8ca9cdeb01a3b0c573172cc9c21bb3d41811c7820145623d13c"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
     </dependencies>
-  </autotools>
+  </meson>
 
-  <autotools id="gst-plugins-bad" supports-non-srcdir-builds="no"
-             autogenargs="--disable-xvid --disable-gl --disable-cocoa --disable-libde265 --disable-mpegdemux --disable-mpegtsdemux --disable-mpegtsmux --disable-mpegpsmux --disable-mpeg2enc --disable-gtk3 --disable-smoothstreaming --disable-hls --disable-dtls --disable-apple_media"
-             makeargs="ERROR_CFLAGS=" autogen-sh="configure">
-    <branch version="1.16.2"
-            module="gst-plugins-bad/gst-plugins-bad-1.16.2.tar.xz"
-            hash="sha256:f1cb7aa2389569a5343661aae473f0a940a90b872001824bc47fa8072a041e74"/>
+  <meson id="gst-plugins-bad" mesonargs="-Dvulkan=disabled -Dgl=disabled -Dmpegdemux=disabled -Dmpegtsdemux=disabled -Dmpegtsmux=disabled -Dmpegpsmux=disabled -Dmpeg2enc=disabled -Dsmoothstreaming=false -Dhls=false -Ddtls=disabled -Dapplemedia=disabled">
+    <branch version="1.18.4"
+            module="gst-plugins-bad/gst-plugins-bad-1.18.4.tar.xz"
+            hash="sha256:74e806bc5595b18c70e9ca93571e27e79dfb808e5d2e7967afa952b52e99c85f"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
       <dep package="faad2"/>
       <dep package='openssl'/>
     </dependencies>
-  </autotools>
+  </meson>
 
-  <autotools id="gst-libav" supports-non-srcdir-builds="no"
-             autogen-sh="configure"
-             autogenargs="--disable-tests">
-     <branch version="1.16.2"
-            module="gst-libav/gst-libav-1.16.2.tar.xz"
-            hash="sha256:c724f612700c15a933c7356fbeabb0bb9571fb5538f8b1b54d4d2d94188deef2"/>
+  <meson id="gst-libav" mesonargs="-Dtests=false">
+     <branch version="1.18.4"
+            module="gst-libav/gst-libav-1.18.4.tar.xz"
+            hash="sha256:344a463badca216c2cef6ee36f9510c190862bdee48dc4591c0a430df7e8c396"/>
     <dependencies>
       <dep package="gstreamer"/>
       <dep package="gst-plugins-base"/>
     </dependencies>
-  </autotools>
+  </meson>
 
   <metamodule id="meta-gstreamer">
     <dependencies>
