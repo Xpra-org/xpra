@@ -77,16 +77,9 @@
     </after>
   </metamodule>
 
-  <systemmodule id="meson">
-    <branch repo="system" version="0.49.2"/>
-    <systemdependencies>
-      <dep type="path" name="meson"/>
-    </systemdependencies>
-  </systemmodule>
-
-  <meson id="glib" mesonargs="-Dinternal_pcre=true -Dlibmount=false">
-    <branch module="glib/2.60/glib-2.60.6.tar.xz"  version="2.60.6"
-            hash="sha256:ff8fab8d8deaa4fd0536c90f90d9769a09071779c7e6183907f6855645bffb6c">
+  <meson id="glib" mesonargs="-Dinternal_pcre=true -Dlibmount=disabled">
+    <branch module="glib/2.64/glib-2.64.2.tar.xz"  version="2.64.2"
+            hash="sha256:9a2f21ed8f13b9303399de13a0252b7cbcede593d26971378ec6cb90e87f2277">
     </branch>
     <dependencies>
         <dep package="libffi"/>
@@ -98,16 +91,15 @@
 
   <autotools id="libffi" autogenargs="--disable-builddir"
              autogen-sh="configure">
-    <branch module="libffi/libffi-3.2.1.tar.gz" repo="sourceware.org"
-            version="3.2.1"/>
+    <branch module="libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz"
+            repo="github-tarball" version="3.3"/>
   </autotools>
 
   <meson id="gobject-introspection">
-    <branch module="gobject-introspection/1.60/gobject-introspection-1.60.2.tar.xz"
-            version="1.60.2"
-            hash="sha256:ffdfe2368fb2e34a547898b01aac0520d52d8627fdeb1c306559bcb503ab5e9c">
+    <branch module="gobject-introspection/1.64/gobject-introspection-1.64.1.tar.xz"
+            version="1.64.1"
+            hash="sha256:80beae6728c134521926affff9b2e97125749b38d38744dc901f4010ee3e7fa7">
       <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/girscanner-objc.patch" strip="1"/>
-            <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gi_cairo_library_path.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -119,16 +111,16 @@
   </meson>
 
   <meson id="fribidi" mesonargs="-Ddocs=false">
-    <branch module="fribidi/fribidi/releases/download/v1.0.5/fribidi-1.0.5.tar.bz2"
-            repo="github-tarball" version="1.0.5"/>
+    <branch module="fribidi/fribidi/releases/download/v1.0.9/fribidi-1.0.9.tar.xz"
+            repo="github-tarball" version="1.0.9"/>
     <dependencies>
       <!--dep package="c2man"/ -->
     </dependencies>
   </meson>
 
-  <autotools id="pango"  autogen-sh="autoreconf">
-    <branch version="1.42.4" module="pango/1.42/pango-1.42.4.tar.xz"
-            hash="sha256:1d2b74cd63e8bd41961f2f8d952355aa0f9be6002b52c8aa7699d9f5da597c9d">
+  <meson id="pango">
+    <branch version="1.44.7" module="pango/1.44/pango-1.44.7.tar.xz"
+            hash="sha256:66a5b6cc13db73efed67b8e933584509f8ddb7b10a8a40c3850ca4a985ea1b1f">
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -141,11 +133,11 @@
       <dep package="meta-gtk-osx-freetype"/>
       <dep package="meta-gtk-osx-bootstrap"/>
     </after>
-  </autotools>
+  </meson>
   
-  <autotools id="atk" autogen-sh="configure">
-    <branch module="atk/2.28/atk-2.28.1.tar.xz" version="2.28.1"
-            hash="sha256:cd3a1ea6ecc268a2497f0cd018e970860de24a6d42086919d6bf6c8e8d53f4fc"/>
+  <meson id="atk">
+    <branch module="atk/2.36/atk-2.36.0.tar.xz" version="2.36.0"
+            hash="sha256:fb76247e369402be23f1f5c65d38a9639c1164d934e40f6a9cf3c9e96b652788"/>
     <dependencies>
     </dependencies>
     <after>
@@ -153,20 +145,21 @@
       <dep package="meta-gtk-osx-bootstrap"/>
       <dep package="gobject-introspection"/>
     </after>
-  </autotools>
+  </meson>
 
-  <autotools id="gdk-pixbuf" autogen-sh="configure">
-    <branch module="gdk-pixbuf/2.36/gdk-pixbuf-2.36.12.tar.xz" version="2.36.12"
-            hash="sha256:fff85cf48223ab60e3c3c8318e2087131b590fd6f1737e42cb3759a3b427a334">
+  <meson id="gdk-pixbuf" mesonargs="-Dx11=false -Dman=false">
+    <branch module="gdk-pixbuf/2.40/gdk-pixbuf-2.40.0.tar.xz" version="2.40.0"
+            hash="sha256:1582595099537ca8ff3b99c6804350b4c058bb8ad67411bbaae024ee7cead4e6">
+      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/gdk-pixbuf-loader-name.patch" strip="1"/>
     </branch>
     <after>
       <dep package="pango"/>
       <dep package="gobject-introspection"/>
     </after>
-  </autotools>
+  </meson>
 
   <autotools id="gtk+" autogen-sh="autoreconf"
-             autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection">
+             autogenargs="--with-gdktarget=quartz --enable-quartz-relocation --disable-introspection --disable-visibility">
     <branch module="gtk+/2.24/gtk+-2.24.32.tar.xz" version="2.24.32"
             hash="sha256:b6c8a93ddda5eabe3bfee1eb39636c9a03d2a56c7b62828b359bf197943c582e">
       <!--patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/0004-Bug-571582-GtkSelection-implementation-for-quartz.patch" strip="1"/-->
@@ -198,8 +191,9 @@
   </autotools>
 
   <meson id="libepoxy">
-    <branch repo="github-tarball" version="1.5.3"
-            module="anholt/libepoxy/releases/download/1.5.3/libepoxy-1.5.3.tar.xz"/>
+    <branch repo="github-tarball" version="1.5.4"
+            hash="sha256:0bd2cc681dfeffdef739cb29913f8c3caa47a88a451fd2bc6e606c02997289d2"
+            module="anholt/libepoxy/releases/download/1.5.4/libepoxy-1.5.4.tar.xz"/>
     <dependencies>
       <dep package="xorg-util-macros"/>
     </dependencies>
@@ -231,8 +225,10 @@
 
   <autotools id="gtk+-3.0" autogen-sh="autogen.sh"
              autogenargs="--enable-quartz-backend --enable-quartz-relocation">
-    <branch module="gtk+/3.24/gtk+-3.24.10.tar.xz" version="3.24.10"
-            hash="sha256:35a8f107e2b90fda217f014c0c15cb20a6a66678f6fd7e36556d469372c01b03">
+    <branch module="gtk+/3.24/gtk+-3.24.23.tar.xz" version="3.24.23"
+            hash="sha256:5d864d248357a2251545b3387b35942de5f66e4c66013f0962eb5cb6f8dae2b1">
+      <patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/gtk-revert-noobjc.patch" strip="1"/>
+      <patch file="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/patches/0001-propagates-unhandled-keyboard-events-back-to-OS-on-OSX.patch" strip="1"/>
     </branch>
     <dependencies>
       <dep package="glib"/>
@@ -249,9 +245,9 @@
 
   <autotools id="pixman" autogenargs="--disable-gtk --disable-mmx"
              autogen-sh="configure">
-    <branch version="0.38.4" module="pixman-0.38.4.tar.gz"
+    <branch version="0.40.0" module="pixman-0.40.0.tar.gz"
             repo="cairographics"
-            hash="sha1:8594e0a31c1802ae0c155d6b502c0953aa862baa">
+            hash="sha512:063776e132f5d59a6d3f94497da41d6fc1c7dca0d269149c78247f0e0d7f520a25208d908cf5e421d1564889a91da44267b12d61c0bd7934cd54261729a7de5f">
     </branch>
     <after>
       <dep package="meta-gtk-osx-bootstrap"/>

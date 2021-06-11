@@ -22,13 +22,14 @@
               href="http://launchpad.net/intltool/trunk/"/>
 
   <autotools id='readline' autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="readline/readline-7.0.tar.gz"
-      version="7.0">
+    <branch repo="ftp.gnu.org" module="readline/readline-8.0.tar.gz"
+            hash="sha256:e339f51971478d369f8a053a330a190781acb9864cf4c541060f12078948e461"
+            version="8.0">
     </branch>
   </autotools>
 
   <autotools id="xz" autogen-sh="configure" bootstrap="true">
-    <branch repo="tukaani.org" module="xz/xz-5.2.4.tar.bz2" version="5.2.4"/>
+    <branch repo="tukaani.org" module="xz/xz-5.2.5.tar.bz2" version="5.2.5"/>
   </autotools>
 
 
@@ -63,7 +64,7 @@
   <!-- cmakes ./configure is picky about invalid flags so we manually set it -->
   <autotools id="cmake" autogen-sh="bootstrap"
              autogen-template="%(srcdir)s/%(autogen-sh)s --prefix=%(prefix)s">
-    <branch repo="cmake" module="v3.14/cmake-3.14.5.tar.gz" version="3.14.5">
+    <branch repo="cmake" module="v3.17/cmake-3.17.2.tar.gz" version="3.17.2">
     </branch>
   </autotools>
 
@@ -77,8 +78,8 @@
 
   <autotools id="autoconf-archive" autogen-sh="configure">
     <branch repo="ftp.gnu.org"
-            module="autoconf-archive/autoconf-archive-2018.03.13.tar.xz"
-            version="2018-03-13"/>
+            module="autoconf-archive/autoconf-archive-2019.01.06.tar.xz"
+            version="2019-01-06"/>
   </autotools>
 
   <autotools id="libtool" autogen-sh="configure" bootstrap="true">
@@ -128,8 +129,8 @@
   </autotools>
 
   <autotools id="automake" autogen-sh="configure" bootstrap="true">
-    <branch repo="ftp.gnu.org" version="1.16"
-            module="automake/automake-1.16.1.tar.xz"/>
+    <branch repo="ftp.gnu.org" version="1.16.2"
+            module="automake/automake-1.16.2.tar.xz"/>
     <dependencies>
       <dep package="autoconf"/>
     </dependencies>
@@ -144,25 +145,22 @@
   <!-- MacOS provides 2.3 (presumably the last GPL2 version, gstreamer
        requires 2.4. -->
   <autotools id="bison" autogen-sh="configure">
-    <branch repo="ftp.gnu.org" module="bison/bison-3.0.4.tar.xz"
-            version="3.0.4">
-      <patch file="https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/patches/bison-3.0.4-vasnprintf.patch" strip="1"/>
+    <branch repo="ftp.gnu.org" module="bison/bison-3.6.tar.xz"
+            version="3.6">
     </branch>
     <dependencies>
       <dep package='flex'/>
     </dependencies>
   </autotools>
   
-  <!-- MacOS hasn't updated flex since 2012. Since it's BSD-licensed
-       it must be just because Apple doesn't use it and doesn't
-       care. We'll provide something more up-to-date. -->
+  <!-- As of 9 May 2020 Flex hasn't had an update since November 2015. -->
   <autotools id="flex" autogen-sh="configure">
     <branch module="flex/flex-2.6.0.tar.xz" version="2.6.0"
             repo="sourceforge" />
   </autotools>
   
   <autotools id="expat" autogen-sh="configure">
-    <branch module="expat/expat-2.2.5.tar.bz2" version="2.2.5"
+    <branch module="expat/expat-2.2.9.tar.bz2" version="2.2.9"
             repo="sourceforge"/>
   </autotools>
 

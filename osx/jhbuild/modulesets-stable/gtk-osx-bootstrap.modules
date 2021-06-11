@@ -27,11 +27,13 @@
               href="http://download.icu-project.org/files/"/>
   <repository type="tarball" name="ragel"
               href="http://www.colm.net/files/ragel/"/>
+  <repository type="tarball" name="github-tarball"
+              href="https://github.com/"/>
 
   <autotools id='readline' autogen-sh="configure">
     <branch repo="ftp.gnu.org" module="readline/readline-8.0.tar.gz"
-      hash="sha256:e339f51971478d369f8a053a330a190781acb9864cf4c541060f12078948e461"
-      version="8.0">
+            hash="sha256:e339f51971478d369f8a053a330a190781acb9864cf4c541060f12078948e461"
+            version="8.0">
     </branch>
   </autotools>
 
@@ -54,13 +56,10 @@
   </autotools>
 
   <autotools id="libtiff" autogen-sh="configure" autogenargs="--without-x --disable-webp">
-    <branch version="4.0.10" module="libtiff/tiff-4.0.10.tar.gz"
-    	hash="sha156:2c52d11ccaf767457db0c46795d9c7d1a8d8f76f68b0b800a3dfe45786b996e4"
-	    repo="libtiff">
-	<patch file="https://raw.githubusercontent.com/totaam/gtk-osx-build/master/patches/tiff-nohtml.patch" strip="1" />
-    </branch>
+    <branch version="4.1.0" module="libtiff/tiff-4.1.0.tar.gz"
+            hash="sha156:5d29f32517dadb6dbcd1255ea5bbc93a2b54b94fbf83653b4d65c7d6775b8634"
+            repo="libtiff"/>
     <dependencies>
-      <dep package="libwebp"/>
       <dep package="libjpeg"/>
     </dependencies>
   </autotools>
@@ -74,8 +73,8 @@
   <autotools id="libxml2" autogen-sh="configure"
              autogenargs='--libdir="$JHBUILD_LIBDIR" --with-python'>
     <branch version="2.9.9" module="libxml2-2.9.9.tar.gz"
-    	hash="sha256:94fb70890143e3c6549f265cee93ec064c80a84c42ad0f23e85ee1fd6540a871"
-	    repo="xmlsoft.org"/>
+            hash="sha256:94fb70890143e3c6549f265cee93ec064c80a84c42ad0f23e85ee1fd6540a871"
+            repo="xmlsoft.org"/>
     <after>
       <dep package="python"/>
       <dep package="python3"/>
@@ -84,8 +83,8 @@
 
   <autotools id="libxslt" autogen-sh="configure">
     <branch version="1.1.34" module="libxslt-1.1.34.tar.gz"
-      hash="sha256:98b1bd46d6792925ad2dfe9a87452ea2adebf69dcb9919ffd55bf926a7f93f7f"
-	    repo="xmlsoft.org"/>
+            hash="sha256:98b1bd46d6792925ad2dfe9a87452ea2adebf69dcb9919ffd55bf926a7f93f7f"
+            repo="xmlsoft.org"/>
     <dependencies>
       <dep package="libxml2"/>
     </dependencies>
@@ -102,8 +101,8 @@
   </autotools>
 
   <autotools id="yelp-xsl">
-    <branch version="3.20.1" module="yelp-xsl/3.20/yelp-xsl-3.20.1.tar.xz"
-            hash="sha256:dc61849e5dca473573d32e28c6c4e3cf9c1b6afe241f8c26e29539c415f97ba0"/>
+    <branch version="3.36.0" module="yelp-xsl/3.36/yelp-xsl-3.36.0.tar.xz"
+            hash="sha256:4fe51c0233b79a4c204c68498d45f09b342c30ed02c4e418506c0e35f0904ec3"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -112,8 +111,8 @@
   </autotools>
 
   <autotools id="yelp-tools">
-    <branch version="3.18.0" module="yelp-tools/3.18/yelp-tools-3.18.0.tar.xz"
-            hash="sha256:c6c1d65f802397267cdc47aafd5398c4b60766e0a7ad2190426af6c0d0716932"/>
+    <branch version="3.32.2" module="yelp-tools/3.32/yelp-tools-3.32.2.tar.xz"
+            hash="sha256:183856b5ed0b0bb2c05dd1204af023946ed436943e35e789afb0295e5e71e8f9"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -123,8 +122,8 @@
   </autotools>
 
   <autotools id="gtk-doc" autogen-sh="configure">
-    <branch version="1.30" module="gtk-doc/1.30/gtk-doc-1.30.tar.xz"
-            hash="sha256:a4f6448eb838ccd30d76a33b1fd095f81aea361f03b12c7b23df181d21b7069e"/>
+    <branch version="1.32" module="gtk-doc/1.32/gtk-doc-1.32.tar.xz"
+            hash="sha256:de0ef034fb17cb21ab0c635ec730d19746bce52984a6706e7bbec6fb5e0b907c"/>
     <dependencies>
       <dep package="libxml2"/>
       <dep package="libxslt"/>
@@ -137,8 +136,9 @@
 
   <autotools id="icu" autogen-sh="source/configure" autogenargs="--enable-rpath"
              makeargs='CFLAGS="$CFLAGS -DU_CHARSET_IS_UTF8=1 -DU_USING_ICU_NAMESPACE=0"'>
-    <branch repo="icu" version="58.2" checkoutdir="icu"
-            module="icu4c/58.2/icu4c-58_2-src.tgz"/>
+    <branch repo="github-tarball" version="66.1" checkoutdir="icu"
+            module="unicode-org/icu/releases/download/release-66-1/icu4c-66_1-src.tgz"
+            hash="sha256:52a3f2209ab95559c1cf0a14f24338001f389615bf00e2585ef3dbc43ecf0a2e"/>
   </autotools>
 
 
@@ -150,14 +150,15 @@
 
   <autotools id="harfbuzz" autogen-sh="configure"
              autogenargs="--with-coretext --with-icu">
-    <branch repo="harfbuzz" module="harfbuzz-2.5.3.tar.xz" version="2.5.3">
+    <branch repo="harfbuzz" module="harfbuzz-2.6.4.tar.xz" version="2.6.4"
+            hash="sha256:9413b8d96132d699687ef914ebb8c50440efc87b3f775d25856d7ec347c03c12">
     </branch>
     <dependencies>
       <dep package="ragel"/>
       <dep package="glib"/>
-      <dep package="icu"/>
     </dependencies>
     <after>
+      <dep package="icu"/>
       <dep package="icu55"/>
     </after>
   </autotools>

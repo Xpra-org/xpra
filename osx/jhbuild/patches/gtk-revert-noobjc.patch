@@ -1,0 +1,1203 @@
+diff --git a/gdk/Makefile.am b/gdk/Makefile.am
+index 3635864fef..b874f69563 100644
+--- a/gdk/Makefile.am
++++ b/gdk/Makefile.am
+@@ -222,6 +222,7 @@ libgdk_3_la_LIBADD += x11/libgdk-x11.la
+ endif # USE_X11
+ 
+ if USE_QUARTZ
++libgdk_3_la_CFLAGS += -xobjective-c
+ libgdk_3_la_LIBADD += quartz/libgdk-quartz.la
+ endif # USE_QUARTZ
+ 
+diff --git a/gdk/gdkdisplaymanager.c b/gdk/gdkdisplaymanager.c
+index e631652e0e..24f8ea09f6 100644
+--- a/gdk/gdkdisplaymanager.c
++++ b/gdk/gdkdisplaymanager.c
+@@ -38,6 +38,12 @@
+ #endif
+ 
+ #ifdef GDK_WINDOWING_QUARTZ
++/* When the gdk_quartz_display_open function is removed We can
++ * immediately include gdkquartzdisplaymanager.h here instead of
++ * gdkprivate-quartz.h so that we won’t have to enable -xobjective-c
++ * for the “generic” GDK source code.
++ * #include "quartz/gdkquartzdisplaymanager.h"
++ */
+ #include "quartz/gdkprivate-quartz.h"
+ #endif
+ 
+diff --git a/gdk/quartz/GdkQuartzNSWindow.c b/gdk/quartz/GdkQuartzNSWindow.c
+index 005e747d94..6de26b001b 100644
+--- a/gdk/quartz/GdkQuartzNSWindow.c
++++ b/gdk/quartz/GdkQuartzNSWindow.c
+@@ -21,8 +21,6 @@
+ #include "gdkquartzwindow.h"
+ #include "gdkdnd-quartz.h"
+ #include "gdkprivate-quartz.h"
+-#include "gdkinternal-quartz.h"
+-#include "gdkquartzdnd.h"
+ 
+ @implementation GdkQuartzNSWindow
+ 
+diff --git a/gdk/quartz/GdkQuartzView.c b/gdk/quartz/GdkQuartzView.c
+index a02df616e1..b2ed5e2418 100644
+--- a/gdk/quartz/GdkQuartzView.c
++++ b/gdk/quartz/GdkQuartzView.c
+@@ -23,7 +23,6 @@
+ #include "gdkquartzwindow.h"
+ #include "gdkprivate-quartz.h"
+ #include "gdkquartz.h"
+-#include "gdkinternal-quartz.h"
+ 
+ @implementation GdkQuartzView
+ 
+diff --git a/gdk/quartz/Makefile.am b/gdk/quartz/Makefile.am
+index 141d931c64..08928b1e77 100644
+--- a/gdk/quartz/Makefile.am
++++ b/gdk/quartz/Makefile.am
+@@ -38,9 +38,7 @@ libgdk_quartz_la_SOURCES =    	\
+ 	gdkglcontext-quartz.c	\
+ 	gdkglcontext-quartz.h	\
+ 	gdkglobals-quartz.c	\
+-	gdkinternal-quartz.h	\
+ 	gdkkeys-quartz.c	\
+-	gdkkeys-quartz.h	\
+ 	gdkmonitor-quartz.c     \
+ 	gdkmonitor-quartz.h     \
+ 	gdkprivate-quartz.h	\
+--- a/gdk/quartz/gdkcursor-quartz.c	2020-07-09 04:22:19.000000000 -0700
++++ b/gdk/quartz/gdkcursor-quartz.c	2020-07-09 04:23:29.000000000 -0700
+@@ -23,8 +23,6 @@
+ #include "gdkcursorprivate.h"
+ #include "gdkquartzcursor.h"
+ #include "gdkprivate-quartz.h"
+-#include "gdkinternal-quartz.h"
+-#include "gdkquartz-gtk-only.h"
+ 
+ #include "xcursors.h"
+ 
+diff --git a/gdk/quartz/gdkdevice-core-quartz.c b/gdk/quartz/gdkdevice-core-quartz.c
+index 788cbe4b04..8ba62c0ae0 100644
+--- a/gdk/quartz/gdkdevice-core-quartz.c
++++ b/gdk/quartz/gdkdevice-core-quartz.c
+@@ -26,7 +26,6 @@
+ #include "gdkquartzcursor.h"
+ #include "gdkprivate-quartz.h"
+ #include "gdkquartzdevice-core.h"
+-#include "gdkinternal-quartz.h"
+ 
+ struct _GdkQuartzDeviceCore
+ {
+diff --git a/gdk/quartz/gdkdisplay-quartz.h b/gdk/quartz/gdkdisplay-quartz.h
+index a053ab11cf..c9533a91db 100644
+--- a/gdk/quartz/gdkdisplay-quartz.h
++++ b/gdk/quartz/gdkdisplay-quartz.h
+@@ -25,7 +25,6 @@
+ #include "gdkwindow.h"
+ #include "gdkinternals.h"
+ #include "gdkmain.h"
+-#include "gdkinternal-quartz.h"
+ 
+ G_BEGIN_DECLS
+ 
+diff --git a/gdk/quartz/gdkdnd-quartz.c b/gdk/quartz/gdkdnd-quartz.c
+index a68ee3055e..aca4cb1dd8 100644
+--- a/gdk/quartz/gdkdnd-quartz.c
++++ b/gdk/quartz/gdkdnd-quartz.c
+@@ -20,8 +20,7 @@
+ #include "gdkdnd.h"
+ #include "gdkquartzdnd.h"
+ #include "gdkprivate-quartz.h"
+-#include "gdkinternal-quartz.h"
+-#include "gdkquartz-gtk-only.h"
++
+ 
+ G_DEFINE_TYPE (GdkQuartzDragContext, gdk_quartz_drag_context, GDK_TYPE_DRAG_CONTEXT)
+ 
+diff --git a/gdk/quartz/gdkdnd-quartz.h b/gdk/quartz/gdkdnd-quartz.h
+index e4aa3d5742..990904e760 100644
+--- a/gdk/quartz/gdkdnd-quartz.h
++++ b/gdk/quartz/gdkdnd-quartz.h
+@@ -21,6 +21,7 @@
+ #define __GDK_QUARTZ_DND__
+ 
+ #include <gdkdndprivate.h>
++#include "gdkquartzdnd.h"
+ 
+ #include <AppKit/AppKit.h>
+ 
+diff --git a/gdk/quartz/gdkeventloop-quartz.c b/gdk/quartz/gdkeventloop-quartz.c
+index 8000576837..3f3b033242 100644
+--- a/gdk/quartz/gdkeventloop-quartz.c
++++ b/gdk/quartz/gdkeventloop-quartz.c
+@@ -7,7 +7,6 @@
+ #include <unistd.h>
+ 
+ #include "gdkprivate-quartz.h"
+-#include "gdkinternal-quartz.h"
+ #include <gdk/gdkdisplayprivate.h>
+ 
+ /* 
+@@ -153,18 +152,6 @@ static const char *const state_names[]  = {
+ };
+ #endif
+ 
+-#if MAC_OS_X_VERSION_MIN_REQUIRED < 101200
+-typedef enum
+-  {
+-   GDK_QUARTZ_EVENT_MASK_ANY = NSAnyEventMask,
+-  } GdkQuartzEventMask;
+-#else
+-typedef enum
+-  {
+-   GDK_QUARTZ_EVENT_MASK_ANY = NSEventMaskAny,
+-  } GdkQuartzEventMask;
+-#endif
+-
+ static SelectThreadState select_thread_state = BEFORE_START;
+ 
+ static pthread_t select_thread;
+diff --git a/gdk/quartz/gdkevents-quartz.c b/gdk/quartz/gdkevents-quartz.c
+index b0e6c0549e..d97cebd2bd 100644
+--- a/gdk/quartz/gdkevents-quartz.c
++++ b/gdk/quartz/gdkevents-quartz.c
+@@ -34,10 +34,8 @@
+ #include "gdkquartz.h"
+ #include "gdkquartzdisplay.h"
+ #include "gdkprivate-quartz.h"
+-#include "gdkinternal-quartz.h"
+ #include "gdkquartzdevicemanager-core.h"
+ #include "gdkquartzkeys.h"
+-#include "gdkkeys-quartz.h"
+ 
+ #define GRIP_WIDTH 15
+ #define GRIP_HEIGHT 15
+@@ -53,7 +51,6 @@
+    GDK_WINDOW_TYPE (window) != GDK_WINDOW_FOREIGN && \
+    GDK_WINDOW_TYPE (window) != GDK_WINDOW_OFFSCREEN)
+ 
+-
+ /* This is the window corresponding to the key window */
+ static GdkWindow   *current_keyboard_window;
+ 
+diff --git a/gdk/quartz/gdkglobals-quartz.c b/gdk/quartz/gdkglobals-quartz.c
+index 46a4c811aa..81cd4632e8 100644
+--- a/gdk/quartz/gdkglobals-quartz.c
++++ b/gdk/quartz/gdkglobals-quartz.c
+@@ -20,7 +20,6 @@
+ #include "gdktypes.h"
+ #include "gdkprivate.h"
+ #include "gdkquartz.h"
+-#include "gdkinternal-quartz.h"
+ 
+ GdkDisplay *_gdk_display = NULL;
+ GdkScreen *_gdk_screen = NULL;
+diff --git a/gdk/quartz/gdkinternal-quartz.h b/gdk/quartz/gdkinternal-quartz.h
+--- a/gdk/quartz/gdkinternal-quartz.h
++++ b/gdk/quartz/gdkinternal-quartz.h
+@@ -1,288 +1 @@
+-/* gdkinternal-quartz.h
+- *
+- * Copyright (C) 2005-2007 Imendio AB
+- *
+- * This library is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU Lesser General Public
+- * License as published by the Free Software Foundation; either
+- * version 2 of the License, or (at your option) any later version.
+- *
+- * This library is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * Lesser General Public License for more details.
+- *
+- * You should have received a copy of the GNU Lesser General Public
+- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+- */
+ 
+-#ifndef __GDK_INTERNAL_QUARTZ_H__
+-#define __GDK_INTERNAL_QUARTZ_H__
+-
+-#include <AppKit/AppKit.h>
+-
+-/* This is mostly a pot of function prototypes to avoid having
+- * separate include file for each implementation file that exports
+- * functions to one other file in GdkQuartz.
+- */
+-
+-/* NSInteger only exists in Leopard and newer.  This check has to be
+- * done after inclusion of the system headers.  If NSInteger has not
+- * been defined, we know for sure that we are on 32-bit.
+- */
+-#ifndef NSINTEGER_DEFINED
+-typedef int NSInteger;
+-typedef unsigned int NSUInteger;
+-#endif
+-
+-#ifndef CGFLOAT_DEFINED
+-typedef float CGFloat;
+-#endif
+-
+-#define GDK_QUARTZ_ALLOC_POOL NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init]
+-#define GDK_QUARTZ_RELEASE_POOL [pool release]
+-
+-#include <gdk/gdkprivate.h>
+-#include <gdk/quartz/gdkquartz.h>
+-#include <gdk/quartz/gdkdevicemanager-core-quartz.h>
+-#include <gdk/quartz/gdkdnd-quartz.h>
+-#include <gdk/quartz/gdkscreen-quartz.h>
+-#include <gdk/quartz/gdkwindow-quartz.h>
+-
+-#include <gdk/gdk.h>
+-
+-#include "config.h"
+-
+-extern GdkDisplay *_gdk_display;
+-extern GdkScreen *_gdk_screen;
+-extern GdkWindow *_gdk_root;
+-
+-extern GdkDragContext *_gdk_quartz_drag_source_context;
+-
+-#define GDK_WINDOW_IS_QUARTZ(win)        (GDK_IS_WINDOW_IMPL_QUARTZ (((GdkWindow *)win)->impl))
+-
+-/* Initialization */
+-void _gdk_quartz_window_init_windowing      (GdkDisplay *display,
+-                                             GdkScreen  *screen);
+-void _gdk_quartz_events_init                (void);
+-void _gdk_quartz_event_loop_init            (void);
+-
+-/* Cursor */
+-NSCursor   *_gdk_quartz_cursor_get_ns_cursor        (GdkCursor *cursor);
+-
+-/* Events */
+-typedef enum {
+-  GDK_QUARTZ_EVENT_SUBTYPE_EVENTLOOP
+-} GdkQuartzEventSubType;
+-
+-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 10130
+-#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSEventTypeTabletProximity
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSEventSubtypeTabletProximity
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSEventSubtypeTabletPoint
+-#else
+-#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSTabletProximity
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSTabletProximityEventSubtype
+-#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSTabletPointEventSubtype
+-#endif
+-
+-void         _gdk_quartz_events_update_focus_window    (GdkWindow *new_window,
+-                                                        gboolean   got_focus);
+-void         _gdk_quartz_events_send_map_event         (GdkWindow *window);
+-
+-GdkModifierType _gdk_quartz_events_get_current_keyboard_modifiers (void);
+-GdkModifierType _gdk_quartz_events_get_current_mouse_modifiers    (void);
+-
+-void         _gdk_quartz_events_break_all_grabs         (guint32    time);
+-
+-/* Devices */
+-void       _gdk_quartz_device_core_set_active (GdkDevice  *device,
+-                                               gboolean    active,
+-                                               NSUInteger  device_id);
+-
+-gboolean   _gdk_quartz_device_core_is_active (GdkDevice  *device,
+-                                              NSUInteger  device_id);
+-
+-void       _gdk_quartz_device_core_set_unique (GdkDevice          *device,
+-                                               unsigned long long  unique_id);
+-
+-unsigned long long _gdk_quartz_device_core_get_unique (GdkDevice *device);
+-
+-/* Event loop */
+-gboolean   _gdk_quartz_event_loop_check_pending (void);
+-NSEvent *  _gdk_quartz_event_loop_get_pending   (void);
+-void       _gdk_quartz_event_loop_release_event (NSEvent *event);
+-
+-/* Keys */
+-GdkEventType _gdk_quartz_keys_event_type  (NSEvent   *event);
+-gboolean     _gdk_quartz_keys_is_modifier (guint      keycode);
+-void         _gdk_quartz_synthesize_null_key_event (GdkWindow *window);
+-
+-/* Drag and Drop */
+-void        _gdk_quartz_window_register_dnd      (GdkWindow   *window);
+-GdkDragContext * _gdk_quartz_window_drag_begin   (GdkWindow   *window,
+-                                                  GdkDevice   *device,
+-                                                  GList       *targets,
+-                                                  gint         x_root,
+-                                                  gint         y_root);
+-
+-/* Display */
+-
+-GdkDisplay *    _gdk_quartz_display_open (const gchar *name);
+-
+-/* Display methods - events */
+-void     _gdk_quartz_display_queue_events (GdkDisplay *display);
+-gboolean _gdk_quartz_display_has_pending  (GdkDisplay *display);
+-
+-void       _gdk_quartz_display_event_data_copy (GdkDisplay     *display,
+-                                                const GdkEvent *src,
+-                                                GdkEvent       *dst);
+-void       _gdk_quartz_display_event_data_free (GdkDisplay     *display,
+-                                                GdkEvent       *event);
+-
+-/* Display methods - cursor */
+-GdkCursor *_gdk_quartz_display_get_cursor_for_type     (GdkDisplay      *display,
+-                                                        GdkCursorType    type);
+-GdkCursor *_gdk_quartz_display_get_cursor_for_name     (GdkDisplay      *display,
+-                                                        const gchar     *name);
+-GdkCursor *_gdk_quartz_display_get_cursor_for_surface  (GdkDisplay      *display,
+-                                                        cairo_surface_t *surface,
+-                                                        gdouble          x,
+-                                                        gdouble          y);
+-gboolean   _gdk_quartz_display_supports_cursor_alpha   (GdkDisplay    *display);
+-gboolean   _gdk_quartz_display_supports_cursor_color   (GdkDisplay    *display);
+-void       _gdk_quartz_display_get_default_cursor_size (GdkDisplay *display,
+-                                                        guint      *width,
+-                                                        guint      *height);
+-void       _gdk_quartz_display_get_maximal_cursor_size (GdkDisplay *display,
+-                                                        guint      *width,
+-                                                        guint      *height);
+-
+-/* Display methods - keymap */
+-GdkKeymap * _gdk_quartz_display_get_keymap (GdkDisplay *display);
+-
+-/* Display methods - selection */
+-gboolean    _gdk_quartz_display_set_selection_owner (GdkDisplay *display,
+-                                                     GdkWindow  *owner,
+-                                                     GdkAtom     selection,
+-                                                     guint32     time,
+-                                                     gboolean    send_event);
+-GdkWindow * _gdk_quartz_display_get_selection_owner (GdkDisplay *display,
+-                                                     GdkAtom     selection);
+-gint        _gdk_quartz_display_get_selection_property (GdkDisplay     *display,
+-                                                        GdkWindow      *requestor,
+-                                                        guchar        **data,
+-                                                        GdkAtom        *ret_type,
+-                                                        gint           *ret_format);
+-void        _gdk_quartz_display_convert_selection      (GdkDisplay     *display,
+-                                                        GdkWindow      *requestor,
+-                                                        GdkAtom         selection,
+-                                                        GdkAtom         target,
+-                                                        guint32         time);
+-gint        _gdk_quartz_display_text_property_to_utf8_list (GdkDisplay     *display,
+-                                                            GdkAtom         encoding,
+-                                                            gint            format,
+-                                                            const guchar   *text,
+-                                                            gint            length,
+-                                                            gchar        ***list);
+-gchar *     _gdk_quartz_display_utf8_to_string_target      (GdkDisplay     *displayt,
+-                                                            const gchar    *str);
+-
+-/* Screen */
+-GdkScreen  *_gdk_quartz_screen_new                      (void);
+-void        _gdk_quartz_screen_update_window_sizes      (GdkScreen *screen);
+-
+-/* Screen methods - visual */
+-GdkVisual *   _gdk_quartz_screen_get_rgba_visual            (GdkScreen      *screen);
+-GdkVisual *   _gdk_quartz_screen_get_system_visual          (GdkScreen      *screen);
+-gint          _gdk_quartz_screen_visual_get_best_depth      (GdkScreen      *screen);
+-GdkVisualType _gdk_quartz_screen_visual_get_best_type       (GdkScreen      *screen);
+-GdkVisual *   _gdk_quartz_screen_get_system_visual          (GdkScreen      *screen);
+-GdkVisual*    _gdk_quartz_screen_visual_get_best            (GdkScreen      *screen);
+-GdkVisual*    _gdk_quartz_screen_visual_get_best_with_depth (GdkScreen      *screen,
+-                                                             gint            depth);
+-GdkVisual*    _gdk_quartz_screen_visual_get_best_with_type  (GdkScreen      *screen,
+-                                                             GdkVisualType   visual_type);
+-GdkVisual*    _gdk_quartz_screen_visual_get_best_with_both  (GdkScreen      *screen,
+-                                                             gint            depth,
+-                                                             GdkVisualType   visual_type);
+-void          _gdk_quartz_screen_query_depths               (GdkScreen      *screen,
+-                                                             gint          **depths,
+-                                                             gint           *count);
+-void          _gdk_quartz_screen_query_visual_types         (GdkScreen      *screen,
+-                                                             GdkVisualType **visual_types,
+-                                                             gint           *count);
+-void          _gdk_quartz_screen_init_visuals               (GdkScreen      *screen);
+-GList *       _gdk_quartz_screen_list_visuals               (GdkScreen      *screen);
+-
+-/* Screen methods - events */
+-void        _gdk_quartz_screen_broadcast_client_message (GdkScreen   *screen,
+-                                                         GdkEvent    *event);
+-gboolean    _gdk_quartz_screen_get_setting              (GdkScreen   *screen,
+-                                                         const gchar *name,
+-                                                         GValue      *value);
+-
+-gboolean    _gdk_quartz_window_is_ancestor          (GdkWindow *ancestor,
+-                                                     GdkWindow *window);
+-void       _gdk_quartz_window_gdk_xy_to_xy          (gint       gdk_x,
+-                                                     gint       gdk_y,
+-                                                     gint      *ns_x,
+-                                                     gint      *ns_y);
+-void       _gdk_quartz_window_xy_to_gdk_xy          (gint       ns_x,
+-                                                     gint       ns_y,
+-                                                     gint      *gdk_x,
+-                                                     gint      *gdk_y);
+-void       _gdk_quartz_window_nspoint_to_gdk_xy     (NSPoint    point,
+-                                                     gint      *x,
+-                                                     gint      *y);
+-GdkWindow *_gdk_quartz_window_find_child            (GdkWindow *window,
+-                                                     gint       x,
+-                                                     gint       y,
+-                                                     gboolean   get_toplevel);
+-void       _gdk_quartz_window_attach_to_parent      (GdkWindow *window);
+-void       _gdk_quartz_window_detach_from_parent    (GdkWindow *window);
+-void       _gdk_quartz_window_did_become_main       (GdkWindow *window);
+-void       _gdk_quartz_window_did_resign_main       (GdkWindow *window);
+-void       _gdk_quartz_window_debug_highlight       (GdkWindow *window,
+-                                                     gint       number);
+-
+-void       _gdk_quartz_window_update_position           (GdkWindow    *window);
+-void       _gdk_quartz_window_update_fullscreen_state   (GdkWindow    *window);
+-
+-/* Window methods - testing */
+-void     _gdk_quartz_window_sync_rendering    (GdkWindow       *window);
+-gboolean _gdk_quartz_window_simulate_key      (GdkWindow       *window,
+-                                               gint             x,
+-                                               gint             y,
+-                                               guint            keyval,
+-                                               GdkModifierType  modifiers,
+-                                               GdkEventType     key_pressrelease);
+-gboolean _gdk_quartz_window_simulate_button   (GdkWindow       *window,
+-                                               gint             x,
+-                                               gint             y,
+-                                               guint            button,
+-                                               GdkModifierType  modifiers,
+-                                               GdkEventType     button_pressrelease);
+-
+-/* Window methods - property */
+-gboolean _gdk_quartz_window_get_property      (GdkWindow    *window,
+-                                               GdkAtom       property,
+-                                               GdkAtom       type,
+-                                               gulong        offset,
+-                                               gulong        length,
+-                                               gint          pdelete,
+-                                               GdkAtom      *actual_property_type,
+-                                               gint         *actual_format_type,
+-                                               gint         *actual_length,
+-                                               guchar      **data);
+-void     _gdk_quartz_window_change_property   (GdkWindow    *window,
+-                                               GdkAtom       property,
+-                                               GdkAtom       type,
+-                                               gint          format,
+-                                               GdkPropMode   mode,
+-                                               const guchar *data,
+-                                               gint          nelements);
+-void     _gdk_quartz_window_delete_property   (GdkWindow    *window,
+-                                               GdkAtom       property);
+-
+-
+-#endif /* __GDK_INTERNAL_QUARTZ_H__ */
+diff --git a/gdk/quartz/gdkkeys-quartz.c b/gdk/quartz/gdkkeys-quartz.c
+index 9df493999c..56922f039b 100644
+--- a/gdk/quartz/gdkkeys-quartz.c
++++ b/gdk/quartz/gdkkeys-quartz.c
+@@ -55,8 +55,6 @@
+ #include "gdkquartzkeys.h"
+ #include "gdkkeysprivate.h"
+ #include "gdkkeysyms.h"
+-#include "gdkkeys-quartz.h"
+-#include "gdkinternal-quartz.h"
+ 
+ #define NUM_KEYCODES 128
+ #define KEYVALS_PER_KEYCODE 4
+diff --git a/gdk/quartz/gdkkeys-quartz.h b/gdk/quartz/gdkkeys-quartz.h
+deleted file mode 100644
+index f61a00bd7e..0000000000
+--- a/gdk/quartz/gdkkeys-quartz.h
++++ /dev/null
+@@ -1,85 +0,0 @@
+-/* gdkkeys-quartz.h
+- *
+- * Copyright (C) 2005-2007 Imendio AB
+- *
+- * This library is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU Lesser General Public
+- * License as published by the Free Software Foundation; either
+- * version 2 of the License, or (at your option) any later version.
+- *
+- * This library is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * Lesser General Public License for more details.
+- *
+- * You should have received a copy of the GNU Lesser General Public
+- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+- */
+-
+-#ifndef __GDK_KEYS_QUARTZ_H__
+-#define __GDK_KEYS_QUARTZ_H__
+-#if MAC_OS_X_VERSION_MIN_REQUIRED < 101200
+-typedef enum
+-  {
+-    GDK_QUARTZ_FLAGS_CHANGED = NSFlagsChanged,
+-    GDK_QUARTZ_KEY_UP = NSKeyUp,
+-    GDK_QUARTZ_KEY_DOWN = NSKeyDown,
+-    GDK_QUARTZ_MOUSE_ENTERED = NSMouseEntered,
+-    GDK_QUARTZ_MOUSE_EXITED = NSMouseExited,
+-    GDK_QUARTZ_SCROLL_WHEEL = NSScrollWheel,
+-    GDK_QUARTZ_MOUSE_MOVED = NSMouseMoved,
+-    GDK_QUARTZ_OTHER_MOUSE_DRAGGED = NSOtherMouseDragged,
+-    GDK_QUARTZ_RIGHT_MOUSE_DRAGGED = NSRightMouseDragged,
+-    GDK_QUARTZ_LEFT_MOUSE_DRAGGED = NSLeftMouseDragged,
+-    GDK_QUARTZ_OTHER_MOUSE_UP = NSOtherMouseUp,
+-    GDK_QUARTZ_RIGHT_MOUSE_UP = NSRightMouseUp,
+-    GDK_QUARTZ_LEFT_MOUSE_UP = NSLeftMouseUp,
+-    GDK_QUARTZ_OTHER_MOUSE_DOWN = NSOtherMouseDown,
+-    GDK_QUARTZ_RIGHT_MOUSE_DOWN = NSRightMouseDown,
+-    GDK_QUARTZ_LEFT_MOUSE_DOWN = NSLeftMouseDown,
+-  } GdkQuartzEventType;
+-
+-typedef enum
+-  {
+-    GDK_QUARTZ_ALTERNATE_KEY_MASK = NSAlternateKeyMask,
+-    GDK_QUARTZ_CONTROL_KEY_MASK = NSControlKeyMask,
+-    GDK_QUARTZ_SHIFT_KEY_MASK = NSShiftKeyMask,
+-    GDK_QUARTZ_ALPHA_SHIFT_KEY_MASK = NSAlphaShiftKeyMask,
+-    GDK_QUARTZ_COMMAND_KEY_MASK = NSCommandKeyMask,
+-    GDK_QUARTZ_ANY_EVENT_MASK = NSAnyEventMask,
+-  } GdkQuartzEventModifierFlags;
+-
+-
+-#else
+-typedef enum
+-  {
+-    GDK_QUARTZ_FLAGS_CHANGED = NSEventTypeFlagsChanged,
+-    GDK_QUARTZ_KEY_UP = NSEventTypeKeyUp,
+-    GDK_QUARTZ_KEY_DOWN = NSEventTypeKeyDown,
+-    GDK_QUARTZ_MOUSE_ENTERED = NSEventTypeMouseEntered,
+-    GDK_QUARTZ_MOUSE_EXITED = NSEventTypeMouseExited,
+-    GDK_QUARTZ_SCROLL_WHEEL = NSEventTypeScrollWheel,
+-    GDK_QUARTZ_MOUSE_MOVED = NSEventTypeMouseMoved,
+-    GDK_QUARTZ_OTHER_MOUSE_DRAGGED = NSEventTypeOtherMouseDragged,
+-    GDK_QUARTZ_RIGHT_MOUSE_DRAGGED = NSEventTypeRightMouseDragged,
+-    GDK_QUARTZ_LEFT_MOUSE_DRAGGED = NSEventTypeLeftMouseDragged,
+-    GDK_QUARTZ_OTHER_MOUSE_UP = NSEventTypeOtherMouseUp,
+-    GDK_QUARTZ_RIGHT_MOUSE_UP = NSEventTypeRightMouseUp,
+-    GDK_QUARTZ_LEFT_MOUSE_UP = NSEventTypeLeftMouseUp,
+-    GDK_QUARTZ_OTHER_MOUSE_DOWN = NSEventTypeOtherMouseDown,
+-    GDK_QUARTZ_RIGHT_MOUSE_DOWN = NSEventTypeRightMouseDown,
+-    GDK_QUARTZ_LEFT_MOUSE_DOWN = NSEventTypeLeftMouseDown,
+-  } GdkQuartzEventType;
+-
+-typedef enum
+-  {
+-   GDK_QUARTZ_ALTERNATE_KEY_MASK = NSEventModifierFlagOption,
+-   GDK_QUARTZ_CONTROL_KEY_MASK = NSEventModifierFlagControl,
+-   GDK_QUARTZ_SHIFT_KEY_MASK = NSEventModifierFlagShift,
+-   GDK_QUARTZ_ALPHA_SHIFT_KEY_MASK = NSEventModifierFlagCapsLock,
+-   GDK_QUARTZ_COMMAND_KEY_MASK = NSEventModifierFlagCommand,
+-  } GdkQuartzEventModifierFlags;
+-
+-
+-#endif
+-#endif /* __GDK_KEYS_QUARTZ_H__ */
+diff --git a/gdk/quartz/gdkmonitor-quartz.c b/gdk/quartz/gdkmonitor-quartz.c
+index 06f1be1dc0..1182816a40 100644
+--- a/gdk/quartz/gdkmonitor-quartz.c
++++ b/gdk/quartz/gdkmonitor-quartz.c
+@@ -23,6 +23,7 @@
+ #include "gdkmonitor-quartz.h"
+ #include "gdkdisplay-quartz.h"
+ 
++
+ G_DEFINE_TYPE (GdkQuartzMonitor, gdk_quartz_monitor, GDK_TYPE_MONITOR)
+ 
+ static void
+diff --git a/gdk/quartz/gdkmonitor-quartz.h b/gdk/quartz/gdkmonitor-quartz.h
+index d37db8c990..86811b2380 100644
+--- a/gdk/quartz/gdkmonitor-quartz.h
++++ b/gdk/quartz/gdkmonitor-quartz.h
+@@ -25,7 +25,6 @@
+ 
+ #include "gdkquartzmonitor.h"
+ #include "gdkprivate-quartz.h"
+-#include "gdkinternal-quartz.h"
+ 
+ struct _GdkQuartzMonitor
+ {
+diff --git a/gdk/quartz/gdkprivate-quartz.h b/gdk/quartz/gdkprivate-quartz.h
+index 7900c01b17..8fca4300e4 100644
+--- a/gdk/quartz/gdkprivate-quartz.h
++++ b/gdk/quartz/gdkprivate-quartz.h
+@@ -1,4 +1,4 @@
+-/* gdkprivate-quartz.h
++/* gdkwindow-quartz.c
+  *
+  * Copyright (C) 2005-2007 Imendio AB
+  *
+@@ -19,6 +19,15 @@
+ #ifndef __GDK_PRIVATE_QUARTZ_H__
+ #define __GDK_PRIVATE_QUARTZ_H__
+ 
++#define GDK_QUARTZ_ALLOC_POOL NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init]
++#define GDK_QUARTZ_RELEASE_POOL [pool release]
++
++#include <gdk/gdkprivate.h>
++#include <gdk/quartz/gdkquartz.h>
++#include <gdk/quartz/gdkdevicemanager-core-quartz.h>
++#include <gdk/quartz/gdkdnd-quartz.h>
++#include <gdk/quartz/gdkscreen-quartz.h>
++#include <gdk/quartz/gdkwindow-quartz.h>
+ 
+ #include <gdk/gdk.h>
+ 
+@@ -26,12 +35,225 @@
+ 
+ #include "config.h"
+ 
++extern GdkDisplay *_gdk_display;
++extern GdkScreen *_gdk_screen;
++extern GdkWindow *_gdk_root;
++
++extern GdkDragContext *_gdk_quartz_drag_source_context;
++
+ #define GDK_WINDOW_IS_QUARTZ(win)        (GDK_IS_WINDOW_IMPL_QUARTZ (((GdkWindow *)win)->impl))
+ 
++/* Initialization */
++void _gdk_quartz_window_init_windowing      (GdkDisplay *display,
++                                             GdkScreen  *screen);
++void _gdk_quartz_events_init                (void);
++void _gdk_quartz_event_loop_init            (void);
++
++/* Cursor */
++NSCursor   *_gdk_quartz_cursor_get_ns_cursor        (GdkCursor *cursor);
++
++/* Events */
++typedef enum {
++  GDK_QUARTZ_EVENT_SUBTYPE_EVENTLOOP
++} GdkQuartzEventSubType;
++
++#if MAC_OS_X_VERSION_MIN_REQUIRED >= 10130
++#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSEventTypeTabletProximity
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSEventSubtypeTabletProximity
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSEventSubtypeTabletPoint
++#else
++#define GDK_QUARTZ_EVENT_TABLET_PROXIMITY NSTabletProximity
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_PROXIMITY NSTabletProximityEventSubtype
++#define GDK_QUARTZ_EVENT_SUBTYPE_TABLET_POINT NSTabletPointEventSubtype
++#endif
++
++void         _gdk_quartz_events_update_focus_window    (GdkWindow *new_window,
++                                                        gboolean   got_focus);
++void         _gdk_quartz_events_send_map_event         (GdkWindow *window);
++
++GdkModifierType _gdk_quartz_events_get_current_keyboard_modifiers (void);
++GdkModifierType _gdk_quartz_events_get_current_mouse_modifiers    (void);
++
++void         _gdk_quartz_events_break_all_grabs         (guint32    time);
++
++/* Event loop */
++gboolean   _gdk_quartz_event_loop_check_pending (void);
++NSEvent *  _gdk_quartz_event_loop_get_pending   (void);
++void       _gdk_quartz_event_loop_release_event (NSEvent *event);
++
++/* Keys */
++GdkEventType _gdk_quartz_keys_event_type  (NSEvent   *event);
++gboolean     _gdk_quartz_keys_is_modifier (guint      keycode);
++void         _gdk_quartz_synthesize_null_key_event (GdkWindow *window);
++
++/* Drag and Drop */
++void        _gdk_quartz_window_register_dnd      (GdkWindow   *window);
++GdkDragContext * _gdk_quartz_window_drag_begin   (GdkWindow   *window,
++                                                  GdkDevice   *device,
++                                                  GList       *targets,
++                                                  gint         x_root,
++                                                  gint         y_root);
+ 
+ /* Display */
+ 
+ GdkDisplay *    _gdk_quartz_display_open (const gchar *name);
+ 
++/* Display methods - events */
++void     _gdk_quartz_display_queue_events (GdkDisplay *display);
++gboolean _gdk_quartz_display_has_pending  (GdkDisplay *display);
++
++void       _gdk_quartz_display_event_data_copy (GdkDisplay     *display,
++                                                const GdkEvent *src,
++                                                GdkEvent       *dst);
++void       _gdk_quartz_display_event_data_free (GdkDisplay     *display,
++                                                GdkEvent       *event);
++
++/* Display methods - cursor */
++GdkCursor *_gdk_quartz_display_get_cursor_for_type     (GdkDisplay      *display,
++                                                        GdkCursorType    type);
++GdkCursor *_gdk_quartz_display_get_cursor_for_name     (GdkDisplay      *display,
++                                                        const gchar     *name);
++GdkCursor *_gdk_quartz_display_get_cursor_for_surface  (GdkDisplay      *display,
++                                                        cairo_surface_t *surface,
++                                                        gdouble          x,
++                                                        gdouble          y);
++gboolean   _gdk_quartz_display_supports_cursor_alpha   (GdkDisplay    *display);
++gboolean   _gdk_quartz_display_supports_cursor_color   (GdkDisplay    *display);
++void       _gdk_quartz_display_get_default_cursor_size (GdkDisplay *display,
++                                                        guint      *width,
++                                                        guint      *height);
++void       _gdk_quartz_display_get_maximal_cursor_size (GdkDisplay *display,
++                                                        guint      *width,
++                                                        guint      *height);
++
++/* Display methods - keymap */
++GdkKeymap * _gdk_quartz_display_get_keymap (GdkDisplay *display);
++
++/* Display methods - selection */
++gboolean    _gdk_quartz_display_set_selection_owner (GdkDisplay *display,
++                                                     GdkWindow  *owner,
++                                                     GdkAtom     selection,
++                                                     guint32     time,
++                                                     gboolean    send_event);
++GdkWindow * _gdk_quartz_display_get_selection_owner (GdkDisplay *display,
++                                                     GdkAtom     selection);
++gint        _gdk_quartz_display_get_selection_property (GdkDisplay     *display,
++                                                        GdkWindow      *requestor,
++                                                        guchar        **data,
++                                                        GdkAtom        *ret_type,
++                                                        gint           *ret_format);
++void        _gdk_quartz_display_convert_selection      (GdkDisplay     *display,
++                                                        GdkWindow      *requestor,
++                                                        GdkAtom         selection,
++                                                        GdkAtom         target,
++                                                        guint32         time);
++gint        _gdk_quartz_display_text_property_to_utf8_list (GdkDisplay     *display,
++                                                            GdkAtom         encoding,
++                                                            gint            format,
++                                                            const guchar   *text,
++                                                            gint            length,
++                                                            gchar        ***list);
++gchar *     _gdk_quartz_display_utf8_to_string_target      (GdkDisplay     *displayt,
++                                                            const gchar    *str);
++
++/* Screen */
++GdkScreen  *_gdk_quartz_screen_new                      (void);
++void        _gdk_quartz_screen_update_window_sizes      (GdkScreen *screen);
++
++/* Screen methods - visual */
++GdkVisual *   _gdk_quartz_screen_get_rgba_visual            (GdkScreen      *screen);
++GdkVisual *   _gdk_quartz_screen_get_system_visual          (GdkScreen      *screen);
++gint          _gdk_quartz_screen_visual_get_best_depth      (GdkScreen      *screen);
++GdkVisualType _gdk_quartz_screen_visual_get_best_type       (GdkScreen      *screen);
++GdkVisual *   _gdk_quartz_screen_get_system_visual          (GdkScreen      *screen);
++GdkVisual*    _gdk_quartz_screen_visual_get_best            (GdkScreen      *screen);
++GdkVisual*    _gdk_quartz_screen_visual_get_best_with_depth (GdkScreen      *screen,
++                                                             gint            depth);
++GdkVisual*    _gdk_quartz_screen_visual_get_best_with_type  (GdkScreen      *screen,
++                                                             GdkVisualType   visual_type);
++GdkVisual*    _gdk_quartz_screen_visual_get_best_with_both  (GdkScreen      *screen,
++                                                             gint            depth,
++                                                             GdkVisualType   visual_type);
++void          _gdk_quartz_screen_query_depths               (GdkScreen      *screen,
++                                                             gint          **depths,
++                                                             gint           *count);
++void          _gdk_quartz_screen_query_visual_types         (GdkScreen      *screen,
++                                                             GdkVisualType **visual_types,
++                                                             gint           *count);
++void          _gdk_quartz_screen_init_visuals               (GdkScreen      *screen);
++GList *       _gdk_quartz_screen_list_visuals               (GdkScreen      *screen);
++
++/* Screen methods - events */
++void        _gdk_quartz_screen_broadcast_client_message (GdkScreen   *screen,
++                                                         GdkEvent    *event);
++gboolean    _gdk_quartz_screen_get_setting              (GdkScreen   *screen,
++                                                         const gchar *name,
++                                                         GValue      *value);
++
++
++/* Window */
++gboolean    _gdk_quartz_window_is_ancestor          (GdkWindow *ancestor,
++                                                     GdkWindow *window);
++void       _gdk_quartz_window_gdk_xy_to_xy          (gint       gdk_x,
++                                                     gint       gdk_y,
++                                                     gint      *ns_x,
++                                                     gint      *ns_y);
++void       _gdk_quartz_window_xy_to_gdk_xy          (gint       ns_x,
++                                                     gint       ns_y,
++                                                     gint      *gdk_x,
++                                                     gint      *gdk_y);
++void       _gdk_quartz_window_nspoint_to_gdk_xy     (NSPoint    point,
++                                                     gint      *x,
++                                                     gint      *y);
++GdkWindow *_gdk_quartz_window_find_child            (GdkWindow *window,
++						     gint       x,
++						     gint       y,
++                                                     gboolean   get_toplevel);
++void       _gdk_quartz_window_attach_to_parent      (GdkWindow *window);
++void       _gdk_quartz_window_detach_from_parent    (GdkWindow *window);
++void       _gdk_quartz_window_did_become_main       (GdkWindow *window);
++void       _gdk_quartz_window_did_resign_main       (GdkWindow *window);
++void       _gdk_quartz_window_debug_highlight       (GdkWindow *window,
++                                                     gint       number);
++
++void       _gdk_quartz_window_update_position           (GdkWindow    *window);
++void       _gdk_quartz_window_update_fullscreen_state   (GdkWindow    *window);
++
++/* Window methods - testing */
++void     _gdk_quartz_window_sync_rendering    (GdkWindow       *window);
++gboolean _gdk_quartz_window_simulate_key      (GdkWindow       *window,
++                                               gint             x,
++                                               gint             y,
++                                               guint            keyval,
++                                               GdkModifierType  modifiers,
++                                               GdkEventType     key_pressrelease);
++gboolean _gdk_quartz_window_simulate_button   (GdkWindow       *window,
++                                               gint             x,
++                                               gint             y,
++                                               guint            button,
++                                               GdkModifierType  modifiers,
++                                               GdkEventType     button_pressrelease);
++
++/* Window methods - property */
++gboolean _gdk_quartz_window_get_property      (GdkWindow    *window,
++                                               GdkAtom       property,
++                                               GdkAtom       type,
++                                               gulong        offset,
++                                               gulong        length,
++                                               gint          pdelete,
++                                               GdkAtom      *actual_property_type,
++                                               gint         *actual_format_type,
++                                               gint         *actual_length,
++                                               guchar      **data);
++void     _gdk_quartz_window_change_property   (GdkWindow    *window,
++                                               GdkAtom       property,
++                                               GdkAtom       type,
++                                               gint          format,
++                                               GdkPropMode   mode,
++                                               const guchar *data,
++                                               gint          nelements);
++void     _gdk_quartz_window_delete_property   (GdkWindow    *window,
++                                               GdkAtom       property);
++
+ 
+ #endif /* __GDK_PRIVATE_QUARTZ_H__ */
+* Unmerged path gdk/quartz/gdkquartz-gtk-only.h
+diff --git a/gdk/quartz/gdkquartz.h b/gdk/quartz/gdkquartz.h
+index b6bce2b140..ed8e4cb8b1 100644
+--- a/gdk/quartz/gdkquartz.h
++++ b/gdk/quartz/gdkquartz.h
+@@ -20,11 +20,26 @@
+ #ifndef __GDK_QUARTZ_H__
+ #define __GDK_QUARTZ_H__
+ 
++#include <AppKit/AppKit.h>
++
+ #include <gdk/gdk.h>
+ #include <gdk/gdkprivate.h>
+ 
+ G_BEGIN_DECLS
+ 
++/* NSInteger only exists in Leopard and newer.  This check has to be
++ * done after inclusion of the system headers.  If NSInteger has not
++ * been defined, we know for sure that we are on 32-bit.
++ */
++#ifndef NSINTEGER_DEFINED
++typedef int NSInteger;
++typedef unsigned int NSUInteger;
++#endif
++
++#ifndef CGFLOAT_DEFINED
++typedef float CGFloat;
++#endif
++
+ typedef enum
+ {
+   GDK_OSX_UNSUPPORTED = 0,
+@@ -47,6 +62,13 @@ typedef enum
+ GDK_AVAILABLE_IN_ALL
+ GdkOSXVersion gdk_quartz_osx_version (void);
+ 
++GDK_AVAILABLE_IN_ALL
++GdkAtom   gdk_quartz_pasteboard_type_to_atom_libgtk_only        (NSString       *type);
++GDK_AVAILABLE_IN_ALL
++NSString *gdk_quartz_target_to_pasteboard_type_libgtk_only      (const gchar    *target);
++GDK_AVAILABLE_IN_ALL
++NSString *gdk_quartz_atom_to_pasteboard_type_libgtk_only        (GdkAtom         atom);
++
+ G_END_DECLS
+ 
+ #define __GDKQUARTZ_H_INSIDE__
+@@ -56,6 +78,7 @@ G_END_DECLS
+ #include <gdk/quartz/gdkquartzdevicemanager-core.h>
+ #include <gdk/quartz/gdkquartzdisplay.h>
+ #include <gdk/quartz/gdkquartzdisplaymanager.h>
++#include <gdk/quartz/gdkquartzdnd.h>
+ #include <gdk/quartz/gdkquartzkeys.h>
+ #include <gdk/quartz/gdkquartzmonitor.h>
+ #include <gdk/quartz/gdkquartzscreen.h>
+diff --git a/gdk/quartz/gdkquartzdnd.h b/gdk/quartz/gdkquartzdnd.h
+index bdcc93a12d..fb578e1b8f 100644
+--- a/gdk/quartz/gdkquartzdnd.h
++++ b/gdk/quartz/gdkquartzdnd.h
+@@ -19,8 +19,8 @@
+ #ifndef __GDK_QUARTZ_DND_H__
+ #define __GDK_QUARTZ_DND_H__
+ 
+-#if !defined (GTK_COMPILATION) && !defined (GDK_COMPILATION)
+-#error "gdkquartzdnd.h is for Gtk's internal use only"
++#if !defined(__GDKQUARTZ_H_INSIDE__) && !defined (GDK_COMPILATION)
++#error "Only <gdk/gdkquartz.h> can be included directly."
+ #endif
+ 
+ #include <gdk/gdk.h>
+diff --git a/gdk/quartz/gdkquartzkeys.h b/gdk/quartz/gdkquartzkeys.h
+index f35612e36a..c937288b45 100644
+--- a/gdk/quartz/gdkquartzkeys.h
++++ b/gdk/quartz/gdkquartzkeys.h
+@@ -45,6 +45,79 @@ typedef struct _GdkQuartzKeymapClass GdkQuartzKeymapClass;
+ GDK_AVAILABLE_IN_ALL
+ GType gdk_quartz_keymap_get_type (void);
+ 
++#if MAC_OS_X_VERSION_MIN_REQUIRED < 101200
++typedef enum
++  {
++    GDK_QUARTZ_FLAGS_CHANGED = NSFlagsChanged,
++    GDK_QUARTZ_KEY_UP = NSKeyUp,
++    GDK_QUARTZ_KEY_DOWN = NSKeyDown,
++    GDK_QUARTZ_MOUSE_ENTERED = NSMouseEntered,
++    GDK_QUARTZ_MOUSE_EXITED = NSMouseExited,
++    GDK_QUARTZ_SCROLL_WHEEL = NSScrollWheel,
++    GDK_QUARTZ_MOUSE_MOVED = NSMouseMoved,
++    GDK_QUARTZ_OTHER_MOUSE_DRAGGED = NSOtherMouseDragged,
++    GDK_QUARTZ_RIGHT_MOUSE_DRAGGED = NSRightMouseDragged,
++    GDK_QUARTZ_LEFT_MOUSE_DRAGGED = NSLeftMouseDragged,
++    GDK_QUARTZ_OTHER_MOUSE_UP = NSOtherMouseUp,
++    GDK_QUARTZ_RIGHT_MOUSE_UP = NSRightMouseUp,
++    GDK_QUARTZ_LEFT_MOUSE_UP = NSLeftMouseUp,
++    GDK_QUARTZ_OTHER_MOUSE_DOWN = NSOtherMouseDown,
++    GDK_QUARTZ_RIGHT_MOUSE_DOWN = NSRightMouseDown,
++    GDK_QUARTZ_LEFT_MOUSE_DOWN = NSLeftMouseDown,
++  } GdkQuartzEventType;
++
++typedef enum
++  {
++    GDK_QUARTZ_ALTERNATE_KEY_MASK = NSAlternateKeyMask,
++    GDK_QUARTZ_CONTROL_KEY_MASK = NSControlKeyMask,
++    GDK_QUARTZ_SHIFT_KEY_MASK = NSShiftKeyMask,
++    GDK_QUARTZ_ALPHA_SHIFT_KEY_MASK = NSAlphaShiftKeyMask,
++    GDK_QUARTZ_COMMAND_KEY_MASK = NSCommandKeyMask,
++    GDK_QUARTZ_ANY_EVENT_MASK = NSAnyEventMask,
++  } GdkQuartzEventModifierFlags;
++
++typedef enum
++  {
++   GDK_QUARTZ_EVENT_MASK_ANY = NSAnyEventMask,
++  } GdkQuartzEventMask;
++
++#else
++typedef enum
++  {
++    GDK_QUARTZ_FLAGS_CHANGED = NSEventTypeFlagsChanged,
++    GDK_QUARTZ_KEY_UP = NSEventTypeKeyUp,
++    GDK_QUARTZ_KEY_DOWN = NSEventTypeKeyDown,
++    GDK_QUARTZ_MOUSE_ENTERED = NSEventTypeMouseEntered,
++    GDK_QUARTZ_MOUSE_EXITED = NSEventTypeMouseExited,
++    GDK_QUARTZ_SCROLL_WHEEL = NSEventTypeScrollWheel,
++    GDK_QUARTZ_MOUSE_MOVED = NSEventTypeMouseMoved,
++    GDK_QUARTZ_OTHER_MOUSE_DRAGGED = NSEventTypeOtherMouseDragged,
++    GDK_QUARTZ_RIGHT_MOUSE_DRAGGED = NSEventTypeRightMouseDragged,
++    GDK_QUARTZ_LEFT_MOUSE_DRAGGED = NSEventTypeLeftMouseDragged,
++    GDK_QUARTZ_OTHER_MOUSE_UP = NSEventTypeOtherMouseUp,
++    GDK_QUARTZ_RIGHT_MOUSE_UP = NSEventTypeRightMouseUp,
++    GDK_QUARTZ_LEFT_MOUSE_UP = NSEventTypeLeftMouseUp,
++    GDK_QUARTZ_OTHER_MOUSE_DOWN = NSEventTypeOtherMouseDown,
++    GDK_QUARTZ_RIGHT_MOUSE_DOWN = NSEventTypeRightMouseDown,
++    GDK_QUARTZ_LEFT_MOUSE_DOWN = NSEventTypeLeftMouseDown,
++  } GdkQuartzEventType;
++
++typedef enum
++  {
++   GDK_QUARTZ_ALTERNATE_KEY_MASK = NSEventModifierFlagOption,
++   GDK_QUARTZ_CONTROL_KEY_MASK = NSEventModifierFlagControl,
++   GDK_QUARTZ_SHIFT_KEY_MASK = NSEventModifierFlagShift,
++   GDK_QUARTZ_ALPHA_SHIFT_KEY_MASK = NSEventModifierFlagCapsLock,
++   GDK_QUARTZ_COMMAND_KEY_MASK = NSEventModifierFlagCommand,
++  } GdkQuartzEventModifierFlags;
++
++typedef enum
++  {
++   GDK_QUARTZ_EVENT_MASK_ANY = NSEventMaskAny,
++  } GdkQuartzEventMask;
++
++#endif
++
+ G_END_DECLS
+ 
+ #endif /* __GDK_QUARTZ_KEYS_H__ */
+diff --git a/gdk/quartz/gdkquartzutils.h b/gdk/quartz/gdkquartzutils.h
+index 790f688fe3..c816bf30ee 100644
+--- a/gdk/quartz/gdkquartzutils.h
++++ b/gdk/quartz/gdkquartzutils.h
+@@ -28,6 +28,10 @@
+ 
+ G_BEGIN_DECLS
+ 
++GDK_AVAILABLE_IN_ALL
++NSImage  *gdk_quartz_pixbuf_to_ns_image_libgtk_only             (GdkPixbuf      *pixbuf);
++GDK_AVAILABLE_IN_ALL
++NSEvent  *gdk_quartz_event_get_nsevent                          (GdkEvent       *event);
+ GDK_AVAILABLE_IN_3_12
+ gunichar  gdk_quartz_get_key_equivalent                         (guint           key);
+ 
+diff --git a/gdk/quartz/gdkquartzwindow.h b/gdk/quartz/gdkquartzwindow.h
+index a90d84774d..a88eb16e9b 100644
+--- a/gdk/quartz/gdkquartzwindow.h
++++ b/gdk/quartz/gdkquartzwindow.h
+@@ -45,6 +45,11 @@ typedef struct _GdkQuartzWindowClass GdkQuartzWindowClass;
+ GDK_AVAILABLE_IN_ALL
+ GType     gdk_quartz_window_get_type     (void);
+ 
++GDK_AVAILABLE_IN_ALL
++NSWindow *gdk_quartz_window_get_nswindow (GdkWindow *window);
++GDK_AVAILABLE_IN_ALL
++NSView   *gdk_quartz_window_get_nsview   (GdkWindow *window);
++
+ G_END_DECLS
+ 
+ #endif /* __GDK_QUARTZ_WINDOW_H__ */
+--- a/gdk/quartz/gdkselection-quartz.c	2020-07-09 04:22:23.000000000 -0700
++++ b/gdk/quartz/gdkselection-quartz.c	2020-07-09 04:24:11.000000000 -0700
+@@ -23,8 +23,6 @@
+ #include "gdkselection.h"
+ #include "gdkproperty.h"
+ #include "gdkquartz.h"
+-#include "gdkinternal-quartz.h"
+-#include "gdkquartz-gtk-only.h"
+ 
+ gboolean
+ _gdk_quartz_display_set_selection_owner (GdkDisplay *display,
+ 
+diff --git a/gdk/quartz/gdkutils-quartz.c b/gdk/quartz/gdkutils-quartz.c
+index 1edb94ad14..30eff8a7e1 100644
+--- a/gdk/quartz/gdkutils-quartz.c
++++ b/gdk/quartz/gdkutils-quartz.c
+@@ -19,11 +19,10 @@
+ 
+ #include "config.h"
+ 
+-#include <gdk/gdk.h>
+-#include <gdkinternals.h>
++#include <AppKit/AppKit.h>
+ 
+-#include "gdkquartz-gtk-only.h"
+ #include <gdkquartzutils.h>
++#include "gdkprivate-quartz.h"
+ 
+ NSImage *
+ gdk_quartz_pixbuf_to_ns_image_libgtk_only (GdkPixbuf *pixbuf)
+diff --git a/gdk/quartz/gdkwindow-quartz.c b/gdk/quartz/gdkwindow-quartz.c
+index 6f72793a82..d82625691f 100644
+--- a/gdk/quartz/gdkwindow-quartz.c
++++ b/gdk/quartz/gdkwindow-quartz.c
+@@ -24,13 +24,11 @@
+ #include <gdk/gdkdisplayprivate.h>
+ 
+ #include "gdkwindowimpl.h"
+-#include "gdkwindow-quartz.h"
+ #include "gdkprivate-quartz.h"
+ #include "gdkglcontext-quartz.h"
+ #include "gdkquartzglcontext.h"
+ #include "gdkquartzscreen.h"
+ #include "gdkquartzcursor.h"
+-#include "gdkquartz-gtk-only.h"
+ 
+ #include <Carbon/Carbon.h>
+ #include <AvailabilityMacros.h>
+diff --git a/gdk/quartz/gdkwindow-quartz.h b/gdk/quartz/gdkwindow-quartz.h
+index 3a4384d281..4c8347c9e5 100644
+--- a/gdk/quartz/gdkwindow-quartz.h
++++ b/gdk/quartz/gdkwindow-quartz.h
+@@ -22,7 +22,6 @@
+ #import <gdk/quartz/GdkQuartzView.h>
+ #import <gdk/quartz/GdkQuartzNSWindow.h>
+ #include "gdk/gdkwindowimpl.h"
+-#include "gdkinternal-quartz.h"
+ 
+ G_BEGIN_DECLS
+ 
+@@ -109,6 +108,7 @@ struct _GdkRootWindowImplQuartzClass
+ 
+ GType _gdk_root_window_impl_quartz_get_type (void);
+ 
++
+ G_END_DECLS
+ 
+ #endif /* __GDK_WINDOW_QUARTZ_H__ */
+diff --git a/gtk/deprecated/gtkstatusicon-quartz.c b/gtk/deprecated/gtkstatusicon-quartz.c
+index e7367d29a2..7a2442b607 100644
+--- a/gtk/deprecated/gtkstatusicon-quartz.c
++++ b/gtk/deprecated/gtkstatusicon-quartz.c
+@@ -22,9 +22,7 @@
+  */
+ 
+ #import <Cocoa/Cocoa.h>
+-#define __GTK_H_INSIDE__
+-#include <quartz/gdkquartz-gtk-only.h>
+-#undef __GTK_H_INSIDE__
++#include <quartz/gdkquartz.h>
+ 
+ #define QUARTZ_POOL_ALLOC NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init]
+ #define QUARTZ_POOL_RELEASE [pool release]
+diff --git a/gtk/gtkclipboard-quartz.c b/gtk/gtkclipboard-quartz.c
+index df599b253a..c01a9cd627 100644
+--- a/gtk/gtkclipboard-quartz.c
++++ b/gtk/gtkclipboard-quartz.c
+@@ -31,7 +31,7 @@
+ #include "gtktextbuffer.h"
+ #include "gtkselectionprivate.h"
+ #include "gtkquartz.h"
+-#include "quartz/gdkquartz-gtk-only.h"
++#include "../gdk/quartz/gdkquartz.h"
+ 
+ enum {
+   OWNER_CHANGE,
+diff --git a/gtk/gtkdnd-quartz.c b/gtk/gtkdnd-quartz.c
+index 9356a69b8a..501cbcdc21 100644
+--- a/gtk/gtkdnd-quartz.c
++++ b/gtk/gtkdnd-quartz.c
+@@ -42,8 +42,6 @@
+ #include "gtkintl.h"
+ #include "gtkquartz.h"
+ #include "gdk/quartz/gdkquartz.h"
+-#include "gdk/quartz/gdkquartz-gtk-only.h"
+-#include "gdk/quartz/gdkquartzdnd.h"
+ #include "gtkselectionprivate.h"
+ #include "gtksettings.h"
+ #include "gtkiconhelperprivate.h"
+diff --git a/gtk/gtkfilechoosernativequartz.c b/gtk/gtkfilechoosernativequartz.c
+index 680c7f1381..c1b7225ca8 100644
+--- a/gtk/gtkfilechoosernativequartz.c
++++ b/gtk/gtkfilechoosernativequartz.c
+@@ -40,7 +40,8 @@
+ #include "gtklabel.h"
+ #include "gtkfilechooserentry.h"
+ #include "gtkfilefilterprivate.h"
+-#include <quartz/gdkquartz-gtk-only.h>
++
++#include "quartz/gdkquartz.h"
+ 
+ #if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
+ typedef struct {
+diff --git a/gtk/gtkquartz.c b/gtk/gtkquartz.c
+index 4790087b89..183bef6c08 100644
+--- a/gtk/gtkquartz.c
++++ b/gtk/gtkquartz.c
+@@ -20,7 +20,7 @@
+ 
+ #include "gtkquartz.h"
+ #include "gtkselectionprivate.h"
+-#include <gdk/quartz/gdkquartz-gtk-only.h>
++#include <gdk/quartz/gdkquartz.h>
+ 
+ 
+ static gboolean
+diff --git a/modules/input/imquartz.c b/modules/input/imquartz.c
+index 7437ad1ceb..43dbad4e46 100644
+--- a/modules/input/imquartz.c
++++ b/modules/input/imquartz.c
+@@ -25,10 +25,7 @@
+ #include "gtk/gtkintl.h"
+ #include "gtk/gtkimmodule.h"
+ 
+-#define GTK_COMPILATION 1 // For gdkquartz-gtk-only.h
+-
+-#include "gdk/quartz/gdkinternal-quartz.h"
+-#include "gdk/quartz/gdkquartz-gtk-only.h"
++#include "gdk/quartz/gdkquartz.h"
+ #include "gdk/quartz/GdkQuartzView.h"
+ 
+ #define GTK_IM_CONTEXT_TYPE_QUARTZ (type_quartz)
