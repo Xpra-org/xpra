@@ -32,6 +32,7 @@ BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	DO_TESTS="0"
 	DO_SERVICE="0"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x264 --without-nvenc --without-nvfbc"
 	shift
 fi
 
@@ -259,6 +260,11 @@ rm -fr "${DIST}/lib/comtypes/gen"
 pushd ${DIST} > /dev/null
 #why is it shipping those files??
 find lib/ -name "*dll.a" -exec rm {} \;
+if [ "${BITS}" == "32" ]; then
+	#no idea why this is needed on x86 only
+	cp lib/libgdk-*dll ./
+	cp lib/libepoxy*dll ./
+fi
 #only keep the actual loaders, not all the other crap cx_Freeze put there:
 #but keep librsvg
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders/librsvg* ./
@@ -268,7 +274,9 @@ rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 #move libs that are likely to be common to the lib dir:
 for prefix in lib avcodec avformat avutil swscale swresample zlib1 xvidcore; do
-	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
+	#just in case they were not included yet by cx_Freeze:
+	cp $MINGW_PREFIX/bin/${prefix}*.dll ./lib/
+	find lib/Xpra -name "${prefix}*.dll" -exec mv {} ./lib/ \;
 done
 for x in openblas gfortran quadmath; do
 	mv -f ./lib/numpy/core/lib$x*.dll ./lib/
@@ -301,7 +309,7 @@ fi
 #cx_Freeze forgets these!?
 ESSENTIALS="atk gtk intl glib pcre winpthread brotlienc croco pdfium lz4 gthread"
 #include avcodec by default (lots of dependencies):
-ESSENTIALS="${ESSENTIALS} avcodec avutil aom celt0 dav1d gsm iconv lzma mfx mp3lame opencore openjp2 opus speex theoradec theoraenc vorbis vpx vulkan webp x264 x265 swresample xvidcore zlib1"
+ESSENTIALS="${ESSENTIALS} aom celt0 dav1d gsm iconv lzma mfx mp3lame opencore openjp2 opus speex theoradec theoraenc vorbis vpx vulkan webp x264 x265"
 if [ "${PYTHON_MAJOR_VERSION}" == "2" ]; then
 	ESSENTIALS="${ESSENTIALS} pyglib gtkglext"
 fi
