@@ -2372,7 +2372,7 @@ cdef class Encoder:
             del e
             self.clean()
             self.init_cuda()
-            return self.compress_image(image, retry+1)
+            return self.compress_image(image, retry=retry+1)
 
     cdef do_compress_image(self, image):
         assert self.context, "context is not initialized"
