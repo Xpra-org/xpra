@@ -767,7 +767,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "microphone", "speaker", "sound-source", "pulseaudio",
     "idle-timeout", "server-idle-timeout",
     "use-display",
-    "fake-xinerama", "resize_display", "dpi", "pixel-depth",
+    "fake-xinerama", "resize-display", "dpi", "pixel-depth",
     "readonly", "keyboard-sync", "cursors", "bell", "notifications", "xsettings",
     "system-tray", "sharing", "lock", "windows", "webcam", "html", "http-scripts",
     "terminate-children", "exit-with-children", "exit-with-client",
