@@ -2364,7 +2364,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, quality=-1, speed=-1, retry=0):
+    def compress_image(self, image, quality=-1, speed=-1, options=None, retry=0):
         assert self.context, "context is not initialized"
         self.cuda_context.push()
         try:
@@ -2377,14 +2377,14 @@ cdef class Encoder:
             finally:
                 self.cuda_context.pop()
         except driver.LogicError as e:
-            log("compress_image%s", (image, quality, speed, retry), exc_info=True)
+            log("compress_image%s", (image, quality, speed, options, retry), exc_info=True)
             if retry>0:
                 raise
             log.warn("Warning: PyCUDA %s", e)
             del e
             self.clean()
             self.init_cuda()
-            return self.compress_image(image, retry+1)
+            return self.compress_image(image, quality, speed, options, retry+1)
 
     cdef do_compress_image(self, image):
         assert self.context, "context is not initialized"
