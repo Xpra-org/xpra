@@ -274,6 +274,8 @@ rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 #move libs that are likely to be common to the lib dir:
 for prefix in lib avcodec avformat avutil swscale swresample zlib1 xvidcore; do
+	#just in case they were not included yet by cx_Freeze:
+	cp $MINGW_PREFIX/bin/$x*.dll ./lib/
 	find lib/Xpra -name "${prefix}*dll" -exec mv {} ./lib/ \;
 done
 if [ "${CLIENT_ONLY}" ]; then
@@ -319,7 +321,7 @@ fi
 #cx_Freeze forgets these!?
 ESSENTIALS="atk gtk intl glib pcre winpthread brotlienc croco pdfium lz4 gthread"
 #include avcodec by default (lots of dependencies):
-ESSENTIALS="${ESSENTIALS} avcodec avutil aom celt0 dav1d gsm iconv lzma mfx mp3lame opencore openjp2 opus speex theoradec theoraenc vorbis vpx vulkan webp x264 x265 swresample xvidcore zlib1"
+ESSENTIALS="${ESSENTIALS} aom celt0 dav1d gsm iconv lzma mfx mp3lame opencore openjp2 opus speex theoradec theoraenc vorbis vpx vulkan webp x264 x265"
 if [ "${PYTHON_MAJOR_VERSION}" == "2" ]; then
 	ESSENTIALS="${ESSENTIALS} pyglib gtkglext"
 fi
