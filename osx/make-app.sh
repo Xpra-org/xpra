@@ -48,7 +48,7 @@ echo "**************************************************************************
 echo "Building and installing locally"
 pushd ../src
 
-svn upgrade ../.. >& /dev/null
+rm -f xpra/src_info.py xpra/build_info.py
 ${PYTHON} -c "from add_build_info import record_src_info;record_src_info()"
 rm -fr build/* dist/*
 ${PYTHON} ./setup.py clean
@@ -137,7 +137,7 @@ fi
 echo
 echo "*******************************************************************************"
 echo "adding version \"$VERSION\" and revision \"$REVISION$REV_MOD\" to Info.plist files"
-svn revert Info.plist Xpra.bundle
+git checkout Info.plist
 sed -i '' -e "s+%VERSION%+$VERSION+g" "./Info.plist"
 sed -i '' -e "s+%REVISION%+$REVISION$REV_MOD+g" "./Info.plist"
 sed -i '' -e "s+%BUILDNO%+$BUILDNO+g" "./Info.plist"
@@ -307,6 +307,9 @@ if [ "$STRIP_NUMPY" == "1" ]; then
 	done
 	popd
 fi
+echo " * add Adwaita theme"
+#gtk-mac-bundler doesn't do it properly, so do it ourselves:
+rsync -rpl ${JHBUILD_PREFIX}/share/icons/Adwaita ${RSCDIR}/share/icons/
 #unused py2app scripts:
 rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh ${RSCDIR}/client_launcher.py
 
@@ -413,4 +416,4 @@ echo "Done"
 echo "*******************************************************************************"
 echo
 
-svn revert Info.plist Xpra.bundle
+git checkout Info.plist
