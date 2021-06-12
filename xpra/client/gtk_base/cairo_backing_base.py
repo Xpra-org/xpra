@@ -18,7 +18,7 @@ try:
 except ImportError:
     FORMAT_RGB30 = 5
     #try to find the constant in the C bindings:
-    if PYTHON3
+    if PYTHON3:
         from xpra.client.gtk3.cairo_workaround import CAIRO_FORMAT
         for v, format_name in CAIRO_FORMAT.items():
             if format_name=="RGB30":
