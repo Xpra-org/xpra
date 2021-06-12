@@ -251,8 +251,10 @@ class AudioMixin(StubSourceMixin):
                     log("Popen(%s)=%s", cmd, proc)
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
-            except Exception:
-                pass
+            except Exception as e:
+                log("new_stream(%s, %s) error playing new stream sound", sound_source, codec, exc_info=True)
+                log.error("Error playing new-stream bell sound:")
+                log.error(" %s", e)
         log("new_stream(%s, %s)", sound_source, codec)
         if self.sound_source!=sound_source:
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.sound_source, sound_source)
