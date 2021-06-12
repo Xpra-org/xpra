@@ -224,7 +224,7 @@ class CairoBackingBase(WindowBackingBase):
         fire_paint_callbacks(callbacks)
 
 
-    def nasty_rgb_via_png_paint(self, cairo_format, has_alpha : bool, img_data,
+    def nasty_rgb_via_png_paint(self, cairo_format, has_alpha, img_data,
                                 x, y, width, height, rowstride, rgb_format):
         log.warn("nasty_rgb_via_png_paint%s",
                  (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
