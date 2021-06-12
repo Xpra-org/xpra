@@ -112,13 +112,13 @@ class CairoBackingBase(WindowBackingBase):
         WindowBackingBase.close(self)
 
 
-    def cairo_paint_pixbuf(self, pixbuf, x : int, y : int, options):
+    def cairo_paint_pixbuf(self, pixbuf, x, y, options):
         """ must be called from UI thread """
         log("source pixbuf: %s", pixbuf)
         w, h = pixbuf.get_width(), pixbuf.get_height()
         self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, w, h, options)
 
-    def cairo_paint_surface(self, img_surface, x : int, y : int, width : int, height : int, options):
+    def cairo_paint_surface(self, img_surface, x, y, width, height, options):
         iw, ih = img_surface.get_width(), img_surface.get_height()
         log("source image surface: %s",
             (img_surface.get_format(), iw, ih, img_surface.get_stride(), img_surface.get_content(), ))
@@ -127,7 +127,7 @@ class CairoBackingBase(WindowBackingBase):
         self.cairo_paint_from_source(set_source_surface, img_surface, x, y, iw, ih, width, height, options)
 
     def cairo_paint_from_source(self, set_source_fn, source,
-                                x : int, y : int, iw : int, ih : int, width : int, height : int, options):
+                                x, y, iw, ih, width, height, options):
         """ must be called from UI thread """
         backing = self._backing
         log("cairo_paint_surface%s backing=%s, paint box line width=%i",
@@ -169,8 +169,8 @@ class CairoBackingBase(WindowBackingBase):
         return self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
                                   x, y, width, height, rowstride, options)
 
-    def _do_paint_rgb24(self, img_data, x : int, y : int, width : int, height : int,
-                        rowstride : int, options):
+    def _do_paint_rgb24(self, img_data, x, y, width, height,
+                        rowstride, options):
         return self._do_paint_rgb(FORMAT_RGB24, False, img_data,
                                   x, y, width, height, rowstride, options)
 
@@ -178,8 +178,8 @@ class CairoBackingBase(WindowBackingBase):
         return self._do_paint_rgb(FORMAT_RGB30, True, img_data,
                                   x, y, width, height, rowstride, options)
 
-    def _do_paint_rgb32(self, img_data, x : int, y : int, width : int, height : int,
-                        rowstride : int, options):
+    def _do_paint_rgb32(self, img_data, x, y, width, height,
+                        rowstride, options):
         if self._alpha_enabled:
             cformat = FORMAT_ARGB32
         else:
@@ -225,7 +225,7 @@ class CairoBackingBase(WindowBackingBase):
 
 
     def nasty_rgb_via_png_paint(self, cairo_format, has_alpha : bool, img_data,
-                                x : int, y : int, width : int, height : int, rowstride : int, rgb_format):
+                                x, y, width, height, rowstride, rgb_format):
         log.warn("nasty_rgb_via_png_paint%s",
                  (cairo_format, has_alpha, len(img_data), x, y, width, height, rowstride, rgb_format))
         #PIL fallback
