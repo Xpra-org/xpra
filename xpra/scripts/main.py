@@ -419,22 +419,32 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
 
     if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
         assert not display_is_remote
-        #maybe the server is already running
-        #and we don't need to bother trying to start it:
+        # User requested to start new server,
+        # so start it and try picking its display
+        if not run_server(script_file, error_cb, options, args, mode, defaults):
+            error("Failed to spawn Xpra server!")
+            return 1
+
         try:
             display = pick_display(error_cb, options, args)
-        except Exception:
-            pass
-        else:
-            dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-            display_name = display.get("display_name")
-            if display_name:
-                state = dotxpra.get_display_state(display_name)
-                if state==DotXpra.LIVE:
-                    noerr(sys.stdout.write, "existing live display found, attaching")
-                    return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+        except Exception as e:
+            error("Server has likely started but its display is not reachable: %s", e)
+            return 1
 
-    if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow", "proxy"):
+        dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+        display_name = display.get("display_name")
+        if display_name:
+            state = dotxpra.get_display_state(display_name)
+            if state==DotXpra.LIVE:
+                noerr(sys.stdout.write, "existing live display found, attaching")
+                return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+            else:
+                error("Display '%s' is not in LIVE state but '%s'" % (display_name, state));
+        else:
+            error("Can not open display ", display)
+        # Here we return an error
+        return 1
+    elif mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow", "proxy"):
         return run_server(script_file, error_cb, options, args, mode, defaults)
     elif mode in (
         "attach", "listen", "detach",
