@@ -4,7 +4,7 @@
 Summary: D-Bus Python2 Bindings
 Name:    python2-dbus
 Version: 1.2.16
-Release: 1%{?dist}
+Release: 2%{?dist}
 
 License: MIT
 URL:     http://www.freedesktop.org/wiki/Software/DBusBindings/
@@ -20,6 +20,9 @@ BuildRequires: python2-devel
 BuildRequires: python2-setuptools
 # autoreconf and friends
 BuildRequires: autoconf-archive automake libtool
+%if 0%{?el7}
+Provides: python-dbus = %{version}-%{release}
+%endif
 Provides: dbus-python = %{version}-%{release}
 Provides: dbus-python%{?_isa} = %{version}-%{release}
 Obsoletes: dbus-python < %{version}-%{release}
@@ -59,6 +62,9 @@ rm -rfv $RPM_BUILD_ROOT%{_datadir}/doc/dbus-python/
 %{python2_sitearch}/dbus_python*egg-info
 
 %changelog
+* Sat Jun 12 2021 Antoine Martin <antoine@xpra.org> - 1.2.16-2
+- centos8 python2
+
 * Sat Sep 28 2019 Antoine Martin <antoine@xpra.org> - 1.2.16-1
 - centos8 python2
 
