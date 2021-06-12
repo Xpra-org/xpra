@@ -7,14 +7,26 @@
 import cairo
 from cairo import (  #pylint: disable=no-name-in-module
     Context, ImageSurface,
-    FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,
+    FORMAT_ARGB32, FORMAT_RGB24, FORMAT_RGB16_565,
     OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,
     )
+
+from xpra.os_util import memoryview_to_bytes, monotonic_time, PYTHON3
+#workaround for Debian Stretch:
+try:
+    from cairo import FORMAT_RGB30
+except ImportError:
+    FORMAT_RGB30 = 5
+    #try to find the constant in the C bindings:
+    if PYTHON3
+        from xpra.client.gtk3.cairo_workaround import CAIRO_FORMAT
+        for v, format_name in CAIRO_FORMAT.items():
+            if format_name=="RGB30":
+                FORMAT_RGB30 = v
 from gi.repository import GLib, Gdk
 
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
-from xpra.os_util import memoryview_to_bytes, monotonic_time
 from xpra.util import envbool
 from xpra.log import Logger
 
