@@ -241,6 +241,7 @@ STRUCT_KNOWN_FILTERS = OrderedDict([
                 ("pillow"       , "Pillow encoder and decoder"),
                 ("jpeg"         , "JPEG codec"),
                 ("vpx"          , "libvpx encoder and decoder"),
+                ("nvjpeg"       , "nvidia nvjpeg hardware encoder"),
                 ("nvenc"        , "nvenc hardware encoder"),
                 ("nvfbc"        , "nfbc screen capture"),
                 ("x264"         , "libx264 encoder"),
