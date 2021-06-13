@@ -406,7 +406,14 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 			http enum sqlite3 winreg copyreg _thread _dummythread builtins importlib \
 			logging queue urllib xml xmlrpc pyasn1_modules concurrent pynvml collections > /dev/null
 fi
+#leave ./lib
 popd > /dev/null
+#remove empty icon directories
+for i in `seq 4`; do
+	find share/icons -type d -exec rmdir {} \; 2> /dev/null
+done
+rm -fr share/xml
+#leave ./dist
 popd > /dev/null
 
 
