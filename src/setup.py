@@ -22,7 +22,7 @@ from distutils.command.install_data import install_data
 
 import xpra
 from xpra.os_util import (
-    get_status_output, getUbuntuVersion, get_distribution_version_id, load_binary_file,
+    get_status_output, get_distribution_version_id, load_binary_file,
     PYTHON3, BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
     is_Ubuntu, is_Debian, is_Raspbian, is_Fedora, is_CentOS, is_RedHat,
     )
@@ -144,7 +144,7 @@ shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and DEFAULT
 rfb_ENABLED = server_ENABLED
 service_ENABLED = LINUX and server_ENABLED
-sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd") and (not is_Ubuntu() or getUbuntuVersion()>(16, 4))
+sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 scripts_ENABLED = not WIN32
@@ -686,9 +686,6 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 # error: function declaration isn't a prototype [-Werror=strict-prototypes]
                 eifd.append("-Wno-error=strict-prototypes")
                 #the cython version shipped with Xenial emits warnings:
-                if (14,4)<getUbuntuVersion()<=(16,4):
-                    eifd.append("-Wno-error=shift-count-overflow")
-                    eifd.append("-Wno-error=sign-compare")
             if NETBSD:
                 #see: http://trac.cython.org/ticket/395
                 eifd += ["-fno-strict-aliasing"]
@@ -843,7 +840,7 @@ def build_xpra_conf(install_dir):
         return " ".join(cmd)
     #OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
     #Ubuntu 16.10 has opencv builds that conflict with our private ffmpeg
-    webcam = webcam_ENABLED and not (OSX or getUbuntuVersion()==(16, 10))
+    webcam = webcam_ENABLED and not OSX
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
@@ -1884,7 +1881,7 @@ if xinput_ENABLED:
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models")
-gtk2_deprecated = True #WIN32 or (is_Fedora() and int(get_distribution_version_id())>=31) or getUbuntuVersion()>=(19, 10)
+gtk2_deprecated = True #WIN32 or (is_Fedora() and int(get_distribution_version_id())>=31)
 if gtk_x11_ENABLED:
     toggle_packages(PYTHON3, "xpra.x11.gtk3")
     toggle_packages(not PYTHON3, "xpra.x11.gtk2")
