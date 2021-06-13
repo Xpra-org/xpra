@@ -607,7 +607,7 @@ fi
 
 
 %changelog
-* Fri Jun 04 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
+* Sun Jun 13 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
 - build and packaging fixes:
    missing dependencies
    nvjpeg DEB packaging
@@ -618,7 +618,10 @@ fi
 - proxy deadlocks when queues fill up too quickly
 - proxy server does not honour mode or display
 - proxy disconnections under heavy load
+- fix RFB server protocol, sockets not timing out with VNC clients
 - scroll detection bugs
+- NVENC errors when retrying after a transient failure
+- MacOS Big Sur error with 'Xpra_Browser' subcommand
 - invalid error when bind option points to a directory
 - default to ssl-mode if the 'wss' socket option is not specified
 - local start with explicit attach was broken on Posix
@@ -628,6 +631,7 @@ fi
 - disable SVG icon resizing (potential crashes on some platforms)
 - missing icon errors when html5 client disconnects from system-wide proxy server
 - provide XDG_RUNTIME_DIR if it is not defined
+- minor cosmetic fixes
 
 * Tue May 18 2021 Antoine Martin <antoine@xpra.org> 4.2-1
 - use pinentry for password prompts and ssh prompts

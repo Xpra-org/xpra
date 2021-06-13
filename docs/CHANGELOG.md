@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.2.1] 2021-06-04
+## [4.2.1] 2021-06-13
 * build and packaging fixes:
 	* missing dependencies
 	* nvjpeg DEB packaging
@@ -11,7 +11,10 @@
 * proxy deadlocks when queues fill up too quickly
 * proxy server does not honour mode or display
 * proxy disconnections under heavy load
+* fix RFB server protocol, sockets not timing out with VNC clients
 * scroll detection bugs
+* NVENC errors when retrying after a transient failure
+* MacOS Big Sur error with 'Xpra_Browser' subcommand
 * invalid error when bind option points to a directory
 * default to ssl-mode if the 'wss' socket option is not specified
 * local start with explicit attach was broken on Posix
