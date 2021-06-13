@@ -40,8 +40,13 @@ def parse_image_path(path):
             img = Image.open(path)
             return image_data(img)
         except Exception as e:
-            log.error("Error parsing image path '%s' for notification:", path)
-            log.error(" %s", e)
+            log("failed to open image '%s'", path, exc_info=True)
+            log.error("Error loading image for notification")
+            log.error(" using path '%s':", path)
+            estr = str(e)
+            if estr.endswith("%r" % path):
+                estr=estr[:-len("%r"  % path)]
+            log.error(" %s", estr)
     return None
 
 def image_data(img):
