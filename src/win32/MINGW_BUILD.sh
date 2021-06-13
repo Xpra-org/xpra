@@ -372,6 +372,12 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 			logging queue urllib xml xmlrpc pyasn1_modules concurrent pynvml collections > /dev/null
 fi
 popd > /dev/null
+#remove empty icon directories
+for i in `seq 4`; do
+	find dist/share/icons -type d -exec rmdir {} \; 2> /dev/null
+done
+rm -fr dist/share/xml
+#leave ./dist
 
 
 echo "* Generating gdk pixbuf loaders.cache"
