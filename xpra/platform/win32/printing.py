@@ -93,13 +93,15 @@ def on_devmodechange(wParam, lParam):
 
 
 def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
-    import ctypes
-    from ctypes.wintypes import BYTE, DWORD, LPCWSTR
+    from ctypes import byref, addressof, cast, WinDLL, Structure, POINTER
+    from ctypes.wintypes import BYTE, BOOL, DWORD, LPCWSTR, LPBYTE, LPDWORD
 
-    winspool = ctypes.WinDLL('winspool.drv', use_last_error=True)
-    msvcrt = ctypes.cdll.msvcrt
+    winspool = WinDLL('winspool.drv', use_last_error=True)
+    EnumPrintersW = winspool.EnumPrintersW
+    EnumPrintersW.restype = BOOL
+    EnumPrintersW.argtypes = [DWORD, LPCWSTR, DWORD, LPBYTE, DWORD, LPDWORD, LPDWORD]
 
-    class PRINTER_INFO(ctypes.Structure):
+    class PRINTER_INFO(Structure):
         _fields_ = [
             ("Flags", DWORD),
             ("pDescription", LPCWSTR),
@@ -108,33 +110,31 @@ def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
         ]
 
     # Invoke once with a NULL pointer to get buffer size.
-    info = ctypes.POINTER(BYTE)()
+    info = BYTE(0)
     pcbNeeded = DWORD(0)
     pcReturned = DWORD(0)  # the number of PRINTER_INFO_1 structures retrieved
-    r = winspool.EnumPrintersW(DWORD(flags), name, DWORD(level), ctypes.byref(info), DWORD(0), ctypes.byref(pcbNeeded), ctypes.byref(pcReturned))
+    r = EnumPrintersW(DWORD(flags), name, DWORD(level), byref(info), DWORD(0), byref(pcbNeeded), byref(pcReturned))
     log("EnumPrintersW(..)=%i pcbNeeded=%i", r, pcbNeeded.value)
     if pcbNeeded.value<=0:
         log("EnumPrinters probe failed for flags=%i, level=%i, pcbNeeded=%i", flags, level, pcbNeeded.value)
         return []
 
-    bufsize = pcbNeeded.value
-    buf = msvcrt.malloc(bufsize)
-    if buf==0:
-        log.error("Error: cannot enumerate printers, malloc failed")
-        return []
-
-    r = winspool.EnumPrintersW(DWORD(flags), name, DWORD(level), buf, bufsize, ctypes.byref(pcbNeeded), ctypes.byref(pcReturned))
+    bufsize = int(pcbNeeded.value)
+    buf = (BYTE*bufsize)()
+    pPrinterEnum = cast(addressof(buf), LPBYTE)
+    log("EnumPrinters into buf %s", pPrinterEnum)
+    r = EnumPrintersW(DWORD(flags), name, DWORD(level), pPrinterEnum, DWORD(bufsize), byref(pcbNeeded), byref(pcReturned))
     log("EnumPrintersW(..)=%i pcReturned=%i", r, pcReturned.value)
     if r==0:
         log.error("Error: EnumPrinters failed")
         return []
-    info = ctypes.cast(buf, ctypes.POINTER(PRINTER_INFO))
+    info = cast(pPrinterEnum, POINTER(PRINTER_INFO))
     printers = []
     for i in range(pcReturned.value):
         v = int(info[i].Flags), str(info[i].pDescription), str(info[i].pName), str(info[i].pComment)
         log("EnumPrintersW(..) [%i]=%s", i, v)
         printers.append(v)
-    msvcrt.free(buf)
+    del buf
     return printers
 
 def get_info():
