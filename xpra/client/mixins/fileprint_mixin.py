@@ -107,7 +107,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             return
         def do_send_printers():
             try:
-                self.do_send_printers
+                self.do_send_printers()
             except Exception as e:
                 printlog("do_send_printers()", exc_info=True)
                 printlog.error("Error sending the list of printers")
