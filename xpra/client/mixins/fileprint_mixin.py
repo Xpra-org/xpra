@@ -6,6 +6,7 @@
 from xpra.util import envbool, csv, typedict
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
+from xpra.make_thread import start_thread
 from xpra.log import Logger
 
 printlog = Logger("printing")
@@ -75,11 +76,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             printlog.error(" %s", e)
             self.printing = False
         else:
-            try:
-                self.do_send_printers()
-            except Exception:
-                printlog.error("Error sending the list of printers:", exc_info=True)
-                self.printing = False
+            self.send_printers()
         printlog("init_printing() enabled=%s", self.printing)
 
     def cleanup_printing(self):
@@ -114,6 +111,10 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             self.source_remove(spt)
 
     def do_send_printers(self):
+        self.send_printers_timer = None
+        start_thread(self.send_printers_thread, "send-printers", True)
+
+    def send_printers_thread(self):
         try:
             self.send_printers_timer = None
             from xpra.platform.printing import get_printers, get_mimetypes
