@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import envbool, csv, typedict
+from xpra.util import envbool, envint, csv, typedict
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -13,6 +13,7 @@ filelog = Logger("file")
 
 DELETE_PRINTER_FILE = envbool("XPRA_DELETE_PRINTER_FILE", True)
 SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
+INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
 class FilePrintMixin(StubClientMixin, FileTransferHandler):
@@ -62,7 +63,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             if server_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
                                                         ("printer-info", "device-uri"))
-                self.timeout_add(1000, self.init_printing)
+                self.timeout_add(INIT_PRINTING_DELAY*1000, self.init_printing)
 
 
     def init_printing(self):
