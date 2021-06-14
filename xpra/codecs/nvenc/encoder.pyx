@@ -1655,7 +1655,7 @@ cdef class Encoder:
         self.last_frame_times = deque(maxlen=200)
         self.update_bitrate()
 
-        options = options or typedict()
+        options = typedict(options or {})
         #the pixel format we feed into the encoder
         self.pixel_format = self.get_target_pixel_format(self.quality)
         self.profile_name = self._get_profile(options)
