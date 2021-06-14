@@ -8,7 +8,7 @@ import sys
 import subprocess
 
 from xpra.platform.win32 import constants as win32con
-from xpra.util import csv, envint, reverse_dict
+from xpra.util import csv, envint, envbool, reverse_dict
 from xpra.os_util import bytestostr
 from xpra.platform.paths import get_app_dir
 from xpra.log import Logger
@@ -16,6 +16,7 @@ from xpra.log import Logger
 log = Logger("printing")
 
 #allows us to skip some printers we don't want to export
+WINSPOOL_LISTENER = envbool("XPRA_WINSPOOL_LISTENER", True)
 SKIPPED_PRINTERS = os.environ.get("XPRA_SKIPPED_PRINTERS", "Microsoft XPS Document Writer,Fax").split(",")
 PRINTER_LEVEL = envint("XPRA_WIN32_PRINTER_LEVEL", 1)
 DEFAULT_PRINTER_FLAGS = "LOCAL,SHARED+NETWORK+CONNECTIONS"
@@ -73,10 +74,11 @@ def init_printing(callback=None):
     global printers_modified_callback
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
-    try:
-        init_winspool_listener()
-    except Exception:
-        log.error("Error: failed to register for print spooler changes", exc_info=True)
+    if WINSPOOL_LISTENER:
+        try:
+            init_winspool_listener()
+        except Exception:
+            log.error("Error: failed to register for print spooler changes", exc_info=True)
 
 def init_winspool_listener():
     from xpra.platform.win32.win32_events import get_win32_event_listener
