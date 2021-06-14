@@ -102,14 +102,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         #so we wait a bit and fire via a timer to try to batch things together:
         if self.send_printers_timer:
             return
-        def do_send_printers():
-            try:
-                self.do_send_printers()
-            except Exception as e:
-                printlog("do_send_printers()", exc_info=True)
-                printlog.error("Error sending the list of printers")
-                printlog.error(" %s", e)
-        self.send_printers_timer = self.timeout_add(500, do_send_printers)
+        self.send_printers_timer = self.timeout_add(500, self.do_send_printers)
 
     def cancel_send_printers_timer(self):
         spt = self.send_printers_timer
@@ -131,53 +124,58 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             printlog.error("Error: cannot access the list of printers")
             printlog.error(" %s", e)
             return
-        printlog("do_send_printers() found printers=%s", printers)
-        #remove xpra-forwarded printers to avoid loops and multi-forwards,
-        #also ignore stopped printers
-        #and only keep the attributes that the server cares about (self.printer_attributes)
-        exported_printers = {}
-        def used_attrs(d):
-            #filter attributes so that we only compare things that are actually used
-            if not d:
-                return d
-            return dict((k,v) for k,v in d.items() if k in self.printer_attributes)
-        for k,v in printers.items():
-            device_uri = v.get("device-uri", "")
-            if device_uri:
-                #this is cups specific.. oh well
-                printlog("do_send_printers() device-uri(%s)=%s", k, device_uri)
-                if device_uri.startswith("xpraforwarder"):
-                    printlog("do_send_printers() skipping xpra forwarded printer=%s", k)
+        printlog("send_printers_thread() found printers=%s", printers)
+        try:
+            #remove xpra-forwarded printers to avoid loops and multi-forwards,
+            #also ignore stopped printers
+            #and only keep the attributes that the server cares about (self.printer_attributes)
+            exported_printers = {}
+            def used_attrs(d):
+                #filter attributes so that we only compare things that are actually used
+                if not d:
+                    return d
+                return dict((k,v) for k,v in d.items() if k in self.printer_attributes)
+            for k,v in printers.items():
+                device_uri = v.get("device-uri", "")
+                if device_uri:
+                    #this is cups specific.. oh well
+                    printlog("send_printers_thread() device-uri(%s)=%s", k, device_uri)
+                    if device_uri.startswith("xpraforwarder"):
+                        printlog("do_send_printers() skipping xpra forwarded printer=%s", k)
+                        continue
+                state = v.get("printer-state")
+                #"3" if the destination is idle,
+                #"4" if the destination is printing a job,
+                #"5" if the destination is stopped.
+                if state==5 and SKIP_STOPPED_PRINTERS:
+                    printlog("do_send_printers() skipping stopped printer=%s", k)
                     continue
-            state = v.get("printer-state")
-            #"3" if the destination is idle,
-            #"4" if the destination is printing a job,
-            #"5" if the destination is stopped.
-            if state==5 and SKIP_STOPPED_PRINTERS:
-                printlog("do_send_printers() skipping stopped printer=%s", k)
-                continue
-            attrs = used_attrs(v)
-            #add mimetypes:
-            attrs["mimetypes"] = get_mimetypes()
-            exported_printers[k.encode("utf8")] = attrs
-        if self.exported_printers is None:
-            #not been sent yet, ensure we can use the dict below:
-            self.exported_printers = {}
-        elif exported_printers==self.exported_printers:
-            printlog("do_send_printers() exported printers unchanged: %s", self.exported_printers)
-            return
-        #show summary of what has changed:
-        added = tuple(k for k in exported_printers if k not in self.exported_printers)
-        if added:
-            printlog("do_send_printers() new printers: %s", added)
-        removed = tuple(k for k in self.exported_printers if k not in exported_printers)
-        if removed:
-            printlog("do_send_printers() printers removed: %s", removed)
-        modified = tuple(k for k,v in exported_printers.items() if
-                    self.exported_printers.get(k)!=v and k not in added)
-        if modified:
-            printlog("do_send_printers() printers modified: %s", modified)
-        printlog("do_send_printers() printers=%s", exported_printers.keys())
-        printlog("do_send_printers() exported printers=%s", csv(str(x) for x in exported_printers))
-        self.exported_printers = exported_printers
-        self.send("printers", self.exported_printers)
+                attrs = used_attrs(v)
+                #add mimetypes:
+                attrs["mimetypes"] = get_mimetypes()
+                exported_printers[k.encode("utf8")] = attrs
+            if self.exported_printers is None:
+                #not been sent yet, ensure we can use the dict below:
+                self.exported_printers = {}
+            elif exported_printers==self.exported_printers:
+                printlog("send_printers_thread() exported printers unchanged: %s", self.exported_printers)
+                return
+            #show summary of what has changed:
+            added = tuple(k for k in exported_printers if k not in self.exported_printers)
+            if added:
+                printlog("send_printers_thread() new printers: %s", added)
+            removed = tuple(k for k in self.exported_printers if k not in exported_printers)
+            if removed:
+                printlog("send_printers_thread() printers removed: %s", removed)
+            modified = tuple(k for k,v in exported_printers.items() if
+                        self.exported_printers.get(k)!=v and k not in added)
+            if modified:
+                printlog("send_printers_thread() printers modified: %s", modified)
+            printlog("send_printers_thread() printers=%s", exported_printers.keys())
+            printlog("send_printers_thread() exported printers=%s", csv(str(x) for x in exported_printers))
+            self.exported_printers = exported_printers
+            self.send("printers", self.exported_printers)
+        except Exception:
+            printlog("do_send_printers()", exc_info=True)
+            printlog.error("Error sending the list of printers")
+            printlog.error(" %s", e)
