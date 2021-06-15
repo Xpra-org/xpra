@@ -377,7 +377,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     clobber   = int(upgrading or upgrading_desktop) | int(opts.use_display)*2
     start_vfb = not (shadowing or proxying or clobber)
 
-    if not proxying and PYTHON3 and POSIX and not OSX:
+    if not proxying and POSIX and not OSX:
         #we don't support wayland servers,
         #so make sure GDK will use the X11 backend:
         from xpra.os_util import saved_env
