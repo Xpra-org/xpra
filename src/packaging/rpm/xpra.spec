@@ -884,7 +884,7 @@ fi
 
 
 %changelog
-* Thu Jun 11 2021 Antoine Martin <antoine@xpra.org> 3.0.14-10.0xpra1
+* Fri Jun 11 2021 Antoine Martin <antoine@xpra.org> 3.0.14-10.0xpra1
 - fix proxy deadlock, subprocess leak, socket errors
 - fix proxy disconnections under heavy load
 - fix crash / corruption in the webp encoder

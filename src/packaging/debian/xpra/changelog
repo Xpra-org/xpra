@@ -28,6 +28,8 @@ xpra (3.0.14-1) UNRELEASED; urgency=low
   * never pollute /root/.xpra or /root/.config/
   * add new common screen resolutions for Xdummy
 
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 11 Jun 2021 00:00:00 +0700
+
 xpra (3.0.13-1) UNRELEASED; urgency=low
   * fix screen refresh performance issues, especially on jittery links
   * fix virtual screen resizing errors with invalid DPI values
