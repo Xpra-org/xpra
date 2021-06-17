@@ -23,7 +23,8 @@ IF EXIST "%MSVC2019VCBAT%" (
 	-gencode=arch=compute_61,code=sm_61 ^
 	-gencode=arch=compute_62,code=sm_62 ^
 	-gencode=arch=compute_70,code=sm_70 ^
-	-gencode=arch=compute_75,code=sm_75
+	-gencode=arch=compute_75,code=sm_75 ^
+	-allow-unsupported-compiler
 
 ENDLOCAL
 SET ERRORLEVEL=0
