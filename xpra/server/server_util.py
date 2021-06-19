@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
+import shlex
 import os.path
 
 from xpra.util import envbool
@@ -35,14 +36,17 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     import subprocess
     from xpra.log import Logger
     log = Logger("exec")
-    filename = file_to_source_path
-    if not os.path.exists(file_to_source_path):
-        filename = which(file_to_source_path)
+    cmd = shlex.split(file_to_source_path)
+    filename = cmd[0]
+    if not os.path.exists(filename):
+        filename = which(filename)
         if not filename:
             log.error("Error: cannot find file '%s' to source", file_to_source_path)
             return {}
+        cmd[0] = filename
     if not os.path.isabs(filename):
         filename = os.path.abspath(filename)
+        cmd[0] = filename
     #figure out if this is a script to source,
     #or if we're meant to execute it directly
     try:
@@ -53,7 +57,6 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         log.error(" %s", e)
         first_line = b""
     if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
-        cmd = [filename]
         def decode(out):
             env = {}
             for line in out.splitlines():
