@@ -1552,7 +1552,7 @@ def run_send_file(extra_args):
         files = extra_args
     else:
         from xpra.gtk_common.gtk_util import choose_files
-        files = choose_files(None, "Select Files to Send", multiple=True)
+        files = choose_files(None, "Select Files to Transfer", multiple=True)
         if not files:
             return
     filelog = Logger("file")
