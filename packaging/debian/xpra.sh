@@ -2,6 +2,10 @@
 
 eval `dpkg-architecture -s`
 
+if [ -z "${REPO_ARCH_PATH}" ]; then
+	REPO_ARCH_PATH="`pwd`/../repo"
+fi
+
 #find the latest version we can build:
 XPRA_TAR_XZ=`ls ../pkgs/xpra-4.3*.tar.xz | grep -v html5 | sort -V | tail -n 1`
 if [ -z "${XPRA_TAR_XZ}" ]; then
