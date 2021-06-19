@@ -77,7 +77,7 @@ class AudioMixin(StubSourceMixin):
 
     def stop_new_stream_notification(self, proc):
         r = proc.poll()
-        log.info("stop_new_stream_notification(%s) exit code=%s", proc, r)
+        log("stop_new_stream_notification(%s) exit code=%s", proc, r)
         if r is not None:
             #already ended
             return
