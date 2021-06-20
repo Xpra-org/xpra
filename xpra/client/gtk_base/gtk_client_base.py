@@ -981,8 +981,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 img = Image.frombytes("RGBA", (w, h), pixels, "raw", "BGRA", w*4, 1)
                 target = Image.new("RGBA", (fw, fh))
                 target.paste(img, (0, 0, w, h))
-                pixels = img.tobytes("raw", "BGRA")
-                cursor_pixbuf = get_pixbuf_from_data(pixels, True, w, h, w*4)
+                pixels = target.tobytes("raw", "BGRA")
+                cursor_pixbuf = get_pixbuf_from_data(pixels, True, fw, fh, fw*4)
             else:
                 cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
                 cursor_pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
