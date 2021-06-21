@@ -26,11 +26,15 @@ COMPRESSION = {}
 
 def init_lz4():
     from lz4 import VERSION, block
-    from lz4.version import version
     import struct
     block_compress = block.compress
     block_decompress = block.decompress
     LZ4_HEADER = struct.Struct(b'<L')
+    try:
+        from lz4 import library_version_string
+        version = library_version_string()
+    except ImportError:
+        from lz4.version import version
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
         if level>=7:
