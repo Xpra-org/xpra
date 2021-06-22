@@ -40,6 +40,8 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi
         ,gir1.2-gtk-3.0
         ,python3-cairo
+# for spawn
+        ,python3-distutils
         ,python3-gi-cairo
 # for opengl support:
         ,python3-opengl
