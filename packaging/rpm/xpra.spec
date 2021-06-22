@@ -607,7 +607,7 @@ fi
 
 
 %changelog
-* Sun Jun 13 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
+* Tue Jun 22 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
 - build and packaging fixes:
    missing dependencies
    nvjpeg DEB packaging
@@ -615,9 +615,14 @@ fi
    compilation errors on Ubuntu Bionic
    DEB packages were missing some files (fixes audio silence detection)
    remove unused outdated code
-- proxy deadlocks when queues fill up too quickly
-- proxy server does not honour mode or display
-- proxy disconnections under heavy load
+- proxy server:
+   deadlocks when queues fill up too quickly
+   honour mode and display
+   disconnections under heavy load
+* MS Windows:
+   spurious OpenGL warnings during sanity checks
+   printer enumeration crash and stalls
+   small cursors showing random pixel values
 - fix RFB server protocol, sockets not timing out with VNC clients
 - scroll detection bugs
 - NVENC errors when retrying after a transient failure
