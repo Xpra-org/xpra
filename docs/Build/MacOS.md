@@ -21,7 +21,7 @@ export PATH=$PATH:~/.local/bin/
 
 ```shell
 curl -O ~/.jhbuildrc-custom \
-     https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/MacOS/jhbuild/jhbuildrc-custom-xpra
+     https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/jhbuildrc-custom-xpra
 ```
 Download everything required for the build:
 ```shell
