@@ -39,7 +39,8 @@ Use `Xpra_cmd.exe` instead.
 The solution is often distribution specific.  
 You may want to add `--start=/path/to/Xsession` to your server options.\
 Or you may want to add each application individually using a `start` option for each application.
-
+### VirtualBox won't release mouse
+[disable auto capture keyboard](https://github.com/Xpra-org/xpra/issues/3118#issuecomment-838985119)
 
 ***
 
