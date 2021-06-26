@@ -37,6 +37,10 @@ from xpra.util import envbool, unsetenv, noerr
 from xpra.platform.dotxpra import DotXpra
 
 
+IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
+                                     "ibus-daemon --xim -v -r --panel=disable")
+
+
 _cleanups = []
 def run_cleanups():
     global _cleanups
@@ -696,8 +700,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             assert ibus_daemon
             #start ibus-daemon unless already specified in 'start':
             if not any(x.find("ibus-daemon")>=0 for x in opts.start):
-                IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
-                                                     "ibus-daemon --xim -v -r --panel=disable")
                 if IBUS_DAEMON_COMMAND:
                     opts.start.insert(0, IBUS_DAEMON_COMMAND)
     if display_name[0] != 'S':

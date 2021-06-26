@@ -303,6 +303,8 @@ class ChildCommandServer(StubServerMixin):
     def guess_session_name(self, procs=None):
         if not procs:
             return
+        from xpra.scripts.server import IBUS_DAEMON_COMMAND
+        ibus_daemon_cmd = shlex.split(IBUS_DAEMON_COMMAND)[0] or "ibus-daemon"
         #use the commands to define the session name:
         self.child_reaper.poll()
         cmd_names = []
@@ -318,6 +320,8 @@ class ChildCommandServer(StubServerMixin):
                     cmd = cmd[l:]
             elif len(cmd)>1 and cmd[0] in ("vglrun", "nohup",):
                 cmd.pop(0)
+            if cmd[0]==ibus_daemon_cmd:
+                continue
             bcmd = os.path.basename(cmd[0])
             if bcmd not in cmd_names:
                 cmd_names.append(bcmd)
