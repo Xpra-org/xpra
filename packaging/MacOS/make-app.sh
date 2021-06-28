@@ -21,10 +21,8 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy --without-html5"
 	DO_TESTS="0"
 else
-	if [ ! -d "html5" ]; then
-		echo "html5 client not found"
-		echo " perhaps run: 'git clone https://github.com/Xpra-org/xpra-html5'"
-		echo " then: ln -sf xpra-html5 html5"
+	if [ ! -e "${JHBUILD_PREFIX}/share/xpra/www/" ]; then
+		echo "the xpra html5 client must be installed in ${JHBUILD_PREFIX}/share/xpra/www/" 
 		exit 1
 	fi
 fi
@@ -343,13 +341,6 @@ echo "**************************************************************************
 echo "Add the manual in HTML format (since we cannot install the man page properly..)"
 groff -mandoc -Thtml < ../../man/xpra.1 > ${RSCDIR}/share/manual.html
 groff -mandoc -Thtml < ../../man/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
-
-if [ "${CLIENT_ONLY}" != "1" ]; then
-	echo "Add the HTML5 client"
-	pushd html5
-	python3 ./setup.py install ../${RSCDIR}/www/
-	popd
-fi
 
 echo
 echo "*******************************************************************************"
