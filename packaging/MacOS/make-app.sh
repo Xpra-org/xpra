@@ -152,6 +152,10 @@ if [ ! -e "JHBUILD_PREFIX}/lib/charset.alias" ]; then
 	#gtk-mac-bundler chokes if this file is missing
 	touch "${JHBUILD_PREFIX}/lib/charset.alias"
 fi
+if [ ! -e "JHBUILD_PREFIX}/share/icons/hicolor/index.theme" ]; then
+	#gtk-mac-bundler chokes if this file is missing
+	touch "${JHBUILD_PREFIX}/share/icons/hicolor/index.theme"
+fi
 #we have to make sure we use python2 here (not ported yet):
 PYTHON=${PYTHON} python2 ~/.local/bin/gtk-mac-bundler Xpra.bundle
 if [ "$?" != "0" ]; then
