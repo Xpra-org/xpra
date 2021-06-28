@@ -2,7 +2,8 @@
 1. [About](#about)
 2. [Installation](#installation)
 3. [Usage](#usage)
-4. [Help](#help)
+4. [Documentation](#documentation)
+5. [Help](#help)
 
 # About
 Xpra is known as _"screen for X"_ : its [seamless mode](./docs/Usage/Seamless.md) allows you to run X11 programs,
@@ -65,6 +66,14 @@ Connections can be secured using [encryption](./docs/Network/Encryption.md) and 
 Sessions can be automatically announced on LANs using [multicast DNS](./docs/Network/Multicast-DNS.md)
 so that clients can connect more easily using a GUI (ie: `xpra mdns-gui`).\
 Its flexible [proxy server](./docs/Usage/Proxy-Server.md) can be used as a relay or front end for multiple server sessions.
+
+---
+
+# Documentation
+There is extensive documentation [right here](./docs) for the current development version.  
+This documentation is also included with each release.  
+
+For more generic version-agnostic information, checkout [the wiki](https://github.com/Xpra-org/xpra/wiki).
 
 ---
 
