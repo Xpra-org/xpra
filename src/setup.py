@@ -655,7 +655,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         pkg_config_cmd = ["pkg-config", "--libs", "--cflags", "%s" % (" ".join(package_names),)]
         r, pkg_config_out, err = get_status_output(pkg_config_cmd)
         if r!=0:
-            sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(cmd), err))
+            sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(pkg_config_cmd), err))
         add_tokens(pkg_config_out)
     if warn_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-Wall")
