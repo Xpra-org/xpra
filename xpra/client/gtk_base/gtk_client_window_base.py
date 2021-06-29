@@ -238,6 +238,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._screen = -1
         self._frozen = False
         self._focus_latest = None
+        self._ondeiconify = []
         self.window_state_timer = None
         self.send_iconify_timer = None
         self.remove_pointer_overlay_timer = None
@@ -817,6 +818,17 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         self._frozen = False
         self.deiconify()
+
+
+    def deiconify(self):
+        for function in self._ondeiconify:
+            try:
+                function()
+            except Exception as e:
+                log.error("Error calling %s on %s during deiconification:", function, self)
+                log.error(" %s", e)
+        self._ondeiconify = []
+        Gtk.Window.deiconify(self)
 
 
     def window_state_updated(self, widget, event):

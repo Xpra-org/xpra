@@ -1159,6 +1159,7 @@ class GTKTrayMenuBase(MenuHelper):
         menu = Gtk.Menu()
         windows_menu_item.set_submenu(menu)
         menu.append(self.make_raisewindowsmenuitem())
+        menu.append(self.make_showhidewindowsmenuitem())
         menu.append(self.make_minimizewindowsmenuitem())
         menu.append(self.make_refreshmenuitem())
         menu.append(self.make_reinitmenuitem())
@@ -1179,21 +1180,68 @@ class GTKTrayMenuBase(MenuHelper):
             self.client.reinit_window_icons()
         return self.handshake_menuitem("Re-initialize", "reinitialize.png", None, force_reinit)
 
+    def _non_OR_windows(self):
+        return tuple(win for win in self.client._window_to_id.keys() if not win.is_OR())
+
+    def _call_non_OR_windows(self, functions):
+        for win in self._non_OR_windows():
+            for function, args in functions.items():
+                fn = getattr(win, function, None)
+                if not fn:
+                    log.warn("Warning: no '%s' function on %s", function, win)
+                else:
+                    try:
+                        fn(*args)
+                    except Exception as e:
+                        log.error("Error calling %s%s on %s:", function, args, win)
+                        log.error(" %s", e)
+
+    def _raise_all_windows(self, *_args):
+        self._call_non_OR_windows({"deiconify" : (), "present" : ()})
+
     def make_raisewindowsmenuitem(self):
-        def raise_windows(*_args):
-            for win in self.client._window_to_id:
-                if not win.is_OR():
-                    win.deiconify()
-                    win.present()
-        return self.handshake_menuitem("Raise Windows", "raise.png", None, raise_windows)
+        return self.handshake_menuitem("Raise Windows", "raise.png", None, self._raise_all_windows())
+
+    def _minimize_all_windows(self, *_args):
+        self._call_non_OR_windows({"iconify" : ()})
 
     def make_minimizewindowsmenuitem(self):
-        def minimize_windows(*_args):
-            for win in self.client._window_to_id:
-                if not win.is_OR():
-                    win.iconify()
-        return self.handshake_menuitem("Minimize Windows", "minimize.png", None, minimize_windows)
+        return self.handshake_menuitem("Minimize Windows", "minimize.png", None, self._minimize_all_windows)
 
+    def _hide_window(self, win):
+        skip_pager = win.get_skip_pager_hint()
+        skip_taskbar = win.get_skip_taskbar_hint()
+        def ondeiconify():
+            win.set_skip_pager_hint(skip_pager)
+            win.set_skip_taskbar_hint(skip_taskbar)
+        win._ondeiconify.append(ondeiconify)
+        if not skip_pager:
+            win.set_skip_pager_hint(True)
+        if not skip_taskbar:
+            win.set_skip_taskbar_hint(True)
+        win.freeze()
+
+    def make_showhidewindowsmenuitem(self):
+        def set_icon(icon_name):
+            image = self.get_image(icon_name, self.menu_icon_size)
+            if image:
+                self.showhidewindows.set_image(image)
+        def showhide_windows(*args):
+            self.showhidewindows_state = not self.showhidewindows_state
+            log("showhide_windows%s showhidewindows_state=%s", args, self.showhidewindows_state)
+            if self.showhidewindows_state:
+                #deiconify() will take care of restoring the attributes via "_ondeiconify"
+                self._call_non_OR_windows({"unfreeze" : (), "present" : ()})
+                set_icon("eye-off.png")
+                self.showhidewindows.set_label("Hide Windows")
+            else:
+                for win in self._non_OR_windows():
+                    self._hide_window(win)
+                set_icon("eye-on.png")
+                self.showhidewindows.set_label("Show Windows")
+        self.showhidewindows_state = True
+        self.showhidewindows = self.handshake_menuitem("Hide Windows", "eye-off.png", None, showhide_windows)
+        return self.showhidewindows
 
     def make_servermenuitem(self):
         server_menu_item = self.handshake_menuitem("Server", "server.png")
