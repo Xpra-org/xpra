@@ -153,7 +153,7 @@ class KeyboardHelper:
         if not depressed:
             #when the key is released, just ignore it - do NOT send it to the server!
             return True
-        if action in ("pass", "_"):
+        if action=="pass":
             return False
         try:
             method = getattr(window, action)

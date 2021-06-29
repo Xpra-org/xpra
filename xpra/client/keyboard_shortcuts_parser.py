@@ -156,7 +156,8 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
         key_shortcuts = shortcuts.get(keyname, [])
         #remove any existing action using the same modifiers:
         key_shortcuts = [x for x in key_shortcuts if x[0]!=modifiers]
-        key_shortcuts.append((modifiers, action, args))
+        if action!="_":
+            key_shortcuts.append((modifiers, action, args))
         shortcuts[keyname] = key_shortcuts
         log("shortcut(%s)=%s", s, csv((modifiers, action, args)))
     log("parse_shortcuts(%s)=%s" % (str(strs), shortcuts))
