@@ -334,23 +334,26 @@ for d in STRUCT_KNOWN_FILTERS.values():
 def isenvdebug(category : str) -> bool:
     return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0")=="1"
 
-# A wrapper around 'logging' with some convenience stuff.  In particular:
-#    -- You initialize it with a list of categories
-#       If unset, the default logging target is set to the name of the module where
-#       Logger() was called.
-#    -- Any of the categories can enable debug logging if the environment
-#       variable 'XPRA_${CATEGORY}_DEBUG' is set to "1"
-#    -- We also keep a list of debug_categories, so these can get enabled
-#       programatically too
-#    -- We keep track of which loggers are associated with each category,
-#       so we can enable/disable debug logging by category
-#    -- You can pass exc_info=True to any method, and sys.exc_info() will be
-#       substituted.
-#    -- __call__ is an alias for debug
-#    -- we bypass the logging system unless debugging is enabled for the logger,
-#       which is much faster than relying on the python logging code
 
 class Logger:
+    """
+    A wrapper around 'logging' with some convenience stuff.  In particular:
+    * You initialize it with a list of categories
+        If unset, the default logging target is set to the name of the module where
+        Logger() was called.
+    * Any of the categories can enable debug logging if the environment
+    variable 'XPRA_${CATEGORY}_DEBUG' is set to "1"
+    * We also keep a list of debug_categories, so these can get enabled
+        programatically too
+    * We keep track of which loggers are associated with each category,
+        so we can enable/disable debug logging by category
+    * You can pass exc_info=True to any method, and sys.exc_info() will be
+        substituted.
+    * __call__ is an alias for debug
+    * we bypass the logging system unless debugging is enabled for the logger,
+        which is much faster than relying on the python logging code
+    """
+
     def __init__(self, *categories):
         global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)
