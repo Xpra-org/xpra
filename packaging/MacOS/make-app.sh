@@ -340,8 +340,8 @@ popd	#"Resources/lib"
 echo
 echo "*******************************************************************************"
 echo "Add the manual in HTML format (since we cannot install the man page properly..)"
-groff -mandoc -Thtml < ../../man/xpra.1 > ${RSCDIR}/share/manual.html
-groff -mandoc -Thtml < ../../man/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
+groff -mandoc -Thtml < ../../fs/share/man/man1/xpra.1 > ${RSCDIR}/share/manual.html
+groff -mandoc -Thtml < ../../fs/share/man/man1/xpra_launcher.1 > ${RSCDIR}/share/launcher-manual.html
 
 if [ "${CLIENT_ONLY}" != "1" ]; then
 	echo "Add the HTML5 client"
