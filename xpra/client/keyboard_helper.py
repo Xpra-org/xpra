@@ -153,6 +153,8 @@ class KeyboardHelper:
         if not depressed:
             #when the key is released, just ignore it - do NOT send it to the server!
             return True
+        if action in ("pass", "_"):
+            return False
         try:
             method = getattr(window, action)
             log("key_handled_as_shortcut(%s,%s,%s,%s) found shortcut=%s, will call %s%s",
