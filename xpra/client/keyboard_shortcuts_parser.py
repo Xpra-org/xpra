@@ -86,6 +86,9 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
     for s in strs:
         if s=="none":
             continue
+        if s=="clear":
+            shortcuts = {}
+            continue
         #example for s: Control+F8:some_action()
         if s.find("=")>s.find(":"):
             parts = s.split("=", 1)
@@ -120,7 +123,6 @@ def parse_shortcuts(strs=(), shortcut_modifiers=(), modifier_names=()):
                 continue
         action = action.replace("-", "_")       #must be an object attribute
         log("action(%s)=%s%s", s, action, args)
-
         #example for keyspec: ["Alt", "F8"]
         keyspec = parts[0].split("+")
         modifiers = []

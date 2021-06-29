@@ -944,7 +944,7 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="shortcut_modifiers", type="str", default=defaults.shortcut_modifiers,
                       help="Default set of modifiers required by the key shortcuts. Default %default.")
     group.add_option("--key-shortcut", action="append",
-                      dest="key_shortcut", default=[],
+                      dest="key_shortcut", default=defaults.key_shortcut or [],
                       help="Define key shortcuts that will trigger specific actions."
                       + "If no shortcuts are defined, it defaults to: \n%s" % ("\n ".join(defaults.key_shortcut or ())))
     legacy_bool_parse("keyboard-sync")
