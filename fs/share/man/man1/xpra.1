@@ -1282,8 +1282,10 @@ The \fIKEY\fP specification may include keyboard modifiers in the form
 You can refer to the \fIshorcut-modifers\fP option value using \fI#\fP,
 ie: \fI#+F1\fP.
 
-If no shortcuts are defined on the command line,
-the default builtin list will be used.
+Shortcuts defined on the command line are added to the builtin default
+shortcuts.
+To clear the list of shortcuts, use \fIkey-shortcut=clear\fP and
+define your shortcuts after this one.
 
 Some of the actions may allow arguments (ie: the \fIlog\fP action does),
 in which case they are specified in the usual programming style
@@ -1315,6 +1317,11 @@ Placeholder which can be used by some client toolkits.
 .IP \fBvoid\fP
 Does not do anything, and can therefore be used to prevent
 certain key combinations from ever being sent to the server.
+.IP \fBpass\fP
+Does not do anything. However, unlike \fIvoid\fP the key
+event is forwarded to the server.
+.IP \fB\-\fP
+Removes an existing key shortcut if one exists.
 .IP \fBrefresh_window\fP
 Force the currently focused window to be refreshed.
 .IP \fBrefresh_all_windows\fP
