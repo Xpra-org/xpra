@@ -313,7 +313,7 @@ ln -sf Resources/lib Frameworks
 pushd Resources/lib
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	echo "removing extra gstreamer dylib deps:"
-	for x in basevideo cdda check netbuffer photography rtsp sdp signalprocessor; do
+	for x in check photography rtsp sdp; do
 		echo "* removing "$x
 		rm libgst${x}*
 	done
@@ -324,7 +324,7 @@ GST_PLUGIN_DIR="./gstreamer-1.0"
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	KEEP="./gstreamer-1.0.keep"
 	mkdir ${KEEP}
-	PLUGINS="app audio coreelements faac faad flac oss osxaudio speex volume vorbis wav lame mad opus ogg gdp isomp4 matroska"
+	PLUGINS="app audio coreelements faac faad flac oss osxaudio speex volume vorbis wav lame opus ogg gdp isomp4 matroska"
 	for x in $PLUGINS; do
 		echo "* keeping "$x
 		mv ${GST_PLUGIN_DIR}/libgst${x}* ${KEEP}/
