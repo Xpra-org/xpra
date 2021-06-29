@@ -27,11 +27,13 @@ Download everything required for the build:
 ```shell
 jhbuild update
 ```
+
+Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 </details>
 
 ## Build all the libraries
 ```shell
-jhbuild bootstrap
+jhbuild bootstrap-gtk-osx
 jhbuild build
 ```
 
