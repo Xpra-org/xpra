@@ -293,7 +293,7 @@ rsync -rpl ${JHBUILD_PREFIX}/share/icons/Adwaita ${RSCDIR}/share/icons/
 echo " * move GTK css"
 mv ${RSCDIR}/share/xpra/css ${RSCDIR}/
 #unused py2app scripts:
-rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh ${RSCDIR}/client_launcher.py
+rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh
 
 
 if [ "$STRIP_SOURCE" == "1" ]; then
