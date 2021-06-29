@@ -392,6 +392,8 @@ class Logger:
         for x in categories:
             if x not in KNOWN_FILTERS:
                 self.warn("unknown logging category: %s", x)
+        if self.debug_enabled:
+            self.debug("debug enabled for %s / %s", caller, categories)
 
     def get_info(self) -> dict:
         return {
