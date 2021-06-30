@@ -863,12 +863,18 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         cryptolog("get_encryption_key() connection options keydata=%s", ellipsizer(keydata))
         keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
         if keyfile:
+            if not os.path.isabs(keyfile):
+                keyfile = os.path.abspath(keyfile)
             if os.path.exists(keyfile):
                 key = filedata_nocrlf(keyfile)
-                cryptolog("get_encryption_key() loaded %i bytes from '%s'",
+                if key:
+                    cryptolog("get_encryption_key() loaded %i bytes from '%s'",
                           len(key or ""), keyfile)
-                return key
-            cryptolog("get_encryption_key() file '%s' does not exist", keyfile)
+                    return key
+                else:
+                    cryptolog("get_encryption_key() keyfile '%s' is empty", keyfile)
+            else:
+                cryptolog("get_encryption_key() file '%s' does not exist", keyfile)
         XPRA_ENCRYPTION_KEY = "XPRA_ENCRYPTION_KEY"
         key = strtobytes(os.environ.get(XPRA_ENCRYPTION_KEY, ''))
         cryptolog("get_encryption_key() got %i bytes from '%s' environment variable",
