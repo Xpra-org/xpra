@@ -381,6 +381,7 @@ popd
 
 #remove test bits we don't need:
 rm -fr ./future/backports/test ./comtypes/test/ ./ctypes/macholib/fetch_macholib* ./distutils/tests ./distutils/command ./enum/doc ./websocket/tests ./email/test/
+rm -fr ./Crypto/SelfTest/*
 #remove source:
 find xpra -name "*.pyx" -exec rm {} \;
 find xpra -name "*.c" -exec rm {} \;
