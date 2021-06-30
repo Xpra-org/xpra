@@ -21,7 +21,7 @@ source = /etc/profile
 # Scripts that can modify the environment of the commands started by the server:
 #source-start = /etc/profile
 # This one is useful for avoiding delays when running gnome applications:
-#source-start = gnome-keyring-daemon -s
+#source-start = gnome-keyring-daemon --start
 
 # Environment variables for children started
 # with 'start-child' or 'start':
