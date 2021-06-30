@@ -388,7 +388,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         if not self.randr:
             screenlog("configure_best_screen_size() no randr")
             return root_w, root_h
-        sss = tuple(self._server_sources.values())
+        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
         if len(sss)!=1:
             screenlog.info("screen used by %i clients:", len(sss))
             return root_w, root_h

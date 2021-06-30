@@ -520,7 +520,7 @@ class X11ServerCore(GTKServerBase):
         root_w, root_h = self.root_window.get_geometry()[2:4]
         if not self.randr:
             return root_w, root_h
-        sss = self._server_sources.values()
+        sss = tuple(x for x in self._server_sources.values() if x.ui_client)
         if len(sss)>1:
             screenlog.info("screen used by %i clients:", len(sss))
         bigger = True
