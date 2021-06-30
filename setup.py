@@ -1393,15 +1393,6 @@ if WIN32:
         if nvfbc_ENABLED or nvenc_ENABLED:
             add_console_exe("xpra/codecs/cuda_common/cuda_context.py",  "cuda.ico",     "CUDA_info")
 
-        if example_ENABLED:
-            add_gui_exe("xpra/client/gtk_base/example/colors.py",               "encoding.ico",     "Colors")
-            add_gui_exe("xpra/client/gtk_base/example/colors_gradient.py",      "encoding.ico",     "Colors-Gradient")
-            add_gui_exe("xpra/client/gtk_base/example/colors_plain.py",         "encoding.ico",     "Colors-Plain")
-            add_gui_exe("xpra/client/gtk_base/example/bell.py",                 "bell.ico",         "Bell")
-            add_gui_exe("xpra/client/gtk_base/example/transparent_colors.py",   "transparent.ico",  "Transparent-Colors")
-            add_gui_exe("xpra/client/gtk_base/example/transparent_window.py",   "transparent.ico",  "Transparent-Window")
-            add_gui_exe("xpra/client/gtk_base/example/fontrendering.py",        "font.ico",         "Font-Rendering")
-
     if ("install_exe" in sys.argv) or ("install" in sys.argv):
         #FIXME: how do we figure out what target directory to use?
         print("calling build_xpra_conf in-place")
