@@ -307,6 +307,8 @@ if [ "$STRIP_SOURCE" == "1" ]; then
 			rm "${x}"
 		fi
 	done
+	echo "removing html cython report"
+	find $LIBDIR/python/xpra/ -name "*.html" -exec rm {} \;
 fi
 
 
