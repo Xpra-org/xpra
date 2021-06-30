@@ -696,9 +696,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         if not starting_desktop:
             os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
         if configure_imsettings_env(opts.input_method)=="ibus":
-            ibus_daemon = which("ibus-daemon")
-            if not ibus_daemon:
-                raise InitException("cannot locate 'ibus-daemon'")
             #start ibus-daemon unless already specified in 'start':
             if IBUS_DAEMON_COMMAND and not any(x.find("ibus-daemon")>=0 for x in opts.start):
                 opts.start.insert(0, IBUS_DAEMON_COMMAND)
