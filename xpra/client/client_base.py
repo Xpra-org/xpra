@@ -785,7 +785,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             cryptolog("get_encryption_key() got %i bytes from '%s' environment variable",
                       len(key or ""), XPRA_ENCRYPTION_KEY)
         if not key:
-            raise InitExit(1, "no encryption key")
+            raise InitExit(EXIT_ENCRYPTION, "no encryption key")
         return key.strip(b"\n\r")
 
     def _process_hello(self, packet):
