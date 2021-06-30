@@ -875,7 +875,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                   len(key or ""), XPRA_ENCRYPTION_KEY)
         if key:
             return key.strip(b"\n\r")
-        raise InitExit(1, "no encryption key")
+        raise InitExit(EXIT_ENCRYPTION, "no encryption key")
 
     def _process_hello(self, packet):
         self.remove_packet_handlers("challenge")
