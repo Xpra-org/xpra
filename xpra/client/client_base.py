@@ -868,6 +868,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         conn = self._protocol._conn
         keydata = parse_encoded_bin_data(conn.options.get("keydata", None))
         cryptolog("get_encryption_key() connection options keydata=%s", ellipsizer(keydata))
+        if keydata:
+            return keydata
         keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
         if keyfile:
             if os.path.exists(keyfile):
