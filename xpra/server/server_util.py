@@ -37,16 +37,14 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     from xpra.log import Logger
     log = Logger("exec")
     cmd = shlex.split(file_to_source_path)
-    filename = cmd[0]
-    if not os.path.exists(filename):
-        filename = which(filename)
-        if not filename:
-            log.error("Error: cannot find file '%s' to source", file_to_source_path)
-            return {}
-        cmd[0] = filename
+    filename = which(cmd[0])
+    if not filename:
+        log.error("Error: cannot find command '%s' to execute", cmd[0])
+        log.error(" for sourcing '%s'", file_to_source_path)
+        return {}
     if not os.path.isabs(filename):
         filename = os.path.abspath(filename)
-        cmd[0] = filename
+    cmd[0] = filename
     #figure out if this is a script to source,
     #or if we're meant to execute it directly
     try:
@@ -56,6 +54,8 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         log.error("Error: failed to read from '%s'", filename)
         log.error(" %s", e)
         first_line = b""
+    else:
+        log("first line of '%s': %r", filename, first_line)
     if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
         def decode(out):
             env = {}
