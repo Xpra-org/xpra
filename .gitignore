@@ -99,6 +99,7 @@ tests/unittests/test-file*
 /xpra/rectangle.c
 /xpra/buffers/new_buffers.c
 /xpra/buffers/membuf.c
+/xpra/buffers/xxh.c
 /xpra/buffers/cyxor.c
 /xpra/client/gtk3/cairo_workaround.c
 /xpra/codecs/nvapi_version.c

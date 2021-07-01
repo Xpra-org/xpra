@@ -12,7 +12,6 @@
 #    which will be freed when the python object is garbage collected
 #    (also uses memalign to allocate the buffer)
 # 2) object to buffer conversion utility functions,
-# 3) xxhash wrapper
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 
@@ -29,11 +28,6 @@ cdef extern from "Python.h":
 cdef extern from "memalign.h":
     void *xmemalign(size_t size) nogil
     int MEMALIGN_ALIGNMENT
-
-cdef extern from "xxhash.h":
-    ctypedef unsigned long long XXH64_hash_t
-    XXH64_hash_t XXH64(const void* input, size_t length, unsigned long long seed) nogil
-    XXH64_hash_t XXH3_64bits(const void* data, size_t len) nogil
 
 
 cdef void free_buf(const void *p, size_t l, void *arg):
@@ -145,10 +139,3 @@ cdef buffer_context(object obj):
     if isinstance(obj, MemBuf):
         return MemBufContext(obj)
     return BufferContext(obj)
-
-
-cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil:
-    return XXH64(input, length, seed)
-
-cdef unsigned long long xxh3(const void* input, size_t length) nogil:
-    return XXH3_64bits(input, length)

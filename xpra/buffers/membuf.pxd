@@ -19,11 +19,6 @@ ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 cdef void *memalign(size_t size) nogil
 
 
-cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil
-
-cdef unsigned long long xxh3(const void* input, size_t length) nogil
-
-
 cdef class MemBuf:
     cdef const void *p
     cdef size_t l

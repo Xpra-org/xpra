@@ -935,6 +935,7 @@ def clean():
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
+                   "xpra/buffers/xxh.c",
                    "xpra/buffers/cyxor.c",
                    "xpra/codecs/vpx/encoder.c",
                    "xpra/codecs/vpx/decoder.c",
@@ -1764,10 +1765,6 @@ if annotate_ENABLED:
 
 
 #*******************************************************************************
-memalign_c = "xpra/buffers/memalign.c"
-xxhash_c = "xpra/buffers/xxhash.c"
-membuffers_c = [memalign_c, xxhash_c]
-
 if modules_ENABLED:
     add_packages("xpra.buffers")
     buffers_pkgconfig = pkgconfig(optimize=3)
@@ -1777,7 +1774,9 @@ if modules_ENABLED:
         add_to_keywords(buffers_pkgconfig, "extra_compile_args", "-mfpmath=387")
     if cython_ENABLED:
         cython_add(Extension("xpra.buffers.membuf",
-                    ["xpra/buffers/membuf.pyx"]+membuffers_c, **buffers_pkgconfig))
+                    ["xpra/buffers/membuf.pyx", "xpra/buffers/memalign.c"], **buffers_pkgconfig))
+        cython_add(Extension("xpra.buffers.xxh",
+                    ["xpra/buffers/xxh.pyx", "xpra/buffers/xxhash.c"], **buffers_pkgconfig))
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
@@ -2274,7 +2273,7 @@ toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 if csc_cython_ENABLED:
     csc_cython_pkgconfig = pkgconfig(optimize=3)
     cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
-                         ["xpra/codecs/csc_cython/colorspace_converter.pyx"]+membuffers_c,
+                         ["xpra/codecs/csc_cython/colorspace_converter.pyx"],
                          **csc_cython_pkgconfig))
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
