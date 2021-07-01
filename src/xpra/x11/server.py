@@ -469,8 +469,14 @@ class XpraServer(gobject.GObject, X11ServerBase):
             self._add_new_window(window)
 
         root = get_default_root_window()
-        with xsync:
-            children = get_children(root)
+        try:
+            with xsync:
+                children = get_children(root)
+        except XError:
+            log("load_existing_windows()", exc_info=True)
+            log("trying again")
+            with xsync:
+                children = get_children(root)
         for window in children:
             xid = get_xwindow(window)
             can_add = False
