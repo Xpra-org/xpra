@@ -3093,7 +3093,7 @@ def run_stopexit(mode, error_cb, opts, extra_args):
         if display_desc["local"] and display_desc.get("display"):
             show_final_state(display_desc)
         else:
-            print("Sent shutdown command")
+            print("Sent %s command" % mode)
     return e
 
 
