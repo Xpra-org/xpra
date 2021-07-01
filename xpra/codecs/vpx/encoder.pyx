@@ -619,8 +619,8 @@ cdef class Encoder:
                 if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                     raise Exception("failed to read pixel data from %s" % type(pixels[i]))
                 assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
-                assert py_buf.len>=istrides[i]*self.height//ydiv
-                pic_in[i] = <uint8_t *> py_buf.buf
+                assert py_buf[i].len>=istrides[i]*self.height//ydiv
+                pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
             return self.do_compress_image(pic_in, strides), {
                 "csc"       : self.src_format,
