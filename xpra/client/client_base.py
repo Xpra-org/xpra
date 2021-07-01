@@ -61,6 +61,7 @@ DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 LEGACY_SALT_DIGEST = envbool("XPRA_LEGACY_SALT_DIGEST", False)
 MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
+LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
 
 def noop():
@@ -633,10 +634,14 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.quit(EXIT_FAILURE)
 
     def server_disconnect(self, reason, *extra_info):
-        log.info("server requested disconnect:")
-        log.info(" %s", reason)
+        if LOG_DISCONNECT or disconnect_is_an_error(reason):
+            l = log.info
+        else:
+            l = log
+        l("server requested disconnect:")
+        l(" %s", reason)
         for x in extra_info:
-            log.info(" %s", x)
+            l(" %s", x)
         self.quit(EXIT_OK)
 
 

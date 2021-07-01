@@ -505,6 +505,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             env = os.environ.copy()
             #don't wait too long:
             env["XPRA_CONNECT_TIMEOUT"] = "5"
+            #don't log disconnect message
+            env["XPRA_LOG_DISCONNECT"] = "0"
             from subprocess import Popen  #pylint: disable=import-outside-toplevel
             try:
                 p = Popen(cmd, env=env)
