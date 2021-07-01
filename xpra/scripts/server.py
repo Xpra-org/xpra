@@ -514,6 +514,16 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             except OSError as e:
                 noerr(sys.stderr.write, "Error: failed to 'exit' the server to upgrade\n")
                 noerr(sys.stderr.write, " %s\n" % e)
+            else:
+                if p.poll()==0:
+                    #the server has terminated as we had requested
+                    use_display = True
+                    if upgrading:
+                        starting = True
+                        upgrading = False
+                    else:
+                        starting_desktop = True
+                        upgrading_desktop = False
 
     if not (shadowing or proxying or upgrading or upgrading_desktop) and \
     opts.exit_with_children and not has_child_arg:
