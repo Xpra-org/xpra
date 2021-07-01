@@ -132,7 +132,7 @@ class DisplayClient(StubClientMixin):
         ss = self.get_screen_sizes()
         self._current_screen_sizes = ss
 
-        log.info(" desktop size is %sx%s with %s screen%s:", u_root_w, u_root_h, len(ss), engs(ss))
+        log.info(" desktop size is %sx%s:", u_root_w, u_root_h)
         log_screen_sizes(u_root_w, u_root_h, ss)
         if self.xscale!=1 or self.yscale!=1:
             caps["screen_sizes.unscaled"] = ss
@@ -493,7 +493,7 @@ class DisplayClient(StubClientMixin):
             log("screen size unchanged")
             return
         root_w, root_h, sss = screen_settings[:3]
-        log.info("sending updated screen size to server: %sx%s with %s screens", root_w, root_h, len(sss))
+        log.info("sending updated screen size to server: %sx%s", root_w, root_h)
         log_screen_sizes(root_w, root_h, sss)
         if self.server_desktop_size:
             self.send("desktop_size", *screen_settings)

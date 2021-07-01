@@ -304,8 +304,8 @@ class DisplayManager(StubServerMixin):
         self.set_screen_size(width, height, bigger)
         if len(packet)>=4:
             log.info("received updated display dimensions")
-            log.info("client display size is %sx%s with %s screen%s:",
-                     width, height, len(ss.screen_sizes), engs(ss.screen_sizes))
+            log.info("client display size is %sx%s",
+                     width, height)
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
         #ensures that DPI and antialias information gets reset:

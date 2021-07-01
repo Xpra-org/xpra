@@ -457,7 +457,8 @@ def prettify_plug_name(s, default=""):
     return s
 
 def do_log_screen_sizes(root_w, root_h, sizes):
-    log = get_util_logger()
+    from xpra.log import Logger
+    log = Logger("screen")
     #old format, used by some clients (android):
     if not isinstance(sizes, (tuple, list)):
         return
@@ -468,10 +469,10 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             return 0
         return iround(size_pixels * 254 / size_mm / 10)
     def add_workarea(info, wx, wy, ww, wh):
-        info.append("workarea: %ix%i" % (ww, wh))
+        info.append("workarea: %4ix%-4i" % (ww, wh))
         if wx!=0 or wy!=0:
             #log position if not (0, 0)
-            info.append("at %ix%i" % (wx, wy))
+            info.append("at %4ix%-4i" % (wx, wy))
     for s in sizes:
         if len(s)<10:
             log.info(" %s", s)
@@ -491,7 +492,13 @@ def do_log_screen_sizes(root_w, root_h, sizes):
         if work_width!=width or work_height!=height or work_x!=0 or work_y!=0:
             add_workarea(info, work_x, work_y, work_width, work_height)
         log.info("  "+" ".join(info))
-        for i, m in enumerate(monitors, start=1):
+        #sort monitors from left to right, top to bottom:
+        monitors_distances = []
+        for m in monitors:
+            plug_x, plug_y = m[1:3]
+            monitors_distances.append((plug_x+plug_y*width, m))
+        sorted_monitors = [x[1] for x in sorted(monitors_distances)]
+        for i, m in enumerate(sorted_monitors, start=1):
             if len(m)<7:
                 log.info("    %s", m)
                 continue
@@ -500,19 +507,15 @@ def do_log_screen_sizes(root_w, root_h, sizes):
             info = ['%s' % prettify_plug_name(plug_name, default_name)]
             if plug_width!=width or plug_height!=height or plug_x!=0 or plug_y!=0:
                 info.append("%ix%i" % (plug_width, plug_height))
-                if plug_x!=0 or plug_y!=0:
-                    info.append("at %ix%i" % (plug_x, plug_y))
+                if plug_x!=0 or plug_y!=0 or len(sorted_monitors)>1:
+                    info.append("at %4ix%-4i" % (plug_x, plug_y))
             if (plug_width_mm!=width_mm or plug_height_mm!=height_mm) and (plug_width_mm>0 or plug_height_mm>0):
                 dpix = dpi(plug_width, plug_width_mm)
                 dpiy = dpi(plug_height, plug_height_mm)
-                if sdpix!=dpix or sdpiy!=dpiy:
-                    info.append("(%ix%i mm - DPI: %ix%i)" % (
-                        plug_width_mm, plug_height_mm, dpix, dpiy)
-                    )
-                else:
-                    info.append("(%ix%i mm)" % (
-                        plug_width_mm, plug_height_mm)
-                    )
+                dpistr = ""
+                if sdpix!=dpix or sdpiy!=dpiy or len(sorted_monitors)>1:
+                    dpistr = " - DPI: %ix%i" % (dpix, dpiy)
+                info.append("(%3ix%-3i mm%s)" % (plug_width_mm, plug_height_mm, dpistr))
             if len(m)>=11:
                 dwork_x, dwork_y, dwork_width, dwork_height = m[7:11]
                 #only show it again if different from the screen workarea
