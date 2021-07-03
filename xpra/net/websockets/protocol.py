@@ -51,8 +51,8 @@ class WebSocketProtocol(Protocol):
     def __repr__(self):
         return "WebSocket(%s)" % self._conn
 
-    def close(self):
-        Protocol.close(self)
+    def close(self, message=None):
+        super().close(message)
         self.ws_data = b""
         self.ws_payload = []
 

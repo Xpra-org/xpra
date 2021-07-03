@@ -12,7 +12,7 @@ from gi.repository import GObject
 
 from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
-    disconnect_is_an_error, ellipsizer, DONE, first_time,
+    disconnect_is_an_error, ellipsizer, DONE, first_time, csv,
     )
 from xpra.os_util import bytestostr, strtobytes, get_hex_uuid, POSIX, OSX, hexstr
 from xpra.simple_stats import std_unit
@@ -149,11 +149,18 @@ class CommandConnectClient(GObjectXpraClient):
             self.command_timeout = None
             GLib.source_remove(ct)
 
-    def _process_connection_lost(self, _packet):
+    def _process_connection_lost(self, packet):
+        log("_process_connection_lost%s", packet)
         #override so we don't log a warning
         #"command clients" are meant to exit quickly by losing the connection
         p = self._protocol
         if p and p.input_packetcount==0:
+            #never got any data back so we have never connected,
+            #try to give feedback to the user as to why that is:
+            details = ""
+            if len(packet)>1:
+                details = ": %s" % csv(packet[1:])
+            log.warn("Connection failed%s", details)
             self.quit(EXIT_CONNECTION_LOST)
         else:
             self.quit(EXIT_OK)

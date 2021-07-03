@@ -640,11 +640,11 @@ class Protocol:
             while not self._closed and callback():
                 pass
             log("io_thread_loop(%s, %s) loop ended, closed=%s", name, callback, self._closed)
-        except ConnectionClosedException:
-            log("%s closed", self._conn, exc_info=True)
+        except ConnectionClosedException as e:
+            log("%s closed in %s loop", self._conn, name, exc_info=True)
             if not self._closed:
                 #ConnectionClosedException means the warning has been logged already
-                self._connection_lost("%s connection %s closed" % (name, self._conn))
+                self._connection_lost(str(e))
         except (OSError, socket_error) as e:
             if not self._closed:
                 self._internal_error("%s connection %s reset" % (name, self._conn), e, exc_info=e.args[0] not in ABORT)
@@ -750,7 +750,7 @@ class Protocol:
 
     def _connection_lost(self, message="", exc_info=False):
         log("connection lost: %s", message, exc_info=exc_info)
-        self.close()
+        self.close(message)
         return False
 
 
@@ -1131,17 +1131,20 @@ class Protocol:
         log("flush_then_close: wait_for_write_lock()")
         wait_for_write_lock()
 
-    def close(self):
-        log("Protocol.close() closed=%s, connection=%s", self._closed, self._conn)
+    def close(self, message=None):
+        log("Protocol.close(%s) closed=%s, connection=%s", message, self._closed, self._conn)
         if self._closed:
             return
         self._closed = True
-        self.idle_add(self._process_packet_cb, self, [Protocol.CONNECTION_LOST])
+        packet = [Protocol.CONNECTION_LOST]
+        if message:
+            packet.append(message)
+        self.idle_add(self._process_packet_cb, self, packet)
         c = self._conn
         if c:
             self._conn = None
             try:
-                log("Protocol.close() calling %s", c.close)
+                log("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
                 if self._log_stats is None and c.input_bytecount==0 and c.output_bytecount==0:
                     #no data sent or received, skip logging of stats:
@@ -1156,7 +1159,7 @@ class Protocol:
                 log.error("error closing %s", c, exc_info=True)
         self.terminate_queue_threads()
         self.idle_add(self.clean)
-        log("Protocol.close() done")
+        log("Protocol.close(%s) done", message)
 
     def steal_connection(self, read_callback=None):
         #so we can re-use this connection somewhere else
