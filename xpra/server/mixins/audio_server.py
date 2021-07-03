@@ -32,6 +32,7 @@ class AudioServer(StubServerMixin):
 
     def __init__(self):
         self.audio_init_done = Event()
+        self.audio_init_done.set()
         self.pulseaudio = False
         self.pulseaudio_command = None
         self.pulseaudio_configure_commands = []
@@ -66,6 +67,7 @@ class AudioServer(StubServerMixin):
         #the setup code will mostly be waiting for subprocesses to run,
         #so do it in a separate thread
         #and just wait for the results where needed:
+        self.audio_init_done.clear()
         start_thread(self.do_audio_setup, "audio-setup", True)
         #we don't use threaded_setup() here because it would delay
         #all the other mixins that use it, for no good reason.
@@ -330,6 +332,7 @@ class AudioServer(StubServerMixin):
         if bool(self.sound_properties):
             GLib.idle_add(self.query_pulseaudio_properties)
         GLib.idle_add(self.log_sound_properties)
+        self.audio_init_done.set()
 
     def query_pulseaudio_properties(self):
         try:
@@ -349,7 +352,6 @@ class AudioServer(StubServerMixin):
         soundlog("init_sound_options microphone: supported=%s, decoders=%s",
                  self.supports_microphone, csv(self.microphone_codecs))
         soundlog("init_sound_options sound properties=%s", self.sound_properties)
-        self.audio_init_done.set()
 
 
     def get_pulseaudio_info(self) -> dict:
