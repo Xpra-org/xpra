@@ -115,6 +115,7 @@ def save_fakeXinerama_config(supported=True, source="", ss=()):
     return True
 
 def cleanup_fakeXinerama():
+    log("cleanup_fakeXinerama() configs=%s", fakeXinerama_config_files)
     for f in fakeXinerama_config_files:
         try:
             if os.path.exists(f):

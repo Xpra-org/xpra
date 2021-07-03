@@ -72,11 +72,14 @@ class GTKServerBase(ServerBase):
         register_SIGUSR_signals()
 
     def do_cleanup(self):
+        log("GTKServerBase.do_cleanup()")
         ServerBase.do_cleanup(self)
         self.close_gtk_display()
         uiw = self.ui_watcher
+        log("do_cleanup() ui watcher=%s", uiw)
         if uiw:
             uiw.stop()
+            self.ui_watcher = None
 
     def close_gtk_display(self):
         # Close our display(s) first, so the server dying won't kill us.

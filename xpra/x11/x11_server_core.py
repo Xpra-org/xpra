@@ -270,6 +270,7 @@ class X11ServerCore(GTKServerBase):
         return env
 
     def do_cleanup(self):
+        log("do_cleanup() x11_filter=%s", self.x11_filter)
         if self.x11_filter:
             self.x11_filter = False
             cleanup_x11_filter()
@@ -282,12 +283,13 @@ class X11ServerCore(GTKServerBase):
                     with xsync:
                         cleanup_all_event_receivers()
                         #all went well, we're done
+                        log("all event receivers have been removed")
                         break
                 except Exception as e:
                     l("failed to remove event receivers: %s", e)
         if self.fake_xinerama:
             cleanup_fakeXinerama()
-        with xswallow:
+        with xlog:
             clean_keyboard_state()
         GTKServerBase.do_cleanup(self)
         log("close_gdk_display_source()")

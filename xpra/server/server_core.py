@@ -439,7 +439,6 @@ class ServerCore:
         netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
         for p in tuple(self._tcp_proxy_clients):
             p.quit()
-        netlog("cleanup will disconnect: %s", self._potential_protocols)
         self.cancel_touch_timer()
         if self.mdns_publishers:
             add_work_item(self.mdns_cleanup)
@@ -448,8 +447,10 @@ class ServerCore:
         else:
             reason = SERVER_SHUTDOWN
         protocols = self.get_all_protocols()
+        netlog("cleanup will disconnect: %s, reason=%s", protocols, reason)
         self.cleanup_protocols(protocols, reason)
         self.do_cleanup()
+        netlog("cleanup will force disconnect: %s, reason=%s", protocols, reason)
         self.cleanup_protocols(protocols, reason, True)
         self._potential_protocols = []
         self.cleanup_sockets()
@@ -457,9 +458,11 @@ class ServerCore:
         if not self._upgrading:
             self.stop_dbus_server()
         if self.pidfile:
+            netlog("cleanup removing pidfile %s", self.pidfile)
             self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
         if self.menu_provider:
             self.menu_provider.cleanup()
+        netlog("cleanup() done for server core")
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
@@ -467,6 +470,7 @@ class ServerCore:
 
 
     def cleanup_sockets(self):
+        netlog("cleanup_sockets() %s", self.socket_cleanup)
         #stop listening for IO events:
         for sc in self.socket_cleanup:
             sc()
@@ -522,6 +526,7 @@ class ServerCore:
 
     def cleanup_dbus_server(self):
         ds = self.dbus_server
+        netlog("cleanup_dbus_server() dbus_server=%s", ds)
         if ds:
             ds.cleanup()
             self.dbus_server = None

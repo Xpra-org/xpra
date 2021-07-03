@@ -178,8 +178,10 @@ class ServerBase(ServerBaseClass):
     def do_cleanup(self):
         self.server_event("exit")
         self.wait_for_threaded_init()
+        log("do_cleanup() calling on %s", SERVER_BASES)
         for c in SERVER_BASES:
             if c!=ServerCore:
+                log("%s", c.cleanup)
                 c.cleanup(self)
 
 
