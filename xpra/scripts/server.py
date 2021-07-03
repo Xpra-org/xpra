@@ -1048,16 +1048,20 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.setup()
         app.init_when_ready(_when_ready)
     except InitInfo as e:
-        log.info("%s", e)
+        for m in str(e).split("\n"):
+            log.info("%s", m)
         server_not_started(str(e))
         return EXIT_OK
     except InitExit as e:
-        log.info("%s", e)
+        for m in str(e).split("\n"):
+            log.info("%s", m)
         server_not_started(str(e))
         return e.status
     except InitException as e:
+        log("%s failed to start", app, exc_info=True)
         log.error("xpra server initialization error:")
-        log.error(" %s", e)
+        for m in str(e).split("\n"):
+            log.info(" %s", m)
         server_not_started(str(e))
         return EXIT_FAILURE
     except Exception as e:
