@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -21,9 +21,9 @@ from xpra.scripts.main import (
     validate_encryption, parse_env, configure_env,
     stat_X11_display, get_xpra_sessions,
     )
-from xpra.scripts.config import InitException, FALSE_OPTIONS, parse_bool
+from xpra.scripts.config import InitException, InitInfo, InitExit, FALSE_OPTIONS, parse_bool
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
-from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK
+from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK, EXIT_FAILURE
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
@@ -1017,6 +1017,15 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             app = make_desktop_server()
         app.init_virtual_devices(devices)
 
+    def server_not_started(msg="server not started"):
+        progress(100, msg)
+        if upgrading or upgrading_desktop:
+            #something abnormal occurred,
+            #don't kill the vfb on exit:
+            from xpra.server import EXITING_CODE
+            app._upgrading = EXITING_CODE
+        app.cleanup()
+
     try:
         app.exec_cwd = opts.chdir or cwd
         app.display_name = display_name
@@ -1037,22 +1046,25 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         app.server_init()
         app.setup()
         app.init_when_ready(_when_ready)
+    except InitInfo as e:
+        log.info("%s", e)
+        server_not_started(str(e))
+        return EXIT_OK
+    except InitExit as e:
+        log.info("%s", e)
+        server_not_started(str(e))
+        return e.status
     except InitException as e:
         log.error("xpra server initialization error:")
         log.error(" %s", e)
-        app.cleanup()
-        return 1
+        server_not_started(str(e))
+        return EXIT_FAILURE
     except Exception as e:
         log.error("Error: cannot start the %s server", app.session_type, exc_info=True)
         log.error(str(e))
         log.info("")
-        if upgrading or upgrading_desktop:
-            #something abnormal occurred,
-            #don't kill the vfb on exit:
-            from xpra.server import EXITING_CODE
-            app._upgrading = EXITING_CODE
-        app.cleanup()
-        return 1
+        server_not_started(str(e))
+        return EXIT_FAILURE
 
     try:
         progress(100, "running")
