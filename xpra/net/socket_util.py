@@ -281,7 +281,7 @@ def guess_packet_type(data):
             if not (rencode and yaml) and not compressors>1:
                 #if compression is enabled, the compression level must be set:
                 if not compressors or compression_level>0:
-                    pass #return "xpra"
+                    return "xpra"
     if data[:4]==b"SSH-":
         return "ssh"
     if data[0]==0x16:
