@@ -1019,7 +1019,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     def server_not_started(msg="server not started"):
         progress(100, msg)
-        if upgrading or upgrading_desktop:
+        #check the initial 'mode' value instead of "upgrading" or "upgrading_desktop"
+        #as we may have switched to "starting=True"
+        #if the existing server has exited as we requested)
+        if mode.find("upgrade")>=0 or use_display:
             #something abnormal occurred,
             #don't kill the vfb on exit:
             from xpra.server import EXITING_CODE
