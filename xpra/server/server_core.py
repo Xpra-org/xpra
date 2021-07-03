@@ -275,9 +275,6 @@ class ServerCore:
     def validate(self):
         return True
 
-    def server_ready(self):
-        return True
-
     def server_init(self):
         if self.mdns:
             add_work_item(self.mdns_publish)

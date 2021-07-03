@@ -1043,8 +1043,6 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
             app.save_pid()
         app.original_desktop_display = desktop_display
         del opts
-        if not app.server_ready():
-            return 1
         progress(80, "finalizing")
         app.server_init()
         app.setup()
