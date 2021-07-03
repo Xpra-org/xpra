@@ -1239,15 +1239,17 @@ def socket_connect(dtype, host, port):
             }.get(family, ""), (host, port), e)) from None
     retry = 0
     start = monotonic_time()
+    log = Logger("network")
+    log("socket_connect%s addrinfo=%s", (dtype, host, port), addrinfo)
+    errs = []
+    from xpra.net.bytestreams import SOCKET_TIMEOUT  #pylint: disable=import-outside-toplevel
     while True:
         #try each one:
         for addr in addrinfo:
             sockaddr = addr[-1]
             family = addr[0]
             sock = socket.socket(family, socktype)
-            from xpra.net.bytestreams import SOCKET_TIMEOUT
             sock.settimeout(SOCKET_TIMEOUT)
-            log = Logger("network")
             try:
                 log("socket.connect(%s)", sockaddr)
                 sock.connect(sockaddr)
@@ -1255,6 +1257,8 @@ def socket_connect(dtype, host, port):
                 return sock
             except Exception as e:
                 log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
+                if str(e) not in errs:
+                    errs.append(str(e))
             noerr(sock.close)
         if monotonic_time()-start>=CONNECT_TIMEOUT:
             break
@@ -1262,7 +1266,10 @@ def socket_connect(dtype, host, port):
             werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, CONNECT_TIMEOUT))
         retry += 1
         time.sleep(1)
-    raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s:%s" % (host, port))
+    errinfo = ""
+    if errs:
+        errinfo = " : %s" % csv(errs)
+    raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s:%s%s" % (host, port, errinfo))
 
 
 def get_host_target_string(display_desc, port_key="port", prefix=""):
