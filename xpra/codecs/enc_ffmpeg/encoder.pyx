@@ -9,6 +9,7 @@ import os
 import time
 import errno
 import weakref
+import platform
 from xpra.log import Logger
 log = Logger("encoder", "ffmpeg")
 
@@ -820,7 +821,7 @@ def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
 
 
-VAAPI = envbool("XPRA_VAAPI", LINUX and (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR)>=(4, 4))
+VAAPI = envbool("XPRA_VAAPI", LINUX and (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR)>=(4, 4) and platform.release()>="5.")
 
 CODECS = ()
 
