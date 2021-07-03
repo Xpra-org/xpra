@@ -270,13 +270,20 @@ def guess_packet_type(data):
             lz4 = bool(protocol_flags & LZ4_FLAG)
             lzo = bool(protocol_flags & LZO_FLAG)
             brotli = bool(protocol_flags & BROTLI_FLAG)
-            #rencode and yaml are mutually exclusive,
-            #so are the compressors
-            compressors = sum((lz4, lzo, brotli))
-            if not (rencode and yaml) and not compressors>1:
-                #if compression is enabled, the compression level must be set:
-                if not compressors or compression_level>0:
-                    return "xpra"
+            def is_xpra():
+                compressors = sum((lz4, lzo, brotli))
+                #only one compressor can be enabled:
+                if compressors>1:
+                    return False
+                if compressors==1 and compression_level<=0:
+                    #if compression is enabled, the compression level must be set:
+                    return False
+                if rencode and yaml:
+                    #rencode and yaml are mutually exclusive:
+                    return False
+                return True
+            if is_xpra():
+                return "xpra"
     if data[:4]==b"SSH-":
         return "ssh"
     if data[0]==0x16:
