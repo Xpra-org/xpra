@@ -200,7 +200,7 @@ def configure_logging(options, mode):
         )
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
-        "start", "start-desktop", "upgrade", "upgrade-desktop",
+        "start", "start-desktop", "upgrade", "upgrade-desktop", "recover",
         "attach", "listen", "shadow", "proxy",
         "_sound_record", "_sound_play",
         "stop", "print", "showconfig",
