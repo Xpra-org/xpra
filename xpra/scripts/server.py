@@ -491,6 +491,8 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
 
     if upgrading or upgrading_desktop:
         assert display_name, "no display found to upgrade"
+        if POSIX and not OSX and saved_env.get("DISPLAY", "")==display_name:
+            warn("Warning: upgrading from an environment connected to the same display")
         #try to stop the existing server if it exists:
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         sessions = get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN, DotXpra.DEAD), matching_display=display_name, query=True)
