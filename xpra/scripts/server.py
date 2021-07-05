@@ -435,7 +435,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
     elif opts.start_child:
         warn("Warning: the 'start-child' option is used,")
         warn(" but 'exit-with-children' is not enabled,")
-        warn(" use 'start' instead")
+        warn(" you should just use 'start' instead")
 
     if not (shadowing or starting_desktop or upgrading_desktop):
         opts.rfb_upgrade = 0
