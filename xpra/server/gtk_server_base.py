@@ -281,8 +281,16 @@ class GTKServerBase(ServerBase):
         from PIL import Image
         if os.path.isabs(icon_string):
             if os.path.exists(icon_string) and os.path.isfile(icon_string):
-                img = Image.open(icon_string)
-                w, h = img.size
+                #should we be using pillow.decoder.open_only here? meh
+                try:
+                    img = Image.open(icon_string)
+                except Exception as e:
+                    log("%s(%s)", Image.open, icon_string)
+                    log.warn("Warning: unable to load notification icon file")
+                    log.warn(" '%s'", icon_string)
+                    log.warn(" %s", e)
+                else:
+                    w, h = img.size
         else:
             #try to find it in the theme:
             theme = Gtk.IconTheme.get_default()
