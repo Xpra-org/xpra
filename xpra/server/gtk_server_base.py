@@ -281,7 +281,7 @@ class GTKServerBase(ServerBase):
         if not icon_string:
             return ()
         img = None
-        from PIL import Image
+        from PIL import Image  #pylint: disable=import-outside-toplevel
         if os.path.isabs(icon_string):
             if os.path.exists(icon_string) and os.path.isfile(icon_string):
                 #should we be using pillow.decoder.open_only here? meh
@@ -294,7 +294,11 @@ class GTKServerBase(ServerBase):
                     log.warn(" %s", e)
                 else:
                     w, h = img.size
-        else:
+            if not img:
+                #we failed to load it using the absolute path,
+                #so try to locate this icon without the path or extension:
+                icon_string = os.path.splitext(os.path.basename(icon_string))[0]
+        if not img:
             #try to find it in the theme:
             theme = Gtk.IconTheme.get_default()
             if theme:
