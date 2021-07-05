@@ -108,8 +108,18 @@ class NotificationForwarder(StubServerMixin):
 
 
     def notify_callback(self, dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout):
+        assert self.notifications_forwarder and self.notifications
+        #make sure that we run in the main thread:
+        self.idle_add(self.do_notify_callback, dbus_id, nid,
+                      app_name, replaces_nid, app_icon,
+                      summary, body,
+                      actions, hints, expire_timeout)
+
+    def do_notify_callback(self, dbus_id, nid,
+                           app_name, replaces_nid, app_icon,
+                           summary, body,
+                           actions, hints, expire_timeout):
         try:
-            assert self.notifications_forwarder and self.notifications
             icon = self.get_notification_icon(str(app_icon))
             if os.path.isabs(str(app_icon)):
                 app_icon = ""

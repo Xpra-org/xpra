@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -17,7 +17,7 @@ gi.require_version('Pango', '1.0')
 from gi.repository import GLib, Gdk, Gtk
 
 from xpra.util import flatten_dict, envbool
-from xpra.os_util import monotonic_time
+from xpra.os_util import monotonic_time, load_binary_file
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
@@ -275,17 +275,26 @@ class GTKServerBase(ServerBase):
 
 
     def get_notification_icon(self, icon_string):
+        #this method *must* be called from the UI thread
+        #since we may end up calling svg_to_png which uses Cairo
+        #
         #the string may be:
         # * a path which we will load using pillow
-        # * a name we lookup in the current them
+        # * a name we lookup in the current theme
         if not icon_string:
             return ()
+        MAX_SIZE = 256
         img = None
         from PIL import Image  #pylint: disable=import-outside-toplevel
         if os.path.isabs(icon_string):
             if os.path.exists(icon_string) and os.path.isfile(icon_string):
-                #should we be using pillow.decoder.open_only here? meh
                 try:
+                    if icon_string.endswith(".svg"):
+                        from xpra.codecs.icon_util import svg_to_png  #pylint: disable=import-outside-toplevel
+                        svg_data = load_binary_file(icon_string)
+                        png_data = svg_to_png(icon_string, svg_data, MAX_SIZE, MAX_SIZE)
+                        return "png", MAX_SIZE, MAX_SIZE, png_data
+                    #should we be using pillow.decoder.open_only here? meh
                     img = Image.open(icon_string)
                 except Exception as e:
                     log("%s(%s)", Image.open, icon_string)
@@ -316,9 +325,9 @@ class GTKServerBase(ServerBase):
                         mode = "RGBA"
                     img = Image.frombytes(mode, (w, h), data, "raw", mode, rowstride)
         if img:
-            if w>256 or h>256:
-                img = img.resize((256, 256), Image.ANTIALIAS)
-                w = h = 256
+            if w>MAX_SIZE or h>MAX_SIZE:
+                img = img.resize((MAX_SIZE, MAX_SIZE), Image.ANTIALIAS)
+                w = h = MAX_SIZE
             from io import BytesIO
             buf = BytesIO()
             img.save(buf, "PNG")
