@@ -336,8 +336,14 @@ class ServerBaseControlCommands(StubServerMixin):
         for ss in sources:
             #ie: ServerSource.file_transfer (found in FileTransferAttributes)
             if not getattr(ss, source_flag_name, False):
-                log.warn("Warning: cannot %s '%s'", command_type, filename)
-                log.warn(" client %s does not support this feature", ss)
+                #skip the warning if the client is not interactive
+                #(for now just check for 'top' client):
+                if ss.client_type=="top":
+                    l = log
+                else:
+                    l = log.warn
+                l("Warning: cannot %s '%s' to %s client", command_type, filename, ss.client_type)
+                l(" client %s does not support this feature", ss.uuid)
             elif file_size>ss.file_size_limit:
                 log.warn("Warning: cannot %s '%s'", command_type, filename)
                 log.warn(" client %s file size limit is %sB (file is %sB)",
