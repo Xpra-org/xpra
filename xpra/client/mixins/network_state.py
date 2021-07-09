@@ -131,19 +131,19 @@ class NetworkState(StubClientMixin):
         log("get_caps() found socket_speed=%s", socket_speed)
         if socket_speed:
             connection_data["speed"] = socket_speed
-        adapter_type = device_value("adapter-type")
-        log("get_caps() found adapter-type=%s", adapter_type)
-        if adapter_type:
-            connection_data["adapter-type"] = adapter_type
+        default_adapter_type = device_value("adapter-type")
+        log("get_caps() found default adapter-type=%s", default_adapter_type)
         device_name = device_value("name")
         log("get_caps() found device name=%s", device_name)
         jitter = device_value("jitter", int, -1)
         if jitter<0:
-            at = adapter_type.lower()
+            at = default_adapter_type.lower()
             if device_name.startswith("wlan") or device_name.startswith("wlp") or device_name.find("wifi")>=0:
                 jitter = WIRELESS_JITTER
+                default_adapter_type = "wireless"
             elif device_name=="lo":
                 jitter = LOCAL_JITTER
+                default_adapter_type = "loopback"
             elif any(at.find(x)>=0 for x in ("ether", "local", "fiber", "1394", "infiniband")):
                 jitter = LOCAL_JITTER
             elif at.find("wan")>=0:
@@ -152,6 +152,9 @@ class NetworkState(StubClientMixin):
                 jitter = WIRELESS_JITTER
         if jitter>=0:
             connection_data["jitter"] = jitter
+        adapter_type = device_value("adapter-type", str, default_adapter_type)
+        if adapter_type:
+            connection_data["adapter-type"] = adapter_type
         log("get_caps() connection-data=%s", connection_data)
         caps["connection-data"] = connection_data
         bandwidth_limit = self.bandwidth_limit
