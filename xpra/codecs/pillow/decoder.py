@@ -10,7 +10,7 @@ import PIL                      #@UnresolvedImport
 from PIL import Image           #@UnresolvedImport
 
 from xpra.util import csv
-from xpra.os_util import hexstr
+from xpra.os_util import hexstr, strtobytes
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
@@ -31,9 +31,7 @@ def is_jpeg(data):
     #will have this type of header
     return data[:3]==JPEG_HEADER
 def is_svg(data):
-    if data[:5]!="<?xml" and data[:4]!="<svg":
-        return False
-    return True
+    return strtobytes(data[:5])==b"<?xml" or strtobytes(data[:4])==b"<svg"
 XPM_HEADER = b"/* XPM */"
 def is_xpm(data):
     return data[:9]==XPM_HEADER
