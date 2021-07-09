@@ -27,6 +27,10 @@ LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 
+LOCAL_JITTER = envint("XPRA_LOCAL_JITTER", 0)
+WAN_JITTER = envint("XPRA_WAN_JITTER", 20)
+WIRELESS_JITTER = envint("XPRA_WIRELESS_JITTER", 1000)
+
 
 class NetworkState(StubClientMixin):
     """
@@ -131,15 +135,21 @@ class NetworkState(StubClientMixin):
         log("get_caps() found adapter-type=%s", adapter_type)
         if adapter_type:
             connection_data["adapter-type"] = adapter_type
+        device_name = device_value("name")
+        log("get_caps() found device name=%s", device_name)
         jitter = device_value("jitter", int, -1)
         if jitter<0:
             at = adapter_type.lower()
-            if any(at.find(x)>=0 for x in ("ether", "local", "fiber", "1394", "infiniband")):
-                jitter = 0
+            if device_name.startswith("wlan") or device_name.startswith("wlp") or device_name.find("wifi")>=0:
+                jitter = WIRELESS_JITTER
+            elif device_name=="lo":
+                jitter = LOCAL_JITTER
+            elif any(at.find(x)>=0 for x in ("ether", "local", "fiber", "1394", "infiniband")):
+                jitter = LOCAL_JITTER
             elif at.find("wan")>=0:
-                jitter = 20
-            elif at.find("wireless")>=0 or at.find("wifi")>=0 or at.find("80211")>=0:
-                jitter = 1000
+                jitter = WAN_JITTER
+            elif at.find("wireless")>=0 or at.find("wlan")>=0 or at.find("wifi")>=0 or at.find("80211")>=0:
+                jitter = WIRELESS_JITTER
         if jitter>=0:
             connection_data["jitter"] = jitter
         log("get_caps() connection-data=%s", connection_data)
