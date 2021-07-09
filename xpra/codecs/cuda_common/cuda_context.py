@@ -408,7 +408,7 @@ def load_device(device_id):
     try:
         context = device.make_context(flags=flags)
     except Exception as e:
-        log("%s.make_context(%s)", flags, exc_info=True)
+        log("%s.make_context(%s)", device, flags, exc_info=True)
         log.error("Error: cannot create CUDA context for device %s", device_id)
         log.error(" %s", e)
         return None
