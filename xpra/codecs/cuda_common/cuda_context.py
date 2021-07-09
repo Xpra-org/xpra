@@ -191,7 +191,7 @@ def init_all_devices():
     if disabled_gpus is True or enabled_gpus==[]:
         log("all devices are disabled!")
         return DEVICES
-    log("init_all_devices() enabled: %s, disabled: %s", csv(enabled_gpus), csv(disabled_gpus))
+    log("init_all_devices() enabled: %s, disabled: %s", csv(enabled_gpus), csv(disabled_gpus) or "none")
     if not driver_init():
         return DEVICES
     ngpus = driver.Device.count()
@@ -301,7 +301,7 @@ def select_device(preferred_device_id=-1, min_compute=0):
     log("select_device(%s, %s)", preferred_device_id, min_compute)
     for device_id in (preferred_device_id, get_pref("device-id")):
         if device_id is not None and device_id>=0:
-            dct = load_device(device_id)
+            dct = make_device_context(device_id)
             if dct:
                 device, context, tpct = dct
                 context.pop()
@@ -363,7 +363,7 @@ def select_best_free_memory(min_compute=0):
         log("will test %s device%s from %s list: %s", len(device_list), engs(device_list), list_name, device_list)
         for device_id in device_list:
             context = None
-            dct = load_device(device_id)
+            dct = make_device_context(device_id)
             if not dct:
                 continue
             try:
@@ -396,19 +396,25 @@ def select_best_free_memory(min_compute=0):
 def load_device(device_id):
     log("load_device(%i)", device_id)
     try:
-        device = driver.Device(device_id)
+        return driver.Device(device_id)
     except Exception as e:
         log("load_device(%s)", device_id, exc_info=True)
         log.error("Error: allocating CUDA device %s", device_id)
         log.error(" %s", e)
+    return None
+
+def make_device_context(device_id):
+    log("make_device_context(%i)", device_id)
+    device = load_device(device_id)
+    if not device:
         return None
-    log("select_device: testing device %s: %s", device_id, device_info(device))
+    log("make_device_context(%i) device_info=%s", device_id, device_info(device))
     cf = driver.ctx_flags
     flags = cf.SCHED_YIELD | cf.MAP_HOST
     try:
         context = device.make_context(flags=flags)
     except Exception as e:
-        log("%s.make_context(%s)", flags, exc_info=True)
+        log("%s.make_context(%s)", device, flags, exc_info=True)
         log.error("Error: cannot create CUDA context for device %s", device_id)
         log.error(" %s", e)
         return None
@@ -448,20 +454,35 @@ class cuda_device_context:
             self.context.pop()
             log("cuda context allocation took %ims", 1000*(end-start))
         self.context.push()
+        return self.context
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         c = self.context
         if c:
             c.pop()
         self.lock.release()
+        #except driver.LogicError as e:
+        #log.warn("Warning: PyCUDA %s", e)
+        #self.clean()
+        #self.init_cuda()
+
 
     def __repr__(self):
         return "cuda_device_context(%i - %s)" % (self.device_id, self.lock._is_owned())
 
     def get_info(self):
-        return {
+        info = {
             "id" : self.device_id,
+            "device" : {
+                "name"         : self.device.name(),
+                "pci_bus_id"   : self.device.pci_bus_id(),
+                "memory"       : int(self.device.total_memory()//1024//1024),
+                },
             }
+        if self.context:
+            info["api_version"] = self.context.get_api_version()
+        return info
+
 
     def __del__(self):
         self.free()
@@ -544,7 +565,7 @@ CUDA_ERRORS_INFO = {
 
 #cache kernel fatbin files:
 KERNELS = {}
-def get_CUDA_function(device_id, function_name):
+def get_CUDA_function(function_name):
     """
         Returns the compiled kernel for the given device
         and kernel key.
@@ -554,7 +575,7 @@ def get_CUDA_function(device_id, function_name):
     if data is None:
         from xpra.platform.paths import get_resources_dir
         cubin_file = os.path.join(get_resources_dir(), "cuda", "%s.fatbin" % function_name)
-        log("get_CUDA_function(%s, %s) cubin file=%s", device_id, function_name, cubin_file)
+        log("get_CUDA_function(%s) cubin file=%s", function_name, cubin_file)
         data = load_binary_file(cubin_file)
         if not data:
             log.error("Error: failed to load CUDA bin file '%s'", cubin_file)
@@ -570,7 +591,7 @@ def get_CUDA_function(device_id, function_name):
         log.error("Error: failed to load module from buffer for '%s'", function_name)
         log.error(" %s", e)
         return None
-    log("get_CUDA_function(%s, %s) module=%s", device_id, function_name, mod)
+    log("get_CUDA_function(%s) module=%s", function_name, mod)
     try:
         fn = function_name
         CUDA_function = mod.get_function(fn)

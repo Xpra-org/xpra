@@ -12,9 +12,6 @@ from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from pycuda import driver
 
 from xpra.os_util import bytestostr
-from xpra.codecs.cuda_common.cuda_context import (
-    select_device,
-    )
 
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
@@ -309,6 +306,7 @@ cdef nvjpegChromaSubsampling_t get_subsampling(int quality):
 
 
 def encode(image, int quality=50, speed=50):
+    from xpra.codecs.cuda_common.cuda_context import select_device
     cdef double start = monotonic_time()
     cuda_device_id, cuda_device = select_device()
     if cuda_device_id<0 or not cuda_device:

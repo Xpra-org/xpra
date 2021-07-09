@@ -215,10 +215,10 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
             e = encoder_module.Encoder()
             try:
                 options = typedict({"b-frames" : True})
-                e.init_context(W, H, cs_in, [cs_out], encoding, 0, 100, (1, 1), options)
+                e.init_context(None, W, H, cs_in, [cs_out], encoding, 0, 100, (1, 1), options)
                 for i in range(2):
                     image = make_test_image(cs_in, W, H)
-                    v = e.compress_image(image)
+                    v = e.compress_image(None, image)
                     if v is None:
                         raise Exception("%s compression failed" % encoding)
                     data, meta = v
@@ -243,7 +243,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                         wrong_format = wrong_formats[0]
                         try:
                             image = make_test_image(wrong_format, W, H)
-                            out = e.compress_image(image, options=options)
+                            out = e.compress_image(None, image, options=options)
                         except Exception:
                             out = None
                         assert out is None, "encoder %s should have failed using %s encoding with %s instead of %s / %s" % (encoder_module.get_type(), encoding, wrong_format, cs_in, cs_out)
@@ -252,7 +252,7 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
                             continue
                         try:
                             image = make_test_image(cs_in, w, h)
-                            out = e.compress_image(image, options=options)
+                            out = e.compress_image(None, image, options=options)
                         except Exception:
                             out = None
                         assert out is None, "encoder %s, info=%s should have failed using %s encoding with invalid size %ix%i vs %ix%i" % (encoder_module.get_type(), e.get_info(), encoding, w, h, W, H)

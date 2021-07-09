@@ -367,8 +367,8 @@ cdef class Encoder:
     cdef object __weakref__
 
 #init_context(w, h, src_format, encoding, quality, speed, scaling, options)
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
-        log("vpx init_context%s", (width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
+    def init_context(self, device_context, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
+        log("vpx init_context%s", (device_context, width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         assert encoding in CODECS, "invalid encoding: %s" % encoding
         assert scaling==(1,1), "vpx does not handle scaling"
         assert encoding in get_encodings()
@@ -586,7 +586,7 @@ cdef class Encoder:
             f.close()
 
 
-    def compress_image(self, image, quality=-1, speed=-1, options=None):
+    def compress_image(self, device_context, image, quality=-1, speed=-1, options=None):
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         assert self.context!=NULL

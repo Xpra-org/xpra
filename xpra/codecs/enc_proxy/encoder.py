@@ -37,7 +37,7 @@ class Encoder:
         the raw pixels and the metadata that goes with it.
     """
 
-    def init_context(self, width, height, src_format, dst_formats, encoding, quality, speed, scaling, _options):
+    def init_context(self, device_context, width, height, src_format, dst_formats, encoding, quality, speed, scaling, _options):
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -120,7 +120,7 @@ class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image, quality=-1, speed=-1, options=None):
+    def compress_image(self, device_context, image, quality=-1, speed=-1, options=None):
         log("compress_image(%s, %s)", image, options)
         #pass the pixels as they are
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()

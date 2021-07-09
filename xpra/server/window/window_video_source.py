@@ -1768,7 +1768,8 @@ class WindowVideoSource(WindowSource):
         ve = encoder_spec.make_instance()
         options = typedict(self.encoding_options)
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
-        ve.init_context(enc_width, enc_height, enc_in_format,
+        ve.init_context(self.cuda_device_context,
+                        enc_width, enc_height, enc_in_format,
                         dst_formats, encoder_spec.encoding,
                         quality, speed, encoder_scaling, options)
         #record new actual limits:
@@ -2245,7 +2246,7 @@ class WindowVideoSource(WindowSource):
         speed = max(0, min(100, self._current_speed))
         options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
         try:
-            ret = ve.compress_image(csc_image, quality, speed, options)
+            ret = ve.compress_image(self.cuda_device_context, csc_image, quality, speed, options)
         except Exception as e:
             videolog("%s.compress_image%s", ve, (csc_image, quality, speed, options), exc_info=True)
             if self.is_cancelled():

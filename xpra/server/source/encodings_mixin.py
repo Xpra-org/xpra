@@ -359,18 +359,24 @@ class EncodingsMixin(StubSourceMixin):
         self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
 
         #are we going to need a cuda context?
+        if getattr(self, "mmap_enabled", False):
+            #not with mmap!
+            return
         common_encodings = tuple(x for x in self.encodings if x in self.server_encodings)
         from xpra.codecs.loader import has_codec
-        if "jpeg" in common_encodings and has_codec("enc_nvjpeg"):
+        if (has_codec("nvenc") and "h264" in self.core_encodings or "h265" in self.core_encodings) \
+        or ("jpeg" in common_encodings and has_codec("enc_nvjpeg")):
+            cudalog = Logger("cuda")
             try:
                 from xpra.codecs.cuda_common.cuda_context import get_device_context
                 self.cuda_device_context = get_device_context(self.encoding_options)
-                log("cuda_device_context=%s", self.cuda_device_context)
+                cudalog("cuda_device_context=%s", self.cuda_device_context)
             except Exception as e:
-                log("failed to get a cuda device contenxt using encoding options %s",
+                cudalog("failed to get a cuda device context using encoding options %s",
                     self.encoding_options, exc_info=True)
-                log.error("Error: failed to allocate a CUDA context")
-                log.error(" NVJPEG will not be available")
+                cudalog.error("Error: failed to allocate a CUDA context:")
+                cudalog.error(" %s", e)
+                cudalog.error(" NVJPEG and NVENC will not be available")
 
     def print_encoding_info(self):
         log("print_encoding_info() core-encodings=%s, server-core-encodings=%s",

@@ -507,7 +507,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):
+    def init_context(self, device_context, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
@@ -820,7 +820,7 @@ cdef class Encoder:
         return strtobytes(profile)
 
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
         cdef x264_picture_t pic_in
         cdef int i
 

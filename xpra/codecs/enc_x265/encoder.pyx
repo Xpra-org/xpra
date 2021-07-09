@@ -334,7 +334,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
+    def init_context(self, device_context, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
         global COLORSPACES
         assert src_format in COLORSPACES, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES)
         assert encoding=="h265", "invalid encoding: %s" % encoding
@@ -491,7 +491,7 @@ cdef class Encoder:
         return self.src_format
 
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
         cdef x265_nal *nal
         cdef uint32_t nnal = 0
         cdef unsigned int i

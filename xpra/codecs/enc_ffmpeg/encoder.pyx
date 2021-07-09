@@ -1161,7 +1161,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
+    def init_context(self, device_context, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
         global CODECS, generation
         assert encoding in CODECS
         self.vaapi = encoding in VAAPI_CODECS and src_format=="NV12"
@@ -1587,7 +1587,7 @@ cdef class Encoder:
         for k,v in self.get_info().items():
             log.error("  %s = %s", k, v)
 
-    def compress_image(self, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
         cdef int ret, i
         cdef AVFrame *frame = NULL
         cdef AVFrame *hw_frame = NULL
