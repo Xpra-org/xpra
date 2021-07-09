@@ -140,10 +140,10 @@ class NetworkState(StubClientMixin):
             at = default_adapter_type.lower()
             if device_name.startswith("wlan") or device_name.startswith("wlp") or device_name.find("wifi")>=0:
                 jitter = WIRELESS_JITTER
-                default_adapter_type = "wireless"
+                device_info["adapter-type"] = "wireless"
             elif device_name=="lo":
                 jitter = LOCAL_JITTER
-                default_adapter_type = "loopback"
+                device_info["adapter-type"] = "loopback"
             elif any(at.find(x)>=0 for x in ("ether", "local", "fiber", "1394", "infiniband")):
                 jitter = LOCAL_JITTER
             elif at.find("wan")>=0:
