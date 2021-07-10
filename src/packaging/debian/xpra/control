@@ -209,7 +209,7 @@ Recommends: python-dbus
         ,python-cups
 #for ssh transport:
         ,python-paramiko
-        ,python-dns
+        ,python-dnspython
 #the start-session GUI:
         ,python-xdg
 #hope that this will allow our status icon to be shown:
@@ -276,7 +276,7 @@ Recommends: python3-dbus
         ,python3-cups
 #for ssh transport:
         ,python3-paramiko
-        ,python3-dns
+        ,python3-dnspython
 #the start-session GUI:
         ,python3-xdg
 #hope that this will allow our status icon to be shown:
