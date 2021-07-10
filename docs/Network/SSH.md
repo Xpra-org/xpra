@@ -61,3 +61,11 @@ The `--exit-ssh` switch controls whether the SSH transport is killed when the cl
 
 This backend is built into the client connection code and provides better diagnostics (using the `--debug=ssh` switch), and it provides a GUI for confirming host keys, entering key passphrases or passwords.\
 The downside is that since it does not use OpenSSH at all, it does not have the same flexibility, it may require re-confirmation of known hosts and it may not support all the configuration options normally used with OpenSSH.
+
+### passwords
+
+You can specify the password to use on the command line URI:
+```
+xpra attach ssh://USERNAME:PASSWORD@HOSTNAME/
+```
+But this exposes the password in the process list: [obfuscate passwords](https://github.com/Xpra-org/xpra/issues/3196)
