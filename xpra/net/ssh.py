@@ -478,8 +478,8 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
                     dnscheck = check_host_key(host, host_key)
                 except ImportError as e:
                     log("verifyhostkeydns failed", exc_info=True)
-                    log.warn("Warning: cannot check SSHFP DNS records")
-                    log.warn(" %s", e)
+                    log.info("cannot check SSHFP DNS records")
+                    log.info(" %s", e)
             log("dnscheck=%s", dnscheck)
             def adddnscheckinfo(q):
                 if dnscheck is not True:
