@@ -98,3 +98,6 @@ These are harmless and unavoidable, see [Bug 1615700 - warning shows up after ru
 ```
 sudo xattr -rd com.apple.quarantine /Applications/Xpra.app
 ```
+### `gi/overrides/Gtk.py:1632: Warning: g_object_ref: assertion 'G_IS_OBJECT (object)' failed`
+This is a mostly harmless warning coming from the GTK library.
+It is completely pointless as it doesn't specify what object is triggering the problem or from where. But unfortunately, we can't silence it either.
