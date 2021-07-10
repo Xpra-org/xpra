@@ -607,36 +607,53 @@ fi
 
 
 %changelog
-* Tue Jun 22 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
+* Sat Jul 10 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
 - build and packaging fixes:
    missing dependencies
    nvjpeg DEB packaging
    OpenBSD build fix
    compilation errors on Ubuntu Bionic
    DEB packages were missing some files (fixes audio silence detection)
+   correct DEB dependency on 'dns' module for SSHFP support
    remove unused outdated code
+   remove runtime dependency on distutils for 'which'
+   cryptic error when a pkg_config file is missing
+   updated MS Windows GStreamer module list
+   MacOS GStreamer packaging of dylib modules, man page
 - proxy server:
    deadlocks when queues fill up too quickly
    honour mode and display
    disconnections under heavy load
-* MS Windows:
+- MS Windows:
    spurious OpenGL warnings during sanity checks
    printer enumeration crash and stalls
    small cursors showing random pixel values
+- disable vaapi in ffmpeg codec by default (crashy / buggy)
+- notification forwarding errors with SVG icons
 - fix RFB server protocol, sockets not timing out with VNC clients
 - scroll detection bugs
 - NVENC errors when retrying after a transient failure
 - MacOS Big Sur error with 'Xpra_Browser' subcommand
 - invalid error when bind option points to a directory
+- fix 'xpra' packet type auto detection
 - default to ssl-mode if the 'wss' socket option is not specified
+- 'keydata' connection attribute should override other options
+- correct exit code for encryption errors
+- missing log prefix for 'xpra recover' subcommand
+- faster server startup failures: don't wait for things that were not started (ie: audio)
+- fix commands started twice when upgrading (ie: ibus-daemon)
 - local start with explicit attach was broken on Posix
 - 'attach' option should not be forwarded to the server (which then fails)
 - webp encoder invalid memory access (corruption)
 - invalid window resize counter (used for resize loop prevention)
 - disable SVG icon resizing (potential crashes on some platforms)
 - missing icon errors when html5 client disconnects from system-wide proxy server
+- file transfer errors when a 'top' client is connected
+- don't claim that non-interactive clients use the screen
+- retry once after X11 query tree errors during startup
 - provide XDG_RUNTIME_DIR if it is not defined
-- minor cosmetic fixes
+- add new 3x4K Xdummy modeline
+- minor cosmetic and debug logging fixes
 
 * Tue May 18 2021 Antoine Martin <antoine@xpra.org> 4.2-1
 - use pinentry for password prompts and ssh prompts
