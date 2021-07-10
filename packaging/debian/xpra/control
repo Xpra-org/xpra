@@ -83,7 +83,7 @@ Recommends: python3-dbus
         ,python3-cups
 #for ssh transport:
         ,python3-paramiko
-        ,python3-dns
+        ,python3-dnspython
 #the start-session GUI:
         ,python3-xdg
         ,python3-pyinotify
