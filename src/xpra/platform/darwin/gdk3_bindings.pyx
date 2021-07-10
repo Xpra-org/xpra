@@ -37,7 +37,7 @@ cdef extern from "transparency_glue.h":
     void setHasShadow(NSWindow *window, BOOL hasShadow)
 
 
-cdef extern from "gtk-3.0/gdk/gdkquartz.h":
+cdef extern from "gtk-3.0/gdk/quartz/gdkquartz-cocoa-access.h":
     NSView *gdk_quartz_window_get_nsview(GdkWindow *window)
     NSWindow *gdk_quartz_window_get_nswindow(GdkWindow *window)
 
