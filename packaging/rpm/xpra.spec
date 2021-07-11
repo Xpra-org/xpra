@@ -35,12 +35,10 @@ echo CentOS 7.x is no longer supported
 exit 1
 %endif
 
-%if ! 0%{?revision_no}
-%if 0%(echo $XPRA_REVISION)
-%define revision_no 10.r%(echo $XPRA_REVISION)
+%if 0%{?xpra_revision_no}
+%define revision_no 10.r%{xpra_revision_no}
 %else
 %define revision_no 10
-%endif
 %endif
 
 Name:				xpra
