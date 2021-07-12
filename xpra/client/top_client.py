@@ -19,7 +19,7 @@ from xpra.os_util import (
     )
 from xpra.exit_codes import EXIT_STR
 from xpra.make_thread import start_thread
-from xpra.client.gobject_client_base import MonitorXpraClient
+from xpra.client.gobject_client_base import InfoTimerClient
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_nodock_command
@@ -349,17 +349,13 @@ class TopClient:
         box(self.stdscr, x, y, w, h, ul, ur, ll, lr)
 
 
-class TopSessionClient(MonitorXpraClient):
+class TopSessionClient(InfoTimerClient):
 
     def __init__(self, *args):
         super().__init__(*args)
         self.log_file = None
         if CURSES_LOG:
             self.log_file = open(CURSES_LOG, "ab")
-        self.info_request_pending = False
-        self.server_last_info = typedict()
-        self.server_last_info_time = 0
-        self.info_timer = 0
         self.paused = False
         self.stdscr = None
         self.psprocess = {}
@@ -386,24 +382,10 @@ class TopSessionClient(MonitorXpraClient):
         except Exception as e:
             self.log("failed to configure curses: %s" % e)
 
-    def run(self):
-        register_os_signals(self.signal_handler, None)
-        v = super().run()
-        self.log("run()=%s" % v)
-        self.cleanup()
-        self.close_log()
-        return v
-
-    def signal_handler(self, signum, *args):
-        self.log("exit_code=%s" % self.exit_code)
-        self.log("signal_handler(%s, %s)" % (signum, args,))
-        self.quit(128+signum)
-        self.log("exit_code=%s" % self.exit_code)
-
     def cleanup(self):
-        self.cancel_info_timer()
-        MonitorXpraClient.cleanup(self)
+        InfoTimerClient.cleanup(self)
         curses_clean(self.stdscr)
+        self.close_log()
 
     def close_log(self):
         log_file = self.log_file
@@ -808,48 +790,3 @@ class TopSessionClient(MonitorXpraClient):
         box(self.stdscr, x, y, w, h,
             ul=curses.ACS_ULCORNER, ur=curses.ACS_URCORNER,     #@UndefinedVariable
             ll=curses.ACS_LLCORNER, lr=curses.ACS_LRCORNER)     #@UndefinedVariable
-
-
-    def do_command(self, caps : typedict):
-        self.send_info_request()
-        self.timeout_add(REFRESH_RATE*1000, self.send_info_request)
-
-    def send_info_request(self):
-        self.log("send_info_request()")
-        categories = ()
-        if not self.info_request_pending:
-            self.info_request_pending = True
-            window_ids = ()    #no longer used or supported by servers
-            self.send("info-request", [self.uuid], window_ids, categories)
-        if not self.info_timer:
-            self.info_timer = self.timeout_add((REFRESH_RATE+2)*1000, self.info_timeout)
-        return True
-
-    def init_packet_handlers(self):
-        MonitorXpraClient.init_packet_handlers(self)
-        self.add_packet_handler("info-response", self._process_info_response, False)
-
-    def _process_server_event(self, packet):
-        self.log("server event: %s" % (packet,))
-        self.last_server_event = packet[1:]
-        self.update_screen()
-
-    def _process_info_response(self, packet):
-        self.log("info response: %s" % repr_ellipsized(packet))
-        self.cancel_info_timer()
-        self.info_request_pending = False
-        self.server_last_info = typedict(packet[1])
-        self.server_last_info_time = monotonic_time()
-        #log.info("server_last_info=%s", self.server_last_info)
-        self.update_screen()
-
-    def cancel_info_timer(self):
-        it = self.info_timer
-        if it:
-            self.info_timer = None
-            self.source_remove(it)
-
-    def info_timeout(self):
-        self.log("info timeout")
-        self.update_screen()
-        return True
