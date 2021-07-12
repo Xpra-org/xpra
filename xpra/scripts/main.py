@@ -1700,7 +1700,7 @@ def connect_to_server(app, display_desc, opts):
             GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
         except Exception as e:
             log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
-            werr("Error: failed to connect:", " %s", e)
+            werr("Error: failed to connect:", " %s" % e)
             GLib.idle_add(app.quit, EXIT_CONNECTION_FAILED)
     def setup_connection():
         log("setup_connection() starting setup-connection thread")
