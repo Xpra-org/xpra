@@ -17,9 +17,11 @@ from xpra.util import prettify_plug_name, typedict, csv, iround
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client import mixin_features
+from xpra.client.gobject_client_base import InfoTimerClient
 from xpra.gtk_common.gtk_util import (
     add_close_accel, label,
     TableBuilder, imagebutton, get_gtk_version_info,
+    get_icon_pixbuf,
     )
 from xpra.net.net_util import get_network_caps
 from xpra.log import Logger
@@ -118,7 +120,7 @@ def slabel(text="", tooltip=None, font=None):
 
 class SessionInfo(Gtk.Window):
 
-    def __init__(self, client, session_name, window_icon_pixbuf, conn, get_pixbuf):
+    def __init__(self, client, session_name, conn):
         Gtk.Window.__init__(self)
         self.client = client
         self.session_name = session_name
@@ -126,11 +128,11 @@ class SessionInfo(Gtk.Window):
         self.last_populate_time = 0
         self.last_populate_statistics = 0
         self.is_closed = False
-        self.get_pixbuf = get_pixbuf
         self.set_title(self.get_window_title())
         self.set_destroy_with_parent(True)
         self.set_resizable(True)
         self.set_decorated(True)
+        window_icon_pixbuf = get_icon_pixbuf("statistics.png") or get_icon_pixbuf("xpra.png")
         if window_icon_pixbuf:
             self.set_icon(window_icon_pixbuf)
         self.set_position(Gtk.WindowPosition.CENTER)
@@ -502,7 +504,7 @@ class SessionInfo(Gtk.Window):
 
 
     def add_tab(self, icon_filename, title, populate_cb, contents):
-        icon = self.get_pixbuf(icon_filename)
+        icon = get_icon_pixbuf(icon_filename)
         def show_tab(*_args):
             self.show_tab(contents)
         button = imagebutton(title, icon, clicked_callback=show_tab)
@@ -573,9 +575,9 @@ class SessionInfo(Gtk.Window):
 
     def bool_icon(self, image, on_off):
         if on_off:
-            icon = self.get_pixbuf("ticked-small.png")
+            icon = get_icon_pixbuf("ticked-small.png")
         else:
-            icon = self.get_pixbuf("unticked-small.png")
+            icon = get_icon_pixbuf("unticked-small.png")
         image.set_from_pixbuf(icon)
 
     def populate_sound_stats(self, *_args):
@@ -750,7 +752,7 @@ class SessionInfo(Gtk.Window):
                 self.bool_icon(self.server_randr_icon, self.client.server_randr)
         else:
             size_info = "unknown"
-            unknown = self.get_pixbuf("unknown.png")
+            unknown = get_icon_pixbuf("unknown.png")
             if unknown:
                 self.server_randr_icon.set_from_pixbuf(unknown)
         self.server_randr_label.set_text("%s" % size_info)

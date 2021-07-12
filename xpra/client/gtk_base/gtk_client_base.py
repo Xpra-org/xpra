@@ -27,6 +27,7 @@ from xpra.make_thread import start_thread
 from xpra.gtk_common.cursor_names import cursor_types
 from xpra.gtk_common.gtk_util import (
     get_gtk_version_info, scaled_image, get_default_cursor, color_parse,
+    get_icon_pixbuf,
     get_pixbuf_from_data,
     get_default_root_window, get_root_size,
     get_screen_sizes, GDKWindow,
@@ -639,13 +640,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             force_focus()
             self.session_info.present()
             return
-        pixbuf = self.get_pixbuf("statistics.png")
-        if not pixbuf:
-            pixbuf = self.get_pixbuf("xpra.png")
         p = self._protocol
         conn = p._conn if p else None
         from xpra.client.gtk_base.session_info import SessionInfo
-        self.session_info = SessionInfo(self, self.session_name, pixbuf, conn, self.get_pixbuf)
+        self.session_info = SessionInfo(self, self.session_name, conn)
         self.session_info.set_args(*args)
         force_focus()
         self.session_info.show_all()
@@ -681,23 +679,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.timeout_add(200, init_bug_report)
 
 
-    def get_pixbuf(self, icon_name):
-        try:
-            if not icon_name:
-                log("get_pixbuf(%s)=None", icon_name)
-                return None
-            icon_filename = get_icon_filename(icon_name)
-            log("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
-            if icon_filename:
-                return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        except Exception:
-            log.error("get_pixbuf(%s)", icon_name, exc_info=True)
-        return None
-
-
     def get_image(self, icon_name, size=None):
         try:
-            pixbuf = self.get_pixbuf(icon_name)
+            pixbuf = get_icon_pixbuf(icon_name)
             log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
             if not pixbuf:
                 return  None

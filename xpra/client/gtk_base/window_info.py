@@ -9,7 +9,10 @@ from gi.repository import Gtk, Gdk, GLib
 from xpra.util import typedict, csv, WORKSPACE_UNSET
 from xpra.os_util import bytestostr
 from xpra.common import GRAVITY_STR
-from xpra.gtk_common.gtk_util import add_close_accel, label, TableBuilder
+from xpra.gtk_common.gtk_util import (
+    add_close_accel, label, TableBuilder,
+    get_icon_pixbuf,
+    )
 from xpra.log import Logger
 
 log = Logger("info")
@@ -83,7 +86,7 @@ class WindowInfo(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)
         self.set_transient_for(window)
-        self.set_icon(client.get_pixbuf("information.png"))
+        self.set_icon(get_icon_pixbuf("information.png"))
         self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
         def window_deleted(*_args):
             self.is_closed = True
@@ -254,7 +257,7 @@ class WindowInfo(Gtk.Window):
         if not c:
             return
         if on_off:
-            icon = c.get_pixbuf("ticked-small.png")
+            icon = get_icon_pixbuf("ticked-small.png")
         else:
-            icon = c.get_pixbuf("unticked-small.png")
+            icon = get_icon_pixbuf("unticked-small.png")
         image.set_from_pixbuf(icon)

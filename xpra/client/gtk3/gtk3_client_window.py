@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,7 +9,7 @@ from gi.repository import Gdk, Gtk, Gio, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.client.gtk3.window_menu import WindowMenuHelper
-from xpra.gtk_common.gtk_util import scaled_image
+from xpra.gtk_common.gtk_util import scaled_image, get_icon_pixbuf
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util import envbool, typedict
 from xpra.os_util import bytestostr, is_gnome
@@ -93,7 +93,7 @@ class GTK3ClientWindow(GTKClientWindowBase):
             hb.pack_start(button)
         elif WINDOW_ICON:
             #just the icon, no menu:
-            pixbuf = self._client.get_pixbuf("transparent.png")
+            pixbuf = get_icon_pixbuf("transparent.png")
             self.header_bar_image = scaled_image(pixbuf, self._icon_size())
             hb.pack_start(self.header_bar_image)
         if WINDOW_XPRA_MENU:

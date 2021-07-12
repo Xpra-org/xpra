@@ -14,7 +14,7 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.codec_constants import TransientCodecException, CodecStateException
-from xpra.gtk_common.gtk_util import get_screen_sizes
+from xpra.gtk_common.gtk_util import get_screen_sizes, get_icon_pixbuf
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -307,24 +307,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         check_item.show()
         return check_item
 
-    def get_pixbuf(self, icon_name):
-        from xpra.platform.paths import get_icon_filename
-        try:
-            if not icon_name:
-                traylog("get_pixbuf(%s)=None", icon_name)
-                return None
-            icon_filename = get_icon_filename(icon_name)
-            traylog("get_pixbuf(%s) icon_filename=%s", icon_name, icon_filename)
-            if icon_filename:
-                return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        except Exception:
-            traylog.error("get_pixbuf(%s)", icon_name, exc_info=True)
-        return  None
-
     def get_image(self, icon_name, size=None):
         from xpra.gtk_common.gtk_util import scaled_image
         try:
-            pixbuf = self.get_pixbuf(icon_name)
+            pixbuf = get_icon_pixbuf(icon_name)
             traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
             if not pixbuf:
                 return  None

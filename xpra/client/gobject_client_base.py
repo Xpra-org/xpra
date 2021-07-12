@@ -98,9 +98,12 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def run(self):
         XpraClientBase.run(self)
+        self.run_loop()
+        return self.exit_code
+
+    def run_loop(self):
         self.glib_mainloop = GLib.MainLoop()
         self.glib_mainloop.run()
-        return self.exit_code
 
     def make_hello(self):
         capabilities = XpraClientBase.make_hello(self)
@@ -436,7 +439,7 @@ class InfoTimerClient(MonitorXpraClient):
 
     def log(self, message):
         #this method is overriden in top client to use a log file
-        log.info(message)
+        log(message)
 
     def err(self, e):
         log.error(str(e))

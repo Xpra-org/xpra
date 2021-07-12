@@ -27,6 +27,7 @@ from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
 from xpra.os_util import OSX, bytestostr
 from xpra.gtk_common.gtk_util import (
     add_close_accel, color_parse,
+    get_icon_pixbuf,
     )
 from xpra.notifications.notifier_base import NotifierBase, log
 
@@ -39,14 +40,6 @@ if OSX:
 DEFAULT_WIDTH = 340
 DEFAULT_HEIGHT = 100
 
-
-
-def get_pixbuf(icon_name):
-    from xpra.platform.paths import get_icon_dir
-    icon_filename = os.path.join(get_icon_dir(), icon_name)
-    if os.path.exists(icon_filename):
-        return GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-    return None
 
 class GTK_Notifier(NotifierBase):
 
@@ -191,7 +184,7 @@ class Popup(Gtk.Window):
         self.header.set_padding(3, 3)
         self.header.set_alignment(0, 0)
         header_box.pack_start(self.header, True, True, 5)
-        icon = get_pixbuf("close.png")
+        icon = get_icon_pixbuf("close.png")
         if icon:
             close_button = Gtk.Image()
             close_button.set_from_pixbuf(icon)
