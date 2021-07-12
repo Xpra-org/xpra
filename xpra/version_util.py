@@ -162,7 +162,7 @@ def get_version_info_full() -> dict:
                 props[k] = v
         #record library versions:
         d = dict((k.lstrip("lib_"), getattr(build_info, k)) for k in dir(build_info) if k.startswith("lib_"))
-        updict(props, "lib", d)
+        props["lib"] = d
     except Exception as e:
         warn("missing some build information: %s", e)
     log("get_version_info_full()=%s", props)

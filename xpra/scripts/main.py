@@ -166,7 +166,8 @@ def main(script_file, cmdline):
 def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
-        "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui", "bug-report",
+        "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui",
+        "bug-report", "session-info",
         "displays", "list-sessions", "wminfo", "wmname", "recover",
         "clean-displays", "clean-sockets",
         "splash", "qrcode",
@@ -492,6 +493,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         check_gtk()
         from xpra.scripts import bug_report
         bug_report.main(["xpra"]+args)
+    elif mode == "session-info":
+        return run_session_info(error_cb, options, args)
     elif (
         mode=="_proxy" or
         (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
@@ -3135,6 +3138,14 @@ def run_top(error_cb, options, args):
     if not app:
         #show all sessions:
         app = TopClient(options)
+    return app.run()
+
+def run_session_info(error_cb, options, args):
+    check_gtk()
+    display_desc = pick_display(error_cb, options, args)
+    from xpra.client.gtk_base.session_info import SessionInfoClient
+    app = SessionInfoClient(options)
+    connect_to_server(app, display_desc, options)
     return app.run()
 
 

@@ -11,6 +11,25 @@ from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.exit_codes import EXIT_INCOMPATIBLE_VERSION
 
 
+def get_remote_lib_versions(c : typedict,
+                            libs=("glib", "gobject", "gtk", "gdk", "cairo", "pango",
+                                  "sound.gst", "sound.pygst",
+                                  "python",
+                                  )
+                            ):
+    versions = {}
+    for x in libs:
+        v = c.rawget("%s.version" % x, None)
+        if v is None:
+            #fallback to structured access:
+            d = c.rawget(x, None)
+            if isinstance(d, dict):
+                v = typedict(d).rawget("version", None)
+        if v:
+            versions[x] = bytestostr(v)
+    return versions
+
+
 class ServerInfoMixin(StubClientMixin):
 
     def __init__(self):  #pylint: disable=super-init-not-called
@@ -55,10 +74,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_python_version = c.strget("python.version")
         self._remote_subcommands = c.strtupleget("subcommands")
         self._remote_server_log = c.strget("server-log")
-        for x in ("glib", "gobject", "gtk", "gdk", "cairo", "pango", "sound.gst", "sound.pygst"):
-            v = c.rawget("%s.version" % x, None)
-            if v is not None:
-                self._remote_lib_versions[x] = v
+        self._remote_lib_versions = get_remote_lib_versions(c)
         #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
         pld = c.tupleget("platform.linux_distribution")
         if pld and len(pld)==3:

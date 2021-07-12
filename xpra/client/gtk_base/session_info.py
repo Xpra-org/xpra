@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -13,7 +13,7 @@ from gi.repository import GLib, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
-from xpra.util import prettify_plug_name, typedict, csv, iround
+from xpra.util import prettify_plug_name, typedict, envint, csv, iround, repr_ellipsized
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client import mixin_features
@@ -33,6 +33,16 @@ SHOW_PIXEL_STATS = True
 SHOW_SOUND_STATS = True
 SHOW_RECV = True
 
+
+def make_version_str(version):
+    if version and isinstance(version, (tuple, list)):
+        version = ".".join(bytestostr(x) for x in version)
+    return bytestostr(version or "unknown")
+
+def make_datetime(date, time):
+    if not time:
+        return bytestostr(date)
+    return "%s %s" % (bytestostr(date), bytestostr(time))
 
 def title_box(label_str):
     eb = Gtk.EventBox()
@@ -120,7 +130,10 @@ def slabel(text="", tooltip=None, font=None):
 
 class SessionInfo(Gtk.Window):
 
-    def __init__(self, client, session_name, conn):
+    def __init__(self, client, session_name, conn, show_client=True, show_server=True):
+        assert show_client or show_server
+        self.show_client = show_client
+        self.show_server = show_server
         Gtk.Window.__init__(self)
         self.client = client
         self.session_name = session_name
@@ -144,14 +157,30 @@ class SessionInfo(Gtk.Window):
         self.populate_cb = None
         self.tab_box.pack_start(self.tab_button_box, expand=False, fill=True, padding=0)
 
-        #Package Table:
-        tb = self.table_tab("package.png", "Software", self.populate_package)[0]
-        #title row:
         fillexpand = Gtk.AttachOptions.FILL | Gtk.AttachOptions.EXPAND
-        tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Client"), 1, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Server"), 2, xoptions=fillexpand, xpadding=0)
-        tb.inc()
+
+        #Package Table:
+        tb = self.table_tab("package.png", "Software", self.populate_software)[0]
+        if show_client and show_server:
+            #title row:
+            tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Client"), 1, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Server"), 2, xoptions=fillexpand, xpadding=0)
+            tb.inc()
+
+        def clrow(label_str, client_label, server_label, **kwargs):
+            args = [label_str]
+            if show_client:
+                args.append(client_label)
+            if show_server:
+                args.append(server_label)
+            tb.new_row(*args, **kwargs)
+
+        def csrow(label_str, client_str, server_str, **kwargs):
+            clrow(label_str,
+                  slabel(client_str) if show_client else None,
+                  slabel(server_str) if show_server else None,
+                  **kwargs)
 
         def make_os_str(sys_platform, platform_release, platform_platform, platform_linux_distribution):
             from xpra.os_util import platform_name
@@ -169,44 +198,36 @@ class SessionInfo(Gtk.Window):
                                            cattr("_remote_platform_release"),
                                            cattr("_remote_platform_platform"),
                                            cattr("_remote_platform_linux_distribution"))
-        tb.new_row("Operating System", slabel(LOCAL_PLATFORM_NAME), slabel(SERVER_PLATFORM_NAME))
-        tb.new_row("Xpra", slabel(XPRA_VERSION), slabel(cattr("_remote_version", "unknown")))
+        csrow("Operating System", LOCAL_PLATFORM_NAME, SERVER_PLATFORM_NAME)
+        csrow("Xpra", XPRA_VERSION, cattr("_remote_version", "unknown"))
         try:
             from xpra.build_info import BUILD_DATE as cl_date, BUILD_TIME as cl_time
         except ImportError:
             cl_date = cl_time = ""
-        def make_version_str(version):
-            if version and isinstance(version, (tuple, list)):
-                version = ".".join(bytestostr(x) for x in version)
-            return bytestostr(version or "unknown")
-        def make_datetime(date, time):
-            if not time:
-                return bytestostr(date)
-            return "%s %s" % (bytestostr(date), bytestostr(time))
         from xpra.version_util import revision_str, make_revision_str
-        tb.new_row("Revision", slabel(revision_str()),
-                               slabel(make_revision_str(
-                                   cattr("_remote_revision"),
-                                   cattr("_remote_modifications"),
-                                   cattr("_remote_branch"),
-                                   cattr("_remote_commit"),
-                                   )))
-        tb.new_row("Build date", slabel(make_datetime(cl_date, cl_time)),
-                                 slabel(make_datetime(cattr("_remote_build_date"), cattr("_remote_build_time"))))
+        csrow("Revision", revision_str(),
+              make_revision_str(
+                  cattr("_remote_revision"),
+                  cattr("_remote_modifications"),
+                  cattr("_remote_branch"),
+                  cattr("_remote_commit"),
+                  )
+              )
+        csrow("Build date", make_datetime(cl_date, cl_time),
+              make_datetime(cattr("_remote_build_date"), cattr("_remote_build_time")))
         gtk_version_info = get_gtk_version_info()
         def client_vinfo(prop, fallback="unknown"):
-            s = make_version_str(newdictlook(gtk_version_info, (prop, "version"), fallback))
-            return slabel(s)
+            return make_version_str(newdictlook(gtk_version_info, (prop, "version"), fallback))
         def server_vinfo(lib):
             rlv = getattr(self.client, "_remote_lib_versions", {})
-            return slabel(make_version_str(rlv.get(lib, "")))
-        tb.new_row("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
-        tb.new_row("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
-        tb.new_row("GTK",       client_vinfo("gtk"),        server_vinfo("gtk"))
-        tb.new_row("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
-        tb.new_row("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
-        tb.new_row("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
-        tb.new_row("Python", slabel(platform.python_version()), slabel(cattr("_remote_python_version")))
+            return make_version_str(rlv.get(lib, ""))
+        csrow("Glib",      client_vinfo("glib"),       server_vinfo("glib"))
+        csrow("Gobject",   client_vinfo("gobject"),    server_vinfo("gobject"))
+        csrow("GTK",       client_vinfo("gtk"),        server_vinfo("gtk"))
+        csrow("GDK",       client_vinfo("gdk"),        server_vinfo("gdk"))
+        csrow("Cairo",     client_vinfo("cairo"),      server_vinfo("cairo"))
+        csrow("Pango",     client_vinfo("pango"),      server_vinfo("pango"))
+        csrow("Python",    platform.python_version(),  server_vinfo("python"))
 
         try:
             from xpra.sound.wrapper import query_sound
@@ -216,15 +237,19 @@ class SessionInfo(Gtk.Window):
             props = typedict()
         gst_version = props.strtupleget("gst.version")
         pygst_version = props.strtupleget("pygst.version")
-        tb.new_row("GStreamer", slabel(make_version_str(gst_version)), server_vinfo("sound.gst"))
-        tb.new_row("pygst", slabel(make_version_str(pygst_version)), server_vinfo("sound.pygst"))
-        def gllabel(prop="opengl", default_value="n/a"):
-            return slabel(make_version_str(self.client.opengl_props.get(prop, default_value)))
-        def sgllabel(prop="opengl", default_value="n/a"):
-            return slabel(make_version_str(typedict(self.client.server_opengl or {}).strget(prop, default_value)))
-        tb.new_row("OpenGL", gllabel("opengl", "n/a"), sgllabel("opengl"))
-        tb.new_row("OpenGL Vendor", gllabel("vendor", ""), sgllabel("vendor"))
-        tb.new_row("PyOpenGL", gllabel("pyopengl", "n/a"), sgllabel("pyopengl"))
+        csrow("GStreamer", make_version_str(gst_version), server_vinfo("sound.gst"))
+        csrow("pygst", make_version_str(pygst_version), server_vinfo("sound.pygst"))
+        def clientgl(prop="opengl", default_value="n/a"):
+            if not show_client:
+                return ""
+            return make_version_str(self.client.opengl_props.get(prop, default_value))
+        def servergl(prop="opengl", default_value="n/a"):
+            if not show_server:
+                return ""
+            return make_version_str(typedict(self.client.server_opengl or {}).strget(prop, default_value))
+        for prop in ("OpenGL", "Vendor", "PyOpenGL"):
+            key = prop.lower()
+            csrow(prop, clientgl(key), servergl(key))
 
         # Features Table:
         vbox = self.vbox_tab("features.png", "Features", self.populate_features)
@@ -241,19 +266,20 @@ class SessionInfo(Gtk.Window):
         randr_box.add(self.server_randr_icon)
         randr_box.add(self.server_randr_label)
         tb.new_row("RandR Support", randr_box)
-        self.client_display = slabel()
-        tb.new_row("Client Display", self.client_display)
-        opengl_box = Gtk.HBox(False, 20)
-        self.client_opengl_label = slabel()
-        self.client_opengl_label.set_line_wrap(True)
-        self.client_opengl_icon = Gtk.Image()
-        opengl_box.add(self.client_opengl_icon)
-        opengl_box.add(self.client_opengl_label)
-        tb.new_row("Client OpenGL", opengl_box)
-        self.opengl_buffering = slabel()
-        tb.new_row("OpenGL Mode", self.opengl_buffering)
-        self.window_rendering = slabel()
-        tb.new_row("Window Rendering", self.window_rendering)
+        if show_client:
+            self.client_display = slabel()
+            tb.new_row("Client Display", self.client_display)
+            opengl_box = Gtk.HBox(False, 20)
+            self.client_opengl_label = slabel()
+            self.client_opengl_label.set_line_wrap(True)
+            self.client_opengl_icon = Gtk.Image()
+            opengl_box.add(self.client_opengl_icon)
+            opengl_box.add(self.client_opengl_label)
+            tb.new_row("Client OpenGL", opengl_box)
+            self.opengl_buffering = slabel()
+            tb.new_row("OpenGL Mode", self.opengl_buffering)
+            self.window_rendering = slabel()
+            tb.new_row("Window Rendering", self.window_rendering)
         if mixin_features.mmap:
             self.server_mmap_icon = Gtk.Image()
             tb.new_row("Memory Mapped Transfers", self.server_mmap_icon)
@@ -276,45 +302,46 @@ class SessionInfo(Gtk.Window):
         al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(table)
         vbox.pack_start(al, expand=True, fill=False, padding=10)
-        #table headings:
-        tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Client"), 1, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Server"), 2, xoptions=fillexpand, xpadding=0)
-        tb.inc()
+        if show_client and show_server:
+            #table headings:
+            tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Client"), 1, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Server"), 2, xoptions=fillexpand, xpadding=0)
+            tb.inc()
         #table contents:
         self.client_encodings_label = slabel()
         self.client_encodings_label.set_line_wrap(True)
         self.server_encodings_label = slabel()
         self.server_encodings_label.set_line_wrap(True)
-        tb.new_row("Picture Encodings",
-                   self.client_encodings_label, self.server_encodings_label,
-                   xoptions=fillexpand, yoptions=fillexpand)
+        clrow("Picture Encodings",
+              self.client_encodings_label, self.server_encodings_label,
+              xoptions=fillexpand, yoptions=fillexpand)
         self.client_speaker_codecs_label = slabel()
         self.client_speaker_codecs_label.set_line_wrap(True)
         self.server_speaker_codecs_label = slabel()
         self.server_speaker_codecs_label.set_line_wrap(True)
-        tb.new_row("Speaker Codecs",
-                   self.client_speaker_codecs_label, self.server_speaker_codecs_label,
-                   xoptions=fillexpand, yoptions=fillexpand)
+        clrow("Speaker Codecs",
+              self.client_speaker_codecs_label, self.server_speaker_codecs_label,
+              xoptions=fillexpand, yoptions=fillexpand)
         self.client_microphone_codecs_label = slabel()
         self.client_microphone_codecs_label.set_line_wrap(True)
         self.server_microphone_codecs_label = slabel()
         self.server_microphone_codecs_label.set_line_wrap(True)
-        tb.new_row("Microphone Codecs",
-                   self.client_microphone_codecs_label, self.server_microphone_codecs_label,
-                   xoptions=fillexpand, yoptions=fillexpand)
+        clrow("Microphone Codecs",
+              self.client_microphone_codecs_label, self.server_microphone_codecs_label,
+              xoptions=fillexpand, yoptions=fillexpand)
         self.client_packet_encoders_label = slabel()
         self.client_packet_encoders_label.set_line_wrap(True)
         self.server_packet_encoders_label = slabel()
         self.server_packet_encoders_label.set_line_wrap(True)
-        tb.new_row("Packet Encoders",
-                   self.client_packet_encoders_label, self.server_packet_encoders_label,
-                   xoptions=fillexpand, yoptions=fillexpand)
+        clrow("Packet Encoders",
+              self.client_packet_encoders_label, self.server_packet_encoders_label,
+              xoptions=fillexpand, yoptions=fillexpand)
         self.client_packet_compressors_label = slabel()
         self.server_packet_compressors_label = slabel()
-        tb.new_row("Packet Compressors",
-                   self.client_packet_compressors_label, self.server_packet_compressors_label,
-                   xoptions=fillexpand, yoptions=fillexpand)
+        clrow("Packet Compressors",
+              self.client_packet_compressors_label, self.server_packet_compressors_label,
+              xoptions=fillexpand, yoptions=fillexpand)
 
         # Connection Table:
         tb = self.table_tab("connect.png", "Connection", self.populate_connection)[0]
@@ -330,131 +357,133 @@ class SessionInfo(Gtk.Window):
         self.session_started_label = slabel()
         tb.new_row("Session Started", self.session_started_label)
         self.session_connected_label = slabel()
-        tb.new_row("Session Connected", self.session_connected_label)
-        self.input_packets_label = slabel()
-        tb.new_row("Packets Received", self.input_packets_label)
-        self.input_bytes_label = slabel()
-        tb.new_row("Bytes Received", self.input_bytes_label)
-        self.output_packets_label = slabel()
-        tb.new_row("Packets Sent", self.output_packets_label)
-        self.output_bytes_label = slabel()
-        tb.new_row("Bytes Sent", self.output_bytes_label)
-        self.compression_label = slabel()
-        tb.new_row("Encoding + Compression", self.compression_label)
-        self.connection_type_label = slabel()
-        tb.new_row("Connection Type", self.connection_type_label)
-        self.input_encryption_label = slabel()
-        tb.new_row("Input Encryption", self.input_encryption_label)
-        self.output_encryption_label = slabel()
-        tb.new_row("Output Encryption", self.output_encryption_label)
+        if show_client:
+            tb.new_row("Session Connected", self.session_connected_label)
+            self.input_packets_label = slabel()
+            tb.new_row("Packets Received", self.input_packets_label)
+            self.input_bytes_label = slabel()
+            tb.new_row("Bytes Received", self.input_bytes_label)
+            self.output_packets_label = slabel()
+            tb.new_row("Packets Sent", self.output_packets_label)
+            self.output_bytes_label = slabel()
+            tb.new_row("Bytes Sent", self.output_bytes_label)
+            self.compression_label = slabel()
+            tb.new_row("Encoding + Compression", self.compression_label)
+            self.connection_type_label = slabel()
+            tb.new_row("Connection Type", self.connection_type_label)
+            self.input_encryption_label = slabel()
+            tb.new_row("Input Encryption", self.input_encryption_label)
+            self.output_encryption_label = slabel()
+            tb.new_row("Output Encryption", self.output_encryption_label)
 
-        self.speaker_label = slabel()
-        self.speaker_details = slabel(font="monospace 10")
-        tb.new_row("Speaker", self.speaker_label, self.speaker_details)
-        self.microphone_label = slabel()
-        tb.new_row("Microphone", self.microphone_label)
+            self.speaker_label = slabel()
+            self.speaker_details = slabel(font="monospace 10")
+            tb.new_row("Speaker", self.speaker_label, self.speaker_details)
+            self.microphone_label = slabel()
+            tb.new_row("Microphone", self.microphone_label)
 
-        # Details:
-        tb, stats_box = self.table_tab("browse.png", "Statistics", self.populate_statistics)
-        tb.widget_xalign = 1.0
-        tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Latest"), 1, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Minimum"), 2, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Average"), 3, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("90 percentile"), 4, xoptions=fillexpand, xpadding=0)
-        tb.attach(title_box("Maximum"), 5, xoptions=fillexpand, xpadding=0)
-        tb.inc()
+            # Details:
+            tb, stats_box = self.table_tab("browse.png", "Statistics", self.populate_statistics)
+            tb.widget_xalign = 1.0
+            tb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Latest"), 1, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Minimum"), 2, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Average"), 3, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("90 percentile"), 4, xoptions=fillexpand, xpadding=0)
+            tb.attach(title_box("Maximum"), 5, xoptions=fillexpand, xpadding=0)
+            tb.inc()
 
-        def maths_labels():
-            return slabel(), slabel(), slabel(), slabel(), slabel()
-        self.server_latency_labels = maths_labels()
-        tb.add_row(slabel("Server Latency (ms)", "The time it takes for the server to respond to pings"),
-                   *self.server_latency_labels)
-        self.client_latency_labels = maths_labels()
-        tb.add_row(slabel("Client Latency (ms)",
-                          "The time it takes for the client to respond to pings, as measured by the server"),
-                   *self.client_latency_labels)
-        if mixin_features.windows and self.client.windows_enabled:
-            self.batch_labels = maths_labels()
-            tb.add_row(slabel("Batch Delay (MPixels / ms)",
-                              "How long the server waits for new screen updates to accumulate before processing them"),
-                       *self.batch_labels)
-            self.damage_labels = maths_labels()
-            tb.add_row(slabel("Damage Latency (ms)",
-                              "The time it takes to compress a frame and pass it to the OS network layer"),
-                       *self.damage_labels)
-            self.quality_labels = maths_labels()
-            tb.add_row(slabel("Encoding Quality (pct)",
-                              "Automatic picture quality, average for all the windows"),
-                              *self.quality_labels)
-            self.speed_labels = maths_labels()
-            tb.add_row(slabel("Encoding Speed (pct)",
-                              "Automatic picture encoding speed (bandwidth vs CPU usage), average for all the windows"),
-                              *self.speed_labels)
+            def maths_labels():
+                return slabel(), slabel(), slabel(), slabel(), slabel()
+            self.server_latency_labels = maths_labels()
+            tb.add_row(slabel("Server Latency (ms)", "The time it takes for the server to respond to pings"),
+                       *self.server_latency_labels)
+            self.client_latency_labels = maths_labels()
+            tb.add_row(slabel("Client Latency (ms)",
+                              "The time it takes for the client to respond to pings, as measured by the server"),
+                       *self.client_latency_labels)
+            if mixin_features.windows and self.client.windows_enabled:
+                self.batch_labels = maths_labels()
+                tb.add_row(slabel("Batch Delay (MPixels / ms)",
+                                  "How long the server waits for new screen updates to accumulate before processing them"),
+                           *self.batch_labels)
+                self.damage_labels = maths_labels()
+                tb.add_row(slabel("Damage Latency (ms)",
+                                  "The time it takes to compress a frame and pass it to the OS network layer"),
+                           *self.damage_labels)
+                self.quality_labels = maths_labels()
+                tb.add_row(slabel("Encoding Quality (pct)",
+                                  "Automatic picture quality, average for all the windows"),
+                                  *self.quality_labels)
+                self.speed_labels = maths_labels()
+                tb.add_row(slabel("Encoding Speed (pct)",
+                                  "Automatic picture encoding speed (bandwidth vs CPU usage), average for all the windows"),
+                                  *self.speed_labels)
 
-            self.decoding_labels = maths_labels()
-            tb.add_row(slabel("Decoding Latency (ms)",
-                              "How long it takes the client to decode a screen update"),
-                              *self.decoding_labels)
-            self.regions_per_second_labels = maths_labels()
-            tb.add_row(slabel("Regions/s",
-                              "The number of screen updates per second"
-                              +" (includes both partial and full screen updates)"),
-                              *self.regions_per_second_labels)
-            self.regions_sizes_labels = maths_labels()
-            tb.add_row(slabel("Pixels/region", "The number of pixels per screen update"), *self.regions_sizes_labels)
-            self.pixels_per_second_labels = maths_labels()
-            tb.add_row(slabel("Pixels/s", "The number of pixels processed per second"), *self.pixels_per_second_labels)
+                self.decoding_labels = maths_labels()
+                tb.add_row(slabel("Decoding Latency (ms)",
+                                  "How long it takes the client to decode a screen update"),
+                                  *self.decoding_labels)
+                self.regions_per_second_labels = maths_labels()
+                tb.add_row(slabel("Regions/s",
+                                  "The number of screen updates per second"
+                                  +" (includes both partial and full screen updates)"),
+                                  *self.regions_per_second_labels)
+                self.regions_sizes_labels = maths_labels()
+                tb.add_row(slabel("Pixels/region", "The number of pixels per screen update"), *self.regions_sizes_labels)
+                self.pixels_per_second_labels = maths_labels()
+                tb.add_row(slabel("Pixels/s", "The number of pixels processed per second"), *self.pixels_per_second_labels)
 
-            #Window count stats:
-            wtb = TableBuilder()
-            stats_box.add(wtb.get_table())
-            #title row:
-            wtb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
-            wtb.attach(title_box("Regular"), 1, xoptions=fillexpand, xpadding=0)
-            wtb.attach(title_box("Transient"), 2, xoptions=fillexpand, xpadding=0)
-            wtb.attach(title_box("Trays"), 3, xoptions=fillexpand, xpadding=0)
-            if self.client.client_supports_opengl:
-                wtb.attach(title_box("OpenGL"), 4, xoptions=fillexpand, xpadding=0)
-            wtb.inc()
+                #Window count stats:
+                wtb = TableBuilder()
+                stats_box.add(wtb.get_table())
+                #title row:
+                wtb.attach(title_box(""), 0, xoptions=fillexpand, xpadding=0)
+                wtb.attach(title_box("Regular"), 1, xoptions=fillexpand, xpadding=0)
+                wtb.attach(title_box("Transient"), 2, xoptions=fillexpand, xpadding=0)
+                wtb.attach(title_box("Trays"), 3, xoptions=fillexpand, xpadding=0)
+                if self.client.client_supports_opengl:
+                    wtb.attach(title_box("OpenGL"), 4, xoptions=fillexpand, xpadding=0)
+                wtb.inc()
 
-            wtb.attach(slabel("Windows:"), 0, xoptions=fillexpand, xpadding=0)
-            self.windows_managed_label = slabel()
-            wtb.attach(self.windows_managed_label, 1)
-            self.transient_managed_label = slabel()
-            wtb.attach(self.transient_managed_label, 2)
-            self.trays_managed_label = slabel()
-            wtb.attach(self.trays_managed_label, 3)
-            if self.client.client_supports_opengl:
-                self.opengl_label = slabel()
-                wtb.attach(self.opengl_label, 4)
+                wtb.attach(slabel("Windows:"), 0, xoptions=fillexpand, xpadding=0)
+                self.windows_managed_label = slabel()
+                wtb.attach(self.windows_managed_label, 1)
+                self.transient_managed_label = slabel()
+                wtb.attach(self.transient_managed_label, 2)
+                self.trays_managed_label = slabel()
+                wtb.attach(self.trays_managed_label, 3)
+                if self.client.client_supports_opengl:
+                    self.opengl_label = slabel()
+                    wtb.attach(self.opengl_label, 4)
 
-            #add encoder info:
-            etb = TableBuilder()
-            stats_box.add(etb.get_table())
-            self.encoder_info_box = Gtk.HBox(spacing=4)
-            etb.new_row("Window Encoders", self.encoder_info_box)
+                #add encoder info:
+                etb = TableBuilder()
+                stats_box.add(etb.get_table())
+                self.encoder_info_box = Gtk.HBox(spacing=4)
+                etb.new_row("Window Encoders", self.encoder_info_box)
 
-        self.graph_box = Gtk.VBox(False, 10)
-        self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
-        bandwidth_label = "Bandwidth used"
-        if SHOW_PIXEL_STATS:
-            bandwidth_label += ",\nand number of pixels rendered"
-        self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graph)
-        self.latency_graph = self.add_graph_button(None, self.save_graph)
-        if SHOW_SOUND_STATS:
-            self.sound_queue_graph = self.add_graph_button(None, self.save_graph)
-        else:
-            self.sound_queue_graph = None
-        self.connect("realize", self.populate_graphs)
-        self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
-        self.net_in_bitcount = deque(maxlen=N_SAMPLES+4)
-        self.net_out_bitcount = deque(maxlen=N_SAMPLES+4)
-        self.sound_in_bitcount = deque(maxlen=N_SAMPLES+4)
-        self.sound_out_bitcount = deque(maxlen=N_SAMPLES+4)
-        self.sound_out_queue_min = deque(maxlen=N_SAMPLES*10+4)
-        self.sound_out_queue_max = deque(maxlen=N_SAMPLES*10+4)
-        self.sound_out_queue_cur  = deque(maxlen=N_SAMPLES*10+4)
+        if show_client:
+            self.graph_box = Gtk.VBox(False, 10)
+            self.add_tab("statistics.png", "Graphs", self.populate_graphs, self.graph_box)
+            bandwidth_label = "Bandwidth used"
+            if SHOW_PIXEL_STATS:
+                bandwidth_label += ",\nand number of pixels rendered"
+            self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graph)
+            self.latency_graph = self.add_graph_button(None, self.save_graph)
+            if SHOW_SOUND_STATS:
+                self.sound_queue_graph = self.add_graph_button(None, self.save_graph)
+            else:
+                self.sound_queue_graph = None
+            self.connect("realize", self.populate_graphs)
+            self.pixel_in_data = deque(maxlen=N_SAMPLES+4)
+            self.net_in_bitcount = deque(maxlen=N_SAMPLES+4)
+            self.net_out_bitcount = deque(maxlen=N_SAMPLES+4)
+            self.sound_in_bitcount = deque(maxlen=N_SAMPLES+4)
+            self.sound_out_bitcount = deque(maxlen=N_SAMPLES+4)
+            self.sound_out_queue_min = deque(maxlen=N_SAMPLES*10+4)
+            self.sound_out_queue_max = deque(maxlen=N_SAMPLES*10+4)
+            self.sound_out_queue_cur  = deque(maxlen=N_SAMPLES*10+4)
 
         self.set_border_width(15)
         self.add(self.tab_box)
@@ -468,7 +497,7 @@ class SessionInfo(Gtk.Window):
         self.populate_all()
         GLib.timeout_add(1000, self.populate)
         GLib.timeout_add(100, self.populate_tab)
-        if mixin_features.audio and SHOW_SOUND_STATS:
+        if mixin_features.audio and SHOW_SOUND_STATS and show_client:
             GLib.timeout_add(100, self.populate_sound_stats)
         add_close_accel(self, self.destroy)
 
@@ -603,18 +632,19 @@ class SessionInfo(Gtk.Window):
         self.client.send_ping()
         self.last_populate_time = monotonic_time()
 
-        self.show_opengl_state()
-        self.show_window_renderers()
-        #record bytecount every second:
-        self.net_in_bitcount.append(conn.input_bytecount*8)
-        self.net_out_bitcount.append(conn.output_bytecount*8)
-        if mixin_features.audio and SHOW_SOUND_STATS:
-            if self.client.sound_in_bytecount>0:
-                self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
-            if self.client.sound_out_bytecount>0:
-                self.sound_out_bitcount.append(self.client.sound_out_bytecount * 8)
+        if self.show_client:
+            self.show_opengl_state()
+            self.show_window_renderers()
+            #record bytecount every second:
+            self.net_in_bitcount.append(conn.input_bytecount*8)
+            self.net_out_bitcount.append(conn.output_bytecount*8)
+            if mixin_features.audio and SHOW_SOUND_STATS:
+                if self.client.sound_in_bytecount>0:
+                    self.sound_in_bitcount.append(self.client.sound_in_bytecount * 8)
+                if self.client.sound_out_bytecount>0:
+                    self.sound_out_bitcount.append(self.client.sound_out_bytecount * 8)
 
-        if mixin_features.windows:
+        if self.show_client and mixin_features.windows:
             #count pixels in the last second:
             since = monotonic_time()-1
             decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
@@ -661,14 +691,15 @@ class SessionInfo(Gtk.Window):
             cpl = tuple(1000.0*x[1] for x in tuple(self.client.client_ping_latency))
             if spl and cpl:
                 self.avg_ping_latency.append(iround(sum(spl+cpl)/len(spl+cpl)))
-            pc = tuple(self.client.pixel_counter)
-            if mixin_features.windows and pc:
-                tsize = 0
-                ttime = 0
-                for start_time, end_time, size in pc:
-                    ttime += 1000.0 * (end_time-start_time) * size
-                    tsize += size
-                self.avg_decoding_latency.append(iround(ttime/tsize))
+            if mixin_features.windows and self.show_client:
+                pc = tuple(self.client.pixel_counter)
+                if pc:
+                    tsize = 0
+                    ttime = 0
+                    for start_time, end_time, size in pc:
+                        ttime += 1000.0 * (end_time-start_time) * size
+                        tsize += size
+                    self.avg_decoding_latency.append(iround(ttime/tsize))
         #totals: ping latency is halved since we only care about sending, not sending+receiving
         els  = (
             (tuple(self.avg_batch_delay), 1),
@@ -681,6 +712,10 @@ class SessionInfo(Gtk.Window):
             log("frame totals=%s", totals)
             self.avg_total.append(iround(sum(totals)))
         return not self.is_closed
+
+    def populate_software(self):
+        #called from the "fast" timer
+        return False
 
     def init_counters(self):
         self.avg_batch_delay = deque(maxlen=N_SAMPLES+4)
@@ -697,9 +732,6 @@ class SessionInfo(Gtk.Window):
             if not self.populate_cb():
                 self.populate_cb = None
         return not self.is_closed
-
-    def populate_package(self):
-        return False
 
 
     def show_opengl_state(self):
@@ -756,16 +788,17 @@ class SessionInfo(Gtk.Window):
             if unknown:
                 self.server_randr_icon.set_from_pixbuf(unknown)
         self.server_randr_label.set_text("%s" % size_info)
-        root_w, root_h = self.client.get_root_size()
-        if mixin_features.windows and (self.client.xscale!=1 or self.client.yscale!=1):
-            sw, sh = self.client.cp(root_w, root_h)
-            display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
-        else:
-            display_info = "%ix%i" % (root_w, root_h)
-        self.client_display.set_text(display_info)
-        self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
+        if self.show_client:
+            root_w, root_h = self.client.get_root_size()
+            if mixin_features.windows and (self.client.xscale!=1 or self.client.yscale!=1):
+                sw, sh = self.client.cp(root_w, root_h)
+                display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
+            else:
+                display_info = "%ix%i" % (root_w, root_h)
+            self.client_display.set_text(display_info)
+            self.bool_icon(self.client_opengl_icon, self.client.client_supports_opengl)
+            self.show_window_renderers()
 
-        self.show_window_renderers()
         if mixin_features.mmap:
             self.bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
         if mixin_features.clipboard:
@@ -780,12 +813,14 @@ class SessionInfo(Gtk.Window):
         #clamp the large labels so they will overflow vertically:
         w = self.tab_box.get_preferred_width()[0]
         lw = max(200, int(w//2.5))
-        self.client_encodings_label.set_size_request(lw, -1)
-        self.server_encodings_label.set_size_request(lw, -1)
-        self.client_speaker_codecs_label.set_size_request(lw, -1)
-        self.server_speaker_codecs_label.set_size_request(lw, -1)
-        self.client_microphone_codecs_label.set_size_request(lw, -1)
-        self.server_microphone_codecs_label.set_size_request(lw, -1)
+        if self.show_client:
+            self.client_encodings_label.set_size_request(lw, -1)
+            self.client_speaker_codecs_label.set_size_request(lw, -1)
+            self.client_microphone_codecs_label.set_size_request(lw, -1)
+        if self.show_server:
+            self.server_encodings_label.set_size_request(lw, -1)
+            self.server_speaker_codecs_label.set_size_request(lw, -1)
+            self.server_microphone_codecs_label.set_size_request(lw, -1)
         #sound/video codec table:
         def codec_info(enabled, codecs):
             if not enabled:
@@ -793,10 +828,14 @@ class SessionInfo(Gtk.Window):
             return ", ".join(codecs or ())
         if mixin_features.audio:
             c = self.client
-            self.server_speaker_codecs_label.set_text(codec_info(c.server_sound_send, c.server_sound_encoders))
-            self.client_speaker_codecs_label.set_text(codec_info(c.speaker_allowed, c.speaker_codecs))
-            self.server_microphone_codecs_label.set_text(codec_info(c.server_sound_receive, c.server_sound_decoders))
-            self.client_microphone_codecs_label.set_text(codec_info(c.microphone_allowed, c.microphone_codecs))
+            if self.show_server:
+                self.server_speaker_codecs_label.set_text(codec_info(c.server_sound_send, c.server_sound_encoders))
+            if self.show_client:
+                self.client_speaker_codecs_label.set_text(codec_info(c.speaker_allowed, c.speaker_codecs))
+            if self.show_server:
+                self.server_microphone_codecs_label.set_text(codec_info(c.server_sound_receive, c.server_sound_decoders))
+            if self.show_client:
+                self.client_microphone_codecs_label.set_text(codec_info(c.microphone_allowed, c.microphone_codecs))
         def encliststr(v):
             v = list(v)
             try:
@@ -808,18 +847,22 @@ class SessionInfo(Gtk.Window):
         if mixin_features.encoding:
             se = self.client.server_core_encodings
         self.server_encodings_label.set_text(encliststr(se))
-        if mixin_features.encoding:
+        if self.show_client and mixin_features.encoding:
             self.client_encodings_label.set_text(encliststr(self.client.get_core_encodings()))
         else:
             self.client_encodings_label.set_text("n/a")
 
         from xpra.net.packet_encoding import get_enabled_encoders
-        self.client_packet_encoders_label.set_text(csv(get_enabled_encoders()))
-        self.server_packet_encoders_label.set_text(csv(self.client.server_packet_encoders))
+        if self.show_client:
+            self.client_packet_encoders_label.set_text(csv(get_enabled_encoders()))
+        if self.show_server:
+            self.server_packet_encoders_label.set_text(csv(self.client.server_packet_encoders))
 
         from xpra.net.compression import get_enabled_compressors
-        self.client_packet_compressors_label.set_text(csv(get_enabled_compressors()))
-        self.server_packet_compressors_label.set_text(csv(self.client.server_compressors))
+        if self.show_client:
+            self.client_packet_compressors_label.set_text(csv(get_enabled_compressors()))
+        if self.show_server:
+            self.server_packet_compressors_label.set_text(csv(self.client.server_compressors))
         return False
 
     def populate_connection(self):
@@ -836,6 +879,8 @@ class SessionInfo(Gtk.Window):
         settimedeltastr(self.session_connected_label, self.client.start_time)
 
         p = self.client._protocol
+        if not self.show_client:
+            return True
         if p is None:
             #no longer connected!
             return False
@@ -1242,3 +1287,92 @@ class SessionInfo(Gtk.Window):
         self.is_closed = True
         Gtk.Window.destroy(self)
         log("SessionInfo.destroy(%s) done", args)
+
+
+class SessionInfoClient(InfoTimerClient):
+
+    REFRESH_RATE = envint("XPRA_INFO_REFRESH_RATE", 2)
+
+    def setup_connection(self, conn):
+        self.session_name = self.server_session_name = "session-info"
+        self.mmap_enabled = False
+        self.windows_enabled = False
+        def noop(*_args):
+            pass
+        self.send_ping = noop
+        self.server_sound_send = self.server_sound_receive = True
+        self.server_sound_encoders = self.server_sound_decoders = []
+        self.server_ping_latency = self.client_ping_latency = []
+        self.server_start_time = 0
+        protocol = super().setup_connection(conn)
+        self.window = None
+        return protocol
+
+    def run_loop(self):
+        Gtk.main()
+
+    def exit_loop(self):
+        Gtk.main_quit()
+
+    def client_type(self):
+        #overriden in subclasses!
+        return "session-info"
+
+    def update_screen(self):
+        #this is called every time we get the server info back
+        #log.info("server_last_info=%s", self.server_last_info)
+        if not self.server_last_info:
+            return
+        td = typedict(self.server_last_info)
+        def rtdict(*keys):
+            d = td
+            for prop in keys:
+                v = d.dictget(prop)
+                #log.info("%s.get(%s)=%s", repr_ellipsized(d), prop, repr_ellipsized(v))
+                d = typedict(v or {})
+            return d
+        from xpra.client.mixins.serverinfo_mixin import get_remote_lib_versions
+        features = rtdict("features")
+        self.server_clipboard = features.boolget("clipboard")
+        self.server_notifications = features.boolget("notifications")
+        display = rtdict("display")
+        self.server_opengl = rtdict("display", "opengl")
+        self.server_bell = display.boolget("bell")
+        self.server_cursors = display.boolget("cursors")
+        self.server_randr = display.boolget("randr")
+        server = rtdict("server")
+        self.server_actual_desktop_size = server.inttupleget("root_window_size")
+        self.server_max_desktop_size = server.inttupleget("max_desktop_size")
+        self._remote_lib_versions = get_remote_lib_versions(rtdict("server"))
+        encodings = rtdict("encodings")
+        self.server_core_encodings = encodings.strtupleget("core")
+        network = rtdict("network")
+        self.server_packet_encoders = network.strtupleget("encoders")
+        self.server_compressors = network.strtupleget("compressors")
+        self.server_load = server.inttupleget("load")
+        self._remote_hostname = server.strget("hostname")
+        build = rtdict("server", "build")
+        self._remote_version = build.strget("version")
+        self._remote_build_date = build.strget("date")
+        self._remote_build_time = build.strget("time")
+        self._remote_revision = build.intget("revision")
+        self._remote_modifications = build.intget("local_modifications")
+        self._remote_branch = build.strget("branch")
+        self._remote_commit = build.strget("commit")
+        platform_info = rtdict("server", "platform")
+        self._remote_platform = platform_info.strget("")
+        self._remote_platform_release = platform_info.strget("release")
+        self._remote_platform_platform = platform_info.strget("platform")
+        self._remote_platform_linux_distribution = platform_info.strget("linux_distribution")
+        self.server_display = server.strget("display")
+        self.idle_add(self.do_update_screen)
+
+    def do_update_screen(self):
+        if not self.window:
+            self.window = SessionInfo(self, "session-info", self._protocol._conn, show_client=False)
+            self.window.show_all()
+            def destroy(*_args):
+                self.exit_loop()
+            self.window.connect("destroy", destroy)
+        self.window.populate()
+        return False
