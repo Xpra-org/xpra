@@ -452,9 +452,8 @@ class InfoTimerClient(MonitorXpraClient):
         self.send_info_request()
         self.timeout_add(self.REFRESH_RATE*1000, self.send_info_request)
 
-    def send_info_request(self):
-        self.log("send_info_request()")
-        categories = ()
+    def send_info_request(self, *categories):
+        self.log("send_info_request%s" % (categories,))
         if not self.info_request_pending:
             self.info_request_pending = True
             window_ids = ()    #no longer used or supported by servers
