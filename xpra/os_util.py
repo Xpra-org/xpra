@@ -139,6 +139,15 @@ def memoryview_to_bytes(v) -> bytes:
     return strtobytes(v)
 
 
+def set_proc_title(title):
+    print("set_proc_title: %s" % os.getpid())
+    try:
+        import setproctitle
+        setproctitle.setproctitle(title)  #@UndefinedVariable
+    except ImportError as e:
+        get_util_logger().error("setproctitle not installed: %s", e)
+
+
 def getuid() -> int:
     if POSIX:
         return os.getuid()

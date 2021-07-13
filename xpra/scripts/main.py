@@ -34,6 +34,7 @@ from xpra.exit_codes import (
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
     monotonic_time, bytestostr, use_tty,
+    set_proc_title,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
@@ -120,6 +121,9 @@ def main(script_file, cmdline):
         defaults = make_defaults_struct()
         fixup_defaults(defaults)
         options, args = do_parse_cmdline(cmdline, defaults)
+        #set_proc_title is here so we can override the cmdline later
+        #(don't ask me why this works)
+        set_proc_title(" ".join(cmdline))
         if not args:
             raise InitExit(-1, "xpra: need a mode")
         mode = args.pop(0)
@@ -1798,6 +1802,14 @@ def get_client_app(error_cb, opts, extra_args, mode):
         if mode!="listen":
             app.show_progress(60, "connecting to server")
         display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args)
+        if len(extra_args)==1 and opts.password:
+            uri = extra_args[0]
+            if uri in sys.argv and opts.password in uri:
+                #hide the password from the URI:
+                i = sys.argv.index(uri)
+                #sys.argv[i] = uri.replace(opts.password, "*"*len(opts.password))
+                sys.argv[i] = uri.replace(opts.password, "********")
+                set_proc_title(" ".join(sys.argv))
         connect_to_server(app, display_desc, opts)
     except Exception:
         app.cleanup()

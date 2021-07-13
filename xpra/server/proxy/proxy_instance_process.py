@@ -18,6 +18,7 @@ from xpra.os_util import (
     SIGNAMES, POSIX,
     bytestostr,
     osexpand,
+    set_proc_title,
     getuid, getgid, get_username_for_uid, setuidgid,
     register_SIGUSR_signals,
     )
@@ -40,13 +41,6 @@ enclog = Logger("encoding")
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
-
-def set_proc_title(title):
-    try:
-        import setproctitle
-        setproctitle.setproctitle(title)  #@UndefinedVariable
-    except ImportError as e:
-        log("setproctitle not installed: %s", e)
 
 def set_blocking(conn):
     #Note: importing set_socket_timeout from xpra.net.bytestreams
