@@ -140,7 +140,6 @@ def memoryview_to_bytes(v) -> bytes:
 
 
 def set_proc_title(title):
-    print("set_proc_title: %s" % os.getpid())
     try:
         import setproctitle
         setproctitle.setproctitle(title)  #@UndefinedVariable
