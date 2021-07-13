@@ -34,9 +34,7 @@ However if your client uses unusual resolutions, for instance multiple screens o
 
 With Xpra, this may have been configured automatically for you when installing (on some distributions only).  
 You choose at [build time](../Build/README.md) whether or not to use `Xdummy` using the `--with[out]-Xdummy` build switch.  
-If your packages do not enable `Xdummy` by default, you may be able to switch to it by modifying the `xvfb` value in `/etc/xpra/conf.d/55_server_x11.conf`.
-
-You can also specify this virtual framebuffer alternative using the `--xvfb` command line switch or by setting the xvfb option in your `/etc/xpra/xpra.conf` config file:
+If your packages do not enable `Xdummy` by default, you may be able to switch to it by modifying the `xvfb` value in `/etc/xpra/conf.d/55_server_x11.conf`, something like:
 ```
 xvfb=Xorg -dpi 96 -noreset -nolisten tcp \
           +extension GLX +extension RANDR +extension RENDER \
