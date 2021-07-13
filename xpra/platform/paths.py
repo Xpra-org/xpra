@@ -319,6 +319,7 @@ def get_info():
         "libexec"           : {"dir"    : get_libexec_dir()},
         "mmap"              : {"dir"    : get_mmap_dir()},
         "xpra-tmp"          : {"dir"    : get_xpra_tmp_dir()},
+        "script"            : {"dir"    : get_script_bin_dirs()},
         "xpra-module"       : XPRA_MODULE_PATH,
         "app"               : {"default" : {"dir"   : default_get_app_dir()}},
         "desktop-background": get_desktop_background_paths(),
