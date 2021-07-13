@@ -77,7 +77,7 @@ def r210_to_rgba(buf,
     assert w*4<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
     cdef unsigned int* r210
     with buffer_context(buf) as bc:
-        assert len(bc)>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
+        assert len(bc)>=<Py_ssize_t>(h*src_stride), "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
         r210 = <unsigned int*> (<uintptr_t> int(bc))
         return r210data_to_rgba(r210, w, h, src_stride, dst_stride)
 
@@ -110,7 +110,7 @@ def r210_to_rgbx(buf,
     assert w*4<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
     cdef unsigned int* r210
     with buffer_context(buf) as bc:
-        assert len(bc)>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
+        assert len(bc)>=<Py_ssize_t>(h*src_stride), "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
         r210 = <unsigned int*> (<uintptr_t> int(bc))
         return r210data_to_rgbx(r210, w, h, src_stride, dst_stride)
 
@@ -143,7 +143,7 @@ def r210_to_rgb(buf,
     assert w*3<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
     cdef unsigned int* r210
     with buffer_context(buf) as bc:
-        assert len(bc)>=h*src_stride, "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
+        assert len(bc)>=<Py_ssize_t>(h*src_stride), "source buffer is %i bytes, which is too small for %ix%i" % (len(bc), src_stride, h)
         r210 = <unsigned int*> (<uintptr_t> int(bc))
         return r210data_to_rgb(r210, w, h, src_stride, dst_stride)
 

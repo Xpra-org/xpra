@@ -67,7 +67,7 @@ def xor_str(a, b):
 def hybi_unmask(data, unsigned int offset, unsigned int datalen):
     cdef uintptr_t mp
     with buffer_context(data) as bc:
-        assert len(bc)>=offset+4+datalen, "buffer too small %i vs %i: offset=%i, datalen=%i" % (len(bc), offset+4+datalen, offset, datalen)
+        assert len(bc)>=<Py_ssize_t>(offset+4+datalen), "buffer too small %i vs %i: offset=%i, datalen=%i" % (len(bc), offset+4+datalen, offset, datalen)
         mp = (<uintptr_t> int(bc))+offset
         return do_hybi_mask(mp, mp+4, datalen)
 
