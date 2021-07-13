@@ -307,9 +307,10 @@ if [ "$STRIP_SOURCE" == "1" ]; then
 			rm "${x}"
 		fi
 	done
-	echo "removing html cython report"
-	find $LIBDIR/python/xpra/ -name "*.html" -exec rm {} \;
 fi
+#always strip the cython html reports:
+echo "removing html cython report"
+find $LIBDIR/python/xpra/ -name "*.html" -exec rm {} \;
 
 
 #gst bits expect to find dylibs in Frameworks!?
