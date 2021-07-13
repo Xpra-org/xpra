@@ -9,12 +9,13 @@ import os
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, POSIX
-from xpra.util import csv, envbool, flatten_dict, typedict, XPRA_AUDIO_NOTIFICATION_ID
+from xpra.util import csv, envbool, envint, flatten_dict, typedict, XPRA_AUDIO_NOTIFICATION_ID
 from xpra.log import Logger
 
 log = Logger("sound")
 
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
+NEW_STREAM_SOUND_STOP = envint("XPRA_NEW_STREAM_SOUND_STOP", 20)
 
 
 class AudioMixin(StubSourceMixin):
@@ -54,13 +55,36 @@ class AudioMixin(StubSourceMixin):
         self.sound_send = False
         self.sound_bundle_metadata = False
         self.sound_fade_timer = None
+        self.new_stream_timers = {}
 
     def cleanup(self):
         log("%s.cleanup()", self)
         self.cancel_sound_fade_timer()
         self.stop_sending_sound()
         self.stop_receiving_sound()
+        self.stop_new_stream_notifications()
         self.init_state()
+
+
+    def stop_new_stream_notifications(self):
+        timers = self.new_stream_timers.copy()
+        self.new_stream_timers = {}
+        for proc, timer in timers.items():
+            timer = self.new_stream_timers.pop(proc, None)
+            if timer:
+                self.source_remove(timer)
+            self.stop_new_stream_notification(proc)
+
+    def stop_new_stream_notification(self, proc):
+        r = proc.poll()
+        log.info("stop_new_stream_notification(%s) exit code=%s", proc, r)
+        if r is not None:
+            #already ended
+            return
+        try:
+            proc.terminate()
+        except Exception:
+            log("failed to stop stream notification %s", proc)
 
 
     def parse_client_caps(self, c):
@@ -251,6 +275,11 @@ class AudioMixin(StubSourceMixin):
                     log("Popen(%s)=%s", cmd, proc)
                     from xpra.child_reaper import getChildReaper
                     getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
+                    def stop_new_stream_notification():
+                        if self.new_stream_timers.pop(proc, None):
+                            self.stop_new_stream_notification(proc)
+                    timer = self.timeout_add(NEW_STREAM_SOUND_STOP*1000, stop_new_stream_notification)
+                    self.new_stream_timers[proc] = timer
             except Exception:
                 pass
         log("new_stream(%s, %s)", sound_source, codec)
