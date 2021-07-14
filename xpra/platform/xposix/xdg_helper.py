@@ -137,6 +137,8 @@ def load_xdg_entry(de):
         "Exec", "TryExec", "Path", "Terminal", "MimeTypes",
         "Categories", "StartupNotify", "StartupWMClass", "URL",
         ))
+    if props.get("NoDisplay", False) or props.get("Hidden", False):
+        return None
     if de.getTryExec():
         try:
             command = de.findTryExec()
@@ -145,7 +147,7 @@ def load_xdg_entry(de):
     else:
         command = de.getExec()
     props["command"] = command
-    if not EXPORT_SELF and command.find("xpra")>=0:
+    if not EXPORT_SELF and command and command.find("xpra")>=0:
         return None
     if not EXPORT_TERMINAL_APPLICATIONS and props.get("Terminal", False):
         return None
@@ -316,8 +318,16 @@ def do_load_xdg_menu_data():
                     log("failed to load %s from %s", f, d, exc_info=True)
                 else:
                     ed = load_xdg_entry(me.DesktopEntry)
+                    if not ed:
+                        continue
+                    name = ed.get("Name")
+                    #ensure we don't already have it in another submenu:
+                    for menu_category in menu_data.values():
+                        if name in menu_category.get("Entries", {}):
+                            ed = None
+                            break
                     if ed:
-                        entries[ed.get("Name")] = ed
+                        entries[name] = ed
         log("entries(%s)=%s", LOAD_APPLICATIONS, remove_icons(entries))
         if entries:
             #add an 'Applications' menu if we don't have one:
