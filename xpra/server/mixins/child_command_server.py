@@ -92,8 +92,6 @@ class ChildCommandServer(StubServerMixin):
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
-        if self.menu_provider:
-            self.menu_provider.setup()
 
     def cleanup(self):
         if self.terminate_children and self._upgrading!=EXITING_CODE:
