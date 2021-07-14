@@ -27,6 +27,9 @@ log = Logger("exec", "menu")
 LOAD_GLOB = envbool("XPRA_XDG_LOAD_GLOB", True)
 EXPORT_ICONS = envbool("XPRA_XDG_EXPORT_ICONS", True)
 DEBUG_COMMANDS = os.environ.get("XPRA_XDG_DEBUG_COMMANDS", "").split(",")
+EXPORT_TERMINAL_APPLICATIONS = envbool("XPRA_XDG_EXPORT_TERMINAL_APPLICATIONS", False)
+EXPORT_SELF = envbool("XPRA_XDG_EXPORT_SELF", False)
+LOAD_APPLICATIONS = os.environ.get("XPRA_MENU_LOAD_APPLICATIONS", "%s/share/applications" % sys.prefix).split(":")
 
 
 def isvalidtype(v):
@@ -142,6 +145,10 @@ def load_xdg_entry(de):
     else:
         command = de.getExec()
     props["command"] = command
+    if not EXPORT_SELF and command.find("xpra")>=0:
+        return None
+    if not EXPORT_TERMINAL_APPLICATIONS and props.get("Terminal", False):
+        return None
     icondata = props.get("IconData")
     if not icondata:
         #try harder:
@@ -167,18 +174,27 @@ def load_xdg_menu(submenu):
             submenu_data["IconData"] = bdata
             submenu_data["IconType"] = ext
     entries_data = submenu_data.setdefault("Entries", {})
-    for entry in submenu.getEntries():
-        #can we have more than 2 levels of submenus?
-        from xdg.Menu import MenuEntry
-        if isinstance(entry, MenuEntry):
-            de = entry.DesktopEntry
-            name = de.getName()
-            try:
-                entries_data[name] = load_xdg_entry(de)
-            except Exception as e:
-                log("load_xdg_menu(%s)", submenu, exc_info=True)
-                log.error("Error loading desktop entry '%s':", name)
-                log.error(" %s", e)
+    from xdg.Menu import Menu, MenuEntry
+    def add_entries(entries):
+        for i, entry in enumerate(entries):
+            if isinstance(entry, MenuEntry):
+                de = entry.DesktopEntry
+                name = de.getName()
+                log("  - %-3i %s", i, name)
+                try:
+                    ed = load_xdg_entry(de)
+                    if ed:
+                        entries_data[name] = ed
+                except Exception as e:
+                    log("load_xdg_menu(%s)", submenu, exc_info=True)
+                    log.error("Error loading desktop entry '%s':", name)
+                    log.error(" %s", e)
+            elif isinstance(entry, Menu):
+                #merge up:
+                add_entries(entry.Entries)
+    add_entries(submenu.getEntries())
+    if not entries_data:
+        return None
     return submenu_data
 
 def remove_icons(menu_data):
@@ -245,8 +261,8 @@ def do_load_xdg_menu_data():
                 if prefix is not None:
                     os.environ["XDG_MENU_PREFIX"] = prefix
                 try:
-                    log("parsing xdg menu data for prefix %r with XDG_CONFIG_DIRS=%s",
-                        prefix, os.environ.get("XDG_CONFIG_DIRS"))
+                    log("parsing xdg menu data for prefix %r with XDG_CONFIG_DIRS=%s and XDG_MENU_PREFIX=%s",
+                        prefix, os.environ.get("XDG_CONFIG_DIRS"), os.environ.get("XDG_MENU_PREFIX"))
                     menu = parse()
                     break
                 except Exception as e:
@@ -265,20 +281,53 @@ def do_load_xdg_menu_data():
     menu_data = {}
     entries = tuple(menu.getEntries())
     log("%s.getEntries()=%s", menu, entries)
-    for submenu in entries:
+    if len(entries)==1 and entries[0].Submenus:
+        entries = entries[0].Submenus
+        log("using submenus %s", entries)
+    for i, submenu in enumerate(entries):
         if not isinstance(submenu, Menu):
             log("entry '%s' is not a submenu", submenu)
             continue
         name = submenu.getName()
+        log("* %-3i %s", i, name)
         if not submenu.Visible:
-            log("submenu '%s' is not visible", name)
+            log(" submenu '%s' is not visible", name)
             continue
         try:
-            menu_data[name] = load_xdg_menu(submenu)
+            md = load_xdg_menu(submenu)
+            if md:
+                menu_data[name] = md
+            else:
+                log(" no menu data for %s", name)
         except Exception as e:
             log("load_xdg_menu_data()", exc_info=True)
             log.error("Error loading submenu '%s':", name)
             log.error(" %s", e)
+    if LOAD_APPLICATIONS:
+        from xdg.Menu import MenuEntry
+        entries = {}
+        for d in LOAD_APPLICATIONS:
+            for f in os.listdir(d):
+                if not f.endswith(".desktop"):
+                    continue
+                try:
+                    me = MenuEntry(f, d)
+                except Exception:
+                    log("failed to load %s from %s", f, d, exc_info=True)
+                else:
+                    ed = load_xdg_entry(me.DesktopEntry)
+                    if ed:
+                        entries[ed.get("Name")] = ed
+        log("entries(%s)=%s", LOAD_APPLICATIONS, remove_icons(entries))
+        if entries:
+            #add an 'Applications' menu if we don't have one:
+            md = menu_data.get("Applications")
+            if not md:
+                md = {
+                    "Name" : "Applications",
+                    }
+                menu_data["Applications"] = md
+            md.setdefault("Entries", {}).update(entries)
     return menu_data
 
 
@@ -292,6 +341,8 @@ def load_desktop_sessions():
             de = DesktopEntry(filename)
             try:
                 entry = load_xdg_entry(de)
+                if not entry:
+                    continue
                 if getattr(entry, "IconData", None) is None:
                     names = get_icon_names_for_session(de.getName().lower())
                     v = find_session_icon(*names)
