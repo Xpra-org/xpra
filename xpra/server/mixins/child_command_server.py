@@ -92,8 +92,6 @@ class ChildCommandServer(StubServerMixin):
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
         self.idle_add(set_reaper_callback)
-        if self.menu_provider:
-            self.menu_provider.setup()
 
     def cleanup(self):
         if self.terminate_children and self._upgrading!=EXITING_CODE:
@@ -170,7 +168,7 @@ class ChildCommandServer(StubServerMixin):
         mp = self.menu_provider
         if mp:
             info.update({
-            "start-menu"                : mp.get_menu_data(remove_icons=True) or {},
+            "start-menu"                : mp.get_menu_data(remove_icons=True, wait=False) or {},
             "start-desktop-menu"        : mp.get_desktop_sessions(remove_icons=True) or {},
             })
         for i,procinfo in enumerate(self.children_started):
