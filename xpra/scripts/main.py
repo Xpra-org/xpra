@@ -3174,22 +3174,29 @@ def run_docs():
         os.path.join(get_resources_dir(), "doc", "index.html"),
         )
 
-def run_html5():
+def run_html5(url_options=None):
     from xpra.platform.paths import get_resources_dir, get_app_dir
+    page = "connect.html"
+    if url_options:
+        from urllib.parse import urlencode
+        page += "#"+urlencode(url_options)
     return _browser_open(
         "html5 client",
-        os.path.join(get_resources_dir(), "html5", "connect.html"),
-        os.path.join(get_resources_dir(), "www", "connect.html"),
-        os.path.join(get_app_dir(), "www", "connect.html"),
+        os.path.join(get_resources_dir(), "html5", page),
+        os.path.join(get_resources_dir(), "www", page),
+        os.path.join(get_app_dir(), "www", page),
         )
 
 def _browser_open(what, *path_options):
     for f in path_options:
         af = os.path.abspath(f)
-        if os.path.exists(af) and os.path.isfile(af):
+        nohash = af.split("#", 1)[0]
+        if os.path.exists(nohash) and os.path.isfile(nohash):
             import webbrowser
             webbrowser.open_new_tab("file://%s" % af)
             return 0
+        else:
+            print("%s does not exist" % af)
     raise InitExit(EXIT_FAILURE, "%s not found!" % what)
 
 

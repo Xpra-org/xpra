@@ -456,7 +456,15 @@ class MenuHelper:
         def show_html5(*_args):
             from xpra.scripts.main import run_html5
             from xpra.make_thread import start_thread
-            start_thread(run_html5, "open HTML5 client", True)
+            url_options = {}
+            try:
+                for k in ("port", "host", "username", "mode", "display"):
+                    v = self.client.display_desc.get(k)
+                    if v is not None:
+                        url_options[k] = v
+            except Exception:
+                pass
+            start_thread(run_html5, "open HTML5 client", True, args=(url_options, ))
         return self.menuitem("HTML5 client", "browser.png", None, show_html5)
 
     def make_closemenuitem(self):
