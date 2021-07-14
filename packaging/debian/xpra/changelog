@@ -1,3 +1,8 @@
+xpra (4.2.2-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 14 Jul 2021 16:00:16 +0700
+
 xpra (4.2.1-1) UNRELEASED; urgency=low
   * build and packaging fixes:
     - missing dependencies

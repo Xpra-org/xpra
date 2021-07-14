@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.2.2] 2021-07-14
+* TODO
+
 ## [4.2.1] 2021-07-11
 * build and packaging fixes:
 	* missing dependencies
