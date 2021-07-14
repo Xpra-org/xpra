@@ -3168,8 +3168,10 @@ def run_docs():
     from xpra.platform.paths import get_resources_dir, get_app_dir
     return _browser_open(
         "documentation",
-        os.path.join(get_resources_dir(), "doc", "index.html"),
+        os.path.join(get_resources_dir(), "share", "doc", "xpra", "index.html"),
+        os.path.join(get_resources_dir(), "share", "xpra", "doc", "index.html"),
         os.path.join(get_app_dir(), "doc", "index.html"),
+        os.path.join(get_resources_dir(), "doc", "index.html"),
         )
 
 def run_html5():
