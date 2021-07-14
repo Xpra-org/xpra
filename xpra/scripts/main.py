@@ -3195,8 +3195,6 @@ def _browser_open(what, *path_options):
             import webbrowser
             webbrowser.open_new_tab("file://%s" % af)
             return 0
-        else:
-            print("%s does not exist" % af)
     raise InitExit(EXIT_FAILURE, "%s not found!" % what)
 
 
