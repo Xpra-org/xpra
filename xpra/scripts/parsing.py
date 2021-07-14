@@ -248,6 +248,8 @@ def get_usage():
                         "gui",
                         "start-gui",
                         "displays",
+                        "docs",
+                        "html5",
                       ]
     if supports_mdns:
         command_options.append("list-mdns")
