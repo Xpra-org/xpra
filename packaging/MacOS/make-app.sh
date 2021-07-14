@@ -295,6 +295,11 @@ mv ${RSCDIR}/share/xpra/css ${RSCDIR}/
 #unused py2app scripts:
 rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh
 
+echo " * docs"
+if [ -d "${JHBUILD_PREFIX}/share/xpra/doc" ]; then
+	mkdir -p ${RSCDIR}/share/doc/xpra
+	rsync -rplogt ${JHBUILD_PREFIX}/share/doc/xpra/* ${RSCDIR}/share/doc/xpra/
+fi
 
 if [ "$STRIP_SOURCE" == "1" ]; then
 	echo "removing py if we have the pyc:"

@@ -1628,7 +1628,11 @@ else:
                 copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 
             if docs_ENABLED:
-                doc_dir = "%s/share/doc/xpra" % self.install_dir
+                if WIN32 or OSX:
+                    #keep everything in our own directory:
+                    doc_dir = "%s/share/xpra/doc" % self.install_dir
+                else:
+                    doc_dir = "%s/share/doc/xpra" % self.install_dir
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:

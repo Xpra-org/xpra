@@ -171,7 +171,7 @@ def configure_logging(options, mode):
     if mode in (
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui",
-        "bug-report", "session-info",
+        "bug-report", "session-info", "docs",
         "displays", "list-sessions", "wminfo", "wmname", "recover",
         "clean-displays", "clean-sockets",
         "splash", "qrcode",
@@ -499,6 +499,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         bug_report.main(["xpra"]+args)
     elif mode == "session-info":
         return run_session_info(error_cb, options, args)
+    elif mode == "docs":
+        return run_docs()
     elif (
         mode=="_proxy" or
         (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
@@ -3159,6 +3161,14 @@ def run_session_info(error_cb, options, args):
     app = SessionInfoClient(options)
     connect_to_server(app, display_desc, options)
     return app.run()
+
+def run_docs():
+    from xpra.platform.paths import get_resources_dir
+    index = os.path.join(get_resources_dir(), "doc", "index.html")
+    if not os.path.exists(index) or not os.path.isfile(index):
+        raise InitExit(EXIT_FAILURE, "documentation '%s' does not exist" % index)
+    import webbrowser
+    webbrowser.open_new_tab(index)
 
 
 def run_sessions_gui(error_cb, options):
