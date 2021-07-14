@@ -3185,9 +3185,10 @@ def run_html5():
 
 def _browser_open(what, *path_options):
     for f in path_options:
-        if os.path.exists(f) and os.path.isfile(f):
+        af = os.path.abspath(f)
+        if os.path.exists(af) and os.path.isfile(af):
             import webbrowser
-            webbrowser.open_new_tab(f)
+            webbrowser.open_new_tab("file://%s" % af)
             return 0
     raise InitExit(EXIT_FAILURE, "%s not found!" % what)
 
