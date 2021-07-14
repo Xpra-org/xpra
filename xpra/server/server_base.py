@@ -625,10 +625,8 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             try:
                 merge_dicts(info, c.get_info(self, proto))
-            except Exception as e:
-                log("do_get_info%s", (proto, server_sources), exc_info=True)
-                log.error("Error collecting information from %s", c)
-                log.error(" %s", e)
+            except Exception:
+                log.error("Error collecting information from %s", c, exc_info=True)
 
         up("features",  self.get_features_info())
         up("network", {
