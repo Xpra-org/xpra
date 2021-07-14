@@ -445,5 +445,19 @@ class MenuHelper:
             self.show_bug_report()
         return  self.menuitem("Bug Report", "bugs.png", None, show_bug_report_cb)
 
+    def make_docsmenuitem(self):
+        def show_docs(*_args):
+            from xpra.scripts.main import run_docs
+            from xpra.make_thread import start_thread
+            start_thread(run_docs, "open documentation", True)
+        return self.menuitem("Documentation", "documentation.png", None, show_docs)
+
+    def make_html5menuitem(self):
+        def show_html5(*_args):
+            from xpra.scripts.main import run_html5
+            from xpra.make_thread import start_thread
+            start_thread(run_html5, "open HTML5 client", True)
+        return self.menuitem("HTML5 client", "browser.png", None, show_html5)
+
     def make_closemenuitem(self):
         return self.menuitem("Close Menu", "close.png", None, self.close_menu)

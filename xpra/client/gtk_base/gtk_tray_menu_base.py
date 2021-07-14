@@ -133,6 +133,8 @@ class GTKTrayMenuBase(MenuHelper):
         if SHOW_VERSION_CHECK:
             menu.append(self.make_updatecheckmenuitem())
         menu.append(self.make_bugreportmenuitem())
+        menu.append(self.make_docsmenuitem())
+        menu.append(self.make_html5menuitem())
         info_menu_item.show_all()
         return info_menu_item
 
