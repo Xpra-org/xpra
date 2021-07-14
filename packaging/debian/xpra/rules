@@ -3,7 +3,12 @@
 export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
 export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
-BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
+# Disable ffmpeg-based codecs on i386, see https://github.com/Xpra-org/xpra/issues/3198
+ifneq (,$(filter i386,$(DEB_HOST_ARCH)))
+EXTRA_BUILDOPTS := --without-csc_swscale --without-enc_ffmpeg --without-dec_avcodec2
+endif
+
+BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ $(EXTRA_BUILDOPTS)
 
 %:
 	dh $@ --with python3 --with systemd --without=build-stamp
