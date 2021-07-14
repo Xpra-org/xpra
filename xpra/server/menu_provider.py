@@ -55,10 +55,7 @@ class MenuProvider:
         if not POSIX or OSX or not EXPORT_XDG_MENU_DATA:
             return
         self.setup_menu_watcher()
-        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-        #start loading in a thread,
-        #so server startup can complete:
-        start_thread(load_xdg_menu_data, "load-xdg-menu-data", True, (False, False))
+        self.load_menu_data()
 
     def cleanup(self):
         self.cancel_xdg_menu_reload()
@@ -126,6 +123,12 @@ class MenuProvider:
                 log("error closing watch manager %s", wm, exc_info=True)
 
 
+    def load_menu_data(self, force_reload=False):
+        #start loading in a thread,
+        #as this may take a while and
+        #so server startup can complete:
+        start_thread(self.get_menu_data, "load-menu-data", True, args=(force_reload, False))
+
     def get_menu_data(self, force_reload=False, remove_icons=False):
         if not EXPORT_XDG_MENU_DATA:
             return None
@@ -140,9 +143,16 @@ class MenuProvider:
         else:
             log.error("Error: unsupported platform!")
             return None
+        GLib.idle_add(self.got_menu_data, menu_data)
         if remove_icons:
             menu_data = noicondata(menu_data)
         return menu_data
+
+    def got_menu_data(self, menu_data):
+        for cb in self.on_reload:
+            cb(menu_data)
+        return False
+
 
     def cancel_xdg_menu_reload(self):
         xmrt = self.xdg_menu_reload_timer
@@ -157,10 +167,9 @@ class MenuProvider:
     def xdg_menu_reload(self):
         self.xdg_menu_reload_timer = None
         log("xdg_menu_reload()")
-        xdg_menu = self.get_menu_data(True)
-        for cb in self.on_reload:
-            cb(xdg_menu)
+        self.load_menu_data(True)
         return False
+
 
     def get_menu_icon(self, category_name, app_name):
         xdg_menu = self.get_menu_data()
