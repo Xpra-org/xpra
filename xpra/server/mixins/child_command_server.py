@@ -116,11 +116,11 @@ class ChildCommandServer(StubServerMixin):
             }
 
 
-    def _get_xdg_menu_data(self, force_reload=False):
+    def _get_xdg_menu_data(self):
         if not self.start_new_commands:
             return None
         assert self.menu_provider
-        return self.menu_provider.get_menu_data(force_reload)
+        return self.menu_provider.get_menu_data()
 
 
     def get_caps(self, source) -> dict:
