@@ -72,10 +72,6 @@ class MenuProvider:
             log("threaded_setup()", exc_info=True)
             log.error("Error setting up menu watcher:")
             log.error(" %s", e)
-        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-        #start loading in a thread,
-        #so server startup can complete:
-        start_thread(load_xdg_menu_data, "load-xdg-menu-data", True)
 
     def do_setup_menu_watcher(self):
         if self.watch_manager:
