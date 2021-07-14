@@ -501,6 +501,8 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         return run_session_info(error_cb, options, args)
     elif mode == "docs":
         return run_docs()
+    elif mode == "html5":
+        return run_html5()
     elif (
         mode=="_proxy" or
         (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
@@ -3163,12 +3165,29 @@ def run_session_info(error_cb, options, args):
     return app.run()
 
 def run_docs():
-    from xpra.platform.paths import get_resources_dir
-    index = os.path.join(get_resources_dir(), "doc", "index.html")
-    if not os.path.exists(index) or not os.path.isfile(index):
-        raise InitExit(EXIT_FAILURE, "documentation '%s' does not exist" % index)
-    import webbrowser
-    webbrowser.open_new_tab(index)
+    from xpra.platform.paths import get_resources_dir, get_app_dir
+    return _browser_open(
+        "documentation",
+        os.path.join(get_resources_dir(), "doc", "index.html"),
+        os.path.join(get_app_dir(), "doc", "index.html"),
+        )
+
+def run_html5():
+    from xpra.platform.paths import get_resources_dir, get_app_dir
+    return _browser_open(
+        "html5 client",
+        os.path.join(get_resources_dir(), "html5", "connect.html"),
+        os.path.join(get_resources_dir(), "www", "connect.html"),
+        os.path.join(get_app_dir(), "www", "connect.html"),
+        )
+
+def _browser_open(what, *path_options):
+    for f in path_options:
+        if os.path.exists(f) and os.path.isfile(f):
+            import webbrowser
+            webbrowser.open_new_tab(f)
+            return 0
+    raise InitExit(EXIT_FAILURE, "%s not found!" % what)
 
 
 def run_sessions_gui(error_cb, options):
