@@ -127,16 +127,16 @@ class MenuProvider:
         #start loading in a thread,
         #as this may take a while and
         #so server startup can complete:
-        start_thread(self.get_menu_data, "load-menu-data", True, args=(force_reload, False))
+        start_thread(self.get_menu_data, "load-menu-data", True, args=(force_reload, ))
 
-    def get_menu_data(self, force_reload=False, remove_icons=False):
+    def get_menu_data(self, force_reload=False, remove_icons=False, wait=True):
         if not EXPORT_XDG_MENU_DATA:
             return None
         if OSX:
             return None
         if POSIX:
             from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-            menu_data = load_xdg_menu_data(force_reload)
+            menu_data = load_xdg_menu_data(force_reload, wait_for_lock=wait)
         elif WIN32:
             from xpra.platform.win32.menu_helper import load_menu
             menu_data = load_menu()
@@ -144,7 +144,7 @@ class MenuProvider:
             log.error("Error: unsupported platform!")
             return None
         GLib.idle_add(self.got_menu_data, menu_data)
-        if remove_icons:
+        if remove_icons and menu_data:
             menu_data = noicondata(menu_data)
         return menu_data
 

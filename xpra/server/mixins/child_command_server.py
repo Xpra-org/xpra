@@ -170,7 +170,7 @@ class ChildCommandServer(StubServerMixin):
         mp = self.menu_provider
         if mp:
             info.update({
-            "start-menu"                : mp.get_menu_data(remove_icons=True) or {},
+            "start-menu"                : mp.get_menu_data(remove_icons=True, wait=False) or {},
             "start-desktop-menu"        : mp.get_desktop_sessions(remove_icons=True) or {},
             })
         for i,procinfo in enumerate(self.children_started):
