@@ -600,7 +600,7 @@ class WindowModel(BaseWindowModel):
         # As per ICCCM 4.1.5, even if we ignore the request
         # send back a synthetic ConfigureNotify telling the client that nothing has happened.
         with xswallow:
-            X11Window.configureAndNotify(self.xid, x, y, w, h)
+            X11Window.configureAndNotify(self.xid, x, y, w, h, event.value_mask)
         # FIXME: consider handling attempts to change stacking order here.
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
