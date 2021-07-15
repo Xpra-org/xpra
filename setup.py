@@ -183,15 +183,15 @@ webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
-enc_ffmpeg_ENABLED      = DEFAULT and pkg_config_version("58.18", "libavcodec")
+enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
 #ffmpeg 3.1 or later is required
-dec_avcodec2_ENABLED    = DEFAULT and pkg_config_version("57", "libavcodec")
-csc_swscale_ENABLED     = DEFAULT and pkg_config_ok("--exists", "libswscale")
+dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
+csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
 nvjpeg_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_version("10", "nvenc")
