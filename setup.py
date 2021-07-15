@@ -582,6 +582,10 @@ def cython_add(extension, min_version="0.20"):
     global cmdclass
     cmdclass['build_ext'] = build_ext
 
+def add_cython_ext(*args, **kwargs):
+    ext = Extension(*args, **kwargs)
+    cython_add(ext)
+
 def insert_into_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
     for arg in args:
@@ -1683,7 +1687,7 @@ else:
         #don't use py_modules or scripts with py2app, and no cython:
         del setup_options["py_modules"]
         scripts = []
-        def cython_add(*_args, **_kwargs):
+        def add_cython_ext(*_args, **_kwargs):
             pass
 
         remove_packages("ctypes.wintypes", "colorsys")
@@ -1777,10 +1781,10 @@ if modules_ENABLED:
         #this may well be sub-optimal:
         add_to_keywords(buffers_pkgconfig, "extra_compile_args", "-mfpmath=387")
     if cython_ENABLED:
-        cython_add(Extension("xpra.buffers.membuf",
-                    ["xpra/buffers/membuf.pyx", "xpra/buffers/memalign.c"], **buffers_pkgconfig))
-        cython_add(Extension("xpra.buffers.xxh",
-                    ["xpra/buffers/xxh.pyx", "xpra/buffers/xxhash.c"], **buffers_pkgconfig))
+        add_cython_ext("xpra.buffers.membuf",
+                       ["xpra/buffers/membuf.pyx", "xpra/buffers/memalign.c"], **buffers_pkgconfig)
+        add_cython_ext("xpra.buffers.xxh",
+                       ["xpra/buffers/xxh.pyx", "xpra/buffers/xxhash.c"], **buffers_pkgconfig)
 
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
@@ -1807,90 +1811,90 @@ if OSX:
                 "-framework", "AppKit",
                 "-I/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers/",
                 "-I/System/Library/Frameworks/AppKit.framework/Versions/C/Headers/")
-    cython_add(Extension("xpra.platform.darwin.gdk3_bindings",
+    add_cython_ext("xpra.platform.darwin.gdk3_bindings",
             ["xpra/platform/darwin/gdk3_bindings.pyx", "xpra/platform/darwin/transparency_glue.m"],
             language="objc",
             **quartz_pkgconfig
-            ))
+            )
 
 if cython_ENABLED:
     monotonic_time_pkgconfig = pkgconfig()
     if not OSX and not WIN32 and not OPENBSD:
         add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
-    cython_add(Extension("xpra.monotonic_time",
+    add_cython_ext("xpra.monotonic_time",
                 ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
                 **monotonic_time_pkgconfig
-                ))
+                )
 
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:
-    cython_add(Extension("xpra.x11.bindings.wait_for_x_server",
+    add_cython_ext("xpra.x11.bindings.wait_for_x_server",
                 ["xpra/x11/bindings/wait_for_x_server.pyx"],
                 **pkgconfig("x11")
-                ))
-    cython_add(Extension("xpra.x11.bindings.display_source",
+                )
+    add_cython_ext("xpra.x11.bindings.display_source",
                 ["xpra/x11/bindings/display_source.pyx"],
                 **pkgconfig("x11")
-                ))
-    cython_add(Extension("xpra.x11.bindings.core_bindings",
+                )
+    add_cython_ext("xpra.x11.bindings.core_bindings",
                 ["xpra/x11/bindings/core_bindings.pyx"],
                 **pkgconfig("x11")
-                ))
-    cython_add(Extension("xpra.x11.bindings.posix_display_source",
+                )
+    add_cython_ext("xpra.x11.bindings.posix_display_source",
                 ["xpra/x11/bindings/posix_display_source.pyx"],
                 **pkgconfig("x11")
-                ))
+                )
 
-    cython_add(Extension("xpra.x11.bindings.randr_bindings",
+    add_cython_ext("xpra.x11.bindings.randr_bindings",
                 ["xpra/x11/bindings/randr_bindings.pyx"],
                 **pkgconfig("x11", "xrandr")
-                ))
-    cython_add(Extension("xpra.x11.bindings.keyboard_bindings",
+                )
+    add_cython_ext("xpra.x11.bindings.keyboard_bindings",
                 ["xpra/x11/bindings/keyboard_bindings.pyx"],
                 **pkgconfig("x11", "xtst", "xfixes", "xkbfile")
-                ))
+                )
 
-    cython_add(Extension("xpra.x11.bindings.window_bindings",
+    add_cython_ext("xpra.x11.bindings.window_bindings",
                 ["xpra/x11/bindings/window_bindings.pyx"],
                 **pkgconfig("x11", "xtst", "xfixes", "xcomposite", "xdamage", "xext")
-                ))
-    cython_add(Extension("xpra.x11.bindings.ximage",
+                )
+    add_cython_ext("xpra.x11.bindings.ximage",
                 ["xpra/x11/bindings/ximage.pyx"],
                 **pkgconfig("x11", "xext", "xcomposite")
-                ))
+                )
 if xinput_ENABLED:
-    cython_add(Extension("xpra.x11.bindings.xi2_bindings",
+    add_cython_ext("xpra.x11.bindings.xi2_bindings",
                 ["xpra/x11/bindings/xi2_bindings.pyx"],
                 **pkgconfig("x11", "xi")
-                ))
+                )
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models")
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.gtk3")
     #GTK3 display source:
-    cython_add(Extension("xpra.x11.gtk3.gdk_display_source",
+    add_cython_ext("xpra.x11.gtk3.gdk_display_source",
                 ["xpra/x11/gtk3/gdk_display_source.pyx"],
                 **pkgconfig("gdk-3.0")
-                ))
-    cython_add(Extension("xpra.x11.gtk3.gdk_bindings",
+                )
+    add_cython_ext("xpra.x11.gtk3.gdk_bindings",
                 ["xpra/x11/gtk3/gdk_bindings.pyx", "xpra/x11/gtk3/gdk_x11_macros.c"],
                 **pkgconfig("gdk-3.0", "xdamage")
-                ))
+                )
 
 if client_ENABLED and gtk3_ENABLED:
     #cairo workaround:
-    cython_add(Extension("xpra.client.gtk3.cairo_workaround",
+    add_cython_ext("xpra.client.gtk3.cairo_workaround",
                 ["xpra/client/gtk3/cairo_workaround.pyx"],
                 **pkgconfig("py3cairo")
-                ))
+                )
 
 if client_ENABLED or server_ENABLED:
     add_packages("xpra.codecs.argb")
     argb_pkgconfig = pkgconfig(optimize=3)
-    cython_add(Extension("xpra.codecs.argb.argb",
-                ["xpra/codecs/argb/argb.pyx"], **argb_pkgconfig))
+    add_cython_ext("xpra.codecs.argb.argb",
+                ["xpra/codecs/argb/argb.pyx"], **argb_pkgconfig)
 
 
 #build tests, but don't install them:
@@ -1942,10 +1946,10 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
     if debug_ENABLED:
         add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-DDEBUG")
     add_to_keywords(propsys_pkgconfig, 'extra_link_args', "-luuid", "-lshlwapi", "-lole32", "-static-libgcc")
-    cython_add(Extension("xpra.platform.win32.propsys",
+    add_cython_ext("xpra.platform.win32.propsys",
                 ["xpra/platform/win32/propsys.pyx", "xpra/platform/win32/setappid.cpp"],
                 language="c++",
-                **propsys_pkgconfig))
+                **propsys_pkgconfig)
 
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
@@ -1971,40 +1975,40 @@ toggle_modules(sound_ENABLED and not (OSX or WIN32), "xpra.sound.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 if clipboard_ENABLED:
-    cython_add(Extension("xpra.gtk_common.gtk3.gdk_atoms",
+    add_cython_ext("xpra.gtk_common.gtk3.gdk_atoms",
                          ["xpra/gtk_common/gtk3/gdk_atoms.pyx"],
                          **pkgconfig("gtk+-3.0")
-                         ))
+                         )
 toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk_common.gtk3")
 if gtk3_ENABLED:
-    cython_add(Extension("xpra.gtk_common.gtk3.gdk_bindings",
+    add_cython_ext("xpra.gtk_common.gtk3.gdk_bindings",
                 ["xpra/gtk_common/gtk3/gdk_bindings.pyx"],
                 **pkgconfig("gtk+-3.0", "pygobject-3.0")
-                ))
+                )
 
 O3_pkgconfig = pkgconfig(optimize=3)
 if client_ENABLED or server_ENABLED:
-    cython_add(Extension("xpra.buffers.cyxor",
+    add_cython_ext("xpra.buffers.cyxor",
                 ["xpra/buffers/cyxor.pyx"],
-                **O3_pkgconfig))
+                **O3_pkgconfig)
 if client_ENABLED or server_ENABLED or shadow_ENABLED:
-    cython_add(Extension("xpra.rectangle",
+    add_cython_ext("xpra.rectangle",
                 ["xpra/rectangle.pyx"],
-                **O3_pkgconfig))
+                **O3_pkgconfig)
 
 if server_ENABLED or shadow_ENABLED:
-    cython_add(Extension("xpra.server.cystats",
+    add_cython_ext("xpra.server.cystats",
                 ["xpra/server/cystats.pyx"],
-                **O3_pkgconfig))
-    cython_add(Extension("xpra.server.window.motion",
+                **O3_pkgconfig)
+    add_cython_ext("xpra.server.window.motion",
                 ["xpra/server/window/motion.pyx"],
-                **O3_pkgconfig))
+                **O3_pkgconfig)
 
 if sd_listen_ENABLED:
     sdp = pkgconfig("libsystemd")
-    cython_add(Extension("xpra.platform.xposix.sd_listen",
+    add_cython_ext("xpra.platform.xposix.sd_listen",
                 ["xpra/platform/xposix/sd_listen.pyx"],
-                **sdp))
+                **sdp)
 
 
 toggle_packages(enc_proxy_ENABLED, "xpra.codecs.enc_proxy")
@@ -2015,10 +2019,10 @@ if nvfbc_ENABLED:
     if WIN32:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
     platform = sys.platform.rstrip("0123456789")
-    cython_add(Extension("xpra.codecs.nvfbc.fbc_capture_%s" % platform,
+    add_cython_ext("xpra.codecs.nvfbc.fbc_capture_%s" % platform,
                          ["xpra/codecs/nvfbc/fbc_capture_%s.pyx" % platform],
                          language="c++",
-                         **nvfbc_pkgconfig))
+                         **nvfbc_pkgconfig)
 
 toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
@@ -2174,23 +2178,23 @@ if nvenc_ENABLED:
     libraries = nvenc_pkgconfig.get("libraries", [])
     if "nvidia-encode" in libraries:
         libraries.remove("nvidia-encode")
-    cython_add(Extension("xpra.codecs.%s.encoder" % nvencmodule,
+    add_cython_ext("xpra.codecs.%s.encoder" % nvencmodule,
                          ["xpra/codecs/%s/encoder.pyx" % nvencmodule],
-                         **nvenc_pkgconfig))
+                         **nvenc_pkgconfig)
 
 toggle_packages(enc_x264_ENABLED, "xpra.codecs.enc_x264")
 if enc_x264_ENABLED:
     x264_pkgconfig = pkgconfig("x264")
-    cython_add(Extension("xpra.codecs.enc_x264.encoder",
+    add_cython_ext("xpra.codecs.enc_x264.encoder",
                 ["xpra/codecs/enc_x264/encoder.pyx"],
-                **x264_pkgconfig))
+                **x264_pkgconfig)
 
 toggle_packages(enc_x265_ENABLED, "xpra.codecs.enc_x265")
 if enc_x265_ENABLED:
     x265_pkgconfig = pkgconfig("x265")
-    cython_add(Extension("xpra.codecs.enc_x265.encoder",
+    add_cython_ext("xpra.codecs.enc_x265.encoder",
                 ["xpra/codecs/enc_x265/encoder.pyx"],
-                **x265_pkgconfig))
+                **x265_pkgconfig)
 
 toggle_packages(pillow_ENABLED, "xpra.codecs.pillow")
 if pillow_ENABLED:
@@ -2199,12 +2203,12 @@ if pillow_ENABLED:
 toggle_packages(webp_ENABLED, "xpra.codecs.webp")
 if webp_ENABLED:
     webp_pkgconfig = pkgconfig("libwebp")
-    cython_add(Extension("xpra.codecs.webp.encoder",
+    add_cython_ext("xpra.codecs.webp.encoder",
                     ["xpra/codecs/webp/encoder.pyx"],
-                    **webp_pkgconfig))
-    cython_add(Extension("xpra.codecs.webp.decoder",
+                    **webp_pkgconfig)
+    add_cython_ext("xpra.codecs.webp.decoder",
                 ["xpra/codecs/webp/decoder.pyx"],
-                **webp_pkgconfig))
+                **webp_pkgconfig)
 
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:
@@ -2222,80 +2226,80 @@ if nvjpeg_ENABLED:
         assert skip_build or cuda_pkgconfig, "failed to locate cuda pkgconfig"
         for k, v in cuda_pkgconfig.items():
             add_to_keywords(nvjpeg_pkgconfig, k, *v)
-    cython_add(Extension("xpra.codecs.nvjpeg.encoder",
+    add_cython_ext("xpra.codecs.nvjpeg.encoder",
                          ["xpra/codecs/nvjpeg/encoder.pyx"],
-                         **nvjpeg_pkgconfig))
+                         **nvjpeg_pkgconfig)
 
 jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
 toggle_packages(jpeg, "xpra.codecs.jpeg")
 if jpeg:
     if jpeg_encoder_ENABLED:
         jpeg_pkgconfig = pkgconfig("libturbojpeg")
-        cython_add(Extension("xpra.codecs.jpeg.encoder",
+        add_cython_ext("xpra.codecs.jpeg.encoder",
                 ["xpra/codecs/jpeg/encoder.pyx"],
-                **jpeg_pkgconfig))
+                **jpeg_pkgconfig)
     if jpeg_decoder_ENABLED:
         jpeg_pkgconfig = pkgconfig("libturbojpeg")
-        cython_add(Extension("xpra.codecs.jpeg.decoder",
+        add_cython_ext("xpra.codecs.jpeg.decoder",
                 ["xpra/codecs/jpeg/decoder.pyx"],
-                **jpeg_pkgconfig))
+                **jpeg_pkgconfig)
 
 #swscale and avcodec2 use libav_common/av_log:
 libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED
 toggle_packages(libav_common, "xpra.codecs.libav_common")
 if libav_common:
     avutil_pkgconfig = pkgconfig("libavutil")
-    cython_add(Extension("xpra.codecs.libav_common.av_log",
+    add_cython_ext("xpra.codecs.libav_common.av_log",
                 ["xpra/codecs/libav_common/av_log.pyx"],
-                **avutil_pkgconfig))
+                **avutil_pkgconfig)
 
 
 toggle_packages(dec_avcodec2_ENABLED, "xpra.codecs.dec_avcodec2")
 if dec_avcodec2_ENABLED:
     avcodec2_pkgconfig = pkgconfig("libavcodec", "libavutil", "libavformat")
-    cython_add(Extension("xpra.codecs.dec_avcodec2.decoder",
+    add_cython_ext("xpra.codecs.dec_avcodec2.decoder",
                 ["xpra/codecs/dec_avcodec2/decoder.pyx", "xpra/codecs/dec_avcodec2/register_compat.c"],
-                **avcodec2_pkgconfig))
+                **avcodec2_pkgconfig)
 
 
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
 if csc_libyuv_ENABLED:
     libyuv_pkgconfig = pkgconfig("libyuv")
-    cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
+    add_cython_ext("xpra.codecs.csc_libyuv.colorspace_converter",
                 ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"],
                 language="c++",
-                **libyuv_pkgconfig))
+                **libyuv_pkgconfig)
 
 toggle_packages(csc_swscale_ENABLED, "xpra.codecs.csc_swscale")
 if csc_swscale_ENABLED:
     swscale_pkgconfig = pkgconfig("libswscale", "libavutil")
-    cython_add(Extension("xpra.codecs.csc_swscale.colorspace_converter",
+    add_cython_ext("xpra.codecs.csc_swscale.colorspace_converter",
                 ["xpra/codecs/csc_swscale/colorspace_converter.pyx"],
-                **swscale_pkgconfig))
+                **swscale_pkgconfig)
 
 toggle_packages(csc_cython_ENABLED, "xpra.codecs.csc_cython")
 if csc_cython_ENABLED:
     csc_cython_pkgconfig = pkgconfig(optimize=3)
-    cython_add(Extension("xpra.codecs.csc_cython.colorspace_converter",
+    add_cython_ext("xpra.codecs.csc_cython.colorspace_converter",
                          ["xpra/codecs/csc_cython/colorspace_converter.pyx"],
-                         **csc_cython_pkgconfig))
+                         **csc_cython_pkgconfig)
 
 toggle_packages(vpx_ENABLED, "xpra.codecs.vpx")
 if vpx_ENABLED:
     vpx_pkgconfig = pkgconfig("vpx")
-    cython_add(Extension("xpra.codecs.vpx.encoder",
+    add_cython_ext("xpra.codecs.vpx.encoder",
                 ["xpra/codecs/vpx/encoder.pyx"],
-                **vpx_pkgconfig))
-    cython_add(Extension("xpra.codecs.vpx.decoder",
+                **vpx_pkgconfig)
+    add_cython_ext("xpra.codecs.vpx.decoder",
                 ["xpra/codecs/vpx/decoder.pyx"],
-                **vpx_pkgconfig))
+                **vpx_pkgconfig)
 
 toggle_packages(enc_ffmpeg_ENABLED, "xpra.codecs.enc_ffmpeg")
 if enc_ffmpeg_ENABLED:
     ffmpeg_pkgconfig = pkgconfig("libavcodec", "libavformat", "libavutil")
-    cython_add(Extension("xpra.codecs.enc_ffmpeg.encoder",
+    add_cython_ext("xpra.codecs.enc_ffmpeg.encoder",
                 ["xpra/codecs/enc_ffmpeg/encoder.pyx"],
-                **ffmpeg_pkgconfig))
+                **ffmpeg_pkgconfig)
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 if v4l2_ENABLED:
@@ -2312,38 +2316,38 @@ if v4l2_ENABLED:
             ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
         with open(constants_pxi, "wb") as f:
             f.write(b"DEF ENABLE_DEVICE_CAPS=%i" % ENABLE_DEVICE_CAPS)
-    cython_add(Extension("xpra.codecs.v4l2.pusher",
+    add_cython_ext("xpra.codecs.v4l2.pusher",
                 ["xpra/codecs/v4l2/pusher.pyx"],
-                **v4l2_pkgconfig))
+                **v4l2_pkgconfig)
 
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")
 toggle_packages(bencode_ENABLED and cython_bencode_ENABLED, "xpra.net.bencode.cython_bencode")
 if cython_bencode_ENABLED:
     bencode_pkgconfig = pkgconfig(optimize=3)
-    cython_add(Extension("xpra.net.bencode.cython_bencode",
+    add_cython_ext("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx"],
-                **bencode_pkgconfig))
+                **bencode_pkgconfig)
 
 if netdev_ENABLED:
     netdev_pkgconfig = pkgconfig()
-    cython_add(Extension("xpra.platform.xposix.netdev_query",
+    add_cython_ext("xpra.platform.xposix.netdev_query",
                 ["xpra/platform/xposix/netdev_query.pyx"],
-                **netdev_pkgconfig))
+                **netdev_pkgconfig)
 
 if vsock_ENABLED:
     vsock_pkgconfig = pkgconfig()
-    cython_add(Extension("xpra.net.vsock",
+    add_cython_ext("xpra.net.vsock",
                 ["xpra/net/vsock.pyx"],
-                **vsock_pkgconfig))
+                **vsock_pkgconfig)
 
 if pam_ENABLED:
     pam_pkgconfig = pkgconfig()
     add_to_keywords(pam_pkgconfig, 'extra_compile_args', "-I/usr/include/pam", "-I/usr/include/security")
     add_to_keywords(pam_pkgconfig, 'extra_link_args', "-lpam", "-lpam_misc")
-    cython_add(Extension("xpra.server.pam",
+    add_cython_ext("xpra.server.pam",
                 ["xpra/server/pam.pyx"],
-                **pam_pkgconfig))
+                **pam_pkgconfig)
 
 
 if ext_modules:
