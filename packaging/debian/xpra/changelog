@@ -1,5 +1,9 @@
 xpra (4.2.2-1) UNRELEASED; urgency=low
-  * TODO
+  * always stop the 'new-stream' notification process
+  * don't build ffmpeg codecs on i386 (crashy)
+  * try harder to find valid menu entries to use
+  * don't block the main thread loading menus
+  * fix application geometry issues
 
  -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 14 Jul 2021 16:00:16 +0700
 

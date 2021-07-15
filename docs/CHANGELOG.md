@@ -1,7 +1,11 @@
 # Changelog
 
 ## [4.2.2] 2021-07-14
-* TODO
+* always stop the 'new-stream' notification process
+* don't build ffmpeg codecs on i386 (crashy)
+* try harder to find valid menu entries to use
+* don't block the main thread loading menus
+* fix application geometry issues
 
 ## [4.2.1] 2021-07-11
 * build and packaging fixes:

@@ -606,7 +606,12 @@ fi
 
 %changelog
 * Wed Jul 14 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
-- TODO
+- always stop the 'new-stream' notification process
+- don't build ffmpeg codecs on i386 (crashy)
+- try harder to find valid menu entries to use
+- don't block the main thread loading menus
+- fix application geometry issues
+
 * Sun Jul 11 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
 - build and packaging fixes:
    missing dependencies
