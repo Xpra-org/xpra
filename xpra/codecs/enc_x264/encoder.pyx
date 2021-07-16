@@ -874,9 +874,9 @@ cdef class Encoder:
                 for i in range(3):
                     if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                         raise Exception("failed to read pixel data from %s" % type(pixels[i]))
-                    pic_in.img.plane[i] = <uint8_t*> py_buf.buf
+                    pic_in.img.plane[i] = <uint8_t*> py_buf[i].buf
                     pic_in.img.i_stride[i] = istrides[i]
-                    self.bytes_in += py_buf.len
+                    self.bytes_in += py_buf[i].len
                 pic_in.img.i_plane = 3
             pic_in.img.i_csp = self.colorspace
             pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp

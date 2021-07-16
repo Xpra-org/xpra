@@ -1620,7 +1620,7 @@ cdef class Encoder:
                     if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                         raise Exception("failed to read pixel data from %s" % type(pixels[i]))
                     #log("plane %s: %i bytes (%ix%i stride=%i)", ["Y", "U", "V"][i], buf_len, self.width, self.height, istrides[i])
-                    self.av_frame.data[i] = <uint8_t *> py_buf.buf
+                    self.av_frame.data[i] = <uint8_t *> py_buf[i].buf
                     self.av_frame.linesize[i] = istrides[i]
                 else:
                     self.av_frame.data[i] = NULL
