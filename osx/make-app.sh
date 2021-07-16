@@ -293,7 +293,7 @@ mkdir $LIBDIR/girepository-1.0
 GI_MODULES="Gst GObject GLib GModule"
 if [ "${PYTHON_MAJOR_VERSION}" == "3" ]; then
 	#GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication"
-	GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication GL Gio Pango cairo Atk"
+	GI_MODULES="${GI_MODULES} Gtk Gdk GtkosxApplication HarfBuzz GL Gio Pango cairo Atk"
 fi
 for t in ${GI_MODULES}; do
 	rsync -rpl ${JHBUILD_PREFIX}/lib/girepository-1.0/$t*typelib $LIBDIR/girepository-1.0/
