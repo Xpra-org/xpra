@@ -564,20 +564,6 @@ if cython_tracing_ENABLED:
         "profile" : True,
         }
 
-def cython_version_compare(min_version):
-    from distutils.version import LooseVersion
-    assert cython_ENABLED
-    from Cython.Compiler.Version import version as cython_version
-    return LooseVersion(cython_version) >= LooseVersion(min_version)
-
-def cython_version_check(min_version):
-    if not cython_version_compare(min_version):
-        from Cython.Compiler.Version import version as cython_version
-        sys.exit("ERROR: Your version of Cython is too old to build this package\n"
-                 "You have version %s\n"
-                 "Please upgrade to Cython %s or better"
-                 % (cython_version, min_version))
-
 def cython_add(extension, min_version="0.20"):
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
@@ -586,7 +572,6 @@ def cython_add(extension, min_version="0.20"):
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
     assert cython_ENABLED, "cython compilation is disabled"
-    cython_version_check(min_version)
     from Cython.Distutils import build_ext
     ext_modules.append(extension)
     global cmdclass
