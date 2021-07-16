@@ -571,13 +571,13 @@ def add_cython_ext(*args, **kwargs):
     if cython_tracing_ENABLED:
         kwargs["define_macros"] = [
             ('CYTHON_TRACE', 1),
-            #('CYTHON_TRACE_NOGIL', 1),
+            ('CYTHON_TRACE_NOGIL', 1),
             ]
         extra_compile_args = kwargs.setdefault("extra_compile_args", [])
         extra_compile_args += ["-fpermissive", "-Wno-error"]
     from Cython.Distutils import build_ext
+    global cmdclass, ext_modules
     ext_modules.append(Extension(*args, **kwargs))
-    global cmdclass
     cmdclass['build_ext'] = build_ext
 
 def insert_into_keywords(kw, key, *args):
