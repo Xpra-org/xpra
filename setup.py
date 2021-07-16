@@ -146,6 +146,7 @@ proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
+cython_tracing_ENABLED = False
 modules_ENABLED = DEFAULT
 data_ENABLED = DEFAULT
 
@@ -215,7 +216,8 @@ rebuild_ENABLED         = not skip_build
 
 #allow some of these flags to be modified on the command line:
 SWITCHES = [
-    "cython", "modules", "data",
+    "cython", "cython_tracing",
+    "modules", "data",
     "enc_x264", "enc_x265", "enc_ffmpeg",
     "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
     "vpx", "webp", "pillow", "jpeg_encoder", "jpeg_decoder",
@@ -554,6 +556,10 @@ def print_option(prefix, k, v):
 
 #*******************************************************************************
 # Utility methods for building with Cython
+compiler_directives={}
+if cython_tracing_ENABLED:
+    compiler_directives = {'linetrace': True}
+
 def cython_version_compare(min_version):
     from distutils.version import LooseVersion
     assert cython_ENABLED
@@ -583,6 +589,13 @@ def cython_add(extension, min_version="0.20"):
     cmdclass['build_ext'] = build_ext
 
 def add_cython_ext(*args, **kwargs):
+    if cython_tracing_ENABLED:
+        kwargs["define_macros"] = [
+            ('CYTHON_TRACE', 1),
+            #('CYTHON_TRACE_NOGIL', 1),
+            ]
+        extra_compile_args = kwargs.setdefault("extra_compile_args", [])
+        extra_compile_args += ["-fpermissive", "-Wno-error"]
     ext = Extension(*args, **kwargs)
     cython_add(ext)
 
@@ -633,7 +646,7 @@ def get_gcc_version():
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
     optimize = kw.pop("optimize", None)
-    if optimize and not debug_ENABLED:
+    if optimize and not debug_ENABLED and not cython_tracing_ENABLED:
         if isinstance(optimize, bool):
             optimize = int(optimize)*3
         add_to_keywords(kw, 'extra_compile_args', "-O%i" % optimize)
@@ -2354,7 +2367,10 @@ if ext_modules:
     from Cython.Build import cythonize
     #this causes Cython to fall over itself:
     #gdb_debug=debug_ENABLED
-    setup_options["ext_modules"] = cythonize(ext_modules, gdb_debug=False)
+    setup_options["ext_modules"] = cythonize(ext_modules,
+        gdb_debug=False,
+        compiler_directives=compiler_directives,
+        )
 if cmdclass:
     setup_options["cmdclass"] = cmdclass
 if scripts:
