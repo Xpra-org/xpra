@@ -564,20 +564,10 @@ if cython_tracing_ENABLED:
         "profile" : True,
         }
 
-def cython_add(extension, min_version="0.20"):
-    #gentoo does weird things, calls --no-compile with build *and* install
-    #then expects to find the cython modules!? ie:
-    #python2.7 setup.py build -b build-2.7 install --no-compile \
-    #    --root=/var/tmp/portage/x11-wm/xpra-0.7.0/temp/images/2.7
+def add_cython_ext(*args, **kwargs):
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
     assert cython_ENABLED, "cython compilation is disabled"
-    from Cython.Distutils import build_ext
-    ext_modules.append(extension)
-    global cmdclass
-    cmdclass['build_ext'] = build_ext
-
-def add_cython_ext(*args, **kwargs):
     if cython_tracing_ENABLED:
         kwargs["define_macros"] = [
             ('CYTHON_TRACE', 1),
@@ -585,8 +575,10 @@ def add_cython_ext(*args, **kwargs):
             ]
         extra_compile_args = kwargs.setdefault("extra_compile_args", [])
         extra_compile_args += ["-fpermissive", "-Wno-error"]
-    ext = Extension(*args, **kwargs)
-    cython_add(ext)
+    from Cython.Distutils import build_ext
+    ext_modules.append(Extension(*args, **kwargs))
+    global cmdclass
+    cmdclass['build_ext'] = build_ext
 
 def insert_into_keywords(kw, key, *args):
     values = kw.setdefault(key, [])
