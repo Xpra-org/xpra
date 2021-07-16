@@ -872,9 +872,9 @@ def get_defaults():
     build_root = os.environ.get("RPM_BUILD_ROOT")
     if build_root:
         conf_dirs.append(os.path.join(build_root, "etc", "xpra"))
-    xpra_cmd = sys.argv[0]
     bin_dir = None
     if sys.argv:
+        xpra_cmd = sys.argv[0]
         for strip in ("/usr/bin", "/bin"):
             pos = xpra_cmd.find(strip)
             if pos>=0:
