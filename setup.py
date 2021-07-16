@@ -558,7 +558,11 @@ def print_option(prefix, k, v):
 # Utility methods for building with Cython
 compiler_directives={}
 if cython_tracing_ENABLED:
-    compiler_directives = {'linetrace': True}
+    compiler_directives = {
+        "linetrace" : True,
+        "binding" : True,
+        "profile" : True,
+        }
 
 def cython_version_compare(min_version):
     from distutils.version import LooseVersion
