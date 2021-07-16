@@ -40,12 +40,6 @@ cdef extern from *:
 
 DEF WEBP_MAX_DIMENSION = 16383
 
-cdef extern from "Python.h":
-    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
-    void PyBuffer_Release(Py_buffer *view)
-    int PyBUF_ANY_CONTIGUOUS
-    int PyBUF_WRITABLE
-
 cdef extern from "webp/encode.h":
 
     int WebPGetEncoderVersion()
