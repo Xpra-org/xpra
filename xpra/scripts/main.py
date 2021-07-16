@@ -130,7 +130,7 @@ def main(script_file, cmdline):
         mode = args.pop(0)
         def err(*args):
             raise InitException(*args)
-        return run_mode(script_file, err, options, args, mode, defaults)
+        return run_mode(script_file, cmdline, err, options, args, mode, defaults)
     except SystemExit as e:
         debug_exc()
         return e.code
@@ -357,7 +357,7 @@ def use_systemd_run(s):
     return r==0
 
 
-def run_mode(script_file, error_cb, options, args, mode, defaults):
+def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     #configure default logging handler:
     if POSIX and getuid()==0 and options.uid==0 and mode not in ("proxy", "autostart", "showconfig") and not NO_ROOT_WARNING:
         warn("\nWarning: running as root")
@@ -367,7 +367,7 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         if use_systemd_run(options.systemd_run):
             #make sure we run via the same interpreter,
             #inject it into the command line if we have to:
-            argv = list(sys.argv)
+            argv = list(cmdline)
             if argv[0].find("python")<0:
                 argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
             return systemd_run_wrap(mode, argv, options.systemd_run_args)
@@ -411,13 +411,13 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
         ):
         options.encodings = validated_encodings(options.encodings)
     try:
-        return do_run_mode(script_file, error_cb, options, args, mode, defaults)
+        return do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults)
     except KeyboardInterrupt as e:
         info("\ncaught %s, exiting" % repr(e))
         return 128+signal.SIGINT
 
 
-def do_run_mode(script_file, error_cb, options, args, mode, defaults):
+def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop", "shadow") and display_is_remote:
         #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
@@ -438,10 +438,10 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
                 state = dotxpra.get_display_state(display_name)
                 if state==DotXpra.LIVE:
                     noerr(sys.stdout.write, "existing live display found, attaching")
-                    return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+                    return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
     if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow", "proxy"):
-        return run_server(script_file, error_cb, options, args, mode, defaults)
+        return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
     elif mode in (
         "attach", "listen", "detach",
         "screenshot", "version", "info", "id",
@@ -450,7 +450,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         "show-menu", "show-about", "show-session-info",
         "connect-test", "request-start", "request-start-desktop", "request-shadow",
         ):
-        return run_client(error_cb, options, args, mode)
+        return run_client(script_file, cmdline, error_cb, options, args, mode)
     elif mode in ("stop", "exit"):
         return run_stopexit(mode, error_cb, options, args)
     elif mode == "top":
@@ -477,7 +477,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
     elif mode == "clean-sockets":
         return run_clean_sockets(options, args)
     elif mode=="recover":
-        return run_recover(script_file, error_cb, options, args, defaults)
+        return run_recover(script_file, cmdline, error_cb, options, args, defaults)
     elif mode == "wminfo":
         return run_wminfo(args)
     elif mode == "wmname":
@@ -541,7 +541,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         check_gtk()
         return run_glprobe(options, True)
     elif mode=="autostart":
-        return run_autostart(args)
+        return run_autostart(script_file, args)
     elif mode=="encoding":
         from xpra.codecs import loader
         return loader.main(args)
@@ -651,7 +651,7 @@ def do_run_mode(script_file, error_cb, options, args, mode, defaults):
         from xpra.platform.features import LOCAL_SERVERS_SUPPORTED
         if not LOCAL_SERVERS_SUPPORTED:
             print("(this xpra installation does not support starting local servers)")
-        cmd = os.path.basename(sys.argv[0])
+        cmd = os.path.basename(script_file)
         for x in get_usage():
             print("\t%s %s" % (cmd, x))
         print()
@@ -1675,7 +1675,7 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
                                         nomatch="cannot find live server for display %s" % display)[-1]
     return sockpath
 
-def run_client(error_cb, opts, extra_args, mode):
+def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
     if mode=="attach":
         check_gtk()
     else:
@@ -1692,10 +1692,10 @@ def run_client(error_cb, opts, extra_args, mode):
         #but some other command line arguments can take a value of 'all',
         #so we have to make sure that the one we find does not belong to the argument before
         index = None
-        for i, arg in enumerate(sys.argv):
+        for i, arg in enumerate(cmdline):
             if i==0 or arg!="all":
                 continue
-            prevarg = sys.argv[i-1]
+            prevarg = cmdline[i-1]
             if prevarg[0]=="-" and (prevarg.find("=")<0 or len(prevarg)==2):
                 #ie: [.., "--csc-modules", "all"] or [.., "-d", "all"]
                 continue
@@ -1703,16 +1703,17 @@ def run_client(error_cb, opts, extra_args, mode):
             break
         if not index:
             raise InitException("'all' command line argument could not be located")
-        cmd = sys.argv[:index]+sys.argv[index+1:]
+        cmd = cmdline[:index]+cmdline[index+1:]
         for display in displays:
             dcmd = cmd + [display] + ["--splash=no"]
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return 0
-    app = get_client_app(error_cb, opts, extra_args, mode)
+    app = get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode)
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % EXIT_STR.get(r, r))
-        os.execv(sys.argv[0], sys.argv)
+        warn("%s - %s" % (script_file, cmdline))
+        os.execv(script_file, cmdline)
     return r
 
 
@@ -1759,7 +1760,7 @@ def connect_to_server(app, display_desc, opts):
     GLib.idle_add(setup_connection)
 
 
-def get_client_app(error_cb, opts, extra_args, mode):
+def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
     validate_encryption(opts)
     if mode=="screenshot":
         if not extra_args:
@@ -1847,12 +1848,12 @@ def get_client_app(error_cb, opts, extra_args, mode):
         display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args)
         if len(extra_args)==1 and opts.password:
             uri = extra_args[0]
-            if uri in sys.argv and opts.password in uri:
+            if uri in cmdline and opts.password in uri:
                 #hide the password from the URI:
-                i = sys.argv.index(uri)
-                #sys.argv[i] = uri.replace(opts.password, "*"*len(opts.password))
-                sys.argv[i] = uri.replace(opts.password, "********")
-                set_proc_title(" ".join(sys.argv))
+                i = cmdline.index(uri)
+                #cmdline[i] = uri.replace(opts.password, "*"*len(opts.password))
+                cmdline[i] = uri.replace(opts.password, "********")
+                set_proc_title(" ".join(cmdline))
         connect_to_server(app, display_desc, opts)
     except Exception:
         app.cleanup()
@@ -2201,7 +2202,7 @@ def strip_defaults_start_child(start_child, defaults_start_child):
     return start_child
 
 
-def run_server(script_file, error_cb, options, args, mode, defaults):
+def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop") and parse_bool("attach", options.attach) is True:
@@ -2219,7 +2220,7 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
                     state = dotxpra.get_display_state(display_name)
                     if state==DotXpra.LIVE:
                         noerr(sys.stdout.write, "existing live display found, attaching")
-                        return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+                        return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
         #we can't load gtk on posix if the server is local,
         #(as we would need to unload the initial display to attach to the new one)
         if options.resize_display.lower() in TRUE_OPTIONS and (display_is_remote or OSX or not POSIX):
@@ -2260,7 +2261,7 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
                 state = dotxpra.get_display_state(display_name)
                 if state==DotXpra.LIVE:
                     noerr(sys.stdout.write, "existing live display found, attaching")
-                    return do_run_mode(script_file, error_cb, options, args, "attach", defaults)
+                    return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
     start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
     if start_via_proxy is not False and (not POSIX or getuid()!=0) and options.daemon:
@@ -2278,7 +2279,7 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
                 if not args:
                     from xpra.platform.features import SYSTEM_PROXY_SOCKET
                     args = [SYSTEM_PROXY_SOCKET]
-                app = get_client_app(error_cb, options, args, "request-%s" % mode)
+                app = get_client_app(script_file, cmdline, error_cb, options, args, "request-%s" % mode)
                 r = do_run_client(app)
                 #OK or got a signal:
                 NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
@@ -2308,7 +2309,7 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
             warn(" %s" % (err,))
             warn(" more information may be available in your system log")
             #re-exec itself and disable start-via-proxy:
-            args = sys.argv[:]+["--start-via-proxy=no"]
+            args = cmdline[:]+["--start-via-proxy=no"]
             #warn("re-running with: %s" % (args,))
             os.execv(args[0], args)
             #this code should be unreachable!
@@ -2418,7 +2419,7 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
         gc.collect()
 
 
-def run_remote_server(error_cb, opts, args, mode, defaults):
+def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     display_name = args[0]
     params = parse_display_name(error_cb, opts, display_name)
@@ -2493,7 +2494,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % EXIT_STR.get(r, r))
-        args = sys.argv[:]
+        args = cmdline[:]
         #modify the 'mode' in the command line:
         try:
             mode_pos = args.index(mode)
@@ -2626,10 +2627,10 @@ def no_gtk():
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
 
 
-def run_autostart(args):
+def run_autostart(script_file, args):
     def err(msg):
         print(msg)
-        print("Usage: %s enable|disable|status" % (sys.argv[0]))
+        print("Usage: %s enable|disable|status" % (script_file,))
         return 1
     if len(args)!=1:
         return err("invalid number of arguments")
@@ -3378,7 +3379,7 @@ def run_clean_sockets(opts, args):
     return clean_sockets(dotxpra, results)
 
 
-def run_recover(script_file, error_cb, options, args, defaults):
+def run_recover(script_file, cmdline, error_cb, options, args, defaults):
     if not POSIX or OSX:
         raise InitExit(EXIT_UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
     assert POSIX and not OSX
@@ -3435,7 +3436,7 @@ def run_recover(script_file, error_cb, options, args, defaults):
     #use the existing display:
     options.use_display = "yes"
     no_gtk()
-    return run_server(script_file, error_cb, options, args, mode_cmd, defaults)
+    return run_server(script_file, cmdline, error_cb, options, args, mode_cmd, defaults)
 
 def run_displays(args):
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
