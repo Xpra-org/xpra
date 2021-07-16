@@ -33,7 +33,7 @@ def enabled_or_auto(v):
 
 def bool_or(v, other_value, true_str, false_str, other_str):
     vs = str(v).lower()
-    if vs==other_value:
+    if vs==str(other_value).lower():
         return other_str
     bv = parse_bool("", v)
     return enabled_str(bv, true_str, false_str)
