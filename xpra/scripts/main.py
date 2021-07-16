@@ -30,6 +30,7 @@ from xpra.exit_codes import (
     EXIT_NO_DISPLAY,
     EXIT_CONNECTION_LOST, EXIT_REMOTE_ERROR,
     EXIT_INTERNAL_ERROR, EXIT_FILE_TOO_BIG,
+    RETRY_EXIT_CODES,
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
@@ -1148,6 +1149,38 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
     else:
         error_cb("unknown format for display name: %s" % display_name)
 
+def display_desc_to_uri(display_desc):
+    dtype = display_desc.get("type")
+    if not dtype:
+        raise InitException("missing display type")
+    uri = "%s://" % dtype
+    username = display_desc.get("username")
+    if username is not None:
+        uri += username
+    password = display_desc.get("password")
+    if password is not None:
+        uri += ":"+password
+    if username is not None or password is not None:
+        uri += "@"
+    if dtype in ("ssh", "tcp", "ssl", "ws", "wss"):
+        #TODO: re-add 'proxy_host' arguments here
+        host = display_desc.get("host")
+        if not host:
+            raise InitException("missing host from display parameters")
+        uri += host
+        port = display_desc.get("port")
+        if port and port!=DEFAULT_PORTS.get(dtype):
+            uri += ":"+port
+    elif dtype=="vsock":
+        cid, iport = display_desc["vsock"]
+        uri += "%s:%s" % (cid, iport)
+    else:
+        raise NotImplementedError("%s is not implemented yet" % dtype)
+    uri += "/"
+    display = display_desc.get("display")
+    if display:
+        uri += display.lstrip(":")
+    return uri
 
 def pick_display(error_cb, opts, extra_args):
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
@@ -1645,6 +1678,8 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
 def run_client(error_cb, opts, extra_args, mode):
     if mode=="attach":
         check_gtk()
+    else:
+        opts.reconnect = False
     if mode in ("attach", "detach") and len(extra_args)==1 and extra_args[0]=="all":
         #run this command for each display:
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
@@ -1674,7 +1709,11 @@ def run_client(error_cb, opts, extra_args, mode):
             Popen(dcmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
         return 0
     app = get_client_app(error_cb, opts, extra_args, mode)
-    return do_run_client(app)
+    r = do_run_client(app)
+    if opts.reconnect is not False and r in RETRY_EXIT_CODES:
+        warn("%s, reconnecting" % EXIT_STR.get(r, r))
+        os.execv(sys.argv[0], sys.argv)
+    return r
 
 
 def connect_to_server(app, display_desc, opts):
@@ -2381,7 +2420,8 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
 
 def run_remote_server(error_cb, opts, args, mode, defaults):
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
-    params = parse_display_name(error_cb, opts, args[0])
+    display_name = args[0]
+    params = parse_display_name(error_cb, opts, display_name)
     hello_extra = {}
     #strip defaults, only keep extra ones:
     for x in START_COMMAND_OPTIONS:     # ["start", "start-child", etc]
@@ -2431,6 +2471,7 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
                 app = RequestStartClient(opts)
                 app.start_new_session = sns
             app.hello_extra = {"connect" : False}
+            opts.reconnect = False
         else:
             app = make_client(error_cb, opts)
             app.show_progress(30, "client configuration")
@@ -2449,7 +2490,35 @@ def run_remote_server(error_cb, opts, args, mode, defaults):
         if app:
             app.show_progress(100, "failure: %s" % e)
         raise
-    return do_run_client(app)
+    r = do_run_client(app)
+    if opts.reconnect is not False and r in RETRY_EXIT_CODES:
+        warn("%s, reconnecting" % EXIT_STR.get(r, r))
+        args = sys.argv[:]
+        #modify the 'mode' in the command line:
+        try:
+            mode_pos = args.index(mode)
+        except ValueError:
+            raise InitException("mode '%s' not found in command line arguments" % mode) from None
+        args[mode_pos] = "attach"
+        if params.get("display") is None:
+            #try to find which display was used,
+            #so we can re-connect to this specific one:
+            display = getattr(app, "_remote_display", None)
+            if not display:
+                raise InitException("cannot identify the remote display to reconnect to")
+            #then re-generate a URI with this display name in it:
+            new_params = params.copy()
+            new_params["display"] = display
+            uri = display_desc_to_uri(new_params)
+            #and change it in the command line:
+            try:
+                uri_pos = args.index(display_name)
+            except ValueError:
+                raise InitException("URI not found in command line arguments") from None
+            args[uri_pos] = uri
+        print("args=%s" % (args,))
+        os.execv(args[0], args)
+    return r
 
 
 X11_SOCKET_DIR = "/tmp/.X11-unix/"

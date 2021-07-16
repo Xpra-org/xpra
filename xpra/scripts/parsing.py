@@ -854,6 +854,10 @@ def do_parse_cmdline(cmdline, defaults):
     group = optparse.OptionGroup(parser, "Client Features Options",
                 "These options control client features that affect the appearance or the keyboard.")
     parser.add_option_group(group)
+    legacy_bool_parse("reconnect")
+    group.add_option("--reconnect", action="store", metavar="yes|no",
+                      dest="reconnect", default=defaults.reconnect,
+                      help="Reconnect to the server. Default: %s." % enabled_or_auto(defaults.reconnect))
     legacy_bool_parse("opengl")
     group.add_option("--opengl", action="store", metavar="(yes|no|auto)[:backends]",
                       dest="opengl", default=defaults.opengl,

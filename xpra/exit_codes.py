@@ -57,3 +57,8 @@ EXIT_STR = {
     EXIT_VFB_ERROR              : "VFB_ERROR",
     EXIT_FILE_NOT_FOUND         : "FILE_NOT_FOUND",
     }
+
+RETRY_EXIT_CODES = [
+    EXIT_CONNECTION_LOST,
+    EXIT_PACKET_FAILURE,
+    ]

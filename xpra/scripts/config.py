@@ -600,6 +600,7 @@ OPTION_TYPES = {
                     "use-display"       : str,
                     "fake-xinerama"     : str,
                     "resize-display"    : str,
+                    "reconnect"         : bool,
                     "tray"              : bool,
                     "pulseaudio"        : bool,
                     "dbus-proxy"        : bool,
@@ -746,6 +747,7 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
 CLIENT_ONLY_OPTIONS = ["username", "swap-keys", "dock-icon",
                        "tray", "delay-tray", "tray-icon",
                        "attach",
+                       "reconnect",
                        ]
 
 #options that clients can pass to the proxy
@@ -1008,6 +1010,7 @@ def get_defaults():
                     "use-display"       : "auto",
                     "fake-xinerama"     : fake_xinerama,
                     "resize-display"    : ["no", "yes"][not OSX and not WIN32],
+                    "reconnect"         : True,
                     "tray"              : True,
                     "pulseaudio"        : DEFAULT_PULSEAUDIO,
                     "dbus-proxy"        : not OSX and not WIN32,

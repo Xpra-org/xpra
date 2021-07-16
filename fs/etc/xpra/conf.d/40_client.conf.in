@@ -73,3 +73,6 @@ desktop-scaling = on
 # Make desktop or shadow ervers show up in fullscreen mode:
 #desktop-fullscreen = yes
 desktop-fullscreen = no
+
+# Re-connect to the server if the connection to the server is lost:
+reconnect = yes
