@@ -39,6 +39,7 @@ from xpra.scripts.main import (
     add_ssh_args, parse_ssh_string, add_ssh_proxy_args,
     configure_network, configure_env, configure_logging,
     )
+from xpra.exit_codes import RETRY_EXIT_CODES, EXIT_STR
 from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
 
@@ -734,9 +735,12 @@ class ApplicationWindow:
 
     def connect_builtin(self):
         #cooked vars used by connect_to
-        params = {"type"    : self.config.mode}
-        self.config.sharing = self.sharing.get_active()
         username = self.config.username
+        params = {
+            "type"      : self.config.mode,
+            "username"  : username,
+            }
+        self.config.sharing = self.sharing.get_active()
         if self.config.mode=="ssh" or self.config.mode=="ssh -> ssh":
             if self.config.socket_dir:
                 params["socket_dir"] = self.config.socket_dir
@@ -807,22 +811,25 @@ class ApplicationWindow:
         #or the config file may contain a username which is different from the default one
         #which is used for initializing the client during init,
         #so update the client now:
-        def raise_exception(*args):
-            raise Exception(*args)
         configure_env(self.config.env)
         configure_logging(self.config, "attach")
         configure_network(self.config)
+        self.start_client(params)
+
+    def start_client(self, display_desc):
+        def raise_exception(*args):
+            raise Exception(*args)
         self.client = make_client(raise_exception, self.config)
         self.client.show_progress(30, "client configuration")
         self.client.init(self.config)
         self.client.show_progress(40, "loading user interface")
         self.client.init_ui(self.config)
-        self.client.username = username
+        self.client.username = display_desc.get("username")
         def handshake_complete(*_args):
             self.client.show_progress(100, "connection established")
         self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
-        start_thread(self.do_connect_builtin, "connect", daemon=True, args=(params,))
+        start_thread(self.do_connect_builtin, "connect", daemon=True, args=(display_desc,))
 
     def ssh_failed(self, message):
         log("ssh_failed(%s)", message)
@@ -846,7 +853,6 @@ class ApplicationWindow:
             return
         log("connect_to(..)=%s, hiding launcher window, starting client", conn)
         GLib.idle_add(self.start_XpraClient, conn, display_desc)
-
 
     def start_XpraClient(self, conn, display_desc):
         try:
@@ -885,13 +891,25 @@ class ApplicationWindow:
                     self.set_sensitive(True)
                     GLib.idle_add(w.show)
 
+        def reconnect(exit_code):
+            log("reconnect(%s) config reconnect=%s",
+                EXIT_STR.get(exit_code, exit_code), self.config.reconnect)
+            if not self.config.reconnect or exit_code not in RETRY_EXIT_CODES:
+                return False
+            self.clean_client()
+            #give time for the main loop to run once after calling cleanup
+            GLib.timeout_add(100, self.start_client, display_desc)
+            return True
+
         def warn_and_quit_override(exit_code, warning):
             log("warn_and_quit_override(%s, %s)", exit_code, warning)
-            if self.exit_code is None:
-                self.exit_code = exit_code
             password_warning = warning.find("invalid password")>=0
             if password_warning:
                 self.password_warning()
+            elif reconnect(exit_code):
+                return
+            if self.exit_code is None:
+                self.exit_code = exit_code
             err = exit_code!=0 or password_warning
             if not self.current_error:
                 self.current_error = warning
@@ -901,6 +919,8 @@ class ApplicationWindow:
 
         def quit_override(exit_code):
             log("quit_override(%s)", exit_code)
+            if reconnect(exit_code):
+                return
             if self.exit_code is None:
                 self.exit_code = exit_code
             handle_client_quit(self.exit_code==0)
@@ -918,8 +938,8 @@ class ApplicationWindow:
             #no need to start a new main loop:
             self.client.gtk_main = noop
         try:
-            self.client.run()
-            log("client.run() returned")
+            r = self.client.run()
+            log("client.run() returned %s", r)
         except Exception as e:
             log.error("client error", exc_info=True)
             self.handle_exception(e)
