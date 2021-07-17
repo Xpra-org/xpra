@@ -40,7 +40,9 @@ class RemoteLogging(StubClientMixin):
 
     def cleanup(self):
         ll = self.local_logging
+        log("cleanup() local_logging=%s", ll)
         if ll:
+            self.local_logging = None
             set_global_logging_handler(ll)
 
 
