@@ -421,7 +421,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
     if mode in ("start", "start-desktop", "shadow") and display_is_remote:
         #ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
-        return run_remote_server(error_cb, options, args, mode, defaults)
+        return run_remote_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
     if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
         assert not display_is_remote
