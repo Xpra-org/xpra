@@ -23,7 +23,7 @@ from xpra.platform.gui import (
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.make_thread import make_thread
+from xpra.make_thread import start_thread
 from xpra.os_util import (
     bytestostr, monotonic_time, memoryview_to_bytes,
     OSX, POSIX, is_Ubuntu,
@@ -228,7 +228,6 @@ class WindowClient(StubClientMixin):
                     log.error(" %s", e)
         traylog("overlay_image=%s", self.overlay_image)
         self._draw_queue = Queue()
-        self._draw_thread = make_thread(self._draw_thread_loop, "draw")
 
 
     def parse_border(self):
@@ -238,7 +237,7 @@ class WindowClient(StubClientMixin):
 
     def run(self):
         #we decode pixel data in this thread
-        self._draw_thread.start()
+        self._draw_thread = start_thread(self._draw_thread_loop, "draw")
         if FAKE_SUSPEND_RESUME:
             self.timeout_add(FAKE_SUSPEND_RESUME*1000, self.suspend)
             self.timeout_add(FAKE_SUSPEND_RESUME*1000*2, self.resume)
@@ -256,6 +255,10 @@ class WindowClient(StubClientMixin):
         self.cancel_lost_focus_timer()
         if dq:
             dq.put(None)
+        dt = self._draw_thread
+        log("WindowClient.cleanup() draw thread=%s, alive=%s", dt, dt and dt.is_alive())
+        if dt and dt.is_alive():
+            dt.join(0.1)
         log("WindowClient.cleanup() done")
 
 
@@ -1394,12 +1397,14 @@ class WindowClient(StubClientMixin):
         while self.exit_code is None:
             packet = self._draw_queue.get()
             if packet is None:
+                log("draw queue found exit marker")
                 break
             try:
                 self._do_draw(packet)
                 sleep(0)
             except Exception as e:
                 log.error("Error '%s' processing %s packet", e, packet[0], exc_info=True)
+        self._draw_thread = None
         log("draw thread ended")
 
     def _do_draw(self, packet):
