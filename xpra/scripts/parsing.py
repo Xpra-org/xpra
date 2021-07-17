@@ -230,6 +230,7 @@ def get_usage():
                         "attach [DISPLAY]",
                         "detach [DISPLAY]",
                         "info [DISPLAY]",
+                        "id [DISPLAY]",
                         "version [DISPLAY]",
                         "stop [DISPLAY]",
                         "exit [DISPLAY]",
@@ -247,9 +248,15 @@ def get_usage():
                         "launcher",
                         "gui",
                         "start-gui",
+                        "bug-report",
+                        "toolbox",
                         "displays",
+                        "clean-displays",
                         "docs",
                         "html5",
+                        "autostart",
+                        "encoding",
+                        "path-info",
                       ]
     if supports_mdns:
         command_options.append("list-mdns")
