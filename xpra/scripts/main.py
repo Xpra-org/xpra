@@ -179,10 +179,10 @@ def configure_logging(options, mode):
         "opengl-test",
         "autostart",
         "show-menu", "show-about", "show-session-info"
-        "encoding", "webcam", "clipboard-test",
-        "keyboard", "keyboard-test", "keymap", "gui-info", "network-info", "path-info",
+        "encoding", "video", "webcam", "nvinfo",
+        "compression", "packet-encoding",
+        "keyboard", "gui-info", "network-info", "path-info",
         "printing-info", "version-info", "gtk-info",
-        "colors-test", "colors-gradient-test", "transparent-colors", "transparent-window",
         "auth",
         ):
         s = sys.stdout
@@ -566,24 +566,9 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         check_gtk()
         from xpra.scripts import show_webcam
         return show_webcam.main()
-    elif mode=="webcam-info":
-        from xpra.platform import webcam
-        webcam.main(args)
-    elif mode=="clipboard-test":
-        check_gtk()
-        from xpra.gtk_common import gtk_view_clipboard
-        return gtk_view_clipboard.main()
     elif mode=="keyboard":
         from xpra.platform import keyboard
         return keyboard.main()
-    elif mode=="keyboard-test":
-        check_gtk()
-        from xpra.gtk_common import gtk_view_keyboard
-        return gtk_view_keyboard.main()
-    elif mode=="keymap":
-        check_gtk()
-        from xpra.gtk_common import keymap
-        return keymap.main()
     elif mode=="gtk-info":
         check_gtk()
         from xpra.scripts import gtk_info
@@ -614,22 +599,6 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         check_gtk()
         from xpra.client.gtk_base import toolbox
         return toolbox.main()
-    elif mode=="colors-test":
-        check_gtk()
-        from xpra.client.gtk_base.example import colors
-        return colors.main()
-    elif mode=="colors-gradient-test":
-        check_gtk()
-        from xpra.client.gtk_base.example import colors_gradient
-        return colors_gradient.main()
-    elif mode=="transparent-colors":
-        check_gtk()
-        from xpra.client.gtk_base.example import transparent_colors
-        return transparent_colors.main()
-    elif mode=="transparent-window":
-        check_gtk()
-        from xpra.client.gtk_base.example import transparent_window
-        return transparent_window.main()
     elif mode == "initenv":
         if not POSIX:
             raise InitExit(EXIT_UNSUPPORTED, "initenv is not supported on this OS")
