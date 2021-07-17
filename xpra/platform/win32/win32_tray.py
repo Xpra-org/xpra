@@ -99,6 +99,11 @@ class Win32Tray(TrayBase):
             self.tray_widget.set_blinking(on)
 
     def get_geometry(self):
+        tw = self.tray_widget
+        if tw:
+            geom = tw.get_geometry()
+            if geom:
+                return geom
         return self.geometry_guess
 
 

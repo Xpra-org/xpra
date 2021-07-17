@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,8 +9,8 @@
 
 import os
 import ctypes
-from ctypes import Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer
-from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE
+from ctypes import Structure, byref, WinDLL, c_void_p, sizeof, create_string_buffer, HRESULT, POINTER
+from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE, RECT
 
 from xpra.util import typedict, csv, envbool, XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.os_util import bytestostr
@@ -18,6 +18,7 @@ from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import (
     GUID, WNDCLASSEX, WNDPROC,
     GetSystemMetrics,
+    EnumDisplayMonitors,
     GetCursorPos,
     PostMessageA,
     CreateWindowExA, CreatePopupMenu, AppendMenu,
@@ -35,6 +36,7 @@ from xpra.platform.win32.common import (
 from xpra.log import Logger
 
 log = Logger("tray", "win32")
+geomlog = Logger("tray", "geometry")
 
 log("loading ctypes NotifyIcon functions")
 sprintf = ctypes.cdll.msvcrt.sprintf
@@ -85,6 +87,18 @@ Shell_NotifyIconA.argtypes = [DWORD, c_void_p]
 Shell_NotifyIconW = shell32.Shell_NotifyIconW
 Shell_NotifyIconW.restype = BOOL
 Shell_NotifyIconW.argtypes = [DWORD, c_void_p]
+Shell_NotifyIconGetRect = shell32.Shell_NotifyIconGetRect
+SHSTDAPI = HRESULT
+class NOTIFYICONIDENTIFIER(Structure):
+    _fields_ = (
+        ("cbSize",              DWORD),
+        ("hWnd",                HWND),
+        ("uID",                 UINT),
+        ("guidItem",            GUID),
+        )
+PNOTIFYICONIDENTIFIER = POINTER(NOTIFYICONIDENTIFIER)
+Shell_NotifyIconGetRect.restype = SHSTDAPI
+Shell_NotifyIconGetRect.argtypes = [PNOTIFYICONIDENTIFIER, POINTER(RECT)]
 
 Shell_NotifyIcon = Shell_NotifyIconA
 NOTIFYICONDATA = NOTIFYICONDATAA
@@ -330,6 +344,25 @@ class win32NotifyIcon:
             log("delete_tray_window()", exc_info=True)
             log.error("Error: failed to delete tray window")
             log.error(" %s", e)
+
+
+    def get_geometry(self):
+        #we can only use this if there is a single monitor
+        #because multi-monitor coordinates may have offsets
+        #we don't know about (done inside GTK)
+        n = len(EnumDisplayMonitors())
+        if n==1:
+            nii = NOTIFYICONIDENTIFIER()
+            nii.cbSize = sizeof(NOTIFYICONIDENTIFIER)
+            nii.hWnd = self.hwnd
+            nii.uID = self.app_id
+            #nii.guidItem = XPRA_GUID
+            rect = RECT()
+            if Shell_NotifyIconGetRect(byref(nii), byref(rect))==0:
+                geom = (rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top)
+                geomlog("Shell_NotifyIconGetRect: %s", geom)
+                return geom
+        return None
 
 
     def set_blinking(self, on):
