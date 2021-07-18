@@ -1005,6 +1005,10 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #(now we can access the X11 server)
         if uinput_uuid:
             save_uinput_id(uinput_uuid)
+        if xvfb_pid:
+            save_xvfb_pid(xvfb_pid)
+        else:
+            xvfb_pid = get_xvfb_pid()
 
     progress(40, "initializing server")
     if shadowing:
