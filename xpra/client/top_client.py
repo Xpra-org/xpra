@@ -362,7 +362,6 @@ class TopSessionClient(InfoTimerClient):
         start_thread(self.input_thread, "input-thread", daemon=True)
 
     def client_type(self):
-        #overriden in subclasses!
         return "top"
 
     def server_connection_established(self, caps):
