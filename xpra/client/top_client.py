@@ -369,12 +369,13 @@ class TopSessionClient(InfoTimerClient):
         self.log("server_connection_established(%s)" % repr_ellipsized(caps))
         self.log("traceback: %s" % (traceback.extract_stack(),))
         r = super().server_connection_established(caps)
-        self.stdscr = curses_init()
+        self.setup()
         self.update_screen()
         return r
 
     def setup(self):
-        self.stdscr = curses_init()
+        if self.stdscr is None:
+            self.stdscr = curses_init()
         try:
             curses.cbreak()
             curses.halfdelay(10)
@@ -384,6 +385,7 @@ class TopSessionClient(InfoTimerClient):
     def cleanup(self):
         InfoTimerClient.cleanup(self)
         curses_clean(self.stdscr)
+        self.stdscr = None
         self.close_log()
 
     def close_log(self):
