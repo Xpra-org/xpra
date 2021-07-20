@@ -198,8 +198,8 @@ def load_command_to_type():
     global command_to_type
     if command_to_type is None:
         command_to_type = {}
-        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-        xdg_menu = load_xdg_menu_data()
+        from xpra.server.menu_provider import get_menu_provider
+        xdg_menu = get_menu_provider().get_menu_data(remove_icons=True)
         categories_to_type = load_categories_to_type()
         log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type)
         if xdg_menu and categories_to_type:

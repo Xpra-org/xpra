@@ -14,7 +14,6 @@ import sys
 import glob
 
 from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
-from threading import Lock
 
 from xpra.util import envbool, print_nested_dict, first_time, engs
 from xpra.os_util import load_binary_file, monotonic_time, OSEnvContext
@@ -213,27 +212,20 @@ def remove_icons(menu_data):
     return filt
 
 
-load_lock = Lock()
-xdg_menu_data = None
-def load_xdg_menu_data(force_reload=False, wait_for_lock=True):
-    global xdg_menu_data
-    if not wait_for_lock and load_lock.locked():
-        return xdg_menu_data
-    with load_lock:
-        if not xdg_menu_data or force_reload:
-            icon_util.large_icons.clear()
-            start = monotonic_time()
-            xdg_menu_data = do_load_xdg_menu_data()
-            end = monotonic_time()
-            if xdg_menu_data:
-                l = sum(len(x) for x in xdg_menu_data.values())
-                log.info("%s %i start menu entries from %i sub-menus in %.1f seconds",
-                         "reloaded" if force_reload else "loaded", l, len(xdg_menu_data), end-start)
-            if icon_util.large_icons:
-                log.warn("Warning: found %i large icon%s:", len(icon_util.large_icons), engs(icon_util.large_icons))
-                for filename, size in icon_util.large_icons:
-                    log.warn(" '%s' (%i KB)", filename, size//1024)
-                log.warn(" more bandwidth will be used by the start menu data")
+def load_xdg_menu_data():
+    icon_util.large_icons.clear()
+    start = monotonic_time()
+    xdg_menu_data = do_load_xdg_menu_data()
+    end = monotonic_time()
+    if xdg_menu_data:
+        l = sum(len(x) for x in xdg_menu_data.values())
+        log.info("loaded %i start menu entries from %i sub-menus in %.1f seconds",
+                 l, len(xdg_menu_data), end-start)
+    if icon_util.large_icons:
+        log.warn("Warning: found %i large icon%s:", len(icon_util.large_icons), engs(icon_util.large_icons))
+        for filename, size in icon_util.large_icons:
+            log.warn(" '%s' (%i KB)", filename, size//1024)
+        log.warn(" more bandwidth will be used by the start menu data")
     return xdg_menu_data
 
 def do_load_xdg_menu_data():
@@ -361,7 +353,7 @@ def load_desktop_sessions():
                         entry["IconType"] = v[1]
                 xsessions[de.getName()] = entry
             except Exception as e:
-                log("get_desktop_sessions(%s)", remove_icons, exc_info=True)
+                log("load_desktop_sessions(%s)", remove_icons, exc_info=True)
                 log.error("Error loading desktop entry '%s':", filename)
                 log.error(" %s", e)
     return xsessions
