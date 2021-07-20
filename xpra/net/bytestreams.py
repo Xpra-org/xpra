@@ -418,7 +418,7 @@ class SocketConnection(Connection):
             if fd:
                 info["fileno"] = fd
             #ie: self.local = ("192.168.1.7", "14500")
-            log("do_get_socket_info(%s) fd=%s, local=%s", fd, self.local)
+            log("do_get_socket_info(%s) fd=%s, local=%s", s, fd, self.local)
             if self.local and len(self.local)==2:
                 from xpra.net.net_util import get_interface
                 iface = get_interface(self.local[0])
