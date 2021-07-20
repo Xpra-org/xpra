@@ -15,6 +15,7 @@ from xpra.os_util import (
     )
 from xpra.util import envint, envbool
 from xpra.make_thread import start_thread
+from xpra.server.background_worker import add_work_item
 from xpra.log import Logger
 
 log = Logger("menu")
@@ -50,6 +51,7 @@ class MenuProvider:
         self.watch_notifier = None
         self.xdg_menu_reload_timer = None
         self.on_reload = []
+        self.desktop_sessions = None
 
     def setup(self):
         if not POSIX or OSX or not EXPORT_XDG_MENU_DATA:
@@ -58,6 +60,7 @@ class MenuProvider:
         self.load_menu_data()
 
     def cleanup(self):
+        self.on_reload = []
         self.cancel_xdg_menu_reload()
         self.cancel_pynotify_watch()
 
@@ -131,9 +134,13 @@ class MenuProvider:
         #start loading in a thread,
         #as this may take a while and
         #so server startup can complete:
-        start_thread(self.get_menu_data, "load-menu-data", True, args=(force_reload, ))
+        def load():
+            self.get_menu_data(force_reload)
+            self.get_desktop_sessions()
+        start_thread(load, "load-menu-data", True)
 
     def get_menu_data(self, force_reload=False, remove_icons=False, wait=True):
+        log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_XDG_MENU_DATA:
             return None
         if OSX:
@@ -147,7 +154,9 @@ class MenuProvider:
         else:
             log.error("Error: unsupported platform!")
             return None
-        GLib.idle_add(self.got_menu_data, menu_data)
+        def got_menu_data():
+            self.got_menu_data(menu_data)
+        add_work_item(got_menu_data)
         if remove_icons and menu_data:
             menu_data = noicondata(menu_data)
         return menu_data
@@ -197,14 +206,16 @@ class MenuProvider:
         return app.get("IconType"), app.get("IconData")
 
 
-    def get_desktop_sessions(self, remove_icons=False):
+    def get_desktop_sessions(self, force_reload=False, remove_icons=False):
         if not POSIX or OSX:
             return None
-        from xpra.platform.xposix.xdg_helper import load_desktop_sessions
-        xsessions = load_desktop_sessions()
+        if force_reload or self.desktop_sessions is None:
+            from xpra.platform.xposix.xdg_helper import load_desktop_sessions
+            self.desktop_sessions = load_desktop_sessions()
+        desktop_sessions = self.desktop_sessions
         if remove_icons:
-            xsessions = noicondata(xsessions)
-        return xsessions
+            desktop_sessions = noicondata(desktop_sessions)
+        return desktop_sessions
 
     def get_desktop_menu_icon(self, sessionname):
         desktop_sessions = self.get_desktop_sessions(False) or {}
