@@ -55,6 +55,7 @@ from xpra.os_util import (
     getuid, monotonic_time, hexstr,
     WIN32, POSIX, BITS,
     parse_encoded_bin_data, load_binary_file,
+    osexpand,
     )
 from xpra.server.background_worker import stop_worker, get_worker, add_work_item
 from xpra.server.menu_provider import get_menu_provider
@@ -253,7 +254,7 @@ class ServerCore:
         self.readonly = opts.readonly
         self.ssh_upgrade = opts.ssh_upgrade
         self.dbus_control = opts.dbus_control
-        self.pidfile = opts.pidfile
+        self.pidfile = osexpand(opts.pidfile)
         self.mdns = opts.mdns
         if opts.start_new_commands:
             #must be initialized before calling init_html_proxy
