@@ -740,9 +740,12 @@ class TopSessionClient(InfoTimerClient):
         pid = wi.intget("pid", 0)
         if pid:
             line1 = "pid %i: " % pid
-        title = wi.strget("title", "")
+        title = wi.bytesget("title", b"")
         if title:
-            line1 += ' "%s"' % title
+            try:
+                line1 += ' "%s"' % title.decode("utf8")
+            except UnicodeDecodeError:
+                line1 += ' "%s"' % bytestostr(title)
         attrs = [
             x for x in (
                 "above", "below", "bypass-compositor",
