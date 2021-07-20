@@ -381,7 +381,7 @@ class TopSessionClient(InfoTimerClient):
             self.log("failed to configure curses: %s" % e)
 
     def cleanup(self):
-        InfoTimerClient.cleanup(self)
+        super().cleanup()
         curses_clean(self.stdscr)
         self.stdscr = None
         self.close_log()
