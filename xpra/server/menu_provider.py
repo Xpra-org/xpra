@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
+from threading import Lock
 
 from gi.repository import GLib
 
@@ -51,7 +52,9 @@ class MenuProvider:
         self.watch_notifier = None
         self.xdg_menu_reload_timer = None
         self.on_reload = []
+        self.menu_data = None
         self.desktop_sessions = None
+        self.load_lock = Lock()
 
     def setup(self):
         if not POSIX or OSX or not EXPORT_XDG_MENU_DATA:
@@ -140,30 +143,39 @@ class MenuProvider:
         start_thread(load, "load-menu-data", True)
 
     def get_menu_data(self, force_reload=False, remove_icons=False, wait=True):
-        log("get_menu_data%s", (force_reload, remove_icons, wait))
+        log.info("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_XDG_MENU_DATA:
             return None
         if OSX:
             return None
-        if POSIX:
-            from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-            menu_data = load_xdg_menu_data(force_reload, wait_for_lock=wait)
-        elif WIN32:
-            from xpra.platform.win32.menu_helper import load_menu
-            menu_data = load_menu()
-        else:
-            log.error("Error: unsupported platform!")
-            return None
-        def got_menu_data():
-            self.got_menu_data(menu_data)
-        add_work_item(got_menu_data)
-        if remove_icons and menu_data:
-            menu_data = noicondata(menu_data)
+        menu_data = self.menu_data
+        if self.load_lock.acquire(wait):
+            try:
+                log.info("got lock, menu_data=%s", bool(self.menu_data))
+                if not self.menu_data or force_reload:
+                    if POSIX:
+                        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
+                        menu_data = load_xdg_menu_data()
+                    elif WIN32:
+                        from xpra.platform.win32.menu_helper import load_menu
+                        menu_data = load_menu()
+                    else:
+                        log.error("Error: unsupported platform!")
+                        return None
+                    self.menu_data = menu_data
+                    add_work_item(self.got_menu_data)
+            finally:
+                self.load_lock.release()
+            log.info("released lock")
+        if remove_icons and self.menu_data:
+            menu_data = noicondata(self.menu_data)
+        log.info("finished with get_menu_data")
         return menu_data
 
-    def got_menu_data(self, menu_data):
+    def got_menu_data(self):
+        log.warn("got_menu_data(..) on_reload=%s", self.on_reload)
         for cb in self.on_reload:
-            cb(menu_data)
+            cb(self.menu_data)
         return False
 
 
