@@ -108,7 +108,7 @@ class ChildReaper:
         procinfo.process = process
         procinfo.returncode = process.poll()
         procinfo.dead = procinfo.returncode is not None
-        log("add_process(%s, %s, %s, %s, %s) pid=%s", process, name, command, ignore, forget, pid)
+        log("add_process%s pid=%s", (process, name, command, ignore, forget, callback), pid)
         #could have died already:
         self._proc_info.append(procinfo)
         if procinfo.dead:
