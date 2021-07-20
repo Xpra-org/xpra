@@ -367,10 +367,9 @@ class TopSessionClient(InfoTimerClient):
     def server_connection_established(self, caps):
         self.log("server_connection_established(%s)" % repr_ellipsized(caps))
         self.log("traceback: %s" % (traceback.extract_stack(),))
-        r = super().server_connection_established(caps)
         self.setup()
         self.update_screen()
-        return r
+        return super().server_connection_established(caps)
 
     def setup(self):
         if self.stdscr is None:
