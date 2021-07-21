@@ -15,7 +15,7 @@ except ImportError:
 from datetime import datetime, timedelta
 
 from xpra.version_util import caps_to_version
-from xpra.util import typedict, std, envint, csv, engs, repr_ellipsized
+from xpra.util import noerr,typedict, std, envint, csv, engs, repr_ellipsized
 from xpra.os_util import (
     platform_name, get_machine_id,
     bytestostr, monotonic_time,
@@ -319,7 +319,7 @@ class TopClient:
                             self.psprocess[pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            info[0] += ", %i%% CPU" % (cpu)
+                            info[0] += ", %3i%% CPU" % (cpu)
                     except Exception:
                         pass
         return info
@@ -371,6 +371,7 @@ class TopSessionClient(MonitorXpraClient):
         self.info_timer = 0
         self.paused = False
         self.psprocess = {}
+        self.modified = False
         self.setup()
         MonitorXpraClient.__init__(self, conn, *args)
         start_thread(self.input_thread, "input-thread", daemon=True)
@@ -420,32 +421,38 @@ class TopSessionClient(MonitorXpraClient):
             log_file.close()
 
     def log(self, message):
-        if self.log_file:
+        lf = self.log_file
+        if lf:
             now = datetime.now()
-            self.log_file.write(("%s %s\n" % (now.strftime("%Y/%m/%d %H:%M:%S.%f"), message)).encode())
-            self.log_file.flush()
+            #we log from multiple threads,
+            #so the file may have been closed
+            #by the time we get here:
+            noerr(lf.write, ("%s %s\n" % (now.strftime("%Y/%m/%d %H:%M:%S.%f"), message)).encode())
+            noerr(lf.flush)
 
     def err(self, e):
-        if self.log_file:
-            self.log_file.write(b"%s\n" % e)
-            self.log_file.write(traceback.format_exc().encode())
+        lf = self.log_file
+        if lf:
+            noerr(lf.write, b"%s\n" % e)
+            noerr(lf.write(traceback.format_exc().encode()))
         else:
             curses_err(self.stdscr, e)
 
     def update_screen(self):
-        self.log("signal handlers=%s" % signal.getsignal(signal.SIGINT))
-        self.log("update_screen()")
-        if not self.paused:
-            self.stdscr.erase()
-            try:
-                self.do_update_screen()
-            except Exception as e:
-                self.err(e)
-            finally:
-                self.stdscr.refresh()
+        self.modified = False
+
 
     def input_thread(self):
+        self.log("input thread: signal handlers=%s" % signal.getsignal(signal.SIGINT))
         while self.exit_code is None:
+            if not self.paused and self.modified:
+                self.stdscr.erase()
+                try:
+                    self.do_update_screen()
+                except Exception as e:
+                    self.err(e)
+                finally:
+                    self.stdscr.refresh()
             try:
                 curses.halfdelay(10)
                 v = self.stdscr.getch()
@@ -542,7 +549,7 @@ class TopSessionClient(MonitorXpraClient):
                             self.psprocess[server_pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            rinfo += ", %i%% CPU" % (cpu)
+                            rinfo += ", %3i%% CPU" % (cpu)
                     except Exception:
                         pass
             cpuinfo = self.slidictget("cpuinfo")
@@ -658,7 +665,7 @@ class TopSessionClient(MonitorXpraClient):
     def get_client_info(self, ci):
         #version info:
         ctype = ci.strget("type", "unknown")
-        title = "%s client version" % ctype
+        title = "%s client version " % ctype
         title += caps_to_version(ci)
         chost = ci.strget("hostname")
         conn_info = ""
