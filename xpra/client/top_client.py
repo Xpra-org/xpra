@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
 from xpra.version_util import caps_to_version
-from xpra.util import typedict, std, envint, csv, engs, repr_ellipsized
+from xpra.util import noerr,typedict, std, envint, csv, engs, repr_ellipsized
 from xpra.os_util import (
     platform_name, get_machine_id,
     bytestostr, monotonic_time,
@@ -413,15 +413,20 @@ class TopSessionClient(MonitorXpraClient):
             log_file.close()
 
     def log(self, message):
-        if self.log_file:
+        lf = self.log_file
+        if lf:
             now = datetime.now()
-            self.log_file.write(("%s %s\n" % (now.strftime("%Y/%m/%d %H:%M:%S.%f"), message)).encode())
-            self.log_file.flush()
+            #we log from multiple threads,
+            #so the file may have been closed
+            #by the time we get here:
+            noerr(lf.write, ("%s %s\n" % (now.strftime("%Y/%m/%d %H:%M:%S.%f"), message)).encode())
+            noerr(lf.flush)
 
     def err(self, e):
-        if self.log_file:
-            self.log_file.write(b"%s\n" % e)
-            self.log_file.write(traceback.format_exc().encode())
+        lf = self.log_file
+        if lf:
+            noerr(lf.write, b"%s\n" % e)
+            noerr(lf.write(traceback.format_exc().encode()))
         else:
             curses_err(self.stdscr, e)
 
@@ -651,7 +656,7 @@ class TopSessionClient(MonitorXpraClient):
     def get_client_info(self, ci):
         #version info:
         ctype = ci.strget("type", "unknown")
-        title = "%s client version" % ctype
+        title = "%s client version " % ctype
         title += caps_to_version(ci)
         chost = ci.strget("hostname")
         conn_info = ""
