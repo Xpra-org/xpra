@@ -402,9 +402,10 @@ class TopSessionClient(InfoTimerClient):
             noerr(lf.flush)
 
     def err(self, e):
-        if self.log_file:
-            self.log_file.write(b"%s\n" % e)
-            self.log_file.write(traceback.format_exc().encode())
+        lf = self.log_file
+        if lf:
+            noerr(lf.write, b"%s\n" % e)
+            noerr(lf.write(traceback.format_exc().encode()))
         else:
             curses_err(self.stdscr, e)
 
