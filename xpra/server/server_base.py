@@ -607,6 +607,7 @@ class ServerBase(ServerBaseClass):
         return i
 
     def do_get_info(self, proto, server_sources=None) -> dict:
+        log("ServerBase.do_get_info%s", (proto, server_sources))
         start = monotonic_time()
         info = {}
         def up(prefix, d):
@@ -614,7 +615,10 @@ class ServerBase(ServerBaseClass):
 
         for c in SERVER_BASES:
             try:
+                cstart = monotonic_time()
                 merge_dicts(info, c.get_info(self, proto))
+                cend = monotonic_time()
+                log("%s.get_info(%s) took %ims", c, proto, int(1000*(cend-cstart)))
             except Exception:
                 log.error("Error collecting information from %s", c, exc_info=True)
 
