@@ -279,11 +279,11 @@ def record_build_info():
 
 def get_vcs_props():
     props = {
-                "REVISION" : "unknown",
-                "LOCAL_MODIFICATIONS" : "unknown",
-		"BRANCH" : "unknown",
-		"COMMIT" : "unknown"
-            }
+        "REVISION" : "unknown",
+        "LOCAL_MODIFICATIONS" : "unknown",
+        "BRANCH" : "unknown",
+        "COMMIT" : "unknown"
+        }
     branch = None
     for cmd in (
         r"git branch --show-current",
