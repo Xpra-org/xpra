@@ -10,8 +10,8 @@ import traceback
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
-from xpra.version_util import caps_to_version
-from xpra.util import noerr,typedict, std, envint, csv, engs, repr_ellipsized
+from xpra.version_util import caps_to_version, full_version_str
+from xpra.util import noerr, typedict, std, envint, csv, engs, repr_ellipsized
 from xpra.os_util import (
     platform_name, get_machine_id,
     bytestostr, monotonic_time,
@@ -45,7 +45,6 @@ SIGNAL_KEYS = {
 
 
 def get_title():
-    from xpra.version_util import full_version_str
     return "Xpra top %s" % full_version_str()
 
 def curses_init():
