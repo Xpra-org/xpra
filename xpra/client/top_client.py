@@ -308,7 +308,7 @@ class TopClient:
                             self.psprocess[pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            info[0] += ", %i%% CPU" % (cpu)
+                            info[0] += ", %3i%% CPU" % (cpu)
                     except Exception:
                         pass
         return info
@@ -519,7 +519,7 @@ class TopSessionClient(InfoTimerClient):
                             self.psprocess[server_pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            rinfo += ", %i%% CPU" % (cpu)
+                            rinfo += ", %3i%% CPU" % (cpu)
                     except Exception:
                         pass
             cpuinfo = self.slidictget("cpuinfo")
