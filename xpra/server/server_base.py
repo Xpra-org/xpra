@@ -580,22 +580,12 @@ class ServerBase(ServerBaseClass):
     def get_info(self, proto=None, client_uuids=None) -> dict:
         log("ServerBase.get_info%s", (proto, client_uuids))
         start = monotonic_time()
-        info = ServerCore.get_info(self, proto)
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
             sources = tuple(self._server_sources.values())
         log("info-request: sources=%s", sources)
-        dgi = self.do_get_info(proto, sources)
-        #ugly alert: merge nested dictionaries,
-        #ie: do_get_info may return a dictionary for "server" and we already have one,
-        # so we update it with the new values
-        for k,v in dgi.items():
-            cval = info.get(k)
-            if cval is None:
-                info[k] = v
-                continue
-            cval.update(v)
+        info = self.do_get_info(proto, sources)
         log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
         return info
 
