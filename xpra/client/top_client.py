@@ -562,34 +562,42 @@ class TopSessionClient(InfoTimerClient):
                 addstr_main(5, 0, gl_info)
                 hpos += 1
 
+            #filter clients, only show GUI clients:
+            client_info = self.slidictget("client")
+            gui_clients = []
+            nclients = 0
+            while True:
+                ci = client_info.dictget(nclients)
+                if not ci:
+                    break
+                ci = typedict(ci)
+                session_id = ci.strget("session-id")
+                if session_id!=self.session_id and ci.boolget("windows", True) and ci.strget("type")!="top":
+                    gui_clients.append(nclients)
+                nclients += 1
+
+            ngui = 0
             if hpos<height-3:
                 hpos += 1
                 if nclients==0:
-                    addstr_main(hpos, 0, "no clients connected")
+                    clients_str = "no clients connected"
                 else:
-                    addstr_main(hpos, 0, "%i client%s connected:" % (nclients, engs(nclients)))
+                    ngui = len(gui_clients)
+                    clients_str = "%i client%s connected, " % (nclients, engs(nclients))
+                    if ngui==0:
+                        clients_str += "no gui clients"
+                    else:
+                        clients_str += "%i gui client%s:" % (ngui, engs(ngui))
+                addstr_main(hpos, 0, clients_str)
                 hpos += 1
-            client_info = self.slidictget("client")
-            client_no = 0
-            while True:
+            for client_index, client_no in enumerate(gui_clients):
                 ci = client_info.dictget(client_no)
-                if not ci:
-                    break
-                client_no +=1
-                ci = typedict(ci)
-                session_id = ci.strget("session-id")
-                if session_id:
-                    #don't show ourselves:
-                    if session_id==self.session_id:
-                        continue
-                elif not ci.boolget("windows", True):
-                    #for older servers, hide any client that doesn't display windows:
-                    continue
-                ci = self.get_client_info(ci)
+                assert ci
+                ci = self.get_client_info(typedict(ci))
                 l = len(ci)
                 if hpos+2+l>height:
                     if hpos<height:
-                        more = nclients-client_no
+                        more = ngui-client_index
                         addstr_box(hpos, 0, "%i client%s not shown" % (more, engs(more)), curses.A_BOLD)
                     break
                 self.box(1, hpos, width-2, 2+l)
@@ -635,7 +643,7 @@ class TopSessionClient(InfoTimerClient):
     def get_client_info(self, ci):
         #version info:
         ctype = ci.strget("type", "unknown")
-        title = "%s client version" % ctype
+        title = "%s client version " % ctype
         title += caps_to_version(ci)
         chost = ci.strget("hostname")
         conn_info = ""
