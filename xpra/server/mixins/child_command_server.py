@@ -12,6 +12,7 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import monotonic_time, bytestostr, OSX, WIN32, POSIX
 from xpra.util import envint, csv
 from xpra.scripts.parsing import parse_env
+from xpra.make_thread import start_thread
 from xpra.server.server_util import source_env
 from xpra.server import EXITING_CODE
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -207,6 +208,9 @@ class ChildCommandServer(StubServerMixin):
     def xdg_menu_reload(self):
         self.xdg_menu_reload_timer = None
         log("xdg_menu_reload()")
+        start_thread(self.do_xdg_menu_reload, "reload-xdg-menu-data", True)
+
+    def do_xdg_menu_reload(self):
         xdg_menu = self._get_xdg_menu_data(True)
         for source in tuple(self._server_sources.values()):
             if source.xdg_menu_update:
