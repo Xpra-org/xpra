@@ -11,7 +11,7 @@ import platform
 
 #tricky: use xpra.scripts.config to get to the python "platform" module
 import xpra
-from xpra.util import updict, envbool, obsc, typedict, get_util_logger
+from xpra.util import envbool, obsc, typedict, get_util_logger
 from xpra.os_util import get_linux_distribution, BITS, POSIX, WIN32
 
 XPRA_VERSION = xpra.__version__     #@UndefinedVariable
