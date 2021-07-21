@@ -378,7 +378,20 @@ def main(args):
         record_src_info()
     if not has_build_info() or "build" in args:
         record_build_info()
-
+    if "revision" in args:
+        props = get_vcs_props()
+        try:
+            mods = int(props.get("LOCAL_MODIFICATIONS"))
+        except ValueError:
+            mods = 0
+        commit = props.get("COMMIT")
+        print("%s r%s%s%s" % (
+            props.get("BRANCH"),
+            props.get("REVISION"),
+            "M" if mods>0 else "",
+            " (%s)" % commit if commit else "",
+            )
+            )
 
 if __name__ == "__main__":
     main(sys.argv)
