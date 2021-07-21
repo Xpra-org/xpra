@@ -310,7 +310,7 @@ class TopClient:
                             self.psprocess[pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            info[0] += ", %i%% CPU" % (cpu)
+                            info[0] += ", %3i%% CPU" % (cpu)
                     except Exception:
                         pass
         return info
@@ -362,6 +362,7 @@ class TopSessionClient(MonitorXpraClient):
         self.info_timer = 0
         self.paused = False
         self.stdscr = None
+        self.modified = False
         self.psprocess = {}
         self.setup()
         start_thread(self.input_thread, "input-thread", daemon=True)
@@ -431,19 +432,20 @@ class TopSessionClient(MonitorXpraClient):
             curses_err(self.stdscr, e)
 
     def update_screen(self):
-        self.log("signal handlers=%s" % signal.getsignal(signal.SIGINT))
-        self.log("update_screen()")
-        if not self.paused:
-            self.stdscr.erase()
-            try:
-                self.do_update_screen()
-            except Exception as e:
-                self.err(e)
-            finally:
-                self.stdscr.refresh()
+        self.modified = True
 
     def input_thread(self):
+        self.log("input thread: signal handlers=%s" % signal.getsignal(signal.SIGINT))
         while self.exit_code is None:
+            if not self.paused and self.modified:
+                self.stdscr.erase()
+                try:
+                    self.do_update_screen()
+                except Exception as e:
+                    self.err(e)
+                finally:
+                    self.stdscr.refresh()
+                    self.modified = False
             try:
                 curses.halfdelay(10)
                 v = self.stdscr.getch()
@@ -540,7 +542,7 @@ class TopSessionClient(MonitorXpraClient):
                             self.psprocess[server_pid] = process
                         else:
                             cpu = process.cpu_percent()
-                            rinfo += ", %i%% CPU" % (cpu)
+                            rinfo += ", %3i%% CPU" % (cpu)
                     except Exception:
                         pass
             cpuinfo = self.slidictget("cpuinfo")
