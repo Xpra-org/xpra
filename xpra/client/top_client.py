@@ -358,7 +358,6 @@ class TopSessionClient(InfoTimerClient):
         self.paused = False
         self.stdscr = None
         self.psprocess = {}
-        self.setup()
         start_thread(self.input_thread, "input-thread", daemon=True)
 
     def client_type(self):
