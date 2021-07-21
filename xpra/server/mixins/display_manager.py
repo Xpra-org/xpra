@@ -40,6 +40,7 @@ class DisplayManager(StubServerMixin):
         self.bell = opts.bell
         self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
+        self.bit_depth = self.get_display_bit_depth()
 
 
     def parse_hello(self, ss, caps, send_ui):
@@ -140,6 +141,7 @@ class DisplayManager(StubServerMixin):
                     "y"         : self.ydpi,
                     },
                 "antialias" : self.antialias,
+                "depth" : self.bit_depth,
                 }
         if self.opengl_props:
             i["opengl"] = self.opengl_props

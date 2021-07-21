@@ -539,8 +539,13 @@ class TopSessionClient(InfoTimerClient):
             dinfo = []
             server = self.slidictget("server")
             rws = server.intpair("root_window_size", None)
+            display_info = self.slidictget("display")
             if rws:
-                sinfo = "%ix%i display" % (rws[0], rws[1])
+                sinfo = "%ix%i" % (rws[0], rws[1])
+                depth = display_info.intget("depth")
+                if depth>0:
+                    sinfo += " %i-bit" % depth
+                sinfo += " display"
                 mds = server.intpair("max_desktop_size")
                 if mds:
                     sinfo += " (max %ix%i)" % (mds[0], mds[1])
@@ -549,7 +554,6 @@ class TopSessionClient(InfoTimerClient):
             if cursor_info:
                 cx, cy = cursor_info.inttupleget("position", (0, 0))
                 dinfo.append("cursor at %ix%i" % (cx, cy))
-            display_info = self.slidictget("display")
             pid = display_info.intget("pid")
             if pid:
                 dinfo.append("pid %i" % pid)
