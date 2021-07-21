@@ -139,7 +139,7 @@ class MenuProvider:
         start_thread(load, "load-menu-data", True)
 
     def get_menu_data(self, force_reload=False, remove_icons=False, wait=True):
-        log.info("get_menu_data%s", (force_reload, remove_icons, wait))
+        log("get_menu_data%s", (force_reload, remove_icons, wait))
         if not EXPORT_XDG_MENU_DATA:
             return None
         if OSX:
@@ -147,7 +147,6 @@ class MenuProvider:
         menu_data = self.menu_data
         if self.load_lock.acquire(wait):
             try:
-                log.info("got lock, menu_data=%s", bool(self.menu_data))
                 if not self.menu_data or force_reload:
                     if POSIX:
                         from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
@@ -162,14 +161,12 @@ class MenuProvider:
                     add_work_item(self.got_menu_data)
             finally:
                 self.load_lock.release()
-            log.info("released lock")
         if remove_icons and self.menu_data:
             menu_data = noicondata(self.menu_data)
-        log.info("finished with get_menu_data")
         return menu_data
 
     def got_menu_data(self):
-        log.warn("got_menu_data(..) on_reload=%s", self.on_reload)
+        log("got_menu_data(..) on_reload=%s", self.on_reload)
         for cb in self.on_reload:
             cb(self.menu_data)
         return False
