@@ -356,6 +356,7 @@ class TopSessionClient(InfoTimerClient):
             self.log_file = open(CURSES_LOG, "ab")
         self.paused = False
         self.stdscr = None
+        self.modified = False
         self.psprocess = {}
         start_thread(self.input_thread, "input-thread", daemon=True)
 
@@ -410,19 +411,20 @@ class TopSessionClient(InfoTimerClient):
             curses_err(self.stdscr, e)
 
     def update_screen(self):
-        self.log("signal handlers=%s" % signal.getsignal(signal.SIGINT))
-        self.log("update_screen()")
-        if not self.paused:
-            self.stdscr.erase()
-            try:
-                self.do_update_screen()
-            except Exception as e:
-                self.err(e)
-            finally:
-                self.stdscr.refresh()
+        self.modified = True
 
     def input_thread(self):
+        self.log("input thread: signal handlers=%s" % signal.getsignal(signal.SIGINT))
         while self.exit_code is None:
+            if not self.paused and self.modified:
+                self.stdscr.erase()
+                try:
+                    self.do_update_screen()
+                except Exception as e:
+                    self.err(e)
+                finally:
+                    self.stdscr.refresh()
+                    self.modified = False
             try:
                 curses.halfdelay(10)
                 v = self.stdscr.getch()
