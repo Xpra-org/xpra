@@ -4,14 +4,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from gi.repository import Gtk, GLib, GdkPixbuf
-
 from xpra.util import envbool
 from xpra.os_util import OSX
 from xpra.gtk_common.gtk_util import menuitem
 from xpra.gtk_common.about import about, close_about
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
+from xpra.gtk_common.gtk_util import import_gtk
+
+gtk = import_gtk()
 
 HIDE_DISABLED_MENU_ENTRIES = OSX
 
@@ -22,12 +23,12 @@ def make_min_auto_menu(title, min_options, options,
                        set_value_cb):
     #note: we must keep references to the parameters on the submenu
     #(closures and gtk callbacks don't mix so well!)
-    submenu = Gtk.Menu()
+    submenu = gtk.Menu()
     submenu.get_current_min_value = get_current_min_value
     submenu.get_current_value = get_current_value
     submenu.set_min_value_cb = set_min_value_cb
     submenu.set_value_cb = set_value_cb
-    fstitle = Gtk.MenuItem()
+    fstitle = gtk.MenuItem()
     fstitle.set_label("Fixed %s:" % title)
     set_sensitive(fstitle, False)
     submenu.append(fstitle)
@@ -40,7 +41,7 @@ def make_min_auto_menu(title, min_options, options,
             options[value] = "%s%%" % value
         for s in sorted(options.keys()):
             t = options.get(s)
-            qi = Gtk.CheckMenuItem(label=t)
+            qi = gtk.CheckMenuItem(label=t)
             qi.set_draw_as_radio(True)
             candidate_match = s>=max(0, value)
             qi.set_active(not found_match and candidate_match)
@@ -72,8 +73,8 @@ def make_min_auto_menu(title, min_options, options,
                 for v,x in ss.min_menu_items.items():
                     x.set_active(v==0)
     submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
-    submenu.append(Gtk.SeparatorMenuItem())
-    mstitle = Gtk.MenuItem()
+    submenu.append(gtk.SeparatorMenuItem())
+    mstitle = gtk.MenuItem()
     mstitle.set_label("Minimum %s:" % title)
     set_sensitive(mstitle, False)
     submenu.append(mstitle)
@@ -108,7 +109,7 @@ def make_min_auto_menu(title, min_options, options,
     return submenu
 
 def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_encodings):
-    encodings_submenu = Gtk.Menu()
+    encodings_submenu = gtk.Menu()
     populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings)
     return encodings_submenu
 
@@ -125,7 +126,7 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
         name = get_encoding_name(encoding)
         descr = get_encoding_help(encoding)
         NAME_TO_ENCODING[name] = encoding
-        encoding_item = Gtk.CheckMenuItem(label=name)
+        encoding_item = gtk.CheckMenuItem(label=name)
         if descr:
             if encoding not in server_encodings:
                 descr += "\n(not available on this server)"

@@ -23,7 +23,9 @@ except ImportError:
         for v, format_name in CAIRO_FORMAT.items():
             if format_name=="RGB30":
                 FORMAT_RGB30 = v
-from gi.repository import GLib, Gdk
+from xpra.gtk_common.gtk_util import import_glib, import_gdk, cairo_set_source_pixbuf, gdk_cairo_context
+glib = import_glib()
+gdk = import_gdk()
 
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
@@ -64,7 +66,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px, py, start_time):
     img_data = memoryview_to_bytes(argb)
     pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw*4)
     context.set_operator(OPERATOR_OVER)
-    Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
+    cairo_set_source_pixbuf(context, pixbuf, 0, 0)
     context.paint()
 
 
@@ -73,8 +75,8 @@ class CairoBackingBase(WindowBackingBase):
     HAS_ALPHA = envbool("XPRA_ALPHA", True)
 
     def __init__(self, wid, window_alpha, _pixel_depth=0):
-        super().__init__(wid, window_alpha and self.HAS_ALPHA)
-        self.idle_add = GLib.idle_add
+        WindowBackingBase.__init__(self, wid, window_alpha and self.HAS_ALPHA)
+        self.idle_add = glib.idle_add
         self.size = 0, 0
         self.render_size = 0, 0
 
@@ -128,7 +130,7 @@ class CairoBackingBase(WindowBackingBase):
         """ must be called from UI thread """
         log("source pixbuf: %s", pixbuf)
         w, h = pixbuf.get_width(), pixbuf.get_height()
-        self.cairo_paint_from_source(Gdk.cairo_set_source_pixbuf, pixbuf, x, y, w, h, w, h, options)
+        self.cairo_paint_from_source(cairo_set_source_pixbuf, pixbuf, x, y, w, h, w, h, options)
 
     def cairo_paint_surface(self, img_surface, x, y, width, height, options):
         iw, ih = img_surface.get_width(), img_surface.get_height()
@@ -147,7 +149,7 @@ class CairoBackingBase(WindowBackingBase):
             backing, self.paint_box_line_width)
         if not backing:
             return
-        gc = Context(backing)
+        gc = gdk_cairo_context(Context(backing))
         if self.paint_box_line_width:
             gc.save()
 
