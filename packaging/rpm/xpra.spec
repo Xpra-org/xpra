@@ -605,12 +605,24 @@ fi
 
 
 %changelog
-* Wed Jul 14 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
-- always stop the 'new-stream' notification process
-- don't build ffmpeg codecs on i386 (crashy)
-- try harder to find valid menu entries to use
-- don't block the main thread loading menus
-- fix application geometry issues
+* Thu Jul 22 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
+* always stop the 'new-stream' notification process
+* don't build ffmpeg codecs on i386 (crashy)
+* prevent subprocesses becoming zombies
+* clean server on 'stop' or 'exit'
+* remove unused pulseaudio directories
+* menu loading:
+	* try harder to find valid menu entries to use
+	* don't block the main thread when loading menus
+* fix application geometry issues
+* show correct default values with "xpra --help"
+* xpra top:
+	* handle unicode window titles correctly
+	* fix screen corruption due to threading
+* packaging fixes:
+	* Debian packages now correctly use /etc/default for systemd service configuration
+	* MacOS updates for latest GTK3 builds
+	* add missing C++ files for MS Windows builds
 
 * Sun Jul 11 2021 Antoine Martin <antoine@xpra.org> 4.2.1-10
 - build and packaging fixes:

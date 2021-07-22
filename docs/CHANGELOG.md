@@ -1,11 +1,24 @@
 # Changelog
 
-## [4.2.2] 2021-07-14
+## [4.2.2] 2021-07-22
 * always stop the 'new-stream' notification process
 * don't build ffmpeg codecs on i386 (crashy)
-* try harder to find valid menu entries to use
-* don't block the main thread loading menus
+* prevent subprocesses becoming zombies
+* clean server on 'stop' or 'exit'
+* remove unused pulseaudio directories
+* menu loading:
+	* try harder to find valid menu entries to use
+	* don't block the main thread when loading menus
 * fix application geometry issues
+* show correct default values with "xpra --help"
+* xpra top:
+	* handle unicode window titles correctly
+	* fix screen corruption due to threading
+* packaging fixes:
+	* Debian packages now correctly use /etc/default for systemd service configuration
+	* MacOS updates for latest GTK3 builds
+	* add missing C++ files for MS Windows builds
+* cosmetic fixes: logging, error handling
 
 ## [4.2.1] 2021-07-11
 * build and packaging fixes:
