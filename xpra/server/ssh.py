@@ -147,8 +147,8 @@ class SSHServer(paramiko.ServerInterface):
             cmd = shlex.split(bytestostr(command))
         log("check_channel_exec_request: cmd=%s", cmd)
         # not sure if this is the best way to handle this, 'command -v xpra' has len=3
-        if cmd[0] in ("type", "which", "command") and (len(cmd)==2 or len(cmd)==3):
-            xpra_cmd = cmd[1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
+        if cmd[0] in ("type", "which", "command") and len(cmd) in (2,3):
+            xpra_cmd = cmd[-1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             if not POSIX:
                 assert WIN32
                 #we can't execute "type" or "which" on win32,
