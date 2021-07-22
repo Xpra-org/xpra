@@ -2045,7 +2045,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
     options = [os.path.join(x, nvcc_exe) for x in path_options]
     def which(cmd):
         try:
-            code, out, _ = get_status_output(["which", cmd])
+            code, out, _ = get_status_output(["command -v", cmd])
             if code==0:
                 return out
         except:

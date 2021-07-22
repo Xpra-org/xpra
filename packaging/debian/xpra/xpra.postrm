@@ -4,7 +4,7 @@ set -e
 
 case "${1}" in
     purge|remove)
-        if [ -x "$(which delgroup)" ]; then
+        if [ -x "$(command -v delgroup)" ]; then
             delgroup --quiet --system --only-if-empty xpra || true
         fi
     ;;

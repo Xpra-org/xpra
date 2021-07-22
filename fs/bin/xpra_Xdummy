@@ -61,7 +61,7 @@ elif [ -x "/usr/lib/xorg/Xorg" ]; then
 	#Ubuntu 16.10:
 	exec "/usr/lib/xorg/Xorg" "$@"
 else
-	XORG_BIN=$(which Xorg)
+	XORG_BIN=$(command -v Xorg)
 fi
 
 if [ ! -x "$XORG_BIN" ]; then

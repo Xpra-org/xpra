@@ -146,7 +146,8 @@ class SSHServer(paramiko.ServerInterface):
         except UnicodeDecodeError:
             cmd = shlex.split(bytestostr(command))
         log("check_channel_exec_request: cmd=%s", cmd)
-        if cmd[0] in ("type", "which") and len(cmd)==2:
+        # not sure if this is the best way to handle this, 'command -v xpra' has len=3
+        if cmd[0] in ("type", "which", "command") and (len(cmd)==2 or len(cmd)==3):
             xpra_cmd = cmd[1]   #ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
             if not POSIX:
                 assert WIN32
