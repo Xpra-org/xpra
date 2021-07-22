@@ -19,6 +19,7 @@ import traceback
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
+from xpra.child_reaper import getChildReaper
 from xpra.util import (
     csv, envbool, envint, nonl, pver,
     parse_simple_dict, noerr, sorted_nicely, typedict,
@@ -34,6 +35,7 @@ from xpra.exit_codes import (
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
     monotonic_time, bytestostr, use_tty,
+    is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
     )
 from xpra.scripts.parsing import (
@@ -327,7 +329,6 @@ def use_systemd_run(s):
     if is_Ubuntu() and (os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT")): # pragma: no cover
         #would fail
         return False
-    from xpra.os_util import is_systemd_pid1
     if not is_systemd_pid1():
         return False    # pragma: no cover
     #test it:
@@ -1931,6 +1932,7 @@ def make_progress_process(title="Xpra"):
             return
         progress_process.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
         progress_process.stdin.flush()
+    getChildReaper().add_process(progress_process, "splash", True, True)
     progress(0, title)
     progress(10, "initializing")
     return progress_process
@@ -2318,7 +2320,6 @@ def run_server(script_file, error_cb, options, args, mode, defaults):
                         v = str(c)
                     cmd.append("--%s=%s" % (x, v))
             proc = Popen(cmd, cwd=cwd, env=env, start_new_session=POSIX and not OSX)
-            from xpra.child_reaper import getChildReaper
             getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
         add_when_ready(attach_client)
     #add finally hook to ensure we will run the cleanups
@@ -2767,6 +2768,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
         proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log("proc=%s", proc)
+        getChildReaper().add_process(proc, "server", True, True)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd
             buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
