@@ -71,7 +71,7 @@ def do_get_mmap_dir():
     return _get_xpra_runtime_dir() or os.getenv("TMPDIR", "/tmp")
 
 def do_get_xpra_tmp_dir():
-    xrd = _get_xpra_runtime_dir()
+    xrd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
     return os.path.join(xrd, "tmp")
 
 

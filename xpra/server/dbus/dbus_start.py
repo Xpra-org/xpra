@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import shlex
 from subprocess import Popen, PIPE
 
-from xpra.os_util import POSIX, bytestostr
-from xpra.scripts.server import _save_int, _save_str
+from xpra.os_util import POSIX
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
 
@@ -33,7 +33,6 @@ def start_dbus(dbus_launch):
             "SHELL", "LANG", "USER", "LOGNAME", "HOME",
             "DISPLAY", "XAUTHORITY", "CKCON_X11_DISPLAY",
             ))
-        import shlex
         cmd = shlex.split(dbus_launch)
         log("start_dbus(%s) env=%s", dbus_launch, env)
         proc = Popen(cmd, stdin=PIPE, stdout=PIPE, env=env, start_new_session=True)
@@ -42,25 +41,25 @@ def start_dbus(dbus_launch):
         #parse and add to global env:
         dbus_env = {}
         log("out(%s)=%r", cmd, out)
-        for l in bytestostr(out).splitlines():
-            if l.startswith("export "):
+        for l in out.splitlines():
+            if l.startswith(b"export "):
                 continue
-            sep = "="
-            if l.startswith("setenv "):
-                l = l[len("setenv "):]
-                sep = " "
-            if l.startswith("set "):
-                l = l[len("set "):]
+            sep = b"="
+            if l.startswith(b"setenv "):
+                l = l[len(b"setenv "):]
+                sep = b" "
+            if l.startswith(b"set "):
+                l = l[len(b"set "):]
             parts = l.split(sep, 1)
             if len(parts)!=2:
                 continue
             k,v = parts
-            if v.startswith("'") and v.endswith("';"):
+            if v.startswith(b"'") and v.endswith(b"';"):
                 v = v[1:-2]
-            elif v.endswith(";"):
+            elif v.endswith(b";"):
                 v = v[:-1]
             dbus_env[k] = v
-        dbus_pid = int(dbus_env.get("DBUS_SESSION_BUS_PID", 0))
+        dbus_pid = int(dbus_env.get(b"DBUS_SESSION_BUS_PID", 0))
         log("dbus_pid=%i, dbus-env=%s", dbus_pid, dbus_env)
         return dbus_pid, dbus_env
     except Exception as e:
@@ -68,32 +67,3 @@ def start_dbus(dbus_launch):
         log.error("dbus-launch failed to start using command '%s':\n" % dbus_launch)
         log.error(" %s\n" % e)
         return 0, {}
-
-
-def save_dbus_pid(pid):
-    _save_int(b"_XPRA_DBUS_PID", pid)
-
-def save_dbus_env(env):
-    #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
-    #DBUS_SESSION_BUS_PID=11406
-    #DBUS_SESSION_BUS_WINDOWID=50331649
-    def u(s):
-        try:
-            return s.decode("latin1")
-        except Exception:
-            return str(s)
-    for n,conv,save in (
-            ("ADDRESS",     u,    _save_str),
-            ("PID",         int,    _save_int),
-            ("WINDOW_ID",   int,    _save_int)):
-        k = "DBUS_SESSION_BUS_%s" % n
-        v = env.get(k)
-        if v is None:
-            continue
-        try:
-            tv = conv(v)
-            save(k, tv)
-        except Exception as e:
-            log("save_dbus_env(%s)", env, exc_info=True)
-            log.error("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
-            log.error(" %s\n" % e)

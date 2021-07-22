@@ -14,9 +14,12 @@ from xpra.os_util import (
     shellsub, getuid,
     get_util_logger,
     osexpand, umask_context,
+    close_all_fds,
     )
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
+
+UINPUT_UUID_LEN = 12
 
 
 def source_env(source=()) -> dict:
@@ -104,10 +107,9 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
 def sh_quotemeta(s):
     return b"'" + s.replace(b"'", b"'\\''") + b"'"
 
-def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
-    script = []
-    script.append(b"#!/bin/sh\n")
-    for var, value in os.environb.items():
+def xpra_env_shell_script(socket_dir, env):
+    script = [b"#!/bin/sh", b""]
+    for var, value in env.items():
         # these aren't used by xpra, and some should not be exposed
         # as they are either irrelevant or simply do not match
         # the new environment used by xpra
@@ -130,20 +132,26 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
             pval = value.split(pathsep)      #ie: ["/usr/bin", "/usr/local/bin", "/usr/bin"]
             seen = set()
             value = pathsep.join(x for x in pval if not (x in seen or seen.add(x)))
-            script.append(b"%s=%s:\"$%s\"; export %s\n"
+            script.append(b"%s=%s:\"$%s\"; export %s"
                           % (var, sh_quotemeta(value), var, var))
         else:
-            script.append(b"%s=%s; export %s\n"
+            script.append(b"%s=%s; export %s"
                           % (var, sh_quotemeta(value), var))
     #XPRA_SOCKET_DIR is a special case, we want to honour it
     #when it is specified, but the client may override it:
     if socket_dir:
-        script.append(b'if [ -z "${XPRA_SOCKET_DIR}" ]; then\n')
-        script.append(b'    XPRA_SOCKET_DIR="%s"; export XPRA_SOCKET_DIR\n' % sh_quotemeta(os.path.expanduser(socket_dir).encode()))
-        script.append(b'fi\n')
+        script.append(b'if [ -z "${XPRA_SOCKET_DIR}" ]; then')
+        script.append(b'    XPRA_SOCKET_DIR="%s"; export XPRA_SOCKET_DIR' %
+                      sh_quotemeta(os.path.expanduser(socket_dir).encode()))
+        script.append(b'fi')
+    script.append(b"")
+    return b"\n".join(script)
+
+def xpra_runner_shell_script(xpra_file, starting_dir):
+    script = []
     # We ignore failures in cd'ing, b/c it's entirely possible that we were
     # started from some temporary directory and all paths are absolute.
-    script.append(b"cd %s\n" % sh_quotemeta(starting_dir.encode()))
+    script.append(b"cd %s" % sh_quotemeta(starting_dir.encode()))
     if OSX:
         #OSX contortions:
         #The executable is the python interpreter,
@@ -163,8 +171,8 @@ else
 fi
 """)
     else:
-        script.append(b"_XPRA_PYTHON=%s\n" % (sh_quotemeta(sys.executable.encode()),))
-        script.append(b"_XPRA_SCRIPT=%s\n" % (sh_quotemeta(xpra_file.encode()),))
+        script.append(b"_XPRA_PYTHON=%s" % (sh_quotemeta(sys.executable.encode()),))
+        script.append(b"_XPRA_SCRIPT=%s" % (sh_quotemeta(xpra_file.encode()),))
         script.append(b"""
 if command -v "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
     # Happypath:
@@ -178,7 +186,7 @@ END
     exec xpra "$@"
 fi
 """)
-    return b"".join(script)
+    return b"\n".join(script)
 
 def write_runner_shell_scripts(contents, overwrite=True):
     assert POSIX
@@ -277,7 +285,6 @@ def select_log_file(log_dir, log_file, display_name):
     return logpath
 
 def redirect_std_to_log(logfd, *noclose_fds):
-    from xpra.os_util import close_all_fds
     # save current stdout/stderr to be able to print info
     # before exiting the non-deamon process
     # and closing those file descriptors definitively
@@ -383,6 +390,8 @@ def get_uinput_device_path(device):
     return None
 
 def has_uinput():
+    if not envbool("XPRA_UINPUT", True):
+        return False
     try:
         import uinput
         assert uinput
@@ -410,7 +419,7 @@ def has_uinput():
 
 def create_uinput_device(uuid, uid, events, name):
     log = get_util_logger()
-    import uinput
+    import uinput  # @UnresolvedImport
     BUS_USB = 0x03
     #BUS_VIRTUAL = 0x06
     VENDOR = 0xffff
@@ -475,7 +484,7 @@ def create_uinput_touchpad_device(uuid, uid):
 def create_uinput_devices(uinput_uuid, uid):
     log = get_util_logger()
     try:
-        import uinput
+        import uinput  # @UnresolvedImport
         assert uinput
     except (ImportError, NameError) as e:
         log.error("Error: cannot access python uinput module:")

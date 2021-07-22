@@ -22,7 +22,7 @@ from xpra.version_util import (
     XPRA_VERSION, full_version_str, version_compat_check, get_version_info_full,
     get_platform_info, get_host_info,
     )
-from xpra.scripts.server import deadly_signal
+from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.server.server_util import write_pidfile, rm_pidfile
 from xpra.scripts.config import parse_bool, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import may_log_packet, SOCKET_TYPES, MAX_PACKET_SIZE
@@ -458,9 +458,11 @@ class ServerCore:
         self.cleanup_dbus_server()
         if not self._upgrading:
             self.stop_dbus_server()
+            self.clean_session_files("cmdline", "server-env")
         if self.pidfile:
             netlog("cleanup removing pidfile %s", self.pidfile)
             self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
+            rm_session_dir()
         if self.menu_provider:
             self.menu_provider.cleanup()
         netlog("cleanup() done for server core")
@@ -468,6 +470,10 @@ class ServerCore:
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
         sleep(0.1)
+
+    def clean_session_files(self, *filenames):
+        log("clean_session_files%s", filenames)
+        clean_session_files(*filenames)
 
 
     def cleanup_sockets(self):

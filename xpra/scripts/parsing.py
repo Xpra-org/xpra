@@ -1108,6 +1108,9 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--system-proxy-socket", action="store",
                       dest="system_proxy_socket", default=defaults.system_proxy_socket,
                       help="The socket path to use to contact the system-wide proxy server. Default: '%default'.")
+    group.add_option("--sessions-dir", action="store",
+                      dest="sessions_dir", default=defaults.sessions_dir,
+                      help="Directory to place/look for the sessions files in. Default: '%s'." % defaults.sessions_dir)
     group.add_option("--ssh-upgrade", action="store",
                       dest="ssh_upgrade", default=defaults.ssh_upgrade,
                       help="Upgrade TCP sockets to handle SSH connections. Default: '%default'.")

@@ -17,12 +17,13 @@ from xpra.make_thread import start_thread
 from xpra.platform import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
+from xpra.scripts.server import save_session_file
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("server")
 soundlog = Logger("sound")
-httplog = Logger("http")
+httplog = Logger("sound", "http")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
 
@@ -147,7 +148,7 @@ class AudioServer(StubServerMixin):
                 log.warn("Warning: the runtime directory '%s' does not exist,", rd)
                 log.warn(" cannot start a private pulseaudio server")
             else:
-                xpra_rd = _get_xpra_runtime_dir()
+                xpra_rd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
                 assert xpra_rd, "bug: no xpra runtime dir"
                 display = os.environ.get("DISPLAY", "").lstrip(":")
                 self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, "pulse-%s" % display))
@@ -207,6 +208,7 @@ class AudioServer(StubServerMixin):
             return
         self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
+            save_session_file("pulseaudio.pid", "%s" % self.pulseaudio_proc.pid)
             soundlog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
             if self.pulseaudio_private_socket:
                 soundlog.info(" private server socket path:")
@@ -258,6 +260,8 @@ class AudioServer(StubServerMixin):
             while (monotonic_time()-now)<1 and os.path.exists(self.pulseaudio_private_socket):
                 time.sleep(0.1)
         self.clean_pulseaudio_private_dir()
+        if not self.is_child_alive(proc):
+            self.clean_session_files("pulseaudio.pid")
 
     def clean_pulseaudio_private_dir(self):
         if self.pulseaudio_private_dir:

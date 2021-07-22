@@ -2382,7 +2382,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     #add finally hook to ensure we will run the cleanups
     #even if we exit because of an exception:
     try:
-        return do_run_server(error_cb, options, mode, script_file, args, desktop_display, progress_cb)
+        return do_run_server(script_file, cmdline, error_cb, options, mode, script_file, args, desktop_display, progress_cb)
     finally:
         run_cleanups()
         import gc

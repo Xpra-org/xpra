@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -27,6 +27,11 @@ X11Keyboard = X11KeyboardBindings()
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
+
+def root_prop_set(prop_name, prop_type, value):
+    from xpra.gtk_common.gtk_util import get_default_root_window
+    from xpra.x11.gtk_x11.prop import prop_set
+    prop_set(get_default_root_window(), prop_name, prop_type, value)
 
 def _get_antialias_hintstyle(antialias):
     hintstyle = antialias.strget("hintstyle", "").lower()
@@ -78,20 +83,14 @@ class X11ServerBase(X11ServerCore):
             self.init_all_server_settings()
 
     def save_pid(self):
-        from xpra.scripts.server import _save_int
-        _save_int(b"XPRA_SERVER_gPID", os.getpid())
+        root_prop_set(b"XPRA_SERVER_PID", "u32", os.getpid())
+
 
     def init_display_pid(self, pid):
-        if pid:
-            from xpra.scripts.server import _save_int
-            _save_int(b"XPRA_XVFB_PID", pid)
+        if not pid:
+            log.info("xvfb pid not found")
         else:
-            from xpra.scripts.server import _get_int
-            pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")
-            if not pid:
-                log.info("xvfb pid not found")
-            else:
-                log.info("xvfb pid=%i", pid)
+            log.info("xvfb pid=%i", pid)
         self.display_pid = pid
 
     def kill_display(self):
@@ -106,6 +105,7 @@ class X11ServerBase(X11ServerCore):
                 from xpra.x11.vfb_util import kill_xvfb
                 def do_kill_display():
                     kill_xvfb(self.display_pid)
+                    self.clean_session_files("xvfb.pid", "xauthority", "Xorg.log", "Xorg.log.old")
                 add_cleanup(do_kill_display)
 
 
@@ -125,13 +125,33 @@ class X11ServerBase(X11ServerCore):
     def init_dbus(self, dbus_pid, dbus_env):
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
-            os.environ.update(dbus_env)
+            os.environb.update(dbus_env)
             self.dbus_pid = dbus_pid
             self.dbus_env = dbus_env
             #now we can save values on the display
             #(we cannot access gtk3 until dbus has started up)
-            from xpra.server.dbus.dbus_start import save_dbus_env
-            save_dbus_env(dbus_env)
+            def _save_int(prop_name, pid):
+                root_prop_set(prop_name, "u32", pid)
+            def _save_str(prop_name, s):
+                root_prop_set(prop_name, "latin1", s)
+            #DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
+            #DBUS_SESSION_BUS_PID=11406
+            #DBUS_SESSION_BUS_WINDOWID=50331649
+            for n,conv,save in (
+                    ("ADDRESS",     bytestostr,     _save_str),
+                    ("PID",         int,            _save_int),
+                    ("WINDOW_ID",   int,            _save_int)):
+                k = "DBUS_SESSION_BUS_%s" % n
+                v = dbus_env.get(k)
+                if v is None:
+                    continue
+                try:
+                    tv = conv(v)
+                    save(k, tv)
+                except Exception as e:
+                    log("save_dbus_env(%s)", dbus_env, exc_info=True)
+                    log.error("failed to save dbus environment variable '%s' with value '%s':\n" % (k, v))
+                    log.error(" %s\n" % e)
 
 
     def last_client_exited(self):

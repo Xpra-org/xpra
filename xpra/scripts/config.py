@@ -93,7 +93,7 @@ def get_Xdummy_confdir():
         base = "${HOME}/.xpra"
     return base+"/xorg.conf.d/$PID"
 
-def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/etc/xpra/xorg.conf"):
+def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_SESSION_DIR}", xorg_conf="/etc/xpra/xorg.conf"):
     cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
     cmd += [
           "-noreset", "-novtswitch",
@@ -102,7 +102,7 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/e
           "+extension", "RANDR",
           "+extension", "RENDER",
           "-auth", "$XAUTHORITY",
-          "-logfile", "%s/Xorg.${DISPLAY}.log" % log_dir,
+          "-logfile", "%s/Xorg.log" % log_dir,
           #must be specified with some Xorg versions (ie: arch linux)
           #this directory can store xorg config files, it does not need to be created:
           "-configdir", '"%s"' % get_Xdummy_confdir(),
@@ -520,6 +520,7 @@ OPTION_TYPES = {
                     "chdir"             : str,
                     "xvfb"              : str,
                     "socket-dir"        : str,
+                    "sessions-dir"      : str,
                     "mmap"              : str,
                     "log-dir"           : str,
                     "log-file"          : str,
@@ -784,6 +785,7 @@ PROXY_START_OVERRIDABLE_OPTIONS = [
     "start-after-connect", "start-child-after-connect",
     "start-on-connect", "start-child-on-connect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
+    "sessions-dir",
     ]
 tmp = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
@@ -931,7 +933,7 @@ def get_defaults():
                     "tcp-encryption"    : "",
                     "encryption-keyfile": "",
                     "tcp-encryption-keyfile": "",
-                    "pidfile"           : "",
+                    "pidfile"           : "${XPRA_SESSION_DIR}/server.pid",
                     "ssh"               : "auto",
                     "systemd-run"       : get_default_systemd_run(),
                     "systemd-run-args"  : "",
@@ -939,6 +941,7 @@ def get_defaults():
                     "xvfb"              : xvfb_str,
                     "chdir"             : "",
                     "socket-dir"        : "",
+                    "sessions-dir"      : "$XDG_RUNTIME_DIR/xpra",
                     "log-dir"           : "auto",
                     "log-file"          : "$DISPLAY.log",
                     "border"            : "auto,5:off",
