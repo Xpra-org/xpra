@@ -6,6 +6,7 @@ import sys
 from collections import deque
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_gdk, is_gtk3, import_pango, import_glib
+from xpra.gtk_common.gtk_util import display_get_default, keymap_get_for_display
 from xpra.util import csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.platform.paths import get_icon
@@ -49,8 +50,8 @@ class KeyboardStateInfoWindow:
         glib.timeout_add(100, self.populate_modifiers)
 
         self.key_events = deque(maxlen=35)
-        display = Gdk.Display.get_default()
-        keymap = Gdk.Keymap.get_for_display(display)
+        display = display_get_default()
+        keymap = keymap_get_for_display(display)
         self.keymap_change_timer = 0
         keymap.connect("keys-changed", self.keymap_changed)
         self.show_keymap("current keymap")
