@@ -490,12 +490,15 @@ class ServerCore(object):
         dbuslog("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
         if not self.dbus_pid:
             return
-        try:
-            os.kill(self.dbus_pid, signal.SIGINT)
-        except Exception as e:
-            dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-            dbuslog.warn("Warning: error trying to stop dbus with pid %i:", self.dbus_pid)
-            dbuslog.warn(" %s", e)
+        from xpra.scripts.server import add_cleanup
+        def do_kill_dbus():
+            try:
+                os.kill(self.dbus_pid, signal.SIGINT)
+            except Exception as e:
+                dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
+                dbuslog.warn("Warning: error trying to stop dbus with pid %i:", self.dbus_pid)
+                dbuslog.warn(" %s", e)
+        add_cleanup(do_kill_dbus)
 
     def init_dbus_server(self):
         if not POSIX:
