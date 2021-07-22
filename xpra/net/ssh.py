@@ -810,12 +810,12 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             #assume this path exists
             pass
         else:
-            #assume Posix and find that command:
-            r = rtc("which %s" % xpra_cmd)
+            #assume POSIX and find that command:
+            r = rtc("command -v %s" % xpra_cmd)
             if r[2]!=0:
                 continue
             if r[0]:
-                #use the actual path returned by 'which':
+                #use the actual path returned by 'command -v':
                 try:
                     xpra_cmd = r[0].decode().splitlines()[-1].rstrip("\n\r ").lstrip("\t ")
                 except Exception:
@@ -890,8 +890,8 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             else:
                 check = "elif"
             if x=="xpra":
-                #no absolute path, so use "which" to check that the command exists:
-                pc = ['%s which "%s" > /dev/null 2>&1; then' % (check, x)]
+                #no absolute path, so use "command -v" to check that the command exists:
+                pc = ['%s command -v "%s" > /dev/null 2>&1; then' % (check, x)]
             else:
                 pc = ['%s [ -x %s ]; then' % (check, x)]
             pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]

@@ -154,7 +154,7 @@ def xpra_runner_shell_script(xpra_file, starting_dir, socket_dir):
             sexec = os.path.join(sexec[:bini], "Resources", "MacOS", "Xpra")
         script.append(b"_XPRA_SCRIPT=%s\n" % (sh_quotemeta(sexec.encode()),))
         script.append(b"""
-if which "$_XPRA_SCRIPT" > /dev/null; then
+if command -v "$_XPRA_SCRIPT" > /dev/null; then
     # Happypath:
     exec "$_XPRA_SCRIPT" "$@"
 else
@@ -166,7 +166,7 @@ fi
         script.append(b"_XPRA_PYTHON=%s\n" % (sh_quotemeta(sys.executable.encode()),))
         script.append(b"_XPRA_SCRIPT=%s\n" % (sh_quotemeta(xpra_file.encode()),))
         script.append(b"""
-if which "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
+if command -v "$_XPRA_PYTHON" > /dev/null && [ -e "$_XPRA_SCRIPT" ]; then
     # Happypath:
     exec "$_XPRA_PYTHON" "$_XPRA_SCRIPT" "$@"
 else
