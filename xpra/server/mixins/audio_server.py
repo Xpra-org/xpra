@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import shlex
 import os.path
+from subprocess import Popen, PIPE
 from threading import Event
 from gi.repository import GLib
 
@@ -249,7 +251,6 @@ class AudioServer(StubServerMixin):
                 env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
                 self.pulseaudio_private_socket = os.path.join(self.pulseaudio_private_dir, "pulse", "native")
                 os.environ["XPRA_PULSE_SERVER"] = self.pulseaudio_private_socket
-        import shlex
         cmd = shlex.split(self.pulseaudio_command)
         cmd = list(osexpand(x) for x in cmd)
         #find the absolute path to the command:
@@ -267,6 +268,7 @@ class AudioServer(StubServerMixin):
                     soundlog.info(msg)
                 else:
                     soundlog.warn(msg)
+                self.clean_pulseaudio_private_dir()
                 return
             cmd[0] = pa_cmd
         started_at = monotonic_time()
@@ -288,15 +290,15 @@ class AudioServer(StubServerMixin):
             else:
                 soundlog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
-        import subprocess
         try:
             soundlog("pulseaudio cmd=%s", " ".join(cmd))
             soundlog("pulseaudio env=%s", env)
-            self.pulseaudio_proc = subprocess.Popen(cmd, env=env)
+            self.pulseaudio_proc = Popen(cmd, env=env)
         except Exception as e:
             soundlog("Popen(%s)", cmd, exc_info=True)
             soundlog.error("Error: failed to start pulseaudio:")
             soundlog.error(" %s", e)
+            self.clean_pulseaudio_private_dir()
             return
         self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
@@ -310,7 +312,7 @@ class AudioServer(StubServerMixin):
                 if p is None or p.poll() is not None:
                     return
                 for i, x in enumerate(self.pulseaudio_configure_commands):
-                    proc = subprocess.Popen(x, env=env, shell=True)
+                    proc = Popen(x, env=env, shell=True)
                     self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
             self.timeout_add(2*1000, configure_pulse)
 
@@ -325,9 +327,8 @@ class AudioServer(StubServerMixin):
             soundlog.info("stopping pulseaudio with pid %s", proc.pid)
             try:
                 #first we try pactl (required on Ubuntu):
-                import subprocess
                 cmd = ["pactl", "exit"]
-                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
                 self.add_process(proc, "pactl exit", cmd, True)
                 r = pollwait(proc)
                 #warning: pactl will return 0 whether it succeeds or not...
@@ -351,6 +352,9 @@ class AudioServer(StubServerMixin):
             now = monotonic_time()
             while (monotonic_time()-now)<1 and os.path.exists(self.pulseaudio_private_socket):
                 time.sleep(0.1)
+        self.clean_pulseaudio_private_dir()
+
+    def clean_pulseaudio_private_dir(self):
         if self.pulseaudio_private_dir:
             if os.path.exists(self.pulseaudio_private_socket):
                 log.warn("Warning: the pulseaudio private socket file still exists:")
