@@ -23,7 +23,7 @@ from xpra.scripts.main import (
     )
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
-    FALSE_OPTIONS, OPTION_TYPES,
+    FALSE_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS,
     parse_bool,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
@@ -434,6 +434,8 @@ def save_options(opts):
     fixup_options(defaults)
     diff_contents = []
     for attr, dtype in OPTION_TYPES.items():
+        if attr in CLIENT_ONLY_OPTIONS:
+            continue
         if attr in SERVER_SAVE_SKIP_OPTIONS:
             continue
         aname = attr.replace("-", "_")
@@ -811,12 +813,12 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
     if mode in ("upgrade", "upgrade-desktop"):
         #if we had saved the start / start-desktop config, reload it:
         options = load_options()
-        print("options=%s" % (options,))
         if options:
             upgrade_config = dict_to_validated_config(options)
-            print("upgrade_config=%s" % (upgrade_config,))
             #apply the previous session options:
             for k in options.keys():
+                if k in CLIENT_ONLY_OPTIONS:
+                    continue
                 if k in SERVER_LOAD_SKIP_OPTIONS:
                     continue
                 dtype = OPTION_TYPES.get(k)
@@ -831,7 +833,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
                     continue
                 value = getattr(upgrade_config, fn)
                 setattr(opts, fn, value)
-                print("%s=%s" % (k, value))
     save_options(opts)
 
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
