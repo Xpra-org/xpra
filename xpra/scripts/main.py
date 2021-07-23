@@ -1682,7 +1682,6 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % EXIT_STR.get(r, r))
-        warn("%s - %s" % (script_file, cmdline))
         os.execv(script_file, cmdline)
     return r
 
