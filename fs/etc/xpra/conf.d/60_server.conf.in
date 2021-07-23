@@ -5,10 +5,11 @@
 #log-dir = /run/user/$UID
 #log-dir = ~/.xpra
 #log-dir = /tmp
+#log-dir = ${XPRA_SESSION_DIR}
 log-dir = %(log_dir)s
 
 # Log file:
-log-file = $DISPLAY.log
+log-file = server.log
 
 # Delegate "start" and "start-desktop" subcommands to the system-wide proxy server instance
 #start-via-proxy = auto

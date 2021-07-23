@@ -21,7 +21,12 @@ from xpra.scripts.main import (
     validate_encryption, parse_env, configure_env,
     stat_X11_display, get_xpra_sessions,
     )
-from xpra.scripts.config import InitException, InitInfo, InitExit, FALSE_OPTIONS, parse_bool
+from xpra.scripts.config import (
+    InitException, InitInfo, InitExit,
+    FALSE_OPTIONS, OPTION_TYPES,
+    parse_bool,
+    fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
+    )
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
 from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK, EXIT_FAILURE
 from xpra.os_util import (
@@ -405,6 +410,51 @@ def clean_session_files(*filenames):
                 log.error(" %s", e)
     rm_session_dir()
 
+SERVER_SAVE_SKIP_OPTIONS = (
+    "systemd-run",
+    "daemon",
+    )
+
+SERVER_LOAD_SKIP_OPTIONS = (
+    "systemd-run",
+    "daemon",
+    "start-child",
+    "start-after-connect",
+    "start-child-after-connect",
+    "start-on-connect",
+    "start-child-on-connect",
+    "start-on-last-client-exit",
+    "start-child-on-last-client-exit",
+    )
+
+def save_options(opts):
+    from xpra.scripts.parsing import fixup_defaults
+    defaults = make_defaults_struct()
+    fixup_defaults(defaults)
+    fixup_options(defaults)
+    diff_contents = []
+    for attr, dtype in OPTION_TYPES.items():
+        if attr in SERVER_SAVE_SKIP_OPTIONS:
+            continue
+        aname = attr.replace("-", "_")
+        dval = getattr(defaults, aname, None)
+        cval = getattr(opts, aname, None)
+        if dval!=cval:
+            if dtype is bool:
+                BOOL_STR = {True : "yes", False : "no", None : "auto"}
+                diff_contents.append("%s=%s" % (attr, BOOL_STR.get(cval, cval)))
+            elif dtype in (tuple, list):
+                for x in cval or ():
+                    diff_contents.append("%s=%s" % (attr, x))
+            else:
+                diff_contents.append("%s=%s" % (attr, cval))
+    diff_contents.append("")
+    save_session_file("config", "\n".join(diff_contents))
+
+def load_options():
+    config_file = session_file_path("config")
+    return read_config(config_file)
+
 
 def reload_dbus_attributes(display_name):
     from xpra.log import Logger
@@ -509,12 +559,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         warn(" but 'exit-with-children' is not enabled,")
         warn(" you should just use 'start' instead")
 
-    if not (shadowing or starting_desktop or upgrading_desktop):
-        opts.rfb_upgrade = 0
-        if opts.bind_rfb:
-            get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
-            opts.bind_rfb = []
-
     if (upgrading or upgrading_desktop or shadowing) and opts.pulseaudio is None:
         #there should already be one running
         #so change None ('auto') to False
@@ -600,6 +644,11 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
                     else:
                         starting_desktop = True
                         upgrading_desktop = False
+                    #but it may need a second to disconnect the clients
+                    #and then close the sockets cleanly
+                    #(so we can re-create them safely)
+                    import time
+                    time.sleep(1)
 
     if not (shadowing or proxying or upgrading or upgrading_desktop) and \
     opts.exit_with_children and not has_child_arg:
@@ -613,9 +662,10 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         xpra_env_shell_script,
         xpra_runner_shell_script,
         write_runner_shell_scripts,
-        find_log_dir,
         create_input_devices,
         source_env,
+        daemonize,
+        select_log_file, open_log_file, redirect_std_to_log,
         )
     run_xpra_script = None
     env_script = None
@@ -642,7 +692,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         #daemonize will chdir to "/", so try to use an absolute path:
         if opts.password_file:
             opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
-        from xpra.server.server_util import daemonize
         daemonize()
 
     displayfd = 0
@@ -723,6 +772,68 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         #with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
 
+    sanitize_env()
+    os.environ.update(source_env(opts.source))
+    if POSIX:
+        if xrd:
+            os.environ["XDG_RUNTIME_DIR"] = xrd
+        if not OSX:
+            os.environ["XDG_SESSION_TYPE"] = "x11"
+        if not starting_desktop:
+            os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
+    if display_name[0] != 'S':
+        os.environ["DISPLAY"] = display_name
+        if POSIX:
+            os.environ["CKCON_X11_DISPLAY"] = display_name
+    elif not start_vfb or opts.xvfb.find("Xephyr")<0:
+        os.environ.pop("DISPLAY", None)
+    os.environ.update(protected_env)
+
+    #XPRA_SESSION_DIR:
+    session_dir = osexpand(os.path.join(opts.sessions_dir, display_name.lstrip(":")))
+    if not os.path.exists(session_dir):
+        try:
+            os.makedirs(session_dir, 0o750)
+        except OSError:
+            import tempfile
+            session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
+            os.makedirs(session_dir, 0o750)
+    os.environ["XPRA_SESSION_DIR"] = session_dir
+    add_cleanup(rm_session_dir)
+    #populate it:
+    if run_xpra_script:
+        # Write out a shell-script so that we can start our proxy in a clean
+        # environment:
+        write_runner_shell_scripts(run_xpra_script)
+    if env_script:
+        save_session_file("server.env", env_script)
+    save_session_file("cmdline", "\n".join(cmdline))
+    if mode in ("upgrade", "upgrade-desktop"):
+        #if we had saved the start / start-desktop config, reload it:
+        options = load_options()
+        print("options=%s" % (options,))
+        if options:
+            upgrade_config = dict_to_validated_config(options)
+            print("upgrade_config=%s" % (upgrade_config,))
+            #apply the previous session options:
+            for k in options.keys():
+                if k in SERVER_LOAD_SKIP_OPTIONS:
+                    continue
+                dtype = OPTION_TYPES.get(k)
+                if not dtype:
+                    continue
+                fn = k.replace("-", "_")
+                if not hasattr(upgrade_config, fn):
+                    warn("%s not found in saved config" % k)
+                    continue
+                if not hasattr(opts, fn):
+                    warn("%s not found in config" % k)
+                    continue
+                value = getattr(upgrade_config, fn)
+                setattr(opts, fn, value)
+                print("%s=%s" % (k, value))
+    save_options(opts)
+
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "")=="1"
     if start_vfb or log_to_file:
@@ -730,16 +841,13 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         #either for the vfb, or for our own log file
         log_dir = opts.log_dir or ""
         if not log_dir or log_dir.lower()=="auto":
-            log_dir = find_log_dir(username, uid=uid, gid=gid)
-            if not log_dir:
-                raise InitException("cannot find or create a logging directory")
+            log_dir = session_dir
         #expose the log-dir as "XPRA_LOG_DIR",
         #this is used by Xdummy for the Xorg log file
         if "XPRA_LOG_DIR" not in os.environ:
             os.environ["XPRA_LOG_DIR"] = log_dir
 
     if log_to_file:
-        from xpra.server.server_util import select_log_file, open_log_file, redirect_std_to_log
         log_filename0 = osexpand(select_log_file(log_dir, opts.log_file, display_name),
                                  username, uid, gid, extra_expand)
         if os.path.exists(log_filename0) and not display_name.startswith("S"):
@@ -772,53 +880,24 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         warn(" you should also enable the sync-xvfb option")
         warn(" to keep the Xephyr window updated")
 
-    progress(10, "creating sockets")
+    if not (shadowing or starting_desktop or upgrading_desktop):
+        opts.rfb_upgrade = 0
+        if opts.bind_rfb:
+            get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
+            opts.bind_rfb = []
+
+    progress(30, "creating sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
     sockets = create_sockets(opts, error_cb)
 
-    sanitize_env()
-    os.environ.update(source_env(opts.source))
-    if POSIX:
-        if xrd:
-            os.environ["XDG_RUNTIME_DIR"] = xrd
-        if not OSX:
-            os.environ["XDG_SESSION_TYPE"] = "x11"
-        if not starting_desktop:
-            os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
-        if configure_imsettings_env(opts.input_method)=="ibus":
-            #start ibus-daemon unless already specified in 'start':
-            if IBUS_DAEMON_COMMAND and not any(x.find("ibus-daemon")>=0 for x in opts.start):
-                opts.start.insert(0, IBUS_DAEMON_COMMAND)
+    if POSIX and configure_imsettings_env(opts.input_method)=="ibus":
+        #start ibus-daemon unless already specified in 'start':
+        if IBUS_DAEMON_COMMAND and not any(x.find("ibus-daemon")>=0 for x in opts.start):
+            opts.start.insert(0, IBUS_DAEMON_COMMAND)
 
-    if display_name[0] != 'S':
-        os.environ["DISPLAY"] = display_name
-        if POSIX:
-            os.environ["CKCON_X11_DISPLAY"] = display_name
-    elif not start_vfb or opts.xvfb.find("Xephyr")<0:
-        os.environ.pop("DISPLAY", None)
-    os.environ.update(protected_env)
     from xpra.log import Logger
     log = Logger("server")
     log("env=%s", os.environ)
-
-    session_dir = osexpand(os.path.join(opts.sessions_dir, display_name.lstrip(":")))
-    if not os.path.exists(session_dir):
-        try:
-            os.makedirs(session_dir, 0o750)
-        except OSError:
-            import tempfile
-            session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
-            os.makedirs(session_dir, 0o750)
-    os.environ["XPRA_SESSION_DIR"] = session_dir
-    add_cleanup(rm_session_dir)
-    #populate it:
-    if run_xpra_script:
-        # Write out a shell-script so that we can start our proxy in a clean
-        # environment:
-        write_runner_shell_scripts(run_xpra_script)
-    if env_script:
-        save_session_file("server-env", env_script)
-    save_session_file("cmdline", "\n".join(cmdline))
 
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name
@@ -859,7 +938,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
                     error_cb("no displays found to upgrade")
                 use_display = False
             else:
-                progress(20, "connecting to the display")
+                progress(40, "connecting to the display")
                 display_no = int(display_name[1:])
                 stat = stat_X11_display(display_no)
                 log("stat_X11_display(%i)=%s", display_no, stat)
@@ -893,7 +972,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         uinput_uuid = None
         use_uinput = has_uinput() and opts.input_devices.lower() in ("uinput", "auto") and not shadowing
         if start_vfb:
-            progress(20, "starting a virtual display")
+            progress(40, "starting a virtual display")
             assert not proxying and xauth_data
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:
@@ -1098,7 +1177,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
                     return None
             xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")
 
-    progress(40, "initializing server")
+    progress(80, "initializing server")
     if shadowing:
         app = make_shadow_server()
     elif proxying:
@@ -1137,7 +1216,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
             app.save_pid()
         app.original_desktop_display = desktop_display
         del opts
-        progress(80, "finalizing")
+        progress(90, "finalizing")
         app.server_init()
         app.setup()
         app.init_when_ready(_when_ready)

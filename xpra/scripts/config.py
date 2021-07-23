@@ -306,8 +306,8 @@ def read_config(conf_file):
         the value for this key will be an array of strings.
     """
     d = {}
-    if not os.path.isfile(conf_file):
-        debug("read_config(%s) is not a file!", conf_file)
+    if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
+        debug("read_config(%s) is not a file or does not exist", conf_file)
         return d
     with open(conf_file, "r") as f:
         lines = []
@@ -943,7 +943,7 @@ def get_defaults():
                     "socket-dir"        : "",
                     "sessions-dir"      : "$XDG_RUNTIME_DIR/xpra",
                     "log-dir"           : "auto",
-                    "log-file"          : "$DISPLAY.log",
+                    "log-file"          : "server.log",
                     "border"            : "auto,5:off",
                     "window-close"      : "auto",
                     "min-size"          : "",
