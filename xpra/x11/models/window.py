@@ -323,9 +323,11 @@ class WindowModel(BaseWindowModel):
         set_if_unset("requested-position", (ax, ay))
         set_if_unset("requested-size", (aw, ah))
         #it may have been set already:
-        v = self.get_property("set-initial-position")
-        if not v and ("position" in size_hints):
+        sip = self.get_property("set-initial-position")
+        if not sip and ("position" in size_hints):
             self._internal_set_property("set-initial-position", True)
+        elif sip is None:
+            self._internal_set_property("set-initial-position", False)
         self.update_children()
 
     def do_unmanaged(self, wm_exiting):
