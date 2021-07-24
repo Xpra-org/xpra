@@ -11,13 +11,13 @@
 %define debug_package %{nil}
 
 Name:           python2-pynvml
-Version:        11.450.51
+Version:        11.460.79
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source:        	https://files.pythonhosted.org/packages/4c/e7/f6fef887708f601cda64c8fd48dcb80a0763cb6ee4eaf89939bdc165ce41/nvidia-ml-py-%{version}.tar.gz
+Source:        	https://files.pythonhosted.org/packages/3a/14/32e32856e62422655dfe115c8c421a304e87330dadbab72fc5534a9fd5c6/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
@@ -26,7 +26,7 @@ Python Bindings for the NVIDIA Management Library
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "5aa6dd23a140b1ef2314eee5ca154a45397b03e68fd9ebc4f72005979f511c73" ]; then
+if [ "${sha256}" != "5b7c051cd55469848960bb9fde07dc8fd25d21853307eeba669bfe3c3ede11c5" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -49,6 +49,9 @@ rm -rf %{buildroot}
 %{python2_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 
 %changelog
+* Sat Jul 24 2021 Antoine Martin <antoine@xpra.org> - 11.460.79-1
+- new upstream release
+
 * Tue May 25 2021 Antoine Martin <antoine@xpra.org> - 11.450.51-1
 - new upstream release
 
