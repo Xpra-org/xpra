@@ -281,20 +281,14 @@ class ServerBase(ServerBaseClass):
             self.send_screenshot(proto)
             return
         #added in 2.2:
-        generic_request = c.strget("request")
+        request = c.strget("request")
         def is_req(mode):
-            return generic_request==mode or c.boolget("%s_request" % mode, False)
-        detach_request  = is_req("detach")
-        stop_request    = is_req("stop_request")
-        exit_request    = is_req("exit_request")
-        event_request   = is_req("event_request")
-        print_request   = is_req("print_request")
-        is_request = detach_request or stop_request or exit_request or event_request or print_request
-        if not is_request:
+            return request==mode or c.boolget("%s_request" % mode, False)
+        if not request:
             #"normal" connection, so log welcome message:
             log.info("Handshake complete; enabling connection")
         else:
-            log("handling request %s", generic_request)
+            log("handling request %s", request)
         self.server_event("handshake-complete")
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
@@ -302,15 +296,16 @@ class ServerBase(ServerBaseClass):
         ui_client = c.boolget("ui_client", True)
         share = c.boolget("share")
         uuid = c.strget("uuid")
+        detach_request = is_req("detach")
         accepted, share_count, disconnected = self.handle_sharing(proto, ui_client, detach_request, share, uuid)
         if not accepted:
             return
 
-        if detach_request:
+        if is_req("detach"):
             self.disconnect_client(proto, DONE, "%i other clients have been disconnected" % disconnected)
             return
 
-        if not is_request and ui_client:
+        if not request and ui_client:
             #a bit of explanation:
             #normally these things are synchronized using xsettings, which we handle already
             #but non-posix clients have no such thing,
@@ -356,7 +351,7 @@ class ServerBase(ServerBaseClass):
                       self.session_name, self,
                       self.idle_add, self.timeout_add, self.source_remove,
                       self.setting_changed,
-                      self._socket_dir, self.unix_socket_paths, not is_request,
+                      self._socket_dir, self.unix_socket_paths, not request,
                       self.bandwidth_limit, self.bandwidth_detection,
                       )
         log("process_hello clientconnection=%s", ss)
@@ -369,7 +364,7 @@ class ServerBase(ServerBaseClass):
         self._server_sources[proto] = ss
         add_work_item(self.mdns_update)
         #process ui half in ui thread:
-        send_ui = ui_client and not is_request
+        send_ui = ui_client and not request
         self.idle_add(self._process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     def get_client_connection_class(self, caps):
