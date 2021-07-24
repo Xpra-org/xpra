@@ -5,13 +5,13 @@
 Summary:	Getting network addresses from Python
 Vendor:		http://alastairs-place.net/netifaces/
 Name:		python2-netifaces
-Version:	0.10.9
+Version:	0.11.0
 Release:	1%{?dist}
 License:	GPL3
 Group:		Networking
 Packager:	Antoine Martin <antoine@xpra.org>
 URL:		http://xpra.org/
-Source:		https://files.pythonhosted.org/packages/0d/18/fd6e9c71a35b67a73160ec80a49da63d1eed2d2055054cc2995714949132/netifaces-%{version}.tar.gz
+Source:		https://files.pythonhosted.org/packages/a6/91/86a6eac449ddfae239e93ffc1918cf33fd9bab35c04d1e963b311e347a73/netifaces-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 Requires:	python2
 BuildRequires: python2-devel
@@ -30,7 +30,7 @@ Getting network addresses from Python
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "2dee9ffdd16292878336a58d04a20f0ffe95555465fee7c9bd23b3490ef2abf3" ]; then
+if [ "${sha256}" != "043a79146eb2907edf439899f262b3dfe41717d34124298ed281139a8b93ca32" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -51,6 +51,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python2_sitearch}/netifaces*
 
 %changelog
+* Sat Jul 24 2019 Antoine Martin <antoine@xpra.org> - 0.11.0-1
+- new upstream release
+
 * Fri Jan 11 2019 Antoine Martin <antoine@xpra.org> - 0.10.9-1
 - new upstream release
 
