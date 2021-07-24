@@ -39,13 +39,15 @@ from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict, noerr,
     repr_ellipsized, ellipsizer, nonl,
     envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc,
+    SERVER_UPGRADE,
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
         EXIT_PASSWORD_REQUIRED, EXIT_PASSWORD_FILE_ERROR, EXIT_INCOMPATIBLE_VERSION,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE,
-        EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR)
+        EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR, EXIT_UPGRADE,
+        )
 
 log = Logger("client")
 netlog = Logger("network")
@@ -642,7 +644,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         l(" %s", reason)
         for x in extra_info:
             l(" %s", x)
-        self.quit(EXIT_OK)
+        exit_code = EXIT_OK
+        if reason==SERVER_UPGRADE:
+            exit_code = EXIT_UPGRADE
+        self.quit(exit_code)
 
 
     def _process_connection_lost(self, _packet):

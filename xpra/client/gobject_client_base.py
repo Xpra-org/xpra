@@ -12,8 +12,9 @@ from gi.repository import GObject
 
 from xpra.util import (
     nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
-    disconnect_is_an_error, ellipsizer, DONE, first_time, csv,
+    disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized,
+    SERVER_UPGRADE, DONE,
     )
 from xpra.os_util import (
     bytestostr, strtobytes,
@@ -721,7 +722,7 @@ class ExitXpraClient(HelloRequestClient):
             }
 
     def do_command(self, caps : typedict):
-        self.idle_add(self.send, "exit-server")
+        self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", SERVER_UPGRADE))
 
 
 class StopXpraClient(HelloRequestClient):

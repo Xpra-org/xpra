@@ -39,7 +39,7 @@ from xpra.os_util import (
     get_hex_uuid, get_util_logger, osexpand,
     load_binary_file,
     )
-from xpra.util import envbool, unsetenv, noerr
+from xpra.util import envbool, unsetenv, noerr, SERVER_UPGRADE
 from xpra.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
@@ -629,6 +629,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
             env["XPRA_CONNECT_TIMEOUT"] = "5"
             #don't log disconnect message
             env["XPRA_LOG_DISCONNECT"] = "0"
+            env["XPRA_EXIT_MESSAGE"] = SERVER_UPGRADE
             from subprocess import Popen  #pylint: disable=import-outside-toplevel
             try:
                 p = Popen(cmd, env=env)

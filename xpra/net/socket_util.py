@@ -664,10 +664,9 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
         for sock, cleanup_socket in defs.items():
             try:
                 cleanup_socket()
-            except Exception as e:
-                log.error("Error cleaning up socket %s:", sock)
-                log.error(" %s", e)
-                del e
+            except Exception:
+                log.error("Error cleaning up socket %s:", sock, exc_info=True)
+                log.error(" using %s", cleanup_socket)
         raise
     return defs
 

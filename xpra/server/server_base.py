@@ -197,9 +197,14 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # shutdown / exit commands:
-    def _process_exit_server(self, _proto, _packet):
-        log.info("Exiting in response to client request")
-        self.cleanup_all_protocols(SERVER_EXIT)
+    def _process_exit_server(self, _proto, packet):
+        reason = SERVER_EXIT
+        message = "Exiting in response to client request"
+        if len(packet)>1:
+            reason = bytestostr(packet[1])
+            message += ": "+reason
+        log.info(message)
+        self.cleanup_all_protocols(reason)
         self.timeout_add(500, self.clean_quit, EXITING_CODE)
 
     def _process_shutdown_server(self, _proto, _packet):
