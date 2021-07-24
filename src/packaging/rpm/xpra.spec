@@ -885,6 +885,26 @@ fi
 
 
 %changelog
+* Sat Jul 24 2021 Antoine Martin <antoine@xpra.org> 3.0.15-10.0xpra1
+- NVENC errors when retrying
+- MS Windows:
+	- trim unused directories
+	- fix crashes during printer enumeration
+	- build using CUDA 11.3
+	- cursors corruption
+	- add missing C++ files to source snapshots
+- MacOS: GTK3 3.24.30, updated dependencies
+- window geometry errors with StackMode requests
+- errors when "top" clients are connected
+- remove unnecessary runtime dependency on distutils
+- fix missing notifications due to icon loading errors
+- simplified packaging for Ubuntu Xenial
+- use the correct /etc/default path for service configuration
+- fix default values shown with 'xpra --help'
+- minor packaging fixes: updated dependencies, dates, typos, etc
+- use the correct exit code for encryption problems
+- retry to load the initial windows when it fails the first time
+
 * Fri Jun 11 2021 Antoine Martin <antoine@xpra.org> 3.0.14-10.0xpra1
 - fix proxy deadlock, subprocess leak, socket errors
 - fix proxy disconnections under heavy load
