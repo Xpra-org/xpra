@@ -892,6 +892,37 @@ fi
 
 
 %changelog
+* Sat Jul 24 2021 Antoine Martin <antoine@xpra.org> 3.1.1-10.1xpra1
+- build, packaging and platform fixes:
+    default to using CUDA 11.3
+    remove unnecessary runtime dependency on distutils
+    clipboard support with python2 servers started from a Wayland environment
+    corrupted cursors on MS Windows
+    fix crashes during printer enumeration on MS Windows
+    updated GStreamer dependencies
+    the Debian package name we have to recommend is 'dnspython'
+    use the correct /etc/default path for service configuration
+    MacOS updates for GTK3 3.24.30: patches, dependencies
+    disable crashy ffmpeg codecs with 32-bit builds
+    add missing C++ files to source snapshots
+    fixup some compatibility issues in previous backports
+- misc fixes:
+    cosmetic: debug logging and error messages
+    use the correct exit code for encryption problems
+    increase the maximum size of Xdummy resolutions (uses more memory)
+    retry if we fail to load the list of windows the first time (seamless servers)
+    missing notifications when failing to load the icon
+    ensure we always stop the 'new-stream' notification process
+    window geometry errors with StackMode requests
+    fix default values shown with 'xpra --help'
+    try harder to exit the server cleanly (kill xvfb and dbus later)
+- server stalls:
+    don't load menu data from the main thread
+    don't query the list of printers from the main thread
+- 'top' client:
+    server errors when 'top' clients are connected
+    handle unicode window names correctly
+
 * Mon May 24 2021 Antoine Martin <antoine@xpra.org> 3.1-10.1xpra1
 - critical fixes:
     proxy deadlock, subprocess leak, socket errors
