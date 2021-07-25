@@ -890,7 +890,8 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
 
     progress(30, "creating sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
-    sockets = create_sockets(opts, error_cb)
+    retry = 10*int(mode in ("upgrade", "upgrade-desktop"))
+    sockets = create_sockets(opts, error_cb, retry=retry)
 
     if POSIX and configure_imsettings_env(opts.input_method)=="ibus":
         #start ibus-daemon unless already specified in 'start':

@@ -298,7 +298,7 @@ def guess_packet_type(data):
     return None
 
 
-def create_sockets(opts, error_cb):
+def create_sockets(opts, error_cb, retry=0):
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
     bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
@@ -307,16 +307,7 @@ def create_sockets(opts, error_cb):
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
-    sockets = {}
-
     min_port = int(opts.min_port)
-    def add_tcp_socket(socktype, host_str, iport, options):
-        if iport!=0 and iport<min_port:
-            error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
-        for host in hosts(host_str):
-            sock = setup_tcp_socket(host, iport, socktype)
-            host, iport = sock[2]
-            sockets[sock] = options
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
@@ -335,6 +326,8 @@ def create_sockets(opts, error_cb):
             sshlog.error(" %s", e)
             ssh_upgrades = False
     log = get_network_logger()
+    #prepare tcp socket definitions:
+    tcp_defs = []
     for socktype, defs in {
         "tcp"   : bind_tcp,
         "ssl"   : bind_ssl,
@@ -345,7 +338,36 @@ def create_sockets(opts, error_cb):
         }.items():
         log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():
-            add_tcp_socket(socktype, host, iport, options)
+            if iport!=0 and iport<min_port:
+                error_cb("invalid %s port number %i (minimum value is %i)" % (socktype, iport, min_port))
+            for h in hosts(host):
+                tcp_defs.append((socktype, h, iport, options, None))
+
+    sockets = {}
+    for attempt in range(retry+1):
+        if not tcp_defs:
+            break
+        try_list = tuple(tcp_defs)
+        tcp_defs = []
+        for socktype, host, iport, options, _ in try_list:
+            try:
+                sock = setup_tcp_socket(host, iport, socktype)
+            except Exception as e:
+                log("setup_tcp_socket%s attempt=%s", (host, iport, options), attempt)
+                tcp_defs.append((socktype, host, iport, options, e))
+            else:
+                host, iport = sock[2]
+                sockets[sock] = options
+        if tcp_defs:
+            sleep(1)
+    if tcp_defs:
+        #failed to create some sockets:
+        for socktype, host, iport, options, exception in tcp_defs:
+            log.error("Error creating %s socket", socktype)
+            log.error(" on %s:%s", host, iport)
+            log.error(" %s", exception)
+            raise InitException("failed to create %s socket: %s" % (socktype, exception))
+
     log("setting up vsock sockets: %s", csv(bind_vsock.items()))
     for (cid, iport), options in bind_vsock.items():
         sock = setup_vsock_socket(cid, iport)
