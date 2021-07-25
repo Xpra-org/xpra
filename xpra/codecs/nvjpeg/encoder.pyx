@@ -5,17 +5,22 @@
 
 #cython: auto_pickle=False, cdivision=True, language_level=3
 
+import time
+
 from libc.stdint cimport uintptr_t
 from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from pycuda import driver
 
+from xpra.util import envbool
 from xpra.os_util import bytestostr
 
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
 
+
+cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 DEF NVJPEG_MAX_COMPONENT = 4
 
@@ -423,6 +428,11 @@ cdef do_device_encode(device, image, int quality, int speed):
     errcheck(r, "nvjpegEncoderStateDestroy")
     end = monotonic_time()
     log("got %i bytes in %.1fms", length, 1000*(end-start))
+    if SAVE_TO_FILE:    # pragma: no cover
+        filename = "./%s.jpeg" % time.time()
+        with open(filename, "wb") as f:
+            f.write(output_buf)
+        log.info("saved %i bytes to %s", len(output_buf), filename)
     return memoryview(output_buf), width, height, stride
 
 def init_module():

@@ -5,6 +5,9 @@
 
 #cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
 
+import time
+
+from xpra.util import envbool
 from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
@@ -13,6 +16,8 @@ from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: dis
 
 from xpra.net.compression import Compressed
 from xpra.os_util import bytestostr
+
+cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 
 ctypedef int TJSAMP
@@ -144,6 +149,11 @@ def encode(image, int quality=50, int speed=50):
     client_options = {
         "quality"   : min(99, quality),
         }
+    if SAVE_TO_FILE:    # pragma: no cover
+        filename = "./%s.jpeg" % time.time()
+        with open(filename, "wb") as f:
+            f.write(cdata)
+        log.info("saved %i bytes to %s", len(cdata), filename)
     return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24
 
 

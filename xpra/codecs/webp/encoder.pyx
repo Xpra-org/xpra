@@ -6,6 +6,7 @@
 #cython: auto_pickle=False, cdivision=True, language_level=3
 
 import os
+import time
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t   #pylint: disable=syntax-error
 from libc.stdlib cimport free   #pylint: disable=syntax-error
@@ -17,6 +18,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 
+cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
 cdef int LOSSLESS_THRESHOLD = envint("XPRA_WEBP_LOSSLESS_THRESHOLD", 75)
@@ -529,6 +531,11 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     log("webp.compress ratio=%i%%, client-options=%s", 100*memory_writer.size//size, client_options)
     if LOG_CONFIG>0:
         log("webp.compress used config: %s", get_config_info(&config))
+    if SAVE_TO_FILE:    # pragma: no cover
+        filename = "./%s.webp" % time.time()
+        with open(filename, "wb") as f:
+            f.write(cdata)
+        log.info("saved %i bytes to %s", len(cdata), filename)
     return cdata, client_options
 
 
