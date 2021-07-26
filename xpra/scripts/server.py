@@ -46,7 +46,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 
-CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES")
+CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 
