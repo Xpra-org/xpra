@@ -459,7 +459,7 @@ class ServerCore:
         self.cleanup_dbus_server()
         if not self._upgrading:
             self.stop_dbus_server()
-            self.clean_session_files("cmdline", "server.env", "config")
+            self.clean_session_files("cmdline", "server.env", "config", "server.log")
         if self.pidfile:
             netlog("cleanup removing pidfile %s", self.pidfile)
             self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
