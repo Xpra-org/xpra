@@ -418,6 +418,7 @@ SERVER_SAVE_SKIP_OPTIONS = (
 SERVER_LOAD_SKIP_OPTIONS = (
     "systemd-run",
     "daemon",
+    "start",
     "start-child",
     "start-after-connect",
     "start-child-after-connect",
