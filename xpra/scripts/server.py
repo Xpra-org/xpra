@@ -46,6 +46,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 
+CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES")
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 
@@ -399,6 +400,8 @@ def rm_session_dir():
             log.error(" %s", e)
 
 def clean_session_files(*filenames):
+    if not CLEAN_SESSION_FILES:
+        return
     for filename in filenames:
         path = session_file_path(filename)
         if os.path.exists(path):
