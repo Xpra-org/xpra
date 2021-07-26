@@ -363,6 +363,8 @@ class UIXpraClient(ClientBaseClass):
         self.may_notify(XPRA_DISCONNECT_NOTIFICATION_ID,
                         "Xpra Session Disconnected: %s" % reason, body, icon_name="disconnected")
         delay = NOTIFICATION_EXIT_DELAY*mixin_features.notifications
+        if self.exit_code is None:
+            self.exit_code = self.server_disconnect_exit_code(reason, *info)
         self.timeout_add(delay*1000, XpraClientBase.server_disconnect, self, reason, *info)
         self.cleanup()
 

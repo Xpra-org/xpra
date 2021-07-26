@@ -615,6 +615,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def _process_disconnect(self, packet):
         #ie: ("disconnect", "version error", "incompatible version")
+        netlog("%s", packet)
         info = tuple(nonl(bytestostr(x)) for x in packet[1:])
         reason = info[0]
         if not self.connection_established:
@@ -636,7 +637,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.quit(EXIT_FAILURE)
 
     def server_disconnect(self, reason, *extra_info):
-        if LOG_DISCONNECT or disconnect_is_an_error(reason):
+        self.quit(self.server_disconnect_exit_code(reason, *extra_info))
+
+    def server_disconnect_exit_code(self, reason, *extra_info):
+        if self.exit_code is None and (LOG_DISCONNECT or disconnect_is_an_error(reason)):
             l = log.info
         else:
             l = log
@@ -644,10 +648,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         l(" %s", reason)
         for x in extra_info:
             l(" %s", x)
-        exit_code = EXIT_OK
         if reason==SERVER_UPGRADE:
-            exit_code = EXIT_UPGRADE
-        self.quit(exit_code)
+            return EXIT_UPGRADE
+        return EXIT_OK
 
 
     def _process_connection_lost(self, _packet):
