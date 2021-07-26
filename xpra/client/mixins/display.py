@@ -17,7 +17,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
 from xpra.os_util import monotonic_time
 from xpra.util import (
-    iround, envint, envfloat, envbool, log_screen_sizes, engs, flatten_dict, typedict,
+    iround, envint, envfloat, envbool, log_screen_sizes, flatten_dict, typedict,
     XPRA_SCALING_NOTIFICATION_ID,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin

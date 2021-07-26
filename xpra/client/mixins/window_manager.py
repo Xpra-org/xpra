@@ -80,11 +80,11 @@ FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
 
-"""
-Utility superclass for clients that handle windows:
-create, resize, paint, grabs, cursors, etc
-"""
 class WindowClient(StubClientMixin):
+    """
+    Utility superclass for clients that handle windows:
+    create, resize, paint, grabs, cursors, etc
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)

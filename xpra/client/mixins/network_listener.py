@@ -26,13 +26,13 @@ MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 5)
 REQUEST_TIMEOUT = envint("XPRA_CLIENT_REQUEST_TIMEOUT", 10)
 
 
-"""
-Mixin for adding listening sockets to the client,
-those can be used for
-- requesting disconnection
-- info request
-"""
 class NetworkListener(StubClientMixin):
+    """
+    Mixin for adding listening sockets to the client,
+    those can be used for
+    - requesting disconnection
+    - info request
+    """
 
     def __init__(self):
         self.sockets = {}

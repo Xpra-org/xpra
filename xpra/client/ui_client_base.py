@@ -28,7 +28,7 @@ from xpra.util import (
     XPRA_AUDIO_NOTIFICATION_ID, XPRA_DISCONNECT_NOTIFICATION_ID,
     )
 from xpra.scripts.config import parse_bool
-from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_OK, EXIT_CONNECTION_LOST
+from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_CONNECTION_LOST
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client import mixin_features
 from xpra.log import Logger

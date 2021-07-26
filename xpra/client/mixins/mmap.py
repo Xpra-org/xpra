@@ -17,10 +17,10 @@ log = Logger("mmap")
 KEEP_MMAP_FILE = envbool("XPRA_KEEP_MMAP_FILE", False)
 
 
-"""
-Mixin for adding mmap support to a client
-"""
 class MmapClient(StubClientMixin):
+    """
+    Mixin for adding mmap support to a client
+    """
 
     def __init__(self):
         StubClientMixin.__init__(self)
