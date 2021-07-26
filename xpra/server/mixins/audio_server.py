@@ -28,10 +28,10 @@ httplog = Logger("sound", "http")
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
 
 
-"""
-Mixin for servers that handle audio forwarding.
-"""
 class AudioServer(StubServerMixin):
+    """
+    Mixin for servers that handle audio forwarding.
+    """
 
     def __init__(self):
         self.audio_init_done = Event()

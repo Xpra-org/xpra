@@ -23,10 +23,10 @@ TOGGLE_FEATURES = (
     )
 
 
-"""
-Control commands for ServerBase
-"""
 class ServerBaseControlCommands(StubServerMixin):
+    """
+    Control commands for ServerBase
+    """
 
     def setup(self):
         self.add_control_commands()

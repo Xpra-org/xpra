@@ -19,10 +19,10 @@ from xpra.log import Logger, set_global_logging_handler
 log = Logger("server")
 
 
-"""
-Mixin for servers that can receive and send logging packets
-"""
 class LoggingServer(StubServerMixin):
+    """
+    Mixin for servers that can receive and send logging packets
+    """
 
     def __init__(self):
         self.remote_logging_send = False

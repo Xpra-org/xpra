@@ -13,10 +13,10 @@ from xpra.log import Logger
 log = Logger("keyboard")
 
 
-"""
-Manage input devices (keyboard, mouse, etc)
-"""
 class InputMixin(StubSourceMixin):
+    """
+    Manage input devices (keyboard, mouse, etc)
+    """
 
     @classmethod
     def is_needed(cls, caps : typedict) -> bool:
