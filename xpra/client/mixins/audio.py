@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
+from xpra.net.protocol import Protocol
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -485,7 +486,6 @@ class AudioClient(StubClientMixin):
             ss.connect("state-changed", self.sound_sink_state_changed)
             ss.connect("error", self.sound_sink_error)
             ss.connect("exit", self.sound_sink_exit)
-            from xpra.net.protocol import Protocol
             ss.connect(Protocol.CONNECTION_LOST, self.sound_process_stopped)
             ss.start()
             log("%s sound sink started", codec)
