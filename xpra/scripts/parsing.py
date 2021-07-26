@@ -305,12 +305,21 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--start", action="append",
                       dest="start", metavar="CMD", default=list(defaults.start or []),
                       help="program to spawn in server (may be repeated). Default: %s." % dcsv(defaults.start))
+    group.add_option("--start-late", action="append",
+                      dest="start_late", metavar="CMD", default=list(defaults.start_late or []),
+                      help="program to spawn in server once initialization is complete (may be repeated). Default: %s." % dcsv(defaults.start_late))
     group.add_option("--start-child", action="append",
                       dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
                       help="program to spawn in server,"
                       +" taken into account by the exit-with-children option"
                       +" (may be repeated to run multiple commands)."
                       +" Default: %s." % dcsv(defaults.start_child))
+    group.add_option("--start-child-late", action="append",
+                      dest="start_child_late", metavar="CMD", default=list(defaults.start_child_late or []),
+                      help="program to spawn in server once initialization is complete"
+                      +" taken into account by the exit-with-children option"
+                      +" (may be repeated to run multiple commands)."
+                      +" Default: %s." % dcsv(defaults.start_child_late))
     group.add_option("--start-after-connect", action="append",
                       dest="start_after_connect", default=defaults.start_after_connect,
                       help="program to spawn in server after the first client has connected (may be repeated)."

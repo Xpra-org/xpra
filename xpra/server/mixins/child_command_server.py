@@ -63,13 +63,25 @@ class ChildCommandServer(StubServerMixin):
         if not hasattr(self, "session_name"):
             self.session_name = ""
         self.menu_provider = None
+        #wait for main loop to run:
+        self.idle_add(self.late_start)
+
+    def late_start(self):
+        def do_late_start():
+            #wait for all threaded init to complete
+            self.wait_for_threaded_init()
+            self.exec_start_late_commands()
+        start_thread(do_late_start, "command-late-start", daemon=True)
+
 
     def init(self, opts):
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children
         self.start_new_commands = opts.start_new_commands
         self.start_commands              = opts.start
+        self.start_late_commands         = opts.start_late
         self.start_child_commands        = opts.start_child
+        self.start_child_late_commands   = opts.start_child_late
         self.start_after_connect         = opts.start_after_connect
         self.start_child_after_connect   = opts.start_child_after_connect
         self.start_on_connect            = opts.start_on_connect
@@ -156,7 +168,9 @@ class ChildCommandServer(StubServerMixin):
     def get_info(self, _proto) -> dict:
         info = {
             "start"                     : self.start_commands,
+            "start-late"                : self.start_late_commands,
             "start-child"               : self.start_child_commands,
+            "start-child-late"          : self.start_child_late_commands,
             "start-after-connect"       : self.start_after_connect,
             "start-child-after-connect" : self.start_child_after_connect,
             "start-on-connect"          : self.start_on_connect,
@@ -196,6 +210,10 @@ class ChildCommandServer(StubServerMixin):
             return cmd
         return self.exec_wrapper + cmd
 
+    def exec_start_late_commands(self):
+        log("exec_start_late_commands() start-late=%s, start_child=%s",
+                  self.start_late_commands, self.start_child_late_commands)
+        self._exec_commands(self.start_late_commands, self.start_child_late_commands)
 
     def exec_start_commands(self):
         log("exec_start_commands() start=%s, start_child=%s", self.start_commands, self.start_child_commands)

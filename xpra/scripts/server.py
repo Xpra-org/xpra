@@ -5,6 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#pylint: disable=import-outside-toplevel
+
 # DO NOT IMPORT GTK HERE: see
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
@@ -45,7 +47,7 @@ from xpra.platform.dotxpra import DotXpra
 
 
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
-                                     "ibus-daemon --xim -v -r --panel=disable")
+                                     "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 
 
 _cleanups = []
@@ -555,6 +557,8 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         #when proxying or upgrading, don't exec any plain start commands:
         opts.start = []
         opts.start_child = []
+        opts.start_late = []
+        opts.start_child_late = []
     elif opts.exit_with_children:
         assert has_child_arg, "exit-with-children was specified but start-child* is missing!"
     elif opts.start_child:
@@ -894,10 +898,12 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
     retry = 10*int(mode in ("upgrade", "upgrade-desktop"))
     sockets = create_sockets(opts, error_cb, retry=retry)
 
-    if POSIX and configure_imsettings_env(opts.input_method)=="ibus":
+    if POSIX and configure_imsettings_env(opts.input_method)=="ibus" and not (upgrading or upgrading_desktop):
         #start ibus-daemon unless already specified in 'start':
-        if IBUS_DAEMON_COMMAND and not any(x.find("ibus-daemon")>=0 for x in opts.start):
-            opts.start.insert(0, IBUS_DAEMON_COMMAND)
+        if IBUS_DAEMON_COMMAND and not (
+            any(x.find("ibus-daemon")>=0 for x in opts.start) or any(x.find("ibus-daemon")>=0 for x in opts.start_late)
+            ):
+            opts.start_late.insert(0, IBUS_DAEMON_COMMAND)
 
     from xpra.log import Logger
     log = Logger("server")

@@ -377,6 +377,8 @@ class ServerCore:
         threaded_server_init()
         #populate the platform info cache:
         get_platform_info()
+        if self.menu_provider:
+            self.menu_provider.setup()
         #run the init callbacks:
         with self.init_thread_lock:
             for cb in self.init_thread_callbacks:
@@ -386,8 +388,6 @@ class ServerCore:
                     log("threaded_init()", exc_info=True)
                     log.error("Error in initialization thread callback %s", cb)
                     log.error(" %s", e)
-        if self.menu_provider:
-            self.menu_provider.setup()
         log("threaded_init() servercore end")
 
     def after_threaded_init(self, callback):
@@ -413,6 +413,7 @@ class ServerCore:
     def run(self):
         self.install_signal_handlers(self.signal_quit)
         def start_ready_callbacks():
+            log("start_ready_callbacks=%s", self._when_ready)
             for x in self._when_ready:
                 try:
                     x()
