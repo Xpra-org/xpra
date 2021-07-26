@@ -31,8 +31,8 @@ TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000)/1000.0
 
 class ChildCommandServer(StubServerMixin):
     """
-    Mixin for servers that can handle file transfers and forwarded printers.
-    Printer forwarding is only supported on Posix servers with the cups backend script.
+    Mixin for servers that start subcommands,
+    ie "--start=xterm"
     """
 
     def __init__(self):
