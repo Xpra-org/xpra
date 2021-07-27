@@ -19,7 +19,7 @@ from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid
 from xpra.x11.vfb_util import parse_resolution
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
-from xpra.x11.gtk_x11.prop import prop_get, prop_set
+from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE
@@ -291,9 +291,23 @@ class X11ServerCore(GTKServerBase):
             cleanup_fakeXinerama()
         with xlog:
             clean_keyboard_state()
+        #prop_del does its own xsync:
+        self.clean_x11_properties()
         GTKServerBase.do_cleanup(self)
         log("close_gdk_display_source()")
         close_gdk_display_source()
+
+
+    def clean_x11_properties(self):
+        self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE")
+
+    def do_clean_x11_properties(self, *properties):
+        root = get_default_root_window()
+        for prop in properties:
+            try:
+                prop_del(root, prop)
+            except Exception as e:
+                log("prop_del(%s, %s) %s", root, prop, e)
 
 
     def get_uuid(self):

@@ -307,6 +307,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.X11_ungrab()
         X11ServerBase.do_cleanup(self)
 
+    def clean_x11_properties(self):
+        super().clean_x11_properties()
+        self.do_clean_x11_properties("XPRA_SERVER")
+
 
     def last_client_exited(self):
         #last client is gone:

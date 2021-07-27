@@ -85,6 +85,10 @@ class X11ServerBase(X11ServerCore):
     def save_pid(self):
         root_prop_set(b"XPRA_SERVER_PID", "u32", os.getpid())
 
+    def clean_x11_properties(self):
+        super().clean_x11_properties()
+        self.do_clean_x11_properties("XPRA_SERVER_PID")
+
 
     def init_display_pid(self, pid):
         if not pid:
