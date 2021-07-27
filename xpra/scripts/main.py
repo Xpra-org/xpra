@@ -19,7 +19,6 @@ import traceback
 
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
-from xpra.child_reaper import getChildReaper
 from xpra.util import (
     csv, envbool, envint, nonl, pver,
     parse_simple_dict, noerr, sorted_nicely, typedict,
@@ -81,6 +80,10 @@ def werr(*msg):
     for x in msg:
         noerr(sys.stderr.write, "%s\n" % (x,))
     noerr(sys.stderr.flush)
+
+def add_process(*args, **kwargs):
+    from xpra.child_reaper import getChildReaper
+    return getChildReaper().add_process(*args, **kwargs)
 
 
 def main(script_file, cmdline):
@@ -1981,7 +1984,7 @@ def make_progress_process(title="Xpra"):
             return
         progress_process.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
         progress_process.stdin.flush()
-    getChildReaper().add_process(progress_process, "splash", cmd, ignore=True, forget=True)
+    add_process(progress_process, "splash", cmd, ignore=True, forget=True)
     progress(0, title)
     progress(10, "initializing")
     return progress_process
@@ -2378,7 +2381,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
                         v = str(c)
                     cmd.append("--%s=%s" % (x, v))
             proc = Popen(cmd, cwd=cwd, env=env, start_new_session=POSIX and not OSX)
-            getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
+            add_process(proc, "client-attach", cmd, ignore=True, forget=False)
         add_when_ready(attach_client)
     #add finally hook to ensure we will run the cleanups
     #even if we exit because of an exception:
@@ -2877,7 +2880,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
         log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
         proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log("proc=%s", proc)
-        getChildReaper().add_process(proc, "server", cmd, ignore=True, forget=True)
+        add_process(proc, "server", cmd, ignore=True, forget=True)
         if POSIX and not OSX and not matching_display:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd
             buf = read_displayfd(r_pipe, proc=None) #proc deamonizes!
