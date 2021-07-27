@@ -291,6 +291,8 @@ class InfoXpraClient(CommandConnectClient):
         self.warn_and_quit(EXIT_TIMEOUT, "timeout: did not receive the info")
 
     def do_command(self, caps : typedict):
+        def print_fn(s):
+            sys.stdout.write("%s\n" % (s,))
         if caps:
             if FLATTEN_INFO<2:
                 #compatibility mode:
@@ -315,9 +317,9 @@ class InfoXpraClient(CommandConnectClient):
                         return w
                     v = fixvalue(v)
                     k = fixvalue(k)
-                    log.info("%s=%s", k, nonl(v))
+                    print_fn("%s=%s" % (k, nonl(v)))
             else:
-                print_nested_dict(caps)
+                print_nested_dict(caps, print_fn=print_fn)
         self.quit(EXIT_OK)
 
 class IDXpraClient(InfoXpraClient):
