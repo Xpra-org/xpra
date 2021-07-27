@@ -175,21 +175,15 @@ def main(script_file, cmdline):
 
 def configure_logging(options, mode):
     if mode in (
-        "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
-        "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui",
+        "attach", "listen", "launcher",
+        "sessions", "mdns-gui",
         "bug-report", "session-info", "docs",
-        "list-sessions", "recover",
-        "clean-displays", "clean-sockets",
+        "recover",
         "splash", "qrcode",
         "opengl-test",
-        "autostart",
         "desktop-greeter",
         "show-menu", "show-about", "show-session-info"
-        "encoding", "video", "webcam", "nvinfo",
-        "compression", "packet-encoding",
-        "keyboard", "gui-info", "network-info", "path-info",
-        "printing-info", "version-info", "gtk-info",
-        "auth",
+        "video", "webcam",
         ):
         s = sys.stdout
     else:
