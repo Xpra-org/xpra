@@ -1513,10 +1513,10 @@ def abs_paths(options):
 def fixup_options(options, skip_encodings=False):
     if not skip_encodings:
         fixup_encodings(options)
+        fixup_video_all_or_none(options)
     fixup_pings(options)
     fixup_compression(options)
     fixup_packetencoding(options)
-    fixup_video_all_or_none(options)
     fixup_socketdirs(options)
     fixup_clipboard(options)
     fixup_keyboard(options)
