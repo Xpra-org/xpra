@@ -29,6 +29,8 @@ EXIT_SOCKET_CREATION_ERROR = 22
 EXIT_VFB_ERROR = 23
 EXIT_FILE_NOT_FOUND = 24
 EXIT_UPGRADE = 25
+EXIT_IO_ERROR = 26
+EXIT_NO_DATA = 27
 
 
 EXIT_STR = {
@@ -58,6 +60,8 @@ EXIT_STR = {
     EXIT_VFB_ERROR              : "VFB_ERROR",
     EXIT_FILE_NOT_FOUND         : "FILE_NOT_FOUND",
     EXIT_UPGRADE                : "UPGRADE",
+    EXIT_IO_ERROR               : "IO_ERROR",
+    EXIT_NO_DATA                : "NO_DATA",
     }
 
 RETRY_EXIT_CODES = [

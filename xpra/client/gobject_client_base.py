@@ -27,6 +27,7 @@ from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (
     EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
     EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG,
+    EXIT_IO_ERROR, EXIT_NO_DATA,
     )
 from xpra.log import Logger
 
@@ -293,7 +294,11 @@ class InfoXpraClient(CommandConnectClient):
     def do_command(self, caps : typedict):
         def print_fn(s):
             sys.stdout.write("%s\n" % (s,))
-        if caps:
+        if not caps:
+            self.quit(EXIT_NO_DATA)
+            return
+        exit_code = EXIT_OK
+        try:
             if FLATTEN_INFO<2:
                 #compatibility mode:
                 c = flatten_dict(caps)
@@ -310,7 +315,7 @@ class InfoXpraClient(CommandConnectClient):
                                 return hexstr(w)
                             try:
                                 return w.decode("utf-8")
-                            except:
+                            except Exception:
                                 return bytestostr(w)
                         elif isinstance(w, (tuple,list)):
                             return type(w)([fixvalue(x) for x in w])
@@ -320,7 +325,9 @@ class InfoXpraClient(CommandConnectClient):
                     print_fn("%s=%s" % (k, nonl(v)))
             else:
                 print_nested_dict(caps, print_fn=print_fn)
-        self.quit(EXIT_OK)
+        except OSError:
+            exit_code = EXIT_IO_ERROR
+        self.quit(exit_code)
 
 class IDXpraClient(InfoXpraClient):
 
