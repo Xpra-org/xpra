@@ -46,6 +46,7 @@ from xpra.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 
+DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
@@ -901,16 +902,30 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
     retry = 10*int(mode in ("upgrade", "upgrade-desktop"))
     sockets = create_sockets(opts, error_cb, retry=retry)
 
+    from xpra.log import Logger
+    log = Logger("server")
+    log("env=%s", os.environ)
+
+    if POSIX and starting_desktop and not use_display and DESKTOP_GREETER:
+        #if there are no start commands, auto-add a greeter:
+        commands = []
+        for start_prop in (
+            "start", "start-late",
+            "start-child","start-child-late",
+            "start-after-connect", "start-child-after-connect",
+            "start-on-connect", "start-child-on-connect",
+            "start-on-last-client-exit", "start-child-on-last-client-exit",
+            ):
+            commands += list(getattr(opts, start_prop.replace("-", "_")))
+        if not commands:
+            opts.start.append("xpra desktop-greeter")
     if POSIX and configure_imsettings_env(opts.input_method)=="ibus" and not (upgrading or upgrading_desktop):
         #start ibus-daemon unless already specified in 'start':
         if IBUS_DAEMON_COMMAND and not (
             any(x.find("ibus-daemon")>=0 for x in opts.start) or any(x.find("ibus-daemon")>=0 for x in opts.start_late)
             ):
+            log("adding ibus-daemon to late startup")
             opts.start_late.insert(0, IBUS_DAEMON_COMMAND)
-
-    from xpra.log import Logger
-    log = Logger("server")
-    log("env=%s", os.environ)
 
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name

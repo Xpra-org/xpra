@@ -180,6 +180,7 @@ def configure_logging(options, mode):
         "splash", "qrcode",
         "opengl-test",
         "autostart",
+        "desktop-greeter",
         "show-menu", "show-about", "show-session-info"
         "encoding", "video", "webcam", "nvinfo",
         "compression", "packet-encoding",
@@ -483,6 +484,8 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_wminfo(args)
     elif mode == "wmname":
         return run_wmname(args)
+    elif mode == "desktop-greeter":
+        return run_desktop_greeter(args)
     elif mode == "launcher":
         check_gtk()
         from xpra.client.gtk_base.client_launcher import main as launcher_main
@@ -3237,6 +3240,10 @@ def _browser_open(what, *path_options):
             return 0
     raise InitExit(EXIT_FAILURE, "%s not found!" % what)
 
+
+def run_desktop_greeter(args):
+    from xpra.gtk_common.desktop_greeter import main
+    main()
 
 def run_sessions_gui(error_cb, options):
     mdns = supports_mdns and options.mdns
