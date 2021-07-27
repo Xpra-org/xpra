@@ -278,6 +278,7 @@ class StartSession(Gtk.Window):
         self.load_displays_thread = start_thread(self.load_displays, "load-displays", daemon=True)
 
     def load_codecs(self):
+        log("load_codecs()")
         from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS  #pylint: disable=import-outside-toplevel
         vh = getVideoHelper()
         vh.set_modules(video_decoders=self.session_options.video_decoders,
@@ -285,8 +286,10 @@ class StartSession(Gtk.Window):
         vh.init()
         from xpra.codecs.loader import load_codecs  #pylint: disable=import-outside-toplevel
         load_codecs()
+        log("load_codecs() done")
 
     def load_displays(self):
+        log("load_displays()")
         while self.exit_code is None:
             try:
                 from subprocess import Popen, PIPE
