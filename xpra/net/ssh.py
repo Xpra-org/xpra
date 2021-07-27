@@ -35,6 +35,10 @@ from xpra.util import envint, envbool, envfloat, engs, csv
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("network", "ssh")
+if log.is_debug_enabled():
+    import logging
+    logging.getLogger("paramiko").setLevel(logging.DEBUG)
+
 
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "")    #"xpra initenv"
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
