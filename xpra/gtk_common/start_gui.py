@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+import time
 import os.path
 import subprocess
 
@@ -292,6 +293,9 @@ class StartSession(Gtk.Window):
     def load_displays(self):
         log("load_displays()")
         while self.exit_code is None:
+            time.sleep(1)
+            if not self.shadow_btn.get_active():
+                continue
             try:
                 from subprocess import Popen, PIPE
                 cmd = get_xpra_command() + ["displays"]
