@@ -2882,7 +2882,7 @@ def start_server_subprocess(script_file, args, mode, opts, username="", uid=getu
                 log("subprocess displayfd pipes: %s", (r_pipe, w_pipe))
                 cmd.append("--displayfd=%s" % w_pipe)
                 pass_fds = (w_pipe, )
-        log("start_server_subprocess: command=%s", csv(["'%s'" % x for x in cmd]))
+        log("start_server_subprocess: command=%s", csv("%r" % x for x in cmd))
         proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log("proc=%s", proc)
         add_process(proc, "server", cmd, ignore=True, forget=True)

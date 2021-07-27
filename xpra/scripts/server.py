@@ -346,20 +346,21 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     return 0
 
 def write_displayfd(display_name, fd):
-    if POSIX and not OSX and fd>0:
-        from xpra.log import Logger
-        log = Logger("server")
-        try:
-            from xpra.platform import displayfd
-            display_no = display_name[1:]
-            #ensure it is a string containing the number:
-            display_no = str(int(display_no))
-            log("writing display_no='%s' to displayfd=%i", display_no, fd)
-            assert displayfd.write_displayfd(fd, display_no), "timeout"
-        except Exception as e:
-            log.error("write_displayfd failed", exc_info=True)
-            log.error("Error: failed to write '%s' to fd=%s", display_name, fd)
-            log.error(" %s", str(e) or type(e))
+    if OSX or not POSIX or fd<=0:
+        return
+    from xpra.log import Logger
+    log = Logger("server")
+    try:
+        from xpra.platform import displayfd
+        display_no = display_name[1:]
+        #ensure it is a string containing the number:
+        display_no = str(int(display_no))
+        log("writing display_no='%s' to displayfd=%i", display_no, fd)
+        assert displayfd.write_displayfd(fd, display_no), "timeout"
+    except Exception as e:
+        log.error("write_displayfd failed", exc_info=True)
+        log.error("Error: failed to write '%s' to fd=%s", display_name, fd)
+        log.error(" %s", str(e) or type(e))
 
 def session_file_path(filename):
     session_dir = os.environ["XPRA_SESSION_DIR"]
@@ -1062,8 +1063,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
             return True
         return check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb)
 
-    if displayfd:
-        write_displayfd(display_name, displayfd)
+    write_displayfd(display_name, displayfd)
 
     if not check_xvfb(1):
         noerr(stderr.write, "vfb failed to start, exiting\n")
