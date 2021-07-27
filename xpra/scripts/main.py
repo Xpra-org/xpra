@@ -456,19 +456,25 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         ):
         return run_client(script_file, cmdline, error_cb, options, args, mode)
     elif mode in ("stop", "exit"):
+        no_gtk()
         return run_stopexit(mode, error_cb, options, args)
     elif mode == "top":
+        no_gtk()
         return run_top(error_cb, options, args)
     elif mode == "list":
+        no_gtk()
         return run_list(error_cb, options, args)
     elif mode == "list-windows":
+        no_gtk()
         return run_list_windows(error_cb, options, args)
     elif mode == "list-mdns" and supports_mdns:
+        no_gtk()
         return run_list_mdns(error_cb, args)
     elif mode == "mdns-gui" and supports_mdns:
         check_gtk()
         return run_mdns_gui(error_cb, options)
     elif mode == "list-sessions":
+        no_gtk()
         return run_list_sessions(args, options)
     elif mode == "sessions":
         no_gtk()
@@ -477,16 +483,21 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         no_gtk()
         return run_displays(args)
     elif mode == "clean-displays":
+        no_gtk()
         return run_clean_displays(args)
     elif mode == "clean-sockets":
+        no_gtk()
         return run_clean_sockets(options, args)
     elif mode=="recover":
         return run_recover(script_file, cmdline, error_cb, options, args, defaults)
     elif mode == "wminfo":
+        no_gtk()
         return run_wminfo(args)
     elif mode == "wmname":
+        no_gtk()
         return run_wmname(args)
     elif mode == "desktop-greeter":
+        check_gtk()
         return run_desktop_greeter(args)
     elif mode == "launcher":
         check_gtk()
