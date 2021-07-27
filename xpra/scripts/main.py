@@ -471,10 +471,10 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode == "list-sessions":
         return run_list_sessions(args, options)
     elif mode == "sessions":
-        check_gtk()
+        no_gtk()
         return run_sessions_gui(error_cb, options)
     elif mode == "displays":
-        check_gtk()
+        no_gtk()
         return run_displays(args)
     elif mode == "clean-displays":
         return run_clean_displays(args)
