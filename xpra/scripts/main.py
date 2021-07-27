@@ -3628,7 +3628,7 @@ def run_wminfo(args):
     return 0
 
 def run_wmname(args):
-    name = display_wm_info(args).get("name", "")
+    name = display_wm_info(args).get("wmname", "")
     if name:
         print(name)
     return 0
