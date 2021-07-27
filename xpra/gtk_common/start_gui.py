@@ -1182,7 +1182,6 @@ def main(options=None): # pragma: no cover
         gui = StartSession(options)
         register_os_signals(gui.app_signal)
         ready()
-        gui.populate_menus()
         gui.session_toggled()
         if WIN32 or OSX:
             gui.remote_btn.set_active(True)
