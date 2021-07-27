@@ -178,7 +178,7 @@ def configure_logging(options, mode):
         "showconfig", "info", "id", "attach", "listen", "launcher", "stop", "print",
         "control", "list", "list-windows", "list-mdns", "sessions", "mdns-gui",
         "bug-report", "session-info", "docs",
-        "displays", "list-sessions", "wminfo", "wmname", "recover",
+        "list-sessions", "recover",
         "clean-displays", "clean-sockets",
         "splash", "qrcode",
         "opengl-test",
