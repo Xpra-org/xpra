@@ -316,7 +316,6 @@ class StartSession(Gtk.Window):
                             if display==current:
                                 selected = i
                         self.display_combo.set_active(selected)
-                        self.display_combo.show_all()
                     GLib.idle_add(populate_display_combo)
 
     def set_options(self, options):
@@ -394,6 +393,8 @@ class StartSession(Gtk.Window):
                 self.display_entry.show()
                 self.display_combo.hide()
         else:
+            self.display_combo.hide()
+            self.display_entry.show()
             self.exit_with_children_cb.show()
             if xdg and localhost:
                 #we have the xdg menus and the server is local, so we can use them:
