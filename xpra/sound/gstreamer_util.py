@@ -268,17 +268,6 @@ def do_import_gst():
     return gst
 import_gst = do_import_gst
 
-def prevent_import():
-    global gst
-    global import_gst
-    if gst or "gst" in sys.modules or "gi.repository.Gst" in sys.modules:
-        raise Exception("cannot prevent the import of the GStreamer bindings, already loaded: %s" % gst)
-    def fail_import():
-        raise Exception("importing of the GStreamer bindings is not allowed!")
-    import_gst = fail_import
-    sys.modules["gst"] = None
-    sys.modules["gi.repository.Gst"]= None
-
 
 def normv(v):
     if v==2**64-1:

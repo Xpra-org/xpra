@@ -392,11 +392,10 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
     if not mode.startswith("_sound_"):
         #only the sound subcommands should ever actually import GStreamer:
-        try:
-            from xpra.sound.gstreamer_util import prevent_import
-            prevent_import()
-        except ImportError: # pragma: no cover
-            pass
+        if "gst" in sys.modules or "gi.repository.Gst" in sys.modules:
+            raise Exception("cannot prevent the import of the GStreamer bindings, already loaded")
+        sys.modules["gst"] = None
+        sys.modules["gi.repository.Gst"]= None
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
