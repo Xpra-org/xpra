@@ -183,7 +183,7 @@ def configure_logging(options, mode):
         "opengl-test",
         "desktop-greeter",
         "show-menu", "show-about", "show-session-info"
-        "video", "webcam",
+        "webcam",
         ):
         s = sys.stdout
     else:
