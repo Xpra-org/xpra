@@ -345,8 +345,8 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
     log("GDK can access the display")
     return 0
 
-def write_displayfd(display_name, displayfd):
-    if POSIX and not OSX and displayfd>0:
+def write_displayfd(display_name, fd):
+    if POSIX and not OSX and fd>0:
         from xpra.log import Logger
         log = Logger("server")
         try:
@@ -354,11 +354,11 @@ def write_displayfd(display_name, displayfd):
             display_no = display_name[1:]
             #ensure it is a string containing the number:
             display_no = str(int(display_no))
-            log("writing display_no='%s' to displayfd=%i", display_no, displayfd)
-            assert displayfd.write_displayfd(displayfd, display_no), "timeout"
+            log("writing display_no='%s' to displayfd=%i", display_no, fd)
+            assert displayfd.write_displayfd(fd, display_no), "timeout"
         except Exception as e:
             log.error("write_displayfd failed", exc_info=True)
-            log.error("Error: failed to write '%s' to fd=%s", display_name, displayfd)
+            log.error("Error: failed to write '%s' to fd=%s", display_name, fd)
             log.error(" %s", str(e) or type(e))
 
 def session_file_path(filename):
