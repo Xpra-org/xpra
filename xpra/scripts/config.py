@@ -705,6 +705,7 @@ BIND_OPTIONS = ["bind", "bind-tcp", "bind-udp", "bind-ssl", "bind-ws", "bind-wss
 #so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V3 = [
     "source", "source-start", "headerbar",
+    "splash", "http-scripts", "client-socket-dirs",
     ]
 OPTIONS_COMPAT_NAMES = {
     "--compression_level=" : "-z"
