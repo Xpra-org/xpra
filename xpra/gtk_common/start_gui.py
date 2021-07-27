@@ -275,7 +275,8 @@ class StartSession(Gtk.Window):
         self.load_codecs_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
         #poll the list of X11 displays in the background:
         self.display_list = ()
-        self.load_displays_thread = start_thread(self.load_displays, "load-displays", daemon=True)
+        if not OSX:
+            self.load_displays_thread = start_thread(self.load_displays, "load-displays", daemon=True)
 
     def load_codecs(self):
         log("load_codecs()")
