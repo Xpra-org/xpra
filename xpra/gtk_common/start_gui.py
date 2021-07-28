@@ -314,6 +314,10 @@ class StartSession(Gtk.Window):
                 if out:
                     for line in out.decode().splitlines():
                         if line.lower().startswith("#") or line.lower().startswith("found"):
+                            #empty or header line
+                            continue
+                        if line.lower().find("mode=")>=0:
+                            #this is an xpra display, don't shadow it
                             continue
                         new_display_list.append(line.lstrip(" ").split(" ")[0])
                 def populate_display_combo():
