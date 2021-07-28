@@ -34,7 +34,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         for request_id in tuple(self._clipboard_outstanding_requests.keys()):
             self._clipboard_got_contents(request_id)
         self._clipboard_outstanding_requests = {}
-        ClipboardProtocolHelperCore.cleanup(self)
+        super().cleanup()
 
     def make_proxy(self, selection):
         raise NotImplementedError()
