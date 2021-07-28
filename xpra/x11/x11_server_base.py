@@ -12,6 +12,7 @@ from xpra.os_util import bytestostr, strtobytes, hexstr
 from xpra.util import typedict, envbool, iround
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.scripts.config import parse_bool
+from xpra.server import EXITING_CODE
 from xpra.x11.x11_server_core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.xsettings_prop import XSettingsTypeInteger, XSettingsTypeString, BLACKLISTED_XSETTINGS
@@ -99,27 +100,23 @@ class X11ServerBase(X11ServerCore):
 
     def kill_display(self):
         if self.display_pid:
-            from xpra.server import EXITING_CODE
             if self._upgrading==EXITING_CODE:
                 log.info("exiting: not cleaning up Xvfb")
             elif self._upgrading:
                 log.info("upgrading: not cleaning up Xvfb")
             else:
-                from xpra.scripts.server import add_cleanup
                 from xpra.x11.vfb_util import kill_xvfb
-                def do_kill_display():
-                    kill_xvfb(self.display_pid)
-                    self.clean_session_files("xvfb.pid", "xauthority", "Xorg.log", "Xorg.log.old")
-                add_cleanup(do_kill_display)
+                kill_xvfb(self.display_pid)
+                self.clean_session_files("xvfb.pid", "xauthority", "Xorg.log", "Xorg.log.old")
 
 
-    def do_cleanup(self):
-        X11ServerCore.do_cleanup(self)
+    def late_cleanup(self):
+        super().late_cleanup()
         self.kill_display()
 
 
     def configure_best_screen_size(self):
-        root_w, root_h = X11ServerCore.configure_best_screen_size(self)
+        root_w, root_h = super().configure_best_screen_size()
         if self.touchpad_device:
             self.touchpad_device.root_w = root_w
             self.touchpad_device.root_h = root_h
@@ -160,7 +157,7 @@ class X11ServerBase(X11ServerCore):
 
     def last_client_exited(self):
         self.reset_settings()
-        X11ServerCore.last_client_exited(self)
+        super().last_client_exited()
 
     def init_virtual_devices(self, devices):
         #(this runs in the main thread - before the main loop starts)
