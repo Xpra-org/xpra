@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+import time
 import os.path
 import subprocess
 
@@ -279,6 +280,7 @@ class StartSession(Gtk.Window):
             self.load_displays_thread = start_thread(self.load_displays, "load-displays", daemon=True)
 
     def load_codecs(self):
+        log("load_codecs()")
         from xpra.codecs.video_helper import getVideoHelper, NO_GFX_CSC_OPTIONS  #pylint: disable=import-outside-toplevel
         vh = getVideoHelper()
         vh.set_modules(video_decoders=self.session_options.video_decoders,
@@ -286,37 +288,59 @@ class StartSession(Gtk.Window):
         vh.init()
         from xpra.codecs.loader import load_codecs  #pylint: disable=import-outside-toplevel
         load_codecs()
+        log("load_codecs() done")
+
+
+    def no_display_combo(self):
+        self.display_entry.show()
+        self.display_combo.hide()
 
     def load_displays(self):
+        log("load_displays()")
         while self.exit_code is None:
+            time.sleep(1)
+            if not self.shadow_btn.get_active() or not self.localhost_btn.get_active():
+                GLib.idle_add(self.no_display_combo)
+                continue
             try:
                 from subprocess import Popen, PIPE
                 cmd = get_xpra_command() + ["displays"]
                 proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
                 out = proc.communicate(None, 5)[0]
-            except Exception as e:
+            except Exception:
                 log("failed to query the list of displays", exc_info=True)
             else:
+                new_display_list = []
                 if out:
-                    new_display_list = []
                     for line in out.decode().splitlines():
                         if line.lower().startswith("#") or line.lower().startswith("found"):
+                            #empty or header line
+                            continue
+                        if line.lower().find("mode=")>=0:
+                            #this is an xpra display, don't shadow it
                             continue
                         new_display_list.append(line.lstrip(" ").split(" ")[0])
-                if self.display_list!=new_display_list:
+                def populate_display_combo():
+                    changed = self.display_list!=new_display_list
                     self.display_list = new_display_list
-                    def populate_display_combo():
-                        current = self.display_combo.get_active_text()
-                        model = self.display_combo.get_model()
-                        if model:
-                            model.clear()
-                        selected = 0
-                        for i, display in enumerate(new_display_list):
-                            self.display_combo.append_text(display)
-                            if display==current:
-                                selected = i
-                        self.display_combo.set_active(selected)
-                    GLib.idle_add(populate_display_combo)
+                    if not new_display_list:
+                        self.no_display_combo()
+                        return
+                    self.display_entry.hide()
+                    self.display_combo.show()
+                    if not changed:
+                        return
+                    current = self.display_combo.get_active_text()
+                    model = self.display_combo.get_model()
+                    if model:
+                        model.clear()
+                    selected = 0
+                    for i, display in enumerate(new_display_list):
+                        self.display_combo.append_text(display)
+                        if display==current:
+                            selected = i
+                    self.display_combo.set_active(selected)
+                GLib.idle_add(populate_display_combo)
 
     def set_options(self, options):
         #cook some attributes,
@@ -386,12 +410,6 @@ class StartSession(Gtk.Window):
             self.category_box.hide()
             self.command_box.hide()
             self.exit_with_children_cb.hide()
-            if localhost and self.display_list:
-                self.display_entry.hide()
-                self.display_combo.show()
-            else:
-                self.display_entry.show()
-                self.display_combo.hide()
         else:
             self.display_combo.hide()
             self.display_entry.show()
@@ -514,6 +532,8 @@ class StartSession(Gtk.Window):
         log("mode_changed(%s)", args)
         mode = self.mode_combo.get_active_text()
         self.port_entry.set_text(str(self.get_default_port(mode)))
+        if not (self.shadow_btn.get_active() and self.localhost_btn.get_active()):
+            self.no_display_combo()
 
     def session_toggled(self, *args):
         localhost = self.localhost_btn.get_active()
@@ -551,6 +571,8 @@ class StartSession(Gtk.Window):
         self.display_changed()
         self.populate_menus()
         self.entry_changed()
+        if not (self.shadow_btn.get_active() and self.localhost_btn.get_active()):
+            self.no_display_combo()
 
 
     def hide_window(self, *args):
@@ -1078,6 +1100,7 @@ class KeyboardWindow(SessionOptions):
         self.bool_cb(tb, "State Synchronization", "keyboard-sync")
         self.bool_cb(tb, "Raw Mode", "keyboard-raw")
         self.combo(tb, "Input Method", "input-method", {
+            "auto"  : "auto",
             "none"  : "default",
             "keep"  : "unchanged",
             "xim"   : "xim",
@@ -1178,7 +1201,6 @@ def main(options=None): # pragma: no cover
         gui = StartSession(options)
         register_os_signals(gui.app_signal)
         ready()
-        gui.populate_menus()
         gui.session_toggled()
         if WIN32 or OSX:
             gui.remote_btn.set_active(True)
