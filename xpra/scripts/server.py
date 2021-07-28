@@ -17,6 +17,7 @@ import atexit
 import datetime
 import traceback
 
+from xpra import __version__
 from xpra.scripts.main import (
     info, warn,
     no_gtk, bypass_no_gtk,
@@ -440,7 +441,7 @@ def save_options(opts):
     defaults = make_defaults_struct()
     fixup_defaults(defaults)
     fixup_options(defaults)
-    diff_contents = []
+    diff_contents = ["# xpra server %s" % __version__]
     for attr, dtype in OPTION_TYPES.items():
         if attr in CLIENT_ONLY_OPTIONS:
             continue
