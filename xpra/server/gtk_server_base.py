@@ -84,7 +84,7 @@ class GTKServerBase(ServerBase):
     def close_gtk_display(self):
         # Close our display(s) first, so the server dying won't kill us.
         # (if gtk has been loaded)
-        gdk_mod = sys.modules.get("gtk.gdk") or sys.modules.get("gi.repository.Gdk")
+        gdk_mod = sys.modules.get("gi.repository.Gdk")
         #bug 2328: python3 shadow server segfault on Ubuntu 16.04
         #also crashes on Ubuntu 20.04
         close = envbool("XPRA_CLOSE_GTK_DISPLAY", False)
