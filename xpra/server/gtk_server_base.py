@@ -14,7 +14,7 @@ import gi
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
-from gi.repository import GLib, Gdk, Gtk
+from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 
 from xpra.util import flatten_dict, envbool
 from xpra.os_util import monotonic_time, load_binary_file
@@ -49,7 +49,7 @@ class GTKServerBase(ServerBase):
         self.source_remove = GLib.source_remove
         self.cursor_suspended = False
         self.ui_watcher = None
-        ServerBase.__init__(self)
+        super().__init__()
 
     def watch_keymap_changes(self):
         ### Set up keymap change notification:
@@ -71,15 +71,18 @@ class GTKServerBase(ServerBase):
         from xpra.os_util import register_SIGUSR_signals
         register_SIGUSR_signals()
 
-    def do_cleanup(self):
-        log("GTKServerBase.do_cleanup()")
-        ServerBase.do_cleanup(self)
+    def late_cleanup(self):
+        log("GTKServerBase.late_cleanup()")
+        super().late_cleanup()
+        self.stop_ui_watcher()
         self.close_gtk_display()
+
+    def stop_ui_watcher(self):
         uiw = self.ui_watcher
-        log("do_cleanup() ui watcher=%s", uiw)
+        log("stop_ui_watcher() ui watcher=%s", uiw)
         if uiw:
-            uiw.stop()
             self.ui_watcher = None
+            uiw.stop()
 
     def close_gtk_display(self):
         # Close our display(s) first, so the server dying won't kill us.

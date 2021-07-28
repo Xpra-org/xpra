@@ -48,7 +48,7 @@ from xpra.platform.paths import (
     )
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
-    register_SIGUSR_signals,
+    register_SIGUSR_signals, force_quit,
     get_frame_info, get_info_env, get_sysconfig_info,
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
@@ -302,52 +302,55 @@ class ServerCore:
     def clean_quit(self, upgrading=False):
         log("clean_quit(%s)", upgrading)
         self._upgrading = upgrading
+        self.timeout_add(5000, self.force_quit)
         self.closing()
         self.cleanup()
+        self.quit_worker()
+
+    def force_quit(self):
+        log("force_quit()")
+        force_quit()
+
+    def quit_worker(self):
         w = get_worker()
         log("clean_quit: worker=%s", w)
-        if w:
-            stop_worker()
-            try:
-                w.join(0.05)
-            except Exception:
-                pass
-            if w.is_alive():
-                def quit_timer():
-                    log("quit_timer() worker=%s", w)
-                    if w and w.is_alive():
-                        #wait up to 1 second for the worker thread to exit
-                        try:
-                            w.wait(1)
-                        except Exception:
-                            pass
-                        if w.is_alive():
-                            #still alive, force stop:
-                            stop_worker(True)
-                            try:
-                                w.wait(1)
-                            except Exception:
-                                pass
-                    self.quit(upgrading)
-                self.timeout_add(250, quit_timer)
-                log("clean_quit(..) quit timers scheduled, worker=%s", w)
-            else:
-                log("clean_quit(..) worker ended")
-                w = None
-        def force_quit():
-            log("force_quit()")
-            from xpra import os_util
-            os_util.force_quit()
-        self.timeout_add(5000, force_quit)
-        log("clean_quit(..) quit timers scheduled")
         if not w:
-            self.quit(upgrading)
+            self.quit()
+            return
+        stop_worker()
+        try:
+            w.join(0.05)
+        except Exception:
+            pass
+        if not w.is_alive():
+            self.quit()
+            return
+        def quit_timer():
+            log("quit_timer() worker=%s", w)
+            if w and w.is_alive():
+                #wait up to 1 second for the worker thread to exit
+                try:
+                    w.wait(1)
+                except Exception:
+                    pass
+                if w.is_alive():
+                    #still alive, force stop:
+                    stop_worker(True)
+                    try:
+                        w.wait(1)
+                    except Exception:
+                        pass
+            self.quit()
+        self.timeout_add(250, quit_timer)
+        log("clean_quit(..) quit timer scheduled, worker=%s", w)
 
     def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
-        self._upgrading = upgrading
+        if upgrading is not None:
+            self._upgrading = upgrading
         self.closing()
         noerr(sys.stdout.flush)
+        self.late_cleanup()
         self.do_quit()
         log("quit(%s) do_quit done!", upgrading)
         dump_all_frames()
@@ -438,44 +441,42 @@ class ServerCore:
         raise NotImplementedError()
 
     def cleanup(self):
-        netlog("cleanup() stopping %s tcp proxy clients: %s", len(self._tcp_proxy_clients), self._tcp_proxy_clients)
-        for p in tuple(self._tcp_proxy_clients):
-            p.quit()
+        self.stop_tcp_proxy_clients()
         self.cancel_touch_timer()
-        if self.mdns_publishers:
-            add_work_item(self.mdns_cleanup)
-        if self._upgrading:
-            reason = SERVER_UPGRADE
-        else:
-            reason = SERVER_SHUTDOWN
-        protocols = self.get_all_protocols()
-        netlog("cleanup will disconnect: %s, reason=%s", protocols, reason)
-        self.cleanup_protocols(protocols, reason)
+        self.mdns_cleanup()
+        self.cleanup_all_protocols()
         self.do_cleanup()
-        netlog("cleanup will force disconnect: %s, reason=%s", protocols, reason)
-        self.cleanup_protocols(protocols, reason, True)
-        self._potential_protocols = []
         self.cleanup_sockets()
         self.cleanup_dbus_server()
-        if not self._upgrading:
-            self.stop_dbus_server()
-            self.clean_session_files("cmdline", "server.env", "config", "server.log")
-        if self.pidfile:
-            netlog("cleanup removing pidfile %s", self.pidfile)
-            self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
-            rm_session_dir()
-        if self.menu_provider:
-            self.menu_provider.cleanup()
+        self.cleanup_menu_provider()
         netlog("cleanup() done for server core")
 
     def do_cleanup(self):
         #allow just a bit of time for the protocol packet flush
         sleep(0.1)
 
+    def late_cleanup(self):
+        if not self._upgrading:
+            self.stop_dbus_server()
+        self.cleanup_all_protocols(force=True)
+        self._potential_protocols = []
+        if self.pidfile:
+            netlog("cleanup removing pidfile %s", self.pidfile)
+            self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
+        if not self._upgrading:
+            self.clean_session_files("cmdline", "server.env", "config", "server.log", "server.log.new")
+            rm_session_dir()
+
     def clean_session_files(self, *filenames):
         log("clean_session_files%s", filenames)
         clean_session_files(*filenames)
 
+
+    def cleanup_menu_provider(self):
+        mp = self.menu_provider
+        if mp:
+            self.menu_provider = None
+            mp.cleanup()
 
     def cleanup_sockets(self):
         netlog("cleanup_sockets() %s", self.socket_cleanup)
@@ -505,19 +506,16 @@ class ServerCore:
         dbuslog("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
         if not self.dbus_pid:
             return
-        from xpra.scripts.server import add_cleanup
-        def do_kill_dbus():
-            try:
-                os.kill(self.dbus_pid, signal.SIGINT)
-                self.clean_session_files("dbus.pid", "dbus.env")
-            except ProcessLookupError as e:
-                dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-                dbuslog.warn("Warning: dbus process not found (pid=%i)", self.dbus_pid)
-            except Exception as e:
-                dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-                dbuslog.warn("Warning: error trying to stop dbus with pid %i:", self.dbus_pid)
-                dbuslog.warn(" %s", e)
-        add_cleanup(do_kill_dbus)
+        try:
+            os.kill(self.dbus_pid, signal.SIGINT)
+            self.clean_session_files("dbus.pid", "dbus.env")
+        except ProcessLookupError as e:
+            dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
+            dbuslog.warn("Warning: dbus process not found (pid=%i)", self.dbus_pid)
+        except Exception as e:
+            dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
+            dbuslog.warn("Warning: error trying to stop dbus with pid %i:", self.dbus_pid)
+            dbuslog.warn(" %s", e)
 
     def init_dbus_server(self):
         if not POSIX:
@@ -853,7 +851,11 @@ class ServerCore:
         return mdns_info
 
     def mdns_cleanup(self):
-        mp = self.mdns_publishers
+        if self.mdns_publishers:
+            add_work_item(self.do_mdns_cleanup)
+
+    def do_mdns_cleanup(self):
+        mp = dict(self.mdns_publishers)
         self.mdns_publishers = {}
         for ap in tuple(mp.keys()):
             ap.stop()
@@ -933,14 +935,19 @@ class ServerCore:
             self._aliases[i] = key
             i += 1
 
-    def cleanup_all_protocols(self, reason):
+    def cleanup_all_protocols(self, reason=None, force=False):
         protocols = self.get_all_protocols()
-        self.cleanup_protocols(protocols, reason)
+        self.cleanup_protocols(protocols, reason=reason, force=force)
 
     def get_all_protocols(self):
         return tuple(self._potential_protocols)
 
-    def cleanup_protocols(self, protocols, reason, force=False):
+    def cleanup_protocols(self, protocols, reason=None, force=False):
+        if reason is None:
+            if self._upgrading:
+                reason = SERVER_UPGRADE
+            else:
+                reason = SERVER_SHUTDOWN
         netlog("cleanup_protocols(%s, %s, %s)", protocols, reason, force)
         for protocol in protocols:
             if force:
@@ -1650,6 +1657,13 @@ class ServerCore:
         p.start_threads()
 
 
+    def stop_tcp_proxy_clients(self):
+        tpc = tuple(self._tcp_proxy_clients)
+        netlog("stop_tcp_proxy_clients() stopping %s tcp proxy clients: %s", len(tpc), tpc)
+        self._tcp_proxy_clients = []
+        for p in tpc:
+            p.quit()
+
     def tcp_proxy_quit(self, proxy):
         proxylog("tcp_proxy_quit(%s)", proxy)
         if proxy in self._tcp_proxy_clients:
@@ -1736,7 +1750,7 @@ class ServerCore:
         protocol.send_disconnect(reasons)
         self.cleanup_protocol(protocol)
 
-    def cleanup_protocol(self, proto):
+    def cleanup_protocol(self, protocol):
         pass
 
     def _process_disconnect(self, proto, packet):

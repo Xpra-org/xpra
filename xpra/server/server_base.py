@@ -204,7 +204,7 @@ class ServerBase(ServerBaseClass):
             reason = bytestostr(packet[1])
             message += ": "+reason
         log.info(message)
-        self.cleanup_all_protocols(reason)
+        self.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.clean_quit, EXITING_CODE)
 
     def _process_shutdown_server(self, _proto, _packet):
@@ -212,7 +212,7 @@ class ServerBase(ServerBaseClass):
             log.warn("Warning: ignoring shutdown request")
             return
         log.info("Shutting down in response to client request")
-        self.cleanup_all_protocols(SERVER_SHUTDOWN)
+        self.cleanup_all_protocols(reason=SERVER_SHUTDOWN)
         self.timeout_add(500, self.clean_quit)
 
 

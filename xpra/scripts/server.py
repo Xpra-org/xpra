@@ -813,7 +813,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
             session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
             os.makedirs(session_dir, 0o750)
     os.environ["XPRA_SESSION_DIR"] = session_dir
-    add_cleanup(rm_session_dir)
     #populate it:
     if run_xpra_script:
         # Write out a shell-script so that we can start our proxy in a clean
