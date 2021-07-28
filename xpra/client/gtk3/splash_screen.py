@@ -52,7 +52,8 @@ class SplashScreen(Gtk.Window):
         self.set_focus_on_map(False)
         self.set_skip_pager_hint(True)
         self.set_skip_taskbar_hint(True)
-        self.set_type_hint(Gdk.WindowTypeHint.SPLASHSCREEN)
+        if not OSX:
+            self.set_type_hint(Gdk.WindowTypeHint.SPLASHSCREEN)
         vbox = Gtk.VBox()
         hbox = Gtk.HBox(homogeneous=False)
         icon = get_icon_pixbuf("xpra.png")
