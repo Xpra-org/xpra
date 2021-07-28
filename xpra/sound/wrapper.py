@@ -246,13 +246,13 @@ class sound_subprocess_wrapper(subprocess_caller):
         self.connect("signal", self.subprocess_signal)
 
     def get_env(self):
-        env = subprocess_caller.get_env(self)
+        env = super().get_env()
         env.update(get_sound_wrapper_env())
         return env
 
     def start(self):
         self.state = "starting"
-        subprocess_caller.start(self)
+        super().start()
         log("start() %s subprocess(%s)=%s", self.description, self.command, self.process.pid)
         self.timeout_add(SOUND_START_TIMEOUT, self.verify_started)
 

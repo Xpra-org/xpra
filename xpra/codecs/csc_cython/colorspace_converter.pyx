@@ -125,7 +125,7 @@ class CythonImageWrapper(ImageWrapper):
 
     def free(self):
         log("CythonImageWrapper.free() cython_buffer=%#x", <uintptr_t> self.cython_buffer)
-        ImageWrapper.free(self)
+        super().free()
         cb = self.cython_buffer
         if cb>0:
             self.cython_buffer = 0

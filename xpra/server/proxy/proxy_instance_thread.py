@@ -59,7 +59,7 @@ class ProxyInstanceThread(ProxyInstance):
         self.server_protocol = server_protocol_class(self, self.server_conn,
                                                      self.process_server_packet, self.get_server_packet)
         self.log_start()
-        ProxyInstance.run(self)
+        super().run()
 
     def start_network_threads(self):
         log("start_network_threads()")

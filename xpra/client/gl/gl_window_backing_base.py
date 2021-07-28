@@ -334,7 +334,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.RGB_MODES)
 
     def get_encoding_properties(self):
-        props = WindowBackingBase.get_encoding_properties(self)
+        props = super().get_encoding_properties()
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
         props["encoding.bit-depth"] = self.bit_depth

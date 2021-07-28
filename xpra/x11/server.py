@@ -69,7 +69,7 @@ class DesktopState:
 class DesktopManager(Gtk.Widget):
     def __init__(self):
         self._models = {}
-        Gtk.Widget.__init__(self)
+        super().__init__()
         self.set_property("can-focus", True)
         self.realize()
 

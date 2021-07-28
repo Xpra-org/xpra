@@ -46,7 +46,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
 
 
     def cleanup(self):
-        ClipboardTimeoutHelper.cleanup(self)
+        super().cleanup()
         self.pasteboard = None
 
     def make_proxy(self, selection):
@@ -78,7 +78,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         w.add_alive_callback(self.timer_clipboard_check)
 
     def cleanup(self):
-        ClipboardProxyCore.cleanup(self)
+        super().cleanup()
         w = get_UI_watcher()
         if w:
             try:

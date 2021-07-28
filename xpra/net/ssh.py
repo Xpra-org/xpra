@@ -203,7 +203,7 @@ class SSHSocketConnection(SocketConnection):
         return self.do_get_socket_info(self._raw_socket)
 
     def get_info(self) -> dict:
-        i = SocketConnection.get_info(self)
+        i = super().get_info()
         s = self._socket
         if s:
             i["ssh-channel"] = {

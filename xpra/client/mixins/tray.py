@@ -22,7 +22,7 @@ class TrayClient(StubClientMixin):
     """
 
     def __init__(self):
-        StubClientMixin.__init__(self)
+        super().__init__()
         #settings:
         self.tray_enabled = False
         self.delay_tray = False

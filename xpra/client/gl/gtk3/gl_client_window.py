@@ -66,7 +66,7 @@ class GLClientWindowBase(GTK3ClientWindow):
 
 
     def set_alpha(self):
-        GTK3ClientWindow.set_alpha(self)
+        super().set_alpha()
         rgb_formats = self._client_properties.setdefault("encodings.rgb_formats", [])
         #gl_window_backing supports BGR(A) too:
         if "RGBA" in rgb_formats:

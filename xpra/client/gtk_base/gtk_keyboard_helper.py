@@ -70,7 +70,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         return get_gtk_keymap()
 
     def cleanup(self):
-        KeyboardHelper.cleanup(self)
+        super().cleanup()
         if self._keymap_change_handler_id:
             try:
                 self._keymap.disconnect(self._keymap_change_handler_id)

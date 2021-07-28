@@ -36,7 +36,7 @@ class XpraClient(GTKXpraClient):
 
 
     def get_notifier_classes(self):
-        ncs = GTKXpraClient.get_notifier_classes(self)
+        ncs = super().get_notifier_classes()
         if not OSX:
             try:
                 from xpra.client.gtk3.gtk3_notifier import GTK3_Notifier

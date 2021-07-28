@@ -341,7 +341,7 @@ class SeamlessRootWindowModel(RootWindowModel):
 class ShadowServer(GTKShadowServerBase):
 
     def __init__(self):
-        GTKShadowServerBase.__init__(self)
+        super().__init__()
         self.keycodes = {}
         self.cursor_handle = None
         self.cursor_data = None
@@ -432,7 +432,7 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def refresh(self):
-        v = GTKShadowServerBase.refresh(self)
+        v = super().refresh()
         if v and SEAMLESS:
             for rwm in self._id_to_window.values():
                 rwm.refresh_shape()

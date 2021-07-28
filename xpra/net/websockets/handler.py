@@ -81,7 +81,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         if self.redirect_https:
             self.do_redirect_https()
             return
-        HTTPRequestHandler.do_GET(self)
+        super().do_GET()
 
     def do_HEAD(self):
         if self.only_upgrade:
@@ -90,7 +90,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         if self.redirect_https:
             self.do_redirect_https()
             return
-        HTTPRequestHandler.do_HEAD(self)
+        super().do_HEAD()
 
     def do_redirect_https(self):
         if not self.headers["Host"]:
@@ -110,4 +110,4 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         if self.only_upgrade:
             self.send_error(405, "Method Not Allowed")
             return
-        HTTPRequestHandler.handle_request(self)
+        super().handle_request()

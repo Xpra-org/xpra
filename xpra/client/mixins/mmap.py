@@ -23,7 +23,7 @@ class MmapClient(StubClientMixin):
     """
 
     def __init__(self):
-        StubClientMixin.__init__(self)
+        super().__init__()
         self.mmap_enabled = False
         self.mmap = None
         self.mmap_token = None

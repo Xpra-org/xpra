@@ -48,7 +48,7 @@ class ManagerSelection(GObject.GObject):
         return "ManagerSelection(%s)" % self.atom
 
     def __init__(self, selection):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self.atom = selection
         atom = Gdk.Atom.intern(selection, False)
         self.clipboard = Gtk.Clipboard.get(atom)

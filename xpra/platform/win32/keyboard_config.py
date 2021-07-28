@@ -30,7 +30,7 @@ def fake_key(keycode, press):
 class KeyboardConfig(KeyboardConfigBase):
 
     def __init__(self):
-        KeyboardConfigBase.__init__(self)
+        super().__init__()
 
     def __repr__(self):
         return "win32.KeyboardConfig"

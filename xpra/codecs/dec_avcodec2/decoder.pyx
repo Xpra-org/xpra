@@ -681,12 +681,12 @@ class AVImageWrapper(ImageWrapper):
 
     def free(self):
         log("AVImageWrapper.free()")
-        ImageWrapper.free(self)
+        super().free()
         self.xpra_free_frame()
 
     def clone_pixel_data(self):
         log("AVImageWrapper.clone_pixel_data()")
-        ImageWrapper.clone_pixel_data(self)
+        super().clone_pixel_data()
         self.xpra_free_frame()
 
     def xpra_free_frame(self):

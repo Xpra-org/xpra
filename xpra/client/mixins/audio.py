@@ -27,7 +27,7 @@ class AudioClient(StubClientMixin):
     __signals__ = ["speaker-changed", "microphone-changed"]
 
     def __init__(self):
-        StubClientMixin.__init__(self)
+        super().__init__()
         self.sound_source_plugin = None
         self.speaker_allowed = False
         self.speaker_enabled = False

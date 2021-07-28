@@ -60,7 +60,7 @@ else:
 
 class XError(Exception):
     def __init__(self, message):
-        Exception.__init__(self)
+        super().__init__()
         self.msg = get_X_error(message)
 
     def __str__(self):

@@ -60,11 +60,11 @@ class CUDAImageWrapper(ImageWrapper):
 
     def get_pixels(self):
         self.may_download()
-        return ImageWrapper.get_pixels(self)
+        return super().get_pixels()
 
     def clone_pixel_data(self):
         self.may_download()
-        return ImageWrapper.clone_pixel_data(self)
+        return super().clone_pixel_data()
 
     def get_sub_image(self, x, y, w, h):
         self.may_download()
@@ -86,7 +86,7 @@ class CUDAImageWrapper(ImageWrapper):
 
     def free(self):
         self.free_cuda()
-        return ImageWrapper.free(self)
+        return super().free()
 
     def clean(self):
         try:

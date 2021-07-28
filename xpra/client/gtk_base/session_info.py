@@ -134,7 +134,7 @@ class SessionInfo(Gtk.Window):
         assert show_client or show_server
         self.show_client = show_client
         self.show_server = show_server
-        Gtk.Window.__init__(self)
+        super().__init__()
         self.client = client
         self.session_name = session_name
         self.connection = conn
@@ -1285,7 +1285,7 @@ class SessionInfo(Gtk.Window):
     def destroy(self, *args):
         log("SessionInfo.destroy(%s) is_closed=%s", args, self.is_closed)
         self.is_closed = True
-        Gtk.Window.destroy(self)
+        super().destroy()
         log("SessionInfo.destroy(%s) done", args)
 
 

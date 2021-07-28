@@ -43,7 +43,7 @@ class ToolboxGUI(Gtk.Window):
     def __init__(self, title="Xpra Toolbox"):
         self.exit_code = 0
         self.start_session = None
-        Gtk.Window.__init__(self)
+        super().__init__()
         self.set_title(title)
         self.set_border_width(10)
         self.set_resizable(True)

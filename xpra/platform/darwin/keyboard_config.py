@@ -12,9 +12,6 @@ log = Logger("keyboard", "osx")
 
 class KeyboardConfig(KeyboardConfigBase):
 
-    def __init__(self):
-        KeyboardConfigBase.__init__(self)
-
     def __repr__(self):
         return "osx.KeyboardConfig"
 

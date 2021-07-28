@@ -272,7 +272,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
 
 
     def cleanup(self):
-        ClipboardTimeoutHelper.cleanup(self)
+        super().cleanup()
         self.cleanup_window()
 
     def cleanup_window(self):

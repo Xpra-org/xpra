@@ -316,7 +316,7 @@ class YUVImageWrapper(ImageWrapper):
         cdef uintptr_t buf = self.cython_buffer
         self.cython_buffer = 0
         log("webp.YUVImageWrapper.free() cython_buffer=%#x", buf)
-        ImageWrapper.free(self)
+        super().free()
         if buf!=0:
             free(<void *> buf)
 

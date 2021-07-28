@@ -52,7 +52,7 @@ class SoundPipeline(GObject.GObject):
         }
 
     def __init__(self, codec):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self.stream_compressor = None
         self.codec = codec
         self.codec_description = ""

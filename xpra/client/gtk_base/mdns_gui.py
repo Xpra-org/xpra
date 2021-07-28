@@ -34,7 +34,7 @@ class mdns_sessions(SessionsGUI):
 
     def cleanup(self):
         self.listener.stop()
-        SessionsGUI.cleanup(self)
+        super().cleanup()
 
     def mdns_update(self, r_name, r_type):
         log("mdns_update%s", (r_name, r_type))

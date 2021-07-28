@@ -21,7 +21,7 @@ class RPCClient(StubClientMixin):
     """
 
     def __init__(self):
-        StubClientMixin.__init__(self)
+        super().__init__()
         #rpc / dbus:
         self.rpc_counter = AtomicInteger()
         self.rpc_pending_requests = {}

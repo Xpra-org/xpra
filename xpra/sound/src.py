@@ -181,13 +181,13 @@ class SoundSource(SoundPipeline):
         return "SoundSource('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self):
-        SoundPipeline.cleanup(self)
+        super().cleanup()
         self.src_type = ""
         self.sink = None
         self.caps = None
 
     def get_info(self) -> dict:
-        info = SoundPipeline.get_info(self)
+        info = super().get_info()
         if self.queue:
             info["queue"] = {"cur" : self.queue.get_property("current-level-time")//MS_TO_NS}
         if CUTTER_THRESHOLD>0 and (self.min_timestamp or self.max_timestamp):

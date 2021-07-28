@@ -118,7 +118,7 @@ class CairoBackingBase(WindowBackingBase):
         if backing:
             backing.finish()
             self._backing = None
-        WindowBackingBase.close(self)
+        super().close()
 
 
     def cairo_paint_pixbuf(self, pixbuf, x : int, y : int, options):
@@ -202,7 +202,7 @@ class CairoBackingBase(WindowBackingBase):
 
 
     def get_encoding_properties(self):
-        props = WindowBackingBase.get_encoding_properties(self)
+        props = super().get_encoding_properties()
         if SCROLL_ENCODING:
             props["encoding.scrolling"] = True
         return props

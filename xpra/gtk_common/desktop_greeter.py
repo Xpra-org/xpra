@@ -47,7 +47,7 @@ class DesktopGreeter(Gtk.Window):
 
     def __init__(self):
         self.exit_code = None
-        Gtk.Window.__init__(self)
+        super().__init__()
         self.set_border_width(20)
         self.set_title("Start Desktop Environment")
         self.set_position(Gtk.WindowPosition.CENTER)

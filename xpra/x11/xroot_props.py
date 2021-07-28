@@ -22,7 +22,7 @@ class XRootPropWatcher(GObject.GObject):
         }
 
     def __init__(self, props, root_window):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self._props = props
         self._root = root_window
         self._saved_event_mask = self._root.get_events()

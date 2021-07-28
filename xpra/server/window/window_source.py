@@ -451,7 +451,7 @@ class WindowSource(WindowIconSource):
             Add window specific stats
         """
         info = self.statistics.get_info()
-        info.update(WindowIconSource.get_info(self))
+        info.update(super().get_info())
         einfo = info.setdefault("encoding", {})     #defined in statistics.get_info()
         einfo.update(self.get_quality_speed_info())
         einfo.update({

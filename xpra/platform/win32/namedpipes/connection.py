@@ -186,7 +186,7 @@ class NamedPipeConnection(Connection):
         return self.target
 
     def get_info(self) -> dict:
-        d = Connection.get_info(self)
+        d = super().get_info()
         d["type"] = "named-pipe"
         d["closed"] = self.pipe_handle is None
         return d

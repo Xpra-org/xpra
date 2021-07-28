@@ -36,7 +36,7 @@ log = Logger("client", "util")
 class SessionsGUI(Gtk.Window):
 
     def __init__(self, options, title="Xpra Session Browser"):
-        Gtk.Window.__init__(self)
+        super().__init__()
         self.exit_code = 0
         self.set_title(title)
         self.set_border_width(20)

@@ -101,7 +101,7 @@ class StartSession(Gtk.Window):
         self.default_config = get_defaults()
         #log("default_config=%s", self.default_config)
         #log("options=%s (%s)", options, type(options))
-        Gtk.Window.__init__(self)
+        super().__init__()
         self.set_border_width(20)
         self.set_title("Start Xpra Session")
         self.set_position(Gtk.WindowPosition.CENTER)
@@ -678,7 +678,7 @@ class StartSession(Gtk.Window):
 
 class SessionOptions(Gtk.Window):
     def __init__(self, title, icon_name, options, run_mode, parent):
-        Gtk.Window.__init__(self)
+        super().__init__()
         self.options = options
         self.run_mode = run_mode
         self.set_title(title)

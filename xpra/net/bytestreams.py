@@ -221,7 +221,7 @@ class TwoFileConnection(Connection):
     def close(self):
         log("%s.close() close callback=%s, readable=%s, writeable=%s",
             self, self._close_cb, self._readable, self._writeable)
-        Connection.close(self)
+        super().close()
         cc = self._close_cb
         if cc:
             self._close_cb = None
@@ -241,7 +241,7 @@ class TwoFileConnection(Connection):
         return "Pipe(%s)" % str(self.target)
 
     def get_info(self) -> dict:
-        d = Connection.get_info(self)
+        d = super().get_info()
         d.update({
             "type"  : "pipe",
             "pipe"  : {
@@ -344,7 +344,7 @@ class SocketConnection(Connection):
         except IOError:
             i = s
         log("%s.close() for socket=%s", self, i)
-        Connection.close(self)
+        super().close()
         try:
             s.settimeout(0)
         except IOError:
@@ -377,7 +377,7 @@ class SocketConnection(Connection):
         return "%s %s:%s" % (self.socktype, self.protocol_type, pretty_socket(self.local))
 
     def get_info(self) -> dict:
-        d = Connection.get_info(self)
+        d = super().get_info()
         try:
             d["remote"] = self.remote or ""
             d["protocol-type"] = self.protocol_type
@@ -586,7 +586,7 @@ class SSLSocketConnection(PeekableSocketConnection):
         return super().can_retry(e)
 
     def get_info(self) -> dict:
-        i = SocketConnection.get_info(self)
+        i = super().get_info()
         i["ssl"] = True
         for k,fn in {
                      "compression"      : "compression",

@@ -20,7 +20,7 @@ log = Logger("util")
 class AuthDialog(Gtk.Window):
 
     def __init__(self, title="Session Access Request", info="unknown user from unknown location", timeout=600):
-        Gtk.Window.__init__(self)
+        super().__init__()
         self.timeout = timeout
         self.exit_code = 1
         self.set_title(title)

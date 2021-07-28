@@ -139,7 +139,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 self.send_header("Echo-Accept-Language", std(accept, extras="-,./:;="))
         for k,v in self.get_headers().items():
             self.send_header(k, v)
-        BaseHTTPRequestHandler.end_headers(self)
+        super().end_headers()
 
     def get_headers(self):
         return self.may_reload_headers(self.http_headers_dirs)

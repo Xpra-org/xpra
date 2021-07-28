@@ -49,7 +49,7 @@ class Keyboard(KeyboardBase):
     """
 
     def __init__(self):
-        KeyboardBase.__init__(self)
+        super().__init__()
         self.num_lock_modifier = None
         self.altgr_modifier = None
         self.delayed_event = None

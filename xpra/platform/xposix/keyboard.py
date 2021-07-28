@@ -18,7 +18,7 @@ log = Logger("keyboard", "posix")
 class Keyboard(KeyboardBase):
 
     def __init__(self):
-        KeyboardBase.__init__(self)
+        super().__init__()
         self.keymap_modifiers = None
         self.keyboard_bindings = None
         if not is_Wayland():

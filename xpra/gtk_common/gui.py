@@ -56,7 +56,7 @@ class GUI(Gtk.Window):
 
     def __init__(self, title="Xpra"):
         self.exit_code = 0
-        Gtk.Window.__init__(self)
+        super().__init__()
 
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)

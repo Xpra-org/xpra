@@ -151,7 +151,7 @@ class OSX_Notifier(NotifierBase):
             self.gtk_notifier.close_notify(nid)
 
     def cleanup(self):
-        NotifierBase.cleanup(self)
+        super().cleanup()
         GLib.idle_add(self.notification_center.removeAllDeliveredNotifications)
 
 

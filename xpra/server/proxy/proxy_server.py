@@ -71,7 +71,7 @@ class ProxyServer(ServerCore):
 
     def __init__(self):
         log("ProxyServer.__init__()")
-        ServerCore.__init__(self)
+        super().__init__()
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
         self.session_type = "proxy"
@@ -147,7 +147,7 @@ class ProxyServer(ServerCore):
                 log.error(" %s", e)
 
     def init_control_commands(self):
-        ServerCore.init_control_commands(self)
+        super().init_control_commands()
         self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display",
                                                            self.handle_stop_command, min_args=1, max_args=1)
 
@@ -164,7 +164,7 @@ class ProxyServer(ServerCore):
 
 
     def init_packet_handlers(self):
-        ServerCore.init_packet_handlers(self)
+        super().init_packet_handlers()
         #add shutdown handler
         self._default_packet_handlers["shutdown-server"] = self._process_proxy_shutdown_server
 

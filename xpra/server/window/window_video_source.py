@@ -126,7 +126,7 @@ class WindowVideoSource(WindowSource):
         self.video_stream_file = None
 
     def init_encoders(self):
-        WindowSource.init_encoders(self)
+        super().init_encoders()
         self._csc_encoder = None
         self._video_encoder = None
         self._last_pipeline_check = 0
@@ -157,7 +157,7 @@ class WindowVideoSource(WindowSource):
         return "WindowVideoSource(%s : %s)" % (self.wid, self.window_dimensions)
 
     def init_vars(self):
-        WindowSource.init_vars(self)
+        super().init_vars()
         #these constraints get updated with real values
         #when we construct the video pipeline:
         self.min_w = 1
@@ -207,7 +207,7 @@ class WindowVideoSource(WindowSource):
 
 
     def get_property_info(self) -> dict:
-        i = WindowSource.get_property_info(self)
+        i = super().get_property_info()
         if self.scaling_control is None:
             i["scaling.control"] = "auto"
         else:
@@ -216,7 +216,7 @@ class WindowVideoSource(WindowSource):
         return i
 
     def get_info(self) -> dict:
-        info = WindowSource.get_info(self)
+        info = super().get_info()
         sr = self.video_subregion
         if sr:
             sri = sr.get_info()
@@ -299,13 +299,13 @@ class WindowVideoSource(WindowSource):
 
 
     def suspend(self):
-        WindowSource.suspend(self)
+        super().suspend()
         #we'll create a new video pipeline when resumed:
         self.cleanup_codecs()
 
 
     def cleanup(self):
-        WindowSource.cleanup(self)
+        super().cleanup()
         self.cleanup_codecs()
 
     def cleanup_codecs(self):
@@ -362,7 +362,7 @@ class WindowVideoSource(WindowSource):
                 log.error("Error closing video stream file", exc_info=True)
 
     def ui_cleanup(self):
-        WindowSource.ui_cleanup(self)
+        super().ui_cleanup()
         self.video_subregion = None
 
 

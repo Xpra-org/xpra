@@ -46,7 +46,7 @@ ALL_X11_MODIFIERS = {
 
 class KeyboardConfig(KeyboardConfigBase):
     def __init__(self):
-        KeyboardConfigBase.__init__(self)
+        super().__init__()
         self.xkbmap_raw = False
         self.xkbmap_query = None
         self.xkbmap_query_struct = None
@@ -76,7 +76,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return "KeyboardConfig(%s / %s / %s)" % (self.xkbmap_layout, self.xkbmap_variant, self.xkbmap_options)
 
     def get_info(self) -> dict:
-        info = KeyboardConfigBase.get_info(self)
+        info = super().get_info()
         #keycodes:
         if self.keycode_translation:
             ksinfo = info.setdefault("keysym", {})
@@ -172,7 +172,7 @@ class KeyboardConfig(KeyboardConfigBase):
         m = hashlib.sha1()
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
-        m.update(KeyboardConfigBase.get_hash(self))
+        m.update(super().get_hash())
         for x in (self.xkbmap_query, self.xkbmap_raw, \
                   self.xkbmap_mod_meanings, self.xkbmap_mod_pointermissing, \
                   self.xkbmap_keycodes, self.xkbmap_x11_keycodes):

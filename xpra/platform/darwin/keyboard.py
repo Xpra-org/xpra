@@ -75,7 +75,7 @@ class Keyboard(KeyboardBase):
     """
 
     def __init__(self):
-        KeyboardBase.__init__(self)
+        super().__init__()
         self.init_vars()
 
     def init_vars(self):
@@ -94,7 +94,7 @@ class Keyboard(KeyboardBase):
 
     def cleanup(self):
         self.init_vars()
-        KeyboardBase.cleanup(self)
+        super().cleanup()
 
 
     def get_all_x11_layouts(self):

@@ -169,13 +169,13 @@ class SoundSink(SoundPipeline):
         return "SoundSink('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self):
-        SoundPipeline.cleanup(self)
+        super().cleanup()
         self.cancel_volume_timer()
         self.sink_type = ""
         self.src = None
 
     def start(self):
-        SoundPipeline.start(self)
+        super().start()
         self.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
 
 
@@ -352,7 +352,7 @@ class SoundSink(SoundPipeline):
         return GST_FLOW_OK
 
     def get_info(self) -> dict:
-        info = SoundPipeline.get_info(self)
+        info = super().get_info()
         if QUEUE_TIME>0 and self.queue:
             clt = self.queue.get_property("current-level-time")
             qmax = self.queue.get_property("max-size-time")

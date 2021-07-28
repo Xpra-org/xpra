@@ -179,7 +179,7 @@ class Wm(GObject.GObject):
         }
 
     def __init__(self, replace_other_wm, wm_name, display=None):
-        GObject.GObject.__init__(self)
+        super().__init__()
 
         if display is None:
             display = Gdk.Display.get_default()

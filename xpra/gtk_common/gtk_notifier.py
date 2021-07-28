@@ -95,7 +95,7 @@ class GTK_Notifier(NotifierBase):
         self._notify_stack = []
         for x in popups:
             x.hide_notification()
-        NotifierBase.cleanup(self)
+        super().cleanup()
 
 
     def get_origin_x(self):
@@ -161,7 +161,7 @@ class Popup(Gtk.Window):
         log("Popup%s", (stack, nid, title, message, actions, image, timeout, show_timeout))
         self.stack = stack
         self.nid = nid
-        Gtk.Window.__init__(self)
+        super().__init__()
 
         self.set_accept_focus(False)
         self.set_focus_on_map(False)

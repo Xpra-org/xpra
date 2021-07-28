@@ -102,7 +102,7 @@ class SystemTray(GObject.GObject):
         }
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        super().__init__()
         self.tray_window = None
         self.window_trays = {}
         self.tray_windows = {}

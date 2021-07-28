@@ -92,7 +92,7 @@ class X11ServerCore(GTKServerBase):
         self.initial_resolution = None
         self.x11_filter = False
         self.randr_sizes_added = []
-        GTKServerBase.__init__(self)
+        super().__init__()
         log("XShape=%s", X11Window.displayHasXShape())
 
     def init(self, opts):
@@ -253,7 +253,7 @@ class X11ServerCore(GTKServerBase):
             keylog.error(" %s", e)
 
     def init_packet_handlers(self):
-        GTKServerBase.init_packet_handlers(self)
+        super().init_packet_handlers()
         self.add_packet_handler("force-ungrab", self._process_force_ungrab)
         self.add_packet_handler("wheel-motion", self._process_wheel_motion)
 
@@ -293,7 +293,7 @@ class X11ServerCore(GTKServerBase):
             clean_keyboard_state()
         #prop_del does its own xsync:
         self.clean_x11_properties()
-        GTKServerBase.do_cleanup(self)
+        super().do_cleanup()
         log("close_gdk_display_source()")
         close_gdk_display_source()
 

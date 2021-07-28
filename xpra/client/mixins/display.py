@@ -52,7 +52,7 @@ class DisplayClient(StubClientMixin):
 
     def __init__(self):
         check_display()
-        StubClientMixin.__init__(self)
+        super().__init__()
         self.dpi = 0
         self.can_scale = False
         self.initial_scaling = 1, 1

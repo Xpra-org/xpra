@@ -76,7 +76,7 @@ def get_window_attributes(w):
 class WindowInfo(Gtk.Window):
 
     def __init__(self, client, window):
-        Gtk.Window.__init__(self)
+        super().__init__()
         add_close_accel(self, self.destroy)
         self._client = client
         self._window = window
@@ -154,7 +154,7 @@ class WindowInfo(Gtk.Window):
 
     def destroy(self, *_args):
         self.is_closed = True
-        Gtk.Window.destroy(self)
+        super().destroy()
 
     def show(self):
         self.populate()

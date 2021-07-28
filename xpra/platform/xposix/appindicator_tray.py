@@ -133,7 +133,7 @@ class AppindicatorTray(TrayBase):
 
     def cleanup(self):
         self.clean_last_tmp_icon()
-        TrayBase.cleanup(self)
+        super().cleanup()
 
 
 def main(): # pragma: no cover

@@ -65,7 +65,7 @@ class DBUS_Notifier(NotifierBase):
         self.actual_notification_id = {}
         for nid, actual_id in nids:
             self.do_close(nid, actual_id)
-        NotifierBase.cleanup(self)
+        super().cleanup()
 
 
     def show_notify(self, dbus_id, tray, nid,

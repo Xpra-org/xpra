@@ -30,7 +30,7 @@ class Authenticator(FileAuthenticatorBase):
         return True
 
     def get_password(self) -> str:
-        password = FileAuthenticatorBase.get_password(self)
+        password = super().get_password()
         if not password:
             return password
         if password.find(b"\n")>=0 or password.find(b"\r")>=0:

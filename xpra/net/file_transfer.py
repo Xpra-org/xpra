@@ -250,7 +250,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.remote_open_url, self.remote_open_url_ask)
 
     def get_info(self) -> dict:
-        info = FileTransferAttributes.get_info(self)
+        info = super().get_info()
         info["remote"] = {
             "file-transfer"     : self.remote_file_transfer,
             "file-transfer-ask" : self.remote_file_transfer_ask,
