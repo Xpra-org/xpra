@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,6 +8,7 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
+import shlex
 import signal
 from subprocess import Popen, PIPE, call
 import os.path
@@ -177,7 +178,6 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
 
     #identify logfile argument if it exists,
     #as we may have to rename it, or create the directory for it:
-    import shlex
     xvfb_cmd = shlex.split(xvfb_str)
     if not xvfb_cmd:
         raise InitException("cannot start Xvfb, the command definition is missing!")
@@ -410,7 +410,7 @@ def check_xvfb_process(xvfb=None, cmd="Xvfb", timeout=0, command=None):
     return False
 
 def verify_display_ready(xvfb, display_name, shadowing_check=True, log_errors=True, timeout=VFB_WAIT):
-    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport
+    from xpra.x11.bindings.wait_for_x_server import wait_for_x_server        #@UnresolvedImport pylint: disable=import-outside-toplevel
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
