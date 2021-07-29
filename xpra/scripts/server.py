@@ -16,6 +16,7 @@ import os.path
 import atexit
 import datetime
 import traceback
+from subprocess import Popen  #pylint: disable=import-outside-toplevel
 
 from xpra import __version__
 from xpra.scripts.main import (
@@ -26,7 +27,7 @@ from xpra.scripts.main import (
     )
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
-    FALSE_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS,
+    FALSE_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     parse_bool,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
@@ -37,6 +38,7 @@ from xpra.os_util import (
     FDChangeCaptureContext,
     force_quit,
     which,
+    saved_env,
     get_rand_chars,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_util_logger, osexpand,
@@ -64,11 +66,6 @@ def run_cleanups():
         except Exception:
             print("error running cleanup %s" % c)
             traceback.print_exception(*sys.exc_info())
-
-_when_ready = []
-
-def add_when_ready(f):
-    _when_ready.append(f)
 
 def add_cleanup(f):
     _cleanups.append(f)
@@ -509,7 +506,7 @@ def reload_dbus_attributes(display_name):
     return dbus_pid, dbus_env
 
 
-def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_args, desktop_display=None, progress_cb=None):
+def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_args, defaults, desktop_display=None, progress_cb=None):
     assert mode in (
         "start", "start-desktop",
         "upgrade", "upgrade-desktop",
@@ -549,8 +546,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
     if not proxying and POSIX and not OSX:
         #we don't support wayland servers,
         #so make sure GDK will use the X11 backend:
-        from xpra.os_util import saved_env
-        saved_env["GDK_BACKEND"] = "x11"
         os.environ["GDK_BACKEND"] = "x11"
 
     has_child_arg = (
@@ -641,7 +636,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
             #don't log disconnect message
             env["XPRA_LOG_DISCONNECT"] = "0"
             env["XPRA_EXIT_MESSAGE"] = SERVER_UPGRADE
-            from subprocess import Popen  #pylint: disable=import-outside-toplevel
             try:
                 p = Popen(cmd, env=env)
                 p.wait()
@@ -1243,11 +1237,9 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
             app.init_display_pid(xvfb_pid)
             app.save_pid()
         app.original_desktop_display = desktop_display
-        del opts
         progress(90, "finalizing")
         app.server_init()
         app.setup()
-        app.init_when_ready(_when_ready)
     except InitInfo as e:
         for m in str(e).split("\n"):
             log.info("%s", m)
@@ -1272,6 +1264,11 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         server_not_started(str(e))
         return EXIT_FAILURE
 
+    ######################################################################
+    if opts.attach is True:
+        attach_client(opts, defaults)
+    del opts
+
     try:
         progress(100, "running")
         log("%s()", app.run)
@@ -1289,3 +1286,29 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         if r>0:
             r = 0
     return r
+
+def attach_client(options, defaults):
+    from xpra.platform.paths import get_xpra_command
+    cmd = get_xpra_command()+["attach"]
+    display_name = os.environ.get("DISPLAY")
+    if display_name:
+        cmd += [display_name]
+    #options has been "fixed up", make sure this has too:
+    fixup_options(defaults)
+    for x in CLIENT_OPTIONS:
+        f = x.replace("-", "_")
+        try:
+            d = getattr(defaults, f)
+            c = getattr(options, f)
+        except Exception as e:
+            print("error on %s: %s" % (f, e))
+            continue
+        if c!=d:
+            if OPTION_TYPES.get(x)==list:
+                v = ",".join(str(i) for i in x)
+            else:
+                v = str(c)
+            cmd.append("--%s=%s" % (x, v))
+    env = saved_env.copy()
+    proc = Popen(cmd, env=env, start_new_session=POSIX and not OSX)
+    getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)

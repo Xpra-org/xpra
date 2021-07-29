@@ -2353,45 +2353,17 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     except OSError:
         os.chdir("/")
         cwd = "/"
-    env = os.environ.copy()
     desktop_display = nox()
     try:
         from xpra import server
         assert server
-        from xpra.scripts.server import do_run_server, add_when_ready, run_cleanups
+        from xpra.scripts.server import do_run_server, run_cleanups
     except ImportError as e:
         error_cb("Xpra server is not installed")
-    ######################################################################
-    if options.attach is True:
-        def attach_client():
-            from xpra.platform.paths import get_xpra_command
-            cmd = get_xpra_command()+["attach"]
-            display_name = os.environ.get("DISPLAY")
-            if display_name:
-                cmd += [display_name]
-            #options has been "fixed up", make sure this has too:
-            fixup_options(defaults)
-            for x in CLIENT_OPTIONS:
-                f = x.replace("-", "_")
-                try:
-                    d = getattr(defaults, f)
-                    c = getattr(options, f)
-                except Exception as e:
-                    print("error on %s: %s" % (f, e))
-                    continue
-                if c!=d:
-                    if OPTION_TYPES.get(x)==list:
-                        v = csv(c)
-                    else:
-                        v = str(c)
-                    cmd.append("--%s=%s" % (x, v))
-            proc = Popen(cmd, cwd=cwd, env=env, start_new_session=POSIX and not OSX)
-            add_process(proc, "client-attach", cmd, ignore=True, forget=False)
-        add_when_ready(attach_client)
     #add finally hook to ensure we will run the cleanups
     #even if we exit because of an exception:
     try:
-        return do_run_server(script_file, cmdline, error_cb, options, mode, script_file, args, desktop_display, progress_cb)
+        return do_run_server(script_file, cmdline, error_cb, options, mode, script_file, args, defaults, desktop_display, progress_cb)
     finally:
         run_cleanups()
         import gc

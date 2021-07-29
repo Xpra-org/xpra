@@ -146,7 +146,6 @@ class ServerCore:
         log("ServerCore.__init__()")
         self.start_time = time()
         self.auth_classes = {}
-        self._when_ready = []
         self.child_reaper = None
         self.original_desktop_display = None
         self.session_type = "unknown"
@@ -224,10 +223,6 @@ class ServerCore:
 
     def source_remove(self, timer):
         raise NotImplementedError()
-
-    def init_when_ready(self, callbacks):
-        log("init_when_ready(%s)", callbacks)
-        self._when_ready = callbacks
 
 
     def init(self, opts):
@@ -415,17 +410,6 @@ class ServerCore:
 
     def run(self):
         self.install_signal_handlers(self.signal_quit)
-        def start_ready_callbacks():
-            log("start_ready_callbacks=%s", self._when_ready)
-            for x in self._when_ready:
-                try:
-                    x()
-                except Exception as e:
-                    log("start_ready_callbacks()", exc_info=True)
-                    log.error("Error on server start ready callback '%s':", x)
-                    log.error(" %s", e)
-                    del e
-        self.idle_add(start_ready_callbacks)
         self.idle_add(self.reset_server_timeout)
         self.idle_add(self.server_is_ready)
         self.idle_add(self.print_run_info)
