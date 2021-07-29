@@ -934,7 +934,7 @@ XpraClient.prototype._check_echo_timeout = function(ping_time) {
 	if (this.reconnect_in_progress) {
 		return;
 	}
-	if(this.last_ping_echoed_time < ping_time) {
+	if(this.last_ping_echoed_time > 0 && this.last_ping_echoed_time < ping_time) {
 		if (this.reconnect && this.reconnect_attempt<this.reconnect_count) {
 			this.warn("ping timeout - reconnecting");
 			this.reconnect_attempt++;
