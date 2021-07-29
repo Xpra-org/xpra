@@ -297,7 +297,7 @@ XpraWindow.prototype.set_spinner = function(state) {
 }
 
 XpraWindow.prototype.ensure_visible = function() {
-	if (this.client.server_is_desktop || this.client.server_is_shadow) {
+	if (this.client.server_is_desktop || this.client.server_is_shadow || this.override_redirect) {
 		//those windows should usually be centered on screen,
 		//moving them would mess that up
 		return;
