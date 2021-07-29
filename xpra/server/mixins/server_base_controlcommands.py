@@ -91,6 +91,8 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("sound-output",          "control sound forwarding",         min_args=1, max_args=2),
             #windows:
             ArgsControlCommand("workspace",             "move a window to a different workspace", min_args=2, max_args=2, validation=[int, int]),
+            ArgsControlCommand("close",                 "close a window",                   min_args=1, max_args=1, validation=[int]),
+            ArgsControlCommand("delete",                "delete a window",                   min_args=1, max_args=1, validation=[int]),
             ArgsControlCommand("move",                  "move a window",                    min_args=3, max_args=3, validation=[int, int, int]),
             ArgsControlCommand("resize",                "resize a window",                  min_args=3, max_args=3, validation=[int, int, int]),
             ArgsControlCommand("moveresize",            "move and resize a window",         min_args=5, max_args=5, validation=[int, int, int, int, int]),
@@ -641,6 +643,20 @@ class ServerBaseControlCommands(StubServerMixin):
         window.set_property("workspace", workspace)
         return "window %s moved to workspace %s" % (wid, workspace)
 
+
+    def control_command_close(self, wid):
+        window = self._id_to_window.get(wid)
+        if not window:
+            raise ControlError("window %s does not exist" % wid)
+        window.request_close()
+        return "requested window %s closed" % window
+
+    def control_command_delete(self, wid):
+        window = self._id_to_window.get(wid)
+        if not window:
+            raise ControlError("window %s does not exist" % wid)
+        window.send_delete()
+        return "requested window %s deleted" % window
 
     def control_command_move(self, wid, x, y):
         window = self._id_to_window.get(wid)

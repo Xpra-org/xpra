@@ -753,8 +753,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def request_close(self):
         if "WM_DELETE_WINDOW" in self.get_property("protocols"):
-            with xswallow:
-                send_wm_delete_window(self.client_window)
+            self.send_delete()
         else:
             title = self.get_property("title")
             xid = self.get_property("xid")
@@ -767,6 +766,10 @@ class CoreX11WindowModel(WindowModelStub):
                 log.warn("window %#x ('%s') cannot be closed,", xid, title)
                 log.warn(" it does not support WM_DELETE_WINDOW")
                 log.warn(" and FORCE_QUIT is disabled")
+
+    def send_delete(self):
+        with xswallow:
+            send_wm_delete_window(self.client_window)
 
     def force_quit(self):
         pid = self.get_property("pid")
