@@ -1816,6 +1816,9 @@ XpraClient.prototype._process_hello = function(packet, ctx) {
 		return true;
 	}, ctx.PING_FREQUENCY);
 	ctx.reconnect_attempt = 0;
+	// Drop start_new_session to avoid creating new displays
+	// on reconnect
+	ctx.start_new_session = null;
 	ctx.on_connection_progress("Session started", "", 100);
 	ctx.on_connect();
 	ctx.connected = true;
