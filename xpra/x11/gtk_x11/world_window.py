@@ -158,7 +158,7 @@ class WorldWindow(Gtk.Window):
     #         this time, though, so then give it to whoever should
     #   -- and finally ignore all subsequent focus-in-events
     def do_map(self):
-        super().do_map()
+        Gtk.Window.do_map(self)
         # We are being mapped, so we can focus ourselves.
         # Check for the property, just in case this is the second time we are
         # being mapped -- otherwise we might miss the special call to
