@@ -1638,7 +1638,7 @@ KEYSYM_TO_LAYOUT = {
 	"Farsi"		: "ir",
 	"Arabic"	: "ar",
 	"Cyrillic"	: "ru",
-	"Ukrainian"	: "uk",
+	"Ukrainian"	: "ua",
 	"Macedonia"	: "mk",
 	"Greek"		: "gr",
 	"hebrew"	: "he",

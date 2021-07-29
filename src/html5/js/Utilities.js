@@ -176,7 +176,7 @@ var Utilities = {
 			}
 			//ie: "en"
 			layout = l[0].toLowerCase();
-			const tmp = LANGUAGE_TO_LAYOUT[v];
+			const tmp = LANGUAGE_TO_LAYOUT[layout];
 			if (tmp) {
 				layout = tmp;
 			}
