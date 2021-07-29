@@ -960,7 +960,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
             commands += list(getattr(opts, start_prop.replace("-", "_")))
         if not commands:
             opts.start.append("xpra desktop-greeter")
-    if POSIX and configure_imsettings_env(opts.input_method)=="ibus" and not (upgrading or upgrading_desktop):
+    if POSIX and configure_imsettings_env(opts.input_method)=="ibus" and not (upgrading or upgrading_desktop or shadowing or proxying):
         #start ibus-daemon unless already specified in 'start':
         if IBUS_DAEMON_COMMAND and not (
             any(x.find("ibus-daemon")>=0 for x in opts.start) or any(x.find("ibus-daemon")>=0 for x in opts.start_late)
