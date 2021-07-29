@@ -300,7 +300,7 @@ XpraWindow.prototype.ensure_visible = function() {
 	if (this.client.server_is_desktop || this.client.server_is_shadow || this.override_redirect) {
 		//those windows should usually be centered on screen,
 		//moving them would mess that up
-		return;
+		return true;
 	}
 	var oldx = this.x;
 	var oldy = this.y;
@@ -311,13 +311,13 @@ XpraWindow.prototype.ensure_visible = function() {
 	var ww = desktop_size[0];
 	var wh = desktop_size[1];
 	//this.log("x=", this.x, "y=", this.y, "w=", this.w, "h=", this.h, "leftoffset=", this.leftoffset, "topoffset=", this.topoffset, " - ww=", ww, "wh=", wh);
-	if(oldx + this.w <= min_visible) {
+	if(oldx<this.leftoffset && oldx + this.w <= min_visible) {
 		this.x = min_visible - this.w + this.leftoffset;
 	}
 	else if (oldx >= ww - min_visible) {
 		this.x = Math.min(oldx, ww - min_visible);
 	}
-	if(oldy <= min_visible) {
+	if(oldy<=this.topoffset && oldy <= min_visible) {
 		this.y = 0 + this.topoffset;
 	}
 	else if (oldy >= wh - min_visible) {
@@ -841,7 +841,9 @@ XpraWindow.prototype.screen_resized = function() {
 		this.fill_screen();
 		this.handle_resized();
 	}
-	this.ensure_visible();
+	if (!this.ensure_visible()) {
+		this.geometry_cb(this);
+	}
 };
 
 XpraWindow.prototype.recenter = function(force_update_geometry) {
@@ -935,7 +937,9 @@ XpraWindow.prototype.move_resize = function(x, y, w, h) {
 			// is this the right thing to do?
 			this.geometry_cb(this);
 		}
-		this.updateCSSGeometry();
+		else {
+			this.updateCSSGeometry();
+		}
 	}
 };
 
