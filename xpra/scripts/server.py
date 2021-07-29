@@ -450,6 +450,31 @@ def load_options():
     config_file = session_file_path("config")
     return read_config(config_file)
 
+def apply_config(opts):
+    #if we had saved the start / start-desktop config, reload it:
+    options = load_options()
+    if not options:
+        return
+    upgrade_config = dict_to_validated_config(options)
+    #apply the previous session options:
+    for k in options.keys():
+        if k in CLIENT_ONLY_OPTIONS:
+            continue
+        if k in SERVER_LOAD_SKIP_OPTIONS:
+            continue
+        dtype = OPTION_TYPES.get(k)
+        if not dtype:
+            continue
+        fn = k.replace("-", "_")
+        if not hasattr(upgrade_config, fn):
+            warn("%s not found in saved config" % k)
+            continue
+        if not hasattr(opts, fn):
+            warn("%s not found in config" % k)
+            continue
+        value = getattr(upgrade_config, fn)
+        setattr(opts, fn, value)
+
 
 def reload_dbus_attributes(display_name):
     from xpra.log import Logger
@@ -525,19 +550,35 @@ MODE_TO_NAME = {
     "proxy"             : "Proxy",
     }
 
+def request_exit(uri):
+    from xpra.platform.paths import get_xpra_command
+    cmd = get_xpra_command()+["exit", uri]
+    env = os.environ.copy()
+    #don't wait too long:
+    env["XPRA_CONNECT_TIMEOUT"] = "5"
+    #don't log disconnect message
+    env["XPRA_LOG_DISCONNECT"] = "0"
+    env["XPRA_EXIT_MESSAGE"] = SERVER_UPGRADE
+    try:
+        p = Popen(cmd, env=env)
+        p.wait()
+    except OSError as e:
+        noerr(sys.stderr.write, "Error: failed to 'exit' the server to upgrade\n")
+        noerr(sys.stderr.write, " %s\n" % e)
+        return False
+    return p.poll()==0
+
+
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
         "start", "start-desktop",
         "upgrade", "upgrade-desktop",
         "shadow", "proxy",
         )
-
-    try:
-        cwd = os.getcwd()
-    except OSError:
-        os.chdir("/")
-        cwd = "/"
     desktop_display = nox()
+    validate_encryption(opts)
+    if opts.encoding=="help" or "help" in opts.encodings:
+        return show_encoding_help(opts)
 
     ################################################################################
     # splash screen:
@@ -572,9 +613,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     except OSError:
         cwd = os.path.expanduser("~")
         warn("current working directory does not exist, using '%s'\n" % cwd)
-    validate_encryption(opts)
-    if opts.encoding=="help" or "help" in opts.encodings:
-        return show_encoding_help(opts)
 
     #remove anything pointing to dbus from the current env
     #(so we only detect a dbus instance started by pam,
@@ -671,40 +709,22 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
                                      matching_display=display_name, query=True)
         session = sessions.get(display_name)
         if session:
-            from xpra.platform.paths import get_xpra_command
-            cmd = get_xpra_command()+["exit"]
             socket_path = session.get("socket-path")
-            if socket_path:
-                cmd += ["socket://%s" % socket_path]
-            else:
-                cmd += [display_name]
-            env = os.environ.copy()
-            #don't wait too long:
-            env["XPRA_CONNECT_TIMEOUT"] = "5"
-            #don't log disconnect message
-            env["XPRA_LOG_DISCONNECT"] = "0"
-            env["XPRA_EXIT_MESSAGE"] = SERVER_UPGRADE
-            try:
-                p = Popen(cmd, env=env)
-                p.wait()
-            except OSError as e:
-                noerr(sys.stderr.write, "Error: failed to 'exit' the server to upgrade\n")
-                noerr(sys.stderr.write, " %s\n" % e)
-            else:
-                if p.poll()==0:
-                    #the server has terminated as we had requested
-                    use_display = True
-                    if upgrading:
-                        starting = True
-                        upgrading = False
-                    else:
-                        starting_desktop = True
-                        upgrading_desktop = False
-                    #but it may need a second to disconnect the clients
-                    #and then close the sockets cleanly
-                    #(so we can re-create them safely)
-                    import time
-                    time.sleep(1)
+            uri = ("socket://%s" % socket_path) if socket_path else display_name
+            if request_exit(uri):
+                #the server has terminated as we had requested
+                use_display = True
+                if upgrading:
+                    starting = True
+                    upgrading = False
+                else:
+                    starting_desktop = True
+                    upgrading_desktop = False
+                #but it may need a second to disconnect the clients
+                #and then close the sockets cleanly
+                #(so we can re-create them safely)
+                import time
+                time.sleep(1)
 
     if not (shadowing or proxying or upgrading or upgrading_desktop) and \
     opts.exit_with_children and not has_child_arg:
@@ -863,27 +883,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     save_session_file("cmdline", "\n".join(cmdline))
     if mode in ("upgrade", "upgrade-desktop"):
         #if we had saved the start / start-desktop config, reload it:
-        options = load_options()
-        if options:
-            upgrade_config = dict_to_validated_config(options)
-            #apply the previous session options:
-            for k in options.keys():
-                if k in CLIENT_ONLY_OPTIONS:
-                    continue
-                if k in SERVER_LOAD_SKIP_OPTIONS:
-                    continue
-                dtype = OPTION_TYPES.get(k)
-                if not dtype:
-                    continue
-                fn = k.replace("-", "_")
-                if not hasattr(upgrade_config, fn):
-                    warn("%s not found in saved config" % k)
-                    continue
-                if not hasattr(opts, fn):
-                    warn("%s not found in config" % k)
-                    continue
-                value = getattr(upgrade_config, fn)
-                setattr(opts, fn, value)
+        apply_config(opts)
     save_options(opts)
 
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
