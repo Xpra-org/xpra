@@ -525,7 +525,7 @@ MODE_TO_NAME = {
     "proxy"             : "Proxy",
     }
 
-def do_run_server(script_file, cmdline, error_cb, opts, mode, extra_args, display_name, defaults):
+def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
         "start", "start-desktop",
         "upgrade", "upgrade-desktop",

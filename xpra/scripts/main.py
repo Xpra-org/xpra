@@ -2300,7 +2300,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
         from xpra.scripts.server import do_run_server
     except ImportError as e:
         error_cb("Xpra server is not installed")
-    return do_run_server(script_file, cmdline, error_cb, options, mode, args, display, defaults)
+    return do_run_server(script_file, cmdline, error_cb, options, args, mode, display, defaults)
 
 
 def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults):
