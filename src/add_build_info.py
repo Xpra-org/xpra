@@ -288,7 +288,7 @@ def get_vcs_props():
         #when in detached state, the one above does not work, but this one does:
         r"git branch --remote --verbose --no-abbrev --contains | sed -rne 's/^[^\/]*\/([^\ ]+).*$/\1/p'",
         #if all else fails:
-        r"git branch | grep '* '",
+        r"git branch | grep '* ' | awk '{print $2}'",
     ):
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         out, _ = proc.communicate()
@@ -296,9 +296,8 @@ def get_vcs_props():
             branch_out = out.decode("utf-8").splitlines()
             if branch_out:
                 branch = branch_out[0]
-                if branch.startswith("* "):
-                    branch = branch[2:]
-                break
+                if branch:
+                    break
     if not branch:
         print("Warning: could not get branch information")
     else:
