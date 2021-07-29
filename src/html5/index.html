@@ -227,6 +227,7 @@
 
 			function confirm_shutdown_server() {
 				if (confirm("Shutdown this server?")) {
+					client.reconnect = false;
 					client.send(["shutdown-server"]);
 				}
 			}
