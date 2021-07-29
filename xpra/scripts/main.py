@@ -2243,64 +2243,75 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
                     noerr(sys.stdout.write, "existing live display found, attaching")
                     return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
-    start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
-    if start_via_proxy is not False and (not POSIX or getuid()!=0) and options.daemon:
-        try:
-            from xpra import client
-            assert client
-        except ImportError as e:
-            if start_via_proxy is True:
-                error_cb("cannot start-via-proxy: xpra client is not installed")
-        else:
-            err = None
-            try:
-                #this will use the client "start-new-session" feature,
-                #to start a new session and connect to it at the same time:
-                if not args:
-                    from xpra.platform.features import SYSTEM_PROXY_SOCKET
-                    args = [SYSTEM_PROXY_SOCKET]
-                app = get_client_app(script_file, cmdline, error_cb, options, args, "request-%s" % mode)
-                r = do_run_client(app)
-                #OK or got a signal:
-                NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
-                if app.completed_startup:
-                    #if we had connected to the session,
-                    #we can ignore more error codes:
-                    NO_RETRY += [
-                        EXIT_CONNECTION_LOST,
-                        EXIT_REMOTE_ERROR,
-                        EXIT_INTERNAL_ERROR,
-                        EXIT_FILE_TOO_BIG,
-                        ]
-                if r in NO_RETRY:
-                    return r
-                if r==EXIT_FAILURE:
-                    err = "unknown general failure"
-                else:
-                    err = EXIT_STR.get(r, r)
-            except Exception as e:
-                log = Logger("proxy")
-                log("failed to start via proxy", exc_info=True)
-                err = str(e)
-            if start_via_proxy is True:
-                raise InitException("failed to start-via-proxy: %s" % (err,))
-            #warn and fall through to regular server start:
-            warn("Warning: cannot use the system proxy for '%s' subcommand," % (mode, ))
-            warn(" %s" % (err,))
-            warn(" more information may be available in your system log")
-            #re-exec itself and disable start-via-proxy:
-            args = cmdline[:]+["--start-via-proxy=no"]
-            #warn("re-running with: %s" % (args,))
-            os.execv(args[0], args)
-            #this code should be unreachable!
-            return 1
+    r = start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode)
+    if isinstance(r, int):
+        return r
+
     try:
         from xpra import server
         assert server
         from xpra.scripts.server import do_run_server
-    except ImportError as e:
+    except ImportError:
         error_cb("Xpra server is not installed")
     return do_run_server(script_file, cmdline, error_cb, options, args, mode, display, defaults)
+
+def start_server_via_proxy(script_file, cmdline, error_cb, options, args, mode):
+    start_via_proxy = parse_bool("start-via-proxy", options.start_via_proxy)
+    if start_via_proxy is False:
+        return
+    if not options.daemon:
+        if start_via_proxy is True:
+            error_cb("cannot start-via-proxy without daemonizing")
+        return
+    if POSIX and getuid()==0:
+        error_cb("cannot start via proxy for root")
+        return
+    try:
+        from xpra import client  #pylint: disable=import-outside-toplevel
+        assert client
+    except ImportError as e:
+        if start_via_proxy is True:
+            error_cb("cannot start-via-proxy: xpra client is not installed")
+        return
+    ################################################################################
+    err = None
+    try:
+        #this will use the client "start-new-session" feature,
+        #to start a new session and connect to it at the same time:
+        if not args:
+            from xpra.platform.features import SYSTEM_PROXY_SOCKET
+            args = [SYSTEM_PROXY_SOCKET]
+        app = get_client_app(script_file, cmdline, error_cb, options, args, "request-%s" % mode)
+        r = do_run_client(app)
+        #OK or got a signal:
+        NO_RETRY = [EXIT_OK] + list(range(128, 128+16))
+        #TODO: honour "--attach=yes"
+        if app.completed_startup:
+            #if we had connected to the session,
+            #we can ignore more error codes:
+            NO_RETRY += [
+                EXIT_CONNECTION_LOST,
+                EXIT_REMOTE_ERROR,
+                EXIT_INTERNAL_ERROR,
+                EXIT_FILE_TOO_BIG,
+                ]
+        if r in NO_RETRY:
+            return r
+        if r==EXIT_FAILURE:
+            err = "unknown general failure"
+        else:
+            err = EXIT_STR.get(r, r)
+    except Exception as e:
+        log = Logger("proxy")
+        log("failed to start via proxy", exc_info=True)
+        err = str(e)
+    if start_via_proxy is True:
+        error_cb("failed to start-via-proxy: %s" % (err,))
+        return
+    #warn and fall through to regular server start:
+    warn("Warning: cannot use the system proxy for '%s' subcommand," % (mode, ))
+    warn(" %s" % (err,))
+    warn(" more information may be available in your system log")
 
 
 def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults):
