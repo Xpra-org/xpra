@@ -107,7 +107,13 @@ class X11ServerBase(X11ServerCore):
             else:
                 from xpra.x11.vfb_util import kill_xvfb
                 kill_xvfb(self.display_pid)
-                self.clean_session_files("xvfb.pid", "xauthority", "Xorg.log", "Xorg.log.old")
+                self.do_clean_session_files(
+                    "xvfb.pid",
+                    "xauthority",
+                    "Xorg.log*",
+                    "xorg.conf.d/*"
+                    "xorg.conf.d"
+                    )
 
 
     def late_cleanup(self):

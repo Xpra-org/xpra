@@ -261,7 +261,7 @@ class AudioServer(StubServerMixin):
                 time.sleep(0.1)
         self.clean_pulseaudio_private_dir()
         if not self.is_child_alive(proc):
-            self.clean_session_files("pulseaudio.pid")
+            self.do_clean_session_files("pulseaudio.pid")
 
     def clean_pulseaudio_private_dir(self):
         if self.pulseaudio_private_dir:

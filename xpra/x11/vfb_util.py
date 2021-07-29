@@ -71,21 +71,13 @@ def osclose(fd):
 def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
     log = get_vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
-    cleanups = []
     if not device_uuid:
-        return cleanups
+        return
 
     def makedir(dirname):
         log("makedir(%s)", dirname)
         os.mkdir(dirname)
         os.lchown(dirname, uid, gid)
-        def cleanup_dir():
-            try:
-                log("cleanup_dir() %s", dirname)
-                os.rmdir(dirname)
-            except Exception as e:
-                log("failed to cleanup %s: %s", dirname, e)
-        cleanups.insert(0, cleanup_dir)
 
     #create conf dir if needed:
     d = xorg_conf_dir
@@ -104,11 +96,6 @@ def create_xorg_device_configs(xorg_conf_dir, device_uuid, uid, gid):
         ) :
         f = save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid)
         conf_files.append(f)
-    def cleanup_input_conf_files():
-        for f in conf_files:
-            os.unlink(f)
-    cleanups.insert(0, cleanup_input_conf_files)
-    return cleanups
 
 #create individual device files:
 def save_input_conf(xorg_conf_dir, i, dev_type, device_uuid, uid, gid):
@@ -163,7 +150,6 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
     if not xvfb_str:
         raise InitException("the 'xvfb' command is not defined")
 
-    cleanups = []
     log = get_vfb_logger()
     log("start_Xvfb%s", (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid))
     use_display_fd = display_name[0]=='S'
@@ -245,7 +231,7 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
             #create uinput device definition files:
             #(we have to assume that Xorg is configured to use this path..)
             xorg_conf_dir = pathexpand(get_Xdummy_confdir())
-            cleanups = create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
+            create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
     xvfb_executable = xvfb_cmd[0]
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
@@ -317,7 +303,7 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
         raise
     log("xvfb process=%s", xvfb)
     log("display_name=%s", display_name)
-    return xvfb, display_name, cleanups
+    return xvfb, display_name
 
 
 def kill_xvfb(xvfb_pid):

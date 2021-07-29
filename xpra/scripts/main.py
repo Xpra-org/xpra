@@ -2294,80 +2294,13 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
             os.execv(args[0], args)
             #this code should be unreachable!
             return 1
-    #show splash screen?
-    progress_cb = None
-    def is_splash_enabled(splash):
-        if splash in (True, False):
-            return splash
-        #auto mode, figure out if we should show it:
-        if not POSIX:
-            return True
-        if options.daemon:
-            #daemon mode would have problems with the pipes
-            return False
-        if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"):
-            #don't show the splash screen over SSH forwarding
-            return False
-        xdisplay = os.environ.get("DISPLAY")
-        if xdisplay:
-            #make sure that the display isn't the one we're running against,
-            #unless we're shadowing it
-            return xdisplay!=display or mode=="shadow"
-        if mode=="proxy":
-            return False
-        if os.environ.get("XDG_SESSION_DESKTOP"):
-            return True
-    if is_splash_enabled(options.splash):
-        # use splash screen to show server startup progress:
-        title = "Xpra %s Server %s" % ({
-            "start"             : "Seamless",
-            "start-desktop"     : "Desktop",
-            "upgrade"           : "Seamless",
-            "upgrade-desktop"   : "Desktop",
-            "shadow"            : "Shadow",
-            "proxy"             : "Proxy",
-            }.get(mode, ""), XPRA_VERSION)
-        progress = make_progress_process(title)
-        def stop_progress_process():
-            if progress.poll() is not None:
-                return
-            try:
-                progress.terminate()
-            except Exception:
-                pass
-        def show_progress(pct, text=""):
-            if progress.poll() is not None:
-                return
-            noerr(progress.stdin.write, ("%i:%s\n" % (pct, text)).encode("latin1"))
-            noerr(progress.stdin.flush)
-            if pct==100:
-                #it should exit on its own, but just in case:
-                from xpra.common import SPLASH_EXIT_DELAY
-                from gi.repository import GLib
-                GLib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
-        progress_cb = show_progress
-        from xpra.scripts.server import add_cleanup
-        add_cleanup(stop_progress_process)
-    try:
-        cwd = os.getcwd()
-    except OSError:
-        os.chdir("/")
-        cwd = "/"
-    desktop_display = nox()
     try:
         from xpra import server
         assert server
-        from xpra.scripts.server import do_run_server, run_cleanups
+        from xpra.scripts.server import do_run_server
     except ImportError as e:
         error_cb("Xpra server is not installed")
-    #add finally hook to ensure we will run the cleanups
-    #even if we exit because of an exception:
-    try:
-        return do_run_server(script_file, cmdline, error_cb, options, mode, script_file, args, defaults, desktop_display, progress_cb)
-    finally:
-        run_cleanups()
-        import gc
-        gc.collect()
+    return do_run_server(script_file, cmdline, error_cb, options, mode, args, display, defaults)
 
 
 def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults):

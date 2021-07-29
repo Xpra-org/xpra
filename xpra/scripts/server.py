@@ -12,18 +12,18 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
 import sys
+import glob
 import os.path
-import atexit
 import datetime
-import traceback
 from subprocess import Popen  #pylint: disable=import-outside-toplevel
 
 from xpra import __version__
 from xpra.scripts.main import (
     info, warn,
-    no_gtk, bypass_no_gtk,
+    no_gtk, bypass_no_gtk, nox,
     validate_encryption, parse_env, configure_env,
     stat_X11_display, get_xpra_sessions,
+    make_progress_process,
     )
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
@@ -55,25 +55,8 @@ IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 
 
-_cleanups = []
-def run_cleanups():
-    global _cleanups
-    cleanups = _cleanups
-    _cleanups = []
-    for c in cleanups:
-        try:
-            c()
-        except Exception:
-            print("error running cleanup %s" % c)
-            traceback.print_exception(*sys.exc_info())
-
-def add_cleanup(f):
-    _cleanups.append(f)
-
-
 def deadly_signal(signum):
     info("got deadly signal %s, exiting\n" % SIGNAMES.get(signum, signum))
-    run_cleanups()
     # This works fine in tests, but for some reason if I use it here, then I
     # get bizarre behavior where the signal handler runs, and then I get a
     # KeyboardException (?!?), and the KeyboardException is handled normally
@@ -82,6 +65,8 @@ def deadly_signal(signum):
     #kill(os.getpid(), signum)
     force_quit(128 + signum)
 
+def noop(*args):
+    pass
 
 
 def validate_pixel_depth(pixel_depth, starting_desktop=False):
@@ -404,7 +389,9 @@ def clean_session_files(*filenames):
         return
     for filename in filenames:
         path = session_file_path(filename)
-        if os.path.exists(path):
+        if path.find("*")>=0:
+            clean_session_files(*glob.glob(path))
+        elif os.path.exists(path):
             try:
                 os.unlink(path)
             except OSError as e:
@@ -506,17 +493,78 @@ def reload_dbus_attributes(display_name):
     return dbus_pid, dbus_env
 
 
-def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_args, defaults, desktop_display=None, progress_cb=None):
+def is_splash_enabled(mode, daemon, splash, display):
+    if daemon:
+        #daemon mode would have problems with the pipes
+        return False
+    if splash in (True, False):
+        return splash
+    #auto mode, figure out if we should show it:
+    if not POSIX:
+        return True
+    if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"):
+        #don't show the splash screen over SSH forwarding
+        return False
+    xdisplay = os.environ.get("DISPLAY")
+    if xdisplay:
+        #make sure that the display isn't the one we're running against,
+        #unless we're shadowing it
+        return xdisplay!=display or mode=="shadow"
+    if mode=="proxy":
+        return False
+    if os.environ.get("XDG_SESSION_DESKTOP"):
+        return True
+    return False
+
+MODE_TO_NAME = {
+    "start"             : "Seamless",
+    "start-desktop"     : "Desktop",
+    "upgrade"           : "Seamless",
+    "upgrade-desktop"   : "Desktop",
+    "shadow"            : "Shadow",
+    "proxy"             : "Proxy",
+    }
+
+def do_run_server(script_file, cmdline, error_cb, opts, mode, extra_args, display_name, defaults):
     assert mode in (
         "start", "start-desktop",
         "upgrade", "upgrade-desktop",
         "shadow", "proxy",
         )
 
-    def _progress(i, msg):
-        if progress_cb:
-            progress_cb(i, msg)
-    progress = _progress
+    try:
+        cwd = os.getcwd()
+    except OSError:
+        os.chdir("/")
+        cwd = "/"
+    desktop_display = nox()
+
+    ################################################################################
+    # splash screen:
+    splash_process = None
+    progress = noop
+    if is_splash_enabled(mode, opts.daemon, opts.splash, display_name):
+        # use splash screen to show server startup progress:
+        title = "Xpra %s Server %s" % (MODE_TO_NAME.get(mode, ""), __version__)
+        splash_process = make_progress_process(title)
+        def stop_progress_process():
+            if splash_process.poll() is not None:
+                return
+            try:
+                splash_process.terminate()
+            except Exception:
+                pass
+        def show_progress(pct, text=""):
+            if splash_process.poll() is not None:
+                return
+            noerr(splash_process.stdin.write, ("%i:%s\n" % (pct, text)).encode("latin1"))
+            noerr(splash_process.stdin.flush)
+            if pct==100:
+                #it should exit on its own, but just in case:
+                from xpra.common import SPLASH_EXIT_DELAY
+                from gi.repository import GLib
+                GLib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
+        progress = show_progress
 
     progress(10, "initializing environment")
     try:
@@ -662,8 +710,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
     opts.exit_with_children and not has_child_arg:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
-    atexit.register(run_cleanups)
-
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     from xpra.server.server_util import (
@@ -683,7 +729,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         for k,v in oenv.items():
             env[k.encode("utf8")] = v.encode("utf8")
         env_script = xpra_env_shell_script(opts.socket_dir, env)
-        run_xpra_script = env_script + xpra_runner_shell_script(xpra_file, cwd)
+        run_xpra_script = env_script + xpra_runner_shell_script(script_file, cwd)
 
     uid = int(opts.uid)
     gid = int(opts.gid)
@@ -754,7 +800,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
                     #we can't close it, because we're not going to be root any more,
                     #but since we're the process leader for the session,
                     #terminating will also close the session
-                    #add_cleanup(pam.close)
+                    #atexit.register(pam.close)
                     protected_env = pam.get_envlist()
                     os.environ.update(protected_env)
         #closing the pam fd causes the session to be closed,
@@ -1007,10 +1053,8 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
             except Exception:
                 pass
 
-            xvfb, display_name, cleanups = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
+            xvfb, display_name = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
                                                       uid, gid, username, uinput_uuid)
-            for f in cleanups:
-                add_cleanup(f)
             xauth_add(xauthority, display_name, xauth_data, uid, gid)
             xvfb_pid = xvfb.pid
             xvfb_pidfile = save_session_file("xvfb.pid", "%s" % xvfb.pid)
@@ -1225,6 +1269,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, mode, xpra_file, extra_a
         app.cleanup()
 
     try:
+        app.splash_process = splash_process
         app.exec_cwd = opts.chdir or cwd
         app.display_name = display_name
         app.init(opts)

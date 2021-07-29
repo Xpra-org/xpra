@@ -88,7 +88,7 @@ def get_Xdummy_confdir():
     from xpra.platform.xposix.paths import get_runtime_dir
     xrd = get_runtime_dir()
     if xrd:
-        base = "${XDG_RUNTIME_DIR}/xpra"
+        base = "${XPRA_SESSION_DIR}"
     else:   # pragma: no cover
         base = "${HOME}/.xpra"
     return base+"/xorg.conf.d/$PID"

@@ -186,6 +186,8 @@ class ServerCore:
         self.exec_cwd = os.getcwd()
         self.pidfile = None
         self.pidinode = 0
+        self.session_files = ["cmdline", "server.env", "config", "server.log*"]
+        self.splash_process = None
 
         self.session_name = ""
 
@@ -413,6 +415,7 @@ class ServerCore:
         self.idle_add(self.reset_server_timeout)
         self.idle_add(self.server_is_ready)
         self.idle_add(self.print_run_info)
+        self.stop_splash_process()
         self.do_run()
         log("run()")
         return 0
@@ -425,6 +428,7 @@ class ServerCore:
         raise NotImplementedError()
 
     def cleanup(self):
+        self.stop_splash_process()
         self.stop_tcp_proxy_clients()
         self.cancel_touch_timer()
         self.mdns_cleanup()
@@ -448,12 +452,24 @@ class ServerCore:
             netlog("cleanup removing pidfile %s", self.pidfile)
             self.pidinode = rm_pidfile(self.pidfile, self.pidinode)
         if not self._upgrading:
-            self.clean_session_files("cmdline", "server.env", "config", "server.log", "server.log.new")
+            self.clean_session_files()
             rm_session_dir()
 
-    def clean_session_files(self, *filenames):
-        log("clean_session_files%s", filenames)
+    def clean_session_files(self):
+        self.do_clean_session_files(*self.session_files)
+
+    def do_clean_session_files(self, *filenames):
+        log("do_clean_session_files%s", filenames)
         clean_session_files(*filenames)
+
+    def stop_splash_process(self):
+        sp = self.splash_process
+        if sp:
+            self.splash_process = None
+            try:
+                sp.terminate()
+            except OSError:
+                log("stop_splash_process()", exc_info=True)
 
 
     def cleanup_menu_provider(self):
@@ -492,7 +508,7 @@ class ServerCore:
             return
         try:
             os.kill(self.dbus_pid, signal.SIGINT)
-            self.clean_session_files("dbus.pid", "dbus.env")
+            self.do_clean_session_files("dbus.pid", "dbus.env")
         except ProcessLookupError as e:
             dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
             dbuslog.warn("Warning: dbus process not found (pid=%i)", self.dbus_pid)
