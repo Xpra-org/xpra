@@ -205,6 +205,9 @@ def load_xdg_entry(de):
             command = de.getTryExec()
     else:
         command = de.getExec()
+    if not command:
+        #this command is not executable!
+        return None
     props["command"] = command
     icondata = props.get("IconData")
     if not icondata:
