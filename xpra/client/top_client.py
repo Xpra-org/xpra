@@ -685,7 +685,7 @@ class TopSessionClient(MonitorXpraClient):
             bavg,
             )
         #client latency:
-        pl = self.slidictget("connection", "client", "ping_latency")
+        pl = self.dictget(ci, "connection", "client", "ping_latency")
         lcur = pl.intget("cur")
         lavg = pl.intget("avg")
         lmin = pl.intget("min")
