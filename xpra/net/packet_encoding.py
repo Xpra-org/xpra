@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from collections import namedtuple
+from threading import Lock
 
 from xpra.log import Logger
 from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER
@@ -23,8 +24,10 @@ ENCODERS = {}
 
 def init_rencode():
     from rencode import dumps, loads, __version__
+    rencode_lock = Lock()
     def do_rencode(v):
-        return dumps(v), FLAGS_RENCODE
+        with rencode_lock:
+            return dumps(v), FLAGS_RENCODE
     return Encoding("rencode", FLAGS_RENCODE, __version__, do_rencode, loads)
 
 def init_bencode():
