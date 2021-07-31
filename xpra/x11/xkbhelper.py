@@ -724,7 +724,7 @@ def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
         if modifier:
             keynames = matches.setdefault(modifier, [])
             if keyname not in keynames:
-                keynames.add(keyname)
+                keynames.append(keyname)
             all_keynames.add(keyname)
     if add_default_modifiers:
         #try to add missings ones (magic!)
