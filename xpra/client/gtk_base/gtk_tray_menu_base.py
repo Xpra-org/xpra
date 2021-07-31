@@ -52,6 +52,13 @@ START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 
 
+def s(v):
+    try:
+        return v.decode("utf-8")
+    except AttributeError:
+        return str(v)
+
+
 def get_bandwidth_menu_options():
     options = []
     for x in os.environ.get("XPRA_BANDWIDTH_MENU_OPTIONS", "1,2,5,10,20,50,100").split(","):
@@ -1619,14 +1626,14 @@ class GTKTrayMenuBase(object):
             if not entries:
                 continue
             icondata = category_props.get(b"IconData")
-            category_menu_item = self.start_menuitem(category.decode("utf-8"), icondata)
+            category_menu_item = self.start_menuitem(s(category), icondata)
             cat_menu = gtk.Menu()
             category_menu_item.set_submenu(cat_menu)
             self.popup_menu_workaround(cat_menu)
             menu.append(category_menu_item)
             for app_name, command_props in sorted(entries.items()):
                 log("build_start_menu() app_name=%s", app_name)
-                app_menu_item = self.make_applaunch_menu_item(app_name, command_props)
+                app_menu_item = self.make_applaunch_menu_item(s(app_name), command_props)
                 cat_menu.append(app_menu_item)
         menu.show_all()
         return menu
@@ -1680,7 +1687,7 @@ class GTKTrayMenuBase(object):
 
     def make_applaunch_menu_item(self, app_name, command_props):
         icondata = command_props.get(b"IconData")
-        app_menu_item = self.start_menuitem(app_name.decode("utf-8"), icondata)
+        app_menu_item = self.start_menuitem(app_name, icondata)
         def app_launch(*args):
             log("app_launch(%s) command_props=%s", args, command_props)
             command = command_props.get(b"command")

@@ -345,7 +345,7 @@ class WindowBackingBase(object):
                                 (rowstride * height, width, height, rowstride, len(img_data), len(raw_data)))
         delta = options.intget(b"delta", -1)
         bucket = options.intget(b"bucket", 0)
-        rgb_format = options.strget(b"rgb_format")
+        rgb_format = options.strget("rgb_format")
         rgb_data = img_data
         if delta>=0:
             assert 0<=bucket<DELTA_BUCKETS, "invalid delta bucket number: %s" % bucket
@@ -410,7 +410,8 @@ class WindowBackingBase(object):
             data = img.get_pixels()
             stride = img.get_rowstride()
         #replace with the actual rgb format we get from the decoder:
-        options[b"rgb_format"] = rgb_format
+        options.pop(b"rgb_format", None)
+        options["rgb_format"] = rgb_format
         return self.paint_rgb(rgb_format, data, x, y, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format, raw_data, x, y, width, height, rowstride, options, callbacks):
@@ -437,7 +438,8 @@ class WindowBackingBase(object):
             bpp = len(rgb_format)*8
             assert bpp in (24, 32), "invalid rgb format '%s'" % rgb_format
             paint_fn = getattr(self, "_do_paint_rgb%i" % bpp)
-            options[b"rgb_format"] = rgb_format
+            options.pop(b"rgb_format", None)
+            options["rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except Exception as e:
@@ -651,7 +653,7 @@ class WindowBackingBase(object):
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, *img_data)
-        rgb_format = options.strget(b"rgb_format", b"RGB")
+        rgb_format = options.strget("rgb_format", b"RGB")
         #Note: BGR(A) is only handled by gl_window_backing
         x, y = self.gravity_adjust(x, y, options)
         self.do_paint_rgb(rgb_format, data, x, y, width, height, rowstride, options, callbacks)
@@ -688,7 +690,7 @@ class WindowBackingBase(object):
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
                 #avoid confusion over how many bytes-per-pixel we may have:
-                rgb_format = options.strget(b"rgb_format")
+                rgb_format = options.strget("rgb_format")
                 if not rgb_format:
                     rgb_format = {
                         "rgb24" : "RGB",
