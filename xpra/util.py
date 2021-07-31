@@ -653,6 +653,8 @@ def repr_ellipsized(obj, limit=100):
         if len(obj)>limit>6:
             return obj[:limit//2-2]+" .. "+obj[2-limit//2:]
         return obj
+    if isinstance(obj, memoryview):
+        obj = obj.tobytes()
     if isinstance(obj, bytes):
         try:
             s = repr(obj)
