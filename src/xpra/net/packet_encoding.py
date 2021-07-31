@@ -22,10 +22,15 @@ has_rencode = None
 rencode_dumps, rencode_loads, rencode_version = None, None, None
 def init_rencode():
     global use_rencode, has_rencode, rencode_dumps, rencode_loads, rencode_version
+    from threading import Lock
+    rencode_lock = Lock()
     try:
         from rencode import dumps, loads, __version__
         rencode_dumps = dumps
-        rencode_loads = loads
+        def _rencode_loads(v):
+            with rencode_lock:
+                return loads(v)
+        rencode_loads = _rencode_loads
         rencode_version = __version__
     except ImportError as e:
         log("init_rencode()", exc_info=True)
