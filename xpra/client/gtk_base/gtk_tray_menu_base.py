@@ -72,6 +72,13 @@ CLIPBOARD_DIRECTION_LABEL_TO_NAME = {
 CLIPBOARD_DIRECTION_NAME_TO_LABEL = reverse_dict(CLIPBOARD_DIRECTION_LABEL_TO_NAME)
 
 
+def s(v):
+    try:
+        return v.decode("utf-8")
+    except AttributeError:
+        return str(v)
+
+
 class GTKTrayMenuBase(MenuHelper):
 
     def setup_menu(self):
@@ -1368,7 +1375,7 @@ class GTKTrayMenuBase(MenuHelper):
         execlog("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
         execlog("self.client.server_xdg_menu=%s", ellipsizer(self.client.server_xdg_menu))
         for cat, category_props in sorted(self.client.server_xdg_menu.items()):
-            category = cat.decode("utf-8")
+            category = s(cat)
             execlog(" * category: %s", category)
             #log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):
@@ -1386,7 +1393,7 @@ class GTKTrayMenuBase(MenuHelper):
             category_menu_item.set_submenu(cat_menu)
             menu.append(category_menu_item)
             for an, cp in sorted(entries.items()):
-                app_name = an.decode("utf-8")
+                app_name = s(an)
                 command_props = typedict(cp)
                 execlog("  - app_name=%s", app_name)
                 app_menu_item = self.make_applaunch_menu_item(app_name, command_props)

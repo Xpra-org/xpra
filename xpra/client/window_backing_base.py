@@ -395,7 +395,8 @@ class WindowBackingBase:
             data = img.get_pixels()
             stride = img.get_rowstride()
         #replace with the actual rgb format we get from the decoder:
-        options[b"rgb_format"] = rgb_format
+        options.pop(b"rgb_format", None)
+        options["rgb_format"] = rgb_format
         self.idle_add(self.do_paint_rgb, rgb_format, data,
                                  x, y, iwidth, iheight, width, height, stride, options, callbacks)
 
@@ -442,7 +443,8 @@ class WindowBackingBase:
                 paint_fn = self._do_paint_rgb32
             else:
                 raise Exception("invalid rgb format '%s'" % rgb_format)
-            options[b"rgb_format"] = rgb_format
+            options.pop(b"rgb_format", None)
+            options["rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
             fire_paint_callbacks(callbacks, success)
         except Exception as e:
@@ -671,7 +673,7 @@ class WindowBackingBase:
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, *img_data)
-        rgb_format = options.strget(b"rgb_format", b"RGB")
+        rgb_format = options.strget("rgb_format", "RGB")
         #Note: BGR(A) is only handled by gl_window_backing
         x, y = self.gravity_adjust(x, y, options)
         self.do_paint_rgb(rgb_format, data, x, y, width, height, width, height, rowstride, options, callbacks)
@@ -695,7 +697,7 @@ class WindowBackingBase:
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
                 #avoid confusion over how many bytes-per-pixel we may have:
-                rgb_format = options.strget(b"rgb_format")
+                rgb_format = options.strget("rgb_format")
                 if not rgb_format:
                     rgb_format = {
                         "rgb24" : "RGB",

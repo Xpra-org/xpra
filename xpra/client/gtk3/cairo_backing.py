@@ -57,7 +57,7 @@ class CairoBacking(CairoBackingBase):
             FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
             type(img_data), x, y, width, height, render_width, render_height,
             rowstride, options, set_image_surface_data, CAIRO_USE_PIXBUF)
-        rgb_format = options.strget(b"rgb_format", "RGB")
+        rgb_format = options.strget("rgb_format", "RGB")
         if set_image_surface_data and not CAIRO_USE_PIXBUF:
             rgb_formats = CAIRO_FORMATS.get(cairo_format)
             if rgb_format in rgb_formats:
