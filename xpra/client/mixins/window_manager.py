@@ -460,7 +460,9 @@ class WindowClient(StubClientMixin):
             if len(packet)<9:
                 raise Exception("invalid cursor packet: %s items" % len(packet))
             encoding = packet[1]
-            if not isinstance(encoding, bytes):
+            if isinstance(encoding, bytes):
+                encoding = encoding.decode("latin1")
+            if not isinstance(encoding, str):
                 log.warn("Warning: received an invalid cursor packet:")
                 tmp_packet = list(packet)
                 try:
@@ -474,7 +476,7 @@ class WindowClient(StubClientMixin):
             #trim packet-type:
             new_cursor = packet[1:]
             pixels = new_cursor[8]
-            if encoding==b"png":
+            if encoding=="png":
                 if SAVE_CURSORS:
                     serial = new_cursor[7]
                     with open("raw-cursor-%#x.png" % serial, 'wb') as f:
@@ -483,8 +485,8 @@ class WindowClient(StubClientMixin):
                 img = open_only(pixels, ("png",))
                 new_cursor[8] = img.tobytes("raw", "BGRA")
                 cursorlog("used PIL to convert png cursor to raw")
-                new_cursor[0] = b"raw"
-            elif encoding!=b"raw":
+                new_cursor[0] = "raw"
+            elif encoding!="raw":
                 cursorlog.warn("Warning: invalid cursor encoding: %s", encoding)
                 return
         self.set_windows_cursor(self._id_to_window.values(), new_cursor)
