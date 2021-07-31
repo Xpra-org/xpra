@@ -1420,6 +1420,8 @@ class ServerCore(object):
         for k,v in headers.items():
             handler.send_header(k, v)
         handler.end_headers()
+        if isinstance(content, str):
+            content = content.encode("latin1")
         return content
 
 
