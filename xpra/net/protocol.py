@@ -998,7 +998,7 @@ class Protocol:
                 except InvalidPacketEncodingException as e:
                     self.invalid("invalid packet encoding: %s" % e, data)
                     return
-                except ValueError as e:
+                except (ValueError, TypeError) as e:
                     etype = packet_encoding.get_packet_encoding_type(protocol_flags)
                     log.error("Error parsing %s packet:", etype)
                     log.error(" %s", e)
@@ -1006,8 +1006,10 @@ class Protocol:
                         return
                     log("failed to parse %s packet: %s", etype, hexstr(data[:128]))
                     log(" %s", e)
-                    log(" data: %s", repr_ellipsized(data))
+                    data_str = memoryview_to_bytes(data)
+                    log(" data: %s", repr_ellipsized(data_str))
                     log(" packet index=%i, packet size=%i, buffer size=%s", packet_index, payload_size, bl)
+                    log(" full data: %s", hexstr(data_str))
                     self.gibberish("failed to parse %s packet" % etype, data)
                     return
 
