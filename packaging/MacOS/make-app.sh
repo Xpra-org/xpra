@@ -18,7 +18,7 @@ BUILDNO="${BUILDNO:="0"}"
 APP_DIR="./image/Xpra.app"
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	APP_DIR="./image/Xpra-Client.app"
-	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy --without-html5"
+	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy"
 	DO_TESTS="0"
 else
 	if [ ! -e "${JHBUILD_PREFIX}/share/xpra/www/" ]; then
