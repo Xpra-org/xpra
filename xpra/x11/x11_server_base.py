@@ -288,14 +288,14 @@ class X11ServerBase(X11ServerCore):
         #almost like update_all, except we use the default_dpi,
         #since this is called before the first client connects
         self.do_update_server_settings({
-            b"resource-manager"  : b"",
-            b"xsettings-blob"    : (0, [])
+            "resource-manager"  : b"",
+            "xsettings-blob"    : (0, [])
             }, reset = True, dpi = self.default_dpi, cursor_size=24)
 
     def update_all_server_settings(self, reset=False):
         self.update_server_settings({
-            b"resource-manager"  : b"",
-            b"xsettings-blob"    : (0, []),
+            "resource-manager"  : b"",
+            "xsettings-blob"    : (0, []),
             }, reset=reset)
 
     def update_server_settings(self, settings=None, reset=False):
@@ -325,10 +325,12 @@ class X11ServerBase(X11ServerCore):
         log("overrides: dpi=%s, double click time=%s, double click distance=%s",
             dpi, double_click_time, double_click_distance)
         log("overrides: antialias=%s", antialias)
+        #older versions may send keys as "bytes":
+        settings = dict((bytestostr(k), v) for k,v in settings.items())
         self._settings.update(settings)
         for k, v in settings.items():
             #cook the "resource-manager" value to add the DPI and/or antialias values:
-            if k==b"resource-manager" and (dpi>0 or antialias or cursor_size>0):
+            if k=="resource-manager" and (dpi>0 or antialias or cursor_size>0):
                 value = bytestostr(v)
                 #parse the resources into a dict:
                 values={}
@@ -373,12 +375,12 @@ class X11ServerBase(X11ServerCore):
                 for vk, vv in values.items():
                     value += "%s:\t%s\n" % (vk, vv)
                 #record the actual value used
-                self._settings[b"resource-manager"] = value
+                self._settings["resource-manager"] = value
                 v = value.encode("utf-8")
 
             #cook xsettings to add various settings:
             #(as those may not be present in xsettings on some platforms.. like win32 and osx)
-            if k==b"xsettings-blob" and \
+            if k=="xsettings-blob" and \
             (self.double_click_time>0 or self.double_click_distance!=(-1, -1) or antialias or dpi>0):
                 #start by removing blacklisted options:
                 def filter_blacklisted():
@@ -424,9 +426,9 @@ class X11ServerBase(X11ServerCore):
                         log.warn("error setting double click distance from %s: %s", double_click_distance, e)
 
             if k not in old_settings or v != old_settings[k]:
-                if k == b"xsettings-blob":
+                if k == "xsettings-blob":
                     self.set_xsettings(v)
-                elif k == b"resource-manager":
+                elif k == "resource-manager":
                     from xpra.x11.gtk_x11.prop import prop_set
                     p = "RESOURCE_MANAGER"
                     log("server_settings: setting %s to %r", p, v)
