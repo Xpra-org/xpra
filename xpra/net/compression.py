@@ -76,7 +76,7 @@ def init_brotli():
 def init_zlib():
     import zlib
     def zlib_compress(packet, level):
-        level = max(1, level//2)
+        level = min(9, max(1, level))
         if isinstance(packet, memoryview):
             packet = packet.tobytes()
         elif not isinstance(packet, bytes):

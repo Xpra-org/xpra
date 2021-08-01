@@ -339,7 +339,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._protocol = protocol
         for x in (b"keymap-changed", b"server-settings", b"logging", b"input-devices"):
             protocol.large_packets.append(x)
-        protocol.set_compression_level(self.compression_level)
+        protocol.set_compression_level(10)
         protocol.receive_aliases.update(self._aliases)
         protocol.enable_default_encoder()
         protocol.enable_default_compressor()
@@ -943,6 +943,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p = self._protocol
         if not p or not p.enable_encoder_from_caps(caps):
             return False
+        p.set_compression_level(self.compression_level)
         p.enable_compressor_from_caps(caps)
         p.accept()
         p.parse_remote_caps(caps)
