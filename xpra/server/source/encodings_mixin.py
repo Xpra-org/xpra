@@ -15,7 +15,7 @@ from xpra.server.server_core import ClientException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net.compression import use
-from xpra.os_util import monotonic_time, strtobytes
+from xpra.os_util import monotonic_time, bytestostr
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, typedict, envint
 from xpra.log import Logger
@@ -309,18 +309,18 @@ class EncodingsMixin(StubSourceMixin):
         #2: standardized encoding options:
         for k in c.keys():
             #yaml gives us str..
-            k = strtobytes(k)
-            if k.startswith(b"theme.") or k.startswith(b"encoding.icons."):
-                self.icons_encoding_options[k.replace(b"encoding.icons.", b"").replace(b"theme.", b"")] = c.get(k)
-            elif k.startswith(b"encoding."):
-                stripped_k = k[len(b"encoding."):]
-                if stripped_k in (b"transparency",
-                                  b"rgb_zlib", b"rgb_lz4", b"rgb_lzo",
+            k = bytestostr(k)
+            if k.startswith("theme.") or k.startswith("encoding.icons."):
+                self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)
+            elif k.startswith("encoding."):
+                stripped_k = k[len("encoding."):]
+                if stripped_k in ("transparency",
+                                  "rgb_zlib", "rgb_lz4", "rgb_lzo",
                                   ):
                     v = c.boolget(k)
-                elif stripped_k in (b"initial_quality", b"initial_speed",
-                                    b"min-quality", b"quality",
-                                    b"min-speed", b"speed"):
+                elif stripped_k in ("initial_quality", "initial_speed",
+                                    "min-quality", "quality",
+                                    "min-speed", "speed"):
                     v = c.intget(k)
                 else:
                     v = c.get(k)
