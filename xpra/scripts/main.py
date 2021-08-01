@@ -2412,7 +2412,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
             except ValueError:
                 raise InitException("URI not found in command line arguments") from None
             args[uri_pos] = uri
-        os.execv(args[0], args)
+        os.execv(script_file, args)
     return r
 
 
