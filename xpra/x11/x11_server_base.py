@@ -255,9 +255,8 @@ class X11ServerBase(X11ServerCore):
         screenlog("set_icc_profile() icc data for %s: %s (%i bytes)",
                   ui_clients[0], hexstr(data or ""), len(data or ""))
         self.icc_profile = data
-        from xpra.x11.gtk_x11.prop import prop_set
-        prop_set(self.root_window, "_ICC_PROFILE", ["u32"], [ord(x) for x in data])
-        prop_set(self.root_window, "_ICC_PROFILE_IN_X_VERSION", "u32", 0*100+4) #0.4 -> 0*100+4*1
+        root_prop_set("_ICC_PROFILE", ["u32"], [ord(x) for x in data])
+        root_prop_set("_ICC_PROFILE_IN_X_VERSION", "u32", 0*100+4) #0.4 -> 0*100+4*1
 
     def reset_icc_profile(self):
         screenlog("reset_icc_profile()")
@@ -429,9 +428,8 @@ class X11ServerBase(X11ServerCore):
                 if k == "xsettings-blob":
                     self.set_xsettings(v)
                 elif k == "resource-manager":
-                    from xpra.x11.gtk_x11.prop import prop_set
                     p = "RESOURCE_MANAGER"
                     log("server_settings: setting %s to %r", p, v)
-                    prop_set(self.root_window, p, "latin1", strtobytes(v).decode("latin1"))
+                    root_prop_set(p, "latin1", strtobytes(v).decode("latin1"))
                 else:
                     log.warn("Warning: unexpected setting '%s'", bytestostr(k))
