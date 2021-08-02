@@ -127,7 +127,6 @@ class DotXpra:
     def displays(self, check_uid=0, matching_state=None):
         return list(set(v[1] for v in self.sockets(check_uid, matching_state)))
 
-    #this is imported by winswitch, so we can't change the method signature
     def sockets(self, check_uid=0, matching_state=None):
         #flatten the dictionnary into a list:
         return list(set((v[0], v[1]) for details_values in

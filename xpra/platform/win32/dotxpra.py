@@ -60,7 +60,6 @@ class DotXpra:
     def socket_paths(self, check_uid=0, matching_state=None, matching_display=None):
         return self.get_all_namedpipes().values()
 
-    #this is imported by winswitch, so we can't change the method signature
     def sockets(self, check_uid=0, matching_state=None):
         #flatten the dictionnary into a list:
         return self.get_all_namedpipes().items()
