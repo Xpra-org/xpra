@@ -404,7 +404,7 @@ XpraProtocol.prototype.process_send_queue = function() {
 		var payload_size = bdata.length;
 		// encryption
 		if(this.cipher_out) {
-			proto_flags = 0x2;
+			proto_flags |= 0x2;
 			var padding_size = this.cipher_out_block_size - (payload_size % this.cipher_out_block_size);
 			for (var i = padding_size - 1; i >= 0; i--) {
 				bdata += String.fromCharCode(padding_size);
