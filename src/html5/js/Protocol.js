@@ -319,7 +319,7 @@ XpraProtocol.prototype.do_process_receive_queue = function() {
 			var inflated = new Uint8Array(length);
 			var uncompressedSize = LZ4.decodeBlock(packet_data, inflated, 4);
 			// if lz4 errors out at the end of the buffer, ignore it:
-			if (uncompressedSize<=0 && packet_size+uncompressedSize!=0) {
+			if (uncompressedSize<=0 && packet_data.length+uncompressedSize!=0) {
 				this.protocol_error("failed to decompress lz4 data, error code: "+uncompressedSize);
 				return false;
 			}

@@ -1066,15 +1066,13 @@ XpraClient.prototype._make_hello_base = function() {
 			"connection-data"	: ci,
 		})
 	}
-        if (!this.encryption) {
-		var LZ4 = require('lz4');
-		if(LZ4) {
-			this._update_capabilities({
-				"lz4"						: true,
-				"lz4.js.version"			: LZ4.version,
-				"encoding.rgb_lz4"			: true,
-			});
-		}
+	var LZ4 = require('lz4');
+	if(LZ4) {
+		this._update_capabilities({
+			"lz4"						: true,
+			"lz4.js.version"			: LZ4.version,
+			"encoding.rgb_lz4"			: true,
+		});
 	}
 
 	if(typeof BrotliDecode != "undefined" && !Utilities.isIE()) {
