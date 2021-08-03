@@ -144,7 +144,6 @@ Requires:			xpra-common = %{version}-%{release}
 Requires:			python3
 Requires:			python3-lz4
 Requires:			python3-pillow
-Requires:			python3-rencode
 Requires:			python3-numpy
 Requires:			libyuv
 Requires:			libvpx
@@ -157,6 +156,7 @@ Requires:			ffmpeg-xpra
 Requires:			turbojpeg
 Requires:			python3-cryptography
 Requires:			python3-gobject
+Recommends:			python3-rencode
 Recommends:			python3-inotify
 Recommends:			python3-netifaces
 Recommends:			python3-dbus

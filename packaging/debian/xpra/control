@@ -48,8 +48,6 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-numpy
 # for PNG and JPEG support:
         ,python3-pil
-# packet encoder:
-        ,python3-rencode
 # packet compression:
         ,python3-lz4
 # clipboard packet compression:
@@ -65,6 +63,8 @@ Recommends: python3-dbus
         ,xpra-html5
 # for the proxy server:
         ,python3-setproctitle
+# packet encoder:
+        ,python3-rencode
 #not available?
         ,python3-zeroconf
         ,python3-netifaces
