@@ -389,7 +389,7 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_encoder(self, encoder):
         e = encoder.lower()
         from xpra.net import packet_encoding
-        opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, bencode, yaml]
+        opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, rencodeplus, bencode, yaml]
         if e not in opts:
             raise ControlError("encoder argument must be one of: %s" % csv(opts))
         for cproto in tuple(self._server_sources.keys()):

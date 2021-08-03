@@ -164,6 +164,7 @@ netdev_ENABLED          = LINUX and DEFAULT
 vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
+rencodeplus_ENABLED     = DEFAULT
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  #None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  #None means auto-detect
@@ -225,7 +226,8 @@ SWITCHES = [
     "v4l2",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
-    "bencode", "cython_bencode", "vsock", "netdev", "mdns",
+    "bencode", "cython_bencode", "rencodeplus",
+    "vsock", "netdev", "mdns",
     "clipboard",
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
@@ -310,7 +312,7 @@ if "clean" not in sys.argv:
         vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = False
         webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
         server_ENABLED = client_ENABLED = shadow_ENABLED = False
-        cython_bencode_ENABLED = False
+        cython_bencode_ENABLED = rencodeplus_ENABLED = False
         gtk3_ENABLED = False
         x11_ENABLED = False
     #sanity check the flags:
@@ -931,6 +933,7 @@ def clean():
                    "xpra/platform/xposix/sd_listen.c",
                    "xpra/platform/xposix/netdev_query.c",
                    "xpra/net/bencode/cython_bencode.c",
+                   "xpra/net/rencodeplus/rencodeplus.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
                    "xpra/buffers/xxh.c",
@@ -2322,6 +2325,13 @@ if cython_bencode_ENABLED:
     add_cython_ext("xpra.net.bencode.cython_bencode",
                 ["xpra/net/bencode/cython_bencode.pyx"],
                 **bencode_pkgconfig)
+
+toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
+if rencodeplus_ENABLED:
+    rencodeplus_pkgconfig = pkgconfig(optimize=3)
+    add_cython_ext("xpra.net.rencodeplus.rencodeplus",
+                ["xpra/net/rencodeplus/rencodeplus.pyx"],
+                **rencodeplus_pkgconfig)
 
 if netdev_ENABLED:
     netdev_pkgconfig = pkgconfig()

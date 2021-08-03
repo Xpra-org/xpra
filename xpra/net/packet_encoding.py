@@ -9,13 +9,13 @@ from collections import namedtuple
 from threading import Lock
 
 from xpra.log import Logger
-from xpra.net.header import FLAGS_RENCODE, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER
+from xpra.net.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER
 from xpra.util import envbool
 
 #all the encoders we know about, in best compatibility order:
-ALL_ENCODERS = ("rencode", "bencode", "yaml", "none")
+ALL_ENCODERS = ("rencodeplus", "rencode", "bencode", "yaml", "none")
 #order for performance:
-PERFORMANCE_ORDER = ("rencode", "bencode", "yaml")
+PERFORMANCE_ORDER = ("rencodeplus", "rencode", "bencode", "yaml")
 
 Encoding = namedtuple("Encoding", ["name", "flag", "version", "encode", "decode"])
 
@@ -29,6 +29,12 @@ def init_rencode():
         with rencode_lock:
             return dumps(v), FLAGS_RENCODE
     return Encoding("rencode", FLAGS_RENCODE, __version__, do_rencode, loads)
+
+def init_rencodeplus():
+    from xpra.net.rencodeplus.rencodeplus import dumps, loads, __version__  #pylint: disable=no-name-in-module
+    def do_rencodeplus(v):
+        return dumps(v), FLAGS_RENCODEPLUS
+    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, __version__, do_rencodeplus, loads)
 
 def init_bencode():
     from xpra.net.bencode import bencode, bdecode, __version__
@@ -95,6 +101,8 @@ def get_encoder(e):
     return ENCODERS[e].encode
 
 def get_packet_encoding_type(protocol_flags) -> str:
+    if protocol_flags & FLAGS_RENCODEPLUS:
+        return "rencode"
     if protocol_flags & FLAGS_RENCODE:
         return "rencode"
     if protocol_flags & FLAGS_YAML:

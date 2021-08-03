@@ -242,6 +242,7 @@ class ProxyInstance:
             "lzo"               : parse_bool,
             "zlib"              : parse_bool,
             "rencode"           : parse_bool,
+            "rencodeplus"       : parse_bool,
             "bencode"           : parse_bool,
             "yaml"              : parse_bool,
             }
