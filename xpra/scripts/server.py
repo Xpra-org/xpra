@@ -872,6 +872,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
             import tempfile
             session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
             os.makedirs(session_dir, 0o750)
+        os.lchown(session_dir, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     #populate it:
     if run_xpra_script:
