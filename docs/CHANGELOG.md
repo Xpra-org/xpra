@@ -1,24 +1,44 @@
 # Changelog
 
 ## [4.2.2] 2021-07-22
-* always stop the 'new-stream' notification process
 * don't build ffmpeg codecs on i386 (crashy)
-* prevent subprocesses becoming zombies
+* always stop the 'new-stream' notification process
+* prevent subprocesses from becoming zombies
 * clean server on 'stop' or 'exit'
-* remove unused pulseaudio directories
-* menu loading:
-	* try harder to find valid menu entries to use
-	* don't block the main thread when loading menus
 * fix application geometry issues
 * show correct default values with "xpra --help"
+* network layer:
+	* rencode packet encoder is not threads safe!
+	* packet errors with bencoder and None values
+	* don't assume the packet encoders handle bytes and / or strings
+* client issues:
+	* backwards compatibility with v3 servers for ssh start
+	* incorrect client exit code
+	* icon theme errors should not be fatal (triggered on MacOS)
+* subcommands:
+	* 'start-gui' invalid options shown
+	* 'sessions' and 'displays' subcommands do not need a display
+	* fix hidden 'wmname' utility subcommand
+	* many subcommands should send debug logging to stderr
+* platform issues:
+	* MacOS dock flickering with 'start-gui'
+	* MacOS splash screen hiding password prompts
+* menu loading:
+	* try harder to find valid menu entries to use
+	* skip entries that cannot be executed
+	* don't block the main thread when loading menus
 * xpra top:
 	* handle unicode window titles correctly
 	* fix screen corruption due to threading
+	* fix latency always showing as zero
 * packaging fixes:
 	* Debian packages now correctly use /etc/default for systemd service configuration
 	* MacOS updates for latest GTK3 builds
 	* add missing C++ files for MS Windows builds
-* cosmetic fixes: logging, error handling
+* minor / cosmetic fixes:
+	* logging, error handling
+	* remove unused pulseaudio directories
+	* '1080p' resize-display string matching
 
 ## [4.2.1] 2021-07-11
 * build and packaging fixes:
