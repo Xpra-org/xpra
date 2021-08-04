@@ -372,7 +372,6 @@ class ProxyInstance:
         if len(packet)>index:
             data = packet[index]
             if len(data)<512:
-                packet[index] = strtobytes(data)
                 return
             #this is ugly and not generic!
             zlib = self.caps.boolget("zlib", True)
