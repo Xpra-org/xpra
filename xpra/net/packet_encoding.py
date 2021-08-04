@@ -102,7 +102,7 @@ def get_encoder(e):
 
 def get_packet_encoding_type(protocol_flags) -> str:
     if protocol_flags & FLAGS_RENCODEPLUS:
-        return "rencode"
+        return "rencodeplus"
     if protocol_flags & FLAGS_RENCODE:
         return "rencode"
     if protocol_flags & FLAGS_YAML:
