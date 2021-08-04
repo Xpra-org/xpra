@@ -456,7 +456,8 @@ cdef decode_dict(char *data, unsigned int *pos, long long data_length):
     pos[0] += 1
     check_pos(data, pos[0], data_length)
     while data[pos[0]] != CHR_TERM:
-        d[decode(data, pos, data_length)] = decode(data, pos, data_length)
+        k = decode(data, pos, data_length)
+        d[k] = decode(data, pos, data_length)
     pos[0] += 1
     return d
 
