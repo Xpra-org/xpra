@@ -331,7 +331,7 @@ class ProxyInstance:
             hello = self.filter_client_caps(self.caps, CLIENT_REMOVE_CAPS_CHALLENGE)
             self.queue_server_packet(("hello", hello))
             return
-        if packet_type=="ping_echo" and self.client_ping_timer and len(packet)>=7 and packet[6]==strtobytes(self.uuid):
+        if packet_type=="ping_echo" and self.client_ping_timer and len(packet)>=7 and strtobytes(packet[6])==strtobytes(self.uuid):
             #this is one of our ping packets:
             self.client_last_ping_echo = packet[1]
             self.client_last_ping_latency = 1000*monotonic_time()-self.client_last_ping_echo
@@ -472,7 +472,7 @@ class ProxyInstance:
             #may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw*maxh*4*4)
             packet = ("hello", caps)
-        elif packet_type=="ping_echo" and self.server_ping_timer and len(packet)>=7 and packet[6]==strtobytes(self.uuid):
+        elif packet_type=="ping_echo" and self.server_ping_timer and len(packet)>=7 and strtobytes(packet[6])==strtobytes(self.uuid):
             #this is one of our ping packets:
             self.server_last_ping_echo = packet[1]
             self.server_last_ping_latency = 1000*monotonic_time()-self.server_last_ping_echo
@@ -579,8 +579,8 @@ class ProxyInstance:
             if packet is None:
                 return
             try:
-                packet_type = packet[0]
-                if packet_type==b"lost-window":
+                packet_type = bytestostr(packet[0])
+                if packet_type=="lost-window":
                     wid = packet[1]
                     self.lost_windows.remove(wid)
                     ve = self.video_encoders.get(wid)
@@ -588,12 +588,12 @@ class ProxyInstance:
                         del self.video_encoders[wid]
                         del self.video_encoders_last_used_time[wid]
                         ve.clean()
-                elif packet_type==b"draw":
+                elif packet_type=="draw":
                     #modify the packet with the video encoder:
                     if self.process_draw(packet):
                         #then send it as normal:
                         self.queue_client_packet(packet)
-                elif packet_type==b"check-video-timeout":
+                elif packet_type=="check-video-timeout":
                     #not a real packet, this is added by the timeout check:
                     wid = packet[1]
                     ve = self.video_encoders.get(wid)
@@ -614,8 +614,9 @@ class ProxyInstance:
 
     def process_draw(self, packet):
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
+        encoding = bytestostr(encoding)
         #never modify mmap packets
-        if encoding in (b"mmap", b"scroll"):
+        if encoding in ("mmap", "scroll"):
             return True
 
         client_options = typedict(client_options)
