@@ -1004,8 +1004,7 @@ class Protocol:
                     log.error(" %s", e)
                     if self._closed:
                         return
-                    log("failed to parse %s packet: %s", etype, hexstr(data[:128]))
-                    log(" %s", e)
+                    log("failed to parse %s packet: %s", etype, hexstr(data[:128]), exc_info=True)
                     data_str = memoryview_to_bytes(data)
                     log(" data: %s", repr_ellipsized(data_str))
                     log(" packet index=%i, packet size=%i, buffer size=%s", packet_index, payload_size, bl)
