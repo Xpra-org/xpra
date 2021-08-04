@@ -47,7 +47,7 @@ from xpra.scripts.parsing import (
     )
 from xpra.scripts.config import (
     OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS,
-    CLIENT_OPTIONS, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
+    NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
     START_COMMAND_OPTIONS, BIND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS, OPTIONS_ADDED_SINCE_V3, OPTIONS_COMPAT_NAMES,
     InitException, InitInfo, InitExit,
     fixup_options, dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
