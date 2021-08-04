@@ -1324,7 +1324,7 @@ def do_parse_cmdline(cmdline, defaults):
                 args[1] = address
                 break
 
-    NEED_ENCODING_MODES = ("attach", "start", "start-desktop", "shadow",
+    NEED_ENCODING_MODES = ("attach", "start", "start-desktop", "shadow", "proxy",
                            "upgrade", "upgrade-desktop", "recover",
                            "listen", "launcher",
                            "bug-report", "encoding", "gui-info")
