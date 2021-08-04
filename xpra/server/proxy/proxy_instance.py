@@ -500,18 +500,11 @@ class ProxyInstance:
         #we do want to reformat cursor packets...
         #as they will have been uncompressed by the network layer already:
         elif packet_type=="cursor":
-            #packet = ["cursor", x, y, width, height, xhot, yhot, serial, pixels, name]
-            #or:
             #packet = ["cursor", "png", x, y, width, height, xhot, yhot, serial, pixels, name]
             #or:
             #packet = ["cursor", ""]
             if len(packet)>=8:
-                #hard to distinguish png cursors from normal cursors...
-                try:
-                    int(packet[1])
-                    self._packet_recompress(packet, 8, "cursor")
-                except (TypeError, ValueError):
-                    self._packet_recompress(packet, 9, "cursor")
+                self._packet_recompress(packet, 9, "cursor")
         elif packet_type=="window-icon":
             self._packet_recompress(packet, 5, "icon")
         elif packet_type=="send-file":
