@@ -110,7 +110,7 @@ class ProxyInstance:
             for x in (b"send-file", b"send-file-chunk"):
                 self.server_protocol.large_packets.append(x)
                 self.client_protocol.large_packets.append(x)
-        self.server_protocol.set_compression_level(self.session_options.get("compression_level", 0))
+        self.server_protocol.set_compression_level(int(self.session_options.get("compression_level", 0)))
         self.server_protocol.enable_default_encoder()
 
         self.lost_windows = set()
