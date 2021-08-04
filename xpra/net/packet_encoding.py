@@ -5,11 +5,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#pylint: disable=import-outside-toplevel
+
 from collections import namedtuple
 from threading import Lock
 
 from xpra.log import Logger
-from xpra.net.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER
+from xpra.net.header import (
+    FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_BENCODE, FLAGS_NOHEADER,
+    pack_header,
+    )
 from xpra.util import envbool
 
 #all the encoders we know about, in best compatibility order:
@@ -23,18 +28,20 @@ ENCODERS = {}
 
 
 def init_rencode():
-    from rencode import dumps, loads, __version__
+    import rencode  # @UnresolvedImport
     rencode_lock = Lock()
+    rencode_dumps = rencode.dumps
     def do_rencode(v):
         with rencode_lock:
-            return dumps(v), FLAGS_RENCODE
-    return Encoding("rencode", FLAGS_RENCODE, __version__, do_rencode, loads)
+            return rencode_dumps(v), FLAGS_RENCODE
+    return Encoding("rencode", FLAGS_RENCODE, rencode.__version__, do_rencode, rencode.loads)
 
 def init_rencodeplus():
-    from xpra.net.rencodeplus.rencodeplus import dumps, loads, __version__  #pylint: disable=no-name-in-module
+    from xpra.net.rencodeplus import rencodeplus    #pylint: disable=no-name-in-module
+    rencodeplus_dumps = rencodeplus.dumps
     def do_rencodeplus(v):
-        return dumps(v), FLAGS_RENCODEPLUS
-    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, __version__, do_rencodeplus, loads)
+        return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
+    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 def init_bencode():
     from xpra.net.bencode import bencode, bdecode, __version__
@@ -111,10 +118,10 @@ def get_packet_encoding_type(protocol_flags) -> str:
 
 
 def sanity_checks():
-    if "rencode" not in ENCODERS:
+    if "rencodeplus" not in ENCODERS:
         log = Logger("network", "protocol")
-        log.warn("Warning: 'rencode' packet encoder not found")
-        log.warn(" the other packet encoders are much slower")
+        log.warn("Warning: 'rencodeplus' packet encoder was not found")
+        log.warn(" this build of xpra may be incomplete")
 
 
 class InvalidPacketEncodingException(Exception):
@@ -122,7 +129,6 @@ class InvalidPacketEncodingException(Exception):
 
 
 def pack_one_packet(packet):
-    from xpra.net.header import pack_header
     ee = get_enabled_encoders()
     if ee:
         e = get_encoder(ee[0])
