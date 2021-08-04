@@ -13,7 +13,7 @@ from xpra.net.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_
 from xpra.util import envbool
 
 #all the encoders we know about, in best compatibility order:
-ALL_ENCODERS = ("rencodeplus", "rencode", "bencode", "yaml", "none")
+ALL_ENCODERS = ("rencode", "bencode", "yaml", "rencodeplus", "none")
 #order for performance:
 PERFORMANCE_ORDER = ("rencodeplus", "rencode", "bencode", "yaml")
 
