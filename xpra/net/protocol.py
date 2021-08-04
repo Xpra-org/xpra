@@ -830,6 +830,7 @@ class Protocol:
         packet_index = 0
         compression_level = 0
         raw_packets = {}
+        PACKET_HEADER_CHAR = ord("P")
         while not self._closed:
             buf = self._read_queue.get()
             if not buf:
@@ -843,7 +844,7 @@ class Protocol:
                 if payload_size<0:
                     #try to handle the first buffer:
                     buf = read_buffers[0]
-                    if not header and buf[0]!=ord("P"):
+                    if not header and buf[0]!=PACKET_HEADER_CHAR:
                         self.invalid_header(self, buf, "invalid packet header byte")
                         return
                     #how much to we need to slice off to complete the header:
@@ -853,14 +854,13 @@ class Protocol:
                         #need to process more buffers to get a full header:
                         read_buffers.pop(0)
                         continue
-                    elif len(buf)>read:
-                        #got the full header and more, keep the rest of the packet:
-                        read_buffers[0] = buf[read:]
-                    else:
+                    if len(buf)<=read:
                         #we only got the header:
                         assert len(buf)==read
                         read_buffers.pop(0)
                         continue
+                    #got the full header and more, keep the rest of the packet:
+                    read_buffers[0] = buf[read:]
                     #parse the header:
                     # format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
                     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
