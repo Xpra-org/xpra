@@ -12,6 +12,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper
 from xpra.net.protocol import Protocol
 from xpra.net.common import MAX_PACKET_SIZE
+from xpra.net.digest import get_salt, gendigest
 from xpra.codecs.loader import load_codec, get_codec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
@@ -529,7 +530,6 @@ class ProxyInstance:
                 #otherwise, just forward it to the client
                 self.client_challenge_packet = packet
             else:
-                from xpra.net.digest import get_salt, gendigest
                 #client may have already responded to the challenge,
                 #so we have to handle authentication from this end
                 server_salt = bytestostr(packet[1])
