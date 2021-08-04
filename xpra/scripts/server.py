@@ -374,7 +374,16 @@ def rm_session_dir():
     session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not session_dir or not os.path.exists(session_dir):
         return
-    if not os.listdir(session_dir):
+    try:
+        session_files = os.listdir(session_dir)
+    except OSError as e:
+        from xpra.log import Logger
+        log = Logger("server")
+        log("os.listdir(%s)", session_dir, exc_info=True)
+        log.warn("Warning: cannot access '%s'", session_dir)
+        log.warn(" %s", e)
+        return
+    if not session_files:
         try:
             os.rmdir(session_dir)
         except OSError as e:
