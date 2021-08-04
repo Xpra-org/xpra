@@ -1123,7 +1123,7 @@ class WindowClient(StubClientMixin):
                 metadata = getattr(window, "_metadata", {})
                 log("window_close_event(%i) metadata=%s", wid, metadata)
                 class_instance = metadata.strtupleget("class-instance", (None, None), 2, 2)
-                title = metadata.get("title", "")
+                title = metadata.strget("title", "")
                 log("window_close_event(%i) title=%s, class-instance=%s", wid, title, class_instance)
                 matching_title_close = [x for x in TITLE_CLOSEEXIT if x and title.startswith(x)]
                 close = None
