@@ -5,6 +5,7 @@ gstreamer1-plugin-timestamp
 libyuv
 x264-xpra
 ffmpeg-xpra
+python3-rencode
 python3-pycuda
 python3-pynvml
 python3-pyu2f
