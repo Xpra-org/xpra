@@ -44,7 +44,6 @@ cdef enum:
     MAX_INT_LENGTH = 64
     # The bencode 'typecodes' such as i, d, etc have been extended and
     # relocated on the base-256 character set.
-    CHR_BIN     = 47
     CHR_LIST    = 59
     CHR_DICT    = 60
     CHR_INT     = 61
@@ -211,8 +210,7 @@ cdef encode_float64(char **buf, unsigned int *pos, double x):
 cdef encode_bytes(char **buf, unsigned int *pos, bytes x):
     cdef char *p
     cdef int lx = len(x)
-    write_buffer_char(buf, pos, CHR_BIN)
-    s = b"%i:" % lx
+    s = b"%i/" % lx
     p = s
     write_buffer(buf, pos, p, len(s))
     write_buffer(buf, pos, <char *>x, lx)
@@ -405,33 +403,23 @@ cdef decode_fixed_str(char *data, unsigned int *pos, long long data_length):
     check_pos(data, pos[0] + size - 1, data_length)
     s = data[pos[0]+1:pos[0] + size]
     pos[0] += size
-    return s
+    return s.decode("utf8")
 
 cdef decode_str(char *data, unsigned int *pos, long long data_length):
     cdef unsigned int x = 1
     check_pos(data, pos[0]+x, data_length)
-    while (data[pos[0]+x] != 58):
+    while (data[pos[0]+x] not in (58, 47)):
         x += 1
         check_pos(data, pos[0]+x, data_length)
     cdef int size = int(data[pos[0]:pos[0]+x])
+    cdef bool binary = data[pos[0]+x]==47
     pos[0] += x + 1
     check_pos(data, pos[0] + size - 1, data_length)
     s = data[pos[0]:pos[0] + size]
     pos[0] += size
-    return s
-
-cdef decode_bytes(char *data, unsigned int *pos, long long data_length):
-    cdef unsigned int x = 1
-    check_pos(data, pos[0]+x, data_length)
-    while (data[pos[0]+x] != 58):
-        x += 1
-        check_pos(data, pos[0]+x, data_length)
-    cdef int size = int(data[pos[0]+1:pos[0]+x])
-    pos[0] += x + 1
-    check_pos(data, pos[0] + size - 1, data_length)
-    s = data[pos[0]:pos[0] + size]
-    pos[0] += size
-    return s
+    if binary:
+        return s
+    return s.decode("utf8")
 
 cdef decode_fixed_list(char *data, unsigned int *pos, long long data_length):
     size = <unsigned char>data[pos[0]] - LIST_FIXED_START
@@ -468,7 +456,6 @@ cdef inline check_pos(char *data, unsigned int pos, long long data_length):
 
 cdef decode(char *data, unsigned int *pos, long long data_length):
     check_pos(data, pos[0], data_length)
-
     cdef unsigned char typecode = data[pos[0]]
     if typecode == CHR_INT1:
         return decode_char(data, pos, data_length)
@@ -489,11 +476,9 @@ cdef decode(char *data, unsigned int *pos, long long data_length):
     elif typecode == CHR_FLOAT64:
         return decode_float64(data, pos, data_length)
     elif STR_FIXED_START <= typecode < STR_FIXED_START + STR_FIXED_COUNT:
-        s = decode_fixed_str(data, pos, data_length)
-        return s.decode("utf8")
-    elif 49 <= typecode <= 57:
-        s = decode_str(data, pos, data_length)
-        return s.decode("utf8")
+        return decode_fixed_str(data, pos, data_length)
+    elif 48 <= typecode <= 57:
+        return decode_str(data, pos, data_length)
     elif typecode == CHR_NONE:
         pos[0] += 1
         return None
@@ -507,12 +492,12 @@ cdef decode(char *data, unsigned int *pos, long long data_length):
         return decode_fixed_list(data, pos, data_length)
     elif typecode == CHR_LIST:
         return decode_list(data, pos, data_length)
-    elif typecode == CHR_BIN:
-        return decode_bytes(data, pos, data_length)
     elif DICT_FIXED_START <= typecode < DICT_FIXED_START + DICT_FIXED_COUNT:
         return decode_fixed_dict(data, pos, data_length)
     elif typecode == CHR_DICT:
         return decode_dict(data, pos, data_length)
+    else:
+        raise Exception("unsupported typecode %i" % typecode)
 
 def loads(data):
     """
