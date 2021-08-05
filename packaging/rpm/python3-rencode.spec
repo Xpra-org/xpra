@@ -59,7 +59,7 @@ popd
 %doc COPYING README.md
 
 %changelog
-* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-4.xpra1
+* Thu Aug 05 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-4.xpra1
 - fix DoS decoding invalid typecode in lists or dictionaries
 
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-3.xpra1
