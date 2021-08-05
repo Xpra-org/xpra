@@ -6,7 +6,7 @@
 
 Name:           python3-rencode
 Version:        1.0.6
-Release:        3.xpra1%{?dist}
+Release:        4.xpra1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
@@ -14,6 +14,7 @@ Source0:        https://github.com/aresch/rencode/archive/v%{version}.tar.gz
 Patch0:         python-rencode-readdmissingpyx.patch
 Patch1:         python-rencode-nowheelreq.patch
 Patch2:         python-rencode-rename.patch
+Patch3:         python-rencode-typecode-dos.patch
 BuildRequires:  python3-devel
 BuildRequires:  python3-Cython
 BuildRequires:  python3-pbr
@@ -34,6 +35,7 @@ fi
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
+%patch3 -p1
 
 %build
 CFLAGS="%{optflags}" %{__python3} setup.py build
@@ -56,6 +58,9 @@ popd
 %doc COPYING README.md
 
 %changelog
+* Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-4.xpra1
+- fix DoS decoding invalid typecode in lists or dictionaries
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-3.xpra1
 - verify source checksum
 

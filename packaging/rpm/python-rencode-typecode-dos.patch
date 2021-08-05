@@ -1,0 +1,33 @@
+diff --git a/rencode/_rencode.pyx b/rencode/_rencode.pyx
+index 5716c2d..14e1bec 100644
+--- a/rencode/_rencode.pyx	2021-08-05 21:15:32.117793791 +0700
++++ b/rencode/_rencode.pyx	2021-08-05 21:15:29.931809176 +0700
+@@ -527,6 +527,9 @@
+         return decode_fixed_dict(data, pos)
+     elif typecode == CHR_DICT:
+         return decode_dict(data, pos)
++    else:
++        raise Exception("invalid typecode %i" % typecode)
++
+ 
+ def loads(data, decode_utf8=False):
+     """
+diff --git a/tests/test_rencode.py b/tests/test_rencode.py
+index 0081a1c..63cd3df 100644
+--- a/tests/test_rencode.py
++++ b/tests/test_rencode.py
+@@ -212,5 +212,14 @@ class TestRencode(unittest.TestCase):
+         assert rencode_orig.__version__
+         self.assertEqual(rencode.__version__[1:], rencode_orig.__version__[1:], "version number does not match")
+ 
++    def test_invalidtypecode(self):
++        s = b';\x2f\x7f'
++        try:
++            rencode.loads(s)
++        except Exception:
++            pass
++        else:
++            raise Exception("invalid typecode should raise an Exception")
++
+ if __name__ == '__main__':
+     unittest.main()
