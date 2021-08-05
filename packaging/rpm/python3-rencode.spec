@@ -15,6 +15,7 @@ Patch0:         python-rencode-readdmissingpyx.patch
 Patch1:         python-rencode-nowheelreq.patch
 Patch2:         python-rencode-rename.patch
 Patch3:         python-rencode-typecode-dos.patch
+BuildRequires:  gcc
 BuildRequires:  python3-devel
 BuildRequires:  python3-Cython
 BuildRequires:  python3-pbr
