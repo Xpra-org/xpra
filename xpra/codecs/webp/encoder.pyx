@@ -543,7 +543,6 @@ def selftest(full=False):
     #fake empty buffer:
     from xpra.codecs.codec_checks import make_test_image
     w, h = 24, 16
-    pixels = bytearray(b"\0" * w*h*4)
     for has_alpha in (True, False):
         img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)
         for q in (10, 50, 90):
