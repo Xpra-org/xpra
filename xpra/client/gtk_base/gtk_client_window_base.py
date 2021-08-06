@@ -539,7 +539,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def is_awt(self, metadata) -> bool:
-        wm_class = metadata.get("class-instance")
+        wm_class = metadata.strtupleget("class-instance")
         return wm_class and len(wm_class)==2 and wm_class[0].startswith("sun-awt-X11")
 
     def _is_popup(self, metadata) -> bool:
@@ -547,8 +547,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._override_redirect:
             return True
         if UNDECORATED_TRANSIENT_IS_OR>0:
-            transient_for = metadata.get("transient-for", -1)
-            decorations = metadata.get("decorations", 0)
+            transient_for = metadata.intget("transient-for", -1)
+            decorations = metadata.intget("decorations", 0)
             if transient_for>0 and decorations<=0:
                 if UNDECORATED_TRANSIENT_IS_OR>1:
                     metalog("forcing POPUP type for window transient-for=%s", transient_for)

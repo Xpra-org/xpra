@@ -99,14 +99,16 @@ class ClientWindowBase(ClientWidgetBase):
         workspacelog("init_window(..) workspace from client properties %s: %s", self._client_properties, wn(workspace))
         if workspace is not None:
             #client properties override application specified workspace value on init only:
-            metadata[b"workspace"] = workspace
+            metadata.pop(b"workspace", None)
+            metadata["workspace"] = workspace
         self._window_workspace = WORKSPACE_UNSET        #will get set in set_metadata if present
         self._desktop_workspace = self.get_desktop_workspace()  #pylint: disable=assignment-from-none
         workspacelog("init_window(..) workspace=%s, current workspace=%s",
                      wn(self._window_workspace), wn(self._desktop_workspace))
-        if self.max_window_size and b"size-constraints" not in metadata:
+        if self.max_window_size and "size-constraints" not in metadata:
             #this ensures that we will set size-constraints and honour max_window_size:
-            metadata[b"size-constraints"] = {}
+            metadata.pop(b"workspace", None)
+            metadata["size-constraints"] = {}
         #initialize gravity early:
         sc = typedict(metadata.dictget("size-constraints", {}))
         self.window_gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
@@ -248,10 +250,10 @@ class ClientWindowBase(ClientWidgetBase):
 
     def _force_size_constraint(self, *size):
         return {
-            b"size-constraints" : {
-                b"maximum-size" : size,
-                b"minimum-size" : size,
-                b"base-size" : size,
+            "size-constraints" : {
+                "maximum-size" : size,
+                "minimum-size" : size,
+                "base-size" : size,
                 }
             }
 
@@ -326,53 +328,53 @@ class ClientWindowBase(ClientWidgetBase):
             metalog.info("set_metadata: %s=%s", x, metadata.get(x))
         #WARNING: "class-instance" needs to go first because others may realize the window
         #(and GTK doesn't set the "class-instance" once the window is realized)
-        if b"class-instance" in metadata:
+        if "class-instance" in metadata:
             self.set_class_instance(*self._metadata.strtupleget("class-instance", ("xpra", "Xpra"), 2, 2))
             self.reset_icon()
 
-        if b"title" in metadata:
+        if "title" in metadata:
             title = self._get_window_title(metadata)
             self.set_title(title)
 
-        if b"icon-title" in metadata:
+        if "icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
             self.set_icon_name(icon_title)
             #the DE may have reset the icon now,
             #force it to use the one we really want:
             self.reset_icon()
 
-        if b"size-constraints" in metadata:
+        if "size-constraints" in metadata:
             sc = typedict(metadata.dictget("size-constraints", {}))
             self.size_constraints = sc
             self._set_initial_position = sc.boolget("set-initial-position", self._set_initial_position)
             self.set_size_constraints(sc, self.max_window_size)
 
-        if b"set-initial-position" in metadata:
+        if "set-initial-position" in metadata:
             #this should be redundant - but we keep it here for consistency
             self._set_initial_position = metadata.boolget("set-initial-position")
 
-        if b"transient-for" in metadata:
+        if "transient-for" in metadata:
             wid = metadata.intget("transient-for", -1)
             self.apply_transient_for(wid)
 
-        if b"modal" in metadata:
+        if "modal" in metadata:
             modal = metadata.boolget("modal")
             self.set_modal(modal)
 
         #apply window-type hint if window has not been mapped yet:
-        if b"window-type" in metadata and not self.get_mapped():
+        if "window-type" in metadata and not self.get_mapped():
             window_types = metadata.strtupleget("window-type")
             self.set_window_type(window_types)
 
-        if b"role" in metadata:
+        if "role" in metadata:
             role = metadata.strget("role")
             self.set_role(role)
 
-        if b"xid" in metadata:
+        if "xid" in metadata:
             xid = metadata.strget("xid")
             self.set_xid(xid)
 
-        if b"opacity" in metadata:
+        if "opacity" in metadata:
             opacity = metadata.intget("opacity", -1)
             if opacity<0:
                 opacity = 1
@@ -382,7 +384,7 @@ class ClientWindowBase(ClientWidgetBase):
             if hasattr(self, "set_opacity"):
                 self.set_opacity(opacity)
 
-        if b"has-alpha" in metadata:
+        if "has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
             if new_alpha!=self._has_alpha:
                 l = alphalog
@@ -394,7 +396,7 @@ class ClientWindowBase(ClientWidgetBase):
                 l(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
                 self._has_alpha = new_alpha
 
-        if b"maximized" in metadata:
+        if "maximized" in metadata:
             maximized = metadata.boolget("maximized")
             if maximized!=self._maximized:
                 self._maximized = maximized
@@ -403,13 +405,13 @@ class ClientWindowBase(ClientWidgetBase):
                 else:
                     self.unmaximize()
 
-        if b"fullscreen" in metadata:
+        if "fullscreen" in metadata:
             fullscreen = metadata.boolget("fullscreen")
             if self._fullscreen is None or self._fullscreen!=fullscreen:
                 self._fullscreen = fullscreen
                 self.set_fullscreen(fullscreen)
 
-        if b"iconic" in metadata:
+        if "iconic" in metadata:
             iconified = metadata.boolget("iconic")
             if self._iconified!=iconified:
                 self._iconified = iconified
@@ -418,7 +420,7 @@ class ClientWindowBase(ClientWidgetBase):
                 else:
                     self.deiconify()
 
-        if b"decorations" in metadata:
+        if "decorations" in metadata:
             decorated = metadata.boolget("decorations", True)
             was_decorated = self.get_decorated()
             if WIN32 and decorated!=was_decorated:
@@ -428,25 +430,25 @@ class ClientWindowBase(ClientWidgetBase):
                 self.set_decorated(metadata.boolget("decorations"))
                 self.apply_geometry_hints(self.geometry_hints)
 
-        if b"above" in metadata:
+        if "above" in metadata:
             above = metadata.boolget("above")
             if self._above!=above:
                 self._above = above
                 self.set_keep_above(above)
 
-        if b"below" in metadata:
+        if "below" in metadata:
             below = metadata.boolget("below")
             if self._below!=below:
                 self._below = below
                 self.set_keep_below(below)
 
-        if b"shaded" in metadata:
+        if "shaded" in metadata:
             shaded = metadata.boolget("shaded")
             if self._shaded!=shaded:
                 self._shaded = shaded
                 self.set_shaded(shaded)
 
-        if b"sticky" in metadata:
+        if "sticky" in metadata:
             sticky = metadata.boolget("sticky")
             if self._sticky!=sticky:
                 self._sticky = sticky
@@ -455,40 +457,40 @@ class ClientWindowBase(ClientWidgetBase):
                 else:
                     self.unstick()
 
-        if b"skip-taskbar" in metadata:
+        if "skip-taskbar" in metadata:
             skip_taskbar = metadata.boolget("skip-taskbar")
             if self._skip_taskbar!=skip_taskbar:
                 self._skip_taskbar = skip_taskbar
                 self.set_skip_taskbar_hint(skip_taskbar)
 
-        if b"skip-pager" in metadata:
+        if "skip-pager" in metadata:
             skip_pager = metadata.boolget("skip-pager")
             if self._skip_pager!=skip_pager:
                 self._skip_pager = skip_pager
                 self.set_skip_pager_hint(skip_pager)
 
-        if b"workspace" in metadata:
+        if "workspace" in metadata:
             self.set_workspace(metadata.intget("workspace"))
 
-        if b"bypass-compositor" in metadata:
+        if "bypass-compositor" in metadata:
             self.set_bypass_compositor(metadata.intget("bypass-compositor"))
 
-        if b"strut" in metadata:
+        if "strut" in metadata:
             self.set_strut(metadata.dictget("strut", {}))
 
-        if b"fullscreen-monitors" in metadata:
+        if "fullscreen-monitors" in metadata:
             self.set_fullscreen_monitors(metadata.inttupleget("fullscreen-monitors"))
 
-        if b"shape" in metadata:
+        if "shape" in metadata:
             self.set_shape(metadata.dictget("shape", {}))
 
-        if b"command" in metadata:
+        if "command" in metadata:
             self.set_command(metadata.strget("command"))
 
-        if b"x11-property" in metadata:
+        if "x11-property" in metadata:
             self.set_x11_property(*metadata.tupleget("x11-property"))
 
-        if b"content-type" in metadata:
+        if "content-type" in metadata:
             self.content_type = metadata.strget("content-type")
 
 
@@ -527,21 +529,21 @@ class ClientWindowBase(ClientWidgetBase):
         hints = typedict()
         client = self._client
         for (a, h1, h2) in (
-            (b"maximum-size", b"max_width", b"max_height"),
-            (b"minimum-size", b"min_width", b"min_height"),
-            (b"base-size", b"base_width", b"base_height"),
-            (b"increment", b"width_inc", b"height_inc"),
+            ("maximum-size", "max_width", "max_height"),
+            ("minimum-size", "min_width", "min_height"),
+            ("base-size", "base_width", "base_height"),
+            ("increment", "width_inc", "height_inc"),
             ):
             v = size_constraints.intpair(a)
             geomlog("intpair(%s)=%s", a, v)
             if v:
                 v1, v2 = v
-                if a==b"maximum-size" and v1>=32000 and v2>=32000 and WIN32:
+                if a=="maximum-size" and v1>=32000 and v2>=32000 and WIN32:
                     #causes problems, see #2714
                     continue
                 sv1 = client.sx(v1)
                 sv2 = client.sy(v2)
-                if a in (b"base-size", b"increment"):
+                if a in ("base-size", "increment"):
                     #rounding is not allowed for these values
                     fsv1 = client.fsx(v1)
                     fsv2 = client.fsy(v2)
@@ -558,8 +560,8 @@ class ClientWindowBase(ClientWidgetBase):
                 hints[h1], hints[h2] = sv1, sv2
         if not OSX:
             for (a, h) in (
-                (b"minimum-aspect-ratio", b"min_aspect"),
-                (b"maximum-aspect-ratio", b"max_aspect"),
+                ("minimum-aspect-ratio", "min_aspect"),
+                ("maximum-aspect-ratio", "max_aspect"),
                 ):
                 v = size_constraints.intpair(a)
                 if v:
@@ -569,8 +571,8 @@ class ClientWindowBase(ClientWidgetBase):
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:
             #get the min size, if there is one:
-            minw = max(1, hints.intget(b"min_width", 1))
-            minh = max(1, hints.intget(b"min_height", 1))
+            minw = max(1, hints.intget("min_width", 1))
+            minh = max(1, hints.intget("min_height", 1))
             #the actual max size is:
             # * greater than the min-size
             # * the lowest of the max-size set by the application and the one we have
@@ -578,12 +580,12 @@ class ClientWindowBase(ClientWidgetBase):
             #according to the GTK docs:
             #allowed window widths are base_width + width_inc * N where N is any integer
             #allowed window heights are base_height + width_inc * N where N is any integer
-            maxw = hints.intget(b"max_width", 32768)
-            maxh = hints.intget(b"max_height", 32768)
+            maxw = hints.intget("max_width", 32768)
+            maxh = hints.intget("max_height", 32768)
             maxw = max(minw, min(w, maxw))
             maxh = max(minh, min(h, maxh))
-            rw = (maxw - hints.intget(b"base_width", 0)) % max(hints.intget(b"width_inc", 1), 1)
-            rh = (maxh - hints.intget(b"base_height", 0)) % max(hints.intget(b"height_inc", 1), 1)
+            rw = (maxw - hints.intget("base_width", 0)) % max(hints.intget("width_inc", 1), 1)
+            rh = (maxh - hints.intget("base_height", 0)) % max(hints.intget("height_inc", 1), 1)
             maxw -= rw
             maxh -= rh
             #if the hints combination is invalid, it's possible that we'll end up
@@ -600,8 +602,8 @@ class ClientWindowBase(ClientWidgetBase):
             #bug 2214: GTK3 on win32 gets confused if we specify a large max-size
             # and it will mess up maximizing the window
             if not WIN32 or (maxw<32000 or maxh<32000):
-                hints[b"max_width"] = maxw
-                hints[b"max_height"] = maxh
+                hints["max_width"] = maxw
+                hints["max_height"] = maxh
         try:
             geomlog("calling: %s(%s)", self.apply_geometry_hints, hints)
             #save them so the window hooks can use the last value used:

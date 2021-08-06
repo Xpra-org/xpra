@@ -298,6 +298,14 @@ class typedict(dict):
     def _warn(self, msg, *args, **kwargs):
         get_util_logger().warn(msg, *args, **kwargs)
 
+    def __contains__(self, key):
+        if super().__contains__(key):
+            return True
+        if isinstance(key, str):
+            from xpra.os_util import strtobytes
+            return super().__contains__(strtobytes(key))
+        return False
+
     def rawget(self, key, default=None):
         if key in self:
             return self[key]
