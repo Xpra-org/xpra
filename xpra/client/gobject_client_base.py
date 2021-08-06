@@ -813,7 +813,7 @@ class RequestStartClient(HelloRequestClient):
                 }.get(mode, "")
             try:
                 errwrite("\n%ssession now available on display %s\n" % (session_type, display))
-                if POSIX and not OSX and self.displayfd>0 and display and display.startswith(b":"):
+                if POSIX and not OSX and self.displayfd>0 and display and display.startswith(":"):
                     from xpra.platform.displayfd import write_displayfd
                     log("writing display %s to displayfd=%s", display, self.displayfd)
                     write_displayfd(self.displayfd, display[1:])
