@@ -159,10 +159,9 @@ def get_interface_info(int sockfd, ifname):
             if dev_type:
                 try:
                     idev_type = int(dev_type)
+                    adapter_type = ARPHRD.get(idev_type)
                 except ValueError:
                     pass
-                else:
-                    adapter_type = ARPHRD.get(idev_type)
     if not adapter_type:
         if ifname.startswith("lo"):
             adapter_type = "loopback"
