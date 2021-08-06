@@ -1295,7 +1295,7 @@ class ServerCore:
         def xpra_protocol_class(conn):
             """ adds xpra protocol tweaks after creating the instance """
             protocol = protocol_class(self, conn, self.process_packet)
-            protocol.large_packets.append(b"info-response")
+            protocol.large_packets.append("info-response")
             protocol.receive_aliases.update(self._aliases)
             return protocol
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)

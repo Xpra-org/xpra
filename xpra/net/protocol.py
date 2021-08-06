@@ -167,7 +167,7 @@ class Protocol:
         #initial value which may get increased by client/server after handshake:
         self.max_packet_size = MAX_PACKET_SIZE
         self.abs_max_packet_size = 256*1024*1024
-        self.large_packets = [b"hello", b"window-metadata", b"sound-data", b"notify_show", b"setting-change", b"shell-reply"]
+        self.large_packets = ["hello", "window-metadata", "sound-data", "notify_show", "setting-change", "shell-reply"]
         self.send_aliases = {}
         self.send_flush_flag = False
         self.receive_aliases = {}
@@ -274,7 +274,7 @@ class Protocol:
 
     def get_info(self, alias_info=True) -> dict:
         info = {
-            "large_packets"         : tuple(bytestostr(x) for x in self.large_packets),
+            "large_packets"         : self.large_packets,
             "compression_level"     : self.compression_level,
             "max_packet_size"       : self.max_packet_size,
             "aliases"               : USE_ALIASES,
@@ -608,7 +608,7 @@ class Protocol:
             packet[0] = packet_type
             verify_packet(packet)
             raise
-        if len(main_packet)>size_check and strtobytes(packet_in[0]) not in self.large_packets:
+        if len(main_packet)>size_check and bytestostr(packet_in[0]) not in self.large_packets:
             log.warn("Warning: found large packet")
             log.warn(" '%s' packet is %s bytes: ", packet_type, len(main_packet))
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))

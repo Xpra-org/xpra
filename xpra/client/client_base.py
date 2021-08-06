@@ -337,7 +337,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         protocol_class = get_client_protocol_class(conn.socktype)
         protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol = protocol
-        for x in (b"keymap-changed", b"server-settings", b"logging", b"input-devices"):
+        for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
             protocol.large_packets.append(x)
         protocol.set_compression_level(10)
         protocol.receive_aliases.update(self._aliases)

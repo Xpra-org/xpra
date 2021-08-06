@@ -126,7 +126,7 @@ class sound_record(sound_subprocess):
         from xpra.sound.src import SoundSource
         sound_pipeline = SoundSource(*pipeline_args)
         super().__init__(sound_pipeline, [], ["new-stream", "new-buffer"])
-        self.large_packets = [b"new-buffer"]
+        self.large_packets = ["new-buffer"]
 
 class sound_play(sound_subprocess):
     """ wraps SoundSink as a subprocess """
@@ -315,7 +315,7 @@ class source_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, options, codecs, volume, element_options):
         super().__init__("audio capture")
-        self.large_packets = [b"new-buffer"]
+        self.large_packets = ["new-buffer"]
         self.command = get_full_sound_command()+[
             "_sound_record", "-", "-",
             plugin or "", format_element_options(element_options),
@@ -338,7 +338,7 @@ class sink_subprocess_wrapper(sound_subprocess_wrapper):
 
     def __init__(self, plugin, codec, volume, element_options):
         super().__init__("audio playback")
-        self.large_packets = [b"add_data"]
+        self.large_packets = ["add_data"]
         self.codec = codec
         self.command = get_full_sound_command()+[
             "_sound_play", "-", "-",

@@ -105,12 +105,10 @@ class ProxyInstance:
         self.server_packets = Queue(PROXY_QUEUE_SIZE)
         self.client_packets = Queue(PROXY_QUEUE_SIZE)
         #server connection tweaks:
-        for x in (b"input-devices", b"draw", b"window-icon", b"keymap-changed", b"server-settings"):
-            self.server_protocol.large_packets.append(x)
+        self.server_protocol.large_packets += ["input-devices", "draw", "window-icon", "keymap-changed", "server-settings"]
         if self.caps.boolget("file-transfer"):
-            for x in (b"send-file", b"send-file-chunk"):
-                self.server_protocol.large_packets.append(x)
-                self.client_protocol.large_packets.append(x)
+            self.server_protocol.large_packets += ["send-file", "send-file-chunk"]
+            self.client_protocol.large_packets += ["send-file", "send-file-chunk"]
         self.server_protocol.set_compression_level(int(self.session_options.get("compression_level", 0)))
         self.server_protocol.enable_default_encoder()
 

@@ -265,7 +265,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         log.info("New proxy instance control connection received:")
         log.info(" '%s'", sc)
         protocol = Protocol(self, sc, self.process_control_packet)
-        protocol.large_packets.append(b"info-response")
+        protocol.large_packets.append("info-response")
         self.potential_protocols.append(protocol)
         protocol.enable_default_encoder()
         protocol.start()
