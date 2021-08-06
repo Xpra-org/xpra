@@ -90,6 +90,8 @@ def svg_to_png(filename, icondata, w=128, h=128):
         img = ImageSurface(FORMAT_ARGB32, w, h)
         ctx = Context(img)
         handle = Rsvg.Handle.new_from_data(icondata)
+        dim = handle.get_dimensions()
+        ctx.scale(w/dim.width, h/dim.height)
         handle.render_cairo(ctx)
         del handle
         img.flush()
@@ -110,3 +112,4 @@ def svg_to_png(filename, icondata, w=128, h=128):
         if filename:
             log.error(" '%s':", filename)
         log.error(" %i bytes, %s", len(icondata), ellipsizer(icondata))
+        return None
