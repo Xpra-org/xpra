@@ -851,16 +851,19 @@ def which(command):
             return None
 
 def get_status_output(*args, **kwargs):
-    import subprocess
-    kwargs["stdout"] = subprocess.PIPE
-    kwargs["stderr"] = subprocess.PIPE
+    from subprocess import PIPE, Popen
+    kwargs.update({
+        "stdout"    : PIPE,
+        "stderr"    : PIPE,
+        "universal_newlines"    : True,
+        })
     try:
-        p = subprocess.Popen(*args, **kwargs)
+        p = Popen(*args, **kwargs)
     except Exception as e:
         print("error running %s,%s: %s" % (args, kwargs, e))
         return -1, "", ""
     stdout, stderr = p.communicate()
-    return p.returncode, stdout.decode("utf-8"), stderr.decode("utf-8")
+    return p.returncode, stdout, stderr
 
 
 def is_systemd_pid1() -> bool:

@@ -57,7 +57,7 @@ class StartNewCommand:
             self.category_combo = Gtk.ComboBoxText()
             hbox.add(self.category_combo)
             for name in sorted(xdg_menu.keys()):
-                self.category_combo.append_text(name.decode("utf-8"))
+                self.category_combo.append_text(name)
             self.category_combo.set_active(0)
             self.category_combo.connect("changed", self.category_changed)
 
@@ -114,12 +114,12 @@ class StartNewCommand:
 
 
     def category_changed(self, *args):
-        category = self.category_combo.get_active_text().encode("utf-8")
+        category = self.category_combo.get_active_text()
         entries = typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {})
         log("category_changed(%s) category=%s, entries=%s", args, category, entries)
         self.command_combo.get_model().clear()
         for name in entries.keys():
-            self.command_combo.append_text(name.decode("utf-8"))
+            self.command_combo.append_text(name)
         if entries:
             self.command_combo.set_active(0)
 
@@ -127,14 +127,14 @@ class StartNewCommand:
         if not self.entry:
             return
         category = self.category_combo.get_active_text()
-        entries = typedict(self.xdg_menu.dictget(category.encode("utf-8"), {})).dictget("Entries", {})
+        entries = typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {})
         command_name = self.command_combo.get_active_text()
         log("command_changed(%s) category=%s, entries=%s, command_name=%s", args, category, entries, command_name)
         command = ""
         if entries and command_name:
-            command_props = typedict(entries).dictget(command_name.encode("utf-8"), {})
+            command_props = typedict(entries).dictget(command_name, {})
             log("command properties=%s", command_props)
-            command = typedict(command_props).strget(b"command", "")
+            command = typedict(command_props).strget("command", "")
         self.entry.set_text(command)
 
 

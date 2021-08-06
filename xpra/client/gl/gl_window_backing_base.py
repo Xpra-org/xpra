@@ -50,7 +50,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
     )
 
 from xpra.os_util import (
-    monotonic_time, strtobytes, hexstr,
+    monotonic_time, strtobytes, bytestostr, hexstr,
     POSIX,
     DummyContextManager,
     )
@@ -1042,10 +1042,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not options.boolget("paint", True):
             fire_paint_callbacks(callbacks)
             return
-        try:
-            rgb_format = rgb_format.decode("utf-8")
-        except (AttributeError, UnicodeDecodeError):
-            pass
+        rgb_format = bytestostr(rgb_format)
         try:
             upload, img_data = self.pixels_for_upload(img_data)
 

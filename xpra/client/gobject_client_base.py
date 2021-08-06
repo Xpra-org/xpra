@@ -11,7 +11,7 @@ from gi.repository import GLib
 from gi.repository import GObject
 
 from xpra.util import (
-    nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
+    u, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized,
     SERVER_UPGRADE, DONE,
@@ -313,10 +313,7 @@ class InfoXpraClient(CommandConnectClient):
                         if isinstance(w, bytes):
                             if k.endswith(".data"):
                                 return hexstr(w)
-                            try:
-                                return w.decode("utf-8")
-                            except Exception:
-                                return bytestostr(w)
+                            return u(w)
                         elif isinstance(w, (tuple,list)):
                             return type(w)([fixvalue(x) for x in w])
                         return w

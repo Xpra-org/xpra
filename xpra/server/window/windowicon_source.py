@@ -123,7 +123,7 @@ class WindowIconSource:
             except Exception:
                 c_i = None
             if c_i and len(c_i)==2:
-                wm_class = c_i[0].encode("utf-8")
+                wm_class = c_i[0]
                 if wm_class in self.theme_default_icons:
                     log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
                     return

@@ -428,14 +428,7 @@ class UIXpraClient(ClientBaseClass):
             if not cb.parse_server_capabilities(self, c):
                 log.info("failed to parse server capabilities in %s", cb)
                 return False
-        self.server_session_name = c.get("session_name")
-        #legacy packet encoders give us a string,
-        #but that's actually a utf8 bytearray...
-        if self._protocol.encoder!="rencodeplus":
-            try:
-                self.server_session_name = strtobytes(self.server_session_name).decode("utf8")
-            except UnicodeDecodeError:
-                pass
+        self.server_session_name = c.uget("session_name")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.server_platform = c.strget("platform")
         self.server_sharing = c.boolget("sharing")

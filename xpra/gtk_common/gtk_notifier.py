@@ -18,13 +18,13 @@
 #You should have received a copy of the GNU Lesser General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf
 
-from xpra.os_util import OSX, bytestostr
+from xpra.os_util import OSX
+from xpra.util import u
 from xpra.gtk_common.gtk_util import (
     add_close_accel, color_parse,
     get_icon_pixbuf,
@@ -265,10 +265,7 @@ class Popup(Gtk.Window):
 
 
     def action_button(self, action_id, action_text):
-        try:
-            button = Gtk.Button(action_text.decode("utf-8"))
-        except Exception:
-            button = Gtk.Button(bytestostr(action_text))
+        button = Gtk.Button(u(action_text))
         button.set_relief(Gtk.ReliefStyle.NORMAL)
         def popup_cb_clicked(*args):
             self.hide_notification()

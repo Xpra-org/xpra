@@ -9,6 +9,7 @@ from hashlib import sha1
 from base64 import b64encode
 
 from xpra.os_util import strtobytes, bytestostr, monotonic_time
+from xpra.util import u
 from xpra.log import Logger
 
 log = Logger("websocket")
@@ -62,7 +63,7 @@ def client_upgrade(read, write, host, port):
 
     now = monotonic_time()
     response = b""
-    while ("sec-websocket-protocol" not in response.decode("utf-8").lower()) and monotonic_time()-now<MAX_READ_TIME:
+    while ("sec-websocket-protocol" not in u(response).lower()) and monotonic_time()-now<MAX_READ_TIME:
         response += read(READ_CHUNK_SIZE)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)

@@ -14,7 +14,7 @@ from xpra.os_util import (
     monotonic_time, bytestostr,
     OSX, WIN32, POSIX,
     )
-from xpra.util import envint, csv, ellipsizer
+from xpra.util import envint, csv, ellipsizer, u
 from xpra.make_thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.server_util import source_env
@@ -359,8 +359,8 @@ class ChildCommandServer(StubServerMixin):
         if isinstance(command, (list, tuple)):
             cmd = command
         else:
-            cmd = command.decode("utf-8")
-        proc = self.start_command(name.decode("utf-8"), cmd, ignore)
+            cmd = u(command)
+        proc = self.start_command(u(name), cmd, ignore)
         if len(packet)>=5:
             shared = packet[4]
             if proc and not shared:

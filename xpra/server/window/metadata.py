@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import socket
 
 from xpra.util import WORKSPACE_UNSET, get_util_logger
 
@@ -39,7 +40,7 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
             if skip_defaults:
                 return {}
             return {propname: ""}
-        return {propname: v.encode("utf-8")}
+        return {propname: v}
     if propname in ("pid", "workspace", "bypass-compositor", "depth", "opacity", "quality", "speed"):
         v = raw()
         assert v is not None, "%s is None!" % propname
@@ -73,15 +74,14 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
         c_i = raw()
         if c_i is None:
             return {}
-        return {"class-instance": [x.encode("utf-8") for x in c_i]}
+        return {"class-instance": c_i}
     if propname == "client-machine":
         client_machine = raw()
         if client_machine is None:
-            import socket
             client_machine = socket.gethostname()
             if client_machine is None:
                 return {}
-        return {"client-machine": client_machine.encode("utf-8")}
+        return {"client-machine": client_machine}
     if propname == "transient-for":
         wid = None
         if get_transient_for:

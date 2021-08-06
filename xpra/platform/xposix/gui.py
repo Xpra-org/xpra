@@ -9,7 +9,7 @@ import sys
 import struct
 
 from xpra.os_util import bytestostr, hexstr
-from xpra.util import iround, envbool, envint, csv, ellipsizer
+from xpra.util import u, iround, envbool, envint, csv, ellipsizer
 from xpra.os_util import is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, saved_env
 from xpra.log import Logger
 
@@ -95,7 +95,7 @@ def get_wm_name():
                 wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
                 traylog("_NET_WM_NAME=%s", wm_name)
                 if wm_name:
-                    return wm_name.decode("utf-8")
+                    return u(wm_name)
         except Exception as e:
             traylog("get_wm_name()", exc_info=True)
             traylog.error("Error accessing window manager information:")
@@ -993,7 +993,7 @@ class ClientExtras:
             value = prop_get(root, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
             if value is not None:
                 return value.encode("utf-8")
-        except:
+        except (ImportError, UnicodeEncodeError):
             log.error("failed to get RESOURCE_MANAGER", exc_info=True)
         return None
 

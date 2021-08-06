@@ -92,10 +92,7 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24):
     pixbuf = None
     if app_name and not icondata:
         #try to load from our icons:
-        try:
-            nstr = app_name.decode("utf-8").lower()
-        except UnicodeDecodeError:
-            nstr = bytestostr(app_name).lower()
+        nstr = bytestostr(app_name).lower()
         icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
         if os.path.exists(icon_filename):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)

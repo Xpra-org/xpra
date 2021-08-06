@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,9 +9,9 @@ import os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
-from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
+from xpra.os_util import bytestostr, strtobytes, OSX, WIN32, is_Wayland
 from xpra.common import GRAVITY_STR
-from xpra.util import typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.util import u, typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
 log = Logger("window")
@@ -297,13 +297,15 @@ class ClientWindowBase(ClientWidgetBase):
                             None):
                             return value
                     return "<unknown machine>"
-                value = metadata.bytesget(var) or self._metadata.bytesget(var)
+                value = metadata.get(var) or self._metadata.get(var)
                 if value is None:
                     return default_values.get(var, "<unknown %s>" % var)
-                try:
-                    return value.decode("utf-8")
-                except UnicodeDecodeError:
-                    return str(value)
+                #with 'rencodeplus', we just get the unicode string:
+                if isinstance(value, str):
+                    return value
+                #with rencode or bencode, we have to decode the value:
+                #(after converting it to 'bytes' if necessary)
+                return u(strtobytes(value))
             def metadata_replace(match):
                 atvar = match.group(0)          #ie: '@title@'
                 var = atvar[1:len(atvar)-1]     #ie: 'title'
