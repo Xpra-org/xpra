@@ -1515,13 +1515,23 @@ class ServerCore:
             icon_data = load_binary_file(icon_filename)
             icon_type = "png"
             httplog("using fallback transparent icon")
-        mime_type = "application/octet-stream"
         if icon_type=="svg" and icon_data:
             from xpra.codecs.icon_util import svg_to_png  #pylint: disable=import-outside-toplevel
-            icon_data = svg_to_png(None, icon_data, 48, 48)
-            icon_type = "png"
+            #call svg_to_png via the main thread,
+            #and wait for it to complete via an Event:
+            icon = [icon_data, icon_type]
+            event = threading.Event()
+            def convert():
+                icon[0] = svg_to_png(None, icon_data, 48, 48)
+                icon[1] = "png"
+                event.set()
+            self.idle_add(convert)
+            event.wait()
+            icon_data, icon_type = icon
         if icon_type in ("png", "jpeg", "svg", "webp"):
             mime_type = "image/%s" % icon_type
+        else:
+            mime_type = "application/octet-stream"
         return self.send_http_response(handler, icon_data, mime_type)
 
     def http_menu_request(self, handler):
