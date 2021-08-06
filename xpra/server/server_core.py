@@ -1505,6 +1505,7 @@ class ServerCore:
         if icon_type=="svg" and icon_data:
             from xpra.codecs.icon_util import svg_to_png
             icon_data = svg_to_png(None, icon_data, 48, 48)
+            icon_type = "png"
         if icon_type in ("png", "jpeg", "svg", "webp"):
             mime_type = "image/%s" % icon_type
         return self.send_http_response(handler, icon_data, mime_type)
