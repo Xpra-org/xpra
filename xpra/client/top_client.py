@@ -790,7 +790,7 @@ class TopSessionClient(InfoTimerClient):
             #depending on where we get the gl info from,
             #the value might be a list of strings,
             #or a byte string...
-            v = gli.rawget(key)
+            v = gli.get(key)
             if isinstance(v, (tuple, list)):
                 return sep.join(bytestostr(x) for x in v)
             return bytestostr(v)
@@ -800,7 +800,7 @@ class TopSessionClient(InfoTimerClient):
         depth = gli.intget("depth")
         if depth not in (0, 24):
             gl_info += ", %ibits" % depth
-        modes = gli.rawget("display_mode")
+        modes = gli.get("display_mode")
         if modes:
             gl_info += " - %s" % strget("display_mode", ", ")
         return gl_info

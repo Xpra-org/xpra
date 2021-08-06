@@ -1103,7 +1103,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if workspace is not None:
             window.move_to_workspace(workspace)
             #we have handled it on the window directly, so remove it from client properties
-            new_client_properties.pop(b"workspace", None)
             new_client_properties.pop("workspace", None)
         #handle the rest as normal:
         super()._set_client_properties(proto, wid, window, new_client_properties)

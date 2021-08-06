@@ -19,12 +19,12 @@ def get_remote_lib_versions(c : typedict,
                             ):
     versions = {}
     for x in libs:
-        v = c.rawget("%s.version" % x, None)
+        v = c.get("%s.version" % x, None)
         if v is None:
             #fallback to structured access:
-            d = c.rawget(x, None)
+            d = c.get(x, None)
             if isinstance(d, dict):
-                v = typedict(d).rawget("version", None)
+                v = typedict(d).get("version", None)
         if v:
             versions[x] = bytestostr(v)
     return versions
@@ -57,7 +57,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("build.version", c.strget("version"))
         self._remote_revision = c.strget("build.revision", c.strget("revision"))
-        mods = c.rawget("build.local_modifications")
+        mods = c.get("build.local_modifications")
         if mods and str(mods).find("dfsg")>=0:  # pragma: no cover
             get_util_logger().warn("Warning: the xpra server is running a buggy Debian version")
             get_util_logger().warn(" those are usually out of date and unstable")

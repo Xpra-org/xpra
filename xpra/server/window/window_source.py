@@ -704,7 +704,7 @@ class WindowSource(WindowIconSource):
             rgb_formats = [x for x in rgb_formats if x.find("A")<0]
         self.rgb_formats = rgb_formats
         self.send_window_size = properties.boolget("encoding.send-window-size", self.send_window_size)
-        self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default_value=None))
+        self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default=None))
         #select the defaults encoders:
         #(in case pillow was selected previously and the client side scaling changed)
         for encoding, encoders in self._all_encoders.items():

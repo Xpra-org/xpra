@@ -509,7 +509,6 @@ def apply_maxsize_hints(window, hints):
     #which would remove the maximize button:
     for x in ("min_width", "min_height", "max_width", "max_height"):
         hints.pop(x, None)
-        hints.pop(strtobytes(x), None)
     window_state_updated(window)
 
 def apply_geometry_hints(self, hints):

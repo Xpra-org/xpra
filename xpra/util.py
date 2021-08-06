@@ -4,12 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import re
+import sys
 import binascii
 import traceback
 import threading
-import sys
-import os
-import re
+from itertools import chain
 
 
 XPRA_APP_ID = 0
@@ -293,69 +294,79 @@ class MutableInteger(object):
         return self.counter-int(other)
 
 
-class typedict(dict):
+def strtobytes(x) -> bytes:
+    if isinstance(x, bytes):
+        return x
+    return str(x).encode("latin1")
+def bytestostr(x) -> str:
+    if isinstance(x, (bytes, bytearray)):
+        return x.decode("latin1")
+    return str(x)
 
+_RaiseKeyError = object()
+
+class typedict(dict):
+    __slots__ = () # no __dict__ - that would be redundant
+    @staticmethod # because this doesn't make sense as a global function.
+    def _process_args(mapping=(), **kwargs):
+        if hasattr(mapping, "items"):
+            mapping = getattr(mapping, "items")()
+        return ((bytestostr(k), v) for k, v in chain(mapping, getattr(kwargs, "items")()))
+    def __init__(self, mapping=(), **kwargs):
+        super().__init__(self._process_args(mapping, **kwargs))
+    def __getitem__(self, k):
+        return super().__getitem__(bytestostr(k))
+    def __setitem__(self, k, v):
+        return super().__setitem__(bytestostr(k), v)
+    def __delitem__(self, k):
+        return super().__delitem__(bytestostr(k))
+    def get(self, k, default=None):
+        return super().get(bytestostr(k), default)
+    def setdefault(self, k, default=None):
+        return super().setdefault(bytestostr(k), default)
+    def pop(self, k, v=_RaiseKeyError):
+        if v is _RaiseKeyError:
+            return super().pop(bytestostr(k))
+        return super().pop(bytestostr(k), v)
+    def update(self, mapping=(), **kwargs):
+        super().update(self._process_args(mapping, **kwargs))
+    def __contains__(self, k):
+        return super().__contains__(bytestostr(k))
+    @classmethod
+    def fromkeys(cls, keys, v=None):
+        return super().fromkeys((bytestostr(k) for k in keys), v)
+    def __repr__(self):
+        return '{0}({1})'.format(type(self).__name__, super().__repr__())
     def _warn(self, msg, *args, **kwargs):
         get_util_logger().warn(msg, *args, **kwargs)
 
-    def __contains__(self, key):
-        if super().__contains__(key):
-            return True
-        if isinstance(key, str):
-            from xpra.os_util import strtobytes
-            return super().__contains__(strtobytes(key))
-        return False
-
-    def rawget(self, key, default=None):
-        if key in self:
-            return self[key]
-        #py3k and bytes as keys...
-        if isinstance(key, str):
-            from xpra.os_util import strtobytes
-            return self.get(strtobytes(key), default)
-        return default
+    def conv_get(self, k, default=None, conv=None):
+        if not super().__contains__(bytestostr(k)):
+            return default
+        v = self.get(k, default)
+        try:
+            return conv(v)
+        except (TypeError, ValueError, AssertionError) as e:
+            self._warn("Warning: failed to convert %s using %s: %s", type(v), conv, e)
+            return default
 
     def strget(self, k, default=None):
-        v = self.rawget(k, default)
-        if v is None:
-            return default
-        from xpra.os_util import bytestostr
-        return bytestostr(v)
+        return self.conv_get(k, default, bytestostr)
 
     def bytesget(self, k : str, default=None):
-        v = self.rawget(k, default)
-        if v is None:
-            return default
-        from xpra.os_util import strtobytes
-        return strtobytes(v)
+        return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k : str, d=0):
-        v = self.rawget(k)
-        if v is None:
-            return d
-        try:
-            return int(v)
-        except Exception as e:
-            self._warn("intget(%s, %s)", k, d, exc_info=True)
-            self._warn("Warning: failed to parse %s value '%s':", k, v)
-            self._warn(" %s", e)
-            return d
+    def intget(self, k : str, default=0):
+        return self.conv_get(k, default, int)
 
-    def boolget(self, k : str, default_value=False):
-        v = self.rawget(k)
-        if v is None:
-            return default_value
-        return bool(v)
+    def boolget(self, k : str, default=False):
+        return self.conv_get(k, default, bool)
 
-    def dictget(self, k : str, default_value=None):
-        v = self.rawget(k, default_value)
-        if v is None:
-            return default_value
-        if not isinstance(v, dict):
-            self._warn("dictget(%s, %s)", k, default_value)
-            self._warn("Warning: expected a dict value for %s but got %s", k, type(v))
-            return default_value
-        return v
+    def dictget(self, k : str, default=None):
+        def checkdict(v):
+            assert isinstance(v, dict)
+            return v
+        return self.conv_get(k, default, checkdict)
 
     def intpair(self, k : str, default_value=None):
         v = self.inttupleget(k, default_value)
@@ -382,7 +393,7 @@ class typedict(dict):
         return v
 
     def _listget(self, k : str, default_value, item_type=None, min_items=None, max_items=None):
-        v = self.rawget(k)
+        v = self.get(k)
         if v is None:
             return default_value
         if not isinstance(v, (list, tuple)):
@@ -401,7 +412,6 @@ class typedict(dict):
         if item_type:
             for i, x in enumerate(aslist):
                 if isinstance(x, bytes) and item_type==str:
-                    from xpra.os_util import bytestostr
                     x = bytestostr(x)
                     aslist[i] = x
                 elif isinstance(x, str) and item_type==str:

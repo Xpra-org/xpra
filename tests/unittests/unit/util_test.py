@@ -67,8 +67,6 @@ class TestTypeDict(unittest.TestCase):
             "intpair" : (1, 2),
             "strtuple" : ["a", "b"],
             })
-        v = d.rawget("bytekey")
-        self.assertIsNotNone(v)
         #test all accessors:
         self.assertEqual(d.strget("strkey"), "strvalue")
         self.assertEqual(d.intget(1), 1)

@@ -428,7 +428,14 @@ class UIXpraClient(ClientBaseClass):
             if not cb.parse_server_capabilities(self, c):
                 log.info("failed to parse server capabilities in %s", cb)
                 return False
-        self.server_session_name = strtobytes(c.rawget("session_name", b"")).decode("utf-8")
+        self.server_session_name = c.get("session_name")
+        #legacy packet encoders give us a string,
+        #but that's actually a utf8 bytearray...
+        if self._protocol.encoder!="rencodeplus":
+            try:
+                self.server_session_name = strtobytes(self.server_session_name).decode("utf8")
+            except UnicodeDecodeError:
+                pass
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.server_platform = c.strget("platform")
         self.server_sharing = c.boolget("sharing")
@@ -621,7 +628,7 @@ class UIXpraClient(ClientBaseClass):
             self._protocol.enable_encoder(pe)
         elif command=="name":
             assert len(args)>=3
-            self.server_session_name = args[2]
+            self.server_session_name = bytestostr(args[2])
             log.info("session name updated from server: %s", self.server_session_name)
             #TODO: reset tray tooltip, session info title, etc..
         elif command=="debug":

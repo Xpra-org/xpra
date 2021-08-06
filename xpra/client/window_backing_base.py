@@ -384,7 +384,6 @@ class WindowBackingBase:
             data = img.get_pixels()
             stride = img.get_rowstride()
         #replace with the actual rgb format we get from the decoder:
-        options.pop(b"rgb_format", None)
         options["rgb_format"] = rgb_format
         self.idle_add(self.do_paint_rgb, rgb_format, data,
                                  x, y, iwidth, iheight, width, height, stride, options, callbacks)
@@ -432,7 +431,6 @@ class WindowBackingBase:
                 paint_fn = self._do_paint_rgb32
             else:
                 raise Exception("invalid rgb format '%s'" % rgb_format)
-            options.pop(b"rgb_format", None)
             options["rgb_format"] = rgb_format
             success = paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
             fire_paint_callbacks(callbacks, success)

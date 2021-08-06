@@ -2129,7 +2129,7 @@ class ServerCore:
             if mid:
                 capabilities["machine_id"] = mid
         if self.session_name:
-            capabilities["session_name"] = self.session_name.encode("utf-8")
+            capabilities["session_name"] = self.session_name
         return capabilities
 
 
