@@ -346,7 +346,7 @@ class WindowSource(WindowIconSource):
             self.enc_nvjpeg = get_codec("enc_nvjpeg")
             if self.enc_nvjpeg:
                 self.add_encoder("jpeg", self.nvjpeg_encode)
-        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default_value=None))
+        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
 
 
     def init_vars(self):
