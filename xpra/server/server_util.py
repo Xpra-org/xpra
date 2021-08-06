@@ -58,7 +58,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
             return env
     else:
         source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", filename)
-        dump = '/usr/bin/python -c "import os, json;print(json.dumps(dict(os.environ)))"'
+        dump = 'python%i.%i -c "import os, json;print(json.dumps(dict(os.environ)))"' % (sys.version_info.major, sys.version_info.minor)
         cmd = ['/bin/bash', '-c', '%s && %s' % (source, dump)]
         def decode(out):
             try:
