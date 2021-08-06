@@ -1,12 +1,14 @@
 # Changelog
 
-## [4.2.2] 2021-07-22
+## [4.2.2] 2021-08-06
 * don't build ffmpeg codecs on i386 (crashy)
+* prevent crashes caused by svg conversion done in a thread
 * always stop the 'new-stream' notification process
 * prevent subprocesses from becoming zombies
 * clean server on 'stop' or 'exit'
 * fix application geometry issues
 * show correct default values with "xpra --help"
+* source and source-start errors on CentOS 8
 * network layer:
 	* rencode packet encoder is not threads safe!
 	* packet errors with bencoder and None values
@@ -36,6 +38,7 @@
 	* MacOS updates for latest GTK3 builds
 	* add missing C++ files for MS Windows builds
 * minor / cosmetic fixes:
+	* cropped icons shown in html5 client connect page
 	* logging, error handling
 	* remove unused pulseaudio directories
 	* '1080p' resize-display string matching

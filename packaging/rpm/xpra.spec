@@ -605,13 +605,15 @@ fi
 
 
 %changelog
-* Wed Aug 04 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
+* Fri Aug 06 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
 - don't build ffmpeg codecs on i386 (crashy)
+- prevent crashes caused by svg conversion done in a thread
 - always stop the 'new-stream' notification process
 - prevent subprocesses from becoming zombies
 - clean server on 'stop' or 'exit'
 - fix application geometry issues
 - show correct default values with "xpra --help"
+- source and source-start errors on CentOS 8
 - network layer:
    rencode packet encoder is not threads safe!
    packet errors with bencoder and None values
@@ -641,6 +643,7 @@ fi
    MacOS updates for latest GTK3 builds
    add missing C++ files for MS Windows builds
 - minor / cosmetic fixes:
+   cropped icons shown in html5 client connect page
    logging, error handling
    remove unused pulseaudio directories
    '1080p' resize-display string matching
