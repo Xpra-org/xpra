@@ -11,7 +11,7 @@ from xpra.util import envbool
 from xpra.os_util import (
     OSX, POSIX,
     which,
-    shellsub, getuid,
+    shellsub,
     get_util_logger,
     osexpand, umask_context,
     close_all_fds,
