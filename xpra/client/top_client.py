@@ -11,10 +11,10 @@ from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
 from xpra.version_util import caps_to_version, full_version_str
-from xpra.util import noerr, typedict, std, envint, csv, engs, repr_ellipsized
+from xpra.util import u, noerr, typedict, std, envint, csv, engs, repr_ellipsized
 from xpra.os_util import (
     platform_name, get_machine_id,
-    bytestostr, monotonic_time,
+    bytestostr, strtobytes, monotonic_time,
     POSIX, SIGNAMES,
     )
 from xpra.exit_codes import EXIT_STR
@@ -756,12 +756,11 @@ class TopSessionClient(InfoTimerClient):
         pid = wi.intget("pid", 0)
         if pid:
             line1 = "pid %i: " % pid
-        title = wi.bytesget("title", b"")
+        title = wi.get("title", "")
+        if not isinstance(title, str):
+            title = u(strtobytes(title))
         if title:
-            try:
-                line1 += ' "%s"' % title.decode("utf8")
-            except UnicodeDecodeError:
-                line1 += ' "%s"' % bytestostr(title)
+            line1 += ' "%s"' % title
         attrs = [
             x for x in (
                 "above", "below", "bypass-compositor",

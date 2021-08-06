@@ -7,7 +7,7 @@ import os
 
 #ensure that we use gtk as display source:
 from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-from xpra.util import std, csv, envbool
+from xpra.util import std, csv, envbool, typedict
 from xpra.os_util import bytestostr
 from xpra.gtk_common.error import xsync, xlog
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
@@ -72,8 +72,9 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
     #preferably as structured data:
     if xkbmap_query and not xkbmap_query_struct:
         xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
+    xkbmap_query_struct = typedict(xkbmap_query_struct)
     if xkbmap_query_struct:
-        log("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)
+        log.warn("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)
         #The xkbmap_query_struct data will look something like this:
         #    {
         #    b"rules"       : b"evdev",
@@ -82,15 +83,15 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
         #    b"options"     : b"grp:shift_caps_toggle",
         #    }
         #parse the data into a dict:
-        rules = xkbmap_query_struct.get(b"rules")
-        model = xkbmap_query_struct.get(b"model")
-        layout = xkbmap_query_struct.get(b"layout")
-        variant = xkbmap_query_struct.get(b"variant")
-        options = xkbmap_query_struct.get(b"options")
+        rules = xkbmap_query_struct.strget("rules")
+        model = xkbmap_query_struct.strget("model")
+        layout = xkbmap_query_struct.strget("layout")
+        variant = xkbmap_query_struct.strget("variant")
+        options = xkbmap_query_struct.strget("options")
         if layout:
             log.info("setting keymap: %s",
                      csv("%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items()
-                         if bytestostr(k) in ("rules", "model", "layout", "variant", "options") and v))
+                         if k in ("rules", "model", "layout", "variant", "options") and v))
             safe_setxkbmap(rules, model, layout, variant, options)
         else:
             safe_setxkbmap(rules, model, "", "", "")

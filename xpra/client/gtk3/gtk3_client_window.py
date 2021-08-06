@@ -196,8 +196,8 @@ class GTK3ClientWindow(GTKClientWindowBase):
         hints = self.geometry_hints
         if not hints:
             return True
-        maxw = hints.intget(b"max_width", 32768)
-        maxh = hints.intget(b"max_height", 32768)
+        maxw = hints.intget("max_width", 32768)
+        maxh = hints.intget("max_height", 32768)
         if maxw>32000 and maxh>32000:
             return True
         geom = self.get_drawing_area_geometry()
