@@ -1457,12 +1457,12 @@ class GTKTrayMenuBase(MenuHelper):
         app_menu_item = self.start_menuitem(app_name, icondata)
         def app_launch(*args):
             log("app_launch(%s) command_props=%s", args, command_props)
-            command = command_props.bytesget("command")
+            command = command_props.strget("command")
             try:
-                command = re.sub(b'\\%[fFuU]', b'', command)
+                command = re.sub('\\%[fFuU]', '', command)
             except Exception:
                 log("re substitution failed", exc_info=True)
-                command = command.split(b"%", 1)[0]
+                command = command.split("%", 1)[0]
             log("command=%s", command)
             if command:
                 self.client.send_start_command(app_name, command, False, self.client.server_sharing)
