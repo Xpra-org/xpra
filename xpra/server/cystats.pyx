@@ -149,7 +149,7 @@ def calculate_size_weighted_average(data):
         tw = 1
     if rw<=0:
         rw = 1
-    return float(tv / tw), float(rv / rw)
+    return tv / tw, rv / rw
 
 def calculate_for_target(metric, float target_value, float avg_value, float recent_value, float aim=0.5, float div=1.0, float slope=0.1, smoothing=logp, float weight_multiplier=1.0):
     """
