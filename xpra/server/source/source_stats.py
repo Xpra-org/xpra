@@ -22,6 +22,12 @@ log = Logger("network")
 NRECS = 500
 
 
+def safeint(v, default=0):
+    try:
+        return int(v)
+    except ValueError:
+        return default
+
 class GlobalPerformanceStatistics:
     """
     Statistics which are shared by all WindowSources
@@ -130,7 +136,7 @@ class GlobalPerformanceStatistics:
         acss = 0
         if len(css)>=2:
             #weighted average of the send speed over the last minute:
-            acss = int(calculate_size_weighted_average(css)[0])
+            acss = safeint(calculate_size_weighted_average(css)[0])
             latest_ctime = self.congestion_send_speed[-1][0]
             elapsed = now-latest_ctime
             #require at least one recent event:
@@ -153,7 +159,7 @@ class GlobalPerformanceStatistics:
         if ftl:
             edata = tuple((event_time, pixels, latency) for _, event_time, pixels, latency in ftl)
             #(wid, event_time, no_of_pixels, latency)
-            self.avg_frame_total_latency = int(calculate_size_weighted_average(edata)[1])
+            self.avg_frame_total_latency = safeint(calculate_size_weighted_average(edata)[1])
 
     def get_factors(self, pixel_count):
         factors = []
