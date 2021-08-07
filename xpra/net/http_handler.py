@@ -199,6 +199,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if content:
             try:
                 self.wfile.write(content)
+            except BrokenPipeError as e:
+                log("handle_request() %s", e)
             except TypeError:
                 log("handle_request()", exc_info=True)
                 log.error("Error handling http request")
