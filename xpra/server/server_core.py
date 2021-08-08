@@ -2056,11 +2056,11 @@ class ServerCore:
         if is_req("id"):
             self.send_id_info(proto)
             return True
-        if is_req("info"):
-            self.send_hello_info(proto)
-            return True
         if self._closing:
             self.disconnect_client(proto, SERVER_EXIT, "server is shutting down")
+            return True
+        if is_req("info"):
+            self.send_hello_info(proto)
             return True
         return False
 
