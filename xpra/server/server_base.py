@@ -279,6 +279,8 @@ class ServerBase(ServerBaseClass):
         if ServerCore.hello_oked(self, proto, packet, c, auth_caps):
             #has been handled
             return
+        if not self.sanity_checks(proto, c):
+            return
         if not c.boolget("steal", True) and self._server_sources:
             self.disconnect_client(proto, SESSION_BUSY, "this session is already active")
             return
