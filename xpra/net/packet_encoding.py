@@ -59,8 +59,8 @@ def init_none():
     return Encoding("none", FLAGS_NOHEADER, 0, encode, None)
 
 
-def init_all():
-    for x in list(ALL_ENCODERS)+["none"]:
+def init_encoders(*names):
+    for x in names:
         if not envbool("XPRA_%s" % (x.upper()), True):
             continue
         fn = globals().get("init_%s" % x)
@@ -71,7 +71,9 @@ def init_all():
         except (ImportError, AttributeError):
             logger = Logger("network", "protocol")
             logger.debug("no %s", x, exc_info=True)
-init_all()
+
+def init_all():
+    init_encoders(*(list(ALL_ENCODERS)+["none"]))
 
 
 def get_packet_encoding_caps() -> dict:
