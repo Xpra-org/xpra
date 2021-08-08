@@ -246,21 +246,15 @@ def configure_logging(options, mode):
 
 def configure_network(options):
     from xpra.net import compression, packet_encoding
+    compression.init_compressors(*(list(options.compressors)+["none"]))
     ecs = compression.get_enabled_compressors()
-    for c in compression.ALL_COMPRESSORS:
-        enabled = c in ecs and c in options.compressors
-        setattr(compression, "use_%s" % c, enabled)
     if not ecs:
         #force compression level to zero since we have no compressors available:
         options.compression_level = 0
+    packet_encoding.init_encoders(*list(options.packet_encoders)+["none"])
     ees = packet_encoding.get_enabled_encoders()
-    count = 0
-    for pe in packet_encoding.ALL_ENCODERS:
-        enabled = pe in ees and pe in options.packet_encoders
-        setattr(packet_encoding, "use_%s" % pe, enabled)
-        count += int(enabled)
     #verify that at least one encoder is available:
-    if not count:
+    if not ees:
         raise InitException("at least one valid packet encoder must be enabled")
 
 def configure_env(env_str):

@@ -98,8 +98,8 @@ def init_none():
     return Compression("none", None, None, nocompress, nodecompress)
 
 
-def init_all():
-    for x in list(ALL_COMPRESSORS)+["none"]:
+def init_compressors(*names):
+    for x in names:
         if not envbool("XPRA_%s" % (x.upper()), True):
             continue
         fn = globals().get("init_%s" % x)
@@ -111,7 +111,9 @@ def init_all():
             from xpra.log import Logger
             logger = Logger("network", "protocol")
             logger.debug("no %s", x, exc_info=True)
-init_all()
+
+def init_all():
+    init_compressors(*(list(ALL_COMPRESSORS)+["none"]))
 
 
 def use(compressor) -> bool:
