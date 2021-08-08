@@ -11,7 +11,6 @@ from xpra.net import compression
 class TestCompression(unittest.TestCase):
 
     def test_main(self):
-        compression.sanity_checks()
         compression.init_all()
         assert compression.use("zlib")
         assert compression.get_compression_caps()

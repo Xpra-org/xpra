@@ -12,7 +12,6 @@ class TestPacketEncoding(unittest.TestCase):
 
     def test_env_log(self):
         packet_encoding.init_all()
-        packet_encoding.sanity_checks()
         assert packet_encoding.get_packet_encoding_caps()
         assert packet_encoding.get_enabled_encoders()
         for x in packet_encoding.get_enabled_encoders():
