@@ -37,10 +37,6 @@ def init_rencode():
     return Encoding("rencode", FLAGS_RENCODE, rencode.__version__, do_rencode, rencode.loads)
 
 def init_rencodeplus():
-    import sys
-    print("%s" % (sys.argv,))
-    import traceback
-    traceback.print_stack()
     from xpra.net.rencodeplus import rencodeplus    #pylint: disable=no-name-in-module
     rencodeplus_dumps = rencodeplus.dumps
     def do_rencodeplus(v):
