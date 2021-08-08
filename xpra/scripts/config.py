@@ -1453,7 +1453,6 @@ def fixup_keyboard(options):
     #variants and layouts can be specified as CSV, convert them to lists:
     def p(v):
         try:
-            from xpra.util import remove_dupes
             r = remove_dupes(x.strip() for x in v.split(","))
             #remove empty string if that's the only value:
             if r and len(r)==1 and r[0]=="":
