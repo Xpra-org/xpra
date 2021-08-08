@@ -161,6 +161,7 @@ if [ "${DO_CLEAN}" == "1" ]; then
 	#clean sometimes errors on removing pyd files,
 	#so do it with rm instead:
 	find xpra/ -name "*-cpython-*dll" -exec rm -f {} \;
+	find xpra/ -name "*.cp-mingw*.pyd" -exec rm -f {} \;
 	CLEAN_LOG="clean.log"
 	${PYTHON} ./setup.py clean >& "${CLEAN_LOG}"
 	if [ "$?" != "0" ]; then
