@@ -8,7 +8,8 @@ xpra (4.2.2-1) UNRELEASED; urgency=low
   * show correct default values with "xpra --help"
   * source and source-start errors on CentOS 8
   * network layer:
-    - rencode packet encoder is not threads safe!
+    - honour the packet-encoding and compressors options
+    - rencode packet encoder is not thread safe!
     - packet errors with bencoder and None values
     - don't assume the packet encoders handle bytes and / or strings
   * client issues:
@@ -41,7 +42,7 @@ xpra (4.2.2-1) UNRELEASED; urgency=low
     - remove unused pulseaudio directories
     - '1080p' resize-display string matching
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 06 Aug 2021 22:07:32 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 08 Aug 2021 19:28:01 +0700
 
 xpra (4.2.1-1) UNRELEASED; urgency=low
   * build and packaging fixes:

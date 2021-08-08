@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.2.2] 2021-08-06
+## [4.2.2] 2021-08-08
 * don't build ffmpeg codecs on i386 (crashy)
 * prevent crashes caused by svg conversion done in a thread
 * always stop the 'new-stream' notification process
@@ -10,7 +10,8 @@
 * show correct default values with "xpra --help"
 * source and source-start errors on CentOS 8
 * network layer:
-	* rencode packet encoder is not threads safe!
+	* honour the packet-encoding and compressors options
+	* rencode packet encoder is not thread safe!
 	* packet errors with bencoder and None values
 	* don't assume the packet encoders handle bytes and / or strings
 * client issues:

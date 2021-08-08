@@ -605,7 +605,7 @@ fi
 
 
 %changelog
-* Fri Aug 06 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
+* Sun Aug 08 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
 - don't build ffmpeg codecs on i386 (crashy)
 - prevent crashes caused by svg conversion done in a thread
 - always stop the 'new-stream' notification process
@@ -615,7 +615,8 @@ fi
 - show correct default values with "xpra --help"
 - source and source-start errors on CentOS 8
 - network layer:
-   rencode packet encoder is not threads safe!
+   honour the packet-encoding and compressors options
+   rencode packet encoder is not thread safe!
    packet errors with bencoder and None values
    don't assume the packet encoders handle bytes and / or strings
 - client issues:
