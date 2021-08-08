@@ -135,6 +135,7 @@ if [ "${DO_CLEAN}" == "1" ]; then
 	find xpra/ -name "*.pyd" -exec rm -f {} \;
 	#python3:
 	find xpra/ -name "*-cpython-*dll" -exec rm -f {} \;
+	find xpra/ -name "*.cp-mingw*.pyd" -exec rm -f {} \;
 	CLEAN_LOG="clean.log"
 	${PYTHON} ./setup.py clean >& "${CLEAN_LOG}"
 	if [ "$?" != "0" ]; then
