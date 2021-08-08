@@ -7,5 +7,4 @@ fi
 
 $BASH ./libcuda1.sh
 $BASH ./libnvidia-fbc1.sh
-$BASH ./xpra-html5.sh
 $BASH ./xpra.sh
