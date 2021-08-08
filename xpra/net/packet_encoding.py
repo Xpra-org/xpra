@@ -119,13 +119,6 @@ def get_packet_encoding_type(protocol_flags) -> str:
     return "bencode"
 
 
-def sanity_checks():
-    if "rencodeplus" not in ENCODERS:
-        log = Logger("network", "protocol")
-        log.warn("Warning: 'rencodeplus' packet encoder was not found")
-        log.warn(" this build of xpra may be incomplete")
-
-
 class InvalidPacketEncodingException(Exception):
     pass
 

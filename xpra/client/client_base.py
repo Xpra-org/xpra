@@ -18,7 +18,7 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import may_log_packet, PACKET_TYPES
 from xpra.net.protocol_classes import get_client_protocol_class
-from xpra.net.protocol import Protocol, sanity_checks
+from xpra.net.protocol import Protocol
 from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_salt, gendigest
 from xpra.net.crypto import (
@@ -138,7 +138,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.session_id = uuid.uuid4().hex
         self.init_packet_handlers()
         self.have_more = noop
-        sanity_checks()
 
     def init(self, opts):
         if self._init_done:

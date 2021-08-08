@@ -39,7 +39,7 @@ from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
     )
-from xpra.net.protocol import Protocol, sanity_checks
+from xpra.net.protocol import Protocol
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.paths import (
@@ -211,7 +211,6 @@ class ServerCore:
         self.menu_provider = None
 
         self.init_uuid()
-        sanity_checks()
 
     def get_server_mode(self):
         return "core"
