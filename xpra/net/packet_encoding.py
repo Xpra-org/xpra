@@ -104,13 +104,6 @@ def get_packet_encoding_type(protocol_flags) -> str:
     return "bencode"
 
 
-def sanity_checks():
-    if "rencode" not in ENCODERS:
-        log = Logger("network", "protocol")
-        log.warn("Warning: 'rencode' packet encoder not found")
-        log.warn(" the other packet encoders are much slower")
-
-
 class InvalidPacketEncodingException(Exception):
     pass
 

@@ -144,18 +144,6 @@ def get_compressor(name):
     return c.compress
 
 
-def sanity_checks():
-    if not use("lzo") and not use("lz4"):
-        from xpra.log import Logger
-        logger = Logger("network", "protocol")
-        if not use("zlib"):
-            logger.warn("Warning: all the compressors are unavailable or disabled,")
-            logger.warn(" performance may suffer in some cases")
-        else:
-            logger.warn("Warning: zlib is the only compressor enabled")
-            logger.warn(" install and enable lz4 support for better performance")
-
-
 class Compressed:
     def __init__(self, datatype, data, can_inline=False):
         assert data is not None, "compressed data cannot be set to None"

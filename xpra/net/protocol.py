@@ -23,13 +23,13 @@ from xpra.net.common import (
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (
-    decompress, sanity_checks as compression_sanity_checks,
+    decompress,
     InvalidCompressionException, Compressed, LevelCompressed, Compressible, LargeStructure,
     )
 from xpra.net import packet_encoding
 from xpra.net.socket_util import guess_packet_type
 from xpra.net.packet_encoding import (
-    decode, sanity_checks as packet_encoding_sanity_checks,
+    decode,
     InvalidPacketEncodingException,
     )
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE
@@ -52,12 +52,6 @@ FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
 MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
-
-
-def sanity_checks():
-    """ warns the user if important modules are missing """
-    compression_sanity_checks()
-    packet_encoding_sanity_checks()
 
 
 def exit_queue():

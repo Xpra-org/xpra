@@ -245,8 +245,12 @@ def configure_network(options):
         #force compression level to zero since we have no compressors available:
         options.compression_level = 0
     packet_encoding.init_encoders(*list(options.packet_encoders)+["none"])
-    ees = packet_encoding.get_enabled_encoders()
-    #verify that at least one encoder is available:
+    ees = set(packet_encoding.get_enabled_encoders())
+    try:
+        ees.remove("none")
+    except KeyError:
+        pass
+    #verify that at least one real encoder is available:
     if not ees:
         raise InitException("at least one valid packet encoder must be enabled")
 
