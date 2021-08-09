@@ -605,7 +605,7 @@ fi
 
 
 %changelog
-* Sun Aug 08 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
+* Mon Aug 09 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
 - don't build ffmpeg codecs on i386 (crashy)
 - prevent crashes caused by svg conversion done in a thread
 - always stop the 'new-stream' notification process
@@ -614,6 +614,7 @@ fi
 - fix application geometry issues
 - show correct default values with "xpra --help"
 - source and source-start errors on CentOS 8
+- stop responding to 'info' requests when shutting down
 - network layer:
    honour the packet-encoding and compressors options
    rencode packet encoder is not thread safe!
@@ -643,6 +644,10 @@ fi
    Debian packages now correctly use /etc/default for systemd service configuration
    MacOS updates for latest GTK3 builds
    add missing C++ files for MS Windows builds
+   DEB missing dependency on gst-launch needed for silence detection
+- audio:
+   pipeline errors with aac encoder
+   X11 warning when starting microphone forwarding from the command line
 - minor / cosmetic fixes:
    cropped icons shown in html5 client connect page
    logging, error handling

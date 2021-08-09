@@ -7,6 +7,7 @@ xpra (4.2.2-1) UNRELEASED; urgency=low
   * fix application geometry issues
   * show correct default values with "xpra --help"
   * source and source-start errors on CentOS 8
+  * stop responding to 'info' requests when shutting down
   * network layer:
     - honour the packet-encoding and compressors options
     - rencode packet encoder is not thread safe!
@@ -36,13 +37,17 @@ xpra (4.2.2-1) UNRELEASED; urgency=low
     - Debian packages now correctly use /etc/default for systemd service configuration
     - MacOS updates for latest GTK3 builds
     - add missing C++ files for MS Windows builds
+    - DEB missing dependency on gst-launch needed for silence detection
+  * audio:
+    - pipeline errors with aac encoder
+    - X11 warning when starting microphone forwarding from the command line
   * minor / cosmetic fixes:
     - cropped icons shown in html5 client connect page
     - logging, error handling
     - remove unused pulseaudio directories
     - '1080p' resize-display string matching
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 08 Aug 2021 19:28:01 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 09 Aug 2021 23:38:46 +0700
 
 xpra (4.2.1-1) UNRELEASED; urgency=low
   * build and packaging fixes:
