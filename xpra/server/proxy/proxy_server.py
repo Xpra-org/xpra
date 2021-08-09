@@ -412,7 +412,7 @@ class ProxyServer(ServerCore):
                 return
             if display:
                 if display not in displays:
-                    if (":%s" % display) in displays:
+                    if ":%s" % display in displays:
                         display = ":%s" % display
                     else:
                         disconnect(SESSION_NOT_FOUND, "display '%s' not found" % display)
