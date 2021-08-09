@@ -129,6 +129,7 @@ Recommends: python3-dbus
         ,gstreamer1.0-pulseaudio
         ,gstreamer1.0-alsa
         ,gstreamer1.0-plugins-base
+        ,gstreamer1.0-tools
 #                 ^^ vorbis ^^
         ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
