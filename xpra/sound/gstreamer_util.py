@@ -156,7 +156,7 @@ ENCODER_DEFAULT_OPTIONS_COMMON = {
                                "quality"    : 0,        #"fast"
                                },
             "avenc_aac"     : {
-                               "compliance" : 1,       #allows experimental
+                               #"compliance" : 1,
                                "perfect-timestamp"  : 1,
                                },
             "faac"          : {
