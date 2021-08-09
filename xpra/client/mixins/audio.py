@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from gi.repository import GLib
+
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
@@ -205,7 +207,9 @@ class AudioClient(StubClientMixin):
             self.show_progress(90, "starting speaker forwarding")
             self.start_receiving_sound()
         if self.server_sound_receive and self.microphone_enabled:
-            self.start_sending_sound()
+            #call via idle_add because we may query X11 properties
+            #to find the pulseaudio server:
+            GLib.idle_add(self.start_sending_sound)
         return True
 
 
