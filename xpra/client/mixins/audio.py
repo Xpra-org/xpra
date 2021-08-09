@@ -193,7 +193,7 @@ class AudioClient(StubClientMixin):
         if self.server_sound_send and self.speaker_enabled:
             self.start_receiving_sound()
         if self.server_sound_receive and self.microphone_enabled:
-            self.start_sending_sound()
+            self.idle_add(self.start_sending_sound)
         return True
 
 
