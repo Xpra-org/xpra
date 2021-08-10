@@ -74,7 +74,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
         xkbmap_query_struct = parse_xkbmap_query(xkbmap_query)
     xkbmap_query_struct = typedict(xkbmap_query_struct)
     if xkbmap_query_struct:
-        log.warn("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)
+        log("do_set_keymap using xkbmap_query struct=%s", xkbmap_query_struct)
         #The xkbmap_query_struct data will look something like this:
         #    {
         #    b"rules"       : b"evdev",
