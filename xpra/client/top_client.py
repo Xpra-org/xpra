@@ -411,7 +411,7 @@ class TopSessionClient(InfoTimerClient):
             curses_err(self.stdscr, e)
 
 
-    def dictwarn(self, msg, *args, **kwargs):
+    def dictwarn(self, msg, *args):
         try:
             self.log(msg % (args,))
         except Exception as e:

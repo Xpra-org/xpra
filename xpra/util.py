@@ -348,8 +348,8 @@ class typedict(dict):
     def __repr__(self):
         return '{0}({1})'.format(type(self).__name__, super().__repr__())
 
-    def _warn(self, msg, *args, **kwargs):
-        get_util_logger().warn(msg, *args, **kwargs)
+    def _warn(self, msg, *args):
+        get_util_logger().warn(msg, *args)
 
     def conv_get(self, k, default=None, conv=None):
         if not super().__contains__(bytestostr(k)):
