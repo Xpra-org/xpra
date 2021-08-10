@@ -153,6 +153,12 @@ def dump_exc():
     """Call this from a except: clause to print a nice traceback."""
     print("".join(traceback.format_exception(*sys.exc_info())))
 
+def noerr(fn, *args):
+    try:
+        return fn(*args)
+    except Exception:
+        return None
+
 # A simple little class whose instances we can stick random bags of attributes
 # on.
 class AdHocStruct(object):
