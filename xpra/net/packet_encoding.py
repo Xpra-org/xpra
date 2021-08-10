@@ -61,6 +61,10 @@ def init_none():
 
 def init_encoders(*names):
     for x in names:
+        if x not in ALL_ENCODERS:
+            logger = Logger("network", "protocol")
+            logger.warn("Warning: invalid encoder '%s'", x)
+            continue
         if not envbool("XPRA_%s" % (x.upper()), True):
             continue
         fn = globals().get("init_%s" % x)
