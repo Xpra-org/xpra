@@ -315,7 +315,7 @@ def bytestostr(x) -> str:
 _RaiseKeyError = object()
 
 class typedict(dict):
-    __slots__ = () # no __dict__ - that would be redundant
+    __slots__ = ("warn") # no __dict__ - that would be redundant
     @staticmethod # because this doesn't make sense as a global function.
     def _process_args(mapping=(), **kwargs):
         if hasattr(mapping, "items"):
@@ -323,6 +323,7 @@ class typedict(dict):
         return ((bytestostr(k), v) for k, v in chain(mapping, getattr(kwargs, "items")()))
     def __init__(self, mapping=(), **kwargs):
         super().__init__(self._process_args(mapping, **kwargs))
+        self.warn = self._warn
     def __getitem__(self, k):
         return super().__getitem__(bytestostr(k))
     def __setitem__(self, k, v):
@@ -346,6 +347,7 @@ class typedict(dict):
         return super().fromkeys((bytestostr(k) for k in keys), v)
     def __repr__(self):
         return '{0}({1})'.format(type(self).__name__, super().__repr__())
+
     def _warn(self, msg, *args, **kwargs):
         get_util_logger().warn(msg, *args, **kwargs)
 

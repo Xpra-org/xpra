@@ -410,6 +410,18 @@ class TopSessionClient(InfoTimerClient):
         else:
             curses_err(self.stdscr, e)
 
+
+    def dictwarn(self, msg, *args, **kwargs):
+        try:
+            self.log(msg % (args,))
+        except Exception as e:
+            self.log("error logging message: %s" % e)
+    def td(self, d):
+        d = typedict(d)
+        #override warning method so we don't corrupt the curses output
+        d.warn = self.dictwarn
+        return d
+
     def update_screen(self):
         self.modified = True
 
@@ -470,15 +482,15 @@ class TopSessionClient(InfoTimerClient):
             build = self.slidictget("server", "build")
             vstr = caps_to_version(build)
             mode = server_info.strget("mode", "server")
-            python_info = typedict(server_info.dictget("python", {}))
+            python_info = self.td(server_info.dictget("python", {}))
             bits = python_info.intget("bits", 32)
             server_str = "Xpra %s server version %s %i-bit" % (mode, vstr, bits)
             proxy_info = self.slidictget("proxy")
             if proxy_info:
-                proxy_platform_info = typedict(proxy_info.dictget("platform", {}))
+                proxy_platform_info = self.td(proxy_info.dictget("platform", {}))
                 proxy_platform = proxy_platform_info.strget("")
                 proxy_release = proxy_platform_info.strget("release")
-                proxy_build_info = typedict(proxy_info.dictget("build", {}))
+                proxy_build_info = self.td(proxy_info.dictget("build", {}))
                 proxy_version = proxy_build_info.strget("version")
                 proxy_distro = proxy_info.strget("linux_distribution")
                 server_str += " via: %s proxy version %s" % (
@@ -576,7 +588,7 @@ class TopSessionClient(InfoTimerClient):
                 ci = client_info.dictget(nclients)
                 if not ci:
                     break
-                ci = typedict(ci)
+                ci = self.td(ci)
                 session_id = ci.strget("session-id")
                 if session_id!=self.session_id and ci.boolget("windows", True) and ci.strget("type")!="top":
                     gui_clients.append(nclients)
@@ -599,7 +611,7 @@ class TopSessionClient(InfoTimerClient):
             for client_index, client_no in enumerate(gui_clients):
                 ci = client_info.dictget(client_no)
                 assert ci
-                ci = self.get_client_info(typedict(ci))
+                ci = self.get_client_info(self.td(ci))
                 l = len(ci)
                 if hpos+2+l>height:
                     if hpos<height:
@@ -621,7 +633,7 @@ class TopSessionClient(InfoTimerClient):
             wins = tuple(windows.values())
             nwindows = len(wins)
             for win_no, win in enumerate(wins):
-                wi = self.get_window_info(typedict(win))
+                wi = self.get_window_info(self.td(win))
                 l = len(wi)
                 if hpos+2+l>height:
                     if hpos<height:
@@ -643,7 +655,7 @@ class TopSessionClient(InfoTimerClient):
     def dictget(self, dictinstance, *parts):
         d = dictinstance
         for part in parts:
-            d = typedict(d.dictget(part, {}))
+            d = self.td(d.dictget(part, {}))
         return d
 
     def get_client_info(self, ci):
@@ -657,7 +669,7 @@ class TopSessionClient(InfoTimerClient):
             conn_info = "connected from %s " % chost
         cinfo = ci.dictget("connection")
         if cinfo:
-            cinfo = typedict(cinfo)
+            cinfo = self.td(cinfo)
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
         gl_info = self.get_gl_info(ci.dictget("opengl"))
@@ -667,8 +679,8 @@ class TopSessionClient(InfoTimerClient):
             audio_info.append(self._audio_info(ci, mode))
         audio_info.append(self._avsync_info(ci))
         #batch delay / latency:
-        b_info = typedict(ci.dictget("batch", {}))
-        bi_info = typedict(b_info.dictget("delay", {}))
+        b_info = self.td(ci.dictget("batch", {}))
+        bi_info = self.td(b_info.dictget("delay", {}))
         bcur = bi_info.intget("cur")
         bavg = bi_info.intget("avg")
         batch_info = "batch delay: %i (%i)" %(
@@ -687,16 +699,16 @@ class TopSessionClient(InfoTimerClient):
             bl_color = RED
         batch_latency = batch_info.ljust(24)+"latency: %i (%i)" % (lcur, lavg)
         #speed / quality:
-        edict = typedict(ci.dictget("encoding") or {})
+        edict = self.td(ci.dictget("encoding") or {})
         qs_info = ""
         qs_color = GREEN
         if edict:
-            sinfo = typedict(edict.dictget("speed") or {})
+            sinfo = self.td(edict.dictget("speed") or {})
             if sinfo:
                 cur = sinfo.intget("cur")
                 avg = sinfo.intget("avg")
                 qs_info = "speed: %s%% (avg: %s%%)" % (cur, avg)
-            qinfo = typedict(edict.dictget("quality") or {})
+            qinfo = self.td(edict.dictget("quality") or {})
             if qinfo:
                 qs_info = qs_info.ljust(24)
                 cur = qinfo.intget("cur")
@@ -719,7 +731,7 @@ class TopSessionClient(InfoTimerClient):
         minfo = self.dictget(ci, "sound", mode)
         if not minfo:
             return "%s off" % mode
-        minfo = typedict(minfo)
+        minfo = self.td(minfo)
         audio_info = "%s: %s" % (mode, minfo.strget("codec_description") or \
                                  minfo.strget("codec") or \
                                  minfo.strget("state", "unknown"))
@@ -783,7 +795,7 @@ class TopSessionClient(InfoTimerClient):
     def get_gl_info(self, gli):
         if not gli:
             return None
-        gli = typedict(gli)
+        gli = self.td(gli)
         def strget(key, sep="."):
             #fugly warning:
             #depending on where we get the gl info from,
