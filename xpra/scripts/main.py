@@ -2213,6 +2213,9 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
             if scaling==(1, 1):
                 options.resize_display = "%ix%i" % (root_w, root_h)
 
+    if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and (OSX or WIN32):
+         raise InitException("%s is not supported on this platform" % mode)
+
     if (
         mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and not supports_server
         ) or (
