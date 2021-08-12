@@ -1622,11 +1622,7 @@ class ServerCore:
             "Cross-Origin-Resource-Policy" : "cross-origin" if CROSS_ORIGIN_SCRIPTS else "same-origin",
             }
         if CROSS_ORIGIN_SCRIPTS:
-            try:
-                headers["Access-Control-Allow-Origin"] = handler.client_address[0]
-                headers["Vary"] = "Origin"
-            except (AttributeError, TypeError, KeyError):
-                log("failed to set Access-Control-Allow-Origin with client address", exc_info=True)
+            headers["Access-Control-Allow-Origin"] = "*"
         for k,v in headers.items():
             handler.send_header(k, v)
         handler.end_headers()
