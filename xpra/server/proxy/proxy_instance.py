@@ -494,6 +494,11 @@ class ProxyInstance:
             self.encode_queue.put(packet)
             #which will queue the packet itself when done:
             return
+        elif packet_type=="sound-data":
+            sound_data = packet[2]
+            if sound_data:
+                #best if we use raw packets for the actual sound-data chunk:
+                packet[2] = Compressed("sound-data", sound_data)
         #we do want to reformat cursor packets...
         #as they will have been uncompressed by the network layer already:
         elif packet_type=="cursor":
