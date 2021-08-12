@@ -93,6 +93,7 @@ SYSCONFIG = envbool("XPRA_SYSCONFIG", True)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
+CROSS_ORIGIN_SCRIPTS = envbool("XPRA_CROSS_ORIGIN_SCRIPTS", True)
 
 ENCRYPTED_SOCKET_TYPES = os.environ.get("XPRA_ENCRYPTED_SOCKET_TYPES", "tcp,ws")
 
@@ -1618,7 +1619,15 @@ class ServerCore:
         headers = {
             "Content-type"      : content_type,
             "Content-Length"    : len(content),
+            "Cross-Origin-Resource-Policy" : "cross-origin" if CROSS_ORIGIN_SCRIPTS else "same-origin",
             }
+        #this would be redundant?
+        #if CROSS_ORIGIN_SCRIPTS:
+        #    try:
+        #        headers["Access-Control-Allow-Origin"] = handler.client_address[0]
+        #        headers["Vary"] = "Origin"
+        #    except (AttributeError, TypeError, KeyError):
+        #        log("failed to set Access-Control-Allow-Origin with client address", exc_info=True)
         for k,v in headers.items():
             handler.send_header(k, v)
         handler.end_headers()
