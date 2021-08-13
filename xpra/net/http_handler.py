@@ -265,7 +265,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             f = open(path, 'rb')
             fs = os.fstat(f.fileno())
             content_length = fs[6]
-            headers = {}
             content_type = EXTENSION_TO_MIMETYPE.get(ext)
             if not content_type:
                 if not mimetypes.inited:
@@ -275,7 +274,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                     content_type = ctype[0]
             log("guess_type(%s)=%s", path, content_type)
             if content_type:
-                headers["Content-type"] = content_type
+                self.extra_headers["Content-type"] = content_type
             accept = self.headers.get('accept-encoding', '').split(",")
             accept = tuple(x.split(";")[0].strip() for x in accept)
             content = None
@@ -304,7 +303,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 f = open(compressed_path, 'rb')
                 content = f.read()
                 assert content, "no data in %s" % compressed_path
-                headers["Content-Encoding"] = enc
+                self.extra_headers["Content-Encoding"] = enc
                 break
             if not content:
                 content = f.read()
@@ -322,16 +321,16 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                     compressed_content = gzip_compress.compress(content) + gzip_compress.flush()
                     if len(compressed_content)<content_length:
                         log("gzip compressed '%s': %i down to %i bytes", path, content_length, len(compressed_content))
-                        headers["Content-Encoding"] = "gzip"
+                        self.extra_headers["Content-Encoding"] = "gzip"
                         content = compressed_content
             f.close()
             f = None
-            headers["Content-Length"] = len(content)
-            headers["Last-Modified"] = self.date_time_string(fs.st_mtime)
             #send back response headers:
             self.send_response(200)
-            for k,v in headers.items():
-                self.send_header(k, v)
+            self.extra_headers.update({
+                "Content-Length"    : len(content),
+                "Last-Modified"     : self.date_time_string(fs.st_mtime),
+                })
             self.end_headers()
         except IOError as e:
             log("send_head()", exc_info=True)
