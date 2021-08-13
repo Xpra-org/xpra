@@ -70,6 +70,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         server = AdHocStruct()
         server.logger = log
         self.directory_listing = DIRECTORY_LISTING
+        self.extra_headers = {}
         super().__init__(sock, addr, server)
 
     def translate_path(self, path):
@@ -136,9 +137,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             #ie: "en-GB,en-US;q=0.8,en;q=0.6"
             accept = self.headers.get("Accept-Language")
             if accept:
-                self.send_header("Echo-Accept-Language", std(accept, extras="-,./:;="))
-        for k,v in self.get_headers().items():
-            self.send_header(k, v)
+                self.extra_headers["Echo-Accept-Language"] = std(accept, extras="-,./:;=")
+        headers = self.get_headers()
+        if self.extra_headers:
+            headers.update(self.extra_headers)
+        if headers:
+            for k,v in headers.items():
+                self.send_header(k, v)
         super().end_headers()
 
     def get_headers(self):
@@ -174,6 +179,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                         if sline.startswith("#") or not sline:
                             continue
                         parts = sline.split("=", 1)
+                        if len(parts)!=2 and sline.find(":")>0:
+                            parts = sline.split(":", 1)
                         if len(parts)!=2:
                             continue
                         h[parts[0]] = parts[1]

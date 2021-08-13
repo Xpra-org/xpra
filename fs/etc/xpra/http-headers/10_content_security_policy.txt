@@ -1,3 +1,7 @@
 # Basic Content Security Policy
 
 Content-Security-Policy: default-src 'self' ; script-src 'self' 'unsafe-inline' ; style-src 'self' ; img-src 'self' ; font-src 'none' ; connect-src 'self' ; media-src 'self' ; object-src 'none' ; child-src 'none' ; worker-src 'self' ; frame-ancestors 'none' ; form-action 'self' ; block-all-mixed-content; disown-opener; reflected-xss block; referrer no-referrer;
+
+# for stricter access control, use 'same-origin'
+Cross-Origin-Resource-Policy : cross-origin
+Access-Control-Allow-Origin : *
