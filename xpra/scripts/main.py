@@ -184,6 +184,7 @@ def configure_logging(options, mode):
         "desktop-greeter",
         "show-menu", "show-about", "show-session-info"
         "webcam",
+        "showconfig",
         ):
         s = sys.stdout
     else:
