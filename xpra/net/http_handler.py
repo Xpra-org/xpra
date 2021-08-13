@@ -160,7 +160,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                     if mtime>cls.http_headers_time.get(d, -1):
                         mtimes[d] = mtime
             if not mtimes:
-                return cls.http_headers_cache
+                return cls.http_headers_cache.copy()
             log("headers directories have changed: %s", mtimes)
         headers = {}
         for d in http_headers_dirs:
@@ -189,7 +189,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             cls.http_headers_time[d] = mtime
         log("may_reload_headers() headers=%s, mtime=%s", headers, mtimes)
         cls.http_headers_cache = headers
-        return headers
+        return headers.copy()
 
 
     def do_POST(self):
