@@ -183,7 +183,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                             parts = sline.split(":", 1)
                         if len(parts)!=2:
                             continue
-                        h[parts[0]] = parts[1]
+                        h[parts[0].strip()] = parts[1].strip()
                 log("may_reload_headers() '%s'=%s", header_file, h)
                 headers.update(h)
             cls.http_headers_time[d] = mtime
