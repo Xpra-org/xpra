@@ -167,15 +167,18 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if not os.path.isfile(header_file):
                     continue
                 log("may_reload_headers() loading from '%s'", header_file)
-                with open(header_file, "r") as f:
-                    for line in f:
+                h = {}
+                with open(header_file, "r") as hf:
+                    for line in hf:
                         sline = line.strip().rstrip('\r\n').strip()
                         if sline.startswith("#") or not sline:
                             continue
                         parts = sline.split("=", 1)
                         if len(parts)!=2:
                             continue
-                        headers[parts[0]] = parts[1]
+                        h[parts[0]] = parts[1]
+                log("may_reload_headers() '%s'=%s", header_file, h)
+                headers.update(h)
             cls.http_headers_time[d] = mtime
         log("may_reload_headers() headers=%s, mtime=%s", headers, mtimes)
         cls.http_headers_cache = headers
