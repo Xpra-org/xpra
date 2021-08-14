@@ -22,8 +22,8 @@ def start_dbus(dbus_launch):
     bus_address = os.environ.get("DBUS_SESSION_BUS_ADDRESS")
     log("dbus_launch=%r, current DBUS_SESSION_BUS_ADDRESS=%s", dbus_launch, bus_address)
     if bus_address:
-        log("start_dbus(%s) disabled, found an existing DBUS_SESSION_BUS_ADDRESS=%s", dbus_launch, bus_address)
-        return 0, {}
+        log.warn("Warning: found an existing dbus instance:")
+        log.warn(" DBUS_SESSION_BUS_ADDRESS=%s", bus_address)
     assert POSIX
     try:
         env = dict((k,v) for k,v in os.environ.items() if k in (
