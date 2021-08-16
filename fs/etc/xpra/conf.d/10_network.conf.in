@@ -45,7 +45,7 @@ compression_level = 1
 # Packet encoders (at least one is required):
 #packet-encoders = bencode
 #packet-encoders = all
-packet-encoders = rencode, bencode, yaml
+packet-encoders = rencodeplus, rencode, bencode, yaml
 
 # Socket directories (may be specified more than once):
 #socket-dirs = /tmp
