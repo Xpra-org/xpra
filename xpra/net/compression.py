@@ -245,6 +245,7 @@ def main(): # pragma: no cover
     from xpra.util import print_nested_dict
     from xpra.platform import program_context
     with program_context("Compression", "Compression Info"):
+        init_all()
         print_nested_dict(get_compression_caps())
 
 
