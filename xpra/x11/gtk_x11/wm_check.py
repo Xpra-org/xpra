@@ -84,7 +84,7 @@ def wm_check(wm_name="xpra", upgrading=False):
             log.warn(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue")
             log.warn(" at your own risk")
             return False
-    if upgrading and not found_name:
+    if upgrading and not found_name and not FORCE_REPLACE_WM:
         log.error("Error: xpra server not found")
         return False
     return True
