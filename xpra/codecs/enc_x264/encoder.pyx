@@ -776,7 +776,7 @@ cdef class Encoder:
             "bitrate"           : param.rc.i_bitrate,
             "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,
             "vbv_buffer_size"   : param.rc.i_vbv_buffer_size,
-            #"vbv_buffer_init"   : param.rc.f_vbv_buffer_init,	#can't have floats with bencoder
+            #"vbv_buffer_init"   : param.rc.f_vbv_buffer_init, #can't have floats with bencoder
             "vbv_max_bitrate"   : param.rc.i_vbv_max_bitrate,
 
             "mb-tree"           : bool(param.rc.b_mb_tree),

@@ -239,17 +239,17 @@ cdef extern from "NvFBC/nvFBCToSys.h":
     ctypedef NVFBC_TOSYS_SETUP_PARAMS_V2 NVFBC_TOSYS_SETUP_PARAMS
 
     ctypedef struct NVFBC_TOSYS_GRAB_FRAME_PARAMS_V1:
-        NvU32 dwVersion				                #[in]: Struct version. Set to NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER.
-        NvU32 dwFlags				                #[in]: Special grabbing requests. This should be a bit-mask of NVFBC_TOSYS_GRAB_FLAGS values.
-        NvU32 dwTargetWidth				            #[in]: Target image width. NvFBC will scale the captured image to fit taret width and height. Used with NVFBC_TOSYS_SOURCEMODE_SCALE and NVFBC_TOSYS_SOURCEMODE_CROP.
-        NvU32 dwTargetHeight				        #[in]: Target image height. NvFBC will scale the captured image to fit taret width and height. Used with NVFBC_TOSYS_SOURCEMODE_SCALE and NVFBC_TOSYS_SOURCEMODE_CROP.
-        NvU32 dwStartX				                #[in]: x-coordinate of starting pixel for cropping. Used with NVFBC_TOSYS_SOURCEMODE_CROP.
-        NvU32 dwStartY				                #[in]: y-coordinate of starting pixel for cropping. Used with NVFBC_TOSYS_SOURCEMODE_CROP.
-        NVFBCToSysGrabMode eGMode				    #[in]: Frame grab mode.
-        NvU32 dwWaitTime				            #[in]: Time limit for NvFBCToSysGrabFrame() to wait until a new frame is available or a HW mouse moves. Use with NVFBC_TOSYS_WAIT_WITH_TIMEOUT
-        NvFBCFrameGrabInfo *pNvFBCFrameGrabInfo		#[in/out]: Frame grab information and feedback from NvFBC driver.
-        NvU32 dwReserved[56]				        #[in]: Reserved. Set to 0.
-        void *pReserved[31]				            #[in]: Reserved. Set to NULL.
+        NvU32 dwVersion                             #[in]: Struct version. Set to NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER.
+        NvU32 dwFlags                               #[in]: Special grabbing requests. This should be a bit-mask of NVFBC_TOSYS_GRAB_FLAGS values.
+        NvU32 dwTargetWidth                         #[in]: Target image width. NvFBC will scale the captured image to fit taret width and height. Used with NVFBC_TOSYS_SOURCEMODE_SCALE and NVFBC_TOSYS_SOURCEMODE_CROP.
+        NvU32 dwTargetHeight                        #[in]: Target image height. NvFBC will scale the captured image to fit taret width and height. Used with NVFBC_TOSYS_SOURCEMODE_SCALE and NVFBC_TOSYS_SOURCEMODE_CROP.
+        NvU32 dwStartX                              #[in]: x-coordinate of starting pixel for cropping. Used with NVFBC_TOSYS_SOURCEMODE_CROP.
+        NvU32 dwStartY                              #[in]: y-coordinate of starting pixel for cropping. Used with NVFBC_TOSYS_SOURCEMODE_CROP.
+        NVFBCToSysGrabMode eGMode                   #[in]: Frame grab mode.
+        NvU32 dwWaitTime                            #[in]: Time limit for NvFBCToSysGrabFrame() to wait until a new frame is available or a HW mouse moves. Use with NVFBC_TOSYS_WAIT_WITH_TIMEOUT
+        NvFBCFrameGrabInfo *pNvFBCFrameGrabInfo     #[in/out]: Frame grab information and feedback from NvFBC driver.
+        NvU32 dwReserved[56]                        #[in]: Reserved. Set to 0.
+        void *pReserved[31]                         #[in]: Reserved. Set to NULL.
     ctypedef NVFBC_TOSYS_GRAB_FRAME_PARAMS_V1 NVFBC_TOSYS_GRAB_FRAME_PARAMS
 
     # Sets up NVFBC System Memory capture according to the provided parameters.
