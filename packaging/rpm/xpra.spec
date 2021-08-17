@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.2.2
+%define version 4.2.3
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -605,6 +605,13 @@ fi
 
 
 %changelog
+* Tue Aug 17 2021 Antoine Martin <antoine@xpra.org> 4.2.3-10
+- preserve audio packets chunking (avoids an HTML5 client bug)
+- ensure the http headers cache is never modified unintentionally
+- honour the force-replace-wm flag when upgrading
+- correctly handle command timeouts when probing servers
+- invalid packet encoder names should not cause fatal errors
+
 * Mon Aug 09 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
 - don't build ffmpeg codecs on i386 (crashy)
 - prevent crashes caused by svg conversion done in a thread

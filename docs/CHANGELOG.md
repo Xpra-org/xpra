@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.2.3] 2021-08-17
+* preserve audio packets chunking (avoids an HTML5 client bug)
+* ensure the http headers cache is never modified unintentionally
+* honour the force-replace-wm flag when upgrading
+* correctly handle command timeouts when probing servers
+* invalid packet encoder names should not cause fatal errors
+
 ## [4.2.2] 2021-08-09
 * don't build ffmpeg codecs on i386 (crashy)
 * prevent crashes caused by svg conversion done in a thread
