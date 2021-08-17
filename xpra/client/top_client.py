@@ -439,7 +439,7 @@ class TopSessionClient(MonitorXpraClient):
             curses_err(self.stdscr, e)
 
     def update_screen(self):
-        self.modified = False
+        self.modified = True
 
 
     def input_thread(self):
