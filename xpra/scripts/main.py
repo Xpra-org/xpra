@@ -3525,7 +3525,7 @@ def get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN,), matching_display
                             parts = line.split("=", 1)
                             if len(parts)==2:
                                 session[parts[0]] = parts[1]
-                except OSError:
+                except (OSError, TimeoutExpired):
                     pass
             sessions[display] = session
     return sessions
