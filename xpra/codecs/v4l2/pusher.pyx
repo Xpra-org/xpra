@@ -462,7 +462,7 @@ cdef class Pusher:
             min_len = input_strides[i]*(image.get_height()//divs[i][1])
             assert py_buf.len>=min_len, "buffer for Y plane is too small: %s bytes, expected at least %s" % (py_buf.len, min_len)
 
-        cdef unsigned char *Ybuf = <unsigned char *> py_buf[0].buf 
+        cdef unsigned char *Ybuf = <unsigned char *> py_buf[0].buf
         cdef unsigned char *Ubuf = <unsigned char *> py_buf[1].buf
         cdef unsigned char *Vbuf = <unsigned char *> py_buf[2].buf
         cdef unsigned int Ystride = input_strides[0]

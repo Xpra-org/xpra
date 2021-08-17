@@ -27,7 +27,7 @@
 import cairo
 from libc.stdint cimport uintptr_t
 from libc.string cimport memcpy
-from xpra.buffers.membuf cimport buffer_context 
+from xpra.buffers.membuf cimport buffer_context
 
 
 cdef extern from "Python.h":

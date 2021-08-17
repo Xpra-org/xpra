@@ -132,7 +132,7 @@ cdef class MemBufContext:
         return len(self.membuf)
     def __repr__(self):
         return "MemBufContext(%s)" % self.membuf
- 
+
 
 cdef buffer_context(object obj):
     assert obj, "no buffer"
