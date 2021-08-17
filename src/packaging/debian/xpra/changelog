@@ -1,35 +1,65 @@
 xpra (3.1.1-1) UNRELEASED; urgency=low
-  * build, packaging and platform fixes:
-    - default to using CUDA 11.3
-    - remove unnecessary runtime dependency on distutils
-    - clipboard support with python2 servers started from a Wayland environment
-    - corrupted cursors on MS Windows
-    - fix crashes during printer enumeration on MS Windows
-    - updated GStreamer dependencies
-    - the Debian package name we have to recommend is 'dnspython'
-    - use the correct /etc/default path for service configuration
-    - MacOS updates for GTK3 3.24.30: patches, dependencies
-    - disable crashy ffmpeg codecs with 32-bit builds
-    - add missing C++ files to source snapshots
-    - fixup some compatibility issues in previous backports
-  * misc fixes:
-    - cosmetic: debug logging and error messages
-    - use the correct exit code for encryption problems
-    - increase the maximum size of Xdummy resolutions (uses more memory)
-    - retry if we fail to load the list of windows the first time (seamless servers)
-    - missing notifications when failing to load the icon
-    - ensure we always stop the 'new-stream' notification process
-    - window geometry errors with StackMode requests
-    - fix default values shown with 'xpra --help'
-    - try harder to exit the server cleanly (kill xvfb and dbus later)
+  * critical bugs:
+   - fix crashes during printer enumeration on MS Windows
+   - fix crashes when starting audio forwarding via the command line
+   - disable crashy ffmpeg codecs with 32-bit builds
+   - rencode DoS (MacOS and MS Windows binary builds)
   * server stalls:
-    - don't load menu data from the main thread
-    - don't query the list of printers from the main thread
+   - don't load menu data from the main thread
+   - don't query the list of printers from the main thread
+  * build, packaging and platform fixes:
+   - more reliable git branch detection
+   - default to using CUDA 11.3
+   - remove unnecessary runtime dependency on distutils
+   - clipboard support with python2 servers started from a Wayland environment
+   - corrupted cursors on MS Windows
+   - updated GStreamer dependencies
+   - the Debian package name we have to recommend is 'dnspython'
+   - use the correct /etc/default path for service configuration
+   - MacOS updates for GTK3 3.24.30: patches, dependencies
+   - add missing C++ files to source snapshots
+   - fixup some compatibility issues in previous backports
+   - clean generated Cython files (some pyd filenames have changed)
+   - use the versioned python interpreter for sourcing files (fix error on CentOS 8)
+  * misc fixes:
+   - cosmetic: debug logging and error messages
+   - use the correct exit code for encryption problems
+   - notifications should not override the exit code
+   - stop processing info requests when the server exiting
+   - increase the maximum size of Xdummy resolutions (uses more memory)
+   - retry if we fail to load the list of windows the first time (seamless servers)
+   - missing notifications when failing to load the icon
+   - window geometry errors with StackMode requests
+   - fix default values shown with 'xpra --help'
+   - try harder to exit the server cleanly (kill xvfb and dbus later)
+   - honour the force-replace-wm flag when upgrading
+   - support improved packet encoders
+   - http script errors
+   - documentation, debugging and logging tweaks
+   - don't expose xdg desktop entries that don't have a command to run
+  * proxy fixes:
+   - preserve audio packets chunking (avoids an HTML5 client bug)
+  * audio fixes:
+   - ensure we always stop the 'new-stream' notification process
+   - remove aac codec flag causing compatibility errors
   * 'top' client:
-    - server errors when 'top' clients are connected
-    - handle unicode window names correctly
+   - server errors when 'top' clients are connected
+   - handle unicode window names correctly
+   - threading fixes (screen corruption)
+   - latency shown as always zero
+  * html5:
+   - ensure the 'set-initial-position' attribute is initialized
+   - avoid sending window attributes set to 'None'
+   - fix lz4 with AES incompatibility
+   - log the reason when closing
+   - don't start a new session again when re-connecting
+   - don't try to re-connect when the server is shutting down
+   - re-connected session would lose its connection quickly
+   - keyboard layout mapping from browser language
+   - window snapping to the edge, wrong offset
+   - avoid triggering server side errors on OR windows
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sat, 24 Jul 2021 22:39:09 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 17 Aug 2021 16:18:48 +0700
 
 xpra (3.1-1) UNRELEASED; urgency=low
   * critical fixes:
