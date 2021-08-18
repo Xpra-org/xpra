@@ -461,13 +461,14 @@ class AudioMixin(StubSourceMixin):
         if not self.sound_sink:
             if not self.audio_loop_check("microphone"):
                 #make a fake object so we don't fire the audio loop check warning repeatedly
-                from xpra.util import AdHocStruct
-                self.sound_sink = AdHocStruct()
-                self.sound_sink.codec = codec
-                def noop(*_args):
-                    pass
-                self.sound_sink.add_data = noop
-                self.sound_sink.cleanup = noop
+                class FakeSink:
+                    def __init__(self, codec):
+                        self.codec = codec
+                    def add_data(self, *_args):
+                        pass
+                    def cleanup(self, *_args):
+                        pass
+                self.sound_sink = FakeSink(codec)
                 return
             try:
                 def sound_sink_error(*args):
