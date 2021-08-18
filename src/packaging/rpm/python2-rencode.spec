@@ -18,6 +18,8 @@ Patch2:         python-rencode-rename.patch
 Patch3:         python-rencode-typecode-dos.patch
 %if 0%{?el7}
 BuildRequires:  python2-setuptools
+%else
+BuildRequires:  python2
 %endif
 BuildRequires:  python2-devel
 BuildRequires:  python2-Cython
