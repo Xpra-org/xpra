@@ -576,7 +576,7 @@ class BaseWindowModel(CoreX11WindowModel):
                     event, prop, v, STATE_STRING.get(mode, mode), current)
                 if v!=current:
                     self.update_wm_state(prop, v)
-            atom1 = get_pyatom(event.window, event.data[1])
+            atom1 = get_pyatom(event.data[1])
             log("_NET_WM_STATE: %s", atom1)
             if atom1=="_NET_WM_STATE_FULLSCREEN":
                 update_wm_state("fullscreen")
@@ -592,9 +592,9 @@ class BaseWindowModel(CoreX11WindowModel):
                 update_wm_state("skip-taskbar")
             elif atom1=="_NET_WM_STATE_SKIP_PAGER":
                 update_wm_state("skip-pager")
-                get_pyatom(event.window, event.data[2])
+                get_pyatom(event.data[2])
             elif atom1 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
-                atom2 = get_pyatom(event.window, event.data[2])
+                atom2 = get_pyatom(event.data[2])
                 #we only have one state for both, so we require both to be set:
                 if atom1!=atom2 and atom2 in ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"):
                     update_wm_state("maximized")

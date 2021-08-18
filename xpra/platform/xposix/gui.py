@@ -188,7 +188,7 @@ def _get_xsettings():
         if not data:
             return None
         from xpra.x11.xsettings_prop import get_settings
-        return get_settings(X11Window.get_display_name(), data)
+        return get_settings(data)
     return None
 
 def _get_xsettings_dict():
@@ -975,7 +975,7 @@ class ClientExtras:
     def _get_xsettings(self):
         try:
             return self._xsettings_watcher.get_settings()
-        except:
+        except Exception:
             log.error("failed to get XSETTINGS", exc_info=True)
         return None
 

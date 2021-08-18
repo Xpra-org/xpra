@@ -33,7 +33,7 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 
 
-def _get_atom(_disp, d):
+def _get_atom(d):
     unpacked = struct.unpack(b"@L", d)[0]
     if unpacked==0:
         log.warn("Warning: invalid zero atom value")
@@ -52,28 +52,22 @@ def _get_xatom(str_or_int):
     with xsync:
         return X11WindowBindings().get_xatom(str_or_int)
 
-def _get_multiple(disp, d):
+def _get_multiple(d):
     uint_struct = struct.Struct(b"@L")
     log("get_multiple struct size=%s, len(%s)=%s", uint_struct.size, d, len(d))
     if len(d)!=uint_struct.size and False:
         log.info("get_multiple value is not an atom: %s", d)
         return  str(d)
-    return _get_atom(disp, d)
+    return _get_atom(d)
 
 
-def _get_display_name(disp):
-    try:
-        return disp.get_display().get_name()
-    except Exception:
-        return None
-
-def set_xsettings(disp, v):
+def set_xsettings(v):
     from xpra.x11.xsettings_prop import set_settings
-    return set_settings(_get_display_name(disp), v)
+    return set_settings(v)
 
-def get_xsettings(disp, v):
+def get_xsettings(v):
     from xpra.x11.xsettings_prop import get_settings
-    return get_settings(_get_display_name(disp), v)
+    return get_settings(v)
 
 
 PYTHON_TYPES = {
@@ -89,17 +83,17 @@ def get_python_type(scalar_type):
     #ie: get_python_type("STRING") = "latin1"
     return PYTHON_TYPES.get(scalar_type)
 
-def _to_atom(_disp, a):
+def _to_atom(a):
     return struct.pack(b"@L", _get_xatom(a))
 
-def _to_visual(disp, c):
-    return struct.pack(b"@L", get_xvisual(disp, c))
+def _to_visual(c):
+    return struct.pack(b"@L", get_xvisual(c))
 
-def _to_window(_disp, w):
+def _to_window(w):
     return struct.pack(b"@L", w.get_xid())
 
-def get_window(disp, w):
-    return get_pywindow(disp, struct.unpack(b"@L", w)[0])
+def get_window(w):
+    return get_pywindow(struct.unpack(b"@L", w)[0])
 
 #add the GTK / GDK types to the conversion function list:
 PROP_TYPES.update({
@@ -121,7 +115,7 @@ PROP_TYPES.update({
 
 def prop_set(target, key, etype, value):
     with xsync:
-        dtype, dformat, data = prop_encode(target, etype, value)
+        dtype, dformat, data = prop_encode(etype, value)
         X11WindowBindings().XChangeProperty(target.get_xid(), key, dtype, dformat, data)
 
 
@@ -138,7 +132,7 @@ def prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
     data = raw_prop_get(target, key, etype, ignore_errors, raise_xerrors)
     if data is None:
         return None
-    return do_prop_decode(target, key, etype, data, ignore_errors)
+    return do_prop_decode(key, etype, data, ignore_errors)
 
 def _etypestr(etype):
     if isinstance(etype, (list, tuple)):
@@ -176,13 +170,13 @@ def raw_prop_get(target, key, etype, ignore_errors=False, raise_xerrors=False):
         return None
     return data
 
-def do_prop_decode(target, key, etype, data, ignore_errors=False):
+def do_prop_decode(key, etype, data, ignore_errors=False):
     try:
         with XSyncContext():
-            return prop_decode(target, etype, data)
+            return prop_decode(etype, data)
     except :
         if ignore_errors:
-            log("prop_get%s", (target, key, etype, ignore_errors), exc_info=True)
+            log("prop_get%s", (key, etype, ignore_errors), exc_info=True)
             return None
         log.warn("Error parsing property '%s' (%s)", key, _etypestr(etype))
         log.warn(" this may be a misbehaving application, or bug in Xpra")

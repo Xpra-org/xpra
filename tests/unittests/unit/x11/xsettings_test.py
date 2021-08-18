@@ -32,10 +32,10 @@ class XSettingsTest(unittest.TestCase):
                 data = b""
                 l = len(data)
                 v = struct.pack(b"=BBBBII", get_local_byteorder(), 0, 0, 0, serial, l)+data+b"\0"
-                v1 = get_settings(disp, v)
+                v1 = get_settings(v)
                 assert v
                 #get from cache:
-                v2 = get_settings(disp, v)
+                v2 = get_settings(v)
                 assert v1==v2
 
                 #test all types, set then get:
@@ -46,10 +46,10 @@ class XSettingsTest(unittest.TestCase):
                     (XSettingsTypeColor, "color1", (128, 128, 64, 32), 0),
                     )
                 serial = 2
-                data = set_settings(disp, (serial, settings))
+                data = set_settings((serial, settings))
                 assert data
                 #parse it back:
-                v = get_settings(disp, data)
+                v = get_settings(data)
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==len(settings)
@@ -65,16 +65,16 @@ class XSettingsTest(unittest.TestCase):
             ),
             ):
             serial = 3
-            data = set_settings(disp, (serial, settings))
+            data = set_settings((serial, settings))
             assert data
-            v = get_settings(disp, data)
+            v = get_settings(data)
             rserial, rsettings = v
             assert rserial==serial
             assert len(rsettings)==0
         #parsing an invalid data type (9) should fail:
         hexdata = b"000000000200000001000000090004007374723100000000010000003100000000"
         data = binascii.unhexlify(hexdata)
-        v = get_settings(disp, data)
+        v = get_settings(data)
         rserial, rsettings = v
         assert len(rsettings)==0
 

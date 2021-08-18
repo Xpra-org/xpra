@@ -42,7 +42,7 @@ def get_x11_property(atom_name):
                 if prop:
                     from xpra.os_util import strtobytes
                     from xpra.x11.prop_conv import prop_decode
-                    v = prop_decode(dc.display, "latin1", prop)
+                    v = prop_decode("latin1", prop)
                     log("get_x11_property(%s)=%s", atom_name, v)
                     return strtobytes(v)
                 return b""

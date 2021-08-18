@@ -50,7 +50,7 @@ XSettingsNames = {
 
 
 XSETTINGS_CACHE = {}
-def get_settings(disp, d):
+def get_settings(d):
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
     #parse xsettings according to
@@ -59,9 +59,9 @@ def get_settings(disp, d):
     if DEBUG_XSETTINGS:
         log("get_settings(%s)", tuple(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack(b"=BBBBII", d[:12])
-    cache = XSETTINGS_CACHE.get(disp)
-    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache(%s)=%s",
-        byte_order, get_local_byteorder(), serial, n_settings, disp, cache)
+    cache = XSETTINGS_CACHE
+    log("get_settings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache=%s",
+        byte_order, get_local_byteorder(), serial, n_settings, cache)
     if cache and cache[0]==serial:
         log("get_settings(..) returning value from cache")
         return cache
@@ -107,11 +107,10 @@ def get_settings(disp, d):
             log("get_settings(..) %s -> %s", tuple(d[istart:pos]), setting)
         settings.append(setting)
     log("get_settings(..) settings=%s", settings)
-    if disp:
-        XSETTINGS_CACHE[disp] = (serial, settings)
+    XSETTINGS_CACHE = (serial, settings)
     return  serial, settings
 
-def set_settings(disp, d):
+def set_settings(d):
     assert len(d)==2, "invalid format for XSETTINGS: %s" % str(d)
     serial, settings = d
     log("set_settings(%s) serial=%s, %s settings", d, serial, len(settings))
@@ -145,7 +144,7 @@ def set_settings(disp, d):
             log("set_settings(..) %s -> %s", setting, tuple(x))
             all_bin_settings.append(x)
         except Exception as e:
-            log("set_settings(%s, %s)", disp, d, exc_info=True)
+            log("set_settings(%s)", d, exc_info=True)
             log.error("Error processing XSettings property %s:", bytestostr(prop_name))
             log.error(" type=%s, value=%s", XSettingsNames.get(setting_type, "INVALID!"), value)
             log.error(" %s", e)
@@ -186,7 +185,7 @@ def main(): # pragma: no cover
             XSETTINGS = "_XSETTINGS_SETTINGS"
             if owner:
                 data = window_bindings.XGetWindowProperty(owner, XSETTINGS, XSETTINGS)
-                serial, settings = get_settings(None, data)
+                serial, settings = get_settings(data)
                 print("serial=%s" % serial)
                 print("%s settings:" % len(settings))
                 for s in settings:

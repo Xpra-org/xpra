@@ -50,7 +50,7 @@ def _force_length(name, data, length, noerror_length=None):
 
 
 class NetWMStrut:
-    def __init__(self, _disp, data):
+    def __init__(self, data):
         # This eats both _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.  If we are
         # given a _NET_WM_STRUT instead of a _NET_WM_STRUT_PARTIAL, then it
         # will be only length 4 instead of 12, we just don't define the other values
@@ -75,7 +75,7 @@ class NetWMStrut:
 
 
 class MotifWMHints:
-    def __init__(self, _disp, data):
+    def __init__(self, data):
         #some applications use the wrong size (ie: blender uses 16) so pad it:
         sizeof_long = struct.calcsize(b"@L")
         pdata = _force_length("_MOTIF_WM_HINTS", data, sizeof_long*5, sizeof_long*4)
@@ -199,7 +199,7 @@ class MotifWMHints:
             }
 
 
-def _read_image(_disp, stream):
+def _read_image(stream):
     try:
         int_size = struct.calcsize(b"@I")
         long_size = struct.calcsize(b"@L")
@@ -225,11 +225,11 @@ def _read_image(_disp, stream):
 # This returns a list of icons from a _NET_WM_ICON property.
 # each icon is a tuple:
 # (width, height, fmt, data)
-def NetWMIcons(disp, data):
+def NetWMIcons(data):
     icons = []
     stream = BytesIO(data)
     while True:
-        icon = _read_image(disp, stream)
+        icon = _read_image(stream)
         if icon is None:
             break
         icons.append(icon)
@@ -238,23 +238,23 @@ def NetWMIcons(disp, data):
     return icons
 
 
-def _to_latin1(_disp, v):
+def _to_latin1(v):
     return v.encode("latin1")
 
-def _from_latin1(_disp, v):
+def _from_latin1(v):
     return v.decode("latin1")
 
-def _to_utf8(_disp, v):
+def _to_utf8(v):
     return v.encode("UTF-8")
 
-def _from_utf8(_disp, v):
+def _from_utf8(v):
     return v.decode("UTF-8")
 
 
-def _from_long(_disp, v):
+def _from_long(v):
     return struct.unpack(b"@L", v)[0]
 
-def _to_long(_disp, v):
+def _to_long(v):
     return struct.pack(b"@L", v)
 
 
@@ -284,37 +284,37 @@ PROP_SIZES = {
     }
 
 
-def prop_encode(disp, etype, value):
+def prop_encode(etype, value):
     if isinstance(etype, (list, tuple)):
-        return _prop_encode_list(disp, etype[0], value)
-    return _prop_encode_scalar(disp, etype, value)
+        return _prop_encode_list(etype[0], value)
+    return _prop_encode_scalar(etype, value)
 
-def _prop_encode_scalar(disp, etype, value):
+def _prop_encode_scalar(etype, value):
     pytype, atom, formatbits, serialize = PROP_TYPES[etype][:4]
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
-    return (atom, formatbits, serialize(disp, value))
+    return (atom, formatbits, serialize(value))
 
-def _prop_encode_list(disp, etype, value):
+def _prop_encode_list(etype, value):
     (_, atom, formatbits, _, _, terminator) = PROP_TYPES[etype]
     value = tuple(value)
-    serialized = tuple(_prop_encode_scalar(disp, etype, v)[2] for v in value)
+    serialized = tuple(_prop_encode_scalar(etype, v)[2] for v in value)
     # Strings in X really are null-separated, not null-terminated (ICCCM
     # 2.7.1, see also note in 4.1.2.5)
     return (atom, formatbits, terminator.join(x for x in serialized if x is not None))
 
 
-def prop_decode(disp, etype, data):
+def prop_decode(etype, data):
     if isinstance(etype, (list, tuple)):
-        return _prop_decode_list(disp, etype[0], data)
-    return _prop_decode_scalar(disp, etype, data)
+        return _prop_decode_list(etype[0], data)
+    return _prop_decode_scalar(etype, data)
 
-def _prop_decode_scalar(disp, etype, data):
+def _prop_decode_scalar(etype, data):
     (pytype, _, _, _, deserialize, _) = PROP_TYPES[etype]
-    value = deserialize(disp, data)
+    value = deserialize(data)
     assert value is None or isinstance(value, pytype), "expected a %s but value is a %s" % (pytype, type(value))
     return value
 
-def _prop_decode_list(disp, etype, data):
+def _prop_decode_list(etype, data):
     (_, _, formatbits, _, _, terminator) = PROP_TYPES[etype]
     if terminator:
         datums = data.split(terminator)
@@ -327,5 +327,5 @@ def _prop_decode_list(disp, etype, data):
         while data:
             datums.append(data[:nbytes])
             data = data[nbytes:]
-    props = (_prop_decode_scalar(disp, etype, datum) for datum in datums)
+    props = (_prop_decode_scalar(etype, datum) for datum in datums)
     return [x for x in props if x is not None]

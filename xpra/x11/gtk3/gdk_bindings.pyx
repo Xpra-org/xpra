@@ -465,8 +465,9 @@ cdef extern from "gtk-3.0/gdk/gdktypes.h":
 cdef int get_xwindow(pywindow):
     return GDK_WINDOW_XID(<GdkWindow*>unwrap(pywindow, Gdk.Window))
 
-def get_pywindow(display_source, xwindow):
-    return _get_pywindow(display_source, xwindow)
+def get_pywindow(xwindow):
+    display = Gdk.get_default_root_window().get_display()
+    return _get_pywindow(display, xwindow)
 
 cdef object _get_pywindow(object display_source, Window xwindow):
     if xwindow==0:
@@ -482,7 +483,7 @@ cdef object _get_pywindow(object display_source, Window xwindow):
         raise XError(BadWindow)
     return win
 
-def get_xvisual(disp_source, pyvisual):
+def get_xvisual(pyvisual):
     cdef Visual *xvisual = _get_xvisual(pyvisual)
     if xvisual==NULL:
         return  -1
@@ -511,16 +512,29 @@ def get_xatom(str_or_xatom):
     b = strtobytes(str_or_xatom)
     return gdk_x11_get_xatom_by_name(b)
 
-cdef GdkAtom get_gdkatom(display_source, xatom):
+cdef GdkAtom get_gdkatom(xatom):
     if int(xatom) > 2**32:
         raise Exception("weirdly huge purported xatom: %s" % xatom)
     if xatom==0:
         return GDK_NONE
-    cdef GdkDisplay *disp = get_raw_display_for(display_source)
+    display = Gdk.get_default_root_window().get_display()
+    cdef GdkDisplay *disp = get_raw_display_for(display)
     return gdk_x11_xatom_to_atom_for_display(disp, xatom)
 
-def get_pyatom(display_source, xatom):
-    cdef GdkAtom gdk_atom = get_gdkatom(display_source, xatom)
+def get_pyatom(xatom):
+    cdef GdkAtom gdk_atom = get_gdkatom(xatom)
+    if gdk_atom==GDK_NONE:
+        return ""
+    cdef char *name = gdk_atom_name(gdk_atom)
+    pyname = bytestostr(name)
+    return pyname
+
+
+cdef _get_pyatom(display, int xatom):
+    if xatom==0:
+        return ""
+    cdef GdkDisplay *disp = get_raw_display_for(display)
+    cdef GdkAtom gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
     if gdk_atom==GDK_NONE:
         return ""
     cdef char *name = gdk_atom_name(gdk_atom)
@@ -675,9 +689,10 @@ debug_route_events = []
 def get_error_text(code):
     if type(code)!=int:
         return code
-    cdef Display *display = get_xdisplay_for(Gdk.get_default_root_window())
+    display = Gdk.get_default_root_window().get_display()
+    cdef Display *xdisplay = get_xdisplay_for(display)
     cdef char[128] buffer
-    XGetErrorText(display, code, buffer, 128)
+    XGetErrorText(xdisplay, code, buffer, 128)
     return str(buffer[:128])
 
 cdef int get_XKB_event_base():
@@ -1142,27 +1157,27 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.window = _gw(d, selectionrequest_e.owner)
             pyev.requestor = _gw(d, selectionrequest_e.requestor)
             pyev.selection = get_pyatom(d, selectionrequest_e.selection)
-            pyev.target = get_pyatom(d, selectionrequest_e.target)
-            pyev.property = get_pyatom(d, selectionrequest_e.property)
+            pyev.target = _get_pyatom(d, selectionrequest_e.target)
+            pyev.property = _get_pyatom(d, selectionrequest_e.property)
             pyev.time = int(selectionrequest_e.time)
         elif etype == SelectionClear:
             selectionclear_e = <XSelectionClearEvent*> e
             pyev.window = _gw(d, selectionclear_e.window)
-            pyev.selection = get_pyatom(d, selectionclear_e.selection)
+            pyev.selection = _get_pyatom(d, selectionclear_e.selection)
             pyev.time = int(selectionclear_e.time)
         elif etype == SelectionNotify:
             selection_e = <XSelectionEvent*> e
             pyev.requestor = _gw(d, selection_e.requestor)
-            pyev.selection = get_pyatom(d, selection_e.selection)
-            pyev.target = get_pyatom(d, selection_e.target)
-            pyev.property = get_pyatom(d, selection_e.property)
+            pyev.selection = _get_pyatom(d, selection_e.selection)
+            pyev.target = _get_pyatom(d, selection_e.target)
+            pyev.property = _get_pyatom(d, selection_e.property)
             pyev.time = int(selection_e.time)
         elif etype == XFSelectionNotify:
             selectionnotify_e = <XFixesSelectionNotifyEvent*> e
             pyev.window = _gw(d, selectionnotify_e.window)
             pyev.subtype = selectionnotify_e.subtype
             pyev.owner = _gw(d, selectionnotify_e.owner)
-            pyev.selection = get_pyatom(d, selectionnotify_e.selection)
+            pyev.selection = _get_pyatom(d, selectionnotify_e.selection)
             pyev.timestamp = int(selectionnotify_e.timestamp)
             pyev.selection_timestamp = int(selectionnotify_e.selection_timestamp)
         elif etype == ResizeRequest:
@@ -1188,7 +1203,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
                          + "This makes no sense, so I'm ignoring it.",
                          e.xclient.message_type)
                 return GDK_FILTER_CONTINUE  # @UndefinedVariable
-            pyev.message_type = get_pyatom(d, e.xclient.message_type)
+            pyev.message_type = _get_pyatom(d, e.xclient.message_type)
             pyev.format = e.xclient.format
             # I am lazy.  Add this later if needed for some reason.
             if pyev.format != 32:
@@ -1214,7 +1229,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.window = _gw(d, e.xdestroywindow.window)
         elif etype == PropertyNotify:
             pyev.window = _gw(d, e.xany.window)
-            pyev.atom = trap.call_synced(get_pyatom, d, e.xproperty.atom)
+            pyev.atom = trap.call_synced(_get_pyatom, d, e.xproperty.atom)
             pyev.time = e.xproperty.time
         elif etype == ConfigureNotify:
             pyev.window = _gw(d, e.xconfigure.window)
@@ -1237,7 +1252,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.window = _gw(d, e.xany.window)
             cursor_e = <XFixesCursorNotifyEvent*>e
             pyev.cursor_serial = cursor_e.cursor_serial
-            pyev.cursor_name = trap.call_synced(get_pyatom, d, cursor_e.cursor_name)
+            pyev.cursor_name = trap.call_synced(_get_pyatom, d, cursor_e.cursor_name)
         elif etype == MotionNotify:
             pyev.window = _gw(d, e.xmotion.window)
             pyev.root = _gw(d, e.xmotion.root)
@@ -1288,7 +1303,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.event_only = bool(bell_e.event_only)
             pyev.delivered_to = pyev.window
             pyev.window_model = None
-            pyev.bell_name = get_pyatom(d, bell_e.name)
+            pyev.bell_name = _get_pyatom(d, bell_e.name)
         else:
             log.info("not handled: %s", x_event_type_names.get(etype, etype))
             return None

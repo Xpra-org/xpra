@@ -129,7 +129,7 @@ class ManagerSelection(GObject.GObject):
             # cleared out.
             try:
                 with xsync:
-                    window = get_pywindow(self.clipboard, old_owner)
+                    window = get_pywindow(old_owner)
                     window.set_events(window.get_events() | Gdk.EventMask.STRUCTURE_MASK)
                 log("got window")
             except XError:
@@ -143,7 +143,7 @@ class ManagerSelection(GObject.GObject):
                     GLib.source_remove(self.exit_timer)
                     self.exit_timer = None
                 log("...they did.")
-        window = get_pywindow(self.clipboard, self._xwindow)
+        window = get_pywindow(self._xwindow)
         window.set_title("Xpra-ManagerSelection-%s" % self.atom)
         self.clipboard.connect("owner-change", self._owner_change)
 
@@ -174,6 +174,6 @@ class ManagerSelection(GObject.GObject):
     def window(self):
         if self._xwindow is None:
             return None
-        return get_pywindow(self.clipboard, self._xwindow)
+        return get_pywindow(self._xwindow)
 
 GObject.type_register(ManagerSelection)
