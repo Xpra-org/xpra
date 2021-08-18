@@ -37,6 +37,7 @@ from xpra.platform.win32.common import (
     GetMonitorInfo,
     user32,
     )
+from xpra.common import KeyEvent
 from xpra.util import AdHocStruct, csv, envint, envbool, typedict
 from xpra.os_util import get_util_logger, strtobytes
 from xpra.log import Logger
@@ -1016,8 +1017,6 @@ class ClientExtras:
         #self.client = None
 
     def init_keyboard_listener(self):
-        class WindowsKeyEvent(AdHocStruct):
-            pass
         class KBDLLHOOKSTRUCT(Structure):
             _fields_ = [("vk_code", DWORD),
                         ("scan_code", DWORD),
@@ -1080,7 +1079,7 @@ class ClientExtras:
                     #keylog.info("keyboard helper=%s, modifier keycodes=%s", kh, modifier_keycodes)
                     grablog("vk_code=%s, scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s", vk_code, scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
                     if keycode>0:
-                        key_event = WindowsKeyEvent()
+                        key_event = KeyEvent()
                         key_event.keyname = keyname
                         key_event.pressed = wParam in DOWN
                         key_event.modifiers = modifiers

@@ -30,6 +30,7 @@ from xpra.gtk_common.gtk_util import (
     WINDOW_EVENT_MASK,
     )
 from xpra.gtk_common.keymap import KEY_TRANSLATIONS
+from xpra.common import KeyEvent
 from xpra.client.client_window_base import ClientWindowBase
 from xpra.platform.gui import set_fullscreen_monitors, set_shaded
 from xpra.platform.gui import add_window_hooks, remove_window_hooks
@@ -201,10 +202,6 @@ WINDOW_NAME_TO_HINT = {
 
 def wn(w):
     return WORKSPACE_NAMES.get(w, w)
-
-
-class GTKKeyEvent:
-    __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
 
 
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
@@ -2127,7 +2124,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         keycode = event.hardware_keycode
         keyname = Gdk.keyval_name(keyval)
         keyname = KEY_TRANSLATIONS.get((keyname, keyval, keycode), keyname)
-        key_event = GTKKeyEvent()
+        key_event = KeyEvent()
         key_event.modifiers = self._client.mask_to_names(event.state)
         key_event.keyname = keyname or ""
         key_event.keyval = keyval or 0

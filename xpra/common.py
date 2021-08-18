@@ -42,3 +42,7 @@ MAX_WINDOW_SIZE = 2**15-2**13
 SPLASH_EXIT_DELAY = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 
 DEFAULT_XDG_DATA_DIRS = "/usr/share:/usr/local/share:~/.local/share/applications:~/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share"
+
+
+class KeyEvent:
+    __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
