@@ -253,7 +253,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                         window = AdHocStruct()
                         def get_xid():
                             return self.root_overlay
-                        window.get_xid = root.get_xid
+                        window.get_xid = get_xid
                         prop_set(window, "WM_TITLE", "latin1", "RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:
