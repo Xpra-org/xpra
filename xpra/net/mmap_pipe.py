@@ -72,7 +72,6 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
             mmap_area = mmap.mmap(0, mmap_size, filename)
             #not a real file:
             delete = False
-            mmap_temp_file = None
         else:
             assert POSIX
             if filename:
@@ -157,7 +156,15 @@ def init_client_mmap(mmap_group=None, socket_filename=None, size=128*1024*1024, 
         log("failed to setup mmap: %s", e, exc_info=True)
         log.error("Error: mmap setup failed:")
         log.error(" %s", e)
-        clean_mmap(mmap_filename)
+        if delete:
+            if mmap_temp_file:
+                try:
+                    mmap_temp_file.close()
+                except OSError:
+                    log("%s()", mmap_temp_file.close, exc_info=True)
+                    log.error(" failed to remove the mmap temp file: %s", e)
+            else:
+                clean_mmap(mmap_filename)
         return rerr()
 
 def clean_mmap(mmap_filename):
