@@ -39,7 +39,7 @@ from xpra.platform.win32.common import (
     )
 from xpra.common import KeyEvent
 from xpra.util import AdHocStruct, csv, envint, envbool, typedict
-from xpra.os_util import get_util_logger, strtobytes
+from xpra.os_util import get_util_logger
 from xpra.log import Logger
 
 log = Logger("win32")
