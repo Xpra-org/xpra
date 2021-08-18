@@ -1004,8 +1004,10 @@ class GLWindowBackingBase(WindowBackingBase):
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
         if JPEG_YUV and width>=2 and height>=2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, width, height, options)
+            w = img.get_width()
+            h = img.get_height()
             flush = options.intget("flush", 0)
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, width, height, width, height, callbacks)
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img, x, y, w, h, width, height, callbacks)
         else:
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data, width, height, options)
             self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
