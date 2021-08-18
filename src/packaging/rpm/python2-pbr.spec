@@ -10,6 +10,7 @@ Summary:        PBR is a library that injects some useful and sensible default b
 License:        Apache Software License
 URL:            https://docs.openstack.org/pbr/latest/
 Source0:        https://files.pythonhosted.org/packages/35/8c/69ed04ae31ad498c9bdea55766ed4c0c72de596e75ac0d70b58aa25e0acf/pbr-%{version}.tar.gz
+BuildRequires:  python2
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 
