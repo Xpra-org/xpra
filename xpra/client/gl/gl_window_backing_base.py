@@ -1013,7 +1013,10 @@ class GLWindowBackingBase(WindowBackingBase):
                           x, y, w, h, width, height, options, callbacks)
         else:
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data)
-            self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, width, height, img.get_rowstride(), options, callbacks)
+            w = img.get_width()
+            h = img.get_height()
+            self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, w, h, width, height,
+                          img.get_rowstride(), options, callbacks)
 
     def paint_webp(self, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         subsampling = options.strget("subsampling")
