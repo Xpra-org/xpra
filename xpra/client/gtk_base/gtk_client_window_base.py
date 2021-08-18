@@ -13,7 +13,7 @@ from gi.repository import Gtk, Gdk, Gio
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import (
-    AdHocStruct, typedict, envint, envbool, csv, first_time,
+    typedict, envint, envbool, csv, first_time,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
     MOVERESIZE_CANCEL,
     MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
@@ -203,8 +203,8 @@ def wn(w):
     return WORKSPACE_NAMES.get(w, w)
 
 
-class GTKKeyEvent(AdHocStruct):
-    pass
+class GTKKeyEvent:
+    __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
 
 
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
