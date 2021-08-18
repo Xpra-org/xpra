@@ -13,6 +13,9 @@ from xpra.log import Logger
 log = Logger("x11", "window", "tray")
 
 
+class TrayGeometryChanged:
+    __slots__ = ("x", "y", "width", "height")
+
 class SystemTrayWindowModel(CoreX11WindowModel):
     __gproperties__ = CoreX11WindowModel.__common_properties__.copy()
     __gproperties__.update({
@@ -42,7 +45,7 @@ class SystemTrayWindowModel(CoreX11WindowModel):
         self.client_window.move_resize(x, y, width, height)
         self._updateprop("geometry", (x, y, width, height))
         #force a refresh:
-        event = AdHocStruct()
+        event = TrayGeometryChanged()
         event.x = event.y = 0
         event.width , event.height = self.get_dimensions()
         self.emit("client-contents-changed", event)
