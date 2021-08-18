@@ -13,14 +13,14 @@ from collections import deque
 from gi.repository import GObject, Gtk, Gdk, GdkX11
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import updict, rindex, envbool, envint, typedict, AdHocStruct, WORKSPACE_NAMES
+from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.server import server_features
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
 from xpra.x11.common import Unmanageable
-from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk_x11.prop import raw_prop_set
 from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
 from xpra.x11.gtk_x11.selection import AlreadyOwned
 from xpra.x11.gtk_x11.gdk_bindings import (
@@ -241,20 +241,15 @@ class XpraServer(GObject.GObject, X11ServerBase):
         # selecting SubstructureRedirect.
         root = get_default_root_window()
         root.set_events(root.get_events() | Gdk.EventMask.SUBSTRUCTURE_MASK)
-        prop_set(root, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
+        xid = root.get_xid()
+        raw_prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(root, self)
         if self.sync_xvfb>0:
-            xid = root.get_xid()
             try:
                 with xsync:
                     self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                     if self.root_overlay:
-                        #ugly: API expects a window object with a ".get_xid()" method
-                        window = AdHocStruct()
-                        def get_xid():
-                            return self.root_overlay
-                        window.get_xid = get_xid
-                        prop_set(window, "WM_TITLE", "latin1", "RootOverlay")
+                        raw_prop_set(self.root_overlay, "WM_TITLE", "latin1", "RootOverlay")
                         X11Window.AllowInputPassthrough(self.root_overlay)
             except Exception as e:
                 log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)

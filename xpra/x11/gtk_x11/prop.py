@@ -114,9 +114,12 @@ PROP_TYPES.update({
 
 
 def prop_set(target, key, etype, value):
+    raw_prop_set(target.get_xid(), key, etype, value)
+
+def raw_prop_set(xid, key, etype, value):
     with xsync:
         dtype, dformat, data = prop_encode(etype, value)
-        X11WindowBindings().XChangeProperty(target.get_xid(), key, dtype, dformat, data)
+        X11WindowBindings().XChangeProperty(xid, key, dtype, dformat, data)
 
 
 def prop_type_get(target, key):
