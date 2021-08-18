@@ -7,7 +7,6 @@
 from gi.repository import GObject
 
 from xpra.x11.models.core import CoreX11WindowModel
-from xpra.util import AdHocStruct
 from xpra.log import Logger
 
 log = Logger("x11", "window", "tray")
