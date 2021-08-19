@@ -1156,7 +1156,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             selectionrequest_e = <XSelectionRequestEvent*> e
             pyev.window = _gw(d, selectionrequest_e.owner)
             pyev.requestor = _gw(d, selectionrequest_e.requestor)
-            pyev.selection = get_pyatom(d, selectionrequest_e.selection)
+            pyev.selection = _get_pyatom(d, selectionrequest_e.selection)
             pyev.target = _get_pyatom(d, selectionrequest_e.target)
             pyev.property = _get_pyatom(d, selectionrequest_e.property)
             pyev.time = int(selectionrequest_e.time)
