@@ -132,8 +132,9 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
             rgb = "RGB"
             bpp = 24
     except Exception:
-        log.error("PIL_encode%s converting %s pixels from %s to %s failed",
-                  (w, h, coding, "%s bytes" % image.get_size(), pixel_format, image.get_rowstride()), type(pixels), pixel_format, rgb, exc_info=True)
+        log.error("pillow.encode%s converting %s pixels from %s to %s failed",
+                  (coding, image, speed, supports_transparency, grayscale, resize),
+                  type(pixels), pixel_format, rgb, exc_info=True)
         raise
     client_options = {}
     if resize:
