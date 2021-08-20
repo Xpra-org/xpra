@@ -1974,7 +1974,10 @@ class WindowSource(WindowIconSource):
 
     def do_schedule_auto_refresh(self, encoding, data, region, client_options, options):
         assert data
-        if (encoding.startswith("png") and (self.image_depth<=24 or self.image_depth==32)) or encoding.startswith("rgb") or encoding=="mmap":
+        if encoding.startswith("png"):
+            actual_quality = 100
+            lossy = self.image_depth<=24 or self.image_depth==32
+        elif encoding.startswith("rgb") or encoding=="mmap":
             actual_quality = 100
             lossy = False
         else:
@@ -1984,60 +1987,93 @@ class WindowSource(WindowIconSource):
                 client_options.get("csc") in LOSSY_PIXEL_FORMATS or
                 client_options.get("scaled_size") is not None
                 )
-        schedule = False
-        msg = ""
+        refresh_exclude = self.get_refresh_exclude()  #pylint: disable=assignment-from-none
+        now = monotonic_time()
+        def rec(msg):
+            self.last_auto_refresh_message = now, msg
+            refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s),"
+                       " %s (region=%s, refresh regions=%s, exclude=%s)",
+                       encoding, actual_quality, lossy, msg,
+                       region, self.refresh_regions, refresh_exclude)
         if not lossy or options.get("auto_refresh", False):
             #substract this region from the list of refresh regions:
             #(window video source may remove it from the video subregion)
             self.remove_refresh_region(region)
             if not self.refresh_timer:
                 #nothing due for refresh, still nothing to do
-                msg = "nothing to do"
-            elif not self.refresh_regions:
-                msg = "covered all regions that needed a refresh, cancelling refresh timer"
+                return rec("lossless - nothing to do")
+            if not self.refresh_regions:
                 self.cancel_refresh_timer()
-            else:
-                msg = "removed rectangle from regions, keeping existing refresh timer"
+                return rec("covered all regions that needed a refresh, cancelling refresh timer")
+            return rec("removed rectangle from regions, keeping existing refresh timer")
+        #if we're here: the window is still valid and this was a lossy update,
+        #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
+        #so we probably need an auto-refresh (re-schedule it if one was due already)
+        #try to add the rectangle to the refresh list:
+        ww, wh = self.window_dimensions
+        if ww<=0 or wh<=0:
+            self.cancel_refresh_timer()
+            return rec("cancelling refresh - window cleaned up?")
+        #we may have modified some pixels that were already due to be refreshed,
+        #or added new ones to the list:
+        window_pixcount = ww*wh
+        region_pixcount = region.width*region.height
+        if refresh_exclude:
+            #there's a video region to exclude
+            #(it is handled separately with its own timer)
+            window_pixcount -= refresh_exclude.width*refresh_exclude.height
+            region_excluded = region.intersection_rect(refresh_exclude)
+            if region_excluded:
+                region_pixcount -= region_excluded.width*region_excluded.height
+        added_pixcount = self.add_refresh_region(region)
+        if window_pixcount<=0:
+            #if everything was excluded window_pixcount can be 0
+            pct = 100
         else:
-            #if we're here: the window is still valid and this was a lossy update,
-            #of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
-            #so we probably need an auto-refresh (re-schedule it if one was due already)
-            #try to add the rectangle to the refresh list:
-            pixels_modified = self.add_refresh_region(region)
-            if pixels_modified==0 and self.refresh_timer:
-                msg = "keeping existing timer (all pixels outside area)"
-            else:
-                msg = "added pixels to refresh regions"
-                if self.refresh_regions:
-                    schedule = True
-        now = monotonic_time()
-        if schedule:
-            #figure out the proportion of pixels that need refreshing:
-            #(some of those rectangles may overlap,
-            # so the value may be greater than the size of the window)
-            pixels = sum(rect.width*rect.height for rect in self.refresh_regions)
-            ww, wh = self.window_dimensions
-            if ww<=0 or wh<=0:
-                #window cleaned up?
-                return
-            pct = int(min(100, 100*pixels//(ww*wh)) * (1+self.global_statistics.congestion_value))
-            if not self.refresh_timer:
-                #we must schedule a new refresh timer
-                self.refresh_event_time = now
-                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * sqrt(pct) // 10))
-                self.refresh_target_time = now + sched_delay/1000.0
-                self.refresh_timer = self.timeout_add(sched_delay, self.refresh_timer_function, options)
-                msg += ", scheduling refresh in %sms (pct=%i, batch=%i)" % (sched_delay, pct, self.batch_config.delay)
-            else:
-                #add to the target time,
-                #but don't use sqrt() so this will not move it forwards for small updates following bigger ones:
-                sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct // 100))
-                target_time = self.refresh_target_time
-                self.refresh_target_time = max(target_time, now + sched_delay/1000.0)
-                msg += ", re-scheduling refresh (due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (1000*(self.refresh_target_time-now), 1000*(self.refresh_target_time-target_time), sched_delay, pct, self.batch_config.delay)
-        self.last_auto_refresh_message = now, msg
-        refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s), %s (region=%s, refresh regions=%s)",
-                   encoding, actual_quality, lossy, msg, region, self.refresh_regions)
+            pct = 100*region_pixcount//window_pixcount
+        if pct==100:
+            #everything was updated, start again as new:
+            self.cancel_refresh_timer()
+        if not self.refresh_timer:
+            #timer was not due yet, or we've just updated everything
+            if region_pixcount<=0 or not self.refresh_regions:
+                return rec("nothing to refresh")
+            self.refresh_event_time = now
+            #slow down refresh when there is congestion:
+            mult = sqrt(pct * (1+self.global_statistics.congestion_value))//10
+            sched_delay = max(
+                self.batch_config.delay*5,
+                self.min_auto_refresh_delay,
+                int(self.base_auto_refresh_delay * mult),
+                )
+            self.refresh_target_time = now + sched_delay/1000.0
+            self.refresh_timer = self.timeout_add(sched_delay, self.refresh_timer_function, options)
+            return rec("scheduling refresh in %sms (pct=%i, batch=%i)" % (sched_delay, pct, self.batch_config.delay))
+        #some of those rectangles may overlap,
+        #so the value may be greater than the size of the window:
+        due_pixcount = sum(rect.width*rect.height for rect in self.refresh_regions)
+        sched_delay = 0
+        #a refresh is already due
+        if added_pixcount>=due_pixcount//2:
+            #we have more than doubled the number of pixels to refresh
+            #use the total due
+            pct = 100*due_pixcount//window_pixcount
+        #don't use sqrt() on pct,
+        #so this will not move it forwards for small updates following bigger ones:
+        sched_delay = max(
+            self.batch_config.delay*5,
+            self.min_auto_refresh_delay,
+            int(self.base_auto_refresh_delay * pct // 100),
+            )
+        max_time = self.refresh_event_time + 5*self.base_auto_refresh_delay
+        target_time = self.refresh_target_time
+        self.refresh_target_time = min(max_time, max(target_time, now + sched_delay/1000.0))
+        added_ms = int(1000*(self.refresh_target_time-target_time))
+        due_ms = int(1000*(self.refresh_target_time-now))
+        if self.refresh_target_time==target_time:
+            return rec("unchanged refresh: due in %ims, pct=%i" % (due_ms, pct))
+        rec("re-scheduling refresh: due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (
+            due_ms, added_ms, sched_delay, pct, self.batch_config.delay))
 
     def remove_refresh_region(self, region):
         #removes the given region from the refresh list
