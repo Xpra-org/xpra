@@ -1511,7 +1511,6 @@ cdef class Encoder:
     cdef object pycuda_info
     cdef object cuda_device_info
     cdef object cuda_device_context
-    cdef object cuda_context
     cdef void *cuda_context_ptr
     cdef object kernel
     cdef object kernel_name
@@ -2326,15 +2325,17 @@ cdef class Encoder:
 
     def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None, int retry=0):
         assert device_context, "no cuda device context"
-        with device_context:
+        #cuda_device_context.__enter__ does self.context.push()
+        with device_context as cuda_context:
             if quality>=0:
                 self.set_encoding_quality(quality)
             if speed>=0:
                 self.set_encoding_speed(speed)
-            return self.do_compress_image(image)
+            return self.do_compress_image(cuda_context, image)
 
-    cdef do_compress_image(self, image):
-        assert self.context, "context is not initialized"
+    cdef do_compress_image(self, cuda_context, image):
+        assert self.context, "nvenc context is not initialized"
+        assert cuda_context, "missing device context"
         cdef unsigned int w = image.get_width()
         cdef unsigned int h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
@@ -2359,7 +2360,7 @@ cdef class Encoder:
             else:
                 stride = self.copy_image(image, False)
                 driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
-            self.exec_kernel(w, h, stride)
+            self.exec_kernel(cuda_context, w, h, stride)
             input_size = self.inputPitch * self.input_height
         else:
             #go direct to the CUDA "output" buffer:
@@ -2452,7 +2453,7 @@ cdef class Encoder:
         log("copy_image: %9i bytes uploaded in %3.1f ms: %5i MB/s", copy_len, 1000*elapsed, int(copy_len/elapsed)//1024//1024)
         return stride
 
-    cdef exec_kernel(self, unsigned int w, unsigned int h, unsigned int stride):
+    cdef exec_kernel(self, cuda_context, unsigned int w, unsigned int h, unsigned int stride):
         cdef uint8_t dx, dy
         if self.pixel_format=="NV12":
             #(these values are derived from the kernel code - which we should know nothing about here..)
@@ -2495,7 +2496,7 @@ cdef class Encoder:
             log_args = tuple(lf(v) for v in args)
             log("calling %s%s with block=%s, grid=%s", self.kernel_name, log_args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
-        self.cuda_context.synchronize()
+        cuda_context.synchronize()
         cdef double end = monotonic_time()
         cdef elapsed = end-start
         if elapsed==0:
@@ -2870,7 +2871,7 @@ cdef class Encoder:
         assert self.context is NULL, "context already set"
         assert self.cuda_context_ptr!=NULL, "cuda context is not set"
         #params = <NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS*> malloc(sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS))
-        log("open_encode_session() cuda_context=%s, cuda_context_ptr=%#x", self.cuda_context, <uintptr_t> self.cuda_context_ptr)
+        log("open_encode_session() cuda_context=%s, cuda_context_ptr=%#x", self.cuda_device_context, <uintptr_t> self.cuda_context_ptr)
 
         self.functionList = <NV_ENCODE_API_FUNCTION_LIST*> cmalloc(sizeof(NV_ENCODE_API_FUNCTION_LIST), "function list")
         assert memset(self.functionList, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST))!=NULL
