@@ -9,7 +9,7 @@ import signal
 from gi.repository import Gtk, Gdk, GLib, Pango
 
 from xpra import __version__
-from xpra.util import envint
+from xpra.util import envint, envbool
 from xpra.os_util import SIGNAMES, OSX
 from xpra.exit_codes import EXIT_TIMEOUT, EXIT_CONNECTION_LOST
 from xpra.common import SPLASH_EXIT_DELAY
@@ -102,6 +102,12 @@ class SplashScreen(Gtk.Window):
         self.present()
         self.timeout_timer = GLib.timeout_add(TIMEOUT*1000, self.timeout)
         self.pulse_timer = GLib.timeout_add(100, self.pulse)
+        scrash = envint("XPRA_SPLASH_CRASH", -1)
+        if scrash>=0:
+            def crash():
+                import ctypes  #pylint: disable=import-outside-toplevel
+                ctypes.string_at(0)
+            GLib.timeout_add(scrash, crash)
         Gtk.main()
         return self.exit_code or 0
 
