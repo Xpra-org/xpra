@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -41,6 +41,11 @@ def reaper_cleanup():
 
 
 class ProcInfo:
+    __slots__ = (
+        "pid", "name", "command", "ignore",
+        "forget", "dead", "returncode",
+         "callback", "process",
+         )
     def __repr__(self):
         return "ProcInfo(%s)" % self.__dict__
 
@@ -69,6 +74,7 @@ class ProcInfo:
 # WNOHANG is a tricky beast, see:
 # https://github.com/gevent/gevent/issues/622
 class ChildReaper:
+    __slots__ = ("_quit", "_proc_info")
     #note: the quit callback will fire only once!
     def __init__(self, quit_cb=None):
         log("ChildReaper(%s)", quit_cb)

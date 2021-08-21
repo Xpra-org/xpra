@@ -19,6 +19,7 @@ class Worker_Thread(Thread):
         The functions are placed in a queue and only called once,
         when this thread gets around to it.
     """
+    __slots__ = ("items", "exit", "daemon_work_items")
 
     def __init__(self):
         super().__init__(name="Worker_Thread")

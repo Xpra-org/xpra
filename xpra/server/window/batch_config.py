@@ -47,6 +47,14 @@ class DamageBatchConfig:
     """
     Encapsulate all the damage batching configuration into one object.
     """
+    __slots__ = (
+        "wid", "always", "max_events", "max_pixels", "time_unit",
+        "min_delay", "max_delay", "timeout_delay", "expire_delay",
+        "delay", "delay_per_megapixel",
+        "saved", "locked",
+        "last_event", "last_delays", "last_delay", "last_actual_delays", "last_actual_delay",
+        "last_updated", "factors",
+        )
     ALWAYS = ival("ALWAYS", 0, 0, 1)==1
     MAX_EVENTS = ival("MAX_EVENTS", min(50, NRECS), 10)         #maximum number of damage events
     MAX_PIXELS = ival("MAX_PIXELS", 1024*1024*MAX_EVENTS)       #small screen at MAX_EVENTS frames

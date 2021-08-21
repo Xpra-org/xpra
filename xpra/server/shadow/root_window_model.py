@@ -18,7 +18,7 @@ log = Logger("shadow")
 
 
 class RootWindowModel:
-
+    __slots__ = ("window", "geometry", "capture", "property_names", "dynamic_property_names", "internal_property_names")
     def __init__(self, root_window, capture=None):
         self.window = root_window
         self.geometry = root_window.get_geometry()[:4]

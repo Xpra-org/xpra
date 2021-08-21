@@ -18,7 +18,6 @@ counter = AtomicInteger()
 
 
 class RFBSource:
-
     def __init__(self, protocol, share=False):
         self.protocol = protocol
         self.close_event = Event()

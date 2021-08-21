@@ -95,7 +95,7 @@ class SystemTray(GObject.GObject):
         X11 client applications can request to embed their tray icon in it,
         the xpra server can request to "move_resize" to where the xpra client has it mapped.
     """
-
+    __slots__ = ("tray_window", "window_trays", "tray_windows")
     __gsignals__ = {
         "xpra-unmap-event": one_arg_signal,
         "xpra-client-message-event": one_arg_signal,

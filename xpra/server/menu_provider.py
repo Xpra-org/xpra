@@ -46,6 +46,10 @@ def get_menu_provider():
 
 
 class MenuProvider:
+    __slots__ = (
+        "watch_manager", "watch_notifier", "xdg_menu_reload_timer",
+        "on_reload", "menu_data", "desktop_sessions", "load_lock",
+        )
 
     def __init__(self):
         self.watch_manager = None

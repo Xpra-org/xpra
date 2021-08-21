@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -29,6 +29,7 @@ XNone = 0
 
 
 class XSettingsManager:
+    __slots__ = ("_manager", "_window")
     def __init__(self, screen_number=0):
         selection = "_XSETTINGS_S%i" % screen_number
         self._manager = ManagerSelection(selection)

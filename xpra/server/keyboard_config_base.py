@@ -8,7 +8,7 @@
 class KeyboardConfigBase:
     """ Base class representing the keyboard configuration for a server.
     """
-
+    __slots__ = ("enabled", "owner", "sync", "pressed_translation")
     def __init__(self):
         self.enabled = True
         self.owner = None

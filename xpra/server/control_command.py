@@ -20,7 +20,7 @@ class ControlError(Exception):
 
 class ControlCommand:
     """ Utility superclass for control commands """
-
+    __slots__ = ("name", "help", "do_run")
     def __init__(self, name, help_text=None, run=None):
         self.name = name
         self.help = help_text
@@ -41,6 +41,7 @@ class ControlCommand:
 
 class ArgsControlCommand(ControlCommand):
     """ Adds very basic argument validation """
+    __slots__ = ("validation", "min_args", "max_args")
     def __init__(self, name, help_text=None, run=None, validation=(), min_args=None, max_args=None):
         super().__init__(name, help_text, run)
         self.validation = validation
@@ -70,6 +71,7 @@ class ArgsControlCommand(ControlCommand):
 
 class FixedMessageCommand(ControlCommand):
     """ A control command that returns a fixed message """
+    __slots__ = ("message")
     def __init__(self, name, message, help_text=None):
         super().__init__(name, help_text)
         self.message = message
@@ -87,6 +89,7 @@ class HelloCommand(FixedMessageCommand):
 
 class HelpCommand(ArgsControlCommand):
     """ The help command looks at the 'help' definition of other commands """
+    __slots__ = ("control_commands")
     def __init__(self, control_commands):
         super().__init__("help", max_args=1)
         self.control_commands = control_commands

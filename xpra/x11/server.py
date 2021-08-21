@@ -59,6 +59,7 @@ WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,S
 
 
 class DesktopState:
+    __slots__ = ("geom", "resize_counter", "shown")
     def __init__(self, geom, resize_counter=0, shown=False):
         self.geom = geom
         self.resize_counter = resize_counter
@@ -67,6 +68,7 @@ class DesktopState:
         return "DesktopState(%s, %i, %s)" % (self.geom, self.resize_counter, self.shown)
 
 class DesktopManager(Gtk.Widget):
+    __slots__ = ("_models")
     def __init__(self):
         self._models = {}
         super().__init__()

@@ -50,6 +50,7 @@ def take_png_screenshot(window):
 
 
 class GTKImageCapture:
+    __slots__ = ("window")
     def __init__(self, window):
         self.window = window
 

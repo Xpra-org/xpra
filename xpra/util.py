@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -222,6 +222,7 @@ def roundup(n, m):
 
 
 class AtomicInteger:
+    __slots__ = ("counter", "lock")
     def __init__(self, integer = 0):
         self.counter = integer
         self.lock = threading.RLock()
@@ -263,6 +264,7 @@ class AtomicInteger:
 
 
 class MutableInteger(object):
+    __slots__ = ("counter")
     def __init__(self, integer = 0):
         self.counter = integer
 

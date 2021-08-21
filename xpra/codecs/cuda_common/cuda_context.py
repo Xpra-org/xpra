@@ -434,6 +434,7 @@ def get_device_context(options):
 
 
 class cuda_device_context:
+    __slots__ = ("device_id", "device", "context", "lock")
     def __init__(self, device_id, device):
         self.device_id = device_id
         self.device = device

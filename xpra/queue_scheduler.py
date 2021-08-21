@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,7 @@ log = Logger("util")
 #emulate the glib main loop using a single thread + queue:
 
 class QueueScheduler:
+    __slots__ = ("main_queue", "exit", "timer_id", "timers", "timer_lock")
 
     def __init__(self):
         self.main_queue = Queue()

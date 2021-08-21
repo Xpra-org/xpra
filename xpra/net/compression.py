@@ -149,6 +149,7 @@ def get_compressor(name):
 
 
 class Compressed:
+    __slots__ = ("datatype", "data", "can_inline")
     def __init__(self, datatype, data, can_inline=False):
         assert data is not None, "compressed data cannot be set to None"
         self.datatype = datatype
@@ -161,6 +162,7 @@ class Compressed:
 
 
 class LevelCompressed(Compressed):
+    __slots__ = ("level", "algorithm")
     def __init__(self, datatype, data, level, algo, can_inline):
         super().__init__(datatype, data, can_inline)
         self.level = level
@@ -170,6 +172,7 @@ class LevelCompressed(Compressed):
 
 
 class LargeStructure:
+    __slots__ = ("datatype", "data")
     def __init__(self, datatype, data):
         self.datatype = datatype
         self.data = data
@@ -179,6 +182,7 @@ class LargeStructure:
         return  "LargeStructure(%s: %i bytes)" % (self.datatype, len(self.data))
 
 class Compressible(LargeStructure):
+    __slots__ = ()
     #wrapper for data that should be compressed at some point,
     #to use this class, you must override compress()
     def __repr__(self):

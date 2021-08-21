@@ -38,6 +38,7 @@ if USE_NVFBC:
 
 
 class XImageCapture:
+    __slots__ = ("xshm", "xwindow")
     def __init__(self, xwindow):
         self.xshm = None
         self.xwindow = xwindow

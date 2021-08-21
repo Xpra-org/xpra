@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from uinput import (
-    BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,
-    REL_WHEEL, REL_HWHEEL,
-    REL_X, REL_Y, BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,
+    BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,   # @UnresolvedImport
+    REL_WHEEL, REL_HWHEEL,                                  # @UnresolvedImport
+    REL_X, REL_Y, BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,    # @UnresolvedImport
     )
 
 from xpra.util import envint
@@ -43,7 +43,7 @@ BUTTON_MAP = {
 
 
 class UInputDevice:
-
+    __slots__ = ("device", "device_path", "wheel_delta")
     def __init__(self, device, device_path):
         self.device = device
         self.device_path = bytestostr(device_path)
@@ -52,7 +52,7 @@ class UInputDevice:
         #http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
         #so synthesize a dummy one now:
         with xlog:
-            from xpra.x11.bindings.xi2_bindings import X11XI2Bindings  #pylint: disable=no-name-in-module
+            from xpra.x11.bindings.xi2_bindings import X11XI2Bindings  #pylint: disable=no-name-in-module, import-outside-toplevel
             xi2 = X11XI2Bindings()
             v = xi2.get_xi_version()
             log("XInput version %s", ".".join(str(x) for x in v))
@@ -88,7 +88,8 @@ class UInputDevice:
             ubutton = BUTTON_MAP.get(button)
             val = bool(pressed)
         if ubutton:
-            log("UInput.click(%i, %s) uinput button=%s (%#x), %#x, value=%s", button, pressed, BUTTON_STR.get(ubutton), ubutton[0], ubutton[1], val)
+            log("UInput.click(%i, %s) uinput button=%s (%#x), %#x, value=%s",
+                button, pressed, BUTTON_STR.get(ubutton), ubutton[0], ubutton[1], val)
             self.device.emit(ubutton, val)
         else:
             log("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
@@ -109,7 +110,8 @@ class UInputDevice:
         saved = self.wheel_delta.get(ubutton, 0)
         delta = saved+val
         ival = int(delta)
-        log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s, will emit %i", button, distance, BUTTON_STR.get(ubutton), saved, val, delta, ival)
+        log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s, will emit %i",
+            button, distance, BUTTON_STR.get(ubutton), saved, val, delta, ival)
         if ival!=0:
             self.device.emit(ubutton, ival)
         self.wheel_delta[ubutton] = delta-ival
@@ -143,7 +145,7 @@ class UInputPointerDevice(UInputDevice):
                 self.device.emit(REL_Y, dy, syn=True)
 
 class UInputTouchpadDevice(UInputDevice):
-
+    __slots__ = ("root_w", "root_h")
     def __init__(self, device, device_path, root_w, root_h):
         super().__init__(device, device_path)
         self.root_w = root_w
