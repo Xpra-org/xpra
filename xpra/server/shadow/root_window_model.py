@@ -18,9 +18,10 @@ log = Logger("shadow")
 
 
 class RootWindowModel:
-    __slots__ = ("window", "geometry", "capture", "property_names", "dynamic_property_names", "internal_property_names")
+    __slots__ = ("window", "title", "geometry", "capture", "property_names", "dynamic_property_names", "internal_property_names")
     def __init__(self, root_window, capture=None):
         self.window = root_window
+        self.title = prettify_plug_name(root_window.get_screen().get_display().get_name())
         self.geometry = root_window.get_geometry()[:4]
         self.capture = capture
         self.property_names = [
@@ -109,7 +110,7 @@ class RootWindowModel:
             return getattr(self, attr_name)
         #otherwise fallback to default behaviour:
         if prop=="title":
-            return prettify_plug_name(self.window.get_screen().get_display().get_name())
+            return self.title
         if prop=="client-machine":
             return socket.gethostname()
         if prop=="window-type":
