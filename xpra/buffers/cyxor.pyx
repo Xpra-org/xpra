@@ -7,7 +7,7 @@
 
 from libc.stdint cimport uint32_t, uintptr_t  #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport getbuf, MemBuf
-from libc.string cimport memcpy, memset
+from libc.string cimport memset
 
 
 cdef extern from "Python.h":
