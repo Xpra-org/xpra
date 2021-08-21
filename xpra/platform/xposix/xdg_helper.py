@@ -107,12 +107,13 @@ def load_glob_icon(submenu_data, main_dirname="categories"):
 def find_icon(dirnames, icondirs, name):
     extensions = ("png", "svg", "xpm")
     pathnames = []
+    noext = os.path.splitext(name)[0]
     for dn in dirnames:
         for d in icondirs:
             for ext in extensions:
                 pathnames += [
-                    os.path.join(d, "*", "*", dn, "%s.%s" % (name, ext)),
-                    os.path.join(d, "*", dn, "*", "%s.%s" % (name, ext)),
+                    os.path.join(d, "*", "*", dn, "%s.%s" % (noext, ext)),
+                    os.path.join(d, "*", dn, "*", "%s.%s" % (noext, ext)),
                     ]
     for pathname in pathnames:
         filenames = glob.glob(pathname)
