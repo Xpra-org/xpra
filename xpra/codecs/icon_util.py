@@ -13,13 +13,14 @@ import re
 
 from io import BytesIO
 
-from xpra.util import envint, first_time, ellipsizer
+from xpra.util import envint, envbool, first_time, ellipsizer
 from xpra.os_util import load_binary_file
 from xpra.log import Logger
 
 log = Logger("menu")
 
 MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 0)
+SVG_TO_PNG = envbool("XPRA_SVG_TO_PNG", True)
 
 INKSCAPE_RE = b'\\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
 
@@ -80,6 +81,8 @@ def load_icon_from_file(filename, max_size=MAX_ICON_SIZE):
     return icondata, os.path.splitext(filename)[1].lstrip(".")
 
 def svg_to_png(filename, icondata, w=128, h=128):
+    if not SVG_TO_PNG:
+        return None
     Rsvg = load_Rsvg()
     log("svg_to_png%s Rsvg=%s", (filename, "%i bytes" % len(icondata), w, h), Rsvg)
     if not Rsvg:
