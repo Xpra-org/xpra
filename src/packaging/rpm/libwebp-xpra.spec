@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:	     libwebp-xpra
-Version:     1.2.0
+Version:     1.2.1
 Release:     1%{?dist}
 Summary:     WebP library and conversion tools for xpra
 
@@ -32,7 +32,7 @@ WebP images.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "2fc8bbde9f97f2ab403c0224fb9ca62b2e6852cbc519e91ceaa7c153ffd88a0c" ]; then
+if [ "${sha256}" != "808b98d2f5b84e9b27fdef6c5372dac769c3bda4502febbfa5031bd3c4d7d018" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
