@@ -129,6 +129,7 @@ tests/unittests/test-file*
 /xpra/net/vsock.c
 /xpra/net/bencode/cython_bencode.c
 /xpra/net/rencodeplus/rencodeplus.c
+/xpra/net/websockets/mask.c
 /xpra/platform/darwin/gdk3_bindings.c
 /xpra/platform/win32/propsys.cpp
 /xpra/platform/xposix/netdev_query.c

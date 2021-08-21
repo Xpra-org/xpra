@@ -1,13 +1,13 @@
 # This file is part of Xpra.
 # This file is based on websockify/websocket.py from the websockify project
-# Copyright 2019 Antoine Martin <antoine@xpra.org>
+# Copyright 2019-2021 Antoine Martin <antoine@xpra.org>
 # Copyright 2011 Joel Martin
 # Copyright 2016 Pierre Ossman
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
 
 import struct
 
-from xpra.buffers.cyxor import hybi_unmask   #@UnresolvedImport
+from xpra.net.websockets.mask import hybi_unmask   #@UnresolvedImport
 
 
 def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True):

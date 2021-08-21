@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -63,7 +63,7 @@ class WebSocketProtocol(Protocol):
             packet_type, len(items), payload_len, self.ws_mask)
         header = encode_hybi_header(OPCODE_BINARY, payload_len, self.ws_mask)
         if self.ws_mask:
-            from xpra.buffers.cyxor import hybi_mask     #@UnresolvedImport
+            from xpra.net.websockets.mask import hybi_mask     #@UnresolvedImport
             mask = os.urandom(4)
             #now mask all the items:
             for i, item in enumerate(items):

@@ -934,6 +934,7 @@ def clean():
                    "xpra/platform/xposix/netdev_query.c",
                    "xpra/net/bencode/cython_bencode.c",
                    "xpra/net/rencodeplus/rencodeplus.c",
+                   "xpra/net/websockets/mask.c",
                    "xpra/net/vsock.c",
                    "xpra/buffers/membuf.c",
                    "xpra/buffers/xxh.c",
@@ -2332,6 +2333,13 @@ if rencodeplus_ENABLED:
     add_cython_ext("xpra.net.rencodeplus.rencodeplus",
                 ["xpra/net/rencodeplus/rencodeplus.pyx"],
                 **rencodeplus_pkgconfig)
+
+toggle_packages(websockets_ENABLED, "xpra.net.websockets.mask")
+if websockets_ENABLED:
+    websockets_pkgconfig = pkgconfig(optimize=3)
+    add_cython_ext("xpra.net.websockets.mask",
+                ["xpra/net/websockets/mask.pyx"],
+                **websockets_pkgconfig)
 
 if netdev_ENABLED:
     netdev_pkgconfig = pkgconfig()
