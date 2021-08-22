@@ -46,7 +46,7 @@ def find_libfakeXinerama():
             log("find_libfakeXinerama()", exc_info=True)
             log.error("Error: cannot launch ldconfig -p to locate libfakeXinerama:")
             log.error(" %s", e)
-    return find_lib(libname)
+    return find_lib("libfakeXinerama.so.1")
 
 current_xinerama_config = None
 
