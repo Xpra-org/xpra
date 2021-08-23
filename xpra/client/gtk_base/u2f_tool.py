@@ -59,7 +59,7 @@ def main():
         for d in get_user_conf_dirs():
             public_key_filenames += glob.glob(os.path.join(d, "u2f*.pub"))
         if public_key_filenames:
-            info(" found %i existing public key%s" % (len(public_key_filenames, engs(public_key_filenames))),
+            info(" found %i existing public key%s" % (len(public_key_filenames), engs(public_key_filenames)),
                  *((" - %s" % x) for x in public_key_filenames))
 
         #pick the first directory:
