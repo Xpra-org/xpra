@@ -751,7 +751,8 @@ cdef class Decoder:
             CodecID = AV_CODEC_ID_MPEG2VIDEO
         else:
             raise Exception("invalid codec; %s" % self.encoding)
-        self.codec = avcodec_find_decoder(CodecID)
+        # ↓↓ -Werror=discarded-qualifiers]
+        # self.codec = avcodec_find_decoder(CodecID)
         if self.codec==NULL:
             log.error("codec %s not found!" % self.encoding)
             return  False

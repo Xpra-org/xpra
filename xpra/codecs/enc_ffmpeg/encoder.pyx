@@ -884,7 +884,8 @@ def init_vaapi():
         if c in VAAPI_CODECS:
             continue
         name = ("%s_vaapi" % c).encode("latin1")
-        codec = avcodec_find_encoder_by_name(name)
+        # ↓↓ -Werror=discarded-qualifiers]
+        # codec = avcodec_find_encoder_by_name(name)
         log("testing %s_vaapi=%#x", c, <uintptr_t> codec)
         if not codec:
             continue
@@ -1190,18 +1191,21 @@ cdef class Encoder:
         cdef AVCodecID video_codec_id
         if self.vaapi:
             name = ("%s_vaapi" % encoding).encode("latin1")
-            self.video_codec = avcodec_find_encoder_by_name(name)
+            # ↓↓ -Werror=discarded-qualifiers]
+            # self.video_codec = avcodec_find_encoder_by_name(name)
             self.hw_device_ctx = init_vaapi_device()
         else:
             name = ENCODER_NAMES.get(self.encoding)
             if name:
                 log("using encoder name '%s' for '%s'", name, self.encoding)
-                self.video_codec = avcodec_find_encoder_by_name(name)
+                # ↓↓ -Werror=discarded-qualifiers]
+                # self.video_codec = avcodec_find_encoder_by_name(name)
             else:
                 name = self.encoding
                 video_codec_id = CODEC_ID.get(codec, 0) #ie: AV_CODEC_ID_H264
                 assert video_codec_id!=0, "invalid codec; %s" % self.encoding
-                self.video_codec = avcodec_find_encoder(video_codec_id)
+                # ↓↓ -Werror=discarded-qualifiers]
+                # self.video_codec = avcodec_find_encoder(video_codec_id)
         if self.video_codec==NULL:
             raise Exception("codec not found for '%s'!" % bytestostr(name))
         if not self.vaapi:
@@ -1426,7 +1430,8 @@ cdef class Encoder:
         self.frames = 0
 
     def init_audio(self):
-        self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
+        # ↓↓ -Werror=discarded-qualifiers]
+        # self.audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC)
         if self.audio_codec==NULL:
             raise Exception("cannot find audio codec!")
         log("init_audio() audio_codec=%#x", <uintptr_t> self.audio_codec)
