@@ -551,19 +551,19 @@ if v<(3,):
 
 register_all()
 CODECS = []
-if avcodec_find_decoder(AV_CODEC_ID_H264)!=NULL:
+if avcodec_find_decoder(AV_CODEC_ID_H264):
     CODECS.append("h264")
-if avcodec_find_decoder(AV_CODEC_ID_VP8)!=NULL:
+if avcodec_find_decoder(AV_CODEC_ID_VP8):
     CODECS.append("vp8")
-if avcodec_find_decoder(AV_CODEC_ID_H265)!=NULL:
+if avcodec_find_decoder(AV_CODEC_ID_H265):
     CODECS.append("h265")
-if avcodec_find_decoder(AV_CODEC_ID_MPEG4)!=NULL:
+if avcodec_find_decoder(AV_CODEC_ID_MPEG4):
     CODECS.append("mpeg4")
-if avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO)!=NULL:
+if avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO):
     CODECS.append("mpeg1")
-if avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO)!=NULL:
+if avcodec_find_decoder(AV_CODEC_ID_MPEG2VIDEO):
     CODECS.append("mpeg2")
-if avcodec_find_decoder(AV_CODEC_ID_VP9)!=NULL:
+if avcodec_find_decoder(AV_CODEC_ID_VP9):
     CODECS.append("vp9")
 CODECS = tuple(CODECS)
 log("avcodec2.init_module: CODECS=%s", CODECS)
