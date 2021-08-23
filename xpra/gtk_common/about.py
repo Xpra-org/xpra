@@ -16,7 +16,7 @@ log = Logger("info")
 
 APPLICATION_NAME = "Xpra"
 SITE_DOMAIN = "xpra.org"
-SITE_URL = "http://%s/" % SITE_DOMAIN
+SITE_URL = "https://%s/" % SITE_DOMAIN
 
 
 GPL2 = None
