@@ -613,7 +613,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         if not POSIX:
             raise InitExit(EXIT_UNSUPPORTED, "initenv is not supported on this OS")
         from xpra.server.server_util import xpra_runner_shell_script, write_runner_shell_scripts
-        script = xpra_runner_shell_script(script_file, os.getcwd(), options.socket_dir)
+        script = xpra_runner_shell_script(script_file, os.getcwd())
         write_runner_shell_scripts(script, False)
         return 0
     elif mode=="auth":
