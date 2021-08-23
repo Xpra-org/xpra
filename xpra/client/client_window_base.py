@@ -9,6 +9,7 @@ import os
 import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
+from xpra.client.window_backing_base import fire_paint_callbacks
 from xpra.os_util import bytestostr, strtobytes, OSX, WIN32, is_Wayland
 from xpra.common import GRAVITY_STR
 from xpra.util import u, typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
@@ -729,7 +730,6 @@ class ClientWindowBase(ClientWidgetBase):
         backing = self._backing
         if not backing:
             log("draw_region: window %s has no backing, gone?", self._id)
-            from xpra.client.window_backing_base import fire_paint_callbacks
             fire_paint_callbacks(callbacks, -1, "no backing")
             return
         #only register this callback if we actually need it:
@@ -739,7 +739,6 @@ class ClientWindowBase(ClientWidgetBase):
             if options.intget("flush", 0)==0:
                 callbacks.append(self.after_draw_refresh)
         if coding=="void":
-            from xpra.client.window_backing_base import fire_paint_callbacks
             fire_paint_callbacks(callbacks)
             return
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
