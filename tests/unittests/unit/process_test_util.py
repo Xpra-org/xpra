@@ -179,7 +179,7 @@ class ProcessTestUtil(unittest.TestCase):
     def which(cls, cmd):
         try:
             from xpra.os_util import get_status_output
-            code, out, _ = get_status_output(["command -v", cmd])
+            code, out, _ = get_status_output(["command", "-v", cmd])
             if code==0:
                 return out.splitlines()[0]
         except OSError:
