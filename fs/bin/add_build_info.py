@@ -64,30 +64,31 @@ def save_properties(props, filename):
 
 def get_properties(filename):
     props = dict()
-    if os.path.exists(filename):
-        with open(filename, "rb") as f:
-            for line in f:
-                try:
-                    s = line.decode("utf-8")
-                except UnicodeDecodeError:
-                    #str cannot be decoded!
-                    s = str(line)
-                s = s.strip()
-                if not s:
-                    continue
-                if s[0] in ('!', '#'):
-                    continue
-                parts = s.split("=", 1)
-                if len(parts)<2:
-                    print("missing equal sign: %s" % s)
-                    continue
-                name = parts[0]
-                value = parts[1]
-                if not value:
-                    continue
-                if value[0]!="'" or value[-1]!="'":
-                    continue
-                props[name]= value[1:-1]
+    if not os.path.exists(filename):
+        return props
+    with open(filename, "rb") as f:
+        for line in f:
+            try:
+                s = line.decode("utf-8")
+            except UnicodeDecodeError:
+                #str cannot be decoded!
+                s = str(line)
+            s = s.strip()
+            if not s:
+                continue
+            if s[0] in ('!', '#'):
+                continue
+            parts = s.split("=", 1)
+            if len(parts)<2:
+                print("missing equal sign: %s" % s)
+                continue
+            name = parts[0]
+            value = parts[1]
+            if not value:
+                continue
+            if value[0]!="'" or value[-1]!="'":
+                continue
+            props[name]= value[1:-1]
     return props
 
 
