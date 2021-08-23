@@ -8,6 +8,7 @@ import sys
 
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
+from xpra.util import typedict
 from xpra.os_util import WIN32
 
 
@@ -79,7 +80,11 @@ def main(argv):
         client_salt = get_salt(len(server_salt))
         combined_salt = gendigest(salt_digest, client_salt, server_salt)
         response = xor(password, combined_salt)
-        a.authenticate(response, client_salt)
+        caps = typedict({
+            "challenge_response"    : response,
+            "challenge_client_salt" : client_salt,
+            })
+        a.authenticate(caps)
     return 0
 
 
