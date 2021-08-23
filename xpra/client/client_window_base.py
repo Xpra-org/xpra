@@ -692,6 +692,10 @@ class ClientWindowBase(ClientWidgetBase):
                 self.pending_refresh.append((x, y, width, height))
             if options.intget("flush", 0)==0:
                 callbacks.append(self.after_draw_refresh)
+        if coding=="void":
+            from xpra.client.window_backing_base import fire_paint_callbacks
+            fire_paint_callbacks(callbacks)
+            return
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
     def after_draw_refresh(self, success, message=""):
