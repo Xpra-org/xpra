@@ -620,8 +620,8 @@ class UIXpraClient(ClientBaseClass):
             log.info("switching to %s on server request", pe)
             self._protocol.enable_encoder(pe)
         elif command=="name":
-            assert len(args)>=3
-            self.server_session_name = bytestostr(args[2])
+            assert len(args)>=1
+            self.server_session_name = bytestostr(args[0])
             log.info("session name updated from server: %s", self.server_session_name)
             #TODO: reset tray tooltip, session info title, etc..
         elif command=="debug":
