@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import subprocess
+from subprocess import PIPE, Popen
 
 
 def bytestostr(x):
-    if type(x)==bytes:
+    if isinstance(x, bytes):
         return x.decode("latin1")
     return str(x)
 
 
 def get_status_output(*args, **kwargs):
-    kwargs["stdout"] = subprocess.PIPE
-    kwargs["stderr"] = subprocess.PIPE
+    kwargs["stdout"] = PIPE
+    kwargs["stderr"] = PIPE
     try:
-        p = subprocess.Popen(*args, **kwargs)
+        p = Popen(*args, **kwargs)
     except Exception as e:
         print("error running %s,%s: %s" % (args, kwargs, e))
         return -1, "", ""
@@ -57,18 +57,21 @@ def gen_range(minw, maxw, wstep, minh, maxh, hstep):
                 hz = (hz//10)*10
             elif hz>50:
                 hz = (hz//5)*5
-            cmd = ["cvt", str(w), str(h), str(hz)]
-            lines = get_output_lines(cmd)
-            for line in lines:
-                if line.startswith("Modeline"):
-                    parts = line.split(" ")
-                    parts = [x for x in parts if len(x)>0]
-                    parts[0] = "  Modeline"
-                    parts[1] = ('"%ix%i@%i"' % (w, h, hz)).ljust(15)
-                    parts[2] = parts[2].rjust(8)
-                    for i in range(3, len(parts)):
-                        parts[i] = parts[i].rjust(5)
-                    print(" ".join(parts))
+            print_cvt(w, h, hz)
+
+def print_cvt(w, h, hz):
+    cmd = ["cvt", str(w), str(h), str(hz)]
+    lines = get_output_lines(cmd)
+    for line in lines:
+        if line.startswith("Modeline"):
+            parts = line.split(" ")
+            parts = [x for x in parts if len(x)>0]
+            parts[0] = "  Modeline"
+            parts[1] = ('"%ix%i@%i"' % (w, h, hz)).ljust(15)
+            parts[2] = parts[2].rjust(8)
+            for i in range(3, len(parts)):
+                parts[i] = parts[i].rjust(5)
+            print(" ".join(parts))
 
 def main():
     #lower resolutions (up to 4096x2048) with a 64 pixel step:
