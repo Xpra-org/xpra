@@ -485,7 +485,6 @@ cdef extern from "libavformat/avformat.h":
     int AVFMT_FLAG_BITEXACT
     int AVFMT_FLAG_SORT_DTS         #try to interleave outputted packets by dts (using this flag can slow demuxing down)
     int AVFMT_FLAG_PRIV_OPT         #Enable use of private options by delaying codec open (this could be made default once all code is converted)
-    int AVFMT_FLAG_KEEP_SIDE_DATA   #Don't merge side data but keep it separate.
     int AVFMT_FLAG_FAST_SEEK        #Enable fast, but inaccurate seeks for some formats
 
     int AVFMT_NOFILE                #Demuxer will use avio_open, no opened file should be provided by the caller
@@ -695,7 +694,6 @@ FMT_FLAGS = {
     AVFMT_FLAG_BITEXACT        : "BITEXACT",
     AVFMT_FLAG_SORT_DTS        : "SORT_DTS",
     AVFMT_FLAG_PRIV_OPT        : "PRIV_OPT",
-    AVFMT_FLAG_KEEP_SIDE_DATA  : "KEEP_SIDE_DATA",
     AVFMT_FLAG_FAST_SEEK       : "FAST_SEEK",
     }
 
