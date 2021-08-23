@@ -106,15 +106,7 @@ XPRA_SPEAKER_OPTIONS = [None]
 XPRA_MICROPHONE_OPTIONS = [None]
 if config.TEST_SOUND:
     from xpra.sound.gstreamer_util import CODEC_ORDER, has_codec
-    if XPRA_VERSION_NO>=[0, 9]:
-        #0.9 onwards supports all codecs defined:
-        XPRA_SPEAKER_OPTIONS = [x for x in CODEC_ORDER if has_codec(x)]
-    elif XPRA_VERSION_NO==[0, 8]:
-        #only mp3 works in 0.8:
-        XPRA_SPEAKER_OPTIONS = ["mp3"]
-    else:
-        #none before that
-        XPRA_SPEAKER_OPTIONS = [None]
+    XPRA_SPEAKER_OPTIONS = [x for x in CODEC_ORDER if has_codec(x)]
 
 if config.XPRA_USE_PASSWORD:
     password_filename = "./test-password.txt"
@@ -584,23 +576,13 @@ def get_auth_args(server=True):
     cmd = []
     if config.XPRA_USE_PASSWORD:
         if server:
-            if XPRA_VERSION_NO>=[0, 15]:
-                cmd.append("--auth=none")
-                cmd.append("--tcp-auth=file,filename=%s" % password_filename)
-            elif XPRA_VERSION_NO>=[0, 15]:
-                cmd.append("--auth=none")
-                cmd.append("--tcp-auth=file")
-                cmd.append("--password-file=%s" % password_filename)
-            elif XPRA_VERSION_NO>=[0, 14]:
-                cmd.append("--auth=file")
-                cmd.append("--password-file=%s" % password_filename)
+            cmd.append("--auth=none")
+            cmd.append("--tcp-auth=file,filename=%s" % password_filename)
         else:
             cmd.append("--password-file=%s" % password_filename)
     return cmd
 
 def xpra_get_stats(initial_stats=None, all_stats=[]):
-    if XPRA_VERSION_NO<[0, 3]:
-        return  {}
     info_cmd = XPRA_INFO_COMMAND[:] + get_auth_args(False)
     out = getoutput(info_cmd)
     if not out:
@@ -727,7 +709,6 @@ def get_xpra_start_server_command():
                    +" +extension RENDER"
                    +" -logfile %s" % config.XORG_LOG
                    +" -config %s" % config.XORG_CONFIG)
-    if XPRA_VERSION_NO>=[0, 5]:
         cmd.append("--no-notifications")
     cmd += get_auth_args(True)
     cmd.append("--no-pulseaudio")
@@ -790,10 +771,7 @@ def test_xpra():
                                                             cmd.append("tcp:%s:%s" % (config.IP, config.PORT))
                                                         else:
                                                             cmd.append(":%s" % (config.DISPLAY_NO))
-                                                        if XPRA_VERSION_NO>=[0, 15]:
-                                                            cmd.append("--readonly=yes")
-                                                        else:
-                                                            cmd.append("--readonly")
+                                                        cmd.append("--readonly=yes")
                                                         cmd += get_auth_args(False)
                                                         if packet_encoders:
                                                             cmd += ["--packet-encoders=%s" % packet_encoders]
@@ -801,45 +779,36 @@ def test_xpra():
                                                             cmd += ["--compressors=%s" % comp]
                                                         if compression is not None:
                                                             cmd += ["-z", str(compression)]
-                                                        if XPRA_VERSION_NO>=[0, 3]:
-                                                            cmd.append("--enable-pings")
-                                                            cmd.append("--no-clipboard")
-                                                        if XPRA_VERSION_NO>=[0, 5]:
-                                                            cmd.append("--no-bell")
-                                                            cmd.append("--no-cursors")
-                                                            cmd.append("--no-notifications")
-                                                        if XPRA_VERSION_NO>=[0, 12]:
-                                                            if config.XPRA_MDNS:
-                                                                cmd.append("--mdns")
-                                                            else:
-                                                                cmd.append("--no-mdns")
-                                                        if XPRA_VERSION_NO>=[0, 8] and encryption:
+                                                        cmd.append("--enable-pings")
+                                                        cmd.append("--no-clipboard")
+                                                        cmd.append("--no-bell")
+                                                        cmd.append("--no-cursors")
+                                                        cmd.append("--no-notifications")
+                                                        if config.XPRA_MDNS:
+                                                            cmd.append("--mdns")
+                                                        else:
+                                                            cmd.append("--no-mdns")
+                                                        if encryption:
                                                             cmd.append("--encryption=%s" % encryption)
                                                         if speed>=0:
                                                             cmd.append("--speed=%s" % speed)
                                                         if quality>=0:
-                                                            if XPRA_VERSION_NO>=[0, 7]:
-                                                                cmd.append("--quality=%s" % quality)
-                                                            else:
-                                                                cmd.append("--jpeg-quality=%s" % quality)
+                                                            cmd.append("--quality=%s" % quality)
                                                             name = "%s-%s" % (encoding, quality)
                                                         else:
                                                             name = encoding
                                                         if speaker is None:
-                                                            if XPRA_VERSION_NO>=[0, 8]:
-                                                                cmd.append("--no-speaker")
+                                                            cmd.append("--no-speaker")
                                                         else:
                                                             cmd.append("--speaker-codec=%s" % speaker)
                                                         if mic is None:
-                                                            if XPRA_VERSION_NO>=[0, 8]:
-                                                                cmd.append("--no-microphone")
+                                                            cmd.append("--no-microphone")
                                                         else:
                                                             cmd.append("--microphone-codec=%s" % mic)
                                                         if encoding!="mmap":
                                                             cmd.append("--no-mmap")
                                                             cmd.append("--encoding=%s" % encoding)
-                                                        if XPRA_VERSION_NO>=[0, 9]:
-                                                            cmd.append("--opengl=%s" % opengl)
+                                                        cmd.append("--opengl=%s" % opengl)
 
                                                         full_test_name = "%6s %s" % (name, test_name)
                                                         tests.append(
