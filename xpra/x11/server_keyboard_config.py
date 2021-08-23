@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import hashlib
 from gi.repository import Gdk
 
 from xpra.util import csv, envbool
@@ -168,8 +169,7 @@ class KeyboardConfig(KeyboardConfigBase):
         """
             This hash will be different whenever the keyboard configuration changes.
         """
-        import hashlib
-        m = hashlib.sha1()
+        m = hashlib.sha256()
         def hashadd(v):
             m.update(("/%s" % str(v)).encode("utf8"))
         m.update(super().get_hash())

@@ -471,7 +471,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress: %i" % l, 0)
                 os.close(fd)
                 return
-            digest = hashlib.sha1()
+            digest = hashlib.sha256()
             chunk = 0
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             chunk_state = [
@@ -491,7 +491,7 @@ class FileTransferHandler(FileTransferAttributes):
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
         #check digest if present:
-        def check_digest(algo="sha1", libfn=hashlib.sha1):
+        def check_digest(algo="sha256", libfn=hashlib.sha256):
             digest = options.get(algo)
             if digest:
                 u = libfn()
@@ -499,6 +499,7 @@ class FileTransferHandler(FileTransferAttributes):
                 l("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
                 if digest!=u.hexdigest():
                     self.digest_mismatch(filename, digest, u.hexdigest(), algo)
+        check_digest("sha256", hashlib.sha256)
         check_digest("sha1", hashlib.sha1)
         check_digest("md5", hashlib.md5)
         try:
@@ -874,12 +875,12 @@ class FileTransferHandler(FileTransferAttributes):
         l("do_send_file%s", (s(filename), mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
         if not self.check_file_size(action, filename, filesize):
             return False
-        u = hashlib.sha1()
+        u = hashlib.sha256()
         u.update(data)
         absfile = os.path.abspath(filename)
-        filelog("sha1 digest('%s')=%s", s(absfile), u.hexdigest())
+        filelog("sha256 digest('%s')=%s", s(absfile), u.hexdigest())
         options = options or {}
-        options["sha1"] = u.hexdigest()
+        options["sha256"] = u.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
         if 0<chunk_size<filesize:
             if len(self.send_chunks_in_progress)>=MAX_CONCURRENT_FILES:

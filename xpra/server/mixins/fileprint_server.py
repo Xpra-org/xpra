@@ -172,7 +172,7 @@ class FilePrintServer(StubServerMixin):
                                        source_uuid, title, printer, no_copies, print_options))
         printlog("process_print: got %s bytes for file %s", len(file_data), filename)
         #parse the print options:
-        hu = hashlib.sha1()
+        hu = hashlib.sha256()
         hu.update(file_data)
         printlog("sha1 digest: %s", hu.hexdigest())
         options = {

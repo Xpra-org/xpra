@@ -318,7 +318,7 @@ class KeyboardHelper:
 
     def update_hash(self):
         import hashlib
-        h = hashlib.sha1()
+        h = hashlib.sha256()
         def hashadd(v):
             h.update(("/%s" % str(v)).encode("utf8"))
         for x in (self.xkbmap_print, self.xkbmap_query, \

@@ -392,13 +392,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         color_str = color_str.replace(":off", "")
         if color_str in ("auto", ""):
-            from hashlib import md5, sha1
-            try:
-                if envbool("XPRA_NOMD5", False):
-                    raise ValueError("md5 explicitly disabled")
-                m = md5()
-            except ValueError:
-                m = sha1()
+            from hashlib import sha256
+            m = sha256()
             endpoint = self.display_desc.get("display_name")
             if endpoint:
                 m.update(strtobytes(endpoint))

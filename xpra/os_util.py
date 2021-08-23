@@ -274,7 +274,7 @@ def get_user_uuid() -> str:
     if user_uuid:
         return user_uuid
     import hashlib
-    u = hashlib.sha1()
+    u = hashlib.sha256()
     def uupdate(ustr):
         u.update(ustr.encode("utf-8"))
     uupdate(get_machine_id())

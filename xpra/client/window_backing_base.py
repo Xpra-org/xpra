@@ -80,15 +80,11 @@ def fire_paint_callbacks(callbacks, success=True, message=""):
 def verify_checksum(img_data, options):
     l = options.intget("z.len")
     if l:
-        assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (l, len(img_data))
-    try:
-        chksum = options.get("z.md5")
-        if chksum:
-            h = hashlib.md5(img_data)
-    except ValueError:
-        chksum = options.get("z.sha1")
-        if chksum:
-            h = hashlib.sha1(img_data)
+        assert l==len(img_data), "compressed pixel data failed length integrity check: expected %i bytes but got %i" % (
+            l, len(img_data))
+    chksum = options.get("z.sha256")
+    if chksum:
+        h = hashlib.sha256(img_data)
     if h:
         hd = h.hexdigest()
         assert chksum==hd, "pixel data failed compressed chksum integrity check: expected %s but got %s" % (chksum, hd)
