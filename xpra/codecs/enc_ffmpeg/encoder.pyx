@@ -1148,7 +1148,7 @@ cdef class Encoder:
     cdef object encoding
     cdef object profile
     #audio:
-    cdef AVCodec *audio_codec
+    cdef const AVCodec *audio_codec
     cdef AVStream *audio_stream
     cdef AVCodecContext *audio_ctx
     cdef uint8_t ready
