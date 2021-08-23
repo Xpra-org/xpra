@@ -600,8 +600,9 @@ class UIXpraClient(ClientBaseClass):
 
     def _process_control(self, packet):
         command = bytestostr(packet[1])
+        args = packet[2:]
+        log("_process_control(%s)", packet)
         if command=="show_session_info":
-            args = packet[2:]
             log("calling %s%s on server request", self.show_session_info, args)
             self.show_session_info(*args)
         elif command=="show_bug_report":
@@ -615,12 +616,11 @@ class UIXpraClient(ClientBaseClass):
             log.info("switching to %s on server request", pe)
             self._protocol.enable_encoder(pe)
         elif command=="name":
-            assert len(args)>=3
-            self.server_session_name = args[2]
+            assert len(args)>=1
+            self.server_session_name = bytestostr(args[0])
             log.info("session name updated from server: %s", self.server_session_name)
             #TODO: reset tray tooltip, session info title, etc..
         elif command=="debug":
-            args = packet[2:]
             if not args:
                 log.warn("not enough arguments for debug control command")
                 return
