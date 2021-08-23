@@ -849,7 +849,7 @@ def init_module():
         AV_CODEC_ID_MPEG1VIDEO : ("mpeg1", ),
         AV_CODEC_ID_MPEG2VIDEO : ("mpeg2", )
         }.items():
-        if avcodec_find_encoder(codec_id)!=NULL:
+        if avcodec_find_encoder(codec_id):
             all_codecs += codecs
     log("enc_ffmpeg non vaapi CODECS=%s", csv(all_codecs))
     if VAAPI and LINUX:
@@ -1076,7 +1076,7 @@ cdef list_options(void *obj, const AVClass *av_class, int skip=1):
     cdef const AVOption *option = <const AVOption*> av_class.option
     if skip<=0:
         options = []
-        while option!=NULL:
+        while option:
             oname = bytestostr(option.name)
             options.append(oname)
             option = av_opt_next(obj, option)
@@ -1294,7 +1294,7 @@ cdef class Encoder:
 
     def write_muxer_header(self):
         log("write_muxer_header() %s header", self.muxer_format)
-        assert self.muxer_opts!=NULL
+        assert self.muxer_opts
         r = avformat_write_header(self.muxer_ctx, &self.muxer_opts)
         av_dict_free(&self.muxer_opts)
         if r!=0:
@@ -1476,32 +1476,32 @@ cdef class Encoder:
     def clean_encoder(self):
         cdef int r
         log("%s.clean_encoder()", self)
-        if self.av_frame!=NULL:
+        if self.av_frame:
             log("clean_encoder() freeing AVFrame: %#x", <uintptr_t> self.av_frame)
             av_frame_free(&self.av_frame)
-        if self.muxer_ctx!=NULL:
+        if self.muxer_ctx:
             if self.frames>0:
                 log("clean_encoder() writing trailer to stream")
                 av_write_trailer(self.muxer_ctx)
-                if self.muxer_ctx.pb!=NULL:
+                if self.muxer_ctx.pb:
                     av_free(self.muxer_ctx.pb)
                     self.muxer_ctx.pb = NULL
             log("clean_encoder() freeing av format context %#x", <uintptr_t> self.muxer_ctx)
             avformat_free_context(self.muxer_ctx)
             self.muxer_ctx = NULL
             log("clean_encoder() freeing bitstream buffer %#x", <uintptr_t> self.buffer)
-            if self.buffer!=NULL:
+            if self.buffer:
                 av_free(self.buffer)
                 self.buffer = NULL
         log("clean_encoder() freeing AVCodecContext: %#x", <uintptr_t> self.video_ctx)
-        if self.video_ctx!=NULL:
+        if self.video_ctx:
             r = avcodec_close(self.video_ctx)
             if r!=0:
                 log.error("Error: failed to close video encoder context %#x", <uintptr_t> self.video_ctx)
                 log.error(" %s", av_error_str(r))
             av_free(self.video_ctx)
             self.video_ctx = NULL
-        if self.audio_ctx!=NULL:
+        if self.audio_ctx:
             r = avcodec_close(self.audio_ctx)
             if r!=0:
                 log.error("Error: failed to close audio encoder context %#x", <uintptr_t> self.audio_ctx)
@@ -1588,8 +1588,8 @@ cdef class Encoder:
         cdef AVFrame *frame = NULL
         cdef AVFrame *hw_frame = NULL
         cdef Py_buffer py_buf[4]
-        assert self.video_ctx!=NULL, "no codec context! (not initialized or already closed)"
-        assert self.video_codec!=NULL, "no video codec!"
+        assert self.video_ctx, "no codec context! (not initialized or already closed)"
+        assert self.video_codec, "no video codec!"
 
         for i in range(4):
             memset(&py_buf[i], 0, sizeof(Py_buffer))
