@@ -2420,7 +2420,7 @@ class WindowSource(WindowIconSource):
                 v = data.data
             except AttributeError:
                 v = data
-            chksum = hashlib.sha1().hexdigest()
+            chksum = hashlib.sha1(v).hexdigest()
             client_options["z.sha1"] = chksum
             client_options["z.len"] = len(data)
             log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), chksum)
