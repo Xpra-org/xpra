@@ -126,10 +126,10 @@ def pkg_config_version(req_version, pkgname):
 
 def is_RH():
     try:
-        with open("/etc/redhat-release", mode='rb') as f:
-            data = f.read()
-        return data.startswith("CentOS") or data.startswith("RedHat")
-    except:
+        with open("/etc/redhat-release", mode='rb') as rel:
+            data = rel.read()
+        return data.startswith(b"CentOS") or data.startswith(b"RedHat")
+    except OSError:
         pass
     return False
 
