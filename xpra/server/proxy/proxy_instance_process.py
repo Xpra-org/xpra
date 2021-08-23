@@ -252,7 +252,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         if len(self.potential_protocols)>=self.max_connections:
             log.error("too many connections (%s), ignoring new one", len(self.potential_protocols))
             sock.close()
-            return  True
+            return
         try:
             peername = sock.getpeername()
         except OSError:
@@ -270,7 +270,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         protocol.enable_default_encoder()
         protocol.start()
         self.timeout_add(SOCKET_TIMEOUT*1000, self.verify_connection_accepted, protocol)
-        return True
 
     def verify_connection_accepted(self, protocol):
         if not protocol.is_closed() and protocol in self.potential_protocols:
