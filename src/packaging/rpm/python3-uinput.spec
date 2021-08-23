@@ -47,7 +47,7 @@ chmod a-x examples/*
 
 %files
 %doc COPYING NEWS README examples
-%{python3_sitearch}/python_uinput-%{version}-py?.?.egg-info
+%{python3_sitearch}/python_uinput-%{version}-py?.*.egg-info
 %{python3_sitearch}/_libsuinput.*.so
 %{python3_sitearch}/uinput
 
