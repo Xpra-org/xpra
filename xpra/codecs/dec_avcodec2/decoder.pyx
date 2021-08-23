@@ -283,7 +283,7 @@ cdef extern from "libavcodec/avcodec.h":
     AVCodecID AV_CODEC_ID_MPEG2VIDEO
 
     #init and free:
-    AVCodec *avcodec_find_decoder(AVCodecID id)
+    const AVCodec *avcodec_find_decoder(AVCodecID id)
     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
     AVFrame* av_frame_alloc()
@@ -697,7 +697,7 @@ cdef class Decoder:
         It also handles reconstructing a single ImageWrapper
         constructed from 3-pass decoding (see plane_sizes).
     """
-    cdef AVCodec *codec
+    cdef const AVCodec *codec
     cdef AVCodecContext *codec_ctx
     cdef AVPixelFormat pix_fmt
     cdef AVPixelFormat actual_pix_fmt

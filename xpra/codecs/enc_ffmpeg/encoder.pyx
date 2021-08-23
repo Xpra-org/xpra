@@ -413,7 +413,7 @@ cdef extern from "libavcodec/avcodec.h":
     void av_packet_free(AVPacket **avpkt)
 
     void avcodec_free_context(AVCodecContext **avctx)
-    AVCodec *avcodec_find_encoder_by_name(const char *name)
+    const AVCodec *avcodec_find_encoder_by_name(const char *name)
 
 ctypedef int AVOptionType
 cdef extern from "libavutil/opt.h":
@@ -873,7 +873,7 @@ def init_vaapi():
     #can we find a device:
     cdef AVBufferRef *hw_device_ctx = init_vaapi_device()
     cdef AVCodecContext *avctx = NULL
-    cdef AVCodec *codec = NULL
+    cdef const AVCodec *codec = NULL
     cdef AVFrame *sw_frame = NULL
     cdef AVFrame *hw_frame = NULL
     cdef int WIDTH = 640
@@ -1137,7 +1137,7 @@ cdef class Encoder:
     cdef object muxer_format
     cdef object file
     #video:
-    cdef AVCodec *video_codec
+    cdef const AVCodec *video_codec
     cdef AVStream *video_stream
     cdef AVCodecContext *video_ctx
     cdef AVPixelFormat pix_fmt
