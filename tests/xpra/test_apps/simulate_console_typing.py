@@ -12,7 +12,6 @@ def print_text(text, words_per_minute=80):
 	n_chars = len(text)
 	n_words = len(text.split())
 	chars_per_word = float(n_chars)/n_words
-	words_per_minute = 80
 	chars_per_second = (chars_per_word*words_per_minute)/60.0
 	#print("characters per word: %s" % chars_per_word)
 	#print("words per minute: %s" % words_per_minute)
