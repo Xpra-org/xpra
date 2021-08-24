@@ -72,7 +72,7 @@ log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 def xatoms_to_strings(data):
     l = len(data)
     if l%sizeof_long!=0:
-        raise Exception("invalid length for atom array: %i, value=%s" % (l, repr_ellipsized(str(data))))
+        raise ValueError("invalid length for atom array: %i, value=%s" % (l, repr_ellipsized(str(data))))
     natoms = l//sizeof_long
     atoms = struct.unpack(b"@"+b"L"*natoms, data)
     with xsync:
