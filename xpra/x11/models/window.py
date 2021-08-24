@@ -745,7 +745,7 @@ class WindowModel(BaseWindowModel):
         if 0<cmaxh<hmaxh:
             hmaxh = cmaxh
         #if the values mean something, expose them:
-        if hminw>0 or hminw>0:
+        if hminw>0 or hminh>0:
             hints["minimum-size"] = hminw, hminh
         if hmaxw<MAX_WINDOW_SIZE or hmaxh<MAX_WINDOW_SIZE:
             hints["maximum-size"] = hmaxw, hmaxh
