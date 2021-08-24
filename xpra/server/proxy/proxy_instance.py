@@ -578,6 +578,15 @@ class ProxyInstance:
 
     def encode_loop(self):
         """ thread for slower encoding related work """
+        def delvideo(wid):
+            try:
+                del self.video_encoders[wid]
+            except KeyError:
+                pass
+            try:
+                del self.video_encoders_last_used_time[wid]
+            except KeyError:
+                pass
         while not self.exit:
             packet = self.encode_queue.get()
             if packet is None:
@@ -589,8 +598,7 @@ class ProxyInstance:
                     self.lost_windows.remove(wid)
                     ve = self.video_encoders.get(wid)
                     if ve:
-                        del self.video_encoders[wid]
-                        del self.video_encoders_last_used_time[wid]
+                        delvideo(wid)
                         ve.clean()
                 elif packet_type=="draw":
                     #modify the packet with the video encoder:
@@ -602,14 +610,13 @@ class ProxyInstance:
                     wid = packet[1]
                     ve = self.video_encoders.get(wid)
                     now = monotonic_time()
-                    idle_time = now-self.video_encoders_last_used_time.get(wid)
+                    idle_time = now-self.video_encoders_last_used_time.get(wid, 0)
                     if ve and idle_time>VIDEO_TIMEOUT:
                         enclog("timing out the video encoder context for window %s", wid)
                         #timeout is confirmed, we are in the encoding thread,
                         #so it is now safe to clean it up:
                         ve.clean()
-                        del self.video_encoders[wid]
-                        del self.video_encoders_last_used_time[wid]
+                        delvideo(wid)
                 else:
                     enclog.warn("unexpected encode packet: %s", packet_type)
             except Exception:
@@ -750,9 +757,10 @@ class ProxyInstance:
         #to do what may need to be done if we find a timeout:
         now = monotonic_time()
         for wid in tuple(self.video_encoders_last_used_time.keys()):
-            idle_time = int(now-self.video_encoders_last_used_time.get(wid))
-            if idle_time is None:
+            vetime = self.video_encoders_last_used_time.get(wid)
+            if not vetime:
                 continue
+            idle_time = int(now-vetime)
             enclog("timeout_video_encoders() wid=%s, idle_time=%s", wid, idle_time)
             if idle_time and idle_time>VIDEO_TIMEOUT:
                 self.encode_queue.put(["check-video-timeout", wid])
