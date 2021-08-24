@@ -73,7 +73,7 @@ class TestAuth(unittest.TestCase):
             kwargs["connection"] = "fake-connection-data"
         #exec auth would fail during rpmbuild without a default command:
         if "command" not in kwargs:
-            kwargs["command"] = "/usr/bin/true"
+            kwargs["command"] = "/bin/true"
         return c(username, **kwargs)
 
     def _test_module(self, module):
@@ -380,8 +380,8 @@ class TestAuth(unittest.TestCase):
             a = self._init_auth("exec", **kwargs)
             assert not a.requires_challenge(), "%s should not require a challenge" % a
             assert self.capsauth(a)==success, "%s should have %s using cmd=%s" % (a, ["failed", "succeeded"][success], cmd)
-        exec_cmd("/usr/bin/true", True)
-        exec_cmd("/usr/bin/false", False)
+        exec_cmd("/bin/true", True)
+        exec_cmd("/bin/false", False)
 
 
 def main():
