@@ -84,12 +84,12 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         self._clipboard_request_counter += 1
         remote = self.local_to_remote(selection)
         log("send_clipboard_request %s to %s, id=%s", selection, remote, request_id)
-        timer = GLib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id, selection, target)
+        timer = GLib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id)
         self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
         self.progress()
         self.send("clipboard-request", request_id, remote, target)
 
-    def timeout_request(self, request_id, selection, target):
+    def timeout_request(self, request_id):
         try:
             selection, target = self._clipboard_outstanding_requests.pop(request_id)[1:]
         except KeyError:
