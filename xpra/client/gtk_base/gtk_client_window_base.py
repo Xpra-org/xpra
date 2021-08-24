@@ -327,8 +327,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def drag_got_data_cb(self, wid, context, x, y, selection, info, time):
         draglog("drag_got_data_cb%s", (wid, context, x, y, selection, info, time))
-        #draglog("%s: %s", type(selection), dir(selection))
-        #draglog("%s: %s", type(context), dir(context))
         targets = list(x.name() for x in context.list_targets())
         actions = context.get_actions()
         def xid(w):
