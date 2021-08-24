@@ -112,7 +112,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, exit_code):
+    def quit(self, exit_code=0):
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code
