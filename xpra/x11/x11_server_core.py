@@ -394,7 +394,7 @@ class X11ServerCore(GTKServerBase):
         if self.randr:
             with xlog:
                 sizes = self.get_all_screen_sizes()
-                if len(sizes)>=0:
+                if sizes:
                     sinfo["randr"] = {
                         ""          : True,
                         "options"   : tuple(reversed(sorted(sizes))),
