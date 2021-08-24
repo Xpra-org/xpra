@@ -475,7 +475,7 @@ def main():
             parts = filename.split(".")
             if len(parts)>1:
                 extension = parts[-1]
-                if extension.lower() in codecs:
+                if extension.lower() in decoders:
                     codec = extension.lower()
                     print("guessed codec %s from file extension %s" % (codec, extension))
             if codec is None:
