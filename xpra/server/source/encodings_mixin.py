@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from math import sqrt
 from time import sleep
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.server.window.batch_config import DamageBatchConfig
+from xpra.server.window import batch_config
 from xpra.server.server_core import ClientException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
@@ -47,7 +47,7 @@ class EncodingsMixin(StubSourceMixin):
         self.wants_features = False
 
         #contains default values, some of which may be supplied by the client:
-        self.default_batch_config = DamageBatchConfig()
+        self.default_batch_config = batch_config.DamageBatchConfig()
         self.global_batch_config = self.default_batch_config.clone()      #global batch config
 
         self.supports_transparency = False
@@ -257,14 +257,14 @@ class EncodingsMixin(StubSourceMixin):
         log("compressors: zlib=%s, lz4=%s, lzo=%s, brotli=%s",
             self.zlib, self.lz4, self.lzo, self.brotli)
 
-        delay = DamageBatchConfig.START_DELAY
+        delay = batch_config.START_DELAY
         dbc = self.default_batch_config
-        dbc.always      = bool(batch_value("always", DamageBatchConfig.ALWAYS))
-        dbc.min_delay   = batch_value("min_delay", DamageBatchConfig.MIN_DELAY, 0, 1000)
-        dbc.max_delay   = batch_value("max_delay", DamageBatchConfig.MAX_DELAY, 1, 15000)
-        dbc.max_events  = batch_value("max_events", DamageBatchConfig.MAX_EVENTS)
-        dbc.max_pixels  = batch_value("max_pixels", DamageBatchConfig.MAX_PIXELS)
-        dbc.time_unit   = batch_value("time_unit", DamageBatchConfig.TIME_UNIT, 1)
+        dbc.always      = bool(batch_value("always", batch_config.ALWAYS))
+        dbc.min_delay   = batch_value("min_delay", batch_config.MIN_DELAY, 0, 1000)
+        dbc.max_delay   = batch_value("max_delay", batch_config.MAX_DELAY, 1, 15000)
+        dbc.max_events  = batch_value("max_events", batch_config.MAX_EVENTS)
+        dbc.max_pixels  = batch_value("max_pixels", batch_config.MAX_PIXELS)
+        dbc.time_unit   = batch_value("time_unit", batch_config.TIME_UNIT, 1)
         self.vrefresh = c.intget("vrefresh", -1)
         dbc.match_vrefresh(self.vrefresh)
         dbc.delay       = batch_value("delay", delay, dbc.min_delay)

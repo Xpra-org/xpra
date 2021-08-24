@@ -24,7 +24,7 @@ log = Logger("stats")
 
 #how many historical records to keep
 #for the various statistics we collect:
-#(cannot be lower than DamageBatchConfig.MAX_EVENTS)
+#(cannot be lower than DamageBatchConfig.max_events)
 NRECS = 100
 
 TARGET_LATENCY_TOLERANCE = envint("XPRA_TARGET_LATENCY_TOLERANCE", 20)/1000.0

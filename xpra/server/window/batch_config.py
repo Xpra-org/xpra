@@ -43,6 +43,17 @@ def ival(key, default, minv=0, maxv=None) -> int:
         return default
 
 
+ALWAYS = ival("ALWAYS", 0, 0, 1)==1
+MAX_EVENTS = ival("MAX_EVENTS", min(50, NRECS), 10)         #maximum number of damage events
+MAX_PIXELS = ival("MAX_PIXELS", 1024*1024*MAX_EVENTS)       #small screen at MAX_EVENTS frames
+TIME_UNIT = ival("TIME_UNIT", 1, 1, 1000)                   #per second
+MIN_DELAY = ival("MIN_DELAY", 5, 0, 1000)                   #if lower than 5 milliseconds: just don't batch
+START_DELAY = ival("START_DELAY", 50, 1, 1000)
+MAX_DELAY = ival("MAX_DELAY", 500, 1, 15000)
+EXPIRE_DELAY = ival("EXPIRE_DELAY", 50, 10, 1000)
+TIMEOUT_DELAY = ival("TIMEOUT_DELAY", 15000, 100, 100000)
+
+
 class DamageBatchConfig:
     """
     Encapsulate all the damage batching configuration into one object.
@@ -55,29 +66,20 @@ class DamageBatchConfig:
         "last_event", "last_delays", "last_delay", "last_actual_delays", "last_actual_delay",
         "last_updated", "factors",
         )
-    ALWAYS = ival("ALWAYS", 0, 0, 1)==1
-    MAX_EVENTS = ival("MAX_EVENTS", min(50, NRECS), 10)         #maximum number of damage events
-    MAX_PIXELS = ival("MAX_PIXELS", 1024*1024*MAX_EVENTS)       #small screen at MAX_EVENTS frames
-    TIME_UNIT = ival("TIME_UNIT", 1, 1, 1000)                   #per second
-    MIN_DELAY = ival("MIN_DELAY", 5, 0, 1000)                   #if lower than 5 milliseconds: just don't batch
-    START_DELAY = ival("START_DELAY", 50, 1, 1000)
-    MAX_DELAY = ival("MAX_DELAY", 500, 1, 15000)
-    EXPIRE_DELAY = ival("EXPIRE_DELAY", 50, 10, 1000)
-    TIMEOUT_DELAY = ival("TIMEOUT_DELAY", 15000, 100, 100000)
 
     def __init__(self):
         self.wid = 0
-        self.always = self.ALWAYS
-        self.max_events = self.MAX_EVENTS
-        self.max_pixels = self.MAX_PIXELS
-        self.time_unit = self.TIME_UNIT
-        self.min_delay = self.MIN_DELAY
-        self.max_delay = self.MAX_DELAY
-        self.timeout_delay = self.TIMEOUT_DELAY
-        self.expire_delay = self.EXPIRE_DELAY
-        self.delay = self.START_DELAY
+        self.always = ALWAYS
+        self.max_events = MAX_EVENTS
+        self.max_pixels = MAX_PIXELS
+        self.time_unit = TIME_UNIT
+        self.min_delay = MIN_DELAY
+        self.max_delay = MAX_DELAY
+        self.timeout_delay = TIMEOUT_DELAY
+        self.expire_delay = EXPIRE_DELAY
+        self.delay = START_DELAY
         self.delay_per_megapixel = -1
-        self.saved = self.START_DELAY
+        self.saved = START_DELAY
         self.locked = False                             #to force a specific delay
         self.last_event = 0
         self.last_delays = deque(maxlen=64)             #the delays we have tried to use (milliseconds)
