@@ -27,7 +27,7 @@ class ColorGradientWindow(Gtk.Window):
         if icon:
             self.set_icon(icon)
         self.bpc = 16
-        self.set_title("Color Bit Depth: %i" % self.bpc)
+        self.update_title()
         drawing_area = Gtk.DrawingArea()
         drawing_area.connect("draw", self.area_draw)
         self.add(drawing_area)
@@ -36,6 +36,9 @@ class ColorGradientWindow(Gtk.Window):
         self.connect("destroy", Gtk.main_quit)
         self.connect("key_press_event", self.on_key_press)
         self.connect("button-press-event", self.on_button_press)
+
+    def update_title(self):
+        self.set_title("Color Bit Depth: %i" % self.bpc)
 
     def show_with_focus(self):
         force_focus()
@@ -53,7 +56,7 @@ class ColorGradientWindow(Gtk.Window):
         else:
             self.bpc -= 1
         self.bpc = (self.bpc+16) % 16
-        self.set_title("Color Bit Depth: %i" % self.bpc)
+        self.update_title()
         self.queue_draw()
         return True
 
@@ -62,7 +65,7 @@ class ColorGradientWindow(Gtk.Window):
             self.bpc = ((self.bpc-2) % 16)+1
         else:
             self.bpc = (self.bpc%16)+1
-        self.set_title("Color Bit Depth: %i" % self.bpc)
+        self.update_title()
         self.queue_draw()
         return True
 
