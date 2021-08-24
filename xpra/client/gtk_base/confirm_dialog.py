@@ -52,10 +52,10 @@ class ConfirmDialogWindow(Gtk.Dialog):
         vbox.add(al(title, "sans 18", 0.5))
         info_box = Gtk.VBox()
         for i in info:
-            info_box.add(al(i, "sans 14"))
+            info_box.add(al(i))
         info_box.show_all()
         vbox.add(info_box)
-        vbox.add(al(prompt, "sans 14"))
+        vbox.add(al(prompt))
 
         # Buttons:
         for label, code in buttons:
