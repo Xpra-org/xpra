@@ -173,7 +173,7 @@ class ClipboardProtocolHelperCore:
 
     def cleanup(self):
         def nosend(*_args):
-            pass
+            """ during cleanup, stop sending packets """
         self.send = nosend
         for x in self._clipboard_proxies.values():
             x.cleanup()
