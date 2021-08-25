@@ -79,8 +79,9 @@ class ClientTray(ClientWidgetBase):
 
 
     def freeze(self):
-        pass
-
+        """
+        System trays are small, no point in freezing anything
+        """
 
     def send_configure(self):
         self.reconfigure(True)
@@ -219,27 +220,29 @@ class TrayBacking(WindowBackingBase):
         raise Exception("scroll should not be used with tray icons")
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        log("TrayBacking(%i)._do_paint_rgb24%s",
-            self.wid, ("%s bytes" % len(img_data), x, y, width, height, render_width, render_height, rowstride, options))
         assert width==render_width and height==render_height, "tray rgb must not use scaling"
         self.data = ("rgb24", width, height, rowstride, img_data[:], options)
         if SAVE:
-            from PIL import Image
-            img = Image.frombytes("RGB", (width, height), img_data, "raw", "BGR", width*3, 1)
-            filename = "./tray-%s.png" % time()
-            img.save(filename, "PNG")
-            log.info("tray rgb24 update saved to %s", filename)
+            self.save_tray_png()
         return True
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        log("TrayBacking(%i)._do_paint_rgb32%s",
-            self.wid, ("%s bytes" % len(img_data), x, y, width, height, render_width, render_height, rowstride, options))
         assert width==render_width and height==render_height, "tray rgb must not use scaling"
         self.data = ("rgb32", width, height, rowstride, img_data[:], options)
         if SAVE:
-            from PIL import Image
-            img = Image.frombytes("RGBA", (width, height), img_data, "raw", "BGRA", width*4, 1)
-            filename = "./tray-%s.png" % time()
-            img.save(filename, "PNG")
-            log.info("tray rgb32 update saved to %s", filename)
+            self.save_tray_png()
         return True
+
+    def save_tray_png(self):
+        log("save_tray_png()")
+        rgb_mode, width, height, _, img_data = self.data[:5]
+        mode = "RGB"
+        data_mode = "RGB"
+        if rgb_mode=="rgb32":
+            mode += "A"
+            data_mode += "A"
+        from PIL import Image
+        img = Image.frombytes(mode, (width, height), img_data, "raw", data_mode, width*len(data_mode), 1)
+        filename = "./tray-%s-%s.png" % (rgb_mode, time())
+        img.save(filename, "PNG")
+        log.info("tray %s update saved to %s", rgb_mode, filename)
