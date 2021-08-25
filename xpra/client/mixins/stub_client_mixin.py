@@ -110,4 +110,6 @@ class StubClientMixin:
         raise NotImplementedError()
 
     def show_progress(self, pct, text=""):
-        pass
+        """
+        The GTK client may use the splash screen here
+        """
