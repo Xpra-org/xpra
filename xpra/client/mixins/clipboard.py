@@ -29,7 +29,6 @@ class ClipboardClient(StubClientMixin):
         self.clipboard_enabled = False
         self.server_clipboard_direction = "both"
         self.server_clipboard = False
-        self.server_clipboard_loop_uuids = {}
         self.server_clipboard_direction = ""
         self.server_clipboard_contents_slice_fix = False
         self.server_clipboard_preferred_targets = False
@@ -108,7 +107,6 @@ class ClipboardClient(StubClientMixin):
             self.clipboard_enabled = False
             return True
         self.server_clipboard = c.boolget("clipboard")
-        self.server_clipboard_loop_uuids = c.dictget("clipboard.loop-uuids", {})
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
         if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
             if self.client_clipboard_direction=="disabled":
@@ -259,13 +257,6 @@ class ClipboardClient(StubClientMixin):
         log("send_clipboard_selections(%s)", selections)
         self.send_now("clipboard-enable-selections", selections)
 
-    def send_clipboard_loop_uuids(self):
-        uuids = self.clipboard_helper.get_loop_uuids()
-        log("send_clipboard_loop_uuid() uuids=%s", uuids)
-        if self.server_clipboard_loop_uuids:
-            self.send_now("clipboard-loop-uuids", uuids)
-
-
     def setup_clipboard_helper(self, helperClass):
         log("setup_clipboard_helper(%s)", helperClass)
         #first add the platform specific one, (may be None):
@@ -276,7 +267,6 @@ class ClipboardClient(StubClientMixin):
                  "clipboards.remote"    : self.server_clipboards,
                  "can-send"             : self.client_clipboard_direction in ("to-server", "both"),
                  "can-receive"          : self.client_clipboard_direction in ("to-client", "both"),
-                 "remote-loop-uuids"    : self.server_clipboard_loop_uuids,
                  #the local clipboard we want to sync to (with the translated clipboard only):
                  "clipboard.local"      : self.local_clipboard,
                  #the remote clipboard we want to we sync to (with the translated clipboard only):

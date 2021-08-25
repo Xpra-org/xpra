@@ -258,9 +258,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         for target in lr:
             self.got_local_contents(target)
 
-    def init_uuid(self):
-        ClipboardProxyCore.init_uuid(self)
-        self.claim()
 
     def got_token(self, targets, target_data=None, claim=True, synchronous_client=False):
         # the remote end now owns the clipboard

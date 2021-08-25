@@ -79,8 +79,6 @@ class ClipboardServer(StubServerMixin):
                 "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
                 },
             }
-        if self._clipboard_helper:
-            f["clipboard.loop-uuids"] = self._clipboard_helper.get_loop_uuids()
         return f
 
     def init_clipboard(self):
@@ -123,7 +121,7 @@ class ClipboardServer(StubServerMixin):
                       }
             self._clipboard_helper = ClipboardClass(self.send_clipboard_packet,
                                                     self.clipboard_progress, **kwargs)
-            self._clipboard_helper.init_proxies_uuid()
+            self._clipboard_helper.init_proxies_claim()
             self._clipboards = CLIPBOARDS
         except Exception:
             #log("gdk clipboard helper failure", exc_info=True)

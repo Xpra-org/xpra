@@ -11,7 +11,7 @@ from io import BytesIO
 from gi.repository import GLib
 
 from xpra.net.compression import Compressible
-from xpra.os_util import POSIX, monotonic_time, strtobytes, bytestostr, hexstr, get_hex_uuid
+from xpra.os_util import POSIX, monotonic_time, strtobytes, bytestostr, hexstr
 from xpra.util import csv, envint, envbool, repr_ellipsized, ellipsizer, typedict
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.log import Logger, is_debug_enabled
@@ -124,8 +124,6 @@ class ClipboardProtocolHelperCore:
         self._want_targets = False
         self.init_packet_handlers()
         self.init_proxies(d.strtupleget("clipboards.local", CLIPBOARDS))
-        remote_loop_uuids = d.dictget("remote-loop-uuids", {})
-        self.verify_remote_loop_uuids(remote_loop_uuids)
         self.remote_clipboards = d.strtupleget("clipboards.remote", CLIPBOARDS)
 
     def init_translation(self, kwargs):
@@ -189,19 +187,6 @@ class ClipboardProtocolHelperCore:
             proxy.set_enabled(True)
 
 
-    def get_loop_uuids(self):
-        uuids = {}
-        for proxy in self._clipboard_proxies.values():
-            uuids[proxy._selection] = proxy._loop_uuid
-        log("get_loop_uuids()=%s", uuids)
-        return uuids
-
-    def verify_remote_loop_uuids(self, uuids):
-        log("verify_remote_loop_uuids(%s)", uuids)
-
-    def _verify_remote_loop_uuids(self, clipboard, value, user_data):
-        pass
-
     def set_direction(self, can_send, can_receive, max_send_size=None, max_receive_size=None):
         self.can_send = can_send
         self.can_receive = can_receive
@@ -247,7 +232,6 @@ class ClipboardProtocolHelperCore:
             "clipboard-contents-none"       : self._process_clipboard_contents_none,
             "clipboard-pending-requests"    : self._process_clipboard_pending_requests,
             "clipboard-enable-selections"   : self._process_clipboard_enable_selections,
-            "clipboard-loop-uuids"          : self._process_clipboard_loop_uuids,
             }
 
     def make_proxy(self, selection):
@@ -260,9 +244,9 @@ class ClipboardProtocolHelperCore:
             self._clipboard_proxies[selection] = proxy
         log("%s.init_proxies : %s", self, self._clipboard_proxies)
 
-    def init_proxies_uuid(self):
+    def init_proxies_claim(self):
         for proxy in self._clipboard_proxies.values():
-            proxy.init_uuid()
+            proxy.claim()
 
 
     # Used by the client during startup:
@@ -514,8 +498,7 @@ class ClipboardProtocolHelperCore:
         self.enable_selections(selections)
 
     def _process_clipboard_loop_uuids(self, packet):
-        loop_uuids = packet[1]
-        self.verify_remote_loop_uuids(loop_uuids)
+        """ deprecated """
 
 
     def process_clipboard_packet(self, packet):
@@ -556,12 +539,6 @@ class ClipboardProxyCore:
         self._last_targets = ()
         self.preferred_targets = []
 
-        self._loop_uuid = ""
-
-    def init_uuid(self):
-        self._loop_uuid = LOOP_PREFIX+get_hex_uuid()
-        log("init_uuid() %s uuid=%s", self._selection, self._loop_uuid)
-
     def set_direction(self, can_send : bool, can_receive : bool):
         self._can_send = can_send
         self._can_receive = can_receive
@@ -578,7 +555,6 @@ class ClipboardProxyCore:
                 "preferred-targets"     : self.preferred_targets,
                 "blocked_owner_change"  : self._block_owner_change,
                 "last-targets"          : self._last_targets,
-                "loop-uuid"             : self._loop_uuid,
                 "event"         : {
                                    "selection_request"     : self._selection_request_events,
                                    "selection_get"         : self._selection_get_events,
@@ -680,7 +656,10 @@ class ClipboardProxyCore:
         self._block_owner_change = False
 
     def claim(self):
-        pass
+        """
+        Subclasses may want to take ownership of the clipboard selection.
+        The X11 clipboard does.
+        """
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
