@@ -67,15 +67,13 @@ def _may_log_packet(sending, packet_type, packet):
                 s = repr_ellipsized(s, PACKET_LOG_MAX_SIZE)
             log.info(s)
 
-def noop(*_args):
-    pass
-
-
 LOG_PACKETS = None
 NOLOG_PACKETS = None
 LOG_PACKET_TYPE = False
 PACKET_LOG_MAX_SIZE = 500
 
+def noop(*_args):
+    """ the default implementation is to do nothing """
 may_log_packet = noop
 
 def init():
