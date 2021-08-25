@@ -84,7 +84,7 @@ class ClientWidgetBase:
         pass
 
     def new_backing(self, _w, _h):          # pragma: no cover
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
     def is_OR(self):                        # pragma: no cover
         return False
