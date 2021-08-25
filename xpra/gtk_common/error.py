@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -118,6 +118,13 @@ class _ErrorManager:
         if error:
             raise XError(error)
 
+    def safeXexit(self):
+        try:
+            self.Xexit()
+        except XError:
+            log("XError detected while already in unwind; discarding",
+                exc_info=True)
+
     def _call(self, need_sync, fun, args, kwargs):
         # Goal: call the function.  In all conditions, call _exit exactly once
         # on the way out.  However, if we are exiting because of an exception,
@@ -192,8 +199,8 @@ class XSyncContext:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
                 raise
-            log("XError detected while already in unwind; discarding",
-                exc_info=True)
+            log("XError during Xexit on %s", e_typ)
+            log(" discarding", exc_info=True)
         #raise the original exception:
         return False
 
@@ -208,11 +215,7 @@ class XSwallowContext:
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
             log("xswallow.exit%s", (e_typ, e_val, trcbak), exc_info=True)
-        try:
-            trap.Xexit()
-        except XError:
-            log("XError detected while already in unwind; discarding",
-                exc_info=True)
+        trap.safeXexit()
         #don't raise exceptions:
         return True
 
@@ -227,11 +230,7 @@ class XLogContext:
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
             log.error("XError: %s, %s", e_typ, e_val, exc_info=True)
-        try:
-            trap.Xexit()
-        except XError:
-            log("XError detected while already in unwind; discarding",
-                exc_info=True)
+        trap.safeXexit()
         #don't raise exceptions:
         return True
 
