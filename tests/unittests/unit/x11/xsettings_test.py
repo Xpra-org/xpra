@@ -9,7 +9,6 @@ import struct
 import unittest
 import binascii
 
-from xpra.util import AdHocStruct
 from xpra.os_util import OSEnvContext
 
 
@@ -24,7 +23,6 @@ class XSettingsTest(unittest.TestCase):
             )
         #silence warnings:
         log.error = log.warn = log.debug
-        disp = AdHocStruct()
         for DEBUG_XSETTINGS in (True, False):
             with OSEnvContext():
                 os.environ["XPRA_XSETTINGS_DEBUG"] = str(int(DEBUG_XSETTINGS))
