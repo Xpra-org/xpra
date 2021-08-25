@@ -71,6 +71,8 @@ CLIPBOARD_DIRECTION_LABEL_TO_NAME = {
                                      }
 CLIPBOARD_DIRECTION_NAME_TO_LABEL = reverse_dict(CLIPBOARD_DIRECTION_LABEL_TO_NAME)
 
+SERVER_NOT_SUPPORTED = "Not supported by the server"
+
 
 class GTKTrayMenuBase(MenuHelper):
 
@@ -1274,7 +1276,7 @@ class GTKTrayMenuBase(MenuHelper):
             log("enable_servercommands%s server-commands-info=%s", args, self.client.server_commands_info)
             set_sensitive(self.servercommands, self.client.server_commands_info)
             if not self.client.server_commands_info:
-                self.servercommands.set_tooltip_text("Not supported by the server")
+                self.servercommands.set_tooltip_text(SERVER_NOT_SUPPORTED)
             else:
                 self.servercommands.set_tooltip_text("")
         self.client.after_handshake(enable_servercommands)
@@ -1315,7 +1317,7 @@ class GTKTrayMenuBase(MenuHelper):
             log("enable_upload%s server_file_transfer=%s", args, self.client.remote_file_transfer)
             set_sensitive(self.upload, self.client.remote_file_transfer)
             if not self.client.remote_file_transfer:
-                self.upload.set_tooltip_text("Not supported by the server")
+                self.upload.set_tooltip_text(SERVER_NOT_SUPPORTED)
             else:
                 self.upload.set_tooltip_text("Send a file to the server")
         self.client.after_handshake(enable_upload)
@@ -1328,7 +1330,7 @@ class GTKTrayMenuBase(MenuHelper):
                 args, self.client.remote_file_transfer, self.client.server_start_new_commands, self.client._remote_subcommands)
             set_sensitive(self.download, self.client.remote_file_transfer)
             if not self.client.remote_file_transfer or not self.client.server_start_new_commands:
-                self.download.set_tooltip_text("Not supported by the server")
+                self.download.set_tooltip_text(SERVER_NOT_SUPPORTED)
             elif "send-file" not in self.client._remote_subcommands:
                 self.download.set_tooltip_text("'send-file' subcommand is not supported by the server")
             else:
@@ -1345,7 +1347,7 @@ class GTKTrayMenuBase(MenuHelper):
             log("enable_download%s server_file_transfer=%s", args, self.client.remote_file_transfer)
             set_sensitive(self.download_log, self.client.remote_file_transfer and bool(self.client._remote_server_log))
             if not self.client.remote_file_transfer:
-                self.download_log.set_tooltip_text("Not supported by the server")
+                self.download_log.set_tooltip_text(SERVER_NOT_SUPPORTED)
             elif not self.client._remote_server_log:
                 self.download_log.set_tooltip_text("Server does not expose its log-file")
             else:
