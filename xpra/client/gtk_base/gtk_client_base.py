@@ -1173,18 +1173,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.gl_max_viewport_dims = self.opengl_props.get("max-viewport-dims",
                                                               (self.gl_texture_size_limit, self.gl_texture_size_limit))
             driver_info = self.opengl_props.get("renderer") or self.opengl_props.get("vendor") or "unknown card"
+            def disablewarn(msg):
+                opengllog.warn("Warning: OpenGL is disabled:")
+                opengllog.warn(" %s", msg)
+                self.opengl_enabled = False
             if min(self.gl_max_viewport_dims)<4*1024:
-                opengllog.warn("Warning: OpenGL is disabled:")
-                opengllog.warn(" the maximum viewport size is too low: %s", self.gl_max_viewport_dims)
-                self.opengl_enabled = False
+                disablewarn("the maximum viewport size is too low: %s" % (self.gl_max_viewport_dims,))
             elif self.gl_texture_size_limit<4*1024:
-                opengllog.warn("Warning: OpenGL is disabled:")
-                opengllog.warn(" the texture size limit is too low: %s", self.gl_texture_size_limit)
-                self.opengl_enabled = False
+                disablewarn("the texture size limit is too low: %s" % (self.gl_texture_size_limit,))
             elif driver_info.startswith("SVGA3D") and os.environ.get("WAYLAND_DISPLAY"):
-                opengllog.warn("Warning: OpenGL is disabled:")
-                opengllog.warn(" SVGA3D driver is buggy under Wayland")
-                self.opengl_enabled = False
+                disablewarn("SVGA3D driver is buggy under Wayland")
             self.GLClientWindowClass.MAX_VIEWPORT_DIMS = self.gl_max_viewport_dims
             self.GLClientWindowClass.MAX_BACKING_DIMS = self.gl_texture_size_limit, self.gl_texture_size_limit
             mww, mwh = self.max_window_size
