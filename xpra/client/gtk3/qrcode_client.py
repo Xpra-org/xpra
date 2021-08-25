@@ -93,8 +93,12 @@ class QRCodeClient(InfoXpraClient):
     def exit_loop(self):
         Gtk.main_quit()
 
-    def quit(self, exit_code):
-        pass
+    def quit(self, exit_code=0):
+        #only exit if we encountered an error
+        #InfoXpraClient calls quit(EXIT_OK) on connection-lost
+        #but we don't want to exit then
+        if exit_code!=0:
+            super().quit(exit_code)
 
     def run(self):
         #override so we can use a GTK main loop instead
