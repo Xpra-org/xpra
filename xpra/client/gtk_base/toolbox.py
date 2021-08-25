@@ -38,9 +38,12 @@ def exec_command(cmd):
     return proc
 
 
+TITLE = "Xpra Toolbox"
+
+
 class ToolboxGUI(Gtk.Window):
 
-    def __init__(self, title="Xpra Toolbox"):
+    def __init__(self, title=TITLE):
         self.exit_code = 0
         self.start_session = None
         super().__init__()
@@ -175,14 +178,14 @@ def main():
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready, set_default_icon
-    with program_context("Xpra-Toolbox", "Xpra Toolbox"):
+    with program_context("Xpra-Toolbox", TITLE):
         enable_color()
 
         set_default_icon("toolbox.png")
         init()
 
         gui = ToolboxGUI()
-        register_os_signals(gui.app_signal, "Xpra Toolbox")
+        register_os_signals(gui.app_signal, TITLE)
         ready()
         gui.show()
         Gtk.main()
