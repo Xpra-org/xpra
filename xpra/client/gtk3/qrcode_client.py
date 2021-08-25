@@ -34,9 +34,6 @@ def dpath(caps : typedict, *path):
         d = typedict(d)
     return d
 
-def noop(*_args):
-    pass
-
 
 class QRCodeClient(InfoXpraClient):
 
