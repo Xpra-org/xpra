@@ -188,7 +188,7 @@ class GTKStatusIconTray(TrayBase):
                 log("tray icon scaled to %ix%i", tw, th)
         if SAVE:
             filename = "./statusicon-%s.png" % time()
-            tray_icon.save(filename, "png")
+            tray_icon.savev(filename, "png")
             log.info("statusicon tray saved to %s", filename)
         self.tray_widget.set_from_pixbuf(tray_icon)
         self.icon_timestamp = monotonic_time()
