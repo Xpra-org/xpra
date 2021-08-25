@@ -51,6 +51,7 @@ PIXEL_SUBSAMPLING = {
     "GBRP10"    : ((1, 1), (1, 1), (1, 1)),
     "YUV444P10" : ((1, 1), (1, 1), (1, 1)),
     "YUV444P16" : ((1, 1), (1, 1), (1, 1)),
+    "GBRP9LE"   : ((1, 1), (1, 1), (1, 1)),
 }
 def get_subsampling_divs(pixel_format):
     # Return size dividers for the given pixel format

@@ -46,6 +46,7 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_BGR24
     AVPixelFormat AV_PIX_FMT_NV12
     AVPixelFormat AV_PIX_FMT_NONE
+    AVPixelFormat AV_PIX_FMT_GBRP9LE
 
 ctypedef void SwsContext
 cdef extern from "libswscale/swscale.h":
@@ -105,6 +106,7 @@ FORMAT_OPTIONS = [
     ("YUV422P", AV_PIX_FMT_YUV422P,    (1, 0.5, 0.5, 0),   (1, 1, 1, 0),       "YUV422P"),
     ("YUV444P", AV_PIX_FMT_YUV444P,    (1, 1, 1, 0),       (1, 1, 1, 0),       "YUV444P"),
     ("GBRP",    AV_PIX_FMT_GBRP,       (1, 1, 1, 0),       (1, 1, 1, 0),       "GBRP"   ),
+    ("GBRP9LE", AV_PIX_FMT_GBRP9LE,    (1, 1, 0, 0),       (1, 1, 1, 0),       "GBRP9LE"),
     ("NV12",    AV_PIX_FMT_NV12,       (1, 1, 0, 0),       (1, 0.5, 0, 0),     "NV12"   ),
      ]
 FORMATS = {}
@@ -128,6 +130,7 @@ BYTES_PER_PIXEL = {
     AV_PIX_FMT_ARGB     : 4,
     AV_PIX_FMT_BGRA     : 4,
     AV_PIX_FMT_GBRP     : 1,
+    AV_PIX_FMT_GBRP9LE  : 2, #todo: check
     }
 
 
