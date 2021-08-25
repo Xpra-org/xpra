@@ -125,10 +125,10 @@ class Connection:
         self.timeout = 0
 
     def set_nodelay(self, nodelay : bool):
-        pass
+        """ TCP sockets override this method  """
 
     def set_cork(self, cork : bool):
-        pass
+        """ TCP sockets override this method  """
 
     def is_active(self) -> bool:
         return self.active
@@ -645,6 +645,6 @@ def log_new_connection(conn, socket_info=""):
         log.info("New %s connection received", socktype)
         log.info(" on '%s'", frominfo)
     else:
-        log.info("New %s connection received")
+        log.info("New %s connection received", socktype)
         if socket_info:
             log.info(" on %s", pretty_socket(socket_info))
