@@ -34,7 +34,8 @@ class GLClientWindowBase(GTK3ClientWindow):
         if not b:
             return
         b.paint_spinner = self.can_have_spinner() and not ok
-        log("spinner(%s) backing=%s, paint_screen=%s, paint_spinner=%s", ok, b._backing, b.paint_screen, b.paint_spinner)
+        log("spinner(%s) backing=%s, paint_screen=%s, paint_spinner=%s",
+            ok, b._backing, b.paint_screen, b.paint_spinner)
         if b._backing and b.paint_screen:
             w, h = self.get_size()
             self.repaint(0, 0, w, h)
@@ -42,16 +43,18 @@ class GLClientWindowBase(GTK3ClientWindow):
 
     def remove_backing(self):
         b = self._backing
+        log("remove_backing() backing=%s", b)
         if b:
             self._backing = None
             b.paint_screen = False
             b.close()
             glarea = b._backing
+            log("remove_backing() glarea=%s", glarea)
             if glarea:
                 try:
                     self.remove(glarea)
-                except:
-                    pass
+                except Exception:
+                    log.warn("Warning: cannot remove %s", glarea, exc_info=True)
 
     def magic_key(self, *args):
         b = self._backing

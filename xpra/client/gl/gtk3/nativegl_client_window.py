@@ -9,7 +9,7 @@ from xpra.client.gl.gtk3.gl_client_window import GLClientWindowBase
 from xpra.client.gl.gtk3.gl_drawing_area import GLDrawingArea, GLContext
 
 def check_support(force_enable=False):
-    import warnings
+    import warnings  #pylint: disable=import-outside-toplevel
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*g_object_get_qdata:")
         warnings.filterwarnings("ignore", message=".*g_object_set_qdata_full:")
