@@ -626,6 +626,6 @@ def log_new_connection(conn, socket_info=""):
         log.info("New %s connection received", socktype)
         log.info(" on '%s'", frominfo)
     else:
-        log.info("New %s connection received")
+        log.info("New %s connection received", socktype)
         if socket_info:
             log.info(" on %s", pretty_socket(socket_info))
