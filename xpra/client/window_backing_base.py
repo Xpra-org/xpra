@@ -439,16 +439,16 @@ class WindowBackingBase:
                 fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb16(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        raise Exception("override me!")
+        raise NotImplementedError
 
     def _do_paint_rgb24(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        raise Exception("override me!")
+        raise NotImplementedError
 
     def _do_paint_rgb30(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        raise Exception("override me!")
+        raise NotImplementedError
 
     def _do_paint_rgb32(self, img_data, x, y, width, height, render_width, render_height, rowstride, options):
-        raise Exception("override me!")
+        raise NotImplementedError
 
 
     def eos(self):
