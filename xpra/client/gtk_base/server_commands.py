@@ -222,10 +222,12 @@ def main(): # pragma: no cover
         client.server_last_info = {"commands" : commands_info}
         client.server_start_new_commands = True
         client.server_commands_signals = ("SIGINT", "SIGTERM", "SIGUSR1")
-        def noop(*_args):
-            pass
-        client.send_info_request = noop
-        client.send = noop
+        def nosend(*_args):
+            """
+            this is for testing only - we are not connected to a server
+            """
+        client.send_info_request = nosend
+        client.send = nosend
         window1 = AdHocStruct()
         window1._metadata = {"pid" : 542}  #pylint: disable=protected-access
         client._id_to_window = {  #pylint: disable=protected-access
