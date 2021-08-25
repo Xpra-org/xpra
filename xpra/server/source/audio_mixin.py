@@ -464,10 +464,10 @@ class AudioMixin(StubSourceMixin):
                 class FakeSink:
                     def __init__(self, codec):
                         self.codec = codec
-                    def add_data(self, *_args):
-                        pass
-                    def cleanup(self, *_args):
-                        pass
+                    def add_data(self, *args):
+                        log("FakeSink.add_data%s ignored", args)
+                    def cleanup(self, *args):
+                        log("FakeSink.cleanup%s ignored", args)
                 self.sound_sink = FakeSink(codec)
                 return
             try:
