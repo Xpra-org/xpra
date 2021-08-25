@@ -637,17 +637,15 @@ def log_new_connection(conn, socket_info=""):
         sockname = ""
     log("log_new_connection(%s, %s) type=%s, sock=%s, sockname=%s, address=%s, peername=%s",
         conn, socket_info, type(conn), sock, sockname, address, peername)
+    log.info("New %s connection received", socktype)
     if peername:
         frominfo = pretty_socket(peername)
-        log.info("New %s connection received", socktype)
         log.info(" from '%s'", pretty_socket(frominfo))
         if socket_info:
             log.info(" on '%s'", pretty_socket(socket_info))
     elif socktype=="unix-domain":
         frominfo = sockname
-        log.info("New %s connection received", socktype)
         log.info(" on '%s'", frominfo)
     else:
-        log.info("New %s connection received", socktype)
         if socket_info:
             log.info(" on %s", pretty_socket(socket_info))
