@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -48,10 +48,10 @@ class TrayBase:
         pass
 
     def show(self):
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
     def hide(self):
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
     def get_screen(self):
         return -1
@@ -60,7 +60,7 @@ class TrayBase:
         return None     #assume "HORIZONTAL"
 
     def get_geometry(self):
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
     def get_size(self):
         g = self.get_geometry()
@@ -70,14 +70,14 @@ class TrayBase:
 
     def set_tooltip(self, tooltip=None):
         self.tooltip = tooltip
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
     def set_blinking(self, on):
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
 
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
     def get_icon_filename(self, basename=None):
         name = basename or self.default_icon_filename
@@ -101,7 +101,7 @@ class TrayBase:
         self.icon_timestamp = monotonic_time()
 
     def do_set_icon_from_file(self, filename):
-        raise NotImplementedError("override me!")
+        raise NotImplementedError
 
     def recalculate_geometry(self, x, y, width, height):
         log("recalculate_geometry%s guess=%s, tray event locations: %s",
