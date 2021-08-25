@@ -568,7 +568,10 @@ class GLWindowBackingBase(WindowBackingBase):
 
 
     def close_gl_config(self):
-        pass
+        """
+        Subclasses may free up resources at this point.
+        The GTK3 GL drawing area does.
+        """
 
     def close(self):
         self.close_gl_config()
