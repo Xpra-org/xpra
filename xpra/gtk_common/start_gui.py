@@ -719,6 +719,12 @@ class SessionOptions(Gtk.Window):
         tb.attach(al, 0, 2)
         tb.inc()
 
+    def _save_widget(self, fn, widget, widget_type, **kwargs):
+        setattr(self, "%s_widget" % fn, widget)
+        setattr(self, "%s_widget_type" % fn, widget_type)
+        for k,v in kwargs.items():
+            setattr(self, "%s_%s" % (fn, k), v)
+
     def bool_cb(self, table, label, option_name, tooltip_text=None, link=None):
         attach_label(table, label, tooltip_text, link)
         fn = option_name.replace("-", "_")
@@ -728,9 +734,7 @@ class SessionOptions(Gtk.Window):
         cb.set_active(active)
         al = xal(cb, xalign=0)
         table.attach(al, 1)
-        setattr(self, "%s_widget" % fn, cb)
-        setattr(self, "%s_widget_type" % fn, "bool")
-        setattr(self, "%s_values" % fn, [value if not active else False, value if active else True])
+        self._save_widget(fn, cb, "bool", values=[value if not active else False, value if active else True])
         self.widgets.append(option_name)
         table.inc()
         return cb
@@ -746,7 +750,6 @@ class SessionOptions(Gtk.Window):
         attach_label(table, label, tooltip_text, link)
         fn = option_name.replace("-", "_")
         widget_base_name = "%s_widget" % fn
-        setattr(self, "%s_widget_type" % fn, "radio")
         self.widgets.append(option_name)
         value = getattr(self.options, fn)
         #log.warn("%s=%s", fn, value)
@@ -771,7 +774,7 @@ class SessionOptions(Gtk.Window):
             i += 1
             saved_options[label] = saved_match
             btns.append(btn)
-        setattr(self, "%s_options" % fn, saved_options)
+        self._save_widget(fn, btns, "radio", options=saved_options)
         table.attach(hbox, 1)
         table.inc()
         return btns
@@ -791,9 +794,7 @@ class SessionOptions(Gtk.Window):
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(c)
         table.attach(al, 1)
-        setattr(self, "%s_widget" % fn, c)
-        setattr(self, "%s_widget_type" % fn, "combo")
-        setattr(self, "%s_options" % fn, options)
+        self._save_widget(fn, c, "combo", options=options)
         self.widgets.append(option_name)
         table.inc()
         return c
@@ -814,8 +815,7 @@ class SessionOptions(Gtk.Window):
             for v,label in marks.items():
                 c.add_mark(v, Gtk.PositionType.BOTTOM, label)
         table.attach(c, 1)
-        setattr(self, "%s_widget" % fn, c)
-        setattr(self, "%s_widget_type" % fn, "scale")
+        self._save_widget(fn, c, "scale")
         self.widgets.append(option_name)
         table.inc()
         return c
