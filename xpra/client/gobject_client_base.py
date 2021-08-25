@@ -514,7 +514,11 @@ class ShellXpraClient(SendCommandConnectClient):
         self.hello_extra["shell"] = "True"
 
     def timeout(self, *args):
-        pass
+        """
+        The shell client never times out,
+        but the superclass calls this method automatically,
+        just ignore it.
+        """
 
     def cleanup(self):
         siw = self.stdin_io_watch
