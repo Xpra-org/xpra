@@ -67,10 +67,14 @@ class ClientWidgetBase:
         return backing
 
     def freeze(self):
-        pass
+        """
+        Subclasses can suspend screen updates and free some resources
+        """
 
     def unfreeze(self):
-        pass
+        """
+        Subclasses may resume normal operation that were suspended by freeze()
+        """
 
 
     def workspace_changed(self):            # pragma: no cover
