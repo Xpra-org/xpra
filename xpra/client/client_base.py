@@ -66,10 +66,6 @@ SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
 
-def noop():
-    pass
-
-
 class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     """
     Base class for Xpra clients.
@@ -137,6 +133,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.uuid = get_user_uuid()
         self.session_id = uuid.uuid4().hex
         self.init_packet_handlers()
+        def noop():
+            """
+            until we hook up the real protocol instance,
+            do nothing when have_more() is called
+            """
         self.have_more = noop
 
     def init(self, opts):
