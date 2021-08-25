@@ -45,7 +45,10 @@ class TrayBase:
             self.tray_widget = None
 
     def ready(self):
-        pass
+        """
+        This is called when we have finished the startup sequence.
+        The MacOS dock overrides this method.
+        """
 
     def show(self):
         raise NotImplementedError
