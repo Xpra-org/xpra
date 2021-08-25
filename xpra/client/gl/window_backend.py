@@ -32,8 +32,6 @@ def get_gl_client_window_module(force_enable=False):
         return opengl_props, nativegl_client_window
     return {}, None
 
-def noop(*_args):
-    pass
 def no_scaling(*args):
     if len(args)==1:
         return args[0]
@@ -59,6 +57,8 @@ class FakeClient(AdHocStruct):
         self.encoding_defaults = {}
         self.get_window_frame_sizes = get_None
         self._focused = None
+        def noop(*_args):
+            """ pretend this method exists and does something """
         self.request_frame_extents = noop
         self.server_window_states = ()
         self.server_window_frame_extents = False
@@ -99,12 +99,12 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         noclient = FakeClient()
         #test with alpha, but not on win32
         #because we can't do alpha on win32 with opengl
-        metadata = typedict({b"has-alpha" : not WIN32})
+        metadata = typedict({"has-alpha" : not WIN32})
         class NoHeaderGLClientWindow(gl_client_window_class):
             def add_header_bar(self):
-                pass
+                """ pretend to add the header bar """
             def schedule_recheck_focus(self):
-                pass
+                """ pretend to handle focus checks """
         window = NoHeaderGLClientWindow(noclient, None, None, 2**32-1, x, y, w, h, w, h,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
