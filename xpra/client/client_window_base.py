@@ -713,7 +713,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def repaint(self, x, y, w, h):
         #self.queue_draw_area(0, 0, *self._size)
-        raise NotImplementedError("no repaint on %s", type(self))
+        raise NotImplementedError("no repaint on %s" % type(self))
 
     def refresh_window(self, *args):
         log("refresh_window(%s) wid=%s", args, self._id)
