@@ -27,14 +27,14 @@ class FakeBacking:
         self._video_encoder_quality = []
 
     def close(self):
-        pass
+        self.wid = 0
 
     def draw_region(self, _x, _y, _width, _height, _coding, _img_data, _rowstride, _options, callbacks):
         log("draw_region(..) faking it after %sms", self.fake_delay)
         GLib.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
 
     def cairo_draw(self, context, x, y):
-        pass
+        log("cairo_draw%s", (context, x, y))
 
     def get_encoding_properties(self):
         return {

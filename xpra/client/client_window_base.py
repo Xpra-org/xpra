@@ -497,16 +497,16 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def set_x11_property(self, *x11_property):
-        pass
+        pass        #see gtk client window base
 
     def set_command(self, command):
-        pass
+        pass        #see gtk client window base
 
     def set_class_instance(self, wmclass_name, wmclass_class):
-        pass
+        pass        #see gtk client window base
 
     def set_shape(self, shape):
-        log("set_shape(%s) not implemented", shape)
+        log("set_shape(%s) not implemented by %s", shape, type(self))
 
     def set_bypass_compositor(self, v):
         pass        #see gtk client window base
@@ -626,16 +626,16 @@ class ClientWindowBase(ClientWidgetBase):
 
 
     def set_window_type(self, window_types):
-        pass
+        pass        #see gtk client window base
 
     def set_workspace(self, workspace):
-        pass
+        pass        #see gtk client window base
 
     def set_fullscreen(self, fullscreen):
-        pass
+        pass        #see gtk client window base
 
     def set_xid(self, xid):
-        pass
+        pass        #see gtk client window base
 
 
     def toggle_debug(self, *_args):
@@ -803,7 +803,10 @@ class ClientWindowBase(ClientWidgetBase):
         self._client.quit(0)
 
     def void(self):
-        pass
+        """
+        This method can be used to capture key shortcuts
+        without triggering any specific action.
+        """
 
     def show_window_info(self, *args):
         from xpra.client.gtk_base.window_info import WindowInfo
