@@ -28,7 +28,7 @@ def get_x11_property(atom_name):
         log.error(" %s", e)
         return b""
     try:
-        with X11DisplayContext(display) as dc:
+        with X11DisplayContext(display):
             with xswallow:
                 X11Window = X11WindowBindingsInstance()
                 root = X11Window.getDefaultRootWindow()
