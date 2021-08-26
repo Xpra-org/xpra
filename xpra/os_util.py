@@ -725,9 +725,9 @@ class FDChangeCaptureContext:
 class DummyContextManager:
 
     def __enter__(self):
-        pass
+        """ do nothing """
     def __exit__(self, *_args):
-        pass
+        """ do nothing """
     def __repr__(self):
         return "DummyContextManager"
 
