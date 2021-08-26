@@ -1877,11 +1877,14 @@ class ServerCore:
         proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
+    def auth_failed(self, proto, msg):
+        authlog.warn("Warning: authentication failed")
+        authlog.warn(" %s", msg)
+        self.timeout_add(1000, self.disconnect_client, proto, msg)
+
     def verify_auth(self, proto, packet, c):
         def auth_failed(msg):
-            authlog.warn("Warning: authentication failed")
-            authlog.warn(" %s", msg)
-            self.timeout_add(1000, self.disconnect_client, proto, msg)
+            self.auth_failed(proto, msg)
 
         username = c.strget("username")
         if not username:
@@ -1903,43 +1906,9 @@ class ServerCore:
         digest_modes = c.strtupleget("digest", ("hmac", ))
         salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
         #client may have requested encryption:
-        cipher = c.strget("cipher")
-        cipher_mode = c.strget("cipher.mode")
-        cipher_iv = c.strget("cipher.iv")
-        key_salt = c.strget("cipher.key_salt")
-        auth_caps = {}
-        if cipher and cipher_iv:
-            from xpra.net.crypto import (
-                DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, DEFAULT_MODE,
-                new_cipher_caps,
-                )
-            iterations = c.intget("cipher.key_stretch_iterations")
-            padding = c.strget("cipher.padding", DEFAULT_PADDING)
-            padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
-            if cipher not in ENCRYPTION_CIPHERS:
-                authlog.warn("Warning: unsupported cipher: %s", cipher)
-                if ENCRYPTION_CIPHERS:
-                    authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
-                auth_failed("unsupported cipher")
-                return
-            encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
-            if encryption_key is None:
-                auth_failed("encryption key is missing")
-                return
-            if padding not in ALL_PADDING_OPTIONS:
-                auth_failed("unsupported padding: %s" % padding)
-                return
-            cryptolog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
-            proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, encryption_key, key_salt, iterations, padding)
-            #use the same cipher as used by the client:
-            auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
-            cryptolog("server cipher=%s", auth_caps)
-        else:
-            if proto.encryption and conn.socktype in ENCRYPTED_SOCKET_TYPES:
-                cryptolog("client does not provide encryption tokens")
-                auth_failed("missing encryption tokens")
-                return
-            auth_caps = None
+        auth_caps = self.setup_encryption(proto, c)
+        if auth_caps is None:
+            return
 
         def send_fake_challenge():
             #fake challenge so the client will send the real hello:
@@ -2026,6 +1995,49 @@ class ServerCore:
         #continue processing hello packet in UI thread:
         self.idle_add(self.call_hello_oked, proto, packet, c, auth_caps)
 
+
+    def setup_encryption(self, proto, c : typedict):
+        def auth_failed(msg):
+            self.auth_failed(proto, msg)
+        #client may have requested encryption:
+        cipher = c.strget("cipher")
+        cipher_mode = c.strget("cipher.mode")
+        cipher_iv = c.strget("cipher.iv")
+        key_salt = c.strget("cipher.key_salt")
+        auth_caps = {}
+        if cipher and cipher_iv:
+            from xpra.net.crypto import (
+                DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, DEFAULT_MODE,
+                new_cipher_caps,
+                )
+            iterations = c.intget("cipher.key_stretch_iterations")
+            padding = c.strget("cipher.padding", DEFAULT_PADDING)
+            padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
+            if cipher not in ENCRYPTION_CIPHERS:
+                authlog.warn("Warning: unsupported cipher: %s", cipher)
+                if ENCRYPTION_CIPHERS:
+                    authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
+                auth_failed("unsupported cipher")
+                return None
+            encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
+            if encryption_key is None:
+                auth_failed("encryption key is missing")
+                return None
+            if padding not in ALL_PADDING_OPTIONS:
+                auth_failed("unsupported padding: %s" % padding)
+                return None
+            cryptolog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
+            proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, encryption_key, key_salt, iterations, padding)
+            #use the same cipher as used by the client:
+            auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
+            cryptolog("server cipher=%s", auth_caps)
+            return auth_caps
+        conn = proto._conn
+        if proto.encryption and conn.socktype in ENCRYPTED_SOCKET_TYPES:
+            cryptolog("client does not provide encryption tokens")
+            auth_failed("missing encryption tokens")
+            return None
+        return {}
 
     def get_encryption_key(self, authenticators=None, keyfile=None):
         #if we have a keyfile specified, use that:
