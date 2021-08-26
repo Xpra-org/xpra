@@ -151,7 +151,12 @@ class ApplicationWindow:
         except ImportError:
             pass
         #assume crypto is available
-        modes.append("tcp + aes")
+        try:
+            from xpra.net.crypto import MODES
+            for mode in MODES:
+                modes.append("tcp + aes-%s" % mode.lower())
+        except ImportError:
+            pass
         modes.append("tcp")
         modes.append("ws")
         modes.append("wss")
@@ -1008,7 +1013,7 @@ class ApplicationWindow:
         if mode_enc.startswith("tcp"):
             self.config.mode = "tcp"
             if mode_enc.find("aes")>0:
-                self.config.encryption = "AES"
+                self.config.encryption = "AES-"+mode_enc.split("aes-")[1].upper()
         elif mode_enc in ("ssl", "ssh", "ws", "wss", "ssh -> ssh"):
             self.config.mode = mode_enc
             self.config.encryption = ""

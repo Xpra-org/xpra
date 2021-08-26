@@ -23,8 +23,9 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_salt, gendigest
 from xpra.net.crypto import (
     crypto_backend_init, get_iterations, get_iv, choose_padding,
-    ENCRYPTION_CIPHERS, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
+    ENCRYPTION_CIPHERS, MODES, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
+    DEFAULT_MODE,
     )
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
@@ -437,24 +438,32 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if mid:
             capabilities["machine_id"] = mid
         encryption = self.get_encryption()
+        cryptolog("encryption=%s", encryption)
         if encryption:
             crypto_backend_init()
-            assert encryption in ENCRYPTION_CIPHERS, "invalid encryption '%s', options: %s" % (encryption, csv(ENCRYPTION_CIPHERS))
+            enc, mode = (encryption+"-").split("-")[:2]
+            if not mode:
+                mode = DEFAULT_MODE
+            assert enc in ENCRYPTION_CIPHERS, "invalid encryption '%s', options: %s" % (enc, csv(ENCRYPTION_CIPHERS))
+            assert mode in MODES, "invalid encryption mode '%s', options: %s" % (mode, csv(MODES))
             iv = get_iv()
             key_salt = get_salt()
             iterations = get_iterations()
             padding = choose_padding(self.server_padding_options)
-            up("cipher", {
-                    ""                      : encryption,
-                    "iv"                    : iv,
-                    "key_salt"              : key_salt,
-                    "key_stretch_iterations": iterations,
-                    "padding"               : padding,
-                    "padding.options"       : PADDING_OPTIONS,
-                    })
+            cipher_caps = {
+                ""                      : enc,
+                "mode"                  : mode,
+                "iv"                    : iv,
+                "key_salt"              : key_salt,
+                "key_stretch_iterations": iterations,
+                "padding"               : padding,
+                "padding.options"       : PADDING_OPTIONS,
+                }
+            cryptolog("cipher_caps=%s", cipher_caps)
+            up("cipher", cipher_caps)
             key = self.get_encryption_key()
             self._protocol.set_cipher_in(encryption, iv, key, key_salt, iterations, padding)
-            netlog("encryption capabilities: %s", dict((k,v) for k,v in capabilities.items() if k.startswith("cipher")))
+            cryptolog("encryption capabilities: %s", dict((k,v) for k,v in capabilities.items() if k.startswith("cipher")))
         capabilities.update(self.hello_extra)
         return capabilities
 
@@ -827,6 +836,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     # Encryption
     def set_server_encryption(self, caps, key):
         cipher = caps.strget("cipher")
+        cipher_mode = caps.strget("cipher.mode", DEFAULT_MODE)
         cipher_iv = caps.strget("cipher.iv")
         key_salt = caps.strget("cipher.key_salt")
         iterations = caps.intget("cipher.key_stretch_iterations")
@@ -849,7 +859,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p = self._protocol
         if not p:
             return False
-        p.set_cipher_out(cipher, cipher_iv, key, key_salt, iterations, padding)
+        p.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, key, key_salt, iterations, padding)
         return True
 
 
@@ -863,11 +873,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         cryptolog("get_encryption() connection options encryption=%s", encryption)
         #specifying keyfile or keydata is enough:
         if not encryption and any(conn.options.get(x) for x in ("encryption-keyfile", "keyfile", "keydata")):
-            cryptolog("found keyfile or keydata attribute, enabling 'AES' encryption")
-            encryption = "AES"
+            encryption = "AES-%s" % DEFAULT_MODE
+            cryptolog("found keyfile or keydata attribute, enabling '%s' encryption" % encryption)
         if not encryption and os.environ.get("XPRA_ENCRYPTION_KEY"):
-            cryptolog("found encryption key environment variable, enabling 'AES' encryption")
-            encryption = "AES"
+            encryption = "AES-%s" % DEFAULT_MODE
+            cryptolog("found encryption key environment variable, enabling '%s' encryption" % encryption)
         return encryption
 
     def get_encryption_key(self):

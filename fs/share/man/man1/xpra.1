@@ -1047,9 +1047,22 @@ Defaults to 600. This is ignored when \fImmap-group\fP is enabled.
 Specifies the cipher to use for securing the connection from
 prying eyes.
 This option requires the use of the \fB--encryption-keyfile\fP option.
-The only cipher supported at present is \fIAES\fP, if the client
-requests encryption it will be used by both the client and server
-for all communication after the initial password verification,
+The only ciphers supported at present are:
+.RS
+.IP \fBAES\fP
+Alias for \fIAES-CBC\fP, using a more specific mode is prefered.
+.IP \fBAES-CBC\fP
+\fIAES\fP in \fIcipher block chaining\fP mode
+.IP \fBAES-GCM\fP
+\fIAES\fP in \fIgalois/counter mode\fP
+.IP \fBAES-CFB\fP
+\fIAES\fP in \fIcipher feedback\fP mode
+.IP \fBAES-CTR\fP
+\fIAES\fP in \fIcounter\fP mode
+.RE
+.PP
+If the client requests encryption it will be used by both the client
+and server for all communication after the initial password verification,
 but only if the server supports this feature too.
 Note: this feature has not been extensively reviewed and as it is
 it should not be considered safe from determined attackers.

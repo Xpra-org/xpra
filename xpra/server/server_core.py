@@ -78,6 +78,7 @@ wslog = Logger("websocket")
 proxylog = Logger("proxy")
 commandlog = Logger("command")
 authlog = Logger("auth")
+cryptolog = Logger("crypto")
 timeoutlog = Logger("timeout")
 dbuslog = Logger("dbus")
 mdnslog = Logger("mdns")
@@ -1903,11 +1904,15 @@ class ServerCore:
         salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
         #client may have requested encryption:
         cipher = c.strget("cipher")
+        cipher_mode = c.strget("cipher.mode")
         cipher_iv = c.strget("cipher.iv")
         key_salt = c.strget("cipher.key_salt")
         auth_caps = {}
         if cipher and cipher_iv:
-            from xpra.net.crypto import DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, new_cipher_caps
+            from xpra.net.crypto import (
+                DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, DEFAULT_MODE,
+                new_cipher_caps,
+                )
             iterations = c.intget("cipher.key_stretch_iterations")
             padding = c.strget("cipher.padding", DEFAULT_PADDING)
             padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
@@ -1924,14 +1929,14 @@ class ServerCore:
             if padding not in ALL_PADDING_OPTIONS:
                 auth_failed("unsupported padding: %s" % padding)
                 return
-            authlog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
-            proto.set_cipher_out(cipher, cipher_iv, encryption_key, key_salt, iterations, padding)
+            cryptolog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
+            proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, encryption_key, key_salt, iterations, padding)
             #use the same cipher as used by the client:
-            auth_caps = new_cipher_caps(proto, cipher, encryption_key, padding_options)
-            authlog("server cipher=%s", auth_caps)
+            auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
+            cryptolog("server cipher=%s", auth_caps)
         else:
             if proto.encryption and conn.socktype in ENCRYPTED_SOCKET_TYPES:
-                authlog("client does not provide encryption tokens")
+                cryptolog("client does not provide encryption tokens")
                 auth_failed("missing encryption tokens")
                 return
             auth_caps = None

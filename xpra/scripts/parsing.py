@@ -1356,9 +1356,11 @@ def do_parse_cmdline(cmdline, defaults):
     if options.max_size:
         options.max_size = "%sx%s" % parse_window_size(options.max_size, "max-size")
     if options.encryption_keyfile and not options.encryption:
-        options.encryption = "AES"
+        from xpra.net.crypto import DEFAULT_MODE
+        options.encryption = "AES-%s" % DEFAULT_MODE
     if options.tcp_encryption_keyfile and not options.tcp_encryption:
-        options.tcp_encryption = "AES"
+        from xpra.net.crypto import DEFAULT_MODE
+        options.tcp_encryption = "AES-%s" % DEFAULT_MODE
     return options, args
 
 def validated_encodings(encodings):
@@ -1385,22 +1387,26 @@ def do_validate_encryption(auth, tcp_auth,
     crypto_backend_init()
     env_key = os.environ.get("XPRA_ENCRYPTION_KEY")
     pass_key = os.environ.get("XPRA_PASSWORD")
-    from xpra.net.crypto import ENCRYPTION_CIPHERS
+    from xpra.net.crypto import ENCRYPTION_CIPHERS, MODES, DEFAULT_MODE
     if not ENCRYPTION_CIPHERS:
         raise InitException("cannot use encryption: no ciphers available (the python-cryptography library must be installed)")
     if encryption=="help" or tcp_encryption=="help":
         raise InitInfo("the following encryption ciphers are available: %s" % csv(ENCRYPTION_CIPHERS))
-    if encryption and encryption not in ENCRYPTION_CIPHERS:
-        raise InitException("encryption %s is not supported, try: %s" % (encryption, csv(ENCRYPTION_CIPHERS)))
-    if tcp_encryption and tcp_encryption not in ENCRYPTION_CIPHERS:
-        raise InitException("encryption %s is not supported, try: %s" % (tcp_encryption, csv(ENCRYPTION_CIPHERS)))
-    if encryption and not encryption_keyfile and not env_key and not auth:
-        raise InitException("encryption %s cannot be used without an authentication module or keyfile"
-                            +" (see --encryption-keyfile option)" % encryption)
-    if tcp_encryption and not tcp_encryption_keyfile and not env_key and not tcp_auth:
-        raise InitException("tcp-encryption %s cannot be used " % tcp_encryption+
-                            "without a tcp authentication module or keyfile "
-                            +" (see --tcp-encryption-keyfile option)")
+    enc, mode = ((encryption or tcp_encryption)+"-").split("-")[:2]
+    if not mode:
+        mode = DEFAULT_MODE
+    if enc:
+        if enc not in ENCRYPTION_CIPHERS:
+            raise InitException("encryption %s is not supported, try: %s" % (enc, csv(ENCRYPTION_CIPHERS)))
+        if mode not in MODES:
+            raise InitException("encryption mode %s is not supported, try: %s" % (mode, csv(MODES)))
+        if encryption and not encryption_keyfile and not env_key and not auth:
+            raise InitException("encryption %s cannot be used without an authentication module or keyfile"
+                                +" (see --encryption-keyfile option)" % encryption)
+        if tcp_encryption and not tcp_encryption_keyfile and not env_key and not tcp_auth:
+            raise InitException("tcp-encryption %s cannot be used " % tcp_encryption+
+                                "without a tcp authentication module or keyfile "
+                                +" (see --tcp-encryption-keyfile option)")
     if pass_key and env_key and pass_key==env_key:
         raise InitException("encryption and authentication should not use the same value")
     #discouraged but not illegal:

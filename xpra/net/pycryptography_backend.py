@@ -1,8 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+import os
 
 from xpra.os_util import strtobytes, memoryview_to_bytes
 from xpra.log import Logger
@@ -11,7 +13,10 @@ log = Logger("network", "crypto")
 
 __all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", "ENCRYPTION_CIPHERS")
 
+DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
+
 ENCRYPTION_CIPHERS = []
+MODES = ("CBC", "GCM", "CFB", "CTR")
 backend = None
 
 
@@ -76,18 +81,22 @@ def get_key(password, key_salt, block_size, iterations):
     key = kdf.derive(strtobytes(password))
     return key
 
-def _get_cipher(key, iv):
+def _get_cipher(key, iv, mode=DEFAULT_MODE):
     global backend
+    assert mode in MODES
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    return Cipher(algorithms.AES(key), modes.CBC(strtobytes(iv)), backend=backend)
+    mode_class = getattr(modes, mode, None)
+    if mode_class is None:
+        raise ValueError("no %s mode in this version of python-cryptography" % mode)
+    return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)), backend=backend)
 
-def get_encryptor(key, iv):
-    encryptor = _get_cipher(key, iv).encryptor()
+def get_encryptor(key, iv, mode=DEFAULT_MODE):
+    encryptor = _get_cipher(key, iv, mode).encryptor()
     encryptor.encrypt = encryptor.update
     return encryptor
 
-def get_decryptor(key, iv):
-    decryptor = _get_cipher(key, iv).decryptor()
+def get_decryptor(key, iv, mode=DEFAULT_MODE):
+    decryptor = _get_cipher(key, iv, mode).decryptor()
     def i(s):
         try:
             return int(s)
