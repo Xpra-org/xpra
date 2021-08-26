@@ -83,7 +83,7 @@ class KeyboardHelper:
     def cleanup(self):
         self.reset_state()
         def nosend(*_args):
-            pass
+            """ make sure we don't send keyboard updates during cleanup """
         self.send = nosend
 
     def keymap_changed(self, *args):
