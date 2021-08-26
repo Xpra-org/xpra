@@ -90,6 +90,13 @@ def _get_cipher(key, iv, mode=DEFAULT_MODE):
         raise ValueError("no %s mode in this version of python-cryptography" % mode)
     return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)), backend=backend)
 
+def get_block_size(mode):
+    if mode=="CBC":
+        #16 would also work,
+        #but older versions require 32
+        return 32
+    return 0
+
 def get_encryptor(key, iv, mode=DEFAULT_MODE):
     encryptor = _get_cipher(key, iv, mode).encryptor()
     encryptor.encrypt = encryptor.update

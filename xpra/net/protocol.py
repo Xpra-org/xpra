@@ -33,7 +33,7 @@ from xpra.net.packet_encoding import (
     InvalidPacketEncodingException,
     )
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE
-from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
+from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING, DEFAULT_BLOCKSIZE
 from xpra.log import Logger
 
 log = Logger("network", "protocol")
@@ -231,7 +231,9 @@ class Protocol:
 
     def set_cipher_in(self, ciphername, iv, password, key_salt, iterations, padding):
         cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, iterations))
-        self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername, iv, password, key_salt, iterations)
+        key_size = DEFAULT_BLOCKSIZE
+        self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
+                                                                  iv, password, key_salt, key_size, iterations)
         self.cipher_in_padding = padding
         if self.cipher_in_name!=ciphername:
             cryptolog.info("receiving data using %s encryption", ciphername)
@@ -239,7 +241,9 @@ class Protocol:
 
     def set_cipher_out(self, ciphername, iv, password, key_salt, iterations, padding):
         cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations, padding))
-        self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername, iv, password, key_salt, iterations)
+        key_size = DEFAULT_BLOCKSIZE
+        self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
+                                                                    iv, password, key_salt, key_size, iterations)
         self.cipher_out_padding = padding
         if self.cipher_out_name!=ciphername:
             cryptolog.info("sending data using %s encryption", ciphername)
@@ -404,7 +408,10 @@ class Protocol:
             if self.cipher_out:
                 proto_flags |= FLAGS_CIPHER
                 #note: since we are padding: l!=len(data)
-                padding_size = self.cipher_out_block_size - (payload_size % self.cipher_out_block_size)
+                if self.cipher_out_block_size==0:
+                    padding_size = 0
+                else:
+                    padding_size = self.cipher_out_block_size - (payload_size % self.cipher_out_block_size)
                 if padding_size==0:
                     padded = data
                 else:
@@ -865,13 +872,16 @@ class Protocol:
                         return
 
                     if protocol_flags & FLAGS_CIPHER:
-                        if self.cipher_in_block_size==0 or not self.cipher_in_name:
+                        if not self.cipher_in_name:
                             cryptolog.warn("Warning: received cipher block,")
                             cryptolog.warn(" but we don't have a cipher to decrypt it with,")
                             cryptolog.warn(" not an xpra client?")
                             self.invalid_header(self, header, "invalid encryption packet flag (no cipher configured)")
                             return
-                        padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
+                        if self.cipher_in_block_size==0:
+                            padding_size = 0
+                        else:
+                            padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
                         payload_size = data_size + padding_size
                     else:
                         #no cipher, no padding:

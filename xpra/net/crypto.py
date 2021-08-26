@@ -68,29 +68,35 @@ def crypto_backend_init():
 def validate_backend(try_backend):
     log("validate_backend(%s) will validate AES modes: %s", try_backend, try_backend.MODES)
     try_backend.init()
-    message = b"some message1234"
+    message = b"some message1234"*8
     password = "this is our secret"
     key_salt = DEFAULT_SALT
     iterations = DEFAULT_ITERATIONS
-    block_size = DEFAULT_BLOCKSIZE
     for mode in try_backend.MODES:
         log("testing AES-%s", mode)
-        key = try_backend.get_key(password, key_salt, block_size, iterations)
-        log("validate_backend(%s) key=%s", try_backend, hexstr(key))
+        key = try_backend.get_key(password, key_salt, DEFAULT_BLOCKSIZE, iterations)
+        block_size = try_backend.get_block_size(mode)
+        log(" key=%s, block_size=%s", hexstr(key), block_size)
         assert key is not None, "backend %s failed to generate a key" % try_backend
         enc = try_backend.get_encryptor(key, DEFAULT_IV, mode)
-        log("validate_backend(%s) encryptor=%s", try_backend, enc)
+        log(" encryptor=%s", enc)
         assert enc is not None, "backend %s failed to generate an encryptor" % enc
         dec = try_backend.get_decryptor(key, DEFAULT_IV, mode)
-        log("validate_backend(%s) decryptor=%s", try_backend, dec)
+        log(" decryptor=%s", dec)
         assert dec is not None, "backend %s failed to generate a decryptor" % enc
-        ev = enc.encrypt(message)
-        evs = hexstr(ev)
-        log("validate_backend(%s) encrypted(%s)=%s", try_backend, message, evs)
-        dv = dec.decrypt(ev)
-        log("validate_backend(%s) decrypted(%s)=%s", try_backend, evs, dv)
-        assert dv==message
-        log("validate_backend(%s) passed", try_backend)
+        test_messages = [message*(1+block_size)]
+        if block_size==0:
+            test_messages.append(message[:29])
+        else:
+            test_messages.append(message[:block_size])
+        for m in test_messages:
+            ev = enc.encrypt(message)
+            evs = hexstr(ev)
+            log(" encrypted(%s)=%s", message, evs)
+            dv = dec.decrypt(ev)
+            log(" decrypted(%s)=%s", evs, dv)
+            assert dv==message, "expected %r but got %r" % (message, dv)
+            log(" test passed")
 
 
 def pad(padding, size):
@@ -146,29 +152,29 @@ def get_crypto_caps() -> dict:
     return caps
 
 
-def get_encryptor(ciphername, iv, password, key_salt, iterations):
+def get_encryptor(ciphername, iv, password, key_salt, key_size, iterations):
     log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
     if not ciphername:
         return None, 0
+    assert key_size>16
     assert iterations>=100
     assert ciphername.startswith("AES")
     assert password and iv
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
-    block_size = DEFAULT_BLOCKSIZE
-    key = backend.get_key(password, key_salt, block_size, iterations)
-    return backend.get_encryptor(key, iv, mode), block_size
+    key = backend.get_key(password, key_salt, key_size, iterations)
+    return backend.get_encryptor(key, iv, mode), backend.get_block_size(mode)
 
-def get_decryptor(ciphername, iv, password, key_salt, iterations):
+def get_decryptor(ciphername, iv, password, key_salt, key_size, iterations):
     log("get_decryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
     if not ciphername:
         return None, 0
+    assert key_size>16
     assert iterations>=100
     assert ciphername.startswith("AES")
     assert password and iv
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
-    block_size = DEFAULT_BLOCKSIZE
-    key = backend.get_key(password, key_salt, block_size, iterations)
-    return backend.get_decryptor(key, iv, mode), block_size
+    key = backend.get_key(password, key_salt, key_size, iterations)
+    return backend.get_decryptor(key, iv, mode), backend.get_block_size(mode)
 
 
 def main():
