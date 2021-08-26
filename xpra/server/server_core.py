@@ -1999,6 +1999,7 @@ class ServerCore:
     def setup_encryption(self, proto, c : typedict):
         def auth_failed(msg):
             self.auth_failed(proto, msg)
+            return None
         #client may have requested encryption:
         cipher = c.strget("cipher")
         cipher_mode = c.strget("cipher.mode")
@@ -2017,15 +2018,12 @@ class ServerCore:
                 authlog.warn("Warning: unsupported cipher: %s", cipher)
                 if ENCRYPTION_CIPHERS:
                     authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
-                auth_failed("unsupported cipher")
-                return None
+                return auth_failed("unsupported cipher")
             encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
             if encryption_key is None:
-                auth_failed("encryption key is missing")
-                return None
+                return auth_failed("encryption key is missing")
             if padding not in ALL_PADDING_OPTIONS:
-                auth_failed("unsupported padding: %s" % padding)
-                return None
+                return auth_failed("unsupported padding: %s" % padding)
             cryptolog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
             proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, encryption_key, key_salt, iterations, padding)
             #use the same cipher as used by the client:
@@ -2035,8 +2033,7 @@ class ServerCore:
         conn = proto._conn
         if proto.encryption and conn.socktype in ENCRYPTED_SOCKET_TYPES:
             cryptolog("client does not provide encryption tokens")
-            auth_failed("missing encryption tokens")
-            return None
+            return auth_failed("missing encryption tokens")
         return {}
 
     def get_encryption_key(self, authenticators=None, keyfile=None):
