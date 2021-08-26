@@ -27,7 +27,7 @@ def do_init():  # pragma: no cover
     pass
 
 def threaded_server_init():
-    pass
+    """ platform implementations may override this function """
 
 
 class program_context:
@@ -157,7 +157,8 @@ def platform_import(where, pm, required, *imports):
         else:
             where[x] = getattr(platform_module, x)
 
-platform_import(globals(), None, True, "do_init", "do_clean")
-platform_import(globals(), None, False, "threaded_server_init",
+platform_import(globals(), None, False,
+                "do_init", "do_clean",
+                "threaded_server_init",
                 "set_prgname", "set_application_name", "program_context",
                 "command_error", "command_info", "do_get_username")

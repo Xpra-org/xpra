@@ -16,11 +16,6 @@ def do_init():
         NSApp.setActivationPolicy_(1)
 
 
-
-def do_clean():
-    pass
-
-
 exit_cb = None
 def quit_handler(*_args):
     global exit_cb
