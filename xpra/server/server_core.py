@@ -2007,6 +2007,19 @@ class ServerCore:
         key_salt = c.strget("cipher.key_salt")
         auth_caps = {}
         if cipher and cipher_iv:
+            #check that the server supports encryption:
+            if not proto.encryption:
+                return auth_failed("the server does not support encryption on this connection")
+            server_cipher = proto.encryption.split("-")[0]
+            if server_cipher!=cipher:
+                return auth_failed("the server is configured for '%s' not '%s' as requested by the client" % (
+                    server_cipher, cipher))
+            if proto.encryption.find("-")>0:
+                #server specifies the mode to use
+                server_cipher_mode = proto.encryption.split("-")[1]
+                if server_cipher_mode!=cipher_mode:
+                    return auth_failed("the server is configured for %s-%s not %s-%s as requested by the client" % (
+                        server_cipher, server_cipher_mode, cipher, cipher_mode))
             from xpra.net.crypto import (
                 DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, DEFAULT_MODE,
                 new_cipher_caps,
