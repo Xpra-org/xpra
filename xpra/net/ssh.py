@@ -277,6 +277,10 @@ def ssh_paramiko_connect_to(display_desc):
             keyfiles.insert(0, keyfile)
         return keyfiles
 
+    def fail(msg):
+        log("ssh_paramiko_connect_to(%s)", display_desc, exc_info=True)
+        raise InitExit(EXIT_SSH_FAILURE, msg) from None
+
     with nogssapi_context():
         from paramiko import SSHConfig, ProxyCommand
         ssh_config = SSHConfig()
@@ -353,8 +357,7 @@ def ssh_paramiko_connect_to(display_desc):
             try:
                 middle_transport.start_client()
             except SSHException as e:
-                log("start_client()", exc_info=True)
-                raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
+                fail("SSH proxy transport negotiation failed: %s" % e)
             proxy_host_config = ssh_config.lookup(host)
             do_ssh_paramiko_connect_to(middle_transport, proxy_host,
                                        proxy_username, proxy_password,
@@ -369,8 +372,7 @@ def ssh_paramiko_connect_to(display_desc):
             try:
                 transport.start_client()
             except SSHException as e:
-                log("start_client()", exc_info=True)
-                raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
+                fail("SSH transport negotiation failed: %s" % e)
             do_ssh_paramiko_connect_to(transport, host,
                                        username, password,
                                        host_config or ssh_config.lookup("*"),
@@ -398,8 +400,7 @@ def ssh_paramiko_connect_to(display_desc):
         try:
             transport.start_client()
         except SSHException as e:
-            log("start_client()", exc_info=True)
-            raise InitExit(EXIT_SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
+            fail("SSH negotiation failed: %s" % e)
         do_ssh_paramiko_connect_to(transport, host, username, password,
                                    host_config or ssh_config.lookup("*"),
                                    keys,
