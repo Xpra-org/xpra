@@ -36,10 +36,6 @@ class RPCClient(StubClientMixin):
             self.source_remove(t)
 
 
-    def run(self):
-        pass
-
-
     def parse_server_capabilities(self, c : typedict) -> bool:
         self.server_dbus_proxy = c.boolget("dbus_proxy")
         #default for pre-0.16 servers:
@@ -49,9 +45,6 @@ class RPCClient(StubClientMixin):
             default_rpc_types = []
         self.server_rpc_types = c.strtupleget("rpc-types", default_rpc_types)
         return True
-
-    def process_ui_capabilities(self, caps : typedict):
-        pass
 
 
     def rpc_call(self, rpc_type, rpc_args, reply_handler=None, error_handler=None):
