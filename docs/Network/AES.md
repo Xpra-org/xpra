@@ -27,6 +27,9 @@ xpra start --start=xterm \
 xpra attach "tcp://localhost:10000/?encryption=AES&keyfile=./key.txt"
 ```
 
+## Modes
+Starting with version 4.3, the client can specify the exact AES encryption mode to use: `encryption=AES-GCM`.
+  
 ## Older syntax
 Prior to version 4.1, the encryption is configured globally, for all TCP sockets, using the following syntax:
 ```
