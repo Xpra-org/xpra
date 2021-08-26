@@ -87,7 +87,7 @@ class KeyboardHelper:
         self.send = nosend
 
     def keymap_changed(self, *args):
-        pass
+        """ This method is overriden in tghe GTK Keyboard Helper """
 
 
     def parse_shortcuts(self):
