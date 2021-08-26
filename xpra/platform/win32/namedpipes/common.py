@@ -131,7 +131,7 @@ PACL = POINTER(ACL)
 
 class SECURITY_DESCRIPTOR(Structure):
     SECURITY_DESCRIPTOR_CONTROL = WORD
-    #REVISION = 1
+    REVISION = 1
     _fields_ = [
         ('Revision',    c_ubyte),
         ('Sbz1',        c_ubyte),
