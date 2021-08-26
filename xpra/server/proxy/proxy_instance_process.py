@@ -58,10 +58,11 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def __init__(self, uid, gid, env_options, session_options, socket_dir,
                  video_encoder_modules, pings,
-                 client_conn, disp_desc, client_state, cipher, encryption_key, server_conn, caps, message_queue):
+                 client_conn, disp_desc, client_state,
+                 cipher, cipher_mode, encryption_key, server_conn, caps, message_queue):
         ProxyInstance.__init__(self, session_options,
                                video_encoder_modules, pings,
-                               disp_desc, cipher, encryption_key, caps)
+                               disp_desc, cipher, cipher_mode, encryption_key, caps)
         QueueScheduler.__init__(self)
         Process.__init__(self, name=str(client_conn), daemon=False)
         self.client_conn = client_conn
@@ -74,7 +75,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules,
                                client_conn, disp_desc, ellipsizer(client_state),
-                               cipher, encryption_key, server_conn,
+                               cipher, cipher_mode, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), ellipsizer(caps)), message_queue))
         self.message_queue = message_queue
         #for handling the local unix domain socket:

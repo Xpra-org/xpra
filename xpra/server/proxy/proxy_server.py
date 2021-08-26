@@ -474,11 +474,13 @@ class ProxyServer(ServerCore):
             return
         log("server connection=%s", server_conn)
 
-        cipher = None
+        cipher = cipher_mode = None
         encryption_key = None
         if auth_caps:
             cipher = auth_caps.get("cipher")
             if cipher:
+                from xpra.net.crypto import DEFAULT_MODE
+                cipher_mode = auth_caps.get("cipher.mode", DEFAULT_MODE)
                 encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
 
         use_thread = PROXY_INSTANCE_THREADED
@@ -497,7 +499,7 @@ class ProxyServer(ServerCore):
             from xpra.server.proxy.proxy_instance_thread import ProxyInstanceThread
             pit = ProxyInstanceThread(session_options, self.video_encoders, self.pings,
                                       client_proto, server_conn,
-                                      disp_desc, cipher, encryption_key, c)
+                                      disp_desc, cipher, cipher_mode, encryption_key, c)
             pit.stopped = self.reap
             pit.run()
             self.instances[pit] = (False, display, None)
@@ -531,7 +533,7 @@ class ProxyServer(ServerCore):
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
                                                self.video_encoders, self.pings,
                                                client_conn, disp_desc, client_state,
-                                               cipher, encryption_key, server_conn, c, message_queue)
+                                               cipher, cipher_mode, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())
                 self.instances[process] = (True, display, message_queue)
                 process.start()

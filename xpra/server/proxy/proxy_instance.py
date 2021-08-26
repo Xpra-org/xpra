@@ -53,18 +53,19 @@ class ProxyInstance:
 
     def __init__(self, session_options,
                  video_encoder_modules, pings,
-                 disp_desc, cipher, encryption_key, caps):
+                 disp_desc, cipher, cipher_mode, encryption_key, caps):
         self.session_options = session_options
         self.video_encoder_modules = video_encoder_modules
         self.pings = pings
         self.disp_desc = disp_desc
         self.cipher = cipher
+        self.cipher_mode = cipher_mode
         self.encryption_key = encryption_key
         self.caps = caps
         log("ProxyInstance%s", (
             session_options,
             video_encoder_modules,
-            disp_desc, cipher, encryption_key,
+            disp_desc, cipher, cipher_mode, encryption_key,
             "%s: %s.." % (type(caps), ellipsizer(caps))))
         self.uuid = get_hex_uuid()
         self.client_protocol = None
@@ -465,7 +466,8 @@ class ProxyInstance:
                 from xpra.net.crypto import crypto_backend_init, new_cipher_caps, DEFAULT_PADDING
                 crypto_backend_init()
                 padding_options = self.caps.strtupleget("cipher.padding.options", [DEFAULT_PADDING])
-                auth_caps = new_cipher_caps(self.client_protocol, self.cipher, self.encryption_key, padding_options)
+                auth_caps = new_cipher_caps(self.client_protocol,
+                                            self.cipher, self.cipher_mode, self.encryption_key, padding_options)
                 caps.update(auth_caps)
             #may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw*maxh*4*4)
