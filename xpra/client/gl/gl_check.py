@@ -112,7 +112,6 @@ def check_PyOpenGL_support(force_enable) -> dict:
         #log redirection:
         def redirect_log(logger_name):
             logger = logging.getLogger(logger_name)
-            assert logger is not None
             logger.saved_handlers = logger.handlers
             logger.saved_propagate = logger.propagate
             logger.handlers = [CaptureHandler()]
