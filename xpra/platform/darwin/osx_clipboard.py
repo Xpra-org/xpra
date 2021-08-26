@@ -26,6 +26,8 @@ TARGET_TRANS = {
     NSStringPboardType : "STRING",
     }
 
+IMAGE_FORMATS = ["image/png", "image/jpeg", "image/tiff"]
+
 def filter_targets(targets):
     return _filter_targets(TARGET_TRANS.get(x, x) for x in targets)
 
@@ -125,7 +127,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if any(t in (NSStringPboardType, NSPasteboardTypeURL, "public.utf8-plain-text", "public.html", "TEXT") for t in types):
             targets += ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"]
         if any(t in (NSTIFFPboardType, NSPasteboardTypePNG) for t in types):
-            targets += ["image/png", "image/jpeg", "image/tiff"]
+            targets += IMAGE_FORMATS
         log("get_targets() targets(%s)=%s", types, targets)
         return targets
 
@@ -134,7 +136,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if target=="TARGETS":
             got_contents("ATOM", 32, self.get_targets())
             return
-        if target in ("image/png", "image/jpeg", "image/tiff"):
+        if target in IMAGE_FORMATS:
             try:
                 data = self.get_image_contents(target)
             except Exception:
@@ -153,10 +155,10 @@ class OSXClipboardProxy(ClipboardProxyCore):
     def get_image_contents(self, target):
         types = filter_targets(self.pasteboard.types())
         if target=="image/png" and NSPasteboardTypePNG in types:
-            src_dtype = "image/png"
+            src_dtype = target
             img_data = self.pasteboard.dataForType_(NSPasteboardTypePNG)
         elif target=="image/tiff" and NSTIFFPboardType in types:
-            src_dtype = "image/tiff"
+            src_dtype = target
             img_data = self.pasteboard.dataForType_(NSTIFFPboardType)
         elif NSPasteboardTypePNG in types:
             src_dtype = "image/png"
@@ -210,7 +212,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if target=="TARGETS" and dtype=="ATOM" and dformat==32:
             self.targets = _filter_targets(data)
             log("got_contents: tell OS we have %s", csv(self.targets))
-            image_types = tuple(t for t in ("image/png", "image/jpeg", "image/tiff") if t in self.targets)
+            image_types = tuple(t for t in IMAGE_FORMATS if t in self.targets)
             log("image_types=%s, dtype=%s (is text=%s)",
                      image_types, dtype, dtype in TEXT_TARGETS)
             if image_types and dtype not in TEXT_TARGETS:
@@ -220,7 +222,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if dformat==8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", data)
             self.set_clipboard_text(data)
-        if dformat==8 and dtype in ("image/png", "image/jpeg", "image/tiff"):
+        if dformat==8 and dtype in IMAGE_FORMATS:
             log("we got a %s image", dtype)
             self.set_image_data(dtype, data)
 
