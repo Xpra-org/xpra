@@ -47,9 +47,9 @@ FLUSH = envbool("XPRA_SUBPROCESS_FLUSH", False)
 
 
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
-def noop(_p):
-    pass
-INJECT_FAULT = noop
+def nofault(_p):
+    """ by default, don't inject any errors """
+INJECT_FAULT = nofault
 if FAULT_RATE>0:
     _counter = 0
     def DO_INJECT_FAULT(p):
