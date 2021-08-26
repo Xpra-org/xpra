@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#this is a loader module, designed to import things on-demand:
+#pylint: disable=import-outside-toplevel
+
 import os
 
 from xpra.os_util import strtobytes, memoryview_to_bytes
@@ -117,13 +120,15 @@ def get_decryptor(key, iv, mode=DEFAULT_MODE):
     if supports_memoryviews:
         decryptor.decrypt = decryptor.update
     else:
-        del key, iv
-        #with older versions of python-cryptography,
-        #we have to copy the memoryview to a bytearray:
-        def decrypt(v):
-            return decryptor.update(memoryview_to_bytes(v))
-        decryptor.decrypt = decrypt
+        _patch_decryptor(decryptor)
     return decryptor
+
+def _patch_decryptor(decryptor):
+    #with older versions of python-cryptography,
+    #we have to copy the memoryview to a bytearray:
+    def decrypt(v):
+        return decryptor.update(memoryview_to_bytes(v))
+    decryptor.decrypt = decrypt
 
 
 def main():
