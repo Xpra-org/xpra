@@ -199,7 +199,7 @@ class subprocess_callee:
 
 
     def cleanup(self):
-        pass
+        """ subclasses may override this method """
 
     def stop(self):
         self.cleanup()
