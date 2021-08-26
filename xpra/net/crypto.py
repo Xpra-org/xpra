@@ -20,7 +20,7 @@ ENCRYPT_FIRST_PACKET = envbool("XPRA_ENCRYPT_FIRST_PACKET", False)
 DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
 DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
 DEFAULT_ITERATIONS = envint("XPRA_CRYPTO_DEFAULT_ITERATIONS", 1000)
-DEFAULT_BLOCKSIZE = envint("XPRA_CRYPTO_BLOCKSIZE", 32)
+DEFAULT_KEYSIZE = envint("XPRA_CRYPTO_KEYSIZE", 32)
 DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
 
 #other option "PKCS#7", "legacy"
@@ -74,7 +74,7 @@ def validate_backend(try_backend):
     iterations = DEFAULT_ITERATIONS
     for mode in try_backend.MODES:
         log("testing AES-%s", mode)
-        key = try_backend.get_key(password, key_salt, DEFAULT_BLOCKSIZE, iterations)
+        key = try_backend.get_key(password, key_salt, DEFAULT_KEYSIZE, iterations)
         block_size = try_backend.get_block_size(mode)
         log(" key=%s, block_size=%s", hexstr(key), block_size)
         assert key is not None, "backend %s failed to generate a key" % try_backend
@@ -128,14 +128,16 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
     assert backend
     iv = get_iv()
     key_salt = get_salt()
+    key_size = DEFAULT_KEYSIZE
     iterations = get_iterations()
     padding = choose_padding(padding_options)
-    proto.set_cipher_in(cipher+"-"+cipher_mode, iv, encryption_key, key_salt, iterations, padding)
+    proto.set_cipher_in(cipher+"-"+cipher_mode, iv, encryption_key, key_salt, key_size, iterations, padding)
     return {
          "cipher"                       : cipher,
          "cipher.mode"                  : cipher_mode,
          "cipher.iv"                    : iv,
          "cipher.key_salt"              : key_salt,
+         "cipher.key_size"              : key_size,
          "cipher.key_stretch_iterations": iterations,
          "cipher.padding"               : padding,
          "cipher.padding.options"       : PADDING_OPTIONS,

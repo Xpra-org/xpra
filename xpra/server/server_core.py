@@ -1325,6 +1325,7 @@ class ServerCore:
                     ENCRYPT_FIRST_PACKET,
                     DEFAULT_IV,
                     DEFAULT_SALT,
+                    DEFAULT_KEYSIZE,
                     DEFAULT_ITERATIONS,
                     INITIAL_PADDING,
                     )
@@ -1333,7 +1334,7 @@ class ServerCore:
                     password = protocol.keydata or self.get_encryption_key(None, protocol.keyfile)
                     protocol.set_cipher_in(protocol.encryption,
                                            DEFAULT_IV, password,
-                                           DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
+                                           DEFAULT_SALT, DEFAULT_KEYSIZE, DEFAULT_ITERATIONS, INITIAL_PADDING)
         else:
             netlog("no encryption for %s", socktype)
         protocol.invalid_header = self.invalid_header
@@ -2021,7 +2022,8 @@ class ServerCore:
                     return auth_failed("the server is configured for %s-%s not %s-%s as requested by the client" % (
                         server_cipher, server_cipher_mode, cipher, cipher_mode))
             from xpra.net.crypto import (
-                DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS, DEFAULT_MODE,
+                DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS,
+                DEFAULT_MODE, DEFAULT_KEYSIZE,
                 new_cipher_caps,
                 )
             iterations = c.intget("cipher.key_stretch_iterations")
@@ -2038,7 +2040,8 @@ class ServerCore:
             if padding not in ALL_PADDING_OPTIONS:
                 return auth_failed("unsupported padding: %s" % padding)
             cryptolog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
-            proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, encryption_key, key_salt, iterations, padding)
+            key_size = c.intget("cipher.key_size", DEFAULT_KEYSIZE)
+            proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, encryption_key, key_salt, key_size, iterations, padding)
             #use the same cipher as used by the client:
             auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
             cryptolog("server cipher=%s", auth_caps)

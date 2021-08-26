@@ -25,7 +25,7 @@ from xpra.net.crypto import (
     crypto_backend_init, get_iterations, get_iv, choose_padding,
     ENCRYPTION_CIPHERS, MODES, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
-    DEFAULT_MODE,
+    DEFAULT_MODE, DEFAULT_KEYSIZE,
     )
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
@@ -348,7 +348,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if encryption and ENCRYPT_FIRST_PACKET:
             key = self.get_encryption_key()
             protocol.set_cipher_out(encryption,
-                                    DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_ITERATIONS, INITIAL_PADDING)
+                                    DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_KEYSIZE, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
@@ -455,6 +455,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "mode"                  : mode,
                 "iv"                    : iv,
                 "key_salt"              : key_salt,
+                "key_size"              : DEFAULT_KEYSIZE,
                 "key_stretch_iterations": iterations,
                 "padding"               : padding,
                 "padding.options"       : PADDING_OPTIONS,
@@ -462,8 +463,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             cryptolog("cipher_caps=%s", cipher_caps)
             up("cipher", cipher_caps)
             key = self.get_encryption_key()
-            self._protocol.set_cipher_in(encryption, iv, key, key_salt, iterations, padding)
-            cryptolog("encryption capabilities: %s", dict((k,v) for k,v in capabilities.items() if k.startswith("cipher")))
+            self._protocol.set_cipher_in(encryption, iv, key, key_salt, DEFAULT_KEYSIZE, iterations, padding)
         capabilities.update(self.hello_extra)
         return capabilities
 
@@ -839,6 +839,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         cipher_mode = caps.strget("cipher.mode", DEFAULT_MODE)
         cipher_iv = caps.strget("cipher.iv")
         key_salt = caps.strget("cipher.key_salt")
+        key_size = caps.intget("cipher.key_size", DEFAULT_KEYSIZE)
         iterations = caps.intget("cipher.key_stretch_iterations")
         padding = caps.strget("cipher.padding", DEFAULT_PADDING)
         #server may tell us what it supports,
@@ -859,7 +860,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p = self._protocol
         if not p:
             return False
-        p.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, key, key_salt, iterations, padding)
+        p.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, key, key_salt, key_size, iterations, padding)
         return True
 
 

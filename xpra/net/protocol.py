@@ -33,7 +33,7 @@ from xpra.net.packet_encoding import (
     InvalidPacketEncodingException,
     )
 from xpra.net.header import unpack_header, pack_header, FLAGS_CIPHER, FLAGS_NOHEADER, FLAGS_FLUSH, HEADER_SIZE
-from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING, DEFAULT_BLOCKSIZE
+from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
 from xpra.log import Logger
 
 log = Logger("network", "protocol")
@@ -229,9 +229,8 @@ class Protocol:
         self._get_packet_cb = get_packet_cb
 
 
-    def set_cipher_in(self, ciphername, iv, password, key_salt, iterations, padding):
-        cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, iterations))
-        key_size = DEFAULT_BLOCKSIZE
+    def set_cipher_in(self, ciphername, iv, password, key_salt, key_size, iterations, padding):
+        cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, key_size, iterations))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
                                                                   iv, password, key_salt, key_size, iterations)
         self.cipher_in_padding = padding
@@ -239,9 +238,8 @@ class Protocol:
             cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
 
-    def set_cipher_out(self, ciphername, iv, password, key_salt, iterations, padding):
-        cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, iterations, padding))
-        key_size = DEFAULT_BLOCKSIZE
+    def set_cipher_out(self, ciphername, iv, password, key_salt, key_size, iterations, padding):
+        cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, key_size, iterations, padding))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
                                                                     iv, password, key_salt, key_size, iterations)
         self.cipher_out_padding = padding
