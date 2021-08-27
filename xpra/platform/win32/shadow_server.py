@@ -391,7 +391,7 @@ class ShadowServer(GTKShadowServerBase):
         w, h = self.get_root_window_size()
         try:
             display = prettify_plug_name(self.root.get_screen().get_display().get_name())
-        except:
+        except Exception:
             display = ""
         self.do_print_screen_info(display, w, h)
 

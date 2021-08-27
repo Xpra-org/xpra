@@ -451,7 +451,7 @@ def fixup_window_style(self, *_args):
                 self.send_control_refresh(False)
             else:
                 self.send_control_refresh(True)
-    except:
+    except Exception:
         log.warn("failed to fixup window style", exc_info=True)
 
 def set_decorated(self, decorated):
@@ -538,8 +538,9 @@ def add_window_hooks(window):
         gdk_window = window.get_window()
         #win32 cannot use set_group by default:
         gdk_window.set_group = noop
-    except:
-        gdk_window = None
+    except Exception:
+        #can't get a handle from a None value...
+        return
     handle = get_window_handle(gdk_window)
     if not handle:
         log.warn("Warning: cannot add window hooks without a window handle!")
@@ -1058,7 +1059,7 @@ class ClientExtras:
                                 try:
                                     keycode = int(k)
                                     break
-                                except:
+                                except ValueError:
                                     pass
                             if keycode>0:
                                 break
