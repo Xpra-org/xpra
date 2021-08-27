@@ -138,7 +138,7 @@ def main(script_file, cmdline):
         return run_mode(script_file, cmdline, err, options, args, mode, defaults)
     except SystemExit as e:
         debug_exc()
-        return e.code
+        raise
     except InitExit as e:
         debug_exc()
         if str(e) and e.args and (e.args[0] or len(e.args)>1):
