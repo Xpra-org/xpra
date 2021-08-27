@@ -18,6 +18,7 @@ from xpra.os_util import (
     )
 from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
+from xpra.scripts.main import X11_SOCKET_DIR
 from xpra.scripts.config import get_defaults
 
 from xpra.log import Logger
@@ -279,7 +280,6 @@ class ProcessTestUtil(unittest.TestCase):
     def find_X11_display_numbers(cls):
         #use X11 sockets:
         X11_displays = set()
-        X11_SOCKET_DIR = "/tmp/.X11-unix"
         if POSIX and os.path.exists(X11_SOCKET_DIR):
             for x in os.listdir(X11_SOCKET_DIR):
                 if x.startswith("X"):
