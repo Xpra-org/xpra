@@ -443,7 +443,7 @@ class ServerBaseControlCommands(StubServerMixin):
             for x in args:
                 try:
                     wid = int(x)
-                except:
+                except ValueError:
                     raise ControlError("invalid window id: %s" % x) from None
                 if wid in self._id_to_window:
                     wids.append(wid)
@@ -613,9 +613,10 @@ class ServerBaseControlCommands(StubServerMixin):
                 keycode = int(keycode_str, 16)
             else:
                 keycode = int(keycode_str)
-            assert keycode>0 and keycode<=255
-        except:
-            raise ControlError("invalid keycode specified: '%s' (must be a number between 1 and 255)" % keycode_str) from None
+        except ValueError:
+            raise ControlError("invalid keycode specified: '%s' (not a number)" % keycode_str) from None
+        if keycode<=0 or keycode>=255:
+            raise ControlError("invalid keycode value: '%s' (must be between 1 and 255)" % keycode_str)
         if press is not True:
             if press in ("1", "press"):
                 press = True

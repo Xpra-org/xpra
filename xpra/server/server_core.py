@@ -736,7 +736,8 @@ class ServerCore:
                 user = pwd.getpwuid(uid)[0]
                 group = grp.getgrgid(gid)[0]
                 log.info(" uid=%i (%s), gid=%i (%s)", uid, user, gid, group)
-            except:
+            except (TypeError, KeyError):
+                log("failed to get user and group information", exc_info=True)
                 log.info(" uid=%i, gid=%i", uid, gid)
         log.info(" running with pid %s%s", os.getpid(), osinfo)
         self.idle_add(self.print_screen_info)

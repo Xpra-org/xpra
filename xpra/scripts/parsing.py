@@ -8,7 +8,6 @@
 
 import sys
 import os.path
-import optparse
 
 from xpra.version_util import full_version_str
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
@@ -1342,15 +1341,19 @@ def do_parse_cmdline(cmdline, defaults):
             raise InitException("invalid value for %s: '%s': %s" % (x, s, e)) from None
 
     def parse_window_size(v, attribute="max-size"):
+        def pws_fail():
+            raise InitException("invalid %s: %s" % (attribute, v))
         try:
             #split on "," or "x":
             pv = tuple(int(x.strip()) for x in v.replace(",", "x").split("x", 1))
-            assert len(pv)==2
-            w, h = pv
-            assert 0<w<32768 and 0<h<32768
-            return w, h
-        except:
-            raise InitException("invalid %s: %s" % (attribute, v)) from None
+        except ValueError:
+            pws_fail()
+        if len(pv)!=2:
+            pws_fail()
+        w, h = pv
+        if w<0 or h<0 or w>=32768 or h>=32768:
+            pws_fail()
+        return w, h
     if options.min_size:
         options.min_size = "%sx%s" % parse_window_size(options.min_size, "min-size")
     if options.max_size:

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import sys
+import hashlib
 import os.path
 
 from xpra.sound.pulseaudio.pulseaudio_common_util import get_pulse_server_x11_property, get_pulse_id_x11_property
@@ -86,7 +87,7 @@ def get_pactl_info_line(prefix):
         if err:
             for x in err.splitlines():
                 log.warn(" %s", bytestostr(x))
-        return    ""
+        return ""
     stat = ""
     for line in bytestostr(out).splitlines():
         if line.startswith(prefix):
@@ -103,12 +104,7 @@ def get_pactl_server():
 
 def get_pulse_cookie_hash():
     v = get_pactl_info_line("Cookie:")
-    try:
-        import hashlib
-        return strtobytes(hashlib.sha256(strtobytes(v)).hexdigest())
-    except:
-        pass
-    return b""
+    return strtobytes(hashlib.sha256(strtobytes(v)).hexdigest())
 
 def get_pulse_server(may_start_it=True):
     xp = get_pulse_server_x11_property()
