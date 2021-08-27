@@ -2096,7 +2096,6 @@ class ServerCore:
             self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
 
     def hello_oked(self, proto, _packet, c, _auth_caps):
-        proto.accept()
         generic_request = c.strget("request")
         def is_req(mode):
             return generic_request==mode or c.boolget("%s_request" % mode)

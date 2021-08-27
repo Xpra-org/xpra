@@ -962,7 +962,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return False
         p.set_compression_level(self.compression_level)
         p.enable_compressor_from_caps(caps)
-        p.accept()
         p.parse_remote_caps(caps)
         return True
 

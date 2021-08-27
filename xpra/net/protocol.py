@@ -259,9 +259,6 @@ class Protocol:
             self._write_format_thread,
             ) if x is not None)
 
-    def accept(self):
-        pass
-
     def parse_remote_caps(self, caps : typedict):
         for k,v in caps.dictget("aliases", {}).items():
             self.send_aliases[bytestostr(k)] = v
