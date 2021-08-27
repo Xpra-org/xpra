@@ -1084,19 +1084,20 @@ class WindowSource(WindowIconSource):
 
 
     def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
-        if self.batch_config.locked:
+        bc = self.batch_config
+        if bc.locked:
             return
         if self._mmap_size>0:
             #mmap is so fast that we don't need to use the batch delay:
-            self.batch_config.delay = self.batch_config.min_delay
+            bc.delay = bc.min_delay
             return
         #calculations take time (CPU), see if we can just skip it this time around:
         now = monotonic_time()
         lr = self.statistics.last_recalculate
         elapsed = now-lr
         statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %.1f seconds ago",
-                 self.wid, self.batch_config.delay, elapsed)
-        if self.batch_config.delay<=2*self.batch_config.start_delay and lr>0 and elapsed<60 and self.get_packets_backlog()==0:
+                 self.wid, bc.delay, elapsed)
+        if bc.delay<=2*bc.start_delay and lr>0 and elapsed<60 and self.get_packets_backlog()==0:
             #delay is low-ish, figure out if we should bother updating it
             lde = tuple(self.statistics.last_damage_events)
             if not lde:
@@ -1127,11 +1128,11 @@ class WindowSource(WindowIconSource):
                 statslog("calculate_batch_delay for wid=%i, %i bytes sent since the last update", self.wid, nbytes)
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus,
                               other_is_fullscreen, other_is_maximized,
-                              self.is_OR, self.soft_expired, self.batch_config,
+                              self.is_OR, self.soft_expired, bc,
                               self.global_statistics, self.statistics, self.bandwidth_limit, self.jitter)
         #update the normalized value:
         ww, wh = self.window_dimensions
-        self.batch_config.delay_per_megapixel = int(self.batch_config.delay*1000000//max(1, (ww*wh)))
+        bc.delay_per_megapixel = int(bc.delay*1000000//max(1, (ww*wh)))
         self.statistics.last_recalculate = now
         self.update_av_sync_frame_delay()
 
