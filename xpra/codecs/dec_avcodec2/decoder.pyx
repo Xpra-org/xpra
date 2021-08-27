@@ -518,9 +518,9 @@ FORMAT_TO_ENUM = {
             "ARGB"      : AV_PIX_FMT_ARGB,
             "BGRA"      : AV_PIX_FMT_BGRA,
             "GBRP"      : AV_PIX_FMT_GBRP,
+            "GBRP9LE"   : AV_PIX_FMT_GBRP9LE,
             "GBRP10"    : AV_PIX_FMT_GBRP10LE,
             "YUV444P10" : AV_PIX_FMT_YUV444P10LE,
-            "GBRP9LE"   : AV_PIX_FMT_GBRP9LE,
             }
 #for planar formats, this is the number of bytes per channel
 BYTES_PER_PIXEL = {
