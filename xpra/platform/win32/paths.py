@@ -7,6 +7,7 @@
 import os.path
 import sys
 import ctypes
+import tempfile
 import platform
 
 from xpra.os_util import get_util_logger
@@ -38,7 +39,6 @@ def _get_data_dir(roaming=True):
         appdata = os.environ.get("APPDATA" if roaming else "LOCALAPPDATA")
     if not appdata:
         #we need some kind of path..
-        import tempfile
         appdata = tempfile.gettempdir()
         assert appdata, "cannot find any usable directory for log files"
     if not os.path.exists(appdata):
@@ -65,7 +65,7 @@ def do_get_icon_dir():
 
 def do_get_default_log_dirs():
     dd = _get_data_dir()
-    temp = os.environ.get("TEMP", "C:\\TEMP\\")
+    temp = tempfile.gettempdir()
     if dd==temp:
         return [temp]
     return [dd, temp]
