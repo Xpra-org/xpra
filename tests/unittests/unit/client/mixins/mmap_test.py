@@ -21,11 +21,13 @@ class MixinsTest(ClientMixinTest):
 		class badfile:
 			def close(self):
 				raise Exception("test close failure handling")
+		import tempfile
+		tmp_dir = tempfile.gettempdir()
 		for mmap, ctx in {
 			"off" : DummyContextManager(),
 			"on"  : silence_info(log),
-			"/tmp/xpra-mmap-test-file-%i" % os.getpid() : silence_info(log),
-			"/tmp/xpra-fail-mmap-test-file-%i" % os.getpid() : silence_error(log),
+			tmp_dir+"/xpra-mmap-test-file-%i" % os.getpid() : silence_info(log),
+			tmp_dir+"/xpra-fail-mmap-test-file-%i" % os.getpid() : silence_error(log),
 			}.items():
 			opts = AdHocStruct()
 			opts.mmap = mmap
