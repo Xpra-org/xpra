@@ -427,12 +427,6 @@ def get_info():
 #keep track of the window object for each view
 VIEW_TO_WINDOW = weakref.WeakValueDictionary()
 
-def add_window_hooks(window):
-    pass
-
-def remove_window_hooks(window):
-    pass
-
 
 def get_CG_imagewrapper(rect=None):
     from xpra.codecs.image_wrapper import ImageWrapper
