@@ -118,7 +118,7 @@ class _ErrorManager:
         if error:
             raise XError(error)
 
-    def safeXexit(self):
+    def safe_x_exit(self):
         try:
             self.Xexit()
         except XError:
@@ -215,7 +215,7 @@ class XSwallowContext:
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
             log("xswallow.exit%s", (e_typ, e_val, trcbak), exc_info=True)
-        trap.safeXexit()
+        trap.safe_x_exit()
         #don't raise exceptions:
         return True
 
@@ -230,7 +230,7 @@ class XLogContext:
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
             log.error("XError: %s, %s", e_typ, e_val, exc_info=True)
-        trap.safeXexit()
+        trap.safe_x_exit()
         #don't raise exceptions:
         return True
 
