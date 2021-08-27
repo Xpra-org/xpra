@@ -264,11 +264,12 @@ class ClientWindowBase(ClientWidgetBase):
                 return title
             #perform metadata variable substitutions:
             #full of py3k unicode headaches that don't need to be
+            UNKNOWN_MACHINE = "<unknown machine>"
             default_values = {
                 "title"           : "<untitled window>",
-                "client-machine"  : "<unknown machine>",
+                "client-machine"  : UNKNOWN_MACHINE,
                 "windowid"        : str(self._id),
-                "server-machine"  : getattr(self._client, "_remote_hostname", None) or "<unknown machine>",
+                "server-machine"  : getattr(self._client, "_remote_hostname", None) or UNKNOWN_MACHINE,
                 "server-display"  : getattr(self._client, "_remote_display", None) or "<unknown display>",
                 }
             def getvar(var):
@@ -293,11 +294,10 @@ class ClientWindowBase(ClientWidgetBase):
                         if value not in (
                             "localhost",
                             "localhost.localdomain",
-                            "<unknown machine>",
                             "",
                             None):
                             return value
-                    return "<unknown machine>"
+                    return UNKNOWN_MACHINE
                 value = metadata.get(var) or self._metadata.get(var)
                 if value is None:
                     return default_values.get(var, "<unknown %s>" % var)
