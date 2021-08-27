@@ -164,9 +164,9 @@ class WindowClient(StubClientMixin):
             if v:
                 try:
                     pv = tuple(int(x.strip()) for x in v.split("x", 1))
-                    assert len(pv)==2
-                    return pv
-                except:
+                    if len(pv)==2:
+                        return pv
+                except ValueError:
                     #the main script does some checking, but we could be called from a config file launch
                     log.warn("Warning: invalid window %s specified: %s", attribute, v)
             return None
@@ -951,7 +951,7 @@ class WindowClient(StubClientMixin):
             ww, wh = new_size_fn(ww, wh)
         try:
             bw, bh = window._backing.size
-        except:
+        except (AttributeError, ValueError, TypeError):
             bw, bh = ww, wh
         client_properties = window._client_properties
         resize_counter = window._resize_counter
