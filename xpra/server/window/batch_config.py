@@ -61,7 +61,7 @@ class DamageBatchConfig:
     __slots__ = (
         "wid", "always", "max_events", "max_pixels", "time_unit",
         "min_delay", "max_delay", "timeout_delay", "expire_delay",
-        "delay", "delay_per_megapixel",
+        "start_delay", "delay", "delay_per_megapixel",
         "saved", "locked",
         "last_event", "last_delays", "last_delay", "last_actual_delays", "last_actual_delay",
         "last_updated", "factors",
@@ -77,6 +77,7 @@ class DamageBatchConfig:
         self.max_delay = MAX_DELAY
         self.timeout_delay = TIMEOUT_DELAY
         self.expire_delay = EXPIRE_DELAY
+        self.start_delay = START_DELAY
         self.delay = START_DELAY
         self.delay_per_megapixel = -1
         self.saved = START_DELAY
@@ -141,7 +142,7 @@ class DamageBatchConfig:
         c = DamageBatchConfig()
         for x in (
             "always", "max_events", "max_pixels", "time_unit",
-            "min_delay", "max_delay", "timeout_delay", "delay", "expire_delay",
+            "min_delay", "max_delay", "timeout_delay", "start_delay", "delay", "expire_delay",
             ):
             setattr(c, x, getattr(self, x))
         return c

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
-from xpra.server.window.batch_config import DamageBatchConfig
+from xpra.server.window import batch_config
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
@@ -50,8 +50,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.pointer_last_position = None
         self.pointer_poll_timer = None
         self.last_cursor_data = None
-        DamageBatchConfig.ALWAYS = True             #always batch
-        DamageBatchConfig.MIN_DELAY = 50            #never lower than 50ms
+        batch_config.ALWAYS = True             #always batch
+        batch_config.MIN_DELAY = 50            #never lower than 50ms
 
     def init(self, opts):
         if SHADOWSERVER_BASE_CLASS!=object:
