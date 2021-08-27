@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
+import tempfile
 import subprocess
 
 from unit.process_test_util import ProcessTestUtil
@@ -42,7 +43,7 @@ class ServerTestUtil(ProcessTestUtil):
     @classmethod
     def setUpClass(cls):
         ProcessTestUtil.setUpClass()
-        tmpdir = os.environ.get("TMPDIR", "/tmp")
+        tmpdir = tempfile.gettempdir()
         cls.dotxpra = DotXpra(tmpdir, [tmpdir])
         cls.default_xpra_args = ["--speaker=no", "--microphone=no"]
         if not WIN32:

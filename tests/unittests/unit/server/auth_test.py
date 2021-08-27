@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -24,7 +24,7 @@ from xpra.net.digest import get_digests, get_digest_module, gendigest
 
 
 def temp_filename(prefix=""):
-    return os.path.join(os.environ.get("TEMP", "/tmp"), "file-auth-%s-test-%s" % (prefix, monotonic_time()))
+    return os.path.join(tempfile.gettempdir(), "file-auth-%s-test-%s" % (prefix, monotonic_time()))
 
 
 class TempFileContext:
@@ -67,7 +67,7 @@ class TestAuth(unittest.TestCase):
         try:
             c = module.Authenticator
         except AttributeError:
-            raise Exception("module %s does not contain an Authenticator class!")
+            raise Exception("module %s does not contain an Authenticator class!") from None
         #some auth modules require this to function:
         if "connection" not in kwargs:
             kwargs["connection"] = "fake-connection-data"

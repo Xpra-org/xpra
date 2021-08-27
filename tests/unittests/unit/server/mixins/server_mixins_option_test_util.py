@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+import tempfile
 
 from xpra.util import envbool
 from xpra.os_util import pollwait, which, WIN32, OSX, POSIX
@@ -45,7 +46,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
         ServerTestUtil.setUpClass()
         cls.default_xpra_args = []
         if POSIX:
-            tmpdir = os.environ.get("TMPDIR", "/tmp")
+            tmpdir = tempfile.gettempdir()
             cls.default_xpra_args += [
                 "--socket-dirs=%s" % tmpdir,
                 ]

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import tempfile
 import unittest
 
 from xpra.util import AdHocStruct
@@ -24,7 +25,7 @@ class MMAPMixinTest(ServerMixinTest):
 
     def test_mmap_path(self):
         opts = AdHocStruct()
-        opts.mmap = "/tmp/mmap-test-file"
+        opts.mmap = tempfile.gettempdir()+"/mmap-test-file"
         self._test_mmap(opts)
 
 def main():

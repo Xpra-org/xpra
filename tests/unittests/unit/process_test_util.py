@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -352,7 +352,7 @@ class ProcessTestUtil(unittest.TestCase):
                 cmd += ["%i" % i]
             cmd += ["%ix%ix%s" % (w, h, depth_str)]
         cmd.append(display)
-        env["XPRA_LOG_DIR"] = "/tmp"
+        env["XPRA_LOG_DIR"] = tempfile.gettempdir()
         cmd_expanded = [osexpand(v) for v in cmd]
         cmdstr = " ".join("'%s'" % x for x in cmd_expanded)
         if SHOW_XORG_OUTPUT:

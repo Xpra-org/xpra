@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import shlex
 import signal
+import tempfile
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
 
@@ -25,6 +26,9 @@ from xpra.scripts.main import (
     parse_ssh_string, add_ssh_args, add_ssh_proxy_args, parse_proxy_attributes,
     connect_to,
     )
+
+def _get_test_socket_dir():
+    return tempfile.gettempdir()
 
 class TestMain(unittest.TestCase):
 
@@ -70,9 +74,10 @@ class TestMain(unittest.TestCase):
         t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : 2222}, "ssh://foo@bar:2222/")
 
     def test_parse_display_name(self):
+        socket_dir = _get_test_socket_dir()
         opts = AdHocStruct()
-        opts.socket_dirs = ["/tmp"]
-        opts.socket_dir = "/tmp"
+        opts.socket_dirs = [socket_dir]
+        opts.socket_dir = socket_dir
         opts.exit_ssh = False
         opts.ssh = "ssh -v "
         opts.remote_xpra = "run-xpra"
@@ -99,8 +104,8 @@ class TestMain(unittest.TestCase):
         if POSIX:
             e("ZZZZZZ")
             t("10", {"display_name" : "10", "local" : True, "type" : "unix-domain"})
-            t("/tmp/thesocket", {"display_name" : "socket:///tmp/thesocket"})
-            t("socket:/tmp/thesocket", {"display_name" : "socket:/tmp/thesocket"})
+            t(socket_dir+"/thesocket", {"display_name" : "socket://"+socket_dir+"/thesocket"})
+            t("socket:"+socket_dir+"/thesocket", {"display_name" : "socket:"+socket_dir+"/thesocket"})
         e("tcp://host:NOTANUMBER/")
         e("tcp://host:0/")
         e("tcp://host:65536/")
@@ -131,9 +136,10 @@ class TestMain(unittest.TestCase):
 
 
     def test_find_session_by_name(self):
+        socket_dir = _get_test_socket_dir()
         opts = AdHocStruct()
-        opts.socket_dirs = ["/tmp"]
-        opts.socket_dir = "/tmp"
+        opts.socket_dirs = [socket_dir]
+        opts.socket_dir = socket_dir
         assert find_session_by_name(opts, "not-a-valid-session") is None
 
 
@@ -159,8 +165,9 @@ class TestMain(unittest.TestCase):
         targs(["-pw", "password", "-l", "username", "-P", "2222", "-T", "host"],
               "username", "password", "host", 2222, None, is_putty=True)
         if not WIN32:
-            targs(["-l", "username", "-p", "2222", "-T", "host", "-i", "/tmp/key"],
-                  "username", "password", "host", 2222, "/tmp/key")
+            keyfile = os.path.expanduser("~/key")
+            targs(["-l", "username", "-p", "2222", "-T", "host", "-i", keyfile],
+                  "username", "password", "host", 2222, keyfile)
         #proxy:
         def pargs(e, n, *args, **kwargs):
             r = add_ssh_proxy_args(*args, **kwargs)[:n]
@@ -243,8 +250,8 @@ class TestMain(unittest.TestCase):
             proc = Popen(cmd, **kwargs)
             pollwait(proc, wait)
             return proc
-        except Exception:
-            raise Exception("failed on %s" % (cmd,))
+        except Exception as e:
+            raise Exception("failed on %s" % (cmd,)) from e
 
     def test_nongui_subcommands(self):
         for args in (
