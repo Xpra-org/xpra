@@ -725,6 +725,13 @@ class SessionOptions(Gtk.Window):
         for k,v in kwargs.items():
             setattr(self, "%s_%s" % (fn, k), v)
 
+    def get_widget(self, fn):
+        return getattr(self, "%s_widget" % fn)
+
+    def get_widget_options(self, fn):
+        return getattr(self, "%s_options" % fn)
+
+
     def bool_cb(self, table, label, option_name, tooltip_text=None, link=None):
         attach_label(table, label, tooltip_text, link)
         fn = option_name.replace("-", "_")
@@ -834,8 +841,7 @@ class SessionOptions(Gtk.Window):
         elif widget_type=="combo":
             values = self.valuesfromcombo(option_name)
         elif widget_type=="scale":
-            widget = getattr(self, "%s_widget" % fn)
-            values = (int(widget.get_value()), )
+            values = self.valuesfromscale(option_name)
         else:
             log.warn("unknown widget type '%s'", widget_type)
         if len(values)!=1 or values[0]!=UNSET:
@@ -851,14 +857,14 @@ class SessionOptions(Gtk.Window):
 
     def valuesfromswitch(self, option_name):
         fn = option_name.replace("-", "_")
-        widget = getattr(self, "%s_widget" % fn)
+        widget = self.get_widget(fn)
         values = getattr(self, "%s_values" % fn)
         value = values[int(widget.get_active())]
         return (value, )
 
     def valuesfromradio(self, option_name):
         fn = option_name.replace("-", "_")
-        options = getattr(self, "%s_options" % fn)
+        options = self.get_widget_options(fn)
         widget_base_name = "%s_widget" % fn
         for label, match in options.items():
             btn = getattr(self, "%s_%s" % (widget_base_name, label))
@@ -868,13 +874,18 @@ class SessionOptions(Gtk.Window):
 
     def valuesfromcombo(self, option_name):
         fn = option_name.replace("-", "_")
-        widget = getattr(self, "%s_widget" % fn)
-        options = getattr(self, "%s_options" % fn)
+        widget = self.get_widget(fn)
+        options = self.get_widget_options(fn)
         value = widget.get_active_text()
         for k,v in options.items():
             if str(v)==value:
                 return (k, )
         return (UNSET, )
+
+    def valuesfromscale(self, option_name):
+        fn = option_name.replace("-", "_")
+        widget = self.get_widget(fn)
+        return (int(widget.get_value()), )
 
     def table(self):
         tb = TableBuilder()
