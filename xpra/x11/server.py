@@ -16,7 +16,7 @@ from xpra.version_util import XPRA_VERSION
 from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
-from xpra.server import server_features
+from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window, get_pixbuf_from_data
 from xpra.x11.common import Unmanageable
@@ -271,7 +271,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 log("Error: cannot create our window manager", exc_info=True)
                 display = os.environ.get("DISPLAY", "")
                 #make sure we don't kill the vfb since we don't own it:
-                from xpra.server import EXITING_CODE
                 self._upgrading = EXITING_CODE
                 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
                 raise InitException("another window manager is active on display '%s'" % display) from None
