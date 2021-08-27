@@ -187,7 +187,7 @@ jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
-webcam_ENABLED          = DEFAULT and not OSX and (not WIN32 or BITS==64)
+webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
@@ -1424,7 +1424,7 @@ if WIN32:
                     #this is a mac osx thing:
                     "ctypes.macholib")
 
-    if webcam_ENABLED and False:
+    if webcam_ENABLED:
         external_includes.append("cv2")
     else:
         remove_packages("cv2")
