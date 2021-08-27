@@ -25,7 +25,7 @@ from xpra.net.crypto import (
     crypto_backend_init, get_iterations, get_iv, choose_padding,
     ENCRYPTION_CIPHERS, MODES, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
-    DEFAULT_MODE, DEFAULT_KEYSIZE,
+    DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, KEY_HASHES,
     )
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
@@ -456,6 +456,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "iv"                    : iv,
                 "key_salt"              : key_salt,
                 "key_size"              : DEFAULT_KEYSIZE,
+                "key_hash"              : DEFAULT_KEY_HASH,
                 "key_stretch_iterations": iterations,
                 "padding"               : padding,
                 "padding.options"       : PADDING_OPTIONS,
@@ -463,7 +464,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             cryptolog("cipher_caps=%s", cipher_caps)
             up("cipher", cipher_caps)
             key = self.get_encryption_key()
-            self._protocol.set_cipher_in(encryption, iv, key, key_salt, DEFAULT_KEYSIZE, iterations, padding)
+            self._protocol.set_cipher_in(encryption, iv, key,
+                                         key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, iterations, padding)
         capabilities.update(self.hello_extra)
         return capabilities
 
@@ -839,28 +841,32 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         cipher_mode = caps.strget("cipher.mode", DEFAULT_MODE)
         cipher_iv = caps.strget("cipher.iv")
         key_salt = caps.strget("cipher.key_salt")
+        key_hash = caps.strget("cipher.key_hash", DEFAULT_KEY_HASH)
         key_size = caps.intget("cipher.key_size", DEFAULT_KEYSIZE)
         iterations = caps.intget("cipher.key_stretch_iterations")
         padding = caps.strget("cipher.padding", DEFAULT_PADDING)
         #server may tell us what it supports,
         #either from hello response or from challenge packet:
         self.server_padding_options = caps.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
+        def fail(msg):
+            self.warn_and_quit(EXIT_ENCRYPTION, msg)
+            return False
         if not cipher or not cipher_iv:
-            self.warn_and_quit(EXIT_ENCRYPTION,
-                               "the server does not use or support encryption/password, cannot continue")
-            return False
+            return fail("the server does not use or support encryption/password, cannot continue")
         if cipher not in ENCRYPTION_CIPHERS:
-            self.warn_and_quit(EXIT_ENCRYPTION,
-                               "unsupported server cipher: %s, allowed ciphers: %s" % (cipher, csv(ENCRYPTION_CIPHERS)))
-            return False
+            return fail("unsupported server cipher: %s, allowed ciphers: %s" % (
+                cipher, csv(ENCRYPTION_CIPHERS)))
         if padding not in ALL_PADDING_OPTIONS:
-            self.warn_and_quit(EXIT_ENCRYPTION,
-                               "unsupported server cipher padding: %s, allowed ciphers: %s" % (padding, csv(ALL_PADDING_OPTIONS)))
-            return False
+            return fail("unsupported server cipher padding: %s, allowed ciphers: %s" % (
+                padding, csv(ALL_PADDING_OPTIONS)))
+        if key_hash not in KEY_HASHES:
+            return fail("unsupported key hashing: %s, allowed algorithms: %s" % (
+                key_hash, csv(KEY_HASHES)))
         p = self._protocol
         if not p:
             return False
-        p.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, key, key_salt, key_size, iterations, padding)
+        p.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv, key,
+                         key_salt, key_hash, key_size, iterations, padding)
         return True
 
 

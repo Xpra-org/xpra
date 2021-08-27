@@ -20,6 +20,7 @@ DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
 
 ENCRYPTION_CIPHERS = []
 MODES = ("CBC", "GCM", "CFB", "CTR")
+KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
 backend = None
 
 
@@ -75,11 +76,14 @@ def get_info():
                 }
             }
 
-def get_key(password, key_salt, block_size, iterations):
+def get_key(password, key_salt, key_hash, block_size, iterations):
     global backend
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
     from cryptography.hazmat.primitives import hashes
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=block_size,
+    assert key_hash.upper() in KEY_HASHES, "invalid key hash %s, should be one of %s" % (key_hash.upper(), KEY_HASHES)
+    algorithm = getattr(hashes, key_hash.upper(), None)
+    assert algorithm, "%s not found in cryptography hashes" % key_hash.upper()
+    kdf = PBKDF2HMAC(algorithm=algorithm, length=block_size,
                      salt=strtobytes(key_salt), iterations=iterations, backend=backend)
     key = kdf.derive(strtobytes(password))
     return key

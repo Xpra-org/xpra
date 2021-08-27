@@ -21,7 +21,9 @@ DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
 DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
 DEFAULT_ITERATIONS = envint("XPRA_CRYPTO_DEFAULT_ITERATIONS", 1000)
 DEFAULT_KEYSIZE = envint("XPRA_CRYPTO_KEYSIZE", 32)
+#these were made configurable in xpra 4.3:
 DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
+DEFAULT_KEY_HASH = os.environ.get("XPRA_CRYPTO_KEY_HASH", "SHA1")
 
 #other option "PKCS#7", "legacy"
 PADDING_LEGACY = "legacy"
@@ -44,6 +46,7 @@ PADDING_OPTIONS = get_padding_options()
 
 ENCRYPTION_CIPHERS = []
 MODES = []
+KEY_HASHES = []
 backend = False
 def crypto_backend_init():
     global backend, ENCRYPTION_CIPHERS
@@ -56,6 +59,7 @@ def crypto_backend_init():
         validate_backend(pycryptography_backend)
         ENCRYPTION_CIPHERS[:] = pycryptography_backend.ENCRYPTION_CIPHERS[:]
         MODES[:] = list(pycryptography_backend.MODES)
+        KEY_HASHES[:] = list(pycryptography_backend.KEY_HASHES)
         backend = pycryptography_backend
         return
     except ImportError:
@@ -74,7 +78,10 @@ def validate_backend(try_backend):
     iterations = DEFAULT_ITERATIONS
     for mode in try_backend.MODES:
         log("testing AES-%s", mode)
-        key = try_backend.get_key(password, key_salt, DEFAULT_KEYSIZE, iterations)
+        key = None
+        for key_hash in try_backend.KEY_HASHES:
+            key = try_backend.get_key(password, key_salt, key_hash, DEFAULT_KEYSIZE, iterations)
+            assert key
         block_size = try_backend.get_block_size(mode)
         log(" key=%s, block_size=%s", hexstr(key), block_size)
         assert key is not None, "backend %s failed to generate a key" % try_backend
@@ -129,14 +136,17 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
     iv = get_iv()
     key_salt = get_salt()
     key_size = DEFAULT_KEYSIZE
+    key_hash = DEFAULT_KEY_HASH
     iterations = get_iterations()
     padding = choose_padding(padding_options)
-    proto.set_cipher_in(cipher+"-"+cipher_mode, iv, encryption_key, key_salt, key_size, iterations, padding)
+    proto.set_cipher_in(cipher+"-"+cipher_mode, iv, encryption_key,
+                        key_salt, key_hash, key_size, iterations, padding)
     return {
          "cipher"                       : cipher,
          "cipher.mode"                  : cipher_mode,
          "cipher.iv"                    : iv,
          "cipher.key_salt"              : key_salt,
+         "cipher.key_hash"              : key_hash,
          "cipher.key_size"              : key_size,
          "cipher.key_stretch_iterations": iterations,
          "cipher.padding"               : padding,
@@ -154,8 +164,8 @@ def get_crypto_caps() -> dict:
     return caps
 
 
-def get_encryptor(ciphername, iv, password, key_salt, key_size, iterations):
-    log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
+def get_encryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_size : int, iterations : int):
+    log("get_encryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
     assert key_size>16
@@ -163,11 +173,11 @@ def get_encryptor(ciphername, iv, password, key_salt, key_size, iterations):
     assert ciphername.startswith("AES")
     assert password and iv
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
-    key = backend.get_key(password, key_salt, key_size, iterations)
+    key = backend.get_key(password, key_salt, key_hash, key_size, iterations)
     return backend.get_encryptor(key, iv, mode), backend.get_block_size(mode)
 
-def get_decryptor(ciphername, iv, password, key_salt, key_size, iterations):
-    log("get_decryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
+def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_size : int, iterations : int):
+    log("get_decryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
     assert key_size>16
@@ -175,7 +185,7 @@ def get_decryptor(ciphername, iv, password, key_salt, key_size, iterations):
     assert ciphername.startswith("AES")
     assert password and iv
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
-    key = backend.get_key(password, key_salt, key_size, iterations)
+    key = backend.get_key(password, key_salt, key_hash, key_size, iterations)
     return backend.get_decryptor(key, iv, mode), backend.get_block_size(mode)
 
 
