@@ -129,9 +129,10 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     def choose_socket_path(self) -> str:
         assert self.unix_socket_paths
-        for x in self.unix_socket_paths:
-            if x.startswith("/tmp") or x.startswith("/var") or x.startswith("/run"):
-                return x
+        for d in ("run", "var", "tmp"):
+            for x in self.unix_socket_paths:
+                if x.startswith("/"+d):
+                    return x
         return self.unix_socket_paths[0]
 
 
