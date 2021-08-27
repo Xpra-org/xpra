@@ -21,7 +21,7 @@ from unit.test_util import silence_warn
 
 #sample data to encode:
 hello = ["hello", {
-                   "__prerelease_version"   : "0.0.7.26",
+                   "version"   : "4.2.2",
                    "desktop_size"           : [480,800],
                    "jpeg"                   : 4,
                    "challenge"              : "ba59e4110119264f4a6eaf3adc075ea2c5408550",
