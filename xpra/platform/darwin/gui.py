@@ -419,7 +419,7 @@ def get_info():
     i = get_info_base()
     try:
         i["displays"] = get_displays_info()
-    except:
+    except Exception:
         log.error("Error: OSX get_display_info failed", exc_info=True)
     return i
 
@@ -617,7 +617,7 @@ class Delegate(NSObject):
                 self.delegate_cb("wake_callback")
             else:
                 self.delegate_cb("sleep_callback")
-        except:
+        except Exception:
             workspacelog.error("Error querying workspace info", exc_info=True)
 
     #def application_openFile_(self, application, fileName):
@@ -639,7 +639,7 @@ class Delegate(NSObject):
         if callback:
             try:
                 callback()
-            except:
+            except Exception:
                 log.error("Error in %s callback %s", name, callback, exc_info=True)
 
 
