@@ -278,7 +278,7 @@ def get_target_quality(window_dimensions, batch,
             N = 3.0-min_speed/50.0
             #if the min-speed is high, reduce tolerance:
             tolerance = 10-int(min_speed//10)
-            ref_delay = max(0, tolerance+N*(batch.START_DELAY*10 + batch.min_delay*recs) // (recs+10))
+            ref_delay = max(0, tolerance+N*(batch.start_delay*10 + batch.min_delay*recs) // (recs+10))
             batch_q = (N * ref_delay) / max(1, batch.min_delay, batch.delay)
 
     #latency limit factor:
