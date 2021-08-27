@@ -36,6 +36,7 @@ from xpra.platform.win32.constants import (
     PIPE_UNLIMITED_INSTANCES, PIPE_WAIT, PIPE_TYPE_BYTE, NMPWAIT_USE_DEFAULT_WAIT,
     WAIT_TIMEOUT,
     ACL_REVISION,
+    SECURITY_DESCRIPTOR_REVISION,
     )
 log = Logger("network", "named-pipe", "win32")
 
@@ -220,7 +221,7 @@ class NamedPipeListener(Thread):
         SD = SECURITY_DESCRIPTOR()
         self.security_descriptor = SD
         log("SECURITY_DESCRIPTOR=%s", SD)
-        if not InitializeSecurityDescriptor(byref(SD), SECURITY_DESCRIPTOR.REVISION):
+        if not InitializeSecurityDescriptor(byref(SD), SECURITY_DESCRIPTOR_REVISION):
             raise WindowsError()    #@UndefinedVariable
         log("InitializeSecurityDescriptor: %s", SD)
         if not SetSecurityDescriptorOwner(byref(SD), user.SID, False):
