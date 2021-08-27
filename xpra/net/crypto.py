@@ -97,12 +97,12 @@ def validate_backend(try_backend):
         else:
             test_messages.append(message[:block_size])
         for m in test_messages:
-            ev = enc.encrypt(message)
+            ev = enc.encrypt(m)
             evs = hexstr(ev)
-            log(" encrypted(%s)=%s", message, evs)
+            log(" encrypted(%s)=%s", m, evs)
             dv = dec.decrypt(ev)
             log(" decrypted(%s)=%s", evs, dv)
-            assert dv==message, "expected %r but got %r" % (message, dv)
+            assert dv==m, "expected %r but got %r" % (m, dv)
             log(" test passed")
 
 
