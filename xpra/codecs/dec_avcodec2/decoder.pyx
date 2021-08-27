@@ -113,6 +113,7 @@ FORMAT_TO_ENUM = {
             "ARGB"      : AV_PIX_FMT_ARGB,
             "BGRA"      : AV_PIX_FMT_BGRA,
             "GBRP"      : AV_PIX_FMT_GBRP,
+            "GBRP9LE"   : AV_PIX_FMT_GBRP9LE,
             }
 #for planar formats, this is the number of bytes per channel
 BYTES_PER_PIXEL = {
@@ -125,6 +126,7 @@ BYTES_PER_PIXEL = {
     AV_PIX_FMT_ARGB     : 4,
     AV_PIX_FMT_BGRA     : 4,
     AV_PIX_FMT_GBRP     : 1,
+    AV_PIX_FMT_GBRP9LE  : 2,
     }
 
 COLORSPACES = tuple(FORMAT_TO_ENUM.keys())
