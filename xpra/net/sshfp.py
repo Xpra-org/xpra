@@ -1,8 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import hashlib
 
 from dns import flags
@@ -24,6 +25,9 @@ _hash_funcs = {
     '1' : hashlib.sha1,
     '2' : hashlib.sha256,
 }
+if os.environ.get("XPRA_SSHFP_NOSHA1"):
+    _hash_funcs.pop('1')
+
 
 def check_host_key(hostname, key):
     try:
