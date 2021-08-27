@@ -129,7 +129,8 @@ def do_get_default_log_dirs():
             dirs.append(os.path.join(x, "Logs", "Xpra"))
     except Exception:
         dirs.append("~/Library/Logs/Xpra")
-    dirs.append("/tmp")
+    import tempfile
+    dirs.append(tempfile.gettempdir())
     return dirs
 
 def do_get_socket_dirs():

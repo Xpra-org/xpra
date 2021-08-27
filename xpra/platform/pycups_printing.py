@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,7 @@
 import sys
 import os
 import time
+import tempfile
 from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
@@ -23,7 +24,7 @@ SIMULATE_PRINT_FAILURE = envint("XPRA_SIMULATE_PRINT_FAILURE")
 
 RAW_MODE = envbool("XPRA_PRINTER_RAW", False)
 GENERIC = envbool("XPRA_PRINTERS_GENERIC", True)
-FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
+FORWARDER_TMPDIR = os.environ.get("XPRA_FORWARDER_TMPDIR", tempfile.gettempdir())
 #the mimetype to use for clients that do not specify one
 #(older clients just assumed postscript)
 DEFAULT_MIMETYPE = os.environ.get("XPRA_PRINTER_DEFAULT_MIMETYPE", "application/postscript")

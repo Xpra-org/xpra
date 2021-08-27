@@ -7,6 +7,7 @@
 import os.path
 import sys
 import site
+import tempfile
 
 
 def do_get_desktop_background_paths():
@@ -68,7 +69,7 @@ def do_get_libexec_dir():
     return "/usr/lib"
 
 def do_get_mmap_dir():
-    return _get_xpra_runtime_dir() or os.getenv("TMPDIR", "/tmp")
+    return _get_xpra_runtime_dir() or tempfile.gettempdir()
 
 def do_get_xpra_tmp_dir():
     xrd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
@@ -163,7 +164,7 @@ def do_get_default_log_dirs():
     v = _get_xpra_runtime_dir()
     if v:
         log_dirs.append(v)
-    log_dirs.append("/tmp")
+    log_dirs.append(tempfile.gettempdir())
     return log_dirs
 
 def do_get_sound_command():

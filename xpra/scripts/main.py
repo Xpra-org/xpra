@@ -3372,7 +3372,7 @@ def run_clean_displays(args):
     for display in sorted_nicely(dead_displays):
         #find the X11 server PID
         inodes = []
-        sockpath = "/tmp/.X11-unix/X%s" % (display.lstrip(":"))
+        sockpath = X11_SOCKET_DIR+"/X%s" % (display.lstrip(":"))
         with open("/proc/net/unix", "r") as f:
             for line in f:
                 parts = line.rstrip("\n\r").split(" ")

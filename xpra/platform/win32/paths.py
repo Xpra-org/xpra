@@ -38,7 +38,8 @@ def _get_data_dir(roaming=True):
         appdata = os.environ.get("APPDATA" if roaming else "LOCALAPPDATA")
     if not appdata:
         #we need some kind of path..
-        appdata = os.environ.get("TEMP", "C:\\TEMP\\")
+        import tempfile
+        appdata = tempfile.gettempdir()
         assert appdata, "cannot find any usable directory for log files"
     if not os.path.exists(appdata):
         os.mkdir(appdata)
