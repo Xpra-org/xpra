@@ -45,7 +45,7 @@ def sound_option(v):
     return bool_or(vl, "disabled", "on", "off", "disabled")
 
 
-def info(msg):
+def _stderr_write(msg):
     #use this function to print warnings
     #we must write to stderr to prevent
     #the output from interfering when running as proxy over ssh
@@ -53,36 +53,24 @@ def info(msg):
     try:
         sys.stderr.write(msg+"\n")
         sys.stderr.flush()
+        return True
     except OSError:
-        if POSIX:
-            import syslog
-            syslog.syslog(syslog.LOG_INFO, msg)
+        return False
+
+def info(msg):
+    if not _stderr_write(msg) and POSIX:
+        import syslog
+        syslog.syslog(syslog.LOG_INFO, msg)
 
 def warn(msg):
-    #use this function to print warnings
-    #we must write to stderr to prevent
-    #the output from interfering when running as proxy over ssh
-    #(which uses stdin / stdout as communication channel)
-    try:
-        sys.stderr.write(msg+"\n")
-        sys.stderr.flush()
-    except OSError:
-        if POSIX:
-            import syslog
-            syslog.syslog(syslog.LOG_WARNING, msg)
+    if not _stderr_write(msg) and POSIX:
+        import syslog
+        syslog.syslog(syslog.LOG_WARNING, msg)
 
 def error(msg):
-    #use this function to print warnings
-    #we must write to stderr to prevent
-    #the output from interfering when running as proxy over ssh
-    #(which uses stdin / stdout as communication channel)
-    try:
-        sys.stderr.write(msg+"\n")
-        sys.stderr.flush()
-    except OSError:
-        if POSIX:
-            import syslog
-            syslog.syslog(syslog.LOG_ERR, msg)
+    if not _stderr_write(msg) and POSIX:
+        import syslog
+        syslog.syslog(syslog.LOG_ERR, msg)
 
 
 supports_proxy  = True
