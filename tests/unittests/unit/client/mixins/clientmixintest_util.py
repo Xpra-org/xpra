@@ -93,7 +93,7 @@ class ClientMixinTest(unittest.TestCase):
 		x.source_remove = self.glib.source_remove
 		x.init(opts)
 		conn = AdHocStruct()
-		conn.filename = "/tmp/fake"
+		conn.filename = "/fake/path/to/nowhere"
 		x.setup_connection(conn)
 		x.send = self.send
 		x.send_now = self.send
