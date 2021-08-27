@@ -52,14 +52,6 @@ def _get_xatom(str_or_int):
     with xsync:
         return X11WindowBindings().get_xatom(str_or_int)
 
-def _get_multiple(d):
-    uint_struct = struct.Struct(b"@L")
-    log("get_multiple struct size=%s, len(%s)=%s", uint_struct.size, d, len(d))
-    if len(d)!=uint_struct.size and False:
-        log.info("get_multiple value is not an atom: %s", d)
-        return  str(d)
-    return _get_atom(d)
-
 
 def set_xsettings(v):
     from xpra.x11.xsettings_prop import set_settings
@@ -104,12 +96,6 @@ PROP_TYPES.update({
                            set_xsettings,
                            get_xsettings,
                            None),
-    # For fetching the extra information on a MULTIPLE clipboard conversion
-    # request. The exciting thing about MULTIPLE is that it's not actually
-    # specified what 'type' one should use; you just fetch with
-    # AnyPropertyType and assume that what you get is a bunch of pairs of
-    # atoms.
-    "multiple-conversion": (str, 0, 32, unsupported, _get_multiple, None),
     })
 
 
