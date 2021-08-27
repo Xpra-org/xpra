@@ -344,9 +344,9 @@ class OSXMenuHelper(GTKTrayMenuBase):
     #these methods are called by the superclass
     #but we don't have a quality or speed menu, so override and ignore
     def set_qualitymenu(self, *args):
-        pass
+        pass    #no quality menu on MacOS
     def set_speedmenu(self, *args):
-        pass
+        pass    #no speed menu on MacOS
 
     def _get_keyboard(self):
         if not self.client or not self.client.keyboard_helper:
