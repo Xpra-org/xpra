@@ -53,12 +53,12 @@ if frozen:
             continue
         try:
             sys.path.remove(d)
-        except:
+        except ValueError:
             pass
         sys.path.insert(0, d)
         try:
             PATH.remove(d)
-        except:
+        except ValueError:
             pass
         PATH.insert(0, d)
     os.environ['GI_TYPELIB_PATH'] = os.path.join(libdir, "girepository-1.0")
@@ -82,7 +82,7 @@ def is_wine():
         import winreg   #@UnresolvedImport @Reimport
         hKey = winreg.OpenKey(win32con.HKEY_LOCAL_MACHINE, r"Software\\Wine")   #@UndefinedVariable
         return hKey is not None
-    except:
+    except Exception:
         #no wine key, assume not present and wait for input
         pass
     return False
@@ -95,7 +95,7 @@ def get_csidl_folder(csidl):
         SHGetFolderPath = shell32.SHGetFolderPathW
         SHGetFolderPath(0, csidl, None, 0, buf)
         return buf.value
-    except:
+    except Exception:
         return None
 
 def get_common_startmenu_dir():
@@ -117,7 +117,7 @@ def set_prgname(name):
     prg_name = name
     try:
         SetConsoleTitleA(name)
-    except:
+    except Exception:
         pass
 
 def not_a_console(handle):
@@ -286,12 +286,12 @@ def get_console_position(handle):
         cpos = csbi.dwCursorPosition
         #wait for input if this is a brand new console:
         return cpos.X and cpos.Y
-    except:
+    except Exception:
         e = sys.exc_info()[1]
         code = -1
         try:
             code = e.winerror
-        except:
+        except AttributeError:
             pass
         if code==errno.ENXIO:
             #ignore "no device" errors silently
@@ -301,7 +301,7 @@ def get_console_position(handle):
         else:
             try:
                 print("error accessing console %s: %s" % (errno.errorcode.get(e.errno, e.errno), e))
-            except:
+            except Exception:
                 print("error accessing console: %s" % e)
         return -1, -1
 
