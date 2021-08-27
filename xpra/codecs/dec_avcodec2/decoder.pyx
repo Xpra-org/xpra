@@ -530,6 +530,7 @@ BYTES_PER_PIXEL = {
     AV_PIX_FMT_ARGB     : 4,
     AV_PIX_FMT_BGRA     : 4,
     AV_PIX_FMT_GBRP     : 1,
+    AV_PIX_FMT_GBRP9LE  : 2,
     AV_PIX_FMT_GBRP10LE : 6,
     AV_PIX_FMT_YUV444P10LE  : 2,
     }
