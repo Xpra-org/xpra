@@ -74,7 +74,7 @@ LAUNCHER_DEFAULTS = {
                         "port"              : -1,
                         "username"          : get_username(),
                         "password"          : "",
-                        "mode"              : "tcp",    #tcp,ssh,..
+                        "mode"              : MODE_TCP,    #tcp,ssh,..
                         "autoconnect"       : False,
                         "ssh_port"          : 22,
                         "proxy_host"        : "",
@@ -88,6 +88,14 @@ LAUNCHER_DEFAULTS = {
 black   = color_parse("black")
 red     = color_parse("red")
 white   = color_parse("white")
+
+
+MODE_NESTED_SSH = "ssh -> ssh"
+MODE_SSH = "ssh"
+MODE_TCP = "tcp"
+MODE_SSL = "ssl"
+MODE_WS = "ws"
+MODE_WSS = "wss"
 
 
 def get_active_item_index(optionmenu):
@@ -142,12 +150,12 @@ class ApplicationWindow:
         self.is_paramiko = ssh_cmd.startswith("paramiko")
 
     def get_connection_modes(self):
-        modes = ["ssh"]
-        modes.append("ssh -> ssh")
+        modes = [MODE_SSH]
+        modes.append(MODE_NESTED_SSH)
         try:
             import ssl
             assert ssl
-            modes.append("ssl")
+            modes.append(MODE_SSL)
         except ImportError:
             pass
         #assume crypto is available
@@ -157,9 +165,9 @@ class ApplicationWindow:
                 modes.append("tcp + aes-%s" % mode.lower())
         except ImportError:
             pass
-        modes.append("tcp")
-        modes.append("ws")
-        modes.append("wss")
+        modes.append(MODE_TCP)
+        modes.append(MODE_WS)
+        modes.append(MODE_WSS)
         return modes
 
     def get_launcher_validation(self):
@@ -481,8 +489,8 @@ class ApplicationWindow:
 
     def validate(self, *args):
         mode = self.mode_combo.get_active_text().lower()
-        ssh = mode=="ssh"
-        sshtossh = mode=="ssh -> ssh"
+        ssh = mode==MODE_SSH
+        sshtossh = mode==MODE_NESTED_SSH
         errs = []
         host = self.host_entry.get_text()
         errs.append((self.host_entry, not bool(host), "specify the host"))
@@ -560,8 +568,8 @@ class ApplicationWindow:
 
     def mode_changed(self, *_args):
         mode = self.mode_combo.get_active_text().lower()
-        ssh = mode=="ssh"
-        sshtossh = mode=="ssh -> ssh"
+        ssh = mode==MODE_SSH
+        sshtossh = mode==MODE_NESTED_SSH
         if ssh or sshtossh:
             self.port_entry.set_tooltip_text("Display number (optional)")
             self.port_entry.set_text("")
@@ -629,7 +637,7 @@ class ApplicationWindow:
                 self.check_boxes_hbox.hide()
                 self.proxy_password_hbox.hide()
         self.validate()
-        if mode in ("ssl", "wss") or (mode=="ssh" and not WIN32):
+        if mode in (MODE_SSL, MODE_WSS) or (mode==MODE_SSH and not WIN32):
             self.nostrict_host_check.show()
         else:
             self.nostrict_host_check.hide()
@@ -753,7 +761,7 @@ class ApplicationWindow:
             "username"  : username,
             }
         self.config.sharing = self.sharing.get_active()
-        if self.config.mode=="ssh" or self.config.mode=="ssh -> ssh":
+        if self.config.mode==MODE_SSH or self.config.mode==MODE_NESTED_SSH:
             if self.config.socket_dir:
                 params["socket_dir"] = self.config.socket_dir
             params["remote_xpra"] = self.config.remote_xpra
@@ -791,7 +799,7 @@ class ApplicationWindow:
                 params["username"] = username
             if self.nostrict_host_check.get_active():
                 full_ssh += ["-o", "StrictHostKeyChecking=no"]
-            if params["type"] == "ssh -> ssh":
+            if params["type"] == MODE_NESTED_SSH:
                 params["type"] = "ssh"
                 params["proxy_host"] = self.config.proxy_host
                 params["proxy_port"] = self.config.proxy_port
@@ -810,12 +818,12 @@ class ApplicationWindow:
             params["display"] = ":%s" % self.config.port
             params["display_name"] = "unix-domain:%s" % self.config.port
         else:
-            assert self.config.mode in ("tcp", "ssl", "ws", "wss"), "invalid / unsupported mode %s" % self.config.mode
+            assert self.config.mode in (MODE_TCP, MODE_SSL, MODE_WS, MODE_WSS), "invalid / unsupported mode %s" % self.config.mode
             params["host"] = self.config.host
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = "%s:%s:%s" % (self.config.mode, self.config.host, self.config.port)
-            if self.config.mode in ("ssl", "wss") and self.nostrict_host_check.get_active():
+            if self.config.mode in (MODE_SSL, MODE_WSS) and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
         #print("connect_to(%s)" % params)
@@ -1010,11 +1018,11 @@ class ApplicationWindow:
 
         self.config.encoding = self.get_selected_encoding() or self.config.encoding
         mode_enc = self.mode_combo.get_active_text().lower()
-        if mode_enc.startswith("tcp"):
-            self.config.mode = "tcp"
+        if mode_enc.startswith(MODE_TCP):
+            self.config.mode = MODE_TCP
             if mode_enc.find("aes")>0:
                 self.config.encryption = "AES-"+mode_enc.split("aes-")[1].upper()
-        elif mode_enc in ("ssl", "ssh", "ws", "wss", "ssh -> ssh"):
+        elif mode_enc in (MODE_SSL, MODE_SSH, MODE_WS, MODE_WSS, MODE_NESTED_SSH):
             self.config.mode = mode_enc
             self.config.encryption = ""
         log("update_options_from_gui() %s",
@@ -1040,7 +1048,7 @@ class ApplicationWindow:
                 pass
             return str(default_port)
         dport = DEFAULT_PORT
-        if mode in ("ssh", "ssh -> ssh"):
+        if mode in (MODE_SSH, MODE_NESTED_SSH):
             #not required, so don't specify one
             dport = ""
         self.port_entry.set_text(get_port(self.config.port, dport))
@@ -1081,7 +1089,7 @@ class ApplicationWindow:
         from xpra.scripts.parsing import parse_URL
         address, props = parse_URL(url)
         pa = address.split("://")
-        if pa[0] in ("tcp", "ssh", "ssl", "ws", "wss") and len(pa)>=2:
+        if pa[0] in (MODE_TCP, MODE_SSH, MODE_SSL, MODE_WS, MODE_WSS) and len(pa)>=2:
             props["mode"] = pa[0]
             host = pa[1]
             if host.find("@")>0:
