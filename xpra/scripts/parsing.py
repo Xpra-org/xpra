@@ -8,6 +8,7 @@
 
 import sys
 import os.path
+import optparse
 
 from xpra.version_util import full_version_str
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
