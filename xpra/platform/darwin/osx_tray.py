@@ -39,10 +39,14 @@ class OSXTray(TrayBase):
         return None
 
     def show(self):
-        pass
+        """
+        This cannot be implemented on MacOS,
+        as the dock icon is always shown
+        """
 
     def hide(self):
-        pass
+        """ Unfortunately, the dock icon cannot be hidden """
+
 
     def quit(self, *args):
         log("quit(%s) exit_cb=%s", args, self.exit_cb)
