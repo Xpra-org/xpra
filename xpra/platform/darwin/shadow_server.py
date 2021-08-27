@@ -186,30 +186,30 @@ class ShadowServer(GTKShadowServerBase):
         if pointer:
             self.button_action(pointer, button, pressed, -1, *args)
 
-    def button_action(self, pointer, button, pressed, _deviceid=-1, *args):
+    def button_action(self, pointer, button, pressed, _deviceid=-1, *_args):
         if button<=3:
             #we should be using CGEventCreateMouseEvent
             #instead we clear previous clicks when a "higher" button is pressed... oh well
-            args = [pointer[:2], 1, button]
+            event = [pointer[:2], 1, button]
             for i in range(button):
-                args.append(i==(button-1) and pressed)
-            r = CG.CGPostMouseEvent(*args)
-            log("CG.CGPostMouseEvent%s=%s", args, r)
-        else:
-            if not pressed:
-                #we don't simulate press/unpress
-                #so just ignore unpressed events
-                return
-            wheel = (button-2)//2
-            direction = 1-(((button-2) % 2)*2)
-            args = [wheel]
-            for i in range(wheel):
-                if i!=(wheel-1):
-                    args.append(0)
-                else:
-                    args.append(direction)
-            r = CG.CGPostScrollWheelEvent(*args)
-            log("CG.CGPostScrollWheelEvent%s=%s", args, r)
+                event.append(i==(button-1) and pressed)
+            r = CG.CGPostMouseEvent(*event)
+            log("CG.CGPostMouseEvent%s=%s", event, r)
+            return
+        if not pressed:
+            #we don't simulate press/unpress
+            #so just ignore unpressed events
+            return
+        wheel = (button-2)//2
+        direction = 1-(((button-2) % 2)*2)
+        event = [wheel]
+        for i in range(wheel):
+            if i!=(wheel-1):
+                event.append(0)
+            else:
+                event.append(direction)
+        r = CG.CGPostScrollWheelEvent(*event)
+        log("CG.CGPostScrollWheelEvent%s=%s", event, r)
 
     def make_hello(self, source):
         capabilities = GTKServerBase.make_hello(self, source)
