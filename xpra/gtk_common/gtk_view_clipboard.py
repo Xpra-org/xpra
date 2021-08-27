@@ -101,7 +101,7 @@ class ClipboardInstance:
         self.get_target_btn.set_sensitive(bool(target))
 
     def set_target_changed(self, cb):
-        pass
+        self.log("set_target_changed(%s) target=%s", cb, self.set_targets.get_active_text())
 
     def ellipsis(self, val):
         if len(val)>24:
