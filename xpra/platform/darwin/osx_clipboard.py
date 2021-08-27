@@ -274,12 +274,12 @@ def main():
         #init UI watcher with gobject (required by pasteboard monitoring code)
         get_UI_watcher(GLib.timeout_add, GLib.source_remove)
 
-        def noop(*_args):
-            pass
         log.info("testing pasteboard")
         from gi.repository import Gtk
         pasteboard = NSPasteboard.generalPasteboard()
-        proxy = OSXClipboardProxy("CLIPBOARD", pasteboard, noop, noop)
+        def nosend(*args):
+            log("nosend%s", args)
+        proxy = OSXClipboardProxy("CLIPBOARD", pasteboard, nosend, nosend)
         log.info("current change count=%s", proxy.change_count)
         clipboard = Gtk.Clipboard(selection="CLIPBOARD")
         log.info("changing clipboard %s contents", clipboard)
