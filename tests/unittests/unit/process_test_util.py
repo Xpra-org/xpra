@@ -279,8 +279,9 @@ class ProcessTestUtil(unittest.TestCase):
     def find_X11_display_numbers(cls):
         #use X11 sockets:
         X11_displays = set()
-        if POSIX and os.path.exists("/tmp/.X11-unix"):
-            for x in os.listdir("/tmp/.X11-unix"):
+        X11_SOCKET_DIR = "/tmp/.X11-unix"
+        if POSIX and os.path.exists(X11_SOCKET_DIR):
+            for x in os.listdir(X11_SOCKET_DIR):
                 if x.startswith("X"):
                     try:
                         X11_displays.add(int(x[1:]))
