@@ -10,7 +10,6 @@ import socket
 
 from libc.stdint cimport uint32_t, uint16_t, uint8_t  #pylint: disable=syntax-error
 
-from xpra.util import first_time, csv
 from xpra.os_util import strtobytes, bytestostr, load_binary_file, LINUX
 from xpra.log import Logger
 
