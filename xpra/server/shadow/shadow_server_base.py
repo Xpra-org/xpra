@@ -132,8 +132,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         #we export the whole desktop as a window:
         return 0, 0
 
-    def watch_keymap_changes(self):
-        pass
+    def _keys_changed(self, *_args):
+        log.info("keymap has been changed")
 
     def timeout_add(self, *args):
         #usually done via gobject
