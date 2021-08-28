@@ -550,7 +550,6 @@ cdef class ColorspaceConverter:
             with nogil:
                 for y in range(workh):
                     for x in range(workw):
-                        R = G = B = 0
                         Rsum = Gsum = Bsum = 0
                         sum = 0
                         for dy in range(2):
@@ -582,7 +581,6 @@ cdef class ColorspaceConverter:
             with nogil:
                 for y in range(workh):
                     for x in range(workw):
-                        R = G = B = 0
                         Rsum = Gsum = Bsum = 0
                         sum = 0
                         for dy in range(2):
