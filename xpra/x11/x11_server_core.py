@@ -767,6 +767,9 @@ class X11ServerCore(GTKServerBase):
             if first_time("DPI-warning-%s" % ss.uuid):
                 sources[0].may_notify(XPRA_DPI_NOTIFICATION_ID, "DPI Issue", body, icon_name="font")
 
+    def set_dpi(self, xdpi, ydpi):
+        raise NotImplementedError
+
 
     def _process_server_settings(self, _proto, packet):
         settings = packet[1]

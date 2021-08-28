@@ -246,13 +246,10 @@ class GTKServerBase(ServerBase):
         self.set_workarea(workarea)
 
     def set_workarea(self, workarea):
-        pass
+        """ overriden by seamless servers """
 
     def set_desktop_geometry(self, width, height):
-        pass
-
-    def set_dpi(self, xdpi, ydpi):
-        pass
+        """ overriden by X11 seamless and desktop servers """
 
 
     def _move_pointer(self, _wid, pos, *_args):
@@ -261,7 +258,7 @@ class GTKServerBase(ServerBase):
         display.warp_pointer(display.get_default_screen(), x, y)
 
     def do_process_button_action(self, *args):
-        pass
+        raise NotImplementedError
 
 
     def _process_map_window(self, proto, packet):
