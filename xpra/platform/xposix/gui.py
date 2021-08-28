@@ -752,7 +752,7 @@ class ClientExtras:
         self.setup_dbus_signals()
 
     def ready(self):
-        pass
+        """ unused on xposix """
 
     def init_x11_filter(self):
         if self.x11_filter:

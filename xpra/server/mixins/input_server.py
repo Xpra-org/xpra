@@ -74,7 +74,7 @@ class InputServer(StubServerMixin):
             self.parse_hello_ui_keyboard(ss, caps)
 
     def watch_keymap_changes(self):
-        pass
+        """ GTK servers will start listening for the 'keys-changed' signal """
 
     def parse_hello_ui_keyboard(self, ss, c):
         other_ui_clients = [s.uuid for s in self._server_sources.values() if s!=ss and s.ui_client]
@@ -364,7 +364,7 @@ class InputServer(StubServerMixin):
         self.do_process_button_action(proto, *packet[1:])
 
     def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, *args):
-        pass
+        """ all servers should implement this method """
 
 
     def _update_modifiers(self, proto, wid, modifiers):

@@ -32,16 +32,16 @@ class KeyboardConfigBase:
         return b""
 
     def set_layout(self, layout, variant, options):
-        pass
+        """ should be overriden to configure the keyboard layout """
 
     def set_keymap(self, translate_only=False):
-        pass
+        """ should be overriden to configure the keymap """
 
     def set_default_keymap(self):
-        pass
+        """ should be overriden to set a default keymap """
 
     def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
-        pass
+        """ should be overriden to match the modifier state specified """
 
     def get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
         if not keyname and client_keycode<0:
@@ -65,5 +65,5 @@ class KeyboardConfigBase:
         return -1
 
     def is_modifier(self, _keycode):
-        #should be overriden in subclass
+        #should be overriden in subclasses
         return False

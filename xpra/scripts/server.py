@@ -65,9 +65,6 @@ def deadly_signal(signum):
     #kill(os.getpid(), signum)
     force_quit(128 + signum)
 
-def noop(*args):
-    pass
-
 
 def validate_pixel_depth(pixel_depth, starting_desktop=False):
     try:
@@ -592,7 +589,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     ################################################################################
     # splash screen:
     splash_process = None
-    progress = noop
     if is_splash_enabled(mode, opts.daemon, opts.splash, display_name):
         # use splash screen to show server startup progress:
         title = "Xpra %s Server %s" % (MODE_TO_NAME.get(mode, ""), __version__)
@@ -615,6 +611,10 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
                 from gi.repository import GLib
                 GLib.timeout_add(SPLASH_EXIT_DELAY*1000+500, stop_progress_process)
         progress = show_progress
+    else:
+        def noprogressshown(*_args):
+            """ messages aren't shown """
+        progress = noprogressshown
 
     progress(10, "initializing environment")
     try:
