@@ -102,7 +102,6 @@ def encode(image, int quality=50, int speed=50):
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
-    cdef const unsigned char* buf
     pixels = image.get_pixels()
     pfstr = bytestostr(image.get_pixel_format())
     pf = TJPF_VAL.get(pfstr)

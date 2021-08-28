@@ -200,7 +200,6 @@ def decompress_to_yuv(data):
 def decompress_to_rgb(rgb_format, data):
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
-    cdef const uint8_t *buf
 
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:

@@ -390,7 +390,6 @@ cdef class ColorspaceConverter:
 
 
     def convert_image(self, image):
-        cdef const uint8_t *input_image
         cdef uint8_t *output_buffer
         cdef uint8_t *out_planes[3]
         cdef uint8_t *scaled_buffer

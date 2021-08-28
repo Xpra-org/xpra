@@ -961,7 +961,6 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef int modifier
         self.set_work_keymap(NULL)
         unhandled = []
-        map = None
         keycodes = {}
         new_keysyms = []
         try:

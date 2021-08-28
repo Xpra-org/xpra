@@ -79,7 +79,6 @@ CAIRO_FORMAT = {
         }
 
 cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stride, int height):
-    cdef int y
     cdef int stride = src_stride
     with nogil:
         if src_stride==dst_stride:
@@ -87,7 +86,7 @@ cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stri
         else:
             if dst_stride<src_stride:
                 stride = dst_stride
-            for y in range(height):
+            for _ in range(height):
                 memcpy(<void*> dst, <void*> src, stride)
                 src += src_stride
                 dst += dst_stride

@@ -680,7 +680,6 @@ cdef class ColorspaceConverter:
         cdef char *output_image = <char *> memalign(self.buffer_size)
         cdef unsigned int stride = self.dst_strides[0]
 
-        cdef const unsigned short *YUVbuf[3]
         cdef unsigned int YUVstrides[3]
         cdef Py_buffer py_buf[3]
         cdef const unsigned short * YUV[3]
@@ -882,7 +881,6 @@ cdef class ColorspaceConverter:
         cdef unsigned char *Gptr
         cdef unsigned char *Bptr
         cdef unsigned char *Rptr
-        cdef unsigned char sum
 
         self.validate_planar3_image(image)
         planes = image.get_pixels()

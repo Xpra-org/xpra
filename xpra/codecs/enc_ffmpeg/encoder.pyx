@@ -1259,7 +1259,6 @@ cdef class Encoder:
             flagscsv(FMT_FLAGS, self.muxer_ctx.flags), flagscsv(AVFMTCTX, self.muxer_ctx.ctx_flags))
         list_options(self.muxer_ctx, self.muxer_ctx.av_class, 0)
 
-        cdef int64_t v = 0
         movflags = b""
         if self.muxer_format=="mp4":
             #movflags = "empty_moov+omit_tfhd_offset+frag_keyframe+default_base_moof"
