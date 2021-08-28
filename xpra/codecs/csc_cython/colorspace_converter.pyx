@@ -348,8 +348,8 @@ cdef class ColorspaceConverter:
             self.buffer_size = self.offsets[2] + self.dst_sizes[2] + self.dst_strides[2]
             log("allocate_yuv(%s, %i) buffer_size=%s, sizes=%s, strides=%s",
                 fmt, Bpp, self.buffer_size,
-                tuple(self.dst_sizes[i] for i in range(3)),
-                tuple(self.dst_strides[i] for i in range(3))
+                (self.dst_sizes[0], self.dst_sizes[1], self.dst_sizes[2]),
+                (self.dst_strides[0], self.dst_strides[1], self.dst_strides[2])
                 )
 
         def allocate_rgb(Bpp=4):

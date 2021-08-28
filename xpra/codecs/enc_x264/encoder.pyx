@@ -537,7 +537,7 @@ cdef class Encoder:
         self.export_nals = options.intget("h264.export-nals", 0)
         if self.profile is not None and self.profile not in cs_info[2]:
             log.warn("Warning: '%s' is not a valid profile for %s", bytestostr(self.profile), src_format)
-            log.warn(" must be one of: %s", csv(bytestostr(x) for x in cs_info[2]))
+            log.warn(" must be one of: %s", csv([bytestostr(x) for x in cs_info[2]]))
             self.profile = None
         if self.profile is None:
             self.profile = cs_info[1]

@@ -148,7 +148,10 @@ cdef class rectangle:
 def contains(object regions, const int x, const int y, const int w, const int h):
     cdef int x2 = x+w
     cdef int y2 = y+h
-    return any(True for r in regions if (x>=r.x and y>=r.y and x2<=(r.x+r.width) and y2<=(r.y+r.height)))
+    for r in regions:
+        if x>=r.x and y>=r.y and x2<=(r.x+r.width) and y2<=(r.y+r.height):
+            return True
+    return False
 
 
 def contains_rect(object regions, rectangle region):

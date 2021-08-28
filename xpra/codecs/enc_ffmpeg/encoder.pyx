@@ -959,7 +959,7 @@ def init_vaapi():
                 continue
             if flushed:
                 data += flushed
-            log("compressed data: %i bytes", sum(len(x) for x in data))
+            log("compressed data buffer lengths: %s", csv([len(x) for x in data]))
         finally:
             av_frame_free(&hw_frame)
             av_frame_free(&sw_frame)
