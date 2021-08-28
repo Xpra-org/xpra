@@ -292,7 +292,7 @@ def get_send_buffer_info(sock):
     unacked = struct.unpack("I", fcntl.ioctl(sock.fileno(), SIOCOUTQ, b'\0\0\0\0'))[0]
     info["sndbuf_unacked"] = unacked
     SIOCOUTQNSD = 0x894B
-    bytes_in_queue = struct.unpack("I", fcntl.ioctl(sock.fileno(), SIOCOUTQ, b'\0\0\0\0'))[0]
+    bytes_in_queue = struct.unpack("I", fcntl.ioctl(sock.fileno(), SIOCOUTQNSD, b'\0\0\0\0'))[0]
     info["sndbuf_bytes"] = bytes_in_queue
     return info
 
