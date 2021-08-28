@@ -79,7 +79,7 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
         client_machine = raw()
         if client_machine is None:
             client_machine = socket.gethostname()
-            if client_machine is None:
+            if not client_machine:
                 return {}
         return {"client-machine": client_machine}
     if propname == "transient-for":
