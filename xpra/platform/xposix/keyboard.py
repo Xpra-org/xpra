@@ -19,8 +19,6 @@ class Keyboard(KeyboardBase):
 
     def __init__(self):
         super().__init__()
-        self.keymap_modifiers = None
-        self.keyboard_bindings = None
         if not is_Wayland():
             try:
                 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings   #@UnresolvedImport
@@ -28,6 +26,10 @@ class Keyboard(KeyboardBase):
             except Exception as e:
                 log.error("Error: failed to load posix keyboard bindings")
                 log.error(" %s", str(e) or type(e))
+
+    def init_vars(self):
+        self.keymap_modifiers = None
+        self.keyboard_bindings = None
 
     def __repr__(self):
         return "xposix.Keyboard"

@@ -48,8 +48,7 @@ class Keyboard(KeyboardBase):
         * simulate 'Alt_Gr'
     """
 
-    def __init__(self):
-        super().__init__()
+    def init_vars(self):
         self.num_lock_modifier = None
         self.altgr_modifier = None
         self.delayed_event = None

@@ -13,6 +13,9 @@ log = Logger("keyboard")
 class KeyboardBase:
 
     def __init__(self):
+        self.init_vars()
+
+    def init_vars(self):
         self.modifier_mappings = {}
         self.modifier_keys = {}
         self.modifier_names = {}
@@ -23,7 +26,7 @@ class KeyboardBase:
         self.modifier_map = MODIFIER_MAP
 
     def cleanup(self):
-        pass
+        self.init_vars()
 
     def has_bell(self):
         return False

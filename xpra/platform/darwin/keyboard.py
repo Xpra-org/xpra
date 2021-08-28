@@ -74,10 +74,6 @@ class Keyboard(KeyboardBase):
         Switch Meta and Control
     """
 
-    def __init__(self):
-        super().__init__()
-        self.init_vars()
-
     def init_vars(self):
         self.swap_keys = True
         self.meta_modifier = None
@@ -91,10 +87,6 @@ class Keyboard(KeyboardBase):
 
     def __repr__(self):
         return "darwin.Keyboard"
-
-    def cleanup(self):
-        self.init_vars()
-        super().cleanup()
 
 
     def get_all_x11_layouts(self):
