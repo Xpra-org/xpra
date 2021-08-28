@@ -232,7 +232,8 @@ class Protocol:
     def set_cipher_in(self, ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding):
         cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
-                                                                  iv, password, key_salt, key_hash, key_size, iterations)
+                                                                  iv, password,
+                                                                  key_salt,key_hash, key_size, iterations)
         self.cipher_in_padding = padding
         if self.cipher_in_name!=ciphername:
             cryptolog.info("receiving data using %s encryption", ciphername)
@@ -241,7 +242,8 @@ class Protocol:
     def set_cipher_out(self, ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding):
         cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
-                                                                    iv, password, key_salt, key_hash, key_size, iterations)
+                                                                    iv, password,
+                                                                    key_salt, key_hash, key_size, iterations)
         self.cipher_out_padding = padding
         if self.cipher_out_name!=ciphername:
             cryptolog.info("sending data using %s encryption", ciphername)
