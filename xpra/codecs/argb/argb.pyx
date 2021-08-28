@@ -38,7 +38,6 @@ cdef bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
     cdef MemBuf output_buf = padbuf(rgb565_len*2, 2)
     cdef uint32_t *rgbx = <uint32_t*> output_buf.get_mem()
     cdef uint16_t v
-    cdef unsigned int i = 0
     cdef unsigned int l = rgb565_len//2
     for i in range(l):
         v = rgb565[i]
@@ -59,7 +58,6 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     cdef MemBuf output_buf = padbuf(rgb565_len*3//2, 3)
     cdef uint8_t *rgb = <uint8_t*> output_buf.get_mem()
     cdef uint32_t v
-    cdef unsigned int i = 0
     cdef unsigned int l = rgb565_len//2
     for i in range(l):
         v = rgb565[i]
@@ -86,8 +84,7 @@ cdef r210data_to_rgba(unsigned int* r210,
                       const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int y = 0
-    cdef unsigned int i = 0
+    cdef unsigned int i
     cdef unsigned int v
     for y in range(h):
         i = y*dst_stride
@@ -97,7 +94,7 @@ cdef r210data_to_rgba(unsigned int* r210,
             rgba[i+1] = (v&0x000ffc00) >> 12
             rgba[i]   = (v&0x3ff00000) >> 22
             rgba[i+3] = (v>>30)*85
-            i = i + 4
+            i += 4
         r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
 
@@ -119,8 +116,7 @@ cdef r210data_to_rgbx(unsigned int* r210,
                       const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int y = 0
-    cdef unsigned int i = 0
+    cdef unsigned int i
     cdef unsigned int v
     for y in range(h):
         i = y*dst_stride
@@ -130,7 +126,7 @@ cdef r210data_to_rgbx(unsigned int* r210,
             rgba[i+1] = (v&0x000ffc00) >> 12
             rgba[i]   = (v&0x3ff00000) >> 22
             rgba[i+3] = 0xff
-            i = i + 4
+            i += 4
         r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
 
@@ -157,8 +153,7 @@ cdef r210data_to_rgb(unsigned int* r210,
                      const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int y = 0
-    cdef unsigned int i = 0
+    cdef unsigned int i
     cdef unsigned int v
     for y in range(h):
         i = y*dst_stride
@@ -167,7 +162,7 @@ cdef r210data_to_rgb(unsigned int* r210,
             rgba[i+2] = (v&0x000003ff) >> 2
             rgba[i+1] = (v&0x000ffc00) >> 12
             rgba[i]   = (v&0x3ff00000) >> 22
-            i = i + 3
+            i += 3
         r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
 
@@ -192,7 +187,7 @@ cdef argbdata_to_rgba(const unsigned char* argb, const int argb_len):
         rgba[i+1]  = argb[i+2]              #G
         rgba[i+2]  = argb[i+3]              #B
         rgba[i+3]  = argb[i]                #A
-        i = i + 4
+        i += 4
     return memoryview(output_buf)
 
 def argb_to_rgb(buf):
