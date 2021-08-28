@@ -33,10 +33,10 @@ def printing_finished(_printpid):
     return True
 
 def init_printing(printers_modified_callback=None):     #pylint: disable=unused-argument
-    pass
+    """ overriden in platform code """
 
 def cleanup_printing():
-    pass
+    """ overriden in platform code """
 
 
 DEFAULT_MIMETYPES = ["application/pdf", "application/postscript"]

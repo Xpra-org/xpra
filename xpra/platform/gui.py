@@ -24,7 +24,7 @@ def init():
         do_init()
 
 def do_init():
-    pass
+    """ some platforms override this """
 
 _ready_done = False
 def ready():
@@ -34,7 +34,7 @@ def ready():
         do_ready()
 
 def do_ready():
-    pass
+    """ some platforms override this """
 
 
 _default_icon = "xpra.png"
@@ -219,20 +219,29 @@ def get_window_frame_sizes():
 
 
 def add_window_hooks(_window):
-    pass
+    """
+    To add platform specific code to each window,
+    called when the window is created.
+    """
 
 def remove_window_hooks(_window):
-    pass
+    """
+    Remove the hooks,
+    called when the window is destroyed
+    """
 
 
 def show_desktop(_show):
-    pass
+    """ If possible, show the desktop """
 
 def set_fullscreen_monitors(_window, _fsm, _source_indication=0):
-    pass
+    """ Only overriden by xposix """
 
 def set_shaded(_window, _shaded):
-    pass
+    """
+    GTK never exposed the 'shaded' window attribute,
+    xposix clients will hook it up here.
+    """
 
 
 def gl_check():

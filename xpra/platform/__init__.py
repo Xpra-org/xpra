@@ -22,9 +22,9 @@ def init(prgname=None, appname=None):
         _init_done = True
         do_init()
 
-#platforms can override this
+
 def do_init():  # pragma: no cover
-    pass
+    """ some platforms override this """
 
 def threaded_server_init():
     """ platform implementations may override this function """
@@ -71,9 +71,8 @@ def clean():
         _clean_done = True
         do_clean()
 
-#platforms can override this
 def do_clean(): # pragma: no cover
-    pass
+    """ some platforms override this """
 
 
 _name_set = False

@@ -55,7 +55,7 @@ class OSXRootCapture:
         return True
 
     def clean(self):
-        pass
+        """ nothing specific to do here on MacOS """
 
     def get_image(self, x, y, width, height):
         rect = (x, y, width, height)

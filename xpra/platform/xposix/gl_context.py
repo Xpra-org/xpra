@@ -81,7 +81,7 @@ class GLXWindowContext:
             GLX.glXMakeCurrent(self.xdisplay, 0, null_context)
 
     def update_geometry(self):
-        pass
+        """ not needed on X11 """
 
     def swap_buffers(self):
         assert self.valid, "GLX window context is no longer valid"

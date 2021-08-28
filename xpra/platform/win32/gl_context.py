@@ -62,7 +62,7 @@ class WGLWindowContext:
         self.ps = None
 
     def update_geometry(self):
-        pass
+        """ not needed on MS Windows """
 
     def swap_buffers(self):
         assert self.paint_hdc

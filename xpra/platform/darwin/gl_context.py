@@ -42,6 +42,10 @@ class AGLWindowContext:
         self.gl_context.flushBuffer()
 
     def update_geometry(self):
+        """
+        The window has been resized,
+        the gl context must be updated.
+        """
         glc = self.gl_context
         log("update_geometry() gl_context=%s", glc)
         if glc:

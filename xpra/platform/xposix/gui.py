@@ -563,6 +563,9 @@ def get_info():
     return i
 
 
+def suppress_event(*_args):
+    """ we'll use XI2 to receive events """
+
 class XI2_Window:
     def __init__(self, window):
         log("XI2_Window(%s)", window)
@@ -576,14 +579,11 @@ class XI2_Window:
         self.configured()
         #replace event handlers with XI2 version:
         self._do_motion_notify_event = window._do_motion_notify_event
-        window._do_motion_notify_event = self.noop
-        window._do_button_press_event = self.noop
-        window._do_button_release_event = self.noop
-        window._do_scroll_event = self.noop
+        window._do_motion_notify_event = suppress_event
+        window._do_button_press_event = suppress_event
+        window._do_button_release_event = suppress_event
+        window._do_scroll_event = suppress_event
         window.connect("destroy", self.cleanup)
-
-    def noop(self, *args):
-        pass
 
     def cleanup(self, *_args):
         for window in self.windows:
