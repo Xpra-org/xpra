@@ -137,7 +137,7 @@ def decompress_to_yuv(data):
     if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
         raise Exception("failed to read compressed data from %s" % type(data))
 
-    cdef int r, w, h, subsamp, cs
+    cdef int r
     def close():
         PyBuffer_Release(&py_buf)
         r = tjDestroy(decompressor)
@@ -145,12 +145,14 @@ def decompress_to_yuv(data):
             log.error("Error: failed to destroy the JPEG decompressor, code %i:", r)
             log.error(" %s", get_error_str())
 
+    cdef int w, h, subsamp, cs
     r = tjDecompressHeader3(decompressor,
                             <const unsigned char *> py_buf.buf, py_buf.len,
                             &w, &h, &subsamp, &cs)
     if r:
+        err = get_error_str()
         close()
-        raise Exception("failed to decompress JPEG header: %s" % get_error_str())
+        raise Exception("failed to decompress JPEG header: %s" % err)
 
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
@@ -209,6 +211,7 @@ def decompress_to_rgb(rgb_format, data):
     if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
         raise Exception("failed to read compressed data from %s" % type(data))
 
+    cdef int r
     def close():
         PyBuffer_Release(&py_buf)
         r = tjDestroy(decompressor)
@@ -217,12 +220,13 @@ def decompress_to_rgb(rgb_format, data):
             log.error(" %s", get_error_str())
 
     cdef int w, h, subsamp, cs
-    cdef int r = tjDecompressHeader3(decompressor,
+    r = tjDecompressHeader3(decompressor,
                             <const unsigned char *> py_buf.buf, py_buf.len,
                             &w, &h, &subsamp, &cs)
     if r:
+        err = get_error_str()
         close()
-        raise Exception("failed to decompress JPEG header: %s" % get_error_str())
+        raise Exception("failed to decompress JPEG header: %s" % err)
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
