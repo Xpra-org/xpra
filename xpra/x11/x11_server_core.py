@@ -66,9 +66,6 @@ class XTestPointerDevice:
         with xsync:
             X11Keyboard.xtest_fake_button(button, pressed)
 
-    def close(self):
-        pass
-
     def has_precise_wheel(self):
         return False
 

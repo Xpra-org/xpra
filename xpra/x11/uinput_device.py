@@ -116,9 +116,6 @@ class UInputDevice:
             self.device.emit(ubutton, ival)
         self.wheel_delta[ubutton] = delta-ival
 
-    def close(self):
-        pass
-
     def has_precise_wheel(self):
         return True
 
