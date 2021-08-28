@@ -688,7 +688,6 @@ cdef class Encoder:
         cdef const vpx_codec_cx_pkt_t *pkt
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
-        end = monotonic_time()
         if pkt==NULL or pkt.kind!=VPX_CODEC_CX_FRAME_PKT:
             free(image)
             log.error("%s invalid packet type: %s", self.encoding, PACKET_KIND.get(pkt.kind, pkt.kind))
