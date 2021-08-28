@@ -573,11 +573,11 @@ if strict_ENABLED:
         "warn.unused_result"    : True,
         })
 if cython_tracing_ENABLED:
-    compiler_directives = {
+    compiler_directives.update({
         "linetrace" : True,
         "binding" : True,
         "profile" : True,
-        }
+        })
 
 def add_cython_ext(*args, **kwargs):
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
