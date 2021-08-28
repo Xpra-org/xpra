@@ -34,10 +34,10 @@ cdef inline uint64_t hashtoint64(s):
     return <uint64_t> struct.unpack(b"@L", s)[0]
 
 cdef da(uint64_t *a, uint16_t l):
-    return repr_ellipsized(csv(h(a[i]) for i in range(l)))
+    return repr_ellipsized(csv([h(a[i]) for i in range(l)]))
 
 cdef dd(uint16_t *d, uint16_t l):
-    return csv(h(d[i]) for i in range(l))
+    return csv([h(d[i]) for i in range(l)])
 
 
 assert sizeof(uint64_t)==64//8, "uint64_t is not 64-bit: %i!" % sizeof(uint64_t)
