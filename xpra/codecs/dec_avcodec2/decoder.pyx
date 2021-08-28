@@ -914,8 +914,8 @@ cdef class Decoder:
         #ensure we can detect if the frame buffer got allocated:
         clear_frame(av_frame)
         #now safe to run without gil:
-        cdef int ret = 0
-        cdef AVPacket *avpkt = NULL
+        cdef int ret
+        cdef AVPacket *avpkt
         with nogil:
             avpkt = av_packet_alloc()
             avpkt.data = <uint8_t *> (padded_buf)

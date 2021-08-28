@@ -324,7 +324,7 @@ cdef raiseNvFBC(NVFBC_SESSION_HANDLE context, NVFBCSTATUS ret, msg):
     global INIT_DONE
     if ret==0:
         return
-    cdef const char *err_str = NULL
+    cdef const char *err_str
     if context:
         assert INIT_DONE
         err_str = function_list.nvFBCGetLastErrorStr(context)
@@ -569,7 +569,7 @@ cdef class NvFBC_SysCapture:
         cdef unsigned int grab_stride = self.grab_info.dwWidth*Bpp
         cdef unsigned int stride = grab_stride
         cdef MemBuf buf
-        cdef uintptr_t buf_ptr = 0
+        cdef uintptr_t buf_ptr
         cdef uintptr_t grab_ptr = <uintptr_t> (self.framebuffer+x*Bpp+y*grab_stride)
         if x>0 or y>0 or self.grab_info.dwWidth-width>16 or self.grab_info.dwHeight-height>16:
             #copy sub-image with smaller stride:

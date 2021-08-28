@@ -496,7 +496,6 @@ cdef class Encoder:
         cdef uint32_t nnal = 0
         cdef unsigned int i
         cdef int r = 0
-        cdef x265_picture *pic_in = NULL
         cdef int nal_size, frame_size = 0
 
         assert self.context!=NULL
@@ -530,6 +529,8 @@ cdef class Encoder:
             memset(&py_buf[i], 0, sizeof(Py_buffer))
         cdef x265_picture *pic_out = x265_picture_alloc()
         assert pic_out!=NULL, "failed to allocate output picture"
+
+        cdef x265_picture *pic_in
         try:
             pic_in = x265_picture_alloc()
             assert pic_in!=NULL, "failed to allocate input picture"
