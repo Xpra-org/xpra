@@ -47,6 +47,7 @@ def suspend_nonfatal_logging():
     DEBUG_LEVEL    = AV_LOG_FATAL
 
 def resume_nonfatal_logging():
+    global ERROR_LEVEL, WARNING_LEVEL, INFO_LEVEL, DEBUG_LEVEL
     ERROR_LEVEL    = AV_LOG_ERROR
     WARNING_LEVEL  = AV_LOG_WARNING
     INFO_LEVEL     = AV_LOG_INFO
