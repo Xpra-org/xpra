@@ -16,9 +16,6 @@ metalog = Logger("metadata")
 geomlog = Logger("geometry")
 eventslog = Logger("events")
 
-def noop(*_args):
-    pass
-
 
 class WindowServer(StubServerMixin):
     """
@@ -254,8 +251,9 @@ class WindowServer(StubServerMixin):
     def refresh_window_area(self, window, x, y, width, height, options=None):
         wid = self._window_to_id[window]
         for ss in tuple(self._server_sources.values()):
-            damage = getattr(ss, "damage", noop)
-            damage(wid, window, x, y, width, height, options)
+            damage = getattr(ss, "damage", None)
+            if damage:
+                damage(wid, window, x, y, width, height, options)
 
     def _process_buffer_refresh(self, proto, packet):
         """ can be used for requesting a refresh, or tuning batch config, or both """

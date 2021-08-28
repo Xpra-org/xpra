@@ -183,7 +183,7 @@ class InputServer(StubServerMixin):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def fake_key(self, keycode, press):
-        pass
+        keylog("fake_key%s is not implemented", (keycode, press))
 
     def _handle_key(self, wid, pressed, name, keyval, keycode, modifiers, is_mod=False, sync=True):
         """
@@ -238,7 +238,8 @@ class InputServer(StubServerMixin):
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             now = monotonic_time()
-            self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout, now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
+            self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout,
+                                                     now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
     def _key_repeat_timeout(self, when, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod):
         self.key_repeat_timer = None
@@ -301,16 +302,17 @@ class InputServer(StubServerMixin):
                     ss.keys_changed()
 
     def clear_keys_pressed(self):
-        pass
+        keylog("clear_keys_pressed() is not implemented")
 
-    def get_keyboard_config(self, _props=None):
+    def get_keyboard_config(self, props=None):
+        keylog("get_keyboard_config(%s) is not implemented", props)
         return None
 
     def set_keyboard_repeat(self, key_repeat):
-        pass
+        keylog("set_keyboard_repeat(%s)", key_repeat)
 
     def set_keymap(self, ss, force=False):
-        pass
+        keylog("set_keymap(%s, %s)", ss, force)
 
 
     ######################################################################
@@ -368,7 +370,7 @@ class InputServer(StubServerMixin):
 
 
     def _update_modifiers(self, proto, wid, modifiers):
-        pass
+        """ servers subclasses may change the modifiers state """
 
     def _process_pointer_position(self, proto, packet):
         mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
