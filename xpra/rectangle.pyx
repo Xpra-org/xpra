@@ -164,6 +164,7 @@ def add_rectangle(object regions, rectangle region):
     cdef int y = region.y
     cdef int w = region.width
     cdef int h = region.height
+    cdef long total
     cdef rectangle r, sub
     for r in tuple(regions):
         #unroll contains() call:
@@ -173,9 +174,12 @@ def add_rectangle(object regions, rectangle region):
             #so no need to add anything
             return 0
         if r.intersects(x, y, w, h):
+            total = 0
             #only add the parts that are not already in the rectangle
             #it intersects:
-            return sum(add_rectangle(regions, sub) for sub in region.substract_rect(r))
+            for sub in region.substract_rect(r):
+                total += add_rectangle(regions, sub)
+            return total
     #not found at all, add it all:
     regions.append(region)
     return w*h
