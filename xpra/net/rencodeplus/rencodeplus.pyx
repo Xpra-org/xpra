@@ -23,8 +23,6 @@
 #     Boston, MA  02110-1301, USA.
 #
 
-#cython: language_level=3
-
 from __future__ import absolute_import
 
 import sys

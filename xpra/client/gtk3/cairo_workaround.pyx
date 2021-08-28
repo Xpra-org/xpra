@@ -22,7 +22,7 @@
 # cairo.Pattern to introspected methods"
 
 
-#cython: boundscheck=False, language_level=3
+#cython: boundscheck=False
 
 import cairo
 from libc.stdint cimport uintptr_t

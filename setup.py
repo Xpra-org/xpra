@@ -558,7 +558,17 @@ def print_option(prefix, k, v):
 
 #*******************************************************************************
 # Utility methods for building with Cython
-compiler_directives={}
+compiler_directives = {
+    "auto_pickle"           : False,
+    "language_level"        : 3,
+    "cdivision"             : True,
+    "always_allow_keywords" : False,
+    "unraisable_tracebacks" : True,
+    #"warn.undeclared"       : True,
+    #"warn.maybe_uninitialized" : True,
+    #"warn.unused"           : True,
+    #"warn.unused_result"    : True,
+    }
 if cython_tracing_ENABLED:
     compiler_directives = {
         "linetrace" : True,
@@ -1768,6 +1778,8 @@ if WIN32 or OSX:
 if annotate_ENABLED:
     from Cython.Compiler import Options
     Options.annotate = True
+    Options.docstrings = False
+    Options.buffer_max_dims = 3
 
 
 #*******************************************************************************

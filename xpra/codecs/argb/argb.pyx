@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
+#cython: boundscheck=False, wraparound=False
 
 from xpra.util import first_time
 from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf, buffer_context #pylint: disable=syntax-error

@@ -13,7 +13,7 @@
 #    (also uses memalign to allocate the buffer)
 # 2) object to buffer conversion utility functions,
 
-#cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
+#cython: wraparound=False
 
 from cpython.buffer cimport PyBuffer_FillInfo   #pylint: disable=syntax-error
 from libc.stdlib cimport free

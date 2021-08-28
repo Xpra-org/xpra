@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
+#cython: wraparound=False
 
 import os
 import time

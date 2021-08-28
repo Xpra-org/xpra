@@ -1,11 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2020 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#!python
-#cython: language_level=3, boundscheck=False, wraparound=False, overflowcheck=False, cdivision=True, unraisable_tracebacks=True
+#cython: boundscheck=False, wraparound=False, overflowcheck=False
 
 import os
 import sys

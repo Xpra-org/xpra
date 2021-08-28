@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 #!python
-#cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
+#cython: boundscheck=False, wraparound=False
 
 from xpra.log import Logger
 log = Logger("util", "auth")

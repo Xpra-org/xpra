@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2016 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 # this used to be implemented using a gtk.gdk.Rectangle
 # but we don't want its union() behaviour which can be too expensive
 
-#cython: auto_pickle=False, boundscheck=False, wraparound=False, overflowcheck=False, cdivision=True, unraisable_tracebacks=True, always_allow_keywords=False, language_level=3
+#cython: boundscheck=False, wraparound=False, overflowcheck=False
 
 #what I want is a real macro!
 cdef inline int MIN(int a, int b):  #pylint: disable=syntax-error

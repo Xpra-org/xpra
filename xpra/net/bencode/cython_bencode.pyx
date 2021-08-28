@@ -8,8 +8,6 @@
 # further.
 # Original version written by Petru Paler
 
-#cython: language_level=3
-
 
 __version__ = (u"Cython", 4, 3)
 

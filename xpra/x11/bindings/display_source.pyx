@@ -9,8 +9,6 @@
 # somewhere else, so we need this file to hide that...
 # (we can't just pass pointers around easily with Python/Cython)
 
-#cython: language_level=3
-
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
 cdef extern from "X11/Xlib.h":

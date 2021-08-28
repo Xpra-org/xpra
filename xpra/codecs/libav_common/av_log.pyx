@@ -1,9 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
+#cython: wraparound=False
 
 from xpra.os_util import bytestostr
 from xpra.util import envbool

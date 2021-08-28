@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: wraparound=False, boundscheck=False, language_level=3
-
 from libc.stdint cimport uint32_t, uintptr_t  #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context
 

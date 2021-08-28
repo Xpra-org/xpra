@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#cython: auto_pickle=False, language_level=3
-
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
 from xpra.util import envint, csv, iround, first_time

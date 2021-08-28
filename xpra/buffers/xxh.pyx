@@ -6,7 +6,7 @@
 
 # xxhash wrapper
 
-#cython: auto_pickle=False, wraparound=False, cdivision=True, language_level=3
+#cython: wraparound=False
 
 cdef extern from "xxhash.h":
     ctypedef unsigned long long XXH64_hash_t
