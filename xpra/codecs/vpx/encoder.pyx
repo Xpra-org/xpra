@@ -304,9 +304,9 @@ def get_spec(encoding, colorspace):
         speed = 50
         quality = 50
     else:
-        lossless_mode = colorspace=="YUV444P"
+        has_lossless_mode = colorspace=="YUV444P"
         speed = 20
-        quality = 50 + 50*int(lossless_mode)
+        quality = 50 + 50*int(has_lossless_mode)
         if VPX_ENCODER_ABI_VERSION>=11:
             #libvpx 1.5 made some significant performance improvements with vp9:
             speed = 40
