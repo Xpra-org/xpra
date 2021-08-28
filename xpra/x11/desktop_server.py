@@ -363,7 +363,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         self.do_modify_gsettings(self.gsettings_modified, True)
 
     def notify_dpi_warning(self, body):
-        pass
+        """ ignore DPI warnings in desktop mode """
 
     def print_screen_info(self):
         super().print_screen_info()
