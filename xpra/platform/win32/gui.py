@@ -244,10 +244,6 @@ def get_monitor_workarea_for_window(handle):
         return None
 
 
-def noop(*_args):
-    pass
-
-
 def get_window_handle(window):
     """ returns the win32 hwnd from a gtk.Window or gdk.Window """
     gdk_window = window
@@ -528,19 +524,25 @@ def cache_pointer_offset(self, event):
     return gtk_x, gtk_y
 
 
+def no_set_group(*_args):
+    """ provide a dummy implementation """
+
 def add_window_hooks(window):
-    log("add_window_hooks(%s) WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s, MAX_SIZE_HINT=%s, MAX_SIZE_HINT=%s",
-            window, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE, MAX_SIZE_HINT, MAX_SIZE_HINT)
+    log("add_window_hooks(%s) WINDOW_HOOKS=%s, GROUP_LEADER=%s, UNDECORATED_STYLE=%s",
+            window, WINDOW_HOOKS, GROUP_LEADER, UNDECORATED_STYLE)
+    log(" MAX_SIZE_HINT=%s, MAX_SIZE_HINT=%s", MAX_SIZE_HINT, MAX_SIZE_HINT)
     if not WINDOW_HOOKS:
         #allows us to disable the win32 hooks for testing
         return
     try:
         gdk_window = window.get_window()
-        #win32 cannot use set_group by default:
-        gdk_window.set_group = noop
     except Exception:
+        gdk_window = None
+    if not gdk_window:
         #can't get a handle from a None value...
         return
+    #at least provide a dummy method:
+    gdk_window.set_group = no_set_group
     handle = get_window_handle(gdk_window)
     if not handle:
         log.warn("Warning: cannot add window hooks without a window handle!")
@@ -992,7 +994,7 @@ class ClientExtras:
             start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
 
     def ready(self):
-        pass
+        """ nothing specific to do here """
 
     def cleanup(self):
         log("ClientExtras.cleanup()")
