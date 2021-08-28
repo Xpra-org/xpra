@@ -195,7 +195,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             log("check_randr_sizes: failed to get randr screen info")
             return False
         cdef int num_sizes = 0
-        cdef XRRScreenSize *xrrs = XRRConfigSizes(config, &num_sizes)
+        XRRConfigSizes(config, &num_sizes)
         log("found %i config sizes", num_sizes)
         return num_sizes>0
 

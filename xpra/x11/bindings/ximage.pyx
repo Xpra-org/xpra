@@ -533,7 +533,6 @@ cdef class XImageWrapper:
         cdef void *new_buf
         if posix_memalign(<void **> &new_buf, 64, (newsize+rowstride)):
             raise Exception("posix_memalign failed!")
-        cdef unsigned int ry
         cdef void *to = new_buf
         cdef unsigned int oldstride = self.rowstride                     #using a local variable is faster
         #Note: we don't zero the buffer,
@@ -543,7 +542,7 @@ cdef class XImageWrapper:
             memcpy(to, img_buf, size)
         else:
             cpy_size = MIN(rowstride, oldstride)
-            for ry in range(self.height):
+            for _ in range(self.height):
                 memcpy(to, img_buf, cpy_size)
                 to += rowstride
                 img_buf += oldstride
@@ -670,7 +669,7 @@ cdef class XShmWrapper:
         #FIXME: we assume screen is zero
         cdef XWindowAttributes attrs
         cdef XVisualInfo vinfo_template
-        cdef int count = 0
+        cdef int count
         if not XGetWindowAttributes(self.display, self.window, &attrs):
             return None
         cdef Colormap colormap = attrs.colormap

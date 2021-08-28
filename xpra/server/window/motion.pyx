@@ -143,7 +143,7 @@ cdef class ScrollData:
         cdef uint64_t *a2 = self.a2
         cdef uint16_t l = self.height
         cdef uint16_t y1, y2
-        cdef uint16_t miny=0, maxy=0
+        cdef uint16_t miny, maxy
         cdef uint64_t a2v
         if self.distances==NULL:
             self.distances = <uint16_t*> memalign(2*l*sizeof(uint16_t))

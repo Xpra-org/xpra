@@ -112,8 +112,8 @@ cdef class X11CoreBindingsInstance:
         cdef Atom* atoms_return = <Atom*> malloc(sizeof(Atom)*(count+1))
         assert atoms_return!=NULL
         from ctypes import create_string_buffer, addressof
-        str_names = tuple(create_string_buffer(strtobytes(x)) for x in atom_names)
-        cdef uintptr_t ptr = 0
+        str_names = [create_string_buffer(strtobytes(x)) for x in atom_names]
+        cdef uintptr_t ptr
         for i, x in enumerate(str_names):
             ptr = addressof(x)
             names[i] = <char*> ptr

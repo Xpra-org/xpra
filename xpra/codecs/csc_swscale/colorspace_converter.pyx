@@ -201,8 +201,8 @@ cdef int get_swscale_flags(int speed, int scaling, int subsampling, dst_format):
 
 
 def get_swscale_flags_strs(int flags):
-    return tuple(flag_name for flag_value, flag_name in FLAG_NAMES.items()
-            if (flag_value & flags)>0)
+    return [flag_name for flag_value, flag_name in FLAG_NAMES.items()
+            if (flag_value & flags)>0]
 
 
 def init_module():

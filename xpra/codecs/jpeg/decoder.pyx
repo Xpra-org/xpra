@@ -216,8 +216,8 @@ def decompress_to_rgb(rgb_format, data):
             log.error("Error: failed to destroy the JPEG decompressor, code %i:", r)
             log.error(" %s", get_error_str())
 
-    cdef int r, w, h, subsamp, cs
-    r = tjDecompressHeader3(decompressor,
+    cdef int w, h, subsamp, cs
+    cdef int r = tjDecompressHeader3(decompressor,
                             <const unsigned char *> py_buf.buf, py_buf.len,
                             &w, &h, &subsamp, &cs)
     if r:
@@ -229,7 +229,7 @@ def decompress_to_rgb(rgb_format, data):
     cdef MemBuf membuf
     cdef unsigned char *dst_buf
     cdef int stride, flags = 0      #TJFLAG_BOTTOMUP
-    cdef unsigned long size = 0
+    cdef unsigned long size
     cdef double start, elapsed
     try:
         #TODO: add padding and rounding?
