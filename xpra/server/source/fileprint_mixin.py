@@ -31,9 +31,6 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         return bool(caps.boolget("file-transfer") or caps.boolget("printing"))
 
 
-    def __init__(self, *_args):
-        pass
-
     def init_state(self):
         self.printers = {}
         self.printers_added = set()

@@ -17,8 +17,6 @@ class NotificationMixin(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("notifications", False)
 
-    def __init__(self, *_args):
-        pass
 
     def init_state(self):
         self.send_notifications = False

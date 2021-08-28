@@ -20,9 +20,6 @@ class ClientInfoMixin(StubSourceMixin):
     def cleanup(self):
         self.init_state()
 
-    def __init__(self, *_args):
-        pass
-
     def init_state(self):
         self.uuid = ""
         self.session_id = ""

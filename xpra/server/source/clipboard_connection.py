@@ -25,9 +25,6 @@ class ClipboardConnection(StubSourceMixin):
     def is_needed(cls, caps : typedict) -> bool:
         return caps.boolget("clipboard")
 
-    def __init__(self, *_args):
-        pass
-
     def init_state(self):
         self.clipboard_enabled = False
         self.clipboard_notifications = False
