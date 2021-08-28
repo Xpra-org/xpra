@@ -211,8 +211,8 @@ cdef inline unsigned short clamp10(const long v) nogil:
 cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r210,
                                     unsigned int w, unsigned int h,
                                     unsigned int src_stride, unsigned int dst_stride) nogil:
-    cdef unsigned int y = 0
-    cdef unsigned int i = 0
+    cdef unsigned int y
+    cdef unsigned int i
     cdef unsigned int v
     for y in range(h):
         i = y*dst_stride//2
