@@ -143,8 +143,9 @@ def decompress_to_yuv(data):
                             <const unsigned char *> buf, buf_len,
                             &w, &h, &subsamp, &cs)
     if r:
+        err = get_error_str()
         close()
-        raise Exception("failed to decompress JPEG header: %s" % get_error_str())
+        raise Exception("failed to decompress JPEG header: %s" % err)
     subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
     log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s",
@@ -212,8 +213,9 @@ def decompress_to_rgb(rgb_format, data):
                             <const unsigned char *> buf, buf_len,
                             &w, &h, &subsamp, &cs)
     if r:
+        err = get_error_str()
         close()
-        raise Exception("failed to decompress JPEG header: %s" % get_error_str())
+        raise Exception("failed to decompress JPEG header: %s" % err)
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
