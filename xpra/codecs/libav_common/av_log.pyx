@@ -7,7 +7,7 @@
 
 from xpra.os_util import bytestostr
 from xpra.util import envbool
-from xpra.log import Logger, is_debug_enabled
+from xpra.log import Logger
 log = Logger("libav")
 
 cdef int LIBAV_TRACE = envbool("XPRA_LIBAV_TRACE", False)  #pylint: disable=syntax-error
