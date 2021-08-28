@@ -348,7 +348,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if encryption and ENCRYPT_FIRST_PACKET:
             key = self.get_encryption_key()
             protocol.set_cipher_out(encryption,
-                                    DEFAULT_IV, key, DEFAULT_SALT, DEFAULT_KEYSIZE, DEFAULT_ITERATIONS, INITIAL_PADDING)
+                                    DEFAULT_IV, key, DEFAULT_SALT,
+                                    DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
