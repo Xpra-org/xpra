@@ -404,10 +404,36 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if not self._server_sources:
             super().set_screen_geometry_attributes(w, h)
 
-    def set_desktops(self, names):
+    def calculate_desktops(self):
         wm = self._wm
-        if wm:
-            wm.set_desktop_list(names)
+        if not wm:
+            return
+        count = 1
+        sources = tuple(self._server_sources.values())
+        for ss in sources:
+            if ss.desktops:
+                count = max(count, ss.desktops)
+        count = max(1, min(20, count))
+        names = []
+        for i in range(count):
+            name = "Main" if i==0 else "Desktop %i" % (i+1)
+            for ss in sources:
+                if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
+                    dn = ss.desktop_names[i]
+                    if isinstance(dn, str):
+                        #newer clients send unicode
+                        name = dn
+                    else:
+                        #older clients send byte strings:
+                        try :
+                            v = strtobytes(dn).decode("utf8")
+                        except (UnicodeEncodeError, UnicodeDecodeError):
+                            log.error("Error parsing '%s'", dn, exc_info=True)
+                        else:
+                            if v!="0" or i!=0:
+                                name = v
+            names.append(name)
+        wm.set_desktop_list(names)
 
     def set_workarea(self, workarea):
         wm = self._wm

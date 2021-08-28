@@ -637,8 +637,6 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def _process_desktop_size(self, proto, packet):
         pass
-    def calculate_desktops(self):
-        pass
     def calculate_workarea(self, w, h):
         pass
 

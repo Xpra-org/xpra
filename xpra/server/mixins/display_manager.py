@@ -314,40 +314,13 @@ class DisplayManager(StubServerMixin):
         self.update_all_server_settings()
 
     def dpi_changed(self):
-        pass
+        """
+        The x11 servers override this method
+        to also update the XSettings.
+        """
 
     def calculate_desktops(self):
-        count = 1
-        for ss in self._server_sources.values():
-            if ss.desktops:
-                count = max(count, ss.desktops)
-        count = max(1, min(20, count))
-        names = []
-        for i in range(count):
-            if i==0:
-                name = "Main"
-            else:
-                name = "Desktop %i" % (i+1)
-            for ss in self._server_sources.values():
-                if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
-                    dn = ss.desktop_names[i]
-                    if isinstance(dn, str):
-                        #newer clients send unicode
-                        name = dn
-                    else:
-                        #older clients send byte strings:
-                        try :
-                            v = strtobytes(dn).decode("utf8")
-                        except (UnicodeEncodeError, UnicodeDecodeError):
-                            log.error("Error parsing '%s'", dn, exc_info=True)
-                        else:
-                            if v!="0" or i!=0:
-                                name = v
-            names.append(name)
-        self.set_desktops(names)
-
-    def set_desktops(self, names):
-        pass
+        """ seamless servers can update the desktops """
 
     def calculate_workarea(self, w, h):
         raise NotImplementedError()
