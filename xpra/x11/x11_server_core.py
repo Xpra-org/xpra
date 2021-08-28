@@ -861,10 +861,6 @@ class X11ServerCore(GTKServerBase):
         return -1
 
 
-    def cleanup_input_devices(self):
-        pass
-
-
     def setup_input_devices(self):
         from xpra.server import server_features
         xinputlog("setup_input_devices() input_devices feature=%s", server_features.input_devices)
