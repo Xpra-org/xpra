@@ -564,11 +564,14 @@ compiler_directives = {
     "cdivision"             : True,
     "always_allow_keywords" : False,
     "unraisable_tracebacks" : True,
-    #"warn.undeclared"       : True,
-    #"warn.maybe_uninitialized" : True,
-    #"warn.unused"           : True,
-    #"warn.unused_result"    : True,
     }
+if strict_ENABLED:
+    compiler_directives.update({
+        #"warn.undeclared"       : True,
+        #"warn.maybe_uninitialized" : True,
+        "warn.unused"           : True,
+        "warn.unused_result"    : True,
+        })
 if cython_tracing_ENABLED:
     compiler_directives = {
         "linetrace" : True,
