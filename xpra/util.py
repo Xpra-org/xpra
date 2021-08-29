@@ -670,6 +670,7 @@ def log_mem_info(prefix="memory usage: ", pid=os.getpid()):
 
 
 class ellipsizer:
+    __slots__ = ("obj", "limit")
     def __init__(self, obj, limit=100):
         self.obj = obj
         self.limit = limit
