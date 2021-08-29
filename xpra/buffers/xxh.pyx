@@ -16,5 +16,5 @@ cdef extern from "xxhash.h":
 #cdef unsigned long long xxh64(const void* input, size_t length, unsigned long long seed) nogil:
 #    return XXH64(input, length, seed)
 
-cdef unsigned long long xxh3(const void* input, size_t length) nogil:
+cdef XXH64_hash_t xxh3(const void* input, size_t length) nogil:
     return XXH3_64bits(input, length)
