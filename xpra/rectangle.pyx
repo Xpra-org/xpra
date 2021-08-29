@@ -47,7 +47,7 @@ cdef class rectangle:
             raise Exception("cannot compare rectangle and %s" % type(other))
         cdef rectangle o = other
         if op==2:   #==
-            return self.x==o.x and self.y==o.y and self.width==o.width and self.height==o.height
+            return self.hash==o.hash and self.x==o.x and self.y==o.y and self.width==o.width and self.height==o.height
         elif op==3: #!=
             return self.x!=o.x or self.y!=o.y or self.width!=o.width or self.height!=o.height
         elif op==0: #<
@@ -78,10 +78,12 @@ cdef class rectangle:
             or None
         """
         cdef int ix = MAX(self.x, x)
-        cdef int iy = MAX(self.y, y)
         cdef int iw = MIN(self.x+self.width, x+w) - ix
+        if iw<=0:
+            return None
+        cdef int iy = MAX(self.y, y)
         cdef int ih = MIN(self.y+self.height, y+h) - iy
-        if iw<=0 or ih<=0:
+        if ih<=0:
             return None
         return rectangle(ix, iy, iw, ih)
 
