@@ -288,6 +288,12 @@ BuildRequires:		libxkbfile-devel
 BuildRequires:		libXtst-devel
 BuildRequires:		libXcomposite-devel
 BuildRequires:		libXdamage-devel
+BuildRequires:		libXres-devel
+Requires:			libxkbfile
+Requires:			libXtst
+Requires:			libXcomposite
+Requires:			libXdamage
+Requires:			libXres
 #once the server is fully ported over to python3:
 #Recommends:		python3-uinput
 %description -n python3-xpra-server

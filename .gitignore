@@ -143,6 +143,7 @@ tests/unittests/test-file*
 /xpra/x11/bindings/display_source.c
 /xpra/x11/bindings/keyboard_bindings.c
 /xpra/x11/bindings/randr_bindings.c
+/xpra/x11/bindings/res_bindings.c
 /xpra/x11/bindings/wait_for_x_server.c
 /xpra/x11/bindings/window_bindings.c
 /xpra/x11/bindings/ximage.c

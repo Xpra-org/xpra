@@ -15,6 +15,7 @@ from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
 from xpra.x11.bindings.window_bindings import X11WindowBindings, constants, SHAPE_KIND #@UnresolvedImport
+from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.composite import CompositeHelper
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_type_get, PYTHON_TYPES
@@ -33,6 +34,11 @@ geomlog = Logger("x11", "window", "geometry")
 X11Window = X11WindowBindings()
 em = Gdk.EventMask
 ADDMASK = em.STRUCTURE_MASK | em.PROPERTY_CHANGE_MASK | em.FOCUS_CHANGE_MASK | em.POINTER_MOTION_MASK
+
+XRes = ResBindings()
+if not XRes.check_xres():
+    log.warn("Warning: X Resource Extension missing or too old")
+    XRes = None
 
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
@@ -128,8 +134,13 @@ class CoreX11WindowModel(WindowModelStub):
         "client-machine": (GObject.TYPE_PYOBJECT,
                 "Host where client process is running", "",
                 GObject.ParamFlags.READABLE),
-        #from _NET_WM_PID
+        #from XResGetClientPid
         "pid": (GObject.TYPE_INT,
+                "PID of owning process", "",
+                -1, 65535, -1,
+                GObject.ParamFlags.READABLE),
+        #from _NET_WM_PID
+        "wm-pid": (GObject.TYPE_INT,
                 "PID of owning process", "",
                 -1, 65535, -1,
                 GObject.ParamFlags.READABLE),
@@ -193,7 +204,7 @@ class CoreX11WindowModel(WindowModelStub):
     #things that we expose:
     _property_names         = [
         "xid", "depth", "has-alpha",
-        "client-machine", "pid",
+        "client-machine", "pid", "wm-pid",
         "title", "role",
         "command", "shape",
         "class-instance", "protocols",
@@ -371,9 +382,11 @@ class CoreX11WindowModel(WindowModelStub):
         metalog("read_initial_X11_properties() core")
         #immutable ones:
         depth = X11Window.get_depth(self.xid)
-        metalog("initial X11 properties: xid=%#x, depth=%i", self.xid, depth)
+        pid = XRes.get_pid(self.xid) if XRes else -1
+        metalog("initial X11 properties: xid=%#x, depth=%i, pid=%i", self.xid, depth, pid)
         self._updateprop("depth", depth)
         self._updateprop("xid", self.xid)
+        self._updateprop("pid", pid)
         self._updateprop("has-alpha", depth==32)
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())
@@ -552,7 +565,7 @@ class CoreX11WindowModel(WindowModelStub):
     def _handle_pid_change(self):
         pid = self.prop_get("_NET_WM_PID", "u32") or -1
         metalog("_NET_WM_PID=%s", pid)
-        self._updateprop("pid", pid)
+        self._updateprop("wm-pid", pid)
 
     def _handle_client_machine_change(self):
         client_machine = self.prop_get("WM_CLIENT_MACHINE", "latin1")
@@ -759,7 +772,7 @@ class CoreX11WindowModel(WindowModelStub):
             xid = self.get_property("xid")
             if FORCE_QUIT:
                 log.info("window %#x ('%s') does not support WM_DELETE_WINDOW", xid, title)
-                log.info(" using force_quit")
+                log.info(" using force quit")
                 # You don't wanna play ball?  Then no more Mr. Nice Guy!
                 self.force_quit()
             else:
@@ -771,18 +784,29 @@ class CoreX11WindowModel(WindowModelStub):
         with xswallow:
             send_wm_delete_window(self.client_window)
 
+    def XKill(self):
+        with xswallow:
+            X11Window.XKillClient(self.xid)
+
     def force_quit(self):
-        pid = self.get_property("pid")
         machine = self.get_property("client-machine")
+        pid = self.get_property("pid")
+        if pid<=0:
+            #we could fallback to _NET_WM_PID
+            #but that would be unsafe
+            log.warn("Warning: cannot terminate window %#x, no pid found", self.xid)
+            if machine:
+                log.warn(" WM_CLIENT_MACHINE=%s", machine)
+            pid = self.get_property("wm-pid")
+            if pid>0:
+                log.warn(" _NET_WM_PID=%s", pid)
+            return
+        if pid==os.getpid():
+            log.warn("Warning: force_quit is refusing to kill ourselves!")
+            return
         localhost = gethostname()
         log("force_quit() pid=%s, machine=%s, localhost=%s", pid, machine, localhost)
-        def XKill():
-            with xswallow:
-                X11Window.XKillClient(self.xid)
-        if pid > 0 and machine is not None and machine == localhost:
-            if pid==os.getpid():
-                log.warn("Warning: force_quit is refusing to kill ourselves!")
-                return
+        if machine is not None and machine == localhost:
             if self._kill_count==0:
                 #first time around: just send a SIGINT and hope for the best
                 try:
@@ -797,7 +821,7 @@ class CoreX11WindowModel(WindowModelStub):
                 except OSError as e:
                     log.warn("Warning: failed to kill(SIGKILL) client with pid %s", pid)
                     log.warn(" %s", e)
-                XKill()
+                self.XKill()
             self._kill_count += 1
             return
-        XKill()
+        self.XKill()

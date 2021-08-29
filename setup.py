@@ -937,6 +937,7 @@ def clean():
                    "xpra/x11/bindings/display_source.c",
                    "xpra/x11/bindings/window_bindings.c",
                    "xpra/x11/bindings/randr_bindings.c",
+                   "xpra/x11/bindings/res_bindings.c",
                    "xpra/x11/bindings/core_bindings.c",
                    "xpra/x11/bindings/posix_display_source.c",
                    "xpra/x11/bindings/ximage.c",
@@ -1875,6 +1876,10 @@ if x11_ENABLED:
     add_cython_ext("xpra.x11.bindings.ximage",
                 ["xpra/x11/bindings/ximage.pyx"],
                 **pkgconfig("x11", "xext", "xcomposite")
+                )
+    add_cython_ext("xpra.x11.bindings.res_bindings",
+                ["xpra/x11/bindings/res_bindings.pyx"],
+                **pkgconfig("x11", "xres")
                 )
 if xinput_ENABLED:
     add_cython_ext("xpra.x11.bindings.xi2_bindings",
