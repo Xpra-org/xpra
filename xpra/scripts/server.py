@@ -24,6 +24,7 @@ from xpra.scripts.main import (
     validate_encryption, parse_env, configure_env,
     stat_X11_display, get_xpra_sessions,
     make_progress_process,
+    X11_SOCKET_DIR,
     )
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
@@ -845,7 +846,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         if not any(x for x in ("/run/user/%i" % uid, "/tmp", "/var/tmp") if xrd.startswith(x)):
             xrd = ""
         #these paths could cause problems if we were to create and chown them:
-        if xrd.startswith("/tmp/.X11-unix") or xrd.startswith("/tmp/.XIM-unix"):
+        if xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
             xrd = ""
     if not xrd:
         xrd = os.environ.get("XDG_RUNTIME_DIR")
