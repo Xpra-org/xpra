@@ -388,7 +388,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                      })
         try:
             info["client-geometry"] = self._desktop_manager.window_geometry(window)
-        except:
+        except KeyError:
             pass        #OR or tray window
         return info
 
@@ -600,7 +600,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if window_prop_set:
             try:
                 window_prop_set("_XPRA_WID", "u32", wid)
-            except:
+            except XError:
                 pass    #this can fail if the window disappears
                 #but we don't really care, it will get cleaned up soon enough
         return wid
@@ -1312,7 +1312,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             if prio==0:
                 try:
                     prio = rindex(focus_history, wid)
-                except:
+                except ValueError:
                     pass        #not in focus history!
             order[(prio, wid)] = window
         log("do_repaint_root_overlay() has_focus=%s, has_grab=%s, windows in order=%s",
