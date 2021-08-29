@@ -721,7 +721,6 @@ def flatten_dict(info, sep="."):
     return to
 
 def _flatten_dict(to, sep, path, d):
-    from xpra.os_util import bytestostr
     for k,v in d.items():
         if path:
             if k:
@@ -791,7 +790,6 @@ def pver(v, numsep=".", strsep=", "):
                     except UnicodeDecodeError:
                         return bytestostr(x)
                 return strsep.join(s(x) for x in v)
-    from xpra.os_util import bytestostr
     return bytestostr(v)
 
 def sorted_nicely(l):
@@ -800,7 +798,6 @@ def sorted_nicely(l):
         if text.isdigit():
             return int(text)
         return text
-    from xpra.os_util import bytestostr
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', bytestostr(key))]
     return sorted(l, key = alphanum_key)
 
@@ -828,7 +825,6 @@ def print_nested_dict(d, prefix="", lchar="*", pad=32, vformat=None, print_fn=No
             pass
         return nonl(pver(v, ", ", ", "))
     l = pad-len(prefix)-len(lchar)
-    from xpra.os_util import bytestostr
     for k in sorted_nicely(d.keys()):
         v = d[k]
         if isinstance(v, dict):
