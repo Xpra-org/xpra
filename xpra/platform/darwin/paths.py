@@ -134,7 +134,9 @@ def do_get_default_log_dirs():
     return dirs
 
 def do_get_socket_dirs():
-    return ["/var/tmp/%s-Xpra" % os.getuid(), "~/.xpra"]
+    #return ["/var/tmp/%s-Xpra" % os.getuid(), "~/.xpra"]
+    import tempfile
+    return [tempfile.gettempdir(), "~/.xpra"]
 
 def do_get_client_socket_dirs():
     return ["~/.xpra/clients"]
