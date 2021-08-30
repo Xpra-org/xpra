@@ -6,6 +6,7 @@
 
 import unittest
 
+from collections import defaultdict
 from xpra.net.net_util import (
     get_info, get_interfaces, get_interfaces_addresses, #get_interface,
     get_gateways, get_bind_IPs, do_get_bind_ifacemask,
@@ -29,7 +30,8 @@ class TestVersionUtilModule(unittest.TestCase):
         for iface in ifaces:
             ipmasks = do_get_bind_ifacemask(iface)
             for ip, _ in ipmasks:
-                assert get_iface(ip)==iface
+                assert get_iface(ip)==iface, "expected interface %s for ip %s but got %s" % (
+                    iface, ip, get_iface(ip))
             if if_nametoindex:
                 try:
                     i = if_nametoindex(iface)
@@ -37,7 +39,8 @@ class TestVersionUtilModule(unittest.TestCase):
                     pass
                 else:
                     if if_indextoname:
-                        assert if_indextoname(i)==iface
+                        assert if_indextoname(i)==iface, "expected interface %s for index %i but got %s" % (
+                            iface, i, if_indextoname(i))
         ia = get_interfaces_addresses()
         assert ia
         #for iface, address in ia.items():
