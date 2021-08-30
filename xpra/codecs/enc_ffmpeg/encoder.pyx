@@ -851,6 +851,8 @@ def init_module():
         }.items():
         if avcodec_find_encoder(codec_id):
             all_codecs += codecs
+        else:
+            log("cannot find encoder %i for %s", codec_id, csv(codecs))
     log("enc_ffmpeg non vaapi CODECS=%s", csv(all_codecs))
     if VAAPI and LINUX:
         try:
@@ -859,9 +861,11 @@ def init_module():
             for c in vaapi_codecs:
                 if c not in all_codecs:
                     all_codecs.append(c)
-        except Exception:
+        except Exception as e:
             resume_nonfatal_logging()
             log("no vappi support", exc_info=True)
+            log.warn("Warning: no VAAPI support")
+            log.warn(" %s", e)
     CODECS = tuple(all_codecs)
 
 VAAPI_ENCODINGS = os.environ.get("XPRA_VAAPI_ENCODINGS", "h264,hevc,mpeg2,vp8,vp9").split(",")
