@@ -324,9 +324,8 @@ def main(args):
         else:
             load_codecs()
             list_codecs = ALL_CODECS
-
-        #not really a codec, but gets used by codecs, so include version info:
-        add_codec_version("numpy", "numpy")
+            #not really a codec, but gets used by codecs, so include version info:
+            add_codec_version("numpy", "numpy")
         print("codecs and csc modules found:")
         #print("codec_status=%s" % codecs)
         for name in sorted(list_codecs):
