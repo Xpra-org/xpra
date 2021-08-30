@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -164,7 +164,7 @@ class SourceMixinsTest(unittest.TestCase):
         self._test_mixin_class(InputMixin)
 
     def test_mmap(self):
-        from xpra.server.source.mmap_connection import MMAP_Connection, log
+        from xpra.server.source import mmap_connection
         import tempfile
         file = tempfile.NamedTemporaryFile(prefix="xpra-mmap-test")
         file.write(b"0"*1024*1024)
@@ -178,8 +178,8 @@ class SourceMixinsTest(unittest.TestCase):
                     if has_file:
                         caps["mmap.file"] = file.name
                         caps["mmap_file"] = file.name
-                    with LoggerSilencer(log, ("error", "warn")):
-                        self._test_mixin_class(MMAP_Connection, {
+                    with LoggerSilencer(mmap_connection, ("error", "warn")):
+                        self._test_mixin_class(mmap_connection.MMAP_Connection, {
                             "mmap_filename" : server_mmap_filename,
                             "supports_mmap" : supports_mmap,
                             "min_mmap_size" : 10000,
@@ -232,18 +232,18 @@ class SourceMixinsTest(unittest.TestCase):
         self._test_mixin_class(ClientDisplayMixin)
 
     def test_shell(self):
-        from xpra.server.source.shell_mixin import ShellMixin, log
+        from xpra.server.source import shell_mixin
         protocol = AdHocStruct()
         protocol._conn = AdHocStruct()
         protocol._conn.options = {"shell" : "yes"}
-        m = self._test_mixin_class(ShellMixin, protocol=protocol)
+        m = self._test_mixin_class(shell_mixin.ShellMixin, protocol=protocol)
         def noop(*_args):
             pass
         m.send = noop
         out,err = m.shell_exec("print('hello')")
         assert out==b"hello\n", "expected 'hello' but got '%s'" % out
         assert not err
-        with silence_error(log):
+        with silence_error(shell_mixin):
             out,err = m.shell_exec("--not-a-statement--")
         assert not out
         assert err
@@ -261,9 +261,9 @@ class SourceMixinsTest(unittest.TestCase):
             get_util_logger().info("webcam test skipped: no virtual video devices found")
             return
         for need in (False, True):
-            from xpra.server.source.webcam_mixin import WebcamMixin, log
+            from xpra.server.source import webcam_mixin
             for enabled in (False, True):
-                wm = self._test_mixin_class(WebcamMixin, {
+                wm = self._test_mixin_class(webcam_mixin.WebcamMixin, {
                     "webcam"            : need,
                     "webcam_enabled"    : enabled,
                     "webcam_device"     : None,
@@ -280,7 +280,7 @@ class SourceMixinsTest(unittest.TestCase):
             assert wm.get_info()
             device_id = 0
             w, h = 640, 480
-            with silence_info(log):
+            with silence_info(webcam_mixin.log):
                 assert wm.start_virtual_webcam(device_id, w, h)
             assert wm.get_info().get("webcam", {}).get("active-devices", 0)==1
             assert len(packets)==1    #ack sent

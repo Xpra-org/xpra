@@ -8,12 +8,7 @@ import unittest
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs import rgb_transform
-
-#to silence warnings triggered by the tests:
-from xpra.log import Logger
-class NoWarnLogger(Logger):
-    def warn(self, *_args, **_kwargs):
-        pass    #silence it
+from unit.test_util import LoggerSilencer
 
 X = 0
 Y = 0
@@ -31,16 +26,14 @@ class RGBTransformTest(unittest.TestCase):
         return ImageWrapper(X, Y, W, H, memoryview(bytes(buf[:l])), fmt, D, stride, planes=ImageWrapper.PACKED)
 
     def test_rgb_reformat(self):
+        with LoggerSilencer(rgb_transform):
+            self.do_test_rgb_reformat()
+
+    def do_test_rgb_reformat(self):
         rgb_reformat = rgb_transform.rgb_reformat
         save_PIL_conv = rgb_transform.PIL_conv
         save_PIL_conv_noalpha = rgb_transform.PIL_conv_noalpha
         buf = bytearray(W*H*4)
-        rgb_transform.log = NoWarnLogger()
-        try:
-            from xpra.codecs.argb import argb
-            argb.log = NoWarnLogger()
-        except ImportError:
-            pass
         for from_fmt, to_fmts in {
             "BGRA"  : ("RGB", "RGBX", "RGBA"),
             "BGRX"  : ("RGB", "RGBX",),

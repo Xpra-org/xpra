@@ -8,7 +8,8 @@ import time
 import unittest
 
 from unit.test_util import silence_error, LoggerSilencer
-from xpra.server.background_worker import get_worker, add_work_item, stop_worker, Worker_Thread, log
+from xpra.server import background_worker
+from xpra.server.background_worker import get_worker, add_work_item, stop_worker, Worker_Thread
 
 
 class BackgroundWorkerTest(unittest.TestCase):
@@ -19,7 +20,7 @@ class BackgroundWorkerTest(unittest.TestCase):
         assert repr(w)
         def error_item():
             raise Exception("work item test error")
-        with silence_error(log):
+        with silence_error(background_worker):
             add_work_item(error_item)
             time.sleep(0.1)
         #add the same item twice, with "no-duplicates"
@@ -30,7 +31,7 @@ class BackgroundWorkerTest(unittest.TestCase):
         w.add(nodupe, False)
         w.add(nodupe, False)
         time.sleep(1)
-        with LoggerSilencer(log, ("warn", "info")):
+        with LoggerSilencer(background_worker, ("warn", "info")):
             #trigger the warning with more than 10 items:
             def slow_item():
                 time.sleep(1)

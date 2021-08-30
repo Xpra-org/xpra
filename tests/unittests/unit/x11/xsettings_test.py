@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ import unittest
 import binascii
 
 from xpra.os_util import OSEnvContext
+from unit.test_util import LoggerSilencer
 
 
 class XSettingsTest(unittest.TestCase):
@@ -19,10 +20,7 @@ class XSettingsTest(unittest.TestCase):
             get_settings, set_settings,
             get_local_byteorder,
             XSettingsTypeInteger, XSettingsTypeString, XSettingsTypeColor,
-            log,
             )
-        #silence warnings:
-        log.error = log.warn = log.debug
         for DEBUG_XSETTINGS in (True, False):
             with OSEnvContext():
                 os.environ["XPRA_XSETTINGS_DEBUG"] = str(int(DEBUG_XSETTINGS))
@@ -51,30 +49,32 @@ class XSettingsTest(unittest.TestCase):
                 rserial, rsettings = v
                 assert rserial==serial
                 assert len(rsettings)==len(settings)
-        #test error handling:
-        for settings in (
-            (
-                #invalid color causes exception
-                (XSettingsTypeColor, "bad-color", (128, ), 0),
-            ),
-            (
-                #invalid setting type is skipped with an error message:
-                (255, "invalid-setting-type", 0, 0),
-            ),
-            ):
-            serial = 3
-            data = set_settings((serial, settings))
-            assert data
+        from xpra.x11 import xsettings_prop
+        with LoggerSilencer(xsettings_prop):
+            #test error handling:
+            for settings in (
+                (
+                    #invalid color causes exception
+                    (XSettingsTypeColor, "bad-color", (128, ), 0),
+                ),
+                (
+                    #invalid setting type is skipped with an error message:
+                    (255, "invalid-setting-type", 0, 0),
+                ),
+                ):
+                serial = 3
+                data = set_settings((serial, settings))
+                assert data
+                v = get_settings(data)
+                rserial, rsettings = v
+                assert rserial==serial
+                assert len(rsettings)==0
+            #parsing an invalid data type (9) should fail:
+            hexdata = b"000000000200000001000000090004007374723100000000010000003100000000"
+            data = binascii.unhexlify(hexdata)
             v = get_settings(data)
             rserial, rsettings = v
-            assert rserial==serial
             assert len(rsettings)==0
-        #parsing an invalid data type (9) should fail:
-        hexdata = b"000000000200000001000000090004007374723100000000010000003100000000"
-        data = binascii.unhexlify(hexdata)
-        v = get_settings(data)
-        rserial, rsettings = v
-        assert len(rsettings)==0
 
 
 def main():
