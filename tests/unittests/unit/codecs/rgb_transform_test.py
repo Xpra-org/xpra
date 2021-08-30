@@ -8,7 +8,6 @@ import unittest
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs import rgb_transform
-from unit.test_util import LoggerSilencer
 
 X = 0
 Y = 0
@@ -26,8 +25,11 @@ class RGBTransformTest(unittest.TestCase):
         return ImageWrapper(X, Y, W, H, memoryview(bytes(buf[:l])), fmt, D, stride, planes=ImageWrapper.PACKED)
 
     def test_rgb_reformat(self):
+        from unit.test_util import LoggerSilencer
+        from xpra.codecs.argb import argb #pylint: disable=no-name-in-module
         with LoggerSilencer(rgb_transform):
-            self.do_test_rgb_reformat()
+            with LoggerSilencer(argb):
+                self.do_test_rgb_reformat()
 
     def do_test_rgb_reformat(self):
         rgb_reformat = rgb_transform.rgb_reformat
