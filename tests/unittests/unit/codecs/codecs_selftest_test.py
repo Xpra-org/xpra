@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2015-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ import logging
 import unittest
 
 from xpra.codecs import loader
+from xpra.codecs.codec_constants import TransientCodecException
 
 SUSPEND_CODEC_ERROR_LOGGING = os.environ.get("XPRA_SUSPEND_CODEC_ERROR_LOGGING", "1")=="1"
 try:
@@ -49,7 +50,10 @@ class TestDecoders(unittest.TestCase):
                 selftest = getattr(codec, "selftest", None)
                 #print("selftest(%s)=%s" % (codec_name, selftest))
                 if selftest:
-                    selftest(True)
+                    try:
+                        selftest(True)
+                    except TransientCodecException as e:
+                        print("ignoring TransientCodecException on %s : %s" % (codec, e))
             finally:
                 if log:
                     log.logger.setLevel(logging.DEBUG)
