@@ -353,7 +353,7 @@ class Logger:
     * we bypass the logging system unless debugging is enabled for the logger,
         which is much faster than relying on the python logging code
     """
-    __slots__ = ("categories", "level_override", "logger", "debug_enabled")
+    __slots__ = ("categories", "level_override", "logger", "debug_enabled", "__weakref__")
     def __init__(self, *categories):
         global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)
