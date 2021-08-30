@@ -56,7 +56,7 @@ def get_debug_args():
     return args
 
 class FullDebugContext:
-
+    __slots__ = ("debug_enabled_categories", "enabled")
     def __enter__(self):
         global debug_enabled_categories
         self.debug_enabled_categories = debug_enabled_categories
@@ -353,7 +353,7 @@ class Logger:
     * we bypass the logging system unless debugging is enabled for the logger,
         which is much faster than relying on the python logging code
     """
-
+    __slots__ = ("categories", "level_override", "logger", "debug_enabled")
     def __init__(self, *categories):
         global default_level, debug_disabled_categories, KNOWN_FILTERS
         self.categories = list(categories)
@@ -442,7 +442,6 @@ class Logger:
 
 
 class CaptureHandler(logging.Handler):
-
     def __init__(self):
         super().__init__(logging.DEBUG)
         self.records = []
