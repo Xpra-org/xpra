@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016, 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,12 @@ import unittest
 
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs import rgb_transform
+
+#to silence warnings triggered by the tests:
+from xpra.log import Logger
+class NoWarnLogger(Logger):
+    def warn(self, *_args, **_kwargs):
+        pass    #silence it
 
 X = 0
 Y = 0
@@ -29,11 +35,10 @@ class RGBTransformTest(unittest.TestCase):
         save_PIL_conv = rgb_transform.PIL_conv
         save_PIL_conv_noalpha = rgb_transform.PIL_conv_noalpha
         buf = bytearray(W*H*4)
-        #silence warnings:
-        rgb_transform.log.warn = rgb_transform.log.debug
+        rgb_transform.log = NoWarnLogger()
         try:
-            from xpra.codecs.argb.argb import log
-            log.warn = log.debug
+            from xpra.codecs.argb import argb
+            argb.log = NoWarnLogger()
         except ImportError:
             pass
         for from_fmt, to_fmts in {
