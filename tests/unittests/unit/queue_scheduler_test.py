@@ -6,8 +6,8 @@
 
 import unittest
 
-from unit.test_util import silence_error
-from xpra.queue_scheduler import QueueScheduler, log
+from xpra import queue_scheduler
+QueueScheduler = queue_scheduler.QueueScheduler
 
 
 class QueueSchedulerTest(unittest.TestCase):
@@ -90,7 +90,8 @@ class QueueSchedulerTest(unittest.TestCase):
         qs = QueueScheduler()
         def raise_exception():
             raise Exception("test scheduler error handling")
-        with silence_error(log):
+        from unit.test_util import silence_error
+        with silence_error(queue_scheduler):
             qs.idle_add(raise_exception)
             qs.timeout_add(500, qs.stop)
             qs.run()
