@@ -606,7 +606,7 @@ def add_to_keywords(kw, key, *args):
         values.append(arg)
 def remove_from_keywords(kw, key, value):
     values = kw.get(key)
-    if values and value in values:
+    while values and value in values:
         values.remove(value)
 
 
