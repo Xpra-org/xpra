@@ -509,7 +509,7 @@ class UIXpraClient(ClientBaseClass):
 
     def _process_startup_complete(self, packet):
         log("all the existing windows and system trays have been received")
-        XpraClientBase._process_startup_complete(self, packet)
+        super()._process_startup_complete(packet)
         gui_ready()
         if self.tray:
             self.tray.ready()

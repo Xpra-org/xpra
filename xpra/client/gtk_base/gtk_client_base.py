@@ -265,7 +265,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def _process_startup_complete(self, packet):
-        UIXpraClient._process_startup_complete(self, packet)
+        super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
 
 
