@@ -96,13 +96,12 @@ class ProcessTestUtil(unittest.TestCase):
         cls.display_start = 100
         cls.temp_files = []
         cls.processes = []
-        from xpra.server.server_util import find_log_dir
         cls.xauthority_temp = None #tempfile.NamedTemporaryFile(prefix="xpra-test.", suffix=".xauth", delete=False)
         #cls.xauthority_temp.close()
         #os.environ["XAUTHORITY"] = os.path.expanduser(cls.xauthority_temp.name)
         cls.default_env = os.environ.copy()
         cls.default_env.update({
-            "XPRA_LOG_DIR"  : find_log_dir(),
+            "XPRA_LOG_DIR"  : tempfile.gettempdir(),
             "XPRA_NOTTY"    : "1",
             "XPRA_WAIT_FOR_INPUT"   : "0",
             "XPRA_FLATTEN_INFO"     : "0",
