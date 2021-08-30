@@ -718,6 +718,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             eifd = []
         for eif in eifd:
             add_to_keywords(kw, 'extra_compile_args', eif)
+        remove_from_keywords(kw, 'extra_compile_args', "-fpermissive")
     if PIC_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', "-fPIC")
     if debug_ENABLED:
