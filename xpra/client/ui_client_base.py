@@ -18,7 +18,7 @@ from xpra.net.net_util import get_info as get_net_info
 from xpra.child_reaper import reaper_cleanup
 from xpra.platform.info import get_sys_info
 from xpra.os_util import (
-    platform_name, bytestostr, strtobytes,
+    platform_name, bytestostr,
     BITS, POSIX, WIN32, OSX, is_Wayland,
     get_frame_info, get_info_env, get_sysconfig_info,
     )
