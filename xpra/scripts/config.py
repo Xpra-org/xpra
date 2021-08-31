@@ -1386,8 +1386,7 @@ def fixup_encodings(options):
     from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
     estr = _csvstr(options.encodings)
     RENAME = {"jpg" : "jpeg"}
-    if options.encoding:
-        options.encoding = RENAME.get(options.encoding, options.encoding)
+    options.encoding = RENAME.get(options.encoding, options.encoding)
     encodings = [RENAME.get(x, x) for x in _nodupes(estr)]
     while True:
         try:
