@@ -10,9 +10,9 @@ import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.client.window_backing_base import fire_paint_callbacks
-from xpra.os_util import bytestostr, strtobytes, OSX, WIN32, is_Wayland
+from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
 from xpra.common import GRAVITY_STR
-from xpra.util import u, typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.util import net_utf8, typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
 log = Logger("window")
@@ -301,12 +301,7 @@ class ClientWindowBase(ClientWidgetBase):
                 value = metadata.get(var) or self._metadata.get(var)
                 if value is None:
                     return default_values.get(var, "<unknown %s>" % var)
-                #with 'rencodeplus', we just get the unicode string:
-                if isinstance(value, str):
-                    return value
-                #with rencode or bencode, we have to decode the value:
-                #(after converting it to 'bytes' if necessary)
-                return u(strtobytes(value))
+                return net_utf8(value)
             def metadata_replace(match):
                 atvar = match.group(0)          #ie: '@title@'
                 var = atvar[1:len(atvar)-1]     #ie: 'title'
@@ -339,8 +334,8 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_title(title)
 
         if "icon-title" in metadata:
-            icon_title = metadata.strget("icon-title")
-            self.set_icon_name(icon_title)
+            icon_title = metadata.strget("icon-title", "")
+            self.set_icon_name(net_utf8(icon_title))
             #the DE may have reset the icon now,
             #force it to use the one we really want:
             self.reset_icon()
