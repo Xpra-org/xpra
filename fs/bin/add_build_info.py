@@ -192,10 +192,10 @@ def get_platform_name():
         return "Solaris"
     if sys.platform.find("darwin")>=0:
         try:
-            #ie: Mac OS X 10.5.8
-            return "Mac OS X %s" % platform.mac_ver()[0]
-        except:
-            return "Mac OS X"
+            #ie: MacOS 10.14.6
+            return "MacOS %s" % platform.mac_ver()[0]
+        except (AttributeError, TypeError, IndexError):
+            return "MacOS"
     if sys.platform.find("openbsd")>=0:
         return "OpenBSD"
     if sys.platform.startswith("win"):
