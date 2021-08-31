@@ -1399,7 +1399,7 @@ def fixup_encodings(options):
             encodings = encodings[:i]+list(PREFERRED_ENCODING_ORDER)+encodings[i+1:]
     #if the list only has items to exclude (ie: '-scroll,-jpeg')
     #then 'all' is implied:
-    if all(True for e in encodings if e.startswith("-")):
+    if not any(True for e in encodings if not e.startswith("-")):
         encodings = list(PREFERRED_ENCODING_ORDER)+encodings
     if "rgb" in encodings:
         if "rgb24" not in encodings:
