@@ -715,10 +715,6 @@ class FileTransferHandler(FileTransferAttributes):
         data = data[:filesize]          #gio may null terminate it
         l("send_file%s action=%s, ask=%s",
           (filename, mimetype, type(data), "%i bytes" % filesize, printit, openit, options), action, ask)
-        try:
-            filename = bytestostr(filename).encode("utf8")
-        except Exception:
-            filename = strtobytes(filename)
         self.dump_remote_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
@@ -889,12 +885,7 @@ class FileTransferHandler(FileTransferAttributes):
             assert len(cdata)<=filesize     #compressed wrapper ensures this is true
             filelog("sending full file: %i bytes (chunk size=%i)", filesize, chunk_size)
         basefilename = os.path.basename(filename)
-        #convert str to utf8 bytes:
-        try:
-            base = basefilename.encode("utf8")
-        except (AttributeError, UnicodeEncodeError):
-            base = strtobytes(basefilename)
-        self.send("send-file", base, mimetype, printit, openit, filesize, cdata, options, send_id)
+        self.send("send-file", basefilename, mimetype, printit, openit, filesize, cdata, options, send_id)
         return True
 
     def _check_chunk_sending(self, chunk_id, chunk_no):

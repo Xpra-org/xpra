@@ -36,7 +36,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, log, _filter_targets,
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
-from xpra.util import csv, ellipsizer, envint, envbool, roundup
+from xpra.util import net_utf8, csv, ellipsizer, envint, envbool, roundup
 from xpra.os_util import bytestostr, strtobytes
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
@@ -217,8 +217,8 @@ def w_to_utf8(data):
         s = buf.raw[:l]
     log("got %i bytes of UNICODE data: %s", len(s), ellipsizer(s))
     if CONVERT_LINE_ENDINGS:
-        return s.decode("utf8").replace("\r\n", "\n").encode("utf8")
-    return strtobytes(s)
+        return s.decode("utf8").replace("\r\n", "\n")
+    return str(s)
 
 
 class Win32Clipboard(ClipboardTimeoutHelper):
@@ -526,7 +526,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
         elif dformat==8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", data)
-            self.set_clipboard_text(data)
+            self.set_clipboard_text(net_utf8(data))
         elif dformat==8 and dtype.startswith("image/"):
             img_format = dtype.split("/")[-1]   #ie: 'png'
             self.set_clipboard_image(img_format, data)
@@ -676,7 +676,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         #convert to wide char
         #get the length in wide chars:
         if CONVERT_LINE_ENDINGS:
-            text = text.decode("utf8").replace("\n", "\r\n").encode("utf8")
+            text = text.replace("\n", "\r\n").encode("utf8")
         wlen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, len(text), None, 0)
         if not wlen:
             self.set_err("failed to prepare to convert to wide char")

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
-from xpra.util import ellipsizer, envint
+from xpra.util import ellipsizer, envint, net_utf8
 from xpra.os_util import bytestostr, monotonic_time
 from xpra.log import Logger
 
@@ -71,10 +71,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 dtype, dformat, data = target_data.get(text_target)
                 if dformat!=8:
                     continue
-                try:
-                    text = data.decode("utf8")
-                except UnicodeDecodeError:
-                    text = bytestostr(data)
+                text = net_utf8(data)
                 log("setting text data %s / %s of size %i: %s",
                     dtype, dformat, len(text), ellipsizer(text))
                 self._block_owner_change = monotonic_time()
@@ -108,7 +105,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             if text:
                 #should verify the target is actually utf8...
                 text_target = text_targets[0]
-                send_token(targets, (text_target, "UTF8_STRING", 8, text.encode("utf8")))
+                send_token(targets, (text_target, "UTF8_STRING", 8, text))
                 return
         send_token(text_targets)
 
@@ -139,7 +136,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         elif target in TEXT_TARGETS:
             text = self.clipboard.wait_for_text()
             if text:
-                got_contents(target, 8, text.encode("utf8"))
+                got_contents(target, 8, text)
                 return
         else:
             #data = wait_for_contents(target)?

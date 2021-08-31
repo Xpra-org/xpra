@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -16,7 +16,7 @@ from xpra.clipboard.clipboard_core import (
     _filter_targets, ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.platform.ui_thread_watcher import get_UI_watcher
-from xpra.util import csv
+from xpra.util import csv, net_utf8
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
@@ -221,7 +221,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             return
         if dformat==8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", data)
-            self.set_clipboard_text(data)
+            self.set_clipboard_text(net_utf8(data))
         if dformat==8 and dtype in IMAGE_FORMATS:
             log("we got a %s image", dtype)
             self.set_image_data(dtype, data)
@@ -255,7 +255,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
 
     def set_clipboard_text(self, text):
         self.pasteboard.clearContents()
-        r = self.pasteboard.setString_forType_(text.decode("utf8"), NSStringPboardType)
+        r = self.pasteboard.setString_forType_(text, NSStringPboardType)
         log("set_clipboard_text(%s) success=%s", text, r)
         self.update_change_count()
 
