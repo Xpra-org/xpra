@@ -62,7 +62,7 @@ from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module
 from xpra.make_thread import start_thread
 from xpra.util import (
-    first_time, noerr,
+    first_time, noerr, net_utf8,
     csv, merge_dicts, typedict, notypedict, flatten_dict,
     ellipsizer, dump_all_frames, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
@@ -685,7 +685,7 @@ class ServerCore:
 
     def handle_command_request(self, proto, *args):
         """ client sent a command request as part of the hello packet """
-        assert args
+        assert args, "no arguments supplied"
         code, response = self.process_control_command(*args)
         hello = {"command_response"  : (code, response)}
         proto.send_now(("hello", hello))
@@ -1990,7 +1990,7 @@ class ServerCore:
     def auth_verified(self, proto, packet, auth_caps):
         capabilities = packet[1]
         c = typedict(capabilities)
-        command_req = c.strtupleget("command_request")
+        command_req = tuple(net_utf8(x) for x in c.tupleget("command_request"))
         if command_req:
             #call from UI thread:
             authlog("auth_verified(..) command request=%s", command_req)

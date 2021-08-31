@@ -13,7 +13,7 @@ from gi.repository import Gtk, Gdk, Gio
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX
 from xpra.util import (
-    typedict, envint, envbool, csv, first_time,
+    typedict, envint, envbool, csv, first_time, net_utf8,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
     MOVERESIZE_CANCEL,
     MOVERESIZE_SIZE_TOPLEFT, MOVERESIZE_SIZE_TOP, MOVERESIZE_SIZE_TOPRIGHT,
@@ -938,12 +938,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def set_command(self, command):
         if not HAS_X11_BINDINGS:
             return
-        v = command
-        if not isinstance(command, str):
-            try:
-                v = v.decode("utf8")
-            except UnicodeDecodeError:
-                v = bytestostr(command)
+        v = net_utf8(command)
         def do_set_command():
             metalog("do_set_command() str(%s)='%r' (type=%s)", command, v, type(command))
             prop_set(self.get_window(), "WM_COMMAND", "latin1", v)

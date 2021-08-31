@@ -13,7 +13,7 @@ from collections import deque
 from gi.repository import GObject, Gtk, Gdk, GdkX11
 
 from xpra.version_util import XPRA_VERSION
-from xpra.util import updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
+from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.server import server_features, EXITING_CODE
@@ -419,19 +419,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
             name = "Main" if i==0 else "Desktop %i" % (i+1)
             for ss in sources:
                 if ss.desktops and i<len(ss.desktop_names) and ss.desktop_names[i]:
-                    dn = ss.desktop_names[i]
-                    if isinstance(dn, str):
-                        #newer clients send unicode
-                        name = dn
-                    else:
-                        #older clients send byte strings:
-                        try :
-                            v = strtobytes(dn).decode("utf8")
-                        except (UnicodeEncodeError, UnicodeDecodeError):
-                            log.error("Error parsing '%s'", dn, exc_info=True)
-                        else:
-                            if v!="0" or i!=0:
-                                name = v
+                    v = net_utf8(ss.desktop_names[i])
+                    if v!="0" or i!=0:
+                        name = v
             names.append(name)
         wm.set_desktop_list(names)
 

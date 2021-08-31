@@ -369,7 +369,7 @@ def get_number_of_desktops():
 def get_desktop_names():
     v = []
     if not is_Wayland():
-        v = ["Main"]
+        v = ("Main", )
         d = None
         try:
             d = _get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
@@ -377,7 +377,7 @@ def get_desktop_names():
                 v = d.split(b"\0")
                 if len(v)>1 and v[-1]==b"":
                     v = v[:-1]
-                return [x.decode("utf8") for x in v]
+                return tuple(x.decode("utf8") for x in v)
         except Exception as e:
             screenlog.warn("failed to get desktop names: %s", e)
         screenlog("get_desktop_names() %s=%s", hexstr(d or ""), v)

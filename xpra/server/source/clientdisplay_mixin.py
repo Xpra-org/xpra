@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.os_util import strtobytes
-from xpra.util import get_screen_info, envint, first_time, iround, typedict
+from xpra.util import get_screen_info, envint, first_time, iround, typedict, net_utf8
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -65,7 +65,8 @@ class ClientDisplayMixin(StubSourceMixin):
         self.desktop_size_unscaled = c.intpair("desktop_size.unscaled")
         self.screen_resize_bigger = c.boolget("screen-resize-bigger", True)
         self.set_screen_sizes(c.tupleget("screen_sizes"))
-        self.set_desktops(c.intget("desktops", 1), c.strtupleget("desktop.names"))
+        desktop_names = tuple(net_utf8(x) for x in c.tupleget("desktop.names"))
+        self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")
         self.icc = c.dictget("icc", {})
         self.display_icc = c.dictget("display-icc", {})
@@ -113,17 +114,7 @@ class ClientDisplayMixin(StubSourceMixin):
 
     def set_desktops(self, desktops, desktop_names):
         self.desktops = desktops or 1
-        #older clients send strings,
-        #newer clients send bytes...
-        def b(v):
-            try :
-                return strtobytes(v).decode("utf8")
-            except UnicodeDecodeError:
-                return v
-        if desktop_names:
-            self.desktop_names = [b(d) for d in desktop_names]
-        else:
-            self.desktop_names = []
+        self.desktop_names = tuple(net_utf8(d) for d in (desktop_names or ()))
 
     def updated_desktop_size(self, root_w, root_h, max_w, max_h):
         log("updated_desktop_size%s randr_notify=%s, desktop_size=%s",

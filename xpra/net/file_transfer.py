@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,7 +11,7 @@ import uuid
 
 from xpra.child_reaper import getChildReaper
 from xpra.os_util import monotonic_time, bytestostr, strtobytes, umask_context, POSIX, WIN32
-from xpra.util import typedict, csv, envint, envbool, engs
+from xpra.util import typedict, csv, envint, envbool, engs, net_utf8, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.simple_stats import std_unit
 from xpra.make_thread import start_thread
@@ -90,18 +90,6 @@ def safe_open_download_file(basefilename, mimetype):
         fd = os.open(filename, flags)
     filelog("using filename '%s', file descriptor=%s", filename, fd)
     return filename, fd
-
-def s(v):
-    try:
-        return v.decode("utf8")
-    except (AttributeError, UnicodeDecodeError):
-        return bytestostr(v)
-
-def utf8_decode(url):
-    try:
-        return strtobytes(url).decode("utf8")
-    except UnicodeDecodeError:
-        return bytestostr(url)
 
 
 class FileTransferAttributes:
@@ -291,7 +279,7 @@ class FileTransferHandler(FileTransferAttributes):
             if chunk_state[-3]==send_id:
                 self.cancel_file(chunk_id, message)
                 return
-        filelog.error("Error: cannot cancel download %s, entry not found!", s(send_id))
+        filelog.error("Error: cannot cancel download %s, entry not found!", u(send_id))
 
     def cancel_file(self, chunk_id, message, chunk=0):
         filelog("cancel_file%s", (chunk_id, message, chunk))
@@ -322,7 +310,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_file_chunk(self, packet):
         chunk_id, chunk, file_data, has_more = packet[1:5]
-        chunk_id = bytestostr(chunk_id)
+        chunk_id = net_utf8(chunk_id)
         filelog("_process_send_file_chunk%s", (chunk_id, chunk, "%i bytes" % len(file_data), has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         if not chunk_state:
@@ -422,10 +410,10 @@ class FileTransferHandler(FileTransferAttributes):
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
         send_id = ""
         if len(packet)>=9:
-            send_id = s(packet[8])
+            send_id = net_utf8(packet[8])
         #basefilename should be utf8:
-        basefilename = utf8_decode(basefilename)
-        mimetype = bytestostr(mimetype)
+        basefilename = net_utf8(basefilename)
+        mimetype = net_utf8(mimetype)
         if filesize<=0:
             filelog.error("Error: invalid file size: %s", filesize)
             filelog.error(" file transfer aborted for %r", basefilename)
@@ -436,7 +424,7 @@ class FileTransferHandler(FileTransferAttributes):
         if r is None:
             filelog.warn("Warning: %s rejected for file '%s'",
                          ("transfer", "printing")[bool(printit)],
-                         bytestostr(basefilename))
+                         basefilename)
             return
         #accept_data can override the flags:
         printit, openit = r
@@ -450,7 +438,7 @@ class FileTransferHandler(FileTransferAttributes):
         l("receiving file: %s",
           [basefilename, mimetype, printit, openit, filesize, "%s bytes" % len(file_data), options])
         if filesize>self.file_size_limit:
-            l.error("Error: file '%s' is too large:", s(basefilename))
+            l.error("Error: file '%s' is too large:", basefilename)
             l.error(" %sB, the file size limit is %sB",
                     std_unit(filesize), std_unit(self.file_size_limit))
             return
@@ -487,18 +475,18 @@ class FileTransferHandler(FileTransferAttributes):
         #not chunked, full file:
         assert file_data, "no data, got %s" % (file_data,)
         if len(file_data)!=filesize:
-            l.error("Error: invalid data size for file '%s'", s(basefilename))
+            l.error("Error: invalid data size for file '%s'", basefilename)
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
         #check digest if present:
         def check_digest(algo="sha256", libfn=hashlib.sha256):
             digest = options.get(algo)
             if digest:
-                u = libfn()
-                u.update(file_data)
-                l("%s digest: %s - expected: %s", algo, u.hexdigest(), digest)
-                if digest!=u.hexdigest():
-                    self.digest_mismatch(filename, digest, u.hexdigest(), algo)
+                h = libfn()
+                h.update(file_data)
+                l("%s digest: %s - expected: %s", algo, h.hexdigest(), digest)
+                if digest!=h.hexdigest():
+                    self.digest_mismatch(filename, digest, h.hexdigest(), algo)
         check_digest("sha256", hashlib.sha256)
         check_digest("sha1", hashlib.sha1)
         check_digest("md5", hashlib.md5)
@@ -668,8 +656,8 @@ class FileTransferHandler(FileTransferAttributes):
 
 
     def _process_open_url(self, packet):
-        send_id = s(packet[2])
-        url = utf8_decode(packet[1])
+        send_id = net_utf8(packet[2])
+        url = net_utf8(packet[1])
         if not self.open_url:
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
@@ -750,7 +738,7 @@ class FileTransferHandler(FileTransferAttributes):
         delay = self.remote_file_ask_timeout*1000
         self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog("sending data request for %s '%s' with send-id=%s",
-                s(dtype), s(url), send_id)
+                u(dtype), u(url), send_id)
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
@@ -761,15 +749,15 @@ class FileTransferHandler(FileTransferAttributes):
         if len(packet)>=9:
             options = packet[8]
         #filenames and url are always sent encoded as utf8:
-        url = utf8_decode(url)
-        dtype = s(dtype)
-        send_id = s(send_id)
+        url = net_utf8(url)
+        dtype = net_utf8(dtype)
+        send_id = net_utf8(send_id)
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
 
 
     def do_process_send_data_request(self, dtype, send_id, url, _, filesize, printit, openit, options):
         filelog("do_process_send_data_request: send_id=%s, url=%s, printit=%s, openit=%s, options=%s",
-                s(send_id), url, printit, openit, options)
+                u(send_id), url, printit, openit, options)
         def cb_answer(accept):
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, accept)
@@ -820,8 +808,8 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_data_response(self, packet):
         send_id, accept = packet[1:3]
-        filelog("process send-data-response: send_id=%s, accept=%s", s(send_id), accept)
-        send_id = s(send_id)
+        send_id = net_utf8(send_id)
+        filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
             self.source_remove(timer)
@@ -829,10 +817,10 @@ class FileTransferHandler(FileTransferAttributes):
         if v is None:
             filelog.warn("Warning: cannot find send-file entry")
             return
-        dtype = v[0]
-        url = v[1]
+        dtype = net_utf8(v[0])
+        url = net_utf8(v[1])
         if accept==DENY:
-            filelog.info("the request to send %s '%s' has been denied", bytestostr(dtype), s(url))
+            filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
         assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
         if dtype==b"file":
@@ -872,15 +860,15 @@ class FileTransferHandler(FileTransferAttributes):
         else:
             action = "upload"
             l = filelog
-        l("do_send_file%s", (s(filename), mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
+        l("do_send_file%s", (u(filename), mimetype, type(data), "%i bytes" % filesize, printit, openit, options))
         if not self.check_file_size(action, filename, filesize):
             return False
-        u = hashlib.sha256()
-        u.update(data)
+        h = hashlib.sha256()
+        h.update(data)
         absfile = os.path.abspath(filename)
-        filelog("sha256 digest('%s')=%s", s(absfile), u.hexdigest())
+        filelog("sha256 digest('%s')=%s", u(absfile), h.hexdigest())
         options = options or {}
-        options["sha256"] = u.hexdigest()
+        options["sha256"] = h.hexdigest()
         chunk_size = min(self.file_chunks, self.remote_file_chunks)
         if 0<chunk_size<filesize:
             if len(self.send_chunks_in_progress)>=MAX_CONCURRENT_FILES:
@@ -933,10 +921,10 @@ class FileTransferHandler(FileTransferAttributes):
         #send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
         chunk_id, state, error_message, chunk = packet[1:5]
-        chunk_id = bytestostr(chunk_id)
+        chunk_id = net_utf8(chunk_id)
         if not state:
             filelog.info("the remote end is cancelling the file transfer:")
-            filelog.info(" %s", bytestostr(error_message))
+            filelog.info(" %s", net_utf8(error_message))
             self.cancel_sending(chunk_id)
             return
         chunk_state = self.send_chunks_in_progress.get(chunk_id)

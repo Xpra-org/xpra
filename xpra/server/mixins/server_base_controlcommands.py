@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 import os.path
 
-from xpra.util import parse_scaling_value, csv, from0to100
-from xpra.os_util import load_binary_file, bytestostr, strtobytes
+from xpra.util import parse_scaling_value, csv, from0to100, net_utf8
+from xpra.os_util import load_binary_file
 from xpra.simple_stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.control_command import ArgsControlCommand, ControlError
@@ -290,10 +290,7 @@ class ServerBaseControlCommands(StubServerMixin):
         #we always get the values as strings from the command interface,
         #but those may actually be utf8 encoded binary strings,
         #so we may have to do an ugly roundtrip:
-        try:
-            filename = strtobytes(filename).decode("utf8")
-        except Exception:
-            filename = bytestostr(filename)
+        filename = net_utf8(filename)
         openit = str(openit).lower() in ("open", "true", "1")
         return self.do_control_file_command("send file", client_uuids, filename, "file_transfer", (False, openit))
 

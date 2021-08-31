@@ -10,8 +10,8 @@ import logging
 import traceback
 from threading import Lock
 
-from xpra.os_util import bytestostr, strtobytes, monotonic_time
-from xpra.util import repr_ellipsized
+from xpra.os_util import bytestostr, monotonic_time
+from xpra.util import repr_ellipsized, net_utf8
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger, set_global_logging_handler
@@ -90,11 +90,6 @@ class LoggingServer(StubServerMixin):
         if self.in_remote_logging:
             return
         assert self.local_logging
-        def enc(x):
-            try:
-                return bytestostr(x).encode("utf8")
-            except UnicodeEncodeError:
-                return strtobytes(x)
         def local_warn(*args):
             self.local_logging(log, logging.WARNING, *args)
         def local_err(message):
@@ -141,12 +136,12 @@ class LoggingServer(StubServerMixin):
                         exc_info = sys.exc_info()
                     if exc_info and exc_info[0]:
                         for x in traceback.format_tb(exc_info[2]):
-                            self.send("logging", level, enc(x), dtime)
+                            self.send("logging", level, x, dtime)
                         try:
                             etypeinfo = exc_info[0].__name__
                         except AttributeError:
                             etypeinfo = str(exc_info[0])
-                        source.send("logging", level, enc("%s: %s" % (etypeinfo, exc_info[1])), dtime)
+                        source.send("logging", level, "%s: %s" % (etypeinfo, exc_info[1]), dtime)
                 except Exception as e:
                     if self._closing:
                         return
@@ -182,16 +177,11 @@ class LoggingServer(StubServerMixin):
         if len(packet)>=4:
             dtime = packet[3]
             prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
-        def dec(x):
-            try:
-                return x.decode("utf8")
-            except Exception:
-                return bytestostr(x)
         try:
             if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(dec(x) for x in msg)
+                dmsg = " ".join(net_utf8(x) for x in msg)
             else:
-                dmsg = dec(msg)
+                dmsg = net_utf8(msg)
             for l in dmsg.splitlines():
                 self.do_log(level, prefix+l)
         except Exception as e:

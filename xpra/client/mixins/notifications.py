@@ -1,13 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
-from xpra.os_util import bytestostr, strtobytes
-from xpra.util import envbool, repr_ellipsized, make_instance, updict, typedict
+from xpra.util import envbool, repr_ellipsized, make_instance, updict, typedict, net_utf8
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -147,15 +146,9 @@ class NotificationClient(StubClientMixin):
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
         #this one of the few places where we actually do care about character encoding:
-        try:
-            summary = strtobytes(summary).decode("utf8")
-        except UnicodeDecodeError:
-            summary = bytestostr(summary)
-        try:
-            body = strtobytes(body).decode("utf8")
-        except UnicodeDecodeError:
-            body = bytestostr(body)
-        app_name = bytestostr(app_name)
+        summary = net_utf8(summary)
+        body = net_utf8(body)
+        app_name = net_utf8(app_name)
         tray = self.get_tray_window(app_name, hints)
         log("get_tray_window(%s)=%s", app_name, tray)
         self.notifier.show_notify(dbus_id, tray, nid,

@@ -6,7 +6,7 @@
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
-from xpra.util import envint, csv, iround, first_time
+from xpra.util import envint, csv, iround, first_time, decode_str
 from xpra.os_util import strtobytes
 
 
@@ -388,7 +388,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             for o in range(crtc_info.noutput):
                                 output_info = XRRGetOutputInfo(self.display, rsc, crtc_info.outputs[o])
                                 if output_info!=NULL:
-                                    output_names.append(output_info.name.decode("utf8"))
+                                    output_names.append(decode_str(output_info.name))
                                     XRRFreeOutputInfo(output_info)
                             log("%s : %s", csv(output_names), rate)
                             rates[crtc] = rate

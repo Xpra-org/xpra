@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
 from xpra.os_util import monotonic_time, bytestostr
-from xpra.util import typedict
+from xpra.util import typedict, net_utf8
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -152,12 +152,9 @@ class InputServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        keyname = bytestostr(keyname)
-        try:
-            keystr = keystr.decode("utf8")
-        except Exception:
-            keystr = bytestostr(keystr)
-        modifiers = list(bytestostr(x) for x in modifiers)
+        keyname = net_utf8(keyname)
+        keystr = net_utf8(keystr)
+        modifiers = list(net_utf8(x) for x in modifiers)
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
         keylog("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)

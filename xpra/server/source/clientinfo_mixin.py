@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util import std, typedict
+from xpra.util import std, typedict, net_utf8
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.os_util import platform_name
 from xpra.log import Logger
@@ -71,7 +71,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_revision = c.strget("build.revision")
         self.client_bits = c.intget("python.bits")
         self.client_proxy = c.boolget("proxy")
-        self.client_wm_name = c.strget("wm_name")
+        self.client_wm_name = c.conv_get("wm_name", "", net_utf8)
         self.client_session_type = c.strget("session-type")
         self.client_session_type_full = c.strget("session-type.full", "")
         self.client_setting_change = c.boolget("setting-change")

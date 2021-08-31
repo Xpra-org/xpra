@@ -64,15 +64,6 @@ class NotificationMixin(StubSourceMixin):
             return False
         if user_callback:
             self.notification_callbacks[nid] = user_callback
-        #this is one of the few places where we actually do care about character encoding:
-        try:
-            summary = summary.encode("utf8")
-        except UnicodeEncodeError:
-            summary = str(summary)
-        try:
-            body = body.encode("utf8")
-        except UnicodeEncodeError:
-            body = str(body)
         if self.hello_sent:
             #Warning: actions and hints are send last because they were added later (in version 2.3)
             self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon,

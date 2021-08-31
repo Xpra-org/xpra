@@ -153,7 +153,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
                 attrs = used_attrs(v)
                 #add mimetypes:
                 attrs["mimetypes"] = get_mimetypes()
-                exported_printers[k.encode("utf8")] = attrs
+                exported_printers[k] = attrs
             if self.exported_printers is None:
                 #not been sent yet, ensure we can use the dict below:
                 self.exported_printers = {}

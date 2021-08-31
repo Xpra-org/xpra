@@ -11,7 +11,7 @@ from gi.repository import GLib
 from gi.repository import GObject
 
 from xpra.util import (
-    u, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
+    u, net_utf8, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized,
     SERVER_UPGRADE, DONE,
@@ -582,7 +582,7 @@ class ShellXpraClient(SendCommandConnectClient):
             stream = sys.stderr
         else:
             raise Exception("invalid file descriptor %i" % fd)
-        s = message.decode("utf8")
+        s = net_utf8(message)
         if s.endswith("\n"):
             s = s[:-1]
         stream.write("%s" % s)
@@ -647,12 +647,7 @@ class ControlXpraClient(CommandConnectClient):
     def make_hello(self):
         capabilities = super().make_hello()
         log("make_hello() adding command request '%s' to %s", self.command, capabilities)
-        def b(s):
-            try:
-                return s.encode("utf8")
-            except Exception:
-                return strtobytes(s)
-        capabilities["command_request"] = tuple(b(x) for x in self.command)
+        capabilities["command_request"] = tuple(self.command)
         capabilities["request"] = "command"
         return capabilities
 

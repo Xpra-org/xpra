@@ -69,7 +69,7 @@ class ShellMixin(StubSourceMixin):
             with redirect_stdout(stdout):
                 with redirect_stderr(stderr):
                     exec(code, _globals, {})  #pylint: disable=exec-used
-            return stdout.getvalue().encode("utf8"), stderr.getvalue().encode("utf8")
+            return stdout.getvalue(), stderr.getvalue()
         except Exception as e:
             log("shell_exec(..)", exc_info=True)
             log.error("Error running %r:", code)

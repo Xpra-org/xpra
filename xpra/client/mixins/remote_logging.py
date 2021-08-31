@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import logging
 import traceback
 from threading import Lock
 
-from xpra.util import csv, typedict, repr_ellipsized
+from xpra.util import csv, typedict, repr_ellipsized, net_utf8
 from xpra.os_util import monotonic_time, strtobytes, bytestostr
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
@@ -84,16 +84,11 @@ class RemoteLogging(StubClientMixin):
         if len(packet)>=4:
             dtime = packet[3]
             prefix += "@%02i.%03i " % ((dtime//1000)%60, dtime%1000)
-        def dec(x):
-            try:
-                return x.decode("utf8")
-            except Exception:
-                return bytestostr(x)
         try:
             if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(dec(x) for x in msg)
+                dmsg = " ".join(net_utf8(x) for x in msg)
             else:
-                dmsg = dec(msg)
+                dmsg = net_utf8(msg)
             for l in dmsg.splitlines():
                 self.do_log(level, prefix+l)
         except Exception as e:
@@ -112,11 +107,6 @@ class RemoteLogging(StubClientMixin):
         if self.in_remote_logging:
             return
         self.in_remote_logging = True
-        def enc(x):
-            try:
-                return bytestostr(x).encode("utf8")
-            except UnicodeEncodeError:
-                return strtobytes(x)
         def local_warn(*args):
             self.local_logging(logger_log, logging.WARNING, *args)
         try:
@@ -125,19 +115,19 @@ class RemoteLogging(StubClientMixin):
                 s = msg % args
             else:
                 s = msg
-            data = self.compressed_wrapper("text", enc(s), level=1)
+            data = self.compressed_wrapper("text", s, level=1)
             self.send("logging", level, data, dtime)
             exc_info = kwargs.get("exc_info")
             if exc_info is True:
                 exc_info = sys.exc_info()
             if exc_info and exc_info[0]:
                 for x in traceback.format_tb(exc_info[2]):
-                    self.send("logging", level, enc(x), dtime)
+                    self.send("logging", level, x, dtime)
                 try:
                     etypeinfo = exc_info[0].__name__
                 except AttributeError:
                     etypeinfo = str(exc_info[0])
-                self.send("logging", level, enc("%s: %s" % (etypeinfo, exc_info[1])), dtime)
+                self.send("logging", level, "%s: %s" % (etypeinfo, exc_info[1]), dtime)
             if self.log_both:
                 self.local_logging(logger_log, level, msg, *args, **kwargs)
         except Exception as e:

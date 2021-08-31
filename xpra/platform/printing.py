@@ -132,7 +132,7 @@ def main(argv):
                         sv = pv.decode("utf8")
                     else:
                         sv = nonl(pver(pv))
-                except Exception as e:
+                except Exception:
                     sv = repr(pv)
                 print("        %s : %s" % (pk.ljust(32), sv))
         except Exception as e:

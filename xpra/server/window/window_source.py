@@ -13,11 +13,10 @@ from math import sqrt
 from collections import deque
 
 from xpra.os_util import strtobytes, bytestostr, monotonic_time
-from xpra.util import envint, envbool, csv, typedict, first_time
+from xpra.util import envint, envbool, csv, typedict, first_time, decode_str
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.server.window.window_stats import WindowPerformanceStatistics
-from xpra.server.window.batch_config import DamageBatchConfig
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
@@ -2386,10 +2385,7 @@ class WindowSource(WindowIconSource):
         #don't print error code -1, which is just a generic code for error
         emsg = {-1 : ""}.get(error, error)
         def s(v):
-            try:
-                return (v or b"").decode("utf8")
-            except (AttributeError, UnicodeDecodeError):
-                return str(v)
+            return decode_str(v or b"")
         if emsg:
             emsg = (" %s" % s(emsg)).replace("\n", "").replace("\r", "")
         log.warn("Warning: client decoding error:")

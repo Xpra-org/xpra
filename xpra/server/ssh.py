@@ -11,8 +11,8 @@ from threading import Event
 import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
-from xpra.util import csv, envint, first_time
-from xpra.os_util import osexpand, getuid, bytestostr, WIN32, POSIX, monotonic_time
+from xpra.util import csv, envint, first_time, decode_str
+from xpra.os_util import osexpand, getuid, WIN32, POSIX, monotonic_time
 from xpra.platform.paths import get_ssh_conf_dirs
 from xpra.log import Logger
 
@@ -141,10 +141,7 @@ class SSHServer(paramiko.ServerInterface):
                 raise Exception("failed to send all the data using %s" % send_fn)
         #TODO: close channel after use? when?
         log("check_channel_exec_request(%s, %s)", channel, command)
-        try:
-            cmd = shlex.split(command.decode("utf8"))
-        except UnicodeDecodeError:
-            cmd = shlex.split(bytestostr(command))
+        cmd = shlex.split(decode_str(command))
         log("check_channel_exec_request: cmd=%s", cmd)
         # not sure if this is the best way to handle this, 'command -v xpra' has len=3
         if cmd[0] in ("type", "which", "command") and len(cmd) in (2,3):

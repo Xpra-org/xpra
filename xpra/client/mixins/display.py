@@ -119,7 +119,7 @@ class DisplayClient(StubClientMixin):
             }
         wm_name = get_wm_name()
         if wm_name:
-            caps["wm_name"] = wm_name.encode("utf8")
+            caps["wm_name"] = wm_name
 
         self._last_screen_settings = self.get_screen_settings()
         root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h = self._last_screen_settings[:7]
@@ -127,7 +127,7 @@ class DisplayClient(StubClientMixin):
             caps["desktop_size"] = self.cp(u_root_w, u_root_h)
         if ndesktops:
             caps["desktops"] = ndesktops
-            caps["desktop.names"] = tuple(x.encode("utf8") for x in desktop_names)
+            caps["desktop.names"] = tuple(desktop_names)
 
         ss = self.get_screen_sizes()
         self._current_screen_sizes = ss

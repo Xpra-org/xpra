@@ -329,6 +329,17 @@ def bytestostr(x) -> str:
         return x.decode("latin1")
     return str(x)
 
+def decode_str(x, try_encoding="utf8"):
+    """
+    When we want to decode something (usually a byte string) no matter what.
+    Try with utf8 first then fallback to just bytestostr().
+    """
+    try:
+        return x.decode(try_encoding)
+    except (AttributeError, UnicodeDecodeError):
+        return bytestostr(x)
+
+
 _RaiseKeyError = object()
 
 class typedict(dict):
@@ -449,7 +460,15 @@ class typedict(dict):
                     x = str(x)
                     aslist[i] = x
                 if not isinstance(x, item_type):
-                    self._warn("invalid item type for %s %s: expected %s but got %s", type(v), k, item_type, type(x))
+                    if callable(item_type):
+                        try:
+                            return item_type(x)
+                        except Exception:
+                            self._warn("invalid item type for %s %s: %s cannot be used with %s",
+                                       type(v), k, item_type, type(x))
+                            return default_value
+                    self._warn("invalid item type for %s %s: expected %s but got %s",
+                               type(v), k, item_type, type(x))
                     return default_value
         return aslist
 

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 
-from xpra.util import envbool, typedict
-from xpra.os_util import get_machine_id, bytestostr
+from xpra.util import envbool, typedict, net_utf8
+from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -16,12 +16,6 @@ log = Logger("printing")
 
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
-
-def printer_name(name):
-    try:
-        return name.decode("utf8")
-    except Exception:
-        return bytestostr(name)
 
 
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
@@ -120,7 +114,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             attributes["socket-path"] = self.choose_socket_path()
         log("printer attributes: %s", attributes)
         for name,props in printers.items():
-            printer = printer_name(name)
+            printer = net_utf8(name)
             if printer not in self.printers:
                 self.setup_printer(printer, props, attributes)
 
@@ -167,7 +161,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             self.remove_printer(k)
 
     def remove_printer(self, name):
-        printer = printer_name(name)
+        printer = net_utf8(name)
         try:
             self.printers_added.remove(printer)
         except KeyError:
