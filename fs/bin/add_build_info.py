@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 # This file is part of Xpra.
-# Copyright (C) 2011-2013 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #pylint: disable=bare-except
 
 import datetime
-import subprocess
+from subprocess import Popen, PIPE, STDOUT
 import socket
 import platform
 import os.path
@@ -108,10 +108,10 @@ def get_cpuinfo():
     return "unknown"
 
 def get_status_output(*args, **kwargs):
-    kwargs["stdout"] = subprocess.PIPE
-    kwargs["stderr"] = subprocess.STDOUT
+    kwargs["stdout"] = PIPE
+    kwargs["stderr"] = STDOUT
     try:
-        p = subprocess.Popen(*args, **kwargs)
+        p = Popen(*args, **kwargs)
     except Exception as e:
         print("error running %s,%s: %s" % (args, kwargs, e))
         return -1, "", ""
@@ -200,7 +200,7 @@ def get_platform_name():
         return "OpenBSD"
     if sys.platform.startswith("win"):
         try:
-            o = subprocess.Popen('systeminfo', stdout=subprocess.PIPE).communicate()[0]
+            o = Popen('systeminfo', stdout=PIPE).communicate()[0]
             try:
                 o = str(o, "latin-1")  # Python 3+
             except:
@@ -293,7 +293,7 @@ def get_vcs_props():
         #if all else fails:
         r"git branch | grep '* '",
     ):
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
         out, _ = proc.communicate()
         if proc.returncode==0:
             branch_out = out.decode("utf-8").splitlines()
@@ -308,7 +308,7 @@ def get_vcs_props():
         props["BRANCH"] = branch
 
     #use the number of changes since the last tag:
-    proc = subprocess.Popen("git describe --long --always --tags", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = Popen("git describe --long --always --tags", stdout=PIPE, stderr=PIPE, shell=True)
     out, _ = proc.communicate()
     if proc.returncode!=0:
         print("'git describe --long --always --tags' failed with return code %s" % proc.returncode)
@@ -339,8 +339,8 @@ def get_vcs_props():
     if branch=="master":
         #fake a sequential revision number that continues where svn left off,
         #by counting the commits and adding a magic value (5014)
-        proc = subprocess.Popen("git rev-list --count HEAD --first-parent",
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        proc = Popen("git rev-list --count HEAD --first-parent",
+                                stdout=PIPE, stderr=PIPE, shell=True)
         out, _ = proc.communicate()
         if proc.returncode!=0:
             print("failed to get commit count using 'git rev-list --count HEAD'")
@@ -349,7 +349,7 @@ def get_vcs_props():
     props["REVISION"] = rev
     #find number of local files modified:
     changes = 0
-    proc = subprocess.Popen("git status", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = Popen("git status", stdout=PIPE, stderr=PIPE, shell=True)
     (out, _) = proc.communicate()
     if proc.poll()!=0:
         print("could not get status of local files")
