@@ -2451,7 +2451,7 @@ class WindowSource(WindowIconSource):
             if self.is_cancelled(sequence):
                 log("make_data_packet: skipped, sequence no %i is cancelled", sequence)
                 return None
-            raise Exception("BUG: no encoder not found for %s" % coding)
+            raise Exception("BUG: no encoder found for %s" % coding)
         ret = encoder(coding, image, options)
         if ret is None:
             log("%s%s returned None", encoder, (coding, image, options))
