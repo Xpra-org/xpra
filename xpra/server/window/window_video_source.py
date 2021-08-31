@@ -138,14 +138,15 @@ class WindowVideoSource(WindowSource):
             self.non_video_encodings = ()
             self.common_video_encodings = ()
             return
-        self.video_encodings = self.video_helper.get_encodings()
+        self.video_encodings = tuple(x for x in self.video_helper.get_encodings() if x in self.server_core_encodings)
         video_enabled = []
         for x in self.video_encodings:
             if x in self.server_core_encodings:
                 self.add_encoder(x, self.video_encode)
                 video_enabled.append(x)
-        if video_enabled:
-            self.add_encoder("auto", self.video_encode)
+        #video_encode() is used for more than just video encoders:
+        #(always enable it and let it fall through)
+        self.add_encoder("auto", self.video_encode)
         #these are used for non-video areas, ensure "jpeg" is used if available
         #as we may be dealing with large areas still, and we want speed:
         nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
@@ -449,7 +450,6 @@ class WindowVideoSource(WindowSource):
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
         #    (pixel_count, ww, wh, speed, quality, current_encoding), self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
-
         if not self.non_video_encodings:
             return current_encoding
         if not self.common_video_encodings and not self.supports_scrolling:
@@ -914,7 +914,7 @@ class WindowVideoSource(WindowSource):
         # * we want av-sync
         # * the video encoder needs a thread safe image
         #   (the xshm backing may change from underneath us if we don't freeze it)
-        video_mode = coding in self.video_encodings or coding=="auto"
+        video_mode = coding in self.common_video_encodings or (coding=="auto" and self.common_video_encodings)
         must_freeze = av_delay>0 or (video_mode and not image.is_thread_safe())
         log("process_damage_region: av_delay=%s, must_freeze=%s, size=%s, encoding=%s",
             av_delay, must_freeze, (w, h), coding)
@@ -1173,6 +1173,8 @@ class WindowVideoSource(WindowSource):
             return checknovideo("sequence=%s (cancelled=%s)", self._sequence, self._damage_cancelled)
         #which video encodings to evaluate:
         if self.encoding in ("auto", "grayscale"):
+            if not self.common_video_encodings:
+                return checknovideo("no common video encodings")
             eval_encodings = self.common_video_encodings
         else:
             if self.encoding not in self.common_video_encodings:
