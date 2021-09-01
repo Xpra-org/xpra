@@ -188,7 +188,7 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
     peek_data = b""
     start = monotonic_time()
     elapsed = 0
-    set_socket_timeout(conn, PEEK_TIMEOUT_MS*1000)
+    set_socket_timeout(conn, PEEK_TIMEOUT_MS/1000)
     while elapsed<=timeout:
         try:
             peek_data = conn.peek(size)
