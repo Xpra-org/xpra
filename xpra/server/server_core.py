@@ -2018,18 +2018,20 @@ class ServerCore:
             if server_cipher!=cipher:
                 return auth_failed("the server is configured for '%s' not '%s' as requested by the client" % (
                     server_cipher, cipher))
-            if proto.encryption.find("-")>0:
-                #server specifies the mode to use
-                server_cipher_mode = proto.encryption.split("-")[1]
-                if server_cipher_mode!=cipher_mode:
-                    return auth_failed("the server is configured for %s-%s not %s-%s as requested by the client" % (
-                        server_cipher, server_cipher_mode, cipher, cipher_mode))
             from xpra.net.crypto import (
                 DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS,
                 DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
                 KEY_HASHES,
                 new_cipher_caps,
                 )
+            if not cipher_mode:
+                cipher_mode = DEFAULT_MODE
+            if proto.encryption.find("-")>0:
+                #server specifies the mode to use
+                server_cipher_mode = proto.encryption.split("-")[1]
+                if server_cipher_mode!=cipher_mode:
+                    return auth_failed("the server is configured for %s-%s not %s-%s as requested by the client" % (
+                        server_cipher, server_cipher_mode, cipher, cipher_mode))
             iterations = c.intget("cipher.key_stretch_iterations")
             key_hash = c.strget("cipher.key_hash", DEFAULT_KEY_HASH)
             padding = c.strget("cipher.padding", DEFAULT_PADDING)
@@ -2046,7 +2048,8 @@ class ServerCore:
                 return auth_failed("unsupported padding: %s" % padding)
             if key_hash not in KEY_HASHES:
                 return auth_failed("unsupported key hash algorithm: %s" % key_hash)
-            cryptolog("set output cipher using encryption key '%s'", ellipsizer(encryption_key))
+            cryptolog("setting output cipher using %s encryption key '%s'",
+                      cipher, ellipsizer(encryption_key))
             key_size = c.intget("cipher.key_size", DEFAULT_KEYSIZE)
             proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv,
                                  encryption_key, key_salt, key_hash, key_size, iterations, padding)
