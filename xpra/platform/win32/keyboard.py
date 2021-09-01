@@ -49,6 +49,7 @@ class Keyboard(KeyboardBase):
     """
 
     def init_vars(self):
+        super().init_vars()
         self.num_lock_modifier = None
         self.altgr_modifier = None
         self.delayed_event = None
