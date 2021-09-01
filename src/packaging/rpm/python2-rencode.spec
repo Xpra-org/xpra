@@ -7,7 +7,7 @@
 
 Name:           python2-rencode
 Version:        1.0.6
-Release:        4.xpra2%{?dist}
+Release:        11.xpra2%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
@@ -70,6 +70,9 @@ popd
 %doc COPYING README.md
 
 %changelog
+* Wed Sep 01 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-11.xpra1
+- bump release number to ensure EPEL version is not installed
+
 * Thu Aug 05 2021 Antoine Martin <antoine@xpra.org> - 1.0.6-4.xpra1
 - fix DoS decoding invalid typecode in lists or dictionaries
 
