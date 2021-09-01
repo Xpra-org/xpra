@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,6 +18,10 @@ counter = AtomicInteger()
 
 
 class RFBSource:
+    __slots__ = (
+        "protocol", "close_event", "log_disconnect",
+        "ui_client", "counter", "share", "uuid", "lock", "keyboard_config",
+    )
     def __init__(self, protocol, share=False):
         self.protocol = protocol
         self.close_event = Event()

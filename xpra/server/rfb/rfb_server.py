@@ -8,7 +8,7 @@
 from xpra.util import csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
-from xpra.server.rfb.rfb_const import RFBEncoding, RFB_KEYNAMES
+from xpra.server.rfb.rfb_const import ENCODING_STR, RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
 from xpra.server import server_features
@@ -24,7 +24,6 @@ keylog = Logger("rfb", "keyboard")
     Adds RFB packet handler to a server.
 """
 class RFBServer:
-
     def __init__(self):
         self._window_to_id = {}
         self._rfb_upgrade = 0
@@ -171,9 +170,9 @@ class RFBServer:
 
     def _process_rfb_SetEncodings(self, _proto, packet):
         n, encodings = packet[2:4]
-        known_encodings = [RFBEncoding.ENCODING_STR.get(x) for x in encodings if x in RFBEncoding.ENCODING_STR]
+        known_encodings = [ENCODING_STR.get(x) for x in encodings if x in ENCODING_STR]
         log("RFB %i encodings: %s", n, csv(known_encodings))
-        unknown_encodings = [x for x in encodings if x not in RFBEncoding.ENCODING_STR]
+        unknown_encodings = [x for x in encodings if x not in ENCODING_STR]
         if unknown_encodings:
             log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
 

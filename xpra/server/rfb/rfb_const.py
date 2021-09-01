@@ -1,91 +1,65 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import struct
+from enum import IntEnum
 
 #merge header and packet if packet is smaller than:
 PIXEL_FORMAT = b"BBBBHHHBBBBBB"
 
 
-class RFBClientMessage:
+class RFBClientMessage(IntEnum):
     """ client to server messages """
-    SETPIXELFORMAT = 0
-    SETENCODINGS = 2
-    FRAMEBUFFERUPDATEREQUEST = 3
-    KEYEVENT = 4
-    POINTEREVENT = 5
-    CLIENTCUTTEXT = 6
+    SetPixelFormat = 0
+    SetEncodings = 2
+    FramebufferUpdateRequest = 3
+    KeyEvent = 4
+    PointerEvent = 5
+    ClientCutText = 6
     #optional:
-    FILETRANSFER = 7
-    SETSCALE = 8
-    SETSERVERINPUT = 9
-    SETSW = 10
-    TEXTCHAT = 11
-    KEYFRAMEREQUEST = 12
-    KEEPALIVE = 13
-    SETSCALEFACTOR = 15
-    REQUESTSESSION = 20
-    SETSESSION = 21
-    NOTIFYPLUGINSTREAMING = 80
-    VMWARE = 127
-    CARCONNECTIVITY = 128
-    ENABLECONTINUOUSUPDATES = 150
-    CLIENTFENCE = 248
-    OLIVECALLCONTROL = 249
-    XVPCLIENTMESSAGE = 250
-    SETDESKTOPSIZE = 251
-    TIGHT = 252
-    GIICLIENTMESSAGE = 253
-    VMWARE = 254
-    QEMUCLIENTMESSAGE = 255
+    FileTransfer = 7
+    SetScale = 8
+    SetServerInput = 9
+    SetSW = 10
+    TextChat = 11
+    KeyFrameRequest = 12
+    KeepAlive = 13
+    SetScaleFactor = 15
+    RequestSession = 20
+    SetSession = 21
+    NotifyPluginStreaming = 80
+    VMWare = 127
+    CarConnectivity = 128
+    EnableContinuousUpdates = 150
+    ClientFence = 248
+    OliveCallControl = 249
+    XVPClientMessage = 250
+    SetDesktopSize = 251
+    Tight = 252
+    GIIClientMessage = 253
+    #VMWARE = 254
+    QEMUClientMessage = 255
 
-    PACKET_TYPE_STR = {
-        SETPIXELFORMAT               : "SetPixelFormat",
-        SETENCODINGS                 : "SetEncodings",
-        FRAMEBUFFERUPDATEREQUEST     : "FramebufferUpdateRequest",
-        KEYEVENT                     : "KeyEvent",
-        POINTEREVENT                 : "PointerEvent",
-        CLIENTCUTTEXT                : "ClientCutText",
-        #optional:
-        FILETRANSFER                 : "FileTransfer",
-        SETSCALE                     : "SetScale",
-        SETSERVERINPUT               : "SetServerInput",
-        SETSW                        : "SetSW",
-        TEXTCHAT                     : "TextChat",
-        KEYFRAMEREQUEST              : "KeyFrameRequest",
-        KEEPALIVE                    : "KeepAlive",
-        SETSCALEFACTOR               : "SetScaleFactor",
-        REQUESTSESSION               : "RequestSession",
-        SETSESSION                   : "SetSession",
-        NOTIFYPLUGINSTREAMING        : "NotifiyPluginStreaming",
-        VMWARE                       : "VMWare",
-        CARCONNECTIVITY              : "CarConnectivity",
-        ENABLECONTINUOUSUPDATES      : "EnableContiniousUpdates",
-        CLIENTFENCE                  : "ClientFence",
-        OLIVECALLCONTROL             : "OliveCallControl",
-        XVPCLIENTMESSAGE             : "XvpClientMessage",
-        SETDESKTOPSIZE               : "SetDesktopSize",
-        TIGHT                        : "Tight",
-        GIICLIENTMESSAGE             : "GIIClientMessage",
-        VMWARE                       : "VMWare",
-        QEMUCLIENTMESSAGE            : "QEMUClientMessage",
-    }
-    PACKET_FMT = {
-        SETPIXELFORMAT               : b"!BBBB"+PIXEL_FORMAT,
-        SETENCODINGS                 : b"!BBH",
-        FRAMEBUFFERUPDATEREQUEST     : b"!BBHHHH",
-        KEYEVENT                     : b"!BBBBi",
-        POINTEREVENT                 : b"!BBHH",
-        CLIENTCUTTEXT                : b"!BBBBi",
-        }
-    PACKET_STRUCT = {}
-    for ptype, fmt in PACKET_FMT.items():
-        PACKET_STRUCT[ptype] = struct.Struct(fmt)
+CLIENT_PACKET_TYPE_STR = {}
+for e in RFBClientMessage:
+    CLIENT_PACKET_TYPE_STR[e.value] = e.name
 
 
-class RFBServerMessage:
+PACKET_STRUCT = {}
+for msg, fmt in {
+    RFBClientMessage.SetPixelFormat             : b"!BBBB"+PIXEL_FORMAT,
+    RFBClientMessage.SetEncodings               : b"!BBH",
+    RFBClientMessage.FramebufferUpdateRequest   : b"!BBHHHH",
+    RFBClientMessage.KeyEvent                   : b"!BBBBi",
+    RFBClientMessage.PointerEvent               : b"!BBHH",
+    RFBClientMessage.ClientCutText              : b"!BBBBi",
+    }.items():
+    PACKET_STRUCT[msg] = struct.Struct(fmt)
+
+
+class RFBServerMessage(IntEnum):
     #server to client messages:
     FRAMEBUFFERUPDATE = 0
     SETCOLORMAPENTRIES = 1
@@ -110,32 +84,11 @@ class RFBServerMessage:
     VMWARE2 = 254
     QEMUSERVERMESSAGE = 255
 
-    PACKET_TYPE_STR = {
-        FRAMEBUFFERUPDATE        : "FramebufferUpdate",
-        SETCOLORMAPENTRIES       : "SetColorMapEntries",
-        BELL                     : "Bell",
-        SERVERCUTTEXT            : "ServerCutText",
-        #optional:
-        RESIZEFRAMEBUFFER1       : "ResizeFrameBuffer1",
-        KEYFRAMEUPDATE           : "KeyFrameUpdate",
-        FILETRANSFER             : "FileTransfer",
-        TEXTCHAT                 : "TextChat",
-        KEEPALIVE                : "KeepAlive",
-        RESIZEFRAMEBUFFER2       : "ResizeFrameBuffer2",
-        VMWARE1                  : "VMWare1",
-        CARCONNECTIVITY          : "CarConnectivity",
-        ENDOFCONTINOUSUPDATES    : "EndOfContinousUpdates",
-        SERVERSTATE              : "ServerState",
-        SERVERFENCE              : "ServerFence",
-        OLIVECALLCONTROL         : "OliveCallControl",
-        XVPSERVERMESSAGE         : "XvpServerMessage",
-        TIGHT                    : "Tight",
-        GIISERVERMESSAGE         : "GIIServerMessage",
-        VMWARE2                  : "VMWare2",
-        QEMUSERVERMESSAGE        : "QEMUServerMessage",
-        }
+SERVER_PACKET_TYPE_STR = {}
+for e in RFBServerMessage:
+    SERVER_PACKET_TYPE_STR[e.value] = e.name
 
-class RFBEncoding:
+class RFBEncoding(IntEnum):
     RAW = 0
     COPYRECT = 1
     RRE = 2
@@ -171,66 +124,39 @@ class RFBEncoding:
     #-412 to -512    JPEG Fine-Grained Quality Level Pseudo-encoding
     #-763 to -768    JPEG Subsampling Level Pseudo-encoding
 
-    ENCODING_STR = {
-        RAW                 : "Raw",
-        COPYRECT            : "CopyRect",
-        RRE                 : "RRE",
-        CORRE               : "CoRRE",
-        HEXTILE             : "Hextile",
-        ZLIB                : "Zlib",
-        TIGHT               : "Tight",
-        ZLIBHEX             : "ZlibHex",
-        TRLE                : "TRLE",
-        ZRLE                : "ZRLE",
-        H264                : "H264",
-        JPEG                : "JPEG",
-        JRLE                : "JRLE",
-        HITACHI_ZYWRLE      : "HITACHI_ZYWRLE",
-        DESKTOPSIZE         : "DesktopSize",
-        LASTRECT            : "LastRect",
-        CURSOR              : "Cursor",
-        XCURSOR             : "XCursor",
-        QEMU_POINTER        : "QEMU Pointer",
-        QEMU_KEY            : "QEMU Key",
-        QEMU_AUDIO          : "QEMU Audio",
-        GII                 : "GII",
-        DESKTOPNAME         : "DesktopName",
-        EXTENDEDDESKTOPSIZE : "ExtendedDesktopSize",
-        XVP                 : "Xvp",
-        FENCE               : "Fence",
-        CONTINUOUSUPDATES   : "ContinuousUpdates",
-        CURSORWITHALPHA     : "CursorWithAlpha",
-        VA_H264             : "VA_H264",
-        }
+ENCODING_STR = {}
+for e in RFBEncoding:
+    ENCODING_STR[e.value] = e.name
 
 
-class RFBAuth:
+class RFBAuth(IntEnum):
     INVALID = 0
     NONE = 1
     VNC = 2
     TIGHT = 16
-    AUTH_STR = {
-        INVALID    : "Invalid",
-        NONE       : "None",
-        VNC        : "VNC",
-        TIGHT      : "Tight",
-        5                   : "RA2",
-        6                   : "RA2ne",
-        17                  : "Ultra",
-        18                  : "TLS",
-        19                  : "VeNCrypt",
-        20                  : "SASL",
-        21                  : "MD5",
-        22                  : "xvp",
-        }
-    for i in (3, 4):
-        AUTH_STR[i] = "RealVNC"
-    for i in range(7, 16):
-        AUTH_STR[i] = "RealVNC"
-    for i in range(128, 255):
-        AUTH_STR[i] = "RealVNC"
-    for i in range(30, 35):
-        AUTH_STR[i] = "Apple"
+
+AUTH_STR = {
+    RFBAuth.INVALID     : "Invalid",
+    RFBAuth.NONE        : "None",
+    RFBAuth.VNC         : "VNC",
+    RFBAuth.TIGHT       : "Tight",
+    5                   : "RA2",
+    6                   : "RA2ne",
+    17                  : "Ultra",
+    18                  : "TLS",
+    19                  : "VeNCrypt",
+    20                  : "SASL",
+    21                  : "MD5",
+    22                  : "xvp",
+    }
+for i in (3, 4):
+    AUTH_STR[i] = "RealVNC"
+for i in range(7, 16):
+    AUTH_STR[i] = "RealVNC"
+for i in range(128, 255):
+    AUTH_STR[i] = "RealVNC"
+for i in range(30, 35):
+    AUTH_STR[i] = "Apple"
 
 
 RFB_KEYNAMES = {

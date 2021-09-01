@@ -13,7 +13,10 @@ from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
-from xpra.server.rfb.rfb_const import RFBClientMessage, RFBAuth, PIXEL_FORMAT
+from xpra.server.rfb.rfb_const import (
+    RFBClientMessage, RFBAuth,
+    AUTH_STR, PIXEL_FORMAT, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT,
+    )
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
@@ -100,7 +103,7 @@ class RFBProtocol:
         except struct.error:
             self._internal_error(packet, "cannot parse security handshake response '%s'" % hexstr(packet))
             return 0
-        auth_str = RFBAuth.AUTH_STR.get(auth, auth)
+        auth_str = AUTH_STR.get(auth, auth)
         if auth==RFBAuth.VNC:
             #send challenge:
             self._packet_parser = self._parse_challenge
@@ -164,11 +167,11 @@ class RFBProtocol:
             ptype = ord(packet[0])
         except TypeError:
             ptype = packet[0]
-        packet_type = RFBClientMessage.PACKET_TYPE_STR.get(ptype)
+        packet_type = CLIENT_PACKET_TYPE_STR.get(ptype)
         if not packet_type:
             self.invalid("unknown RFB packet type: %#x" % ptype, packet)
             return 0
-        s = RFBClientMessage.PACKET_STRUCT.get(ptype)     #ie: Struct("!BBBB")
+        s = PACKET_STRUCT.get(ptype)     #ie: Struct("!BBBB")
         if not s:
             self.invalid("RFB packet type '%s' is not supported" % packet_type, packet)
             return 0
@@ -178,7 +181,7 @@ class RFBProtocol:
         values = list(s.unpack(packet[:size]))
         values[0] = packet_type
         #some packets require parsing extra data:
-        if ptype==RFBClientMessage.SETENCODINGS:
+        if ptype==RFBClientMessage.SetEncodings:
             N = values[2]
             estruct = struct.Struct(b"!"+b"i"*N)
             size += estruct.size
@@ -186,7 +189,7 @@ class RFBProtocol:
                 return 0
             encodings = estruct.unpack(packet[s.size:size])
             values.append(encodings)
-        elif ptype==RFBClientMessage.CLIENTCUTTEXT:
+        elif ptype==RFBClientMessage.ClientCutText:
             l = values[4]
             size += l
             if len(packet)<size:
