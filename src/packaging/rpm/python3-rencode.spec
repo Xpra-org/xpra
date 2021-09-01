@@ -6,7 +6,7 @@
 
 Name:           python3-rencode
 Version:        1.0.6
-Release:        4.xpra1%{?dist}
+Release:        11.xpra1%{?dist}
 Summary:        Web safe object pickling/unpickling
 License:        GPLv3+ and BSD
 URL:            https://github.com/aresch/rencode
