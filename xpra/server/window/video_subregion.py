@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -54,7 +54,6 @@ def scoreinout(ww, wh, region, incount, outcount):
 
 
 class VideoSubregion:
-
     def __init__(self, timeout_add, source_remove, refresh_cb, auto_refresh_delay, supported=False):
         self.timeout_add = timeout_add
         self.source_remove = source_remove
@@ -440,7 +439,8 @@ class VideoSubregion:
                     d_ratio = damaged_ratio(region)
                 score = int(score * math.sqrt(d_ratio))
                 children_boost = int(region in children_rects)*SUBWINDOW_REGION_BOOST
-            sslog("testing %12s video region %34s: %3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, children_boost=%i, score=%2i",
+            sslog("testing %12s video region %34s: "
+                  "%3i%% in, %3i%% out, %3i%% of window, damaged ratio=%.2f, children_boost=%i, score=%2i",
                   info, region, ipct, opct, 100*region.width*region.height/ww/wh, d_ratio, children_boost, score)
             scores[region] = score
             return score

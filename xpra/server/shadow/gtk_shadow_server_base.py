@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf  #pylint: disable=no-name-in-module
 
 from xpra.util import envbool, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
