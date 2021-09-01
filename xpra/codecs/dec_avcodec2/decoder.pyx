@@ -50,6 +50,7 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_ARGB
     AVPixelFormat AV_PIX_FMT_BGRA
     AVPixelFormat AV_PIX_FMT_GBRP
+    AVPixelFormat AV_PIX_FMT_GBRP9LE
 
 cdef extern from "libavcodec/avcodec.h":
     int AV_CODEC_FLAG2_FAST
