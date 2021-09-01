@@ -11,7 +11,6 @@ log = Logger("util", "command")
 
 
 class ControlError(Exception):
-
     def __init__(self, msg, help_text=None, code=127):
         super().__init__(msg)
         self.help = help_text
@@ -82,7 +81,7 @@ class FixedMessageCommand(ControlCommand):
 
 class HelloCommand(FixedMessageCommand):
     """ Just says hello """
-
+    __slots__ = ()
     def __init__(self):
         super().__init__("hello", "hello", "just says hello back")
 

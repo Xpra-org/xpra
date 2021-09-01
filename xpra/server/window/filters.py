@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,6 +9,7 @@ log = Logger("filters")
 
 
 class WindowPropertyFilter:
+    __slots__ = ("property_name", "value", "recurse")
     def __init__(self, property_name, value, recurse=False):
         self.property_name = property_name
         self.value = value
@@ -38,7 +39,7 @@ class WindowPropertyFilter:
 
 
 class WindowPropertyIn(WindowPropertyFilter):
-
+    __slots__ = ()
     def evaluate(self, window_value):
         vtypes = set([type(x) for x in self.value])
         if len(vtypes)==1 and list(vtypes)[0]==str:
@@ -51,9 +52,9 @@ class WindowPropertyIn(WindowPropertyFilter):
 
 
 class WindowPropertyNotIn(WindowPropertyIn):
-
+    __slots__ = ()
     def evaluate(self, window_value):
-        return not(super().evaluate(window_value))
+        return not super().evaluate(window_value)
 
     def __repr__(self):
         return "WindowPropertyNotIn(%s=%s, recurse=%s)" % (self.property_name, self.value, self.recurse)

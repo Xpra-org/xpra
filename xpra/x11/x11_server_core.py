@@ -52,7 +52,7 @@ FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
 
 
 class XTestPointerDevice:
-
+    __slots__ = ()
     def __repr__(self):
         return "XTestPointerDevice"
 
