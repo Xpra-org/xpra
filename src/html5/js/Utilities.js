@@ -60,15 +60,18 @@ var Utilities = {
 		return uuid;
 	},
 
-	getSalt: function(l) {
-		if(l<32 || l>256) {
-			throw 'invalid salt length';
+	getSecureRandomString: function(len) {
+		const crypto = window.crypto || window.mscrypto;
+		if (!crypto) {
+			let s = "";
+			while (s.length<len) {
+				s += Utilities.getHexUUID();
+			}
+			return s.substr(0, len);
 		}
-		var s = '';
-		while (s.length<l) {
-			s += Utilities.getHexUUID();
-		}
-		return s.slice(0, l);
+		const u = new Uint8Array(len);
+		crypto.getRandomValues(u);
+		return String.fromCharCode.apply(null, u);
 	},
 
 	xorString: function(str1, str2){

@@ -1088,8 +1088,8 @@ XpraClient.prototype._make_hello_base = function() {
 	if(this.encryption) {
 		this.cipher_in_caps = {
 			"cipher"					: this.encryption,
-			"cipher.iv"					: Utilities.getHexUUID().slice(0, 16),
-			"cipher.key_salt"			: Utilities.getHexUUID()+Utilities.getHexUUID(),
+			"cipher.iv"					: Utilities.getSecureRandomString(16),
+			"cipher.key_salt"			: Utilities.getSecureRandomString(32),
 			"cipher.key_stretch_iterations"	: 1000,
 			"cipher.padding.options"	: ["PKCS#7"],
 		};
@@ -1970,7 +1970,7 @@ XpraClient.prototype._process_challenge = function(packet, ctx) {
 		//other digest, 32 random bytes is enough:
 		l = 32;
 	}
-	client_salt = Utilities.getSalt(l);
+	client_salt = Utilities.getSecureRandomString(l);
 	ctx.clog("challenge using salt digest", salt_digest);
 	var salt = ctx._gendigest(salt_digest, client_salt, server_salt);
 	if (!salt) {
