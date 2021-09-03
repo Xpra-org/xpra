@@ -147,7 +147,7 @@ def get_encryptor(ciphername, iv, password, key_salt, iterations):
     log("get_encryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
     if not ciphername:
         return None, 0
-    assert iterations>=100
+    assert iterations>=100 and iterations<=10000
     assert ciphername=="AES"
     assert password and iv
     block_size = DEFAULT_BLOCKSIZE
@@ -158,7 +158,7 @@ def get_decryptor(ciphername, iv, password, key_salt, iterations):
     log("get_decryptor(%s, %s, %s, %s, %s)", ciphername, iv, password, hexstr(key_salt), iterations)
     if not ciphername:
         return None, 0
-    assert iterations>=100
+    assert iterations>=100 and iterations<=10000
     assert ciphername=="AES"
     assert password and iv
     block_size = DEFAULT_BLOCKSIZE
