@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import secrets
 from struct import pack
 
 from xpra.util import envint, envbool
@@ -128,9 +129,7 @@ def choose_padding(options):
 
 
 def get_iv():
-    IV = None
-    #IV = "0000000000000000"
-    return IV or get_hex_uuid()[:16]
+    return secrets.token_urlsafe(16)[:16]
 
 def get_iterations() -> int:
     return DEFAULT_ITERATIONS
