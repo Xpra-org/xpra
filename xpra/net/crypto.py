@@ -22,7 +22,7 @@ DEFAULT_IV = os.environ.get("XPRA_CRYPTO_DEFAULT_IV", "0000000000000000")
 DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
 DEFAULT_ITERATIONS = envint("XPRA_CRYPTO_DEFAULT_ITERATIONS", 1000)
 DEFAULT_KEYSIZE = envint("XPRA_CRYPTO_KEYSIZE", 32)
-if DEFAULT_KEYSIZE not in (16, 24, 48):
+if DEFAULT_KEYSIZE not in (16, 24, 32):
     log.warn("Warning: default key size %i (%i bits) is not supported",
              DEFAULT_KEYSIZE, DEFAULT_KEYSIZE*8)
 #these were made configurable in xpra 4.3:
