@@ -19,7 +19,8 @@ __all__ = ("get_info", "get_key", "get_encryptor", "get_decryptor", "ENCRYPTION_
 DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
 
 ENCRYPTION_CIPHERS = []
-MODES = ("CBC", "GCM", "CFB", "CTR")
+MODES = tuple(x for x in os.environ.get("XPRA_CRYPTO_MODES", "CBC,GCM,CFB,CTR").split(",")
+              if x in ("CBC", "GCM", "CFB", "CTR"))
 KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
 KEY_STRETCHING = ("PBKDF2", )
 backend = None
