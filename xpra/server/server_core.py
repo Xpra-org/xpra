@@ -2021,7 +2021,7 @@ class ServerCore:
             from xpra.net.crypto import (
                 DEFAULT_PADDING, ALL_PADDING_OPTIONS, ENCRYPTION_CIPHERS,
                 DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                KEY_HASHES,
+                KEY_HASHES, DEFAULT_KEY_STRETCH,
                 new_cipher_caps,
                 )
             if not cipher_mode:
@@ -2034,6 +2034,7 @@ class ServerCore:
                         server_cipher, server_cipher_mode, cipher, cipher_mode))
             iterations = c.intget("cipher.key_stretch_iterations")
             key_hash = c.strget("cipher.key_hash", DEFAULT_KEY_HASH)
+            key_stretch = c.strget("cipher.key_stretch", DEFAULT_KEY_STRETCH)
             padding = c.strget("cipher.padding", DEFAULT_PADDING)
             padding_options = c.strtupleget("cipher.padding.options", (DEFAULT_PADDING,))
             if cipher not in ENCRYPTION_CIPHERS:
@@ -2041,6 +2042,8 @@ class ServerCore:
                 if ENCRYPTION_CIPHERS:
                     authlog.warn(" should be: %s", csv(ENCRYPTION_CIPHERS))
                 return auth_failed("unsupported cipher")
+            if key_stretch!="PBKDF2":
+                return auth_failed("unsupported key stretching %s" % key_stretch)
             encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
             if encryption_key is None:
                 return auth_failed("encryption key is missing")

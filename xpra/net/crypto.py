@@ -22,8 +22,11 @@ DEFAULT_SALT = os.environ.get("XPRA_CRYPTO_DEFAULT_SALT", "0000000000000000")
 DEFAULT_ITERATIONS = envint("XPRA_CRYPTO_DEFAULT_ITERATIONS", 1000)
 DEFAULT_KEYSIZE = envint("XPRA_CRYPTO_KEYSIZE", 32)
 #these were made configurable in xpra 4.3:
+MIN_ITERATIONS = envint("XPRA_CRYPTO_STRETCH_MIN_ITERATIONS", 100)
+MAX_ITERATIONS = envint("XPRA_CRYPTO_STRETCH_MIN_ITERATIONS", 10000)
 DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
 DEFAULT_KEY_HASH = os.environ.get("XPRA_CRYPTO_KEY_HASH", "SHA1")
+DEFAULT_KEY_STRETCH = "PBKDF2"
 
 #other option "PKCS#7", "legacy"
 PADDING_LEGACY = "legacy"
@@ -137,6 +140,7 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
     key_salt = get_salt()
     key_size = DEFAULT_KEYSIZE
     key_hash = DEFAULT_KEY_HASH
+    key_stretch = DEFAULT_KEY_STRETCH
     iterations = get_iterations()
     padding = choose_padding(padding_options)
     proto.set_cipher_in(cipher+"-"+cipher_mode, iv, encryption_key,
@@ -148,6 +152,7 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
          "cipher.key_salt"              : key_salt,
          "cipher.key_hash"              : key_hash,
          "cipher.key_size"              : key_size,
+         "cipher.key_stretch"           : key_stretch,
          "cipher.key_stretch_iterations": iterations,
          "cipher.padding"               : padding,
          "cipher.padding.options"       : PADDING_OPTIONS,
@@ -168,10 +173,10 @@ def get_encryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     log("get_encryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
-    assert key_size>16
-    assert iterations>=100
+    assert key_size>=16
+    assert MIN_ITERATIONS<=iterations<=MAX_ITERATIONS, "invalid number of iterations %i" % iterations
     assert ciphername.startswith("AES")
-    assert password and iv
+    assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
     key = backend.get_key(password, key_salt, key_hash, key_size, iterations)
     return backend.get_encryptor(key, iv, mode), backend.get_block_size(mode)
@@ -180,10 +185,10 @@ def get_decryptor(ciphername : str, iv, password, key_salt, key_hash : str, key_
     log("get_decryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
-    assert key_size>16
-    assert iterations>=100
+    assert key_size>=16
+    assert MIN_ITERATIONS<=iterations<=MAX_ITERATIONS, "invalid number of iterations %i" % iterations
     assert ciphername.startswith("AES")
-    assert password and iv
+    assert password and iv, "password or iv missing"
     mode = (ciphername+"-").split("-")[1] or DEFAULT_MODE
     key = backend.get_key(password, key_salt, key_hash, key_size, iterations)
     return backend.get_decryptor(key, iv, mode), backend.get_block_size(mode)

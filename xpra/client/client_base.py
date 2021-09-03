@@ -25,7 +25,7 @@ from xpra.net.crypto import (
     crypto_backend_init, get_iterations, get_iv, choose_padding,
     ENCRYPTION_CIPHERS, MODES, ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
-    DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, KEY_HASHES,
+    DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, KEY_HASHES, DEFAULT_KEY_STRETCH,
     )
 from xpra.version_util import get_version_info, XPRA_VERSION
 from xpra.platform.info import get_name
@@ -458,6 +458,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "key_salt"              : key_salt,
                 "key_size"              : DEFAULT_KEYSIZE,
                 "key_hash"              : DEFAULT_KEY_HASH,
+                "key_stretch"           : "PBKDF2",
                 "key_stretch_iterations": iterations,
                 "padding"               : padding,
                 "padding.options"       : PADDING_OPTIONS,
@@ -844,6 +845,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         key_salt = caps.strget("cipher.key_salt")
         key_hash = caps.strget("cipher.key_hash", DEFAULT_KEY_HASH)
         key_size = caps.intget("cipher.key_size", DEFAULT_KEYSIZE)
+        key_stretch = caps.strget("cipher.key_stretch", DEFAULT_KEY_STRETCH)
         iterations = caps.intget("cipher.key_stretch_iterations")
         padding = caps.strget("cipher.padding", DEFAULT_PADDING)
         #server may tell us what it supports,
@@ -852,6 +854,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         def fail(msg):
             self.warn_and_quit(EXIT_ENCRYPTION, msg)
             return False
+        if key_stretch!="PBKDF2":
+            return fail("unsupported key stretching %s" % key_stretch)
         if not cipher or not cipher_iv:
             return fail("the server does not use or support encryption/password, cannot continue")
         if cipher not in ENCRYPTION_CIPHERS:
