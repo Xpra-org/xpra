@@ -50,6 +50,7 @@ PADDING_OPTIONS = get_padding_options()
 ENCRYPTION_CIPHERS = []
 MODES = []
 KEY_HASHES = []
+KEY_STRETCHING = []
 backend = False
 def crypto_backend_init():
     global backend, ENCRYPTION_CIPHERS
@@ -63,6 +64,7 @@ def crypto_backend_init():
         ENCRYPTION_CIPHERS[:] = pycryptography_backend.ENCRYPTION_CIPHERS[:]
         MODES[:] = list(pycryptography_backend.MODES)
         KEY_HASHES[:] = list(pycryptography_backend.KEY_HASHES)
+        KEY_STRETCHING[:] = list(pycryptography_backend.KEY_STRETCHING)
         backend = pycryptography_backend
         return
     except ImportError:
@@ -148,11 +150,13 @@ def new_cipher_caps(proto, cipher, cipher_mode, encryption_key, padding_options)
     return {
          "cipher"                       : cipher,
          "cipher.mode"                  : cipher_mode,
+         "cipher.mode.options"          : MODES,
          "cipher.iv"                    : iv,
          "cipher.key_salt"              : key_salt,
          "cipher.key_hash"              : key_hash,
          "cipher.key_size"              : key_size,
          "cipher.key_stretch"           : key_stretch,
+         "cipher.key_stretch.options"   : KEY_STRETCHING,
          "cipher.key_stretch_iterations": iterations,
          "cipher.padding"               : padding,
          "cipher.padding.options"       : PADDING_OPTIONS,
@@ -164,6 +168,7 @@ def get_crypto_caps() -> dict:
     caps = {
             "padding"       : {"options"    : PADDING_OPTIONS},
             "modes"         : {"options"    : MODES},
+            "stretch"       : {"options"    : KEY_STRETCHING},
             }
     caps.update(backend.get_info())
     return caps

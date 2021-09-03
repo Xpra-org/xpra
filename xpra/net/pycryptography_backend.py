@@ -21,6 +21,7 @@ DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
 ENCRYPTION_CIPHERS = []
 MODES = ("CBC", "GCM", "CFB", "CTR")
 KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
+KEY_STRETCHING = ("PBKDF2", )
 backend = None
 
 
