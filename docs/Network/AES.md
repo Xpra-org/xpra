@@ -1,13 +1,16 @@
 Use this option if you can securely distribute the AES key to each client.\
 It is somewhat similar to [SSL](./SSL.md) mode with a self-signed certificate.
 
-Xpra's AES [encryption](./Encryption.md) layer uses the [python cryptography](https://pypi.python.org/pypi/cryptography) library to encrypt the network packets with [AES](http://en.wikipedia.org/wiki/Advanced_Encryption_Standard)(Advanced Encryption Standard) [CBC mode](http://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher-block_chaining_.28CBC.29) (Cipher-block 
-chaining).
+Xpra's AES [encryption](./Encryption.md) layer uses the [python cryptography](https://pypi.python.org/pypi/cryptography) library to encrypt the network packets with [AES-256 - Advanced Encryption Standard](http://en.wikipedia.org/wiki/Advanced_Encryption_Standard) in [CBC - Cipher Block Chaining](http://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher-block_chaining_.28CBC.29), [GCM - Galois/Counter Mode](https://en.wikipedia.org/wiki/Galois/Counter_Mode), [CTR - Counter Mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)) or [CFB - Cipher_feedback](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)).
 
 The encryption key can be stored in a keyfile or specified using the `keydata` socket option. If neither is present and an authentication module was used, the password will be used as key data.\
 The key data is stretched using [PBKDF2](http://en.wikipedia.org/wiki/PBKDF2)(Password-Based Key Derivation Function 2).\
-The salts used are generated using Python's [uuid.uuid4()](http://docs.python.org/2/library/uuid.html#uuid.uuid4)
+The salts used are generated using Python's [os.urandom()](https://docs.python.org/3/library/os.html#os.urandom) which is _suitable for cryptographic use_
 
+Caveats:
+* it is also possible to run in `AES-128` or `AES-192` mode but this is not recommended
+* the HTML5 client currently does not support GCM mode: https://github.com/Xpra-org/xpra-html5/issues/94
+* older servers and clients only support `CBC` mode
 
 For step by step instructions on setting up AES, expand:
 <details>
