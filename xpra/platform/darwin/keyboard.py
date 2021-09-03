@@ -75,6 +75,7 @@ class Keyboard(KeyboardBase):
     """
 
     def init_vars(self):
+        super().init_vars()
         self.swap_keys = True
         self.meta_modifier = None
         self.control_modifier = "control"
