@@ -460,7 +460,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log("get_keycode(%s, %s, %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
         else:
             if SIMULATE_MODIFIERS:
-                return self.do_get_keycode_new(client_keycode, keyname, pressed, modifiers, group)
+                return self.do_get_keycode_new(client_keycode, keyname, pressed, modifiers, keystr, group)
             #non-native: try harder to find matching keysym
             #first, try to honour shift state:
             lock = ("lock" in modifiers) and (SHIFT_LOCK or (bool(keystr) and keystr.isalpha()))
@@ -516,7 +516,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 log("get_keycode(%s, %s)=%i (keyname translation)", client_keycode, keyname, keycode)
         return keycode, group
 
-    def do_get_keycode_new(self, client_keycode, keyname, pressed, modifiers, group):
+    def do_get_keycode_new(self, client_keycode, keyname, pressed, modifiers, keystr, group):
         def kmlog(msg, *args):
             if keyname in DEBUG_KEYSYMS:
                 l = log.info
