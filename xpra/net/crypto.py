@@ -10,7 +10,7 @@ from struct import pack
 
 from xpra.util import envint, envbool
 from xpra.log import Logger
-from xpra.os_util import hexstr, get_hex_uuid
+from xpra.os_util import hexstr
 from xpra.net.digest import get_salt
 
 log = Logger("network", "crypto")
