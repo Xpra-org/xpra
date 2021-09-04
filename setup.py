@@ -2182,17 +2182,18 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
 
         #parallel build:
         nvcc_errors = []
-        def nvcc_compile(nvcc_cmd):
-            c, stdout, stderr = get_status_output(nvcc_cmd)
+        def nvcc_compile(cmd):
+            c, stdout, stderr = get_status_output(cmd)
             if c!=0:
                 nvcc_errors.append(c)
                 print("Error: failed to compile CUDA kernel %s" % kernel)
+                print(" using command: %s" % (cmd,))
                 print(stdout or "")
                 print(stderr or "")
         nvcc_threads = []
-        for nvcc_cmd in nvcc_commands:
+        for cmd in nvcc_commands:
             from threading import Thread
-            t = Thread(target=nvcc_compile, args=(nvcc_cmd,))
+            t = Thread(target=nvcc_compile, args=(cmd,))
             t.start()
             nvcc_threads.append(t)
         for t in nvcc_threads:
