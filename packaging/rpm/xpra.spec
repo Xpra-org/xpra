@@ -317,7 +317,7 @@ xzcat $RPM_SOURCE_DIR/xpra-%{version}.tar.xz | tar -xf -
 pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs:
-CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build_ext \
+CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
 	-j `nproc` \
 	%{build_args} \
 	--without-printing --without-cuda_kernels
