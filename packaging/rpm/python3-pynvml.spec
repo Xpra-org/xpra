@@ -11,7 +11,7 @@
 %define debug_package %{nil}
 
 Name:           python3-pynvml
-Version:        11.460.79
+Version:        11.470.66
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
@@ -50,6 +50,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
 
 %changelog
+* Sat Sep 04 2021 Antoine Martin <antoine@xpra.org> - 11.470.66-1
+- new upstream release
+
 * Sat Jul 24 2021 Antoine Martin <antoine@xpra.org> - 11.460.79-1
 - new upstream release
 
