@@ -270,7 +270,7 @@ fi
 
 echo "* Building Python3 Cython modules"
 BUILD_LOG="packaging/MSWindows/Python3-build.log"
-${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace >& ${BUILD_LOG}
+${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace -j `nproc` >& ${BUILD_LOG}
 if [ "$?" != "0" ]; then
 	echo "ERROR: build failed, see ${BUILD_LOG}:"
 	tail -n 20 "${BUILD_LOG}"
