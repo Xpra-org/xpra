@@ -8,7 +8,9 @@ ifneq (,$(filter i386,$(DEB_HOST_ARCH)))
 EXTRA_BUILDOPTS := --without-csc_swscale --without-enc_ffmpeg --without-dec_avcodec2
 endif
 
-BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ $(EXTRA_BUILDOPTS) -j `nproc`
+NPROC := $(shell nproc 2> /dev/null || echo 1)
+
+BUILDOPTS := --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ $(EXTRA_BUILDOPTS)
 
 %:
 	dh $@ --with python3 --with systemd --without=build-stamp
@@ -17,7 +19,7 @@ override_dh_auto_clean:
 	python3 setup.py clean
 
 override_dh_auto_build:
-	python3 setup.py build $(BUILDOPTS)
+	python3 setup.py build $(BUILDOPTS) -j $(NPROC)
 
 override_dh_auto_install:
 	python3 setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb $(BUILDOPTS)
