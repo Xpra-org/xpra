@@ -2122,6 +2122,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         # * compile directly to output directory instead of using data files?
         # * detect which arches we want to build for? (does it really matter much?)
         kernels = ("ARGB_to_NV12", "ARGB_to_YUV444", "BGRA_to_NV12", "BGRA_to_YUV444")
+        nvcc_commands = []
         for kernel in kernels:
             cuda_src = "fs/share/xpra/cuda/%s.cu" % kernel
             cuda_bin = "fs/share/xpra/cuda/%s.fatbin" % kernel
@@ -2177,12 +2178,28 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
             print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
             print(" %s" % " ".join("'%s'" % x for x in cmd))
-            c, stdout, stderr = get_status_output(cmd)
+            nvcc_commands.append(cmd)
+
+        #parallel build:
+        nvcc_errors = []
+        def nvcc_compile(nvcc_cmd):
+            c, stdout, stderr = get_status_output(nvcc_cmd)
             if c!=0:
+                nvcc_errors.append(c)
                 print("Error: failed to compile CUDA kernel %s" % kernel)
                 print(stdout or "")
                 print(stderr or "")
+        nvcc_threads = []
+        for nvcc_cmd in nvcc_commands:
+            from threading import Thread
+            t = Thread(target=nvcc_compile, args=(nvcc_cmd,))
+            t.start()
+            nvcc_threads.append(t)
+        for t in nvcc_threads:
+            if nvcc_errors:
                 sys.exit(1)
+            t.join()
+
         add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/%s.fatbin" % x for x in kernels])
 add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
