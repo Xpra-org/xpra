@@ -21,7 +21,6 @@ Build-Depends: debhelper (>= 8)
               ,python-gi-dev
               ,cython3
               ,gcc
-              ,nproc
               ,libavcodec-dev [!i386]
               ,libavformat-dev [!i386]
               ,libavutil-dev [!i386]
