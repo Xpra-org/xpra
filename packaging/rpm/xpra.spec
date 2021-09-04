@@ -318,7 +318,7 @@ pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build_ext \
-	-j `nproc`
+	-j `nproc` \
 	%{build_args} \
 	--without-printing --without-cuda_kernels
 
