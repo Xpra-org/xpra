@@ -8,7 +8,7 @@ ifneq (,$(filter i386,$(DEB_HOST_ARCH)))
 EXTRA_BUILDOPTS := --without-csc_swscale --without-enc_ffmpeg --without-dec_avcodec2
 endif
 
-BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ $(EXTRA_BUILDOPTS)
+BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ $(EXTRA_BUILDOPTS) -j `nproc`
 
 %:
 	dh $@ --with python3 --with systemd --without=build-stamp
