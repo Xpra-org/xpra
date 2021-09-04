@@ -1,11 +1,35 @@
 # Changelog
 
-## [4.2.3] 2021-08-17
-* preserve audio packets chunking (avoids an HTML5 client bug)
-* ensure the http headers cache is never modified unintentionally
+## [4.2.3] 2021-09-04
+* network layer:
+	* ensure the http headers cache is never modified unintentionally
+	* invalid packet encoder names should not cause fatal errors
+	* preserve audio packets chunking (avoids an HTML5 client bug)
+	* prefer https links
+	* prefer sha256 to sha1 for file transfer checksums
+	* mmap setup error handling
+	* 'sndbuf_bytes' value was incorrect (currently unused)
+	* socket timeout too long - broke VNC connections
+	* AES DoS with unreasonably large number of password stretching iterations
+	* tone down http content security policy for the HTML5 client
+* encodings:
+	* don't enable video encoders not present in 'encodings' option
+	* ffmpeg H264 errors with unreleased version
+	* ffmpeg codecs silencing too many warnings
+	* vpx encoder lossless mode detection
+	* potential race conditions in the proxy server's encoder loop
+	* visual corruption with scaled jpeg updates
+	* incorrect error messages with the jpeg YUV decoder
+	* error in 'void' paint events (currently unused)
+	* CUDA 11.4 and Ampere cards
+* window size hints may not have been honoured (rare case)
 * honour the force-replace-wm flag when upgrading
 * correctly handle command timeouts when probing servers
-* invalid packet encoder names should not cause fatal errors
+* find the fakeXinerama library more reliably on all platforms
+* platform detection for CentOS / RedHat
+* test scripts and command line tools fixups: unit tests, U2F tool, audio test, etc
+* system tray save-to-file debugging failures
+* minor cosmetic fixes to logging messages, unreachable code
 
 ## [4.2.2] 2021-08-09
 * don't build ffmpeg codecs on i386 (crashy)
