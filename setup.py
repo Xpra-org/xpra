@@ -2388,9 +2388,9 @@ if ext_modules:
     #this causes Cython to fall over itself:
     #gdb_debug=debug_ENABLED
     setup_options["ext_modules"] = cythonize(ext_modules,
-        gdb_debug=False,
-        compiler_directives=compiler_directives,
-        )
+                                             gdb_debug=debug_ENABLED,
+                                             compiler_directives=compiler_directives,
+                                             )
 if cmdclass:
     setup_options["cmdclass"] = cmdclass
 if scripts:
