@@ -15,7 +15,7 @@ log = Logger("encoder", "ffmpeg")
 
 from xpra.codecs.codec_constants import video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
-from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
+from xpra.codecs.libav_common.av_log import SilenceAVWarningsContext
 from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
 from xpra.os_util import bytestostr, strtobytes, LINUX
 from xpra.buffers.membuf cimport memalign
@@ -855,17 +855,16 @@ def init_module():
             log("cannot find encoder %i for %s", codec_id, csv(codecs))
     log("enc_ffmpeg non vaapi CODECS=%s", csv(all_codecs))
     if VAAPI and LINUX:
-        try:
-            suspend_nonfatal_logging()
-            vaapi_codecs = init_vaapi()
-            for c in vaapi_codecs:
-                if c not in all_codecs:
-                    all_codecs.append(c)
-        except Exception as e:
-            resume_nonfatal_logging()
-            log("no vappi support", exc_info=True)
-            log.warn("Warning: no VAAPI support")
-            log.warn(" %s", e)
+        with SilenceAVWarningsContext():
+            try:
+                vaapi_codecs = init_vaapi()
+                for c in vaapi_codecs:
+                    if c not in all_codecs:
+                        all_codecs.append(c)
+            except Exception as e:
+                log("no vappi support", exc_info=True)
+                log.warn("Warning: no VAAPI support")
+                log.warn(" %s", e)
     CODECS = tuple(all_codecs)
 
 VAAPI_ENCODINGS = os.environ.get("XPRA_VAAPI_ENCODINGS", "h264,hevc,mpeg2,vp8,vp9").split(",")
@@ -1775,9 +1774,5 @@ def selftest(full=False):
     global CODECS
     from xpra.codecs.codec_checks import testencoder
     from xpra.codecs.enc_ffmpeg import encoder
-    try:
-        suspend_nonfatal_logging()
+    with SilenceAVWarningsContext():
         CODECS = testencoder(encoder, full)
-    finally:
-        pass
-        resume_nonfatal_logging()

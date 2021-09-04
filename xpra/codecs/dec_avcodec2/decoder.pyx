@@ -15,7 +15,7 @@ from xpra.util import csv
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
-from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
+from xpra.codecs.libav_common.av_log import SilenceAVWarningsContext
 from xpra.buffers.membuf cimport memalign, buffer_context
 
 from libc.stdint cimport uintptr_t, uint8_t
@@ -1023,8 +1023,5 @@ def selftest(full=False):
     global CODECS
     from xpra.codecs.codec_checks import testdecoder
     from xpra.codecs.dec_avcodec2 import decoder
-    try:
-        suspend_nonfatal_logging()
+    with SilenceAVWarningsContext():
         CODECS = testdecoder(decoder, full)
-    finally:
-        resume_nonfatal_logging()

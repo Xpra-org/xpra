@@ -54,6 +54,16 @@ def resume_nonfatal_logging():
     DEBUG_LEVEL    = AV_LOG_DEBUG
 
 
+class SilenceAVWarningsContext():
+    __slots__ = ()
+    def __enter__(self):
+        suspend_nonfatal_logging()
+    def __exit__(self, *_args):
+        resume_nonfatal_logging()
+    def __repr__(self):
+        return "SilenceAVWarningsContext"
+
+
 cdef av_error_str(int errnum):
     cdef char[128] err_str
     cdef int i = 0

@@ -10,7 +10,7 @@ log = Logger("csc", "swscale")
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport pylint: disable=syntax-error
-from xpra.codecs.libav_common.av_log import suspend_nonfatal_logging, resume_nonfatal_logging
+from xpra.codecs.libav_common.av_log import SilenceAVWarningsContext
 from xpra.buffers.membuf cimport padbuf, MemBuf
 
 from libc.string cimport memset #pylint: disable=syntax-error
@@ -498,8 +498,7 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import testcsc, get_csc_max_size
     from xpra.codecs.csc_swscale import colorspace_converter
     override_logger()
-    try:
-        suspend_nonfatal_logging()
+    with SilenceAVWarningsContext():
         #test a limited set, not all combinations:
         if full:
             planar_tests = [x for x in get_input_colorspaces() if x.endswith("P")]
@@ -532,5 +531,3 @@ def selftest(full=False):
             MAX_WIDTH = maxw
             MAX_HEIGHT = maxh
             log("%s max dimensions: %ix%i", colorspace_converter, MAX_WIDTH, MAX_HEIGHT)
-    finally:
-        resume_nonfatal_logging()
