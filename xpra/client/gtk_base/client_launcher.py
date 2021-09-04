@@ -45,6 +45,14 @@ from xpra.log import Logger, enable_debug_for
 
 log = Logger("launcher")
 
+MODE_NESTED_SSH = "ssh -> ssh"
+MODE_SSH = "ssh"
+MODE_TCP = "tcp"
+MODE_SSL = "ssl"
+MODE_WS = "ws"
+MODE_WSS = "wss"
+
+
 #what we save in the config file:
 SAVED_FIELDS = [
     "username", "password", "host", "port", "mode", "ssh_port",
@@ -89,13 +97,6 @@ black   = color_parse("black")
 red     = color_parse("red")
 white   = color_parse("white")
 
-
-MODE_NESTED_SSH = "ssh -> ssh"
-MODE_SSH = "ssh"
-MODE_TCP = "tcp"
-MODE_SSL = "ssl"
-MODE_WS = "ws"
-MODE_WSS = "wss"
 
 
 def get_active_item_index(optionmenu):
