@@ -395,7 +395,7 @@ RMP=""
 KMP=""
 for file_name in `ls *Image*`; do
 	plugin_name=`echo $file_name | sed 's+\.py.*++g'`
-    echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP|_webp" >& /dev/null
+    echo "$file_name" | egrep "Bmp|Ico|Image.py|ImageChops|ImageCms|ImageChops|ImageColor|ImageDraw|ImageFile|ImageFilter|ImageFont|ImageGrab|ImageMode|ImageOps|ImagePalette|ImagePath|ImageSequence|ImageStat|ImageTransform|Jpeg|Tiff|Png|Ppm|Xpm|WebP" >& /dev/null
 	if [ "$?" == "0" ]; then
 		KMP="${KMP} $plugin_name"
 	else
