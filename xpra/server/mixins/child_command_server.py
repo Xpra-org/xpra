@@ -149,7 +149,8 @@ class ChildCommandServer(StubServerMixin):
     def send_updated_menu(self, xdg_menu):
         log("send_updated_menu(%s)", ellipsizer(xdg_menu))
         for source in tuple(self._server_sources.values()):
-            if source.xdg_menu_update:
+            #some sources don't have this attribute (ie: RFBSource does not):
+            if getattr(source, "xdg_menu_update", False):
                 source.send_setting_change("xdg-menu", xdg_menu or {})
 
 
