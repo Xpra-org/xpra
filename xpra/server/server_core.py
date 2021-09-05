@@ -1147,7 +1147,7 @@ class ServerCore:
             return
 
         if socktype=="rfb":
-            if peek_data:
+            if peek_data and peek_data[:4]!=b"RFB ":
                 self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
                 return
             self.handle_rfb_connection(conn)
