@@ -2406,7 +2406,7 @@ if ext_modules:
     #this causes Cython to fall over itself:
     #gdb_debug=debug_ENABLED
     setup_options["ext_modules"] = cythonize(ext_modules,
-                                             nthreads=0 if (debug_ENABLED or WIN32) else os.cpu_count(),
+                                             nthreads=0 if (debug_ENABLED or WIN32 or OSX) else os.cpu_count(),
                                              gdb_debug=debug_ENABLED,
                                              compiler_directives=compiler_directives,
                                              )
