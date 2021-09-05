@@ -251,6 +251,7 @@ class RFBProtocol:
         self._write_queue.put(packet)
 
     def start_write_thread(self):
+        log("rfb: starting write thread")
         self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
     def _io_thread_loop(self, name, callback):
@@ -346,6 +347,7 @@ class RFBProtocol:
     #(so this can more easily be intercepted and overriden
     # see tcp-proxy)
     def invalid_header(self, proto, data, msg=""):
+        log("invalid_header%s", (proto, data, msg))
         self._invalid_header(proto, data, msg)
 
     def _invalid_header(self, _proto, data, msg="invalid packet header"):
