@@ -245,7 +245,7 @@ class RFBProtocol:
                 log("send(%i bytes: %s)", len(packet), hexstr(packet))
             else:
                 from xpra.simple_stats import std_unit
-                log("send(%sBytes: %s..)", std_unit(len(packet)), hexstr(packet[:16]))
+                log("send(%s bytes: %s..)", std_unit(len(packet)), hexstr(packet[:16]))
         if self._write_thread is None:
             self.start_write_thread()
         self._write_queue.put(packet)
