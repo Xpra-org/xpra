@@ -17,7 +17,7 @@ URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source0:       	https://files.pythonhosted.org/packages/3a/14/32e32856e62422655dfe115c8c421a304e87330dadbab72fc5534a9fd5c6/nvidia-ml-py-%{version}.tar.gz
+Source0:       	https://files.pythonhosted.org/packages/aa/7f/e72320ff97134628aff67816bcc2803b7d1bdf535e3b3e41fc764685239b/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
@@ -26,7 +26,7 @@ Python Bindings for the NVIDIA Management Library
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "5b7c051cd55469848960bb9fde07dc8fd25d21853307eeba669bfe3c3ede11c5" ]; then
+if [ "${sha256}" != "20fff0dcd40b32fdc674cd98bc614bb8b6cc8d488687a55bf8c569eef39541f3" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
