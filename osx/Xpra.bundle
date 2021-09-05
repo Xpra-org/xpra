@@ -87,7 +87,7 @@
 		${prefix}/lib/libvpx.*.dylib
 	</binary>
 	<binary>
-		${prefix}/lib/libwebp.*dylib
+		${prefix}/lib/libwebp*dylib
 	</binary>
 	<binary>
 		${prefix}/lib/libgst*.dylib
