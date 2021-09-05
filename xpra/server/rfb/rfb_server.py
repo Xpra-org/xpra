@@ -60,7 +60,7 @@ class RFBServer:
         return ids[0]
 
 
-    def handle_rfb_connection(self, conn):
+    def handle_rfb_connection(self, conn, data=b""):
         model = self._get_rfb_desktop_model()
         log("handle_rfb_connection(%s) model=%s", conn, model)
         if not model:
@@ -75,7 +75,9 @@ class RFBServer:
                 auth = auths[0]
             log("creating RFB protocol with authentication=%s", auth)
             return RFBProtocol(self, conn, auth,
-                               self.process_rfb_packet, self.get_rfb_pixelformat, self.session_name or "Xpra Server")
+                               self.process_rfb_packet, self.get_rfb_pixelformat,
+                               self.session_name or "Xpra Server",
+                               data)
         p = self.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
         log("handle_rfb_connection(%s) protocol=%s", conn, p)
         p.send_protocol_handshake()

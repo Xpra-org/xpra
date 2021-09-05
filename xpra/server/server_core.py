@@ -1274,16 +1274,21 @@ class ServerCore:
     def try_upgrade_to_rfb(self, proto):
         self.cancel_upgrade_to_rfb_timer(proto)
         if proto.is_closed():
+            netlog("try_upgrade_to_rfb() protocol is already closed")
             return False
         conn = proto._conn
         netlog("may_upgrade_to_rfb() input_bytecount=%i", conn.input_bytecount)
         if conn.input_bytecount==0:
-            proto.steal_connection()
-            self._potential_protocols.remove(proto)
-            proto.wait_for_io_threads_exit(1)
-            conn.set_active(True)
-            self.handle_rfb_connection(conn)
+            self.upgrade_protocol_to_rfb(proto)
         return False
+
+    def upgrade_protocol_to_rfb(self, proto, data=b""):
+        conn = proto.steal_connection()
+        netlog("upgrade_protocol_to_rfb(%s) connection=%s", proto, conn)
+        self._potential_protocols.remove(proto)
+        proto.wait_for_io_threads_exit(1)
+        conn.set_active(True)
+        self.handle_rfb_connection(conn, data)
 
     def cancel_upgrade_to_rfb_timer(self, protocol):
         t = self.socket_rfb_upgrade_timer.pop(protocol, None)
@@ -1424,9 +1429,14 @@ class ServerCore:
         return True, conn, peek_data
 
     def invalid_header(self, proto, data, msg=""):
-        netlog("invalid header: input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
-               proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_attributes))
-        proto._invalid_header(proto, data, msg)
+        netlog("invalid header: %s, input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
+               ellipsizer(data), proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_attributes))
+        if data==b"RFB " and self._rfb_upgrade>0:
+            netlog("RFB header, trying to upgrade protocol")
+            self.cancel_upgrade_to_rfb_timer(proto)
+            self.upgrade_protocol_to_rfb(proto, data)
+        else:
+            proto._invalid_header(proto, data, msg)
 
 
     ######################################################################
@@ -2431,6 +2441,6 @@ class ServerCore:
                          packet_type, handler, exc_info=True)
 
 
-    def handle_rfb_connection(self, conn):
+    def handle_rfb_connection(self, conn, data=b""):
         log.error("Error: RFB protocol is not supported by this server")
         conn.close()
