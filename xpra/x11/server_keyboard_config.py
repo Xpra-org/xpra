@@ -568,7 +568,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     kmlog("not toggling any modifiers state for keysyms=%s", keysyms)
                     break
                 def toggle_modifier(mod):
-                    keynames = self.keynames_for_mod.get(mod)
+                    keynames = self.keynames_for_mod.get(mod, ())
                     if keyname in keynames:
                         kmlog("not toggling '%s' since '%s' should deal with it", mod, keyname)
                         #the keycode we're returning is for this modifier,
