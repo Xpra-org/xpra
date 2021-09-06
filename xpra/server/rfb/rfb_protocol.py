@@ -28,6 +28,8 @@ class RFBProtocol:
     CONNECTION_LOST = "connection-lost"
     INVALID = "invalid"
 
+    TYPE = "rfb"
+
     def __init__(self, scheduler, conn, auth, process_packet_cb, get_rfb_pixelformat, session_name="Xpra", data=b""):
         """
             You must call this constructor and source_has_more() from the main thread.

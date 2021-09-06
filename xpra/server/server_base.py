@@ -759,6 +759,10 @@ class ServerBase(ServerBaseClass):
         return source
 
     def cleanup_source(self, source):
+        try:
+            ptype = source.protocol.TYPE
+        except (AttributeError, ValueError):
+            ptype = "xpra"
         self.server_event("connection-lost", source.uuid)
         remaining_sources = tuple(self._server_sources.values())
         if self.ui_driver==source.uuid:
@@ -768,7 +772,7 @@ class ServerBase(ServerBaseClass):
                 self.set_ui_driver(None)
         source.close()
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
-        netlog.info("xpra client %i disconnected.", source.counter)
+        netlog.info("%s client %i disconnected.", ptype, source.counter)
         has_client = len(remaining_sources)>0
         if not has_client:
             self.idle_add(self.last_client_exited)
