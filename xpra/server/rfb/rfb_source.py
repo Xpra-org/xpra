@@ -8,7 +8,7 @@ import struct
 from threading import Event
 
 from xpra.server.rfb.rfb_const import RFBEncoding
-from xpra.server.rfb.rfb_encode import raw_encode
+from xpra.server.rfb.rfb_encode import raw_encode, tight_encode
 from xpra.os_util import strtobytes
 from xpra.util import AtomicInteger, csv
 from xpra.log import Logger
@@ -103,7 +103,10 @@ class RFBSource:
             return
         if self.is_closed():
             return
-        for packet in raw_encode(window, x, y, w, h):
+        encode = raw_encode
+        if RFBEncoding.TIGHT in self.encodings:
+            encode = tight_encode
+        for packet in encode(window, x, y, w, h):
             self.send(packet)
 
     def send_clipboard(self, text):
