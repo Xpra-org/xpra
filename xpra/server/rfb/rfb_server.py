@@ -88,14 +88,14 @@ class RFBServer:
         if not fn:
             log.warn("Warning: no RFB handler for %s", fn_name)
             return
-        self.idle_add(fn, proto, packet)
+        fn(proto, packet)
 
 
     def get_rfb_pixelformat(self):
         model = self._get_rfb_desktop_model()
         w, h = model.get_dimensions()
         #w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
-        return w, h, 32, 32, False, True, 255, 255, 255, 16, 8, 0
+        return w, h, 32, 24, False, True, 255, 255, 255, 16, 8, 0
 
     def _process_rfb_invalid(self, proto, packet):
         self.disconnect_protocol(proto, "invalid packet: %s" % (packet[1:]))
@@ -116,10 +116,15 @@ class RFBServer:
         if not accepted:
             return
         source = RFBSource(proto, proto.share)
+        self._server_sources[proto] = source
+        #continue in the UI thread:
+        self.idle_add(self._accept_rfb_source, source)
+
+    def _accept_rfb_source(self, source):
         if server_features.input_devices:
             source.keyboard_config = self.get_keyboard_config()
             self.set_keymap(source)
-        self._server_sources[proto] = source
+        model = self._get_rfb_desktop_model()
         w, h = model.get_dimensions()
         source.damage(self._window_to_id[model], model, 0, 0, w, h)
         #ugly weak dependency,
@@ -134,17 +139,19 @@ class RFBServer:
             return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
-        mouselog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
-        self._move_pointer(wid, (x, y))
-        if buttons!=self.rfb_buttons:
-            #figure out which buttons have changed:
-            for button in range(8):
-                mask = 2**button
-                if buttons & mask != self.rfb_buttons & mask:
-                    pressed = bool(buttons & mask)
-                    mouselog(" %spressing %i", ["un",""][pressed], 1+button)
-                    self.button_action((x, y), 1+button, pressed, -1)
-            self.rfb_buttons = buttons
+        def process_pointer_event():
+            mouselog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
+            self._move_pointer(wid, (x, y))
+            if buttons!=self.rfb_buttons:
+                #figure out which buttons have changed:
+                for button in range(8):
+                    mask = 2**button
+                    if buttons & mask != self.rfb_buttons & mask:
+                        pressed = bool(buttons & mask)
+                        mouselog(" %spressing %i", ["un",""][pressed], 1+button)
+                        self.button_action((x, y), 1+button, pressed, -1)
+                self.rfb_buttons = buttons
+        self.idle_add(process_pointer_event)
 
     def _process_rfb_KeyEvent(self, proto, packet):
         if not server_features.input_devices or self.readonly:
@@ -153,6 +160,9 @@ class RFBServer:
         if not source:
             return
         pressed, p1, p2, key = packet[1:5]
+        self.idle_add(self.process_rfb_key_event, source, pressed, p1, p2, key)
+
+    def process_rfb_key_event(self, source, pressed, p1, p2, key):
         wid = self._get_rfb_desktop_wid()
         keyname = RFB_KEYNAMES.get(key)
         keylog("RFB KeyEvent(%s, %s, %s, %s) keyname=%s, desktop wid=%s", pressed, p1, p2, key, keyname, wid)
@@ -162,7 +172,7 @@ class RFBServer:
             elif self.X11Keyboard:
                 keyname = self.X11Keyboard.keysym_str(key)
         if not keyname:
-            keylog.warn("rfb unknown KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
+            keylog.warn("Warning: unknown rfb KeyEvent: %s, %i, %i, %#x", pressed, p1, p2, key)
             return
         modifiers = []
         keyval = 0
@@ -176,9 +186,9 @@ class RFBServer:
         encodings = packet[3]
         self._server_sources[proto].set_encodings(encodings)
 
-    def _process_rfb_SetPixelFormat(self, _proto, packet):
-        log("RFB: SetPixelFormat %s", packet)
-        #w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = packet
+    def _process_rfb_SetPixelFormat(self, proto, packet):
+        pixel_format = packet[4:14]
+        self._server_sources[proto].set_pixel_format(pixel_format)
 
     def _process_rfb_FramebufferUpdateRequest(self, _proto, packet):
         #pressed, _, _, keycode = packet[1:5]
@@ -186,7 +196,7 @@ class RFBServer:
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         if not inc:
             model = self._get_rfb_desktop_model()
-            self.refresh_window_area(model, x, y, w, h)
+            self.idle_add(self.refresh_window_area, model, x, y, w, h)
 
     def _process_rfb_ClientCutText(self, _proto, packet):
         #l = packet[4]

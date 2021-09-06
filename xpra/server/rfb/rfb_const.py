@@ -112,6 +112,7 @@ class RFBEncoding(IntEnum):
     QEMU_POINTER = -257
     QEMU_KEY = -258
     QEMU_AUDIO = -259
+    TIGHT_PNG = -260
     GII = -305
     DESKTOPNAME = -307
     EXTENDEDDESKTOPSIZE = -308

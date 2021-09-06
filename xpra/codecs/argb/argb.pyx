@@ -216,6 +216,30 @@ cdef argbdata_to_rgb(const unsigned char *argb, const int argb_len):
     return memoryview(output_buf)
 
 
+def bgra_to_rgb222(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    cdef const unsigned char* bgra
+    with buffer_context(buf) as bc:
+        bgra = <const unsigned char*> (<uintptr_t> int(bc))
+        return bgradata_to_rgb222(bgra, len(bc))
+
+cdef bgradata_to_rgb222(const unsigned char* bgra, const int bgra_len):
+    if bgra_len <= 0:
+        return None
+    assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
+    #number of pixels:
+    cdef int mi = bgra_len//4                #@DuplicateSignature
+    #1 byte per pixel:
+    cdef MemBuf output_buf = padbuf(mi, 0)
+    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
+    cdef int di = 0, si = 0                  #@DuplicateSignature
+    while si < bgra_len:
+        rgb[di] = ((bgra[si+2]>>2) & 0x30) | ((bgra[si+1]>>4) & 0xC) | ((bgra[si]>>6) & 0x3)
+        di += 1
+        si += 4
+    return memoryview(output_buf)
+
+
 def bgra_to_rgb(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned char* bgra
