@@ -7,9 +7,10 @@
 import struct
 from threading import Event
 
-from xpra.net.protocol import PACKET_JOIN_SIZE
-from xpra.os_util import memoryview_to_bytes, strtobytes
-from xpra.util import AtomicInteger
+from xpra.server.rfb.rfb_const import RFBEncoding
+from xpra.server.rfb.rfb_encode import raw_encode
+from xpra.os_util import strtobytes
+from xpra.util import AtomicInteger, csv
 from xpra.log import Logger
 
 log = Logger("rfb")
@@ -21,6 +22,7 @@ class RFBSource:
     __slots__ = (
         "protocol", "close_event", "log_disconnect",
         "ui_client", "counter", "share", "uuid", "lock", "keyboard_config",
+        "encodings",
     )
     def __init__(self, protocol, share=False):
         self.protocol = protocol
@@ -32,6 +34,7 @@ class RFBSource:
         self.uuid = "RFB%5i" % counter.increase()
         self.lock = False
         self.keyboard_config = None
+        self.encodings = [RFBEncoding.RAW]
 
     def get_info(self) -> dict:
         return {
@@ -39,6 +42,19 @@ class RFBSource:
             "uuid"      : self.uuid,
             "share"     : self.share,
             }
+
+    def set_encodings(self, encodings):
+        known_encodings = []
+        unknown_encodings = []
+        for v in encodings:
+            try:
+                known_encodings.append(RFBEncoding(v))
+            except ValueError:
+                unknown_encodings.append(v)
+        self.encodings = known_encodings
+        log("RFB encodings: %s", csv(self.encodings))
+        if unknown_encodings:
+            log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
 
     def get_window_info(self, _wids):
         return {}
@@ -85,24 +101,10 @@ class RFBSource:
             #if there are packets waiting already
             #we'll just process the next polling update instead:
             return
-        img = window.get_image(x, y, w, h)
-        window.acknowledge_changes()
-        log("damage: %s", img)
-        if not img or self.is_closed():
+        if self.is_closed():
             return
-        fbupdate = struct.pack(b"!BBH", 0, 0, 1)
-        encoding = 0    #Raw
-        rect = struct.pack(b"!HHHHi", x, y, w, h, encoding)
-        if img.get_rowstride()!=w*4:
-            img.restride(w*4)
-        pixels = img.get_pixels()
-        assert len(pixels)>=4*w*h
-        pixels = pixels[:4*w*h]
-        if len(pixels)<=PACKET_JOIN_SIZE:
-            self.send(fbupdate+rect+memoryview_to_bytes(pixels))
-        else:
-            self.send(fbupdate+rect)
-            self.send(pixels)
+        for packet in raw_encode(window, x, y, w, h):
+            self.send(packet)
 
     def send_clipboard(self, text):
         nocr = strtobytes(text.replace("\r", ""))

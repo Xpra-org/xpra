@@ -102,6 +102,8 @@ class RFBEncoding(IntEnum):
     H264 = 20
     JPEG = 21
     JRLE = 22
+    VAH264 = 23
+    ZRLE2 = 24
     HITACHI_ZYWRLE = 17
     DESKTOPSIZE = -223
     LASTRECT = -224

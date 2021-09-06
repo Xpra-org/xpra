@@ -5,10 +5,9 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from xpra.util import csv
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
-from xpra.server.rfb.rfb_const import ENCODING_STR, RFB_KEYNAMES
+from xpra.server.rfb.rfb_const import RFB_KEYNAMES
 from xpra.server.rfb.rfb_protocol import RFBProtocol
 from xpra.server.rfb.rfb_source import RFBSource
 from xpra.server import server_features
@@ -173,13 +172,9 @@ class RFBServer:
             is_mod = source.keyboard_config.is_modifier(keycode)
             self._handle_key(wid, bool(pressed), keyname, keyval, keycode, modifiers, is_mod, True)
 
-    def _process_rfb_SetEncodings(self, _proto, packet):
-        n, encodings = packet[2:4]
-        known_encodings = [ENCODING_STR.get(x) for x in encodings if x in ENCODING_STR]
-        log("RFB %i encodings: %s", n, csv(known_encodings))
-        unknown_encodings = [x for x in encodings if x not in ENCODING_STR]
-        if unknown_encodings:
-            log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
+    def _process_rfb_SetEncodings(self, proto, packet):
+        encodings = packet[3]
+        self._server_sources[proto].set_encodings(encodings)
 
     def _process_rfb_SetPixelFormat(self, _proto, packet):
         log("RFB: SetPixelFormat %s", packet)
