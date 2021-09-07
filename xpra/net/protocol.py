@@ -979,6 +979,9 @@ class Protocol:
                 #make sure we get a new header next time
                 header = b""
                 if packet_index>0:
+                    if packet_index in raw_packets:
+                        self.invalid("duplicate raw packet at index %i", packet_index)
+                        return
                     #raw packet, store it and continue:
                     raw_packets[packet_index] = data
                     payload_size = -1
