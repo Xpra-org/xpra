@@ -1,14 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import struct
 from socket import error as socket_error
 from queue import Queue
 
 from xpra.os_util import hexstr, strtobytes
-from xpra.util import repr_ellipsized, envint
+from xpra.util import repr_ellipsized, envint, envbool
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
@@ -21,6 +22,7 @@ from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
 
+RFB_LOG = os.environ.get("XPRA_RFB_LOG")
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 
 
@@ -57,6 +59,9 @@ class RFBProtocol:
         self._packet_parser = self._parse_protocol_handshake
         self._write_thread = None
         self._read_thread = make_thread(self._read_thread_loop, "read", daemon=True)
+        self.log = None
+        if RFB_LOG:
+            self.log = open(RFB_LOG, "w")
 
 
     def is_closed(self):
@@ -246,8 +251,10 @@ class RFBProtocol:
             if len(packet)<=16:
                 log("send(%i bytes: %s)", len(packet), hexstr(packet))
             else:
-                from xpra.simple_stats import std_unit
+                from xpra.simple_stats import std_unit  #pylint: disable=import-outside-toplevel
                 log("send(%s bytes: %s..)", std_unit(len(packet)), hexstr(packet[:16]))
+        if self.log:
+            self.log.write("send: %s\n" % hexstr(packet))
         if self._write_thread is None:
             self.start_write_thread()
         self._write_queue.put(packet)
@@ -310,6 +317,8 @@ class RFBProtocol:
             #so it has time to parse and process the last packet received
             self.timeout_add(1000, self.close)
             return False
+        if self.log:
+            self.log.write("receive: %s\n" % hexstr(buf))
         self.input_raw_packetcount += 1
         self._buffer += buf
         #log("calling %s(%s)", self._packet_parser, repr_ellipsized(self._buffer))
@@ -382,6 +391,9 @@ class RFBProtocol:
         self.terminate_queue_threads()
         self._process_packet_cb(self, [RFBProtocol.CONNECTION_LOST])
         self.idle_add(self.clean)
+        if self.log:
+            self.log.close()
+            self.log = None
         log("RFBProtocol.close() done")
 
     def clean(self):
