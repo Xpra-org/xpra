@@ -68,7 +68,7 @@ def init_brotli():
             level = min(9, level)
         else:
             level = min(11, level)
-        if not isinstance(packet, bytes):
+        if not isinstance(packet, (bytes, bytearray, memoryview)):
             packet = bytes(str(packet), 'UTF-8')
         return level | BROTLI_FLAG, brotli.compress(packet, quality=level)
     return Compression("brotli", None, brotli.__version__, brotli_compress, brotli.decompress)
@@ -77,14 +77,10 @@ def init_zlib():
     import zlib
     def zlib_compress(packet, level):
         level = min(9, max(1, level))
-        if isinstance(packet, memoryview):
-            packet = packet.tobytes()
-        elif not isinstance(packet, bytes):
+        if not isinstance(packet, bytes, bytearray, memoryview):
             packet = bytes(str(packet), 'UTF-8')
         return level + ZLIB_FLAG, zlib.compress(packet, level)
     def zlib_decompress(data):
-        if isinstance(data, memoryview):
-            data = data.tobytes()
         return zlib.decompress(data)
     return Compression("zlib", None, zlib.__version__, zlib_compress, zlib_decompress)
 
