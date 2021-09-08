@@ -193,9 +193,9 @@ class Compressible(LargeStructure):
 
 def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, brotli=False, none=False, can_inline=True):
     size = len(data)
-    if size>MAX_SIZE:
+    if size>MAX_DECOMPRESSED_SIZE:
         sizemb = size//1024//1024
-        maxmb = MAX_SIZE//1024//1024
+        maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
         raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
     if lz4 and use("lz4"):
         algo = "lz4"
