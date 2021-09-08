@@ -75,7 +75,6 @@ def init_zlib():
     def zlib_decompress(data):
         d = zlib.decompressobj()
         v = d.decompress(data, MAX_DECOMPRESSED_SIZE)
-        print("unconsumed_tail=%s" % d.unconsumed_tail)
         assert not d.unconsumed_tail, "not all data was decompressed"
         return v
     return Compression("zlib", None, zlib.__version__, zlib_compress, zlib_decompress)
