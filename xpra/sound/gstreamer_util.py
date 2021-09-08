@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import os
 
 from xpra.sound.common import (
     FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA, \
-    AAC_MPEG4, WAV_LZ4, WAV_LZO, \
+    AAC_MPEG4, WAV_LZ4, \
     VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, MP3_ID3V2, \
     MPEG4, MKA, OGG,
     )
@@ -211,7 +211,7 @@ CODEC_ORDER = [
     #best results:
     OPUS,
     #smooth playback but low compression:
-    FLAC, WAVPACK, WAV_LZ4, WAV_LZO, WAV,
+    FLAC, WAVPACK, WAV_LZ4, WAV,
     #YMMV:
     OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS,
     MP3, MP3_ID3V2, FLAC_OGG, AAC_MPEG4,

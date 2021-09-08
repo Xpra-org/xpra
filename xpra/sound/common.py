@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,7 +39,7 @@ OPUS_MKA    = OPUS+"+"+MKA
 VORBIS_MKA  = VORBIS+"+"+MKA
 AAC_MPEG4   = AAC+"+"+MPEG4
 WAV_LZ4     = WAV+"+"+LZ4
-WAV_LZO     = WAV+"+"+LZO
+#WAV_LZO     = WAV+"+"+LZO
 MP3_MPEG4   = MP3+"+"+MPEG4
 MP3_ID3V2   = MP3+"+"+ID3V2
 

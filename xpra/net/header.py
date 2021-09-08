@@ -23,7 +23,7 @@ FLAGS_CIPHER    = 0x2
 #the low bits contain the compression level, the high bits the compression algo:
 ZLIB_FLAG       = 0x0       #assume zlib if no other compression flag is set
 LZ4_FLAG        = 0x10
-LZO_FLAG        = 0x20
+#LZO_FLAG        = 0x20
 BROTLI_FLAG     = 0x40
 FLAGS_NOHEADER  = 0x10000   #never encoded, so we can use a value bigger than a byte
 

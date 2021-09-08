@@ -256,7 +256,7 @@ def guess_packet_type(data):
         from xpra.net.header import (
             unpack_header, HEADER_SIZE,
             FLAGS_RENCODE, FLAGS_YAML,
-            LZ4_FLAG, LZO_FLAG, BROTLI_FLAG,
+            LZ4_FLAG, BROTLI_FLAG,
             )
         header = data.ljust(HEADER_SIZE, b"\0")
         _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
