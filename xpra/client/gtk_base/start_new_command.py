@@ -16,6 +16,7 @@ from xpra.gtk_common.gtk_util import (
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import typedict
+from xpra.os_util import bytestostr
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("exec")
@@ -28,12 +29,24 @@ def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
         _instance = StartNewCommand(run_callback, can_share, xdg_menu)
     return _instance
 
+def udict(d):
+    #with rencode, we may get bytes instead of strings:
+    t = typedict()
+    for k, v in d.items():
+        if isinstance(k, bytes):
+            try:
+                k = net_utf8(k)
+            except Exception:
+                k = bytestostr(k)
+        t[k] = v
+    return t
+
 
 class StartNewCommand:
 
     def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
         self.run_callback = run_callback
-        self.xdg_menu = typedict(xdg_menu or {})
+        self.xdg_menu = udict(xdg_menu or {})
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
@@ -115,7 +128,7 @@ class StartNewCommand:
 
     def category_changed(self, *args):
         category = self.category_combo.get_active_text().encode("utf-8")
-        entries = typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {})
+        entries = udict(udict(self.xdg_menu.dictget(category, {})).dictget("Entries", {}))
         log("category_changed(%s) category=%s, entries=%s", args, category, entries)
         self.command_combo.get_model().clear()
         for name in entries.keys():
@@ -127,14 +140,14 @@ class StartNewCommand:
         if not self.entry:
             return
         category = self.category_combo.get_active_text()
-        entries = typedict(self.xdg_menu.dictget(category.encode("utf-8"), {})).dictget("Entries", {})
+        entries = udict(udict(self.xdg_menu.dictget(category.encode("utf-8"), {})).dictget("Entries", {}))
         command_name = self.command_combo.get_active_text()
         log("command_changed(%s) category=%s, entries=%s, command_name=%s", args, category, entries, command_name)
         command = ""
         if entries and command_name:
-            command_props = typedict(entries).dictget(command_name.encode("utf-8"), {})
+            command_props = udict(udict(entries).dictget(command_name.encode("utf-8"), {}))
             log("command properties=%s", command_props)
-            command = typedict(command_props).strget(b"command", "")
+            command = udict(command_props).strget(b"command", "")
         self.entry.set_text(command)
 
 
