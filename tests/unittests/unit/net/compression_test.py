@@ -69,6 +69,7 @@ class TestCompression(unittest.TestCase):
                     b"0"*16,
                     b"\0",
                     memoryview(b"hello"),
+                    bytearray(b"hello"),
                     b"1"*1024*1024*16,
                     ):
                     v = compression.compressed_wrapper("test", data, level=level, **kwargs)

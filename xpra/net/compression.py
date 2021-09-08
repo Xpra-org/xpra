@@ -77,7 +77,7 @@ def init_zlib():
     import zlib
     def zlib_compress(packet, level):
         level = min(9, max(1, level))
-        if not isinstance(packet, bytes, bytearray, memoryview):
+        if not isinstance(packet, (bytes, bytearray, memoryview)):
             packet = bytes(str(packet), 'UTF-8')
         return level + ZLIB_FLAG, zlib.compress(packet, level)
     def zlib_decompress(data):
