@@ -87,7 +87,7 @@ class StubClientMixin:
         This runs in the UI thread.
         """
 
-    def compressed_wrapper(self, datatype, data, level=5):
+    def compressed_wrapper(self, datatype, data, level=5, **kwargs):
         """
         Dummy utility method for compressing data.
         Actual client implementations will provide compression

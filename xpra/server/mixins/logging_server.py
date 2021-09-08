@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
@@ -117,9 +117,9 @@ class LoggingServer(StubServerMixin):
         try:
             try:
                 if args:
-                    s = msg % args
+                    data = msg % args
                 else:
-                    s = msg
+                    data = msg
             except Exception as e:
                 local_err("failed to format log message")
                 return
@@ -129,7 +129,11 @@ class LoggingServer(StubServerMixin):
                     continue
                 try:
                     dtime = int(1000*(monotonic_time() - start_time))
-                    data = source.compressed_wrapper("text", enc(s))
+                    if len(data)>=32:
+                        try:
+                            data = source.compressed_wrapper("text", data.encode("utf8"), level=1)
+                        except Exception:
+                            pass
                     source.send("logging", level, data, dtime)
                     exc_info = kwargs.get("exc_info")
                     if exc_info is True:

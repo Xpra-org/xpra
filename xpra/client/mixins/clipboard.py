@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -7,6 +7,7 @@
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.gui import get_clipboard_native_class
+from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util import flatten_dict, typedict
 from xpra.os_util import bytestostr, is_Wayland
@@ -278,24 +279,14 @@ class ClipboardClient(StubClientMixin):
             if not self.clipboard_enabled:
                 log("clipboard is disabled, not sending clipboard packet")
                 return
-            #handle clipboard compression if needed:
-            from xpra.net.compression import Compressible
+            #replaces 'Compressible' items in a packet
+            #with a subclass that calls self.compressed_wrapper
+            #and which can therefore enable the brotli compressor:
             packet = list(parts)
-            for v in packet:
-                if isinstance(v, Compressible):
-                    register_clipboard_compress_cb(v)
+            for i, v in enumerate(packet):
+                if isinstance(v, compression.Compressible):
+                    packet[i] = self.compressible_item(v)
             self.send_now(*packet)
-        def register_clipboard_compress_cb(compressible):
-            #register the compressor which will fire in protocol.encode:
-            def compress_clipboard():
-                log("compress_clipboard() compressing %s, server compressors=%s",
-                                  compressible, self.server_compressors)
-                from xpra.net import compression
-                if "brotli" in self.server_compressors and compression.use("brotli"):
-                    return compression.compressed_wrapper(compressible.datatype, compressible.data,
-                                                        level=9, brotli=True, can_inline=False)
-                return self.compressed_wrapper(compressible.datatype, compressible.data)
-            compressible.compress = compress_clipboard
         def clipboard_progress(local_requests, remote_requests):
             log("clipboard_progress(%s, %s)", local_requests, remote_requests)
             if local_requests is not None:
@@ -307,6 +298,23 @@ class ClipboardClient(StubClientMixin):
         hc = helperClass(clipboard_send, clipboard_progress, **kwargs)
         hc.set_preferred_targets(self.server_clipboard_preferred_targets)
         return hc
+
+    def compressible_item(self, compressible):
+        """
+            converts a 'Compressible' item into something that will
+            call `self.compressed_wrapper` when compression is requested
+            by the network encode thread.
+        """
+        client = self
+        class ProtocolCompressible(compression.Compressible):
+            __slots__ = ()
+            def compress(self):
+                log.error("compress() 1")
+                v = client.compressed_wrapper(self.datatype, self.data,
+                                                 level=9, can_inline=False, brotli=True)
+                log.error("compress() 2")
+                return v
+        return ProtocolCompressible(compressible.datatype, compressible.data)
 
     def clipboard_notify(self, n):
         log("clipboard_notify(%i)", n)

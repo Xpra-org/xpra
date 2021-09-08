@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -9,7 +9,7 @@ from time import sleep, time
 from queue import Queue
 
 from xpra.net.net_util import get_network_caps
-from xpra.net.compression import Compressed, compressed_wrapper
+from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.protocol import Protocol
 from xpra.net.common import MAX_PACKET_SIZE
 from xpra.net.digest import get_salt, gendigest
@@ -369,17 +369,11 @@ class ProxyInstance:
     def _packet_recompress(self, packet, index, name):
         if len(packet)>index:
             data = packet[index]
-            if len(data)<512:
+            if len(data)<MIN_COMPRESS_SIZE:
                 return
             #this is ugly and not generic!
-            zlib = self.caps.boolget("zlib", True)
-            lz4 = self.caps.boolget("lz4", False)
-            #lzo = self.caps.boolget("lzo", False)
-            if zlib or lz4:
-                packet[index] = compressed_wrapper(name, data, zlib=zlib, lz4=lz4, can_inline=False)
-            else:
-                #prevent warnings about large uncompressed data
-                packet[index] = Compressed("raw %s" % name, data, can_inline=True)
+            kw = dict((k, self.caps.boolget(k)) for k in ("zlib", "lz4"))
+            packet[index] = compressed_wrapper(name, data, can_inline=False, **kw)
 
 
     def cancel_server_ping_timer(self):

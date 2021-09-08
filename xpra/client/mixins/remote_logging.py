@@ -112,10 +112,14 @@ class RemoteLogging(StubClientMixin):
         try:
             dtime = int(1000*(monotonic_time() - self.monotonic_start_time))
             if args:
-                s = msg % args
+                data = msg % args
             else:
-                s = msg
-            data = self.compressed_wrapper("text", s, level=1)
+                data = msg
+            if len(data)>=32:
+                try:
+                    data = self.compressed_wrapper("text", data.encode("utf8"), level=1)
+                except Exception:
+                    pass
             self.send("logging", level, data, dtime)
             exc_info = kwargs.get("exc_info")
             if exc_info is True:

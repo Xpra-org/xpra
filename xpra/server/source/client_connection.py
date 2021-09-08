@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -141,15 +141,11 @@ class ClientConnection(StubSourceMixin):
             notification_mixin.NotificationMixin.may_notify(self, *args, **kwargs)
 
 
-    def compressed_wrapper(self, datatype, data, min_saving=128):
-        if self.zlib or self.lz4:
-            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, can_inline=False)
-            if len(cw)+min_saving<=len(data):
-                #the compressed version is smaller, use it:
-                return cw
-            #skip compressed version: fall through
-        #we can't compress, so at least avoid warnings in the protocol layer:
-        return Compressed(datatype, data, can_inline=True)
+    def compressed_wrapper(self, datatype, data, **kwargs):
+        #set compression flags based on self.zlib and self.lz4:
+        kw = dict((k, getattr(self, k, False)) for k in ("zlib", "lz4"))
+        kw.update(kwargs)
+        return compressed_wrapper(datatype, data, can_inline=False, **kw)
 
 
     def update_bandwidth_limits(self):

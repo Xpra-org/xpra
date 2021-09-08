@@ -11,6 +11,8 @@ from xpra.util import envbool, envint
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, BROTLI_FLAG
 
 
+#MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 512)
+MIN_COMPRESS_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", -1)
 MAX_DECOMPRESSED_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 #all the compressors we know about, in best compatibility order:
@@ -182,24 +184,29 @@ class Compressible(LargeStructure):
         raise Exception("compress() not defined on %s" % self)
 
 
-def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, brotli=False, none=False, can_inline=True):
+def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs):
     size = len(data)
+    def no():
+        return Compressed("raw %s" % datatype, data, can_inline=can_inline)
+    if size<=MIN_COMPRESS_SIZE:
+        #don't bother
+        return no()
     if size>MAX_DECOMPRESSED_SIZE:
         sizemb = size//1024//1024
         maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
         raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
-    if lz4 and use("lz4"):
-        algo = "lz4"
-    elif brotli and use("brotli"):
-        algo = "brotli"
-    elif zlib and use("zlib"):
-        algo = "zlib"
-    elif none and use("none"):
-        algo = "none"
-    else:
-        raise InvalidCompressionException("no compressors available")
+    algos = [x for x in ALL_COMPRESSORS if kwargs.get(x)]
+    if not algos:
+        return no()
+        #raise InvalidCompressionException("no compressors available")
+    #TODO: smarter selection of algo based on datatype
+    #ie: 'text' -> brotli
+    algo = algos[0]
     c = COMPRESSION[algo]
     cl, cdata = c.compress(data, level)
+    min_saving = kwargs.get("min_saving", 0)
+    if len(cdata)>=size+min_saving:
+        return no()
     return LevelCompressed(datatype, cdata, cl, algo, can_inline=can_inline)
 
 

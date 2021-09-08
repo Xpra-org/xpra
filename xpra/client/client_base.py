@@ -486,17 +486,18 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             capabilities["aliases"] = reverse_aliases
         return capabilities
 
-    def compressed_wrapper(self, datatype, data, level=5):
+    def compressed_wrapper(self, datatype, data, level=5, **kwargs):
         if level>0 and len(data)>=256:
-            #ugly assumptions here, should pass by name
-            zlib = "zlib" in self.server_compressors
-            lz4 = "lz4" in self.server_compressors
-            #never use brotli as a generic compressor
-            #brotli = "brotli" in self.server_compressors and compression.use_brotli
-            cw = compression.compressed_wrapper(datatype, data, level=level,
-                                                zlib=zlib, lz4=lz4,
-                                                brotli=False, none=True,
-                                                can_inline=False)
+            kw = {}
+            #brotli is not enabled by default as a generic compressor
+            #but callers may choose to enable it via kwargs:
+            for algo, defval in {
+                "zlib" : True,
+                "lz4" : True,
+                "brotli" : False,
+                }.items():
+                kw[algo] = algo in self.server_compressors and compression.use(algo) and kwargs.get(algo, defval)
+            cw = compression.compressed_wrapper(datatype, data, level=level, can_inline=False, **kw)
             if len(cw)<len(data):
                 #the compressed version is smaller, use it:
                 return cw

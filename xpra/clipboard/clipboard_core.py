@@ -458,7 +458,11 @@ class ClipboardProtocolHelperCore:
             log.warn("Warning: clipboard contents are too big and have not been sent")
             log.warn(" %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
             return None
-        if isinstance(wire_data, (str, bytes)) and len(wire_data)>=MIN_CLIPBOARD_COMPRESS_SIZE:
+        #if isinstance(wire_data, str):
+        #compression requires bytes:
+        #wire_data = wire_data.encode("utf8")
+        #but this would require the receiving end to use net_utf8()
+        if isinstance(wire_data, bytes) and len(wire_data)>=MIN_CLIPBOARD_COMPRESS_SIZE:
             return Compressible("clipboard: %s / %s" % (dtype, dformat), wire_data)
         return wire_data
 

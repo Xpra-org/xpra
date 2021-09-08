@@ -126,9 +126,5 @@ class ClipboardConnection(StubSourceMixin):
         packet = list(packet)
         for i, item in enumerate(packet):
             if isinstance(item, Compressible):
-                if self.brotli:
-                    packet[i] = compressed_wrapper(item.datatype, item.data,
-                                                               level=9, brotli=True, can_inline=False)
-                else:
-                    packet[i] = self.compressed_wrapper(item.datatype, item.data)
+                packet[i] = compressed_wrapper(item.datatype, item.data, level=9, can_inline=False, brotli=True)
         self.queue_packet(packet)

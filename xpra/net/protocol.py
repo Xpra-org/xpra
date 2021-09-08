@@ -549,17 +549,17 @@ class Protocol:
                 l = len(item)
             except TypeError as e:
                 raise TypeError("invalid type %s in %s packet at index %s: %s" % (ti, packet[0], i, e)) from None
-            if ti==LargeStructure:
+            if issubclass(ti, LargeStructure):
                 packet[i] = item.data
                 continue
-            if ti==Compressible:
+            if issubclass(ti, Compressible):
                 #this is a marker used to tell us we should compress it now
                 #(used by the client for clipboard data)
                 item = item.compress()
                 packet[i] = item
                 ti = type(item)
                 #(it may now be a "Compressed" item and be processed further)
-            if ti in (Compressed, LevelCompressed):
+            if issubclass(ti, (Compressed, LevelCompressed)):
                 #already compressed data (usually pixels, cursors, etc)
                 if not item.can_inline or l>INLINE_SIZE:
                     il = 0
