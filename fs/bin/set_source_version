@@ -16,10 +16,10 @@ for f in "fs/lib/cups/xpraforwarder" "xpra/__init__.py"; do
 done
 
 for k in "AppVersion" "VersionInfoVersion"; do
-	sed -i'' 's/$k=.*/$k=$NEWV/' "packaging/MSWindows/xpra.iss"
+	sed -i'' "s/$k=.*/$k=$NEWV/" "packaging/MSWindows/xpra.iss"
 done
 for k in "AppVerName" "UninstallDisplayName"; do
-	sed -i'' 's/$k=.*/$k=Xpra $NEWV/' "packaging/MSWindows/xpra.iss"
+	sed -i'' "s/$k=.*/$k=Xpra $NEWV/" "packaging/MSWindows/xpra.iss"
 done
 
 #changelogs:
@@ -48,7 +48,6 @@ git commit -m "bump version" \
 	xpra/__init__.py \
 	packaging/rpm/xpra.spec \
 	packaging/debian/xpra/changelog \
-	packaging/buildah/build_rpms.sh \
-	packaging/buildah/build_debs.sh \
+	packaging/MSWindows/xpra.iss \
 	fs/lib/cups/xpraforwarder \
 	docs/CHANGELOG.md
