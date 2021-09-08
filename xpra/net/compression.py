@@ -98,6 +98,8 @@ def init_compressors(*names):
     for x in names:
         if not envbool("XPRA_%s" % (x.upper()), True):
             continue
+        if x not in ALL_COMPRESSORS:
+            continue
         fn = globals().get("init_%s" % x)
         try:
             c = fn()
