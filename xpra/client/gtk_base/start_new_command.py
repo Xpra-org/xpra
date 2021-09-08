@@ -15,7 +15,7 @@ from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
     )
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.util import typedict
+from xpra.util import typedict, net_utf8
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("exec")
@@ -28,12 +28,21 @@ def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
         _instance = StartNewCommand(run_callback, can_share, xdg_menu)
     return _instance
 
+def udict(d):
+    #with rencode, we may get bytes instead of strings:
+    t = typedict()
+    for k, v in d.items():
+        if isinstance(k, bytes):
+            k = net_utf8(k)
+        t[k] = v
+    return t
+
 
 class StartNewCommand:
 
     def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
         self.run_callback = run_callback
-        self.xdg_menu = typedict(xdg_menu or {})
+        self.xdg_menu = udict(xdg_menu or {})
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
@@ -49,14 +58,14 @@ class StartNewCommand:
         vbox.set_spacing(0)
 
         self.entry = None
-        if xdg_menu:
+        if self.xdg_menu:
             # or use menus if we have xdg data:
             hbox = Gtk.HBox(False, 20)
             vbox.add(hbox)
             hbox.add(Gtk.Label("Category:"))
             self.category_combo = Gtk.ComboBoxText()
             hbox.add(self.category_combo)
-            for name in sorted(xdg_menu.keys()):
+            for name in sorted(self.xdg_menu.keys()):
                 self.category_combo.append_text(name)
             self.category_combo.set_active(0)
             self.category_combo.connect("changed", self.category_changed)
@@ -115,7 +124,7 @@ class StartNewCommand:
 
     def category_changed(self, *args):
         category = self.category_combo.get_active_text()
-        entries = typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {})
+        entries = udict(udict(self.xdg_menu.dictget(category, {})).dictget("Entries", {}))
         log("category_changed(%s) category=%s, entries=%s", args, category, entries)
         self.command_combo.get_model().clear()
         for name in entries.keys():
@@ -127,14 +136,14 @@ class StartNewCommand:
         if not self.entry:
             return
         category = self.category_combo.get_active_text()
-        entries = typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {})
+        entries = udict(udict(self.xdg_menu.dictget(category, {})).dictget("Entries", {}))
         command_name = self.command_combo.get_active_text()
         log("command_changed(%s) category=%s, entries=%s, command_name=%s", args, category, entries, command_name)
         command = ""
         if entries and command_name:
-            command_props = typedict(entries).dictget(command_name, {})
+            command_props = udict(udict(entries).dictget(command_name, {}))
             log("command properties=%s", command_props)
-            command = typedict(command_props).strget("command", "")
+            command = udict(command_props).strget("command", "")
         self.entry.set_text(command)
 
 
@@ -200,5 +209,4 @@ def main(): # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover
-    v = main()
-    sys.exit(v)
+    sys.exit(main())
