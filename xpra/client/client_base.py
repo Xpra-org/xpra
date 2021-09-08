@@ -491,11 +491,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             #ugly assumptions here, should pass by name
             zlib = "zlib" in self.server_compressors
             lz4 = "lz4" in self.server_compressors
-            lzo = "lzo" in self.server_compressors
             #never use brotli as a generic compressor
             #brotli = "brotli" in self.server_compressors and compression.use_brotli
             cw = compression.compressed_wrapper(datatype, data, level=level,
-                                                zlib=zlib, lz4=lz4, lzo=lzo,
+                                                zlib=zlib, lz4=lz4,
                                                 brotli=False, none=True,
                                                 can_inline=False)
             if len(cw)<len(data):

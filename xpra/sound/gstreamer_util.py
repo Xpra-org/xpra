@@ -102,7 +102,6 @@ CODEC_OPTIONS = [
         (MP3_MPEG4  , "lamemp3enc",     "mp4mux",       "mpegaudioparse ! mad",         "qtdemux"),
         (WAV        , "wavenc",         None,           "wavparse",                     None),
         (WAV_LZ4    , "wavenc",         None,           "wavparse",                     None,               "lz4"),
-        (WAV_LZO    , "wavenc",         None,           "wavparse",                     None,               "lzo"),
         (OPUS_OGG   , "opusenc",        "oggmux",       "opusdec",                      "oggdemux"),
         (OPUS       , "opusenc",        None,           "opusparse ! opusdec",          None),
         #this can cause "could not link opusenc0 to webmmux0"
@@ -399,13 +398,11 @@ def validate_encoding(elements):
     return True
 
 def has_stream_compressor(stream_compressor):
-    if stream_compressor not in ("lz4", "lzo"):
+    if stream_compressor not in ("lz4", ):
         log.warn("Warning: invalid stream compressor '%s'", stream_compressor)
         return False
     from xpra.net.compression import use
     if stream_compressor=="lz4" and not use("lz4"):
-        return False
-    if stream_compressor=="lzo" and not use("lzo"):
         return False
     return True
 
@@ -424,7 +421,7 @@ def get_demuxers():
     return demuxers
 
 def get_stream_compressors():
-    return [x for x in ("lz4", "lzo") if has_stream_compressor(x)]
+    return [x for x in ("lz4", ) if has_stream_compressor(x)]
 
 def get_encoder_elements(name):
     encoders = get_encoders()

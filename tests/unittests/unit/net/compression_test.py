@@ -59,7 +59,7 @@ class TestCompression(unittest.TestCase):
             pass
         else:
             raise Exception("should not be able to use the wrapper without enabling a compressor")
-        for x in ("lz4", "lzo", "brotli", "zlib", "none"):
+        for x in ("lz4", "brotli", "zlib", "none"):
             if not compression.use(x):
                 continue
             kwargs = {x : True}

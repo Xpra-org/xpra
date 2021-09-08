@@ -28,7 +28,7 @@ RAW = "raw"
 
 #stream compression
 LZ4 = "lz4"
-LZO = "lzo"
+#LZO = "lzo"
 
 FLAC_OGG    = FLAC+"+"+OGG
 OPUS_OGG    = OPUS+"+"+OGG

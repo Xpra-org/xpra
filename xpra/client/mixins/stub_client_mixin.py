@@ -91,7 +91,7 @@ class StubClientMixin:
         """
         Dummy utility method for compressing data.
         Actual client implementations will provide compression
-        based on the client and server capabilities (lz4, lzo, zlib).
+        based on the client and server capabilities (lz4, zlib).
         """
         #sub-classes should override this
         assert level>=0

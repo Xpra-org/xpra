@@ -99,9 +99,6 @@
 		${prefix}/lib/libz*.dylib
 	</binary>
 	<binary>
-		${prefix}/lib/liblzo*.dylib
-	</binary>
-	<binary>
 		${prefix}/lib/liblz4*.dylib
 	</binary>
 	<binary>

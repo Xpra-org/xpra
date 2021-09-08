@@ -44,7 +44,7 @@ def webp_encode(image, supports_transparency, quality, speed, content_type):
     raise Exception("BUG: cannot use 'webp' encoding and none of the PIL fallbacks are available!")
 
 
-def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True, rgb_lzo=False):
+def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zlib=True, rgb_lz4=True):
     pixel_format = bytestostr(image.get_pixel_format())
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
@@ -89,7 +89,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
             level = max(0, min(5, int(115-speed)//20))
     if level>0:
         cwrapper = compression.compressed_wrapper(coding, pixels, level=level,
-                                                  zlib=rgb_zlib, lz4=rgb_lz4, lzo=rgb_lzo,
+                                                  zlib=rgb_zlib, lz4=rgb_lz4,
                                                   brotli=False, none=True)
         algo = cwrapper.algorithm
         if algo=="none" or len(cwrapper)>=(len(pixels)-32):

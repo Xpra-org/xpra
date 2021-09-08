@@ -176,7 +176,6 @@ class WindowSource(WindowIconSource):
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.rgb_zlib = use("zlib") and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression
         self.rgb_lz4 = use("lz4") and encoding_options.boolget("rgb_lz4", False)       #server and client support lz4 pixel compression
-        self.rgb_lzo = use("lzo") and encoding_options.boolget("rgb_lzo", False)       #server and client support lzo pixel compression
         self.client_render_size = encoding_options.get("render-size")
         self.client_bit_depth = encoding_options.intget("bit-depth", 24)
         self.supports_transparency = HAS_ALPHA and encoding_options.boolget("transparency")
@@ -362,7 +361,6 @@ class WindowSource(WindowIconSource):
         self.encoding_options = {}
         self.rgb_zlib = False
         self.rgb_lz4 = False
-        self.rgb_lzo = False
         self.supports_transparency = False
         self.full_frames_only = False
         self.suspended = False
@@ -2526,7 +2524,7 @@ class WindowSource(WindowIconSource):
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed
         return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, s,
-                          self.rgb_zlib, self.rgb_lz4, self.rgb_lzo)
+                          self.rgb_zlib, self.rgb_lz4)
 
     def no_r210(self, image, rgb_formats):
         rgb_format = image.get_pixel_format()

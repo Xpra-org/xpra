@@ -504,7 +504,7 @@ class Protocol:
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
         compressors = caps.strtupleget("compressors")
         log("enable_compressor_from_caps(..) options=%s", opts)
-        for c in opts:      #ie: [zlib, lz4, lzo]
+        for c in opts:      #ie: [zlib, lz4]
             if c=="none":
                 continue
             if c in compressors or caps.boolget(c):

@@ -32,12 +32,12 @@ $PACMAN --noconfirm -S ${XPKG}python ${XPKG}libnotify
 #media libraries (more than we actually need):
 $PACMAN --noconfirm -S ${XPKG}ffmpeg ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
-$PACMAN --noconfirm -S ${XPKG}lz4 ${XPKG}lzo2 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
+$PACMAN --noconfirm -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
 #python GStreamer bindings:
 $PACMAN --noconfirm -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi ${XPKG}pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 lzo brotli PyOpenGL nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli PyOpenGL nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil; do
 	$PACMAN --noconfirm -S ${XPKG}python-${x}
 done
 $PACMAN --noconfirm -S ${XPKG}cython

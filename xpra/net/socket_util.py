@@ -268,10 +268,9 @@ def guess_packet_type(data):
             rencode = bool(protocol_flags & FLAGS_RENCODE)
             yaml = bool(protocol_flags & FLAGS_YAML)
             lz4 = bool(protocol_flags & LZ4_FLAG)
-            lzo = bool(protocol_flags & LZO_FLAG)
             brotli = bool(protocol_flags & BROTLI_FLAG)
             def is_xpra():
-                compressors = sum((lz4, lzo, brotli))
+                compressors = sum((lz4, brotli))
                 #only one compressor can be enabled:
                 if compressors>1:
                     return False

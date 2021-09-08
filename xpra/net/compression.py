@@ -8,15 +8,15 @@
 from collections import namedtuple
 
 from xpra.util import envbool, envint
-from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG, BROTLI_FLAG
+from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, BROTLI_FLAG
 
 
 MAX_DECOMPRESSED_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 #all the compressors we know about, in best compatibility order:
-ALL_COMPRESSORS = ("zlib", "lz4", "lzo", "brotli", "none")
+ALL_COMPRESSORS = ("zlib", "lz4", "brotli", "none")
 #order for performance:
-PERFORMANCE_ORDER = ("none", "lz4", "lzo", "zlib", "brotli")
+PERFORMANCE_ORDER = ("none", "lz4", "zlib", "brotli")
 
 
 Compression = namedtuple("Compression", ["name", "version", "python_version", "compress", "decompress"])
@@ -52,14 +52,6 @@ def init_lz4():
             raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
         return block_decompress(data)
     return Compression("lz4", version, VERSION.encode("latin1"), lz4_compress, lz4_decompress)
-
-def init_lzo():
-    import lzo  #@UnresolvedImport
-    def lzo_compress(packet, level):
-        if isinstance(packet, memoryview):
-            packet = packet.tobytes()
-        return level | LZO_FLAG, lzo.compress(packet)
-    return Compression("lzo", lzo.LZO_VERSION_STRING, lzo.__version__, lzo_compress, lzo.decompress)
 
 def init_brotli():
     import brotli
@@ -107,7 +99,7 @@ def init_compressors(*names):
             c = fn()
             assert c
             COMPRESSION[x] = c
-        except (ImportError, AttributeError):
+        except (TypeError, ImportError, AttributeError):
             from xpra.log import Logger
             logger = Logger("network", "protocol")
             logger.debug("no %s", x, exc_info=True)
@@ -191,7 +183,7 @@ class Compressible(LargeStructure):
         raise Exception("compress() not defined on %s" % self)
 
 
-def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False, brotli=False, none=False, can_inline=True):
+def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, brotli=False, none=False, can_inline=True):
     size = len(data)
     if size>MAX_DECOMPRESSED_SIZE:
         sizemb = size//1024//1024
@@ -199,8 +191,6 @@ def compressed_wrapper(datatype, data, level=5, zlib=False, lz4=False, lzo=False
         raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
     if lz4 and use("lz4"):
         algo = "lz4"
-    elif lzo and use("lzo"):
-        algo = "lzo"
     elif brotli and use("brotli"):
         algo = "brotli"
     elif zlib and use("zlib"):
@@ -221,8 +211,6 @@ class InvalidCompressionException(Exception):
 def get_compression_type(level) -> str:
     if level & LZ4_FLAG:
         return "lz4"
-    if level & LZO_FLAG:
-        return "lzo"
     if level & BROTLI_FLAG:
         return "brotli"
     return "zlib"
@@ -232,8 +220,6 @@ def decompress(data, level):
     #log.info("decompress(%s bytes, %s) type=%s", len(data), get_compression_type(level))
     if level & LZ4_FLAG:
         algo = "lz4"
-    elif level & LZO_FLAG:
-        algo = "lzo"
     elif level & BROTLI_FLAG:
         algo = "brotli"
     else:

@@ -60,7 +60,6 @@ class EncodingsMixin(StubSourceMixin):
 
         self.zlib = True
         self.lz4 = use("lz4")
-        self.lzo = use("lzo")
 
         #for managing the recalculate_delays work:
         self.calculate_window_pixels = {}
@@ -248,10 +247,9 @@ class EncodingsMixin(StubSourceMixin):
         #general features:
         self.zlib = c.boolget("zlib", True)
         self.lz4 = c.boolget("lz4", False) and use("lz4")
-        self.lzo = c.boolget("lzo", False) and use("lzo")
         self.brotli = c.boolget("brotli", False) and use("brotli")
-        log("compressors: zlib=%s, lz4=%s, lzo=%s, brotli=%s",
-            self.zlib, self.lz4, self.lzo, self.brotli)
+        log("compressors: zlib=%s, lz4=%s, brotli=%s",
+            self.zlib, self.lz4, self.brotli)
 
         delay = batch_config.START_DELAY
         dbc = self.default_batch_config
@@ -311,7 +309,7 @@ class EncodingsMixin(StubSourceMixin):
             elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
                 if stripped_k in ("transparency",
-                                  "rgb_zlib", "rgb_lz4", "rgb_lzo",
+                                  "rgb_zlib", "rgb_lz4",
                                   ):
                     v = c.boolget(k)
                 elif stripped_k in ("initial_quality", "initial_speed",
@@ -475,7 +473,6 @@ class EncodingsMixin(StubSourceMixin):
         info = {
                 "auto_refresh"      : self.auto_refresh_delay,
                 "lz4"               : self.lz4,
-                "lzo"               : self.lzo,
                 }
         ieo = dict(self.icons_encoding_options)
         ieo.pop("default.icons", None)

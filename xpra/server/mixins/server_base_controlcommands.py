@@ -375,7 +375,7 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_compression(self, compression):
         c = compression.lower()
         from xpra.net import compression
-        opts = compression.get_enabled_compressors()    #ie: [lz4, lzo, zlib]
+        opts = compression.get_enabled_compressors()    #ie: [lz4, zlib]
         if c not in opts:
             raise ControlError("compressor argument must be one of: %s" % csv(opts))
         for cproto in tuple(self._server_sources.keys()):

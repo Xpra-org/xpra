@@ -395,7 +395,7 @@ class SoundSink(SoundPipeline):
         compress = metadata.get("compress")
         if not compress:
             return data
-        assert compress in ("lz4", "lzo")
+        assert compress in ("lz4", )
         v = decompress_by_name(data, compress)
         #log("decompressed %s data: %i bytes into %i bytes", compress, len(data), len(v))
         return v

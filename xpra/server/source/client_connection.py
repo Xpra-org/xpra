@@ -142,8 +142,8 @@ class ClientConnection(StubSourceMixin):
 
 
     def compressed_wrapper(self, datatype, data, min_saving=128):
-        if self.zlib or self.lz4 or self.lzo:
-            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, lzo=self.lzo, can_inline=False)
+        if self.zlib or self.lz4:
+            cw = compressed_wrapper(datatype, data, zlib=self.zlib, lz4=self.lz4, can_inline=False)
             if len(cw)+min_saving<=len(data):
                 #the compressed version is smaller, use it:
                 return cw

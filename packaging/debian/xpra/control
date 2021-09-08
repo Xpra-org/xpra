@@ -136,8 +136,6 @@ Suggests: openssh-server
 #nvenc support requires pycuda (and its huge list of dependencies!)
 #and the nvencode library:
         ,python3-pycuda, libnvidia-encode1
-#python3-lz4 is better and available everywhere now, alternatively use:
-        ,python3-lzo
 # AES encryption:
         ,python3-cryptography
 #better debug output:

@@ -239,7 +239,6 @@ class ProxyInstance:
         OPTION_WHITELIST = {
             "compression_level" : number,
             "lz4"               : parse_bool,
-            "lzo"               : parse_bool,
             "zlib"              : parse_bool,
             "rencode"           : parse_bool,
             "rencodeplus"       : parse_bool,
@@ -375,9 +374,9 @@ class ProxyInstance:
             #this is ugly and not generic!
             zlib = self.caps.boolget("zlib", True)
             lz4 = self.caps.boolget("lz4", False)
-            lzo = self.caps.boolget("lzo", False)
-            if zlib or lz4 or lzo:
-                packet[index] = compressed_wrapper(name, data, zlib=zlib, lz4=lz4, lzo=lzo, can_inline=False)
+            #lzo = self.caps.boolget("lzo", False)
+            if zlib or lz4:
+                packet[index] = compressed_wrapper(name, data, zlib=zlib, lz4=lz4, can_inline=False)
             else:
                 #prevent warnings about large uncompressed data
                 packet[index] = Compressed("raw %s" % name, data, can_inline=True)

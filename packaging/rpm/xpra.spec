@@ -173,7 +173,6 @@ Recommends:			python3-zeroconf
 %endif
 Recommends:			python3-dns
 Recommends:			python3-paramiko
-#Recommends:			python3-lzo
 Recommends:         python3-kerberos
 Recommends:         python3-gssapi
 Recommends:         python3-ldap
