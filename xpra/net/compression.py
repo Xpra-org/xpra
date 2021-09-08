@@ -7,11 +7,11 @@
 
 from collections import namedtuple
 
-from xpra.util import envbool
+from xpra.util import envbool, envint
 from xpra.net.header import LZ4_FLAG, ZLIB_FLAG, LZO_FLAG, BROTLI_FLAG
 
 
-MAX_SIZE = 256*1024*1024
+MAX_DECOMPRESSED_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 
 #all the compressors we know about, in best compatibility order:
 ALL_COMPRESSORS = ("zlib", "lz4", "lzo", "brotli", "none")
@@ -46,9 +46,9 @@ def init_lz4():
         size = LZ4_HEADER.unpack_from(data[:4])[0]
         #it would be better to use the max_size we have in protocol,
         #but this hardcoded value will do for now
-        if size>MAX_SIZE:
+        if size>MAX_DECOMPRESSED_SIZE:
             sizemb = size//1024//1024
-            maxmb = MAX_SIZE//1024//1024
+            maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
             raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
         return block_decompress(data)
     return Compression("lz4", version, VERSION.encode("latin1"), lz4_compress, lz4_decompress)
@@ -81,7 +81,11 @@ def init_zlib():
             packet = bytes(str(packet), 'UTF-8')
         return level + ZLIB_FLAG, zlib.compress(packet, level)
     def zlib_decompress(data):
-        return zlib.decompress(data)
+        d = zlib.decompressobj()
+        v = d.decompress(data, MAX_DECOMPRESSED_SIZE)
+        print("unconsumed_tail=%s" % d.unconsumed_tail)
+        assert not d.unconsumed_tail, "not all data was decompressed"
+        return v
     return Compression("zlib", None, zlib.__version__, zlib_compress, zlib_decompress)
 
 def init_none():
