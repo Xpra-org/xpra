@@ -483,6 +483,10 @@ def main(): # pragma: no cover
 
         print("")
         print("Protocol Capabilities:")
+        from xpra.net import compression
+        compression.init_all()
+        from xpra.net import packet_encoding
+        packet_encoding.init_all()
         netcaps = get_network_caps()
         netif = {""    : bool(netifaces)}
         if netifaces_version:
