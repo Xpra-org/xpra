@@ -36,6 +36,7 @@ bundle_bin="$bundle_res"/bin
 bundle_data="$bundle_res"/share
 bundle_etc="$bundle_res"/etc
 
+export _DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH"
 export DYLD_LIBRARY_PATH="$bundle_lib"
 export XDG_CONFIG_DIRS="$bundle_etc"/xdg
 export XDG_DATA_DIRS="$bundle_data"
@@ -61,9 +62,12 @@ export GST_BUNDLE_CONTENTS="$bundle_contents"
 #some versions of Mac OSX (10.6 onwards?) do not seem to honour
 #the name we want to supply with "exec -a"
 #This is hacked together in make-app.sh
+export _PYTHON="$PYTHON"
 export PYTHON="$bundle_bin/$APPNAME"
+export _PYTHONHOME="$PYTHONHOME"
 export PYTHONHOME="$bundle_res"
 #Add the bundle's python modules
+export _PYTHONPATH="$PYTHONPATH"
 PYTHONPATH="$bundle_lib:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/python/lib-dynload/:$PYTHONPATH"
 PYTHONPATH="$bundle_lib/python/site-packages.zip:$PYTHONPATH"
@@ -73,6 +77,9 @@ export PYTHONPATH
 
 #override potential user settings to prevent crashes:
 unset PYTHONOPTIMIZE
+
+#Record variables we changed so they can be reverted before SSH is run
+export _PYTHON_WRAPPER_VARS="DYLD_LIBRARY_PATH PYTHON PYTHONHOME PYTHONPATH"
 
 # We need a UTF-8 locale.
 lang=`defaults read .GlobalPreferences AppleLocale 2>/dev/null`
