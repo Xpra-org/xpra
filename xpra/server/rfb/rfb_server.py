@@ -9,7 +9,7 @@ from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.rfb.rfb_const import RFB_KEYNAMES
 from xpra.net.rfb.rfb_protocol import RFBProtocol
-from xpra.net.rfb.rfb_source import RFBSource
+from xpra.server.rfb.rfb_source import RFBSource
 from xpra.server import server_features
 from xpra.scripts.config import parse_bool, parse_number
 from xpra.log import Logger

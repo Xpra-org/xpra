@@ -9,7 +9,7 @@ from threading import Event
 
 from xpra.net.rfb.rfb_const import RFBEncoding
 from xpra.net.rfb.rfb_encode import (
-    raw_encode, tight_encode, tight_png, zlib_encode, rgb222_encode,
+    raw_encode, tight_encode, tight_png, rgb222_encode, #zlib_encode,
     )
 from xpra.net.protocol import PACKET_JOIN_SIZE
 from xpra.os_util import memoryview_to_bytes

@@ -76,6 +76,7 @@ DEFAULT_PORTS = {
     "wss"   : 443,
     "ssh"   : 22,
     "tcp"   : DEFAULT_PORT,
+    "vnc"   : 5900,
     }
 
 

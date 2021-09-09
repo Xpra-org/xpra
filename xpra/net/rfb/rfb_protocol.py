@@ -8,22 +8,21 @@ import struct
 from socket import error as socket_error
 from queue import Queue
 
-from xpra.os_util import hexstr, strtobytes
-from xpra.util import repr_ellipsized, envint, envbool
+from xpra.os_util import hexstr
+from xpra.util import repr_ellipsized, envint
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
-from xpra.net.rfb.rfb_const import (
-    RFBClientMessage, RFBAuth,
-    AUTH_STR, PIXEL_FORMAT, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT,
-    )
+from xpra.net.rfb.rfb_const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
 
 RFB_LOG = os.environ.get("XPRA_RFB_LOG")
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
+
+PROTOCOL_VERSION = (3, 8)
 
 
 class RFBProtocol:
@@ -32,19 +31,13 @@ class RFBProtocol:
 
     TYPE = "rfb"
 
-    def __init__(self, scheduler, conn, auth, process_packet_cb, get_rfb_pixelformat, session_name="Xpra", data=b""):
-        """
-            You must call this constructor and source_has_more() from the main thread.
-        """
+    def __init__(self, scheduler, conn, process_packet_cb, data=b""):
         assert scheduler is not None
         assert conn is not None
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
         self._conn = conn
-        self._authenticator = auth
         self._process_packet_cb = process_packet_cb
-        self._get_rfb_pixelformat = get_rfb_pixelformat
-        self.session_name = session_name
         self._write_queue = Queue()
         self._buffer = data
         self._challenge = None
@@ -54,7 +47,6 @@ class RFBProtocol:
         self.input_raw_packetcount = 0
         self.output_packetcount = 0
         self.output_raw_packetcount = 0
-        self._protocol_version = ()
         self._closed = False
         self._packet_parser = self._parse_protocol_handshake
         self._write_thread = None
@@ -82,92 +74,27 @@ class RFBProtocol:
             self.invalid_header(self, packet, "invalid RFB protocol handshake packet header")
             return 0
         #ie: packet==b'RFB 003.008\n'
-        self._protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
-        log.info("RFB version %s connection from %s",
-                 ".".join(str(x) for x in self._protocol_version), self._conn.target)
-        if self._protocol_version!=(3, 8):
+        protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
+        if protocol_version!=PROTOCOL_VERSION:
             msg = "unsupported protocol version"
             log.error("Error: %s", msg)
             self.send(struct.pack(b"!BI", 0, len(msg))+msg)
             self.invalid(msg, packet)
             return 0
-        #reply with Security Handshake:
-        self._packet_parser = self._parse_security_handshake
-        if self._authenticator and self._authenticator.requires_challenge():
-            security_types = [RFBAuth.VNC]
-        else:
-            security_types = [RFBAuth.NONE]
-        packet = struct.pack(b"B", len(security_types))
-        for x in security_types:
-            packet += struct.pack(b"B", x)
-        self.send(packet)
+        self.handshake_complete()
         return 12
 
+    def handshake_complete(self):
+        raise NotImplementedError
+
     def _parse_security_handshake(self, packet):
-        log("parse_security_handshake(%s)", hexstr(packet))
-        try:
-            auth = struct.unpack(b"B", packet)[0]
-        except struct.error:
-            self._internal_error(packet, "cannot parse security handshake response '%s'" % hexstr(packet))
-            return 0
-        auth_str = AUTH_STR.get(auth, auth)
-        if auth==RFBAuth.VNC:
-            #send challenge:
-            self._packet_parser = self._parse_challenge
-            assert self._authenticator
-            challenge, digest = self._authenticator.get_challenge("des")
-            assert digest=="des"
-            self._challenge = challenge[:16]
-            log("sending RFB challenge value: %s", hexstr(self._challenge))
-            self.send(self._challenge)
-            return 1
-        if self._authenticator and self._authenticator.requires_challenge():
-            self.invalid_header(self, packet, "invalid security handshake response, authentication is required")
-            return 0
-        log("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
-        #Security Handshake, send SecurityResult Handshake
-        self._packet_parser = self._parse_security_result
-        self.send(struct.pack(b"!I", 0))
-        return 1
+        raise NotImplementedError
 
     def _parse_challenge(self, response):
-        assert self._authenticator
-        log("parse_challenge(%s)", hexstr(response))
-        try:
-            assert len(response)==16
-            hex_response = hexstr(response)
-            #log("padded password=%s", password)
-            if self._authenticator.authenticate(hex_response):
-                log("challenge authentication succeeded")
-                self.send(struct.pack(b"!I", 0))
-                self._packet_parser = self._parse_security_result
-                return 16
-            log.warn("Warning: authentication challenge response failure")
-            log.warn(" password does not match")
-        except Exception as e:
-            log("parse_challenge(%s)", hexstr(response), exc_info=True)
-            log.error("Error: authentication challenge failure:")
-            log.error(" %s", e)
-        self.timeout_add(1000, self.send_fail_challenge)
-        return len(response)
-
-    def send_fail_challenge(self):
-        self.send(struct.pack(b"!I", 1))
-        self.close()
+        raise NotImplementedError
 
     def _parse_security_result(self, packet):
-        self.share  = packet != b"\0"
-        log("parse_security_result: sharing=%s, sending ClientInit with session-name=%s", self.share, self.session_name)
-        #send ClientInit
-        self._packet_parser = self._parse_rfb
-        w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = self._get_rfb_pixelformat()
-        packet =  struct.pack(b"!HH"+PIXEL_FORMAT+b"I",
-                              w, h, bpp, depth, bigendian, truecolor,
-                              rmax, gmax, bmax, rshift, bshift, gshift,
-                              0, 0, 0, len(self.session_name))+strtobytes(self.session_name)
-        self.send(packet)
-        self._process_packet_cb(self, [b"authenticated"])
-        return 1
+        raise NotImplementedError
 
     def _parse_rfb(self, packet):
         try:
@@ -222,7 +149,7 @@ class RFBProtocol:
 
 
     def get_info(self, *_args):
-        info = {"protocol" : self._protocol_version}
+        info = {"protocol" : PROTOCOL_VERSION}
         for t in self.get_threads():
             info.setdefault("thread", {})[t.name] = t.is_alive()
         return info
@@ -389,6 +316,7 @@ class RFBProtocol:
                 log.error("Error closing %s", self._conn, exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
+        #log.error("sending connection-lost")
         self._process_packet_cb(self, [RFBProtocol.CONNECTION_LOST])
         self.idle_add(self.clean)
         if self.log:

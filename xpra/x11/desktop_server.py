@@ -265,7 +265,7 @@ GObject.type_register(DesktopModel)
 
 DESKTOPSERVER_BASES = [GObject.GObject]
 if server_features.rfb:
-    from xpra.server.mixins.rfb_server import RFBServer
+    from xpra.server.rfb.rfb_server import RFBServer
     DESKTOPSERVER_BASES.append(RFBServer)
 DESKTOPSERVER_BASES.append(X11ServerBase)
 DESKTOPSERVER_BASES = tuple(DESKTOPSERVER_BASES)

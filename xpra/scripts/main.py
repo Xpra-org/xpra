@@ -847,6 +847,8 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         if psep==":/":
             psep = psep[:-1]
             pos -= 1
+    elif protocol=="rfb":
+        protocol = "vnc"
     if psep not in (":", "/", "://"):
         error_cb("unknown format for protocol separator '%s' in display name: %s" % (psep, display_name))
     afterproto = display_name[pos:]         #ie: "host:port/DISPLAY"
@@ -1082,7 +1084,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         return desc
-    elif protocol in ("tcp", "ssl", "ws", "wss"):
+    elif protocol in ("tcp", "ssl", "ws", "wss", "vnc"):
         desc.update({
                      "type"     : protocol,
                      })
@@ -1399,7 +1401,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             )
         return conn
 
-    if dtype in ("tcp", "ssl", "ws", "wss"):
+    if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         host = display_desc["host"]
         port = display_desc["port"]
         sock = socket_connect(dtype, host, port)

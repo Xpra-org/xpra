@@ -338,18 +338,19 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         protocol_class = get_client_protocol_class(conn.socktype)
         protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
         self._protocol = protocol
-        for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
-            protocol.large_packets.append(x)
-        protocol.set_compression_level(10)
-        protocol.receive_aliases.update(self._aliases)
-        protocol.enable_default_encoder()
-        protocol.enable_default_compressor()
-        encryption = self.get_encryption()
-        if encryption and ENCRYPT_FIRST_PACKET:
-            key = self.get_encryption_key()
-            protocol.set_cipher_out(encryption,
-                                    DEFAULT_IV, key, DEFAULT_SALT,
-                                    DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, DEFAULT_ITERATIONS, INITIAL_PADDING)
+        if protocol.TYPE!="rfb":
+            for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
+                protocol.large_packets.append(x)
+            protocol.set_compression_level(10)
+            protocol.receive_aliases.update(self._aliases)
+            protocol.enable_default_encoder()
+            protocol.enable_default_compressor()
+            encryption = self.get_encryption()
+            if encryption and ENCRYPT_FIRST_PACKET:
+                key = self.get_encryption_key()
+                protocol.set_cipher_out(encryption,
+                                        DEFAULT_IV, key, DEFAULT_SALT,
+                                        DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = protocol.source_has_more
         if conn.timeout>0:
             self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)

@@ -8,6 +8,7 @@ from enum import IntEnum
 
 #merge header and packet if packet is smaller than:
 PIXEL_FORMAT = b"BBBBHHHBBBBBB"
+CLIENT_INIT = b"!HH"+PIXEL_FORMAT+b"I"
 
 
 class RFBClientMessage(IntEnum):
