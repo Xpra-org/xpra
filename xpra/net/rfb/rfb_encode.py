@@ -6,7 +6,7 @@
 
 import struct
 
-from xpra.server.rfb.rfb_const import RFBEncoding
+from xpra.net.rfb.rfb_const import RFBEncoding
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.pillow.encoder import encode
 from xpra.os_util import hexstr, bytestostr

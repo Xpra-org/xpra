@@ -14,7 +14,7 @@ from xpra.make_thread import make_thread, start_thread
 from xpra.net.protocol import force_flush_queue, exit_queue
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
-from xpra.server.rfb.rfb_const import (
+from xpra.net.rfb.rfb_const import (
     RFBClientMessage, RFBAuth,
     AUTH_STR, PIXEL_FORMAT, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT,
     )

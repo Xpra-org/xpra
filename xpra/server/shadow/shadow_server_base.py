@@ -30,14 +30,14 @@ NOTIFY_STARTUP = envbool("XPRA_SHADOW_NOTIFY_STARTUP", True)
 
 SHADOWSERVER_BASE_CLASS = object
 if server_features.rfb:
-    from xpra.server.rfb.rfb_server import RFBServer
+    from xpra.server.mixins.rfb_server import RFBServer
     SHADOWSERVER_BASE_CLASS = RFBServer
 
 
 class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def __init__(self, root_window, capture=None):
-        SHADOWSERVER_BASE_CLASS.__init__(self)
+        super().__init__()
         self.capture = capture
         self.root = root_window
         self.mapped = []

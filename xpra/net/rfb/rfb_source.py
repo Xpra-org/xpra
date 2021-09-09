@@ -7,8 +7,8 @@
 import struct
 from threading import Event
 
-from xpra.server.rfb.rfb_const import RFBEncoding
-from xpra.server.rfb.rfb_encode import (
+from xpra.net.rfb.rfb_const import RFBEncoding
+from xpra.net.rfb.rfb_encode import (
     raw_encode, tight_encode, tight_png, zlib_encode, rgb222_encode,
     )
 from xpra.net.protocol import PACKET_JOIN_SIZE
