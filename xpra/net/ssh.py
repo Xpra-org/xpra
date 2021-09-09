@@ -869,6 +869,8 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         cmd = list(display_desc["full_ssh"])
         kwargs = {}
         env = display_desc.get("env")
+        if env is None:
+            env = os.environ.copy()
         kwargs["stderr"] = sys.stderr
         if WIN32:
             from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW
@@ -930,8 +932,6 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 #sshpass -e ssh ...
                 cmd.insert(0, sshpass_command)
                 cmd.insert(1, "-e")
-                if env is None:
-                    env = os.environ.copy()
                 env["SSHPASS"] = password
                 #the password will be used by ssh via sshpass,
                 #don't try to authenticate again over the ssh-proxy connection,
@@ -939,8 +939,11 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 #authentication over unix-domain-sockets:
                 opts.password = None
                 del display_desc["password"]
-        if env:
-            kwargs["env"] = env
+        # Scrub out env vars our wrapper set so we don't potentially upset the ssh process
+        for v in ["PYTHONHOME", "PYTHONPATH", "PYTHON", "DYLD_LIBRARY_PATH", "LD_PRELOAD", "LD_LIBRARY_PATH"]:
+            if v in env:
+                del env[v]
+        kwargs["env"] = env
         if is_debug_enabled("ssh"):
             log.info("executing ssh command: %s" % (" ".join("\"%s\"" % x for x in cmd)))
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
