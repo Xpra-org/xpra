@@ -305,6 +305,23 @@ def is_X11() -> bool:
         get_util_logger().debug("failed to load x11 bindings", exc_info=True)
         return True
 
+def restore_script_env(env):
+    # On OSX PythonExecWrapper sets various env vars to point into the bundle
+    # and records the original variable contents. Here we revert them back
+    # to their original state in case any of those changes cause problems
+    # when running a command.
+    if "_PYTHON_WRAPPER_VARS" in env:
+        for v in env["_PYTHON_WRAPPER_VARS"].split():
+            origv = "_" + v
+            if origv in env:
+                env[v] = env[origv]
+            elif v in env:
+                del[v]
+            del env[origv]
+        del env["_PYTHON_WRAPPER_VARS"]
+    return env
+
+
 saved_env = os.environ.copy()
 def is_Wayland() -> bool:
     return _is_Wayland(saved_env)

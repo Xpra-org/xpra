@@ -12,6 +12,7 @@ from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import (
     monotonic_time, bytestostr,
+    restore_script_env,
     OSX, WIN32, POSIX,
     )
 from xpra.util import envint, csv, ellipsizer, u
@@ -197,7 +198,7 @@ class ChildCommandServer(StubServerMixin):
 
     def get_child_env(self):
         #subclasses may add more items (ie: fakexinerama)
-        env = super().get_child_env()
+        env = restore_script_env(super().get_child_env())
         env.update(self.source_env)
         env.update(self.start_env)
         if self.child_display:

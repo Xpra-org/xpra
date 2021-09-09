@@ -28,7 +28,7 @@ from xpra.exit_codes import (
 from xpra.os_util import (
     bytestostr, osexpand, load_binary_file, monotonic_time,
     nomodule_context, umask_context, is_main_thread,
-    use_gui_prompt,
+    use_gui_prompt, restore_script_env, saved_env,
     WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, envfloat, engs, csv
@@ -870,7 +870,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         kwargs = {}
         env = display_desc.get("env")
         if env is None:
-            env = os.environ.copy()
+            env = saved_env.copy()
         kwargs["stderr"] = sys.stderr
         if WIN32:
             from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW
@@ -940,19 +940,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
                 opts.password = None
                 del display_desc["password"]
 
-        # On OSX PythonExecWrapper sets various env vars to point into the bundle
-        # and records the original variable contents. Here we revert them back
-        # to their original state before starting up SSH in case any of those
-        # changes cause problems
-        if "_PYTHON_WRAPPER_VARS" in env:
-            for v in env["_PYTHON_WRAPPER_VARS"].split():
-                origv = "_" + v
-                if origv in env:
-                    env[v] = env[origv]
-                elif v in env:
-                    del[v]
-                del env[origv]
-        kwargs["env"] = env
+        kwargs["env"] = restore_script_env(env)
 
         if is_debug_enabled("ssh"):
             log.info("executing ssh command: %s" % (" ".join("\"%s\"" % x for x in cmd)))
