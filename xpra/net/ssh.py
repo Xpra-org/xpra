@@ -28,7 +28,7 @@ from xpra.exit_codes import (
 from xpra.os_util import (
     bytestostr, osexpand, load_binary_file, monotonic_time,
     nomodule_context, umask_context, is_main_thread,
-    use_gui_prompt, restore_script_env, saved_env,
+    use_gui_prompt, restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, envfloat, engs, csv
@@ -870,7 +870,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         kwargs = {}
         env = display_desc.get("env")
         if env is None:
-            env = saved_env.copy()
+            env = get_saved_env()
         kwargs["stderr"] = sys.stderr
         if WIN32:
             from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW

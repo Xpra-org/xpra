@@ -39,7 +39,7 @@ from xpra.os_util import (
     FDChangeCaptureContext,
     force_quit,
     which,
-    saved_env,
+    get_saved_env, get_saved_env_var,
     get_rand_chars,
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
     get_hex_uuid, get_util_logger, osexpand,
@@ -711,7 +711,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
 
     if upgrading or upgrading_desktop:
         assert display_name, "no display found to upgrade"
-        if POSIX and not OSX and saved_env.get("DISPLAY", "")==display_name:
+        if POSIX and not OSX and get_saved_env_var("DISPLAY", "")==display_name:
             warn("Warning: upgrading from an environment connected to the same display")
         #try to stop the existing server if it exists:
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
@@ -1365,6 +1365,6 @@ def attach_client(options, defaults):
             else:
                 v = str(c)
             cmd.append("--%s=%s" % (x, v))
-    env = saved_env.copy()
+    env = get_saved_env()
     proc = Popen(cmd, env=env, start_new_session=POSIX and not OSX)
     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)

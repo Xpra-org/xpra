@@ -322,9 +322,15 @@ def restore_script_env(env):
     return env
 
 
-saved_env = os.environ.copy()
+_saved_env = os.environ.copy()
+def get_saved_env():
+    return _saved_env.copy()
+
+def get_saved_env_var(var, default=None):
+    return _saved_env.get(var, default)
+
 def is_Wayland() -> bool:
-    return _is_Wayland(saved_env)
+    return _is_Wayland(_saved_env)
 
 def _is_Wayland(env : dict) -> bool:
     backend = env.get("GDK_BACKEND", "")

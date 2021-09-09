@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import struct
 
 from xpra.os_util import bytestostr, hexstr
 from xpra.util import u, iround, envbool, envint, csv, ellipsizer
-from xpra.os_util import is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, saved_env
+from xpra.os_util import is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, get_saved_env_var
 from xpra.log import Logger
 
 log = Logger("posix")
@@ -119,7 +119,7 @@ def get_native_tray_classes():
             traylog.warn("Warning: appindicator library not found")
             traylog.warn(" you may want to install libappindicator")
             traylog.warn(" to enable the system tray.")
-            if saved_env.get("XDG_CURRENT_DESKTOP")=="GNOME":
+            if get_saved_env_var("XDG_CURRENT_DESKTOP")=="GNOME":
                 traylog.warn(" With gnome-shell, you may also need some extensions:")
                 traylog.warn(" 'top icons plus' and / or 'appindicator'")
     traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
