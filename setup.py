@@ -811,6 +811,7 @@ def detect_xorg_setup(install_dir=None):
     return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
 def build_xpra_conf(install_dir):
+    print("build_xpra_conf(%s)" % install_dir)
     #generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
     fake_xinerama = "no"
@@ -824,6 +825,7 @@ def build_xpra_conf(install_dir):
         return "yes" if int(b) else "no"
     start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
     conf_dir = get_conf_dir(install_dir)
+    print("get_conf_dir(%s)=%s" % (install_dir, conf_dir))
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
