@@ -1426,7 +1426,7 @@ if WIN32:
         print("calling build_xpra_conf in-place")
         #building etc files in-place:
         if data_ENABLED:
-            build_xpra_conf(".")
+            build_xpra_conf("./fs")
             add_data_files('etc/xpra', glob.glob("fs/etc/xpra/*conf"))
             add_data_files('etc/xpra', glob.glob("fs/etc/xpra/nvenc*.keys"))
             add_data_files('etc/xpra', glob.glob("fs/etc/xpra/nvfbc*.keys"))
