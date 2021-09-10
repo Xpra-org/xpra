@@ -933,8 +933,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_hello(self, packet):
         self.remove_packet_handlers("challenge")
         if not self.password_sent and self.has_password():
-            self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
-            return
+            p = self._protocol
+            if not p or p.TYPE=="xpra":
+                self.warn_and_quit(EXIT_NO_AUTHENTICATION, "the server did not request our password")
+                return
         try:
             caps = typedict(packet[1])
             netlog("processing hello from server: %s", ellipsizer(caps))
