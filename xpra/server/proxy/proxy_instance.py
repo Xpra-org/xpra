@@ -10,7 +10,7 @@ from queue import Queue
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import Protocol, CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE
 from xpra.net.digest import get_salt, gendigest
 from xpra.codecs.loader import load_codec, get_codec
@@ -309,7 +309,7 @@ class ProxyInstance:
     def process_client_packet(self, proto, packet):
         packet_type = bytestostr(packet[0])
         log("process_client_packet: %s", packet_type)
-        if packet_type==Protocol.CONNECTION_LOST:
+        if packet_type==CONNECTION_LOST:
             self.stop(proto, "client connection lost")
             return
         if packet_type=="set_deflate":
@@ -438,7 +438,7 @@ class ProxyInstance:
     def process_server_packet(self, proto, packet):
         packet_type = bytestostr(packet[0])
         log("process_server_packet: %s", packet_type)
-        if packet_type==Protocol.CONNECTION_LOST:
+        if packet_type==CONNECTION_LOST:
             self.stop(proto, "server connection lost")
             return
         if packet_type=="disconnect":

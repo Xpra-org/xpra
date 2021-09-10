@@ -267,6 +267,9 @@ class NetworkState(StubClientMixin):
             self.warn_and_quit(EXIT_CONNECTION_LOST, "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self):
+        p = self._protocol
+        if not p or p.TYPE!="xpra":
+            return
         now_ms = int(1000.0*monotonic_time())
         self.send("ping", now_ms)
         wait = 2.0
@@ -320,7 +323,8 @@ class NetworkState(StubClientMixin):
         self.send_deflate_level()
 
     def send_deflate_level(self):
-        if self._protocol:
+        p = self._protocol
+        if p and p.TYPE=="xpra":
             self._protocol.set_compression_level(self.compression_level)
             self.send("set_deflate", self.compression_level)
 

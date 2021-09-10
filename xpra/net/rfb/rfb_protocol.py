@@ -11,7 +11,7 @@ from queue import Queue
 from xpra.os_util import hexstr
 from xpra.util import repr_ellipsized, envint
 from xpra.make_thread import make_thread, start_thread
-from xpra.net.protocol import force_flush_queue, exit_queue
+from xpra.net.protocol import force_flush_queue, exit_queue, INVALID, CONNECTION_LOST
 from xpra.net.common import ConnectionClosedException          #@UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net.rfb.rfb_const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
@@ -26,8 +26,6 @@ PROTOCOL_VERSION = (3, 8)
 
 
 class RFBProtocol:
-    CONNECTION_LOST = "connection-lost"
-    INVALID = "invalid"
 
     TYPE = "rfb"
 
@@ -275,8 +273,9 @@ class RFBProtocol:
 
 
     def invalid(self, msg, data):
+        log("invalid(%s, %r)", msg, data)
         self._packet_parser = self._parse_invalid
-        self.idle_add(self._process_packet_cb, self, [RFBProtocol.INVALID, msg, data])
+        self.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
         # Then hang up:
         self.timeout_add(1000, self._connection_lost, msg)
 
@@ -317,7 +316,7 @@ class RFBProtocol:
             self._conn = None
         self.terminate_queue_threads()
         #log.error("sending connection-lost")
-        self._process_packet_cb(self, [RFBProtocol.CONNECTION_LOST])
+        self._process_packet_cb(self, [CONNECTION_LOST])
         self.idle_add(self.clean)
         if self.log:
             self.log.close()

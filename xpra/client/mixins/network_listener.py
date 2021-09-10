@@ -13,7 +13,7 @@ from xpra.os_util import bytestostr, get_machine_id
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import Protocol, CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import EXIT_OK, EXIT_FAILURE
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitException, InitExit
@@ -225,7 +225,7 @@ class NetworkListener(StubClientMixin):
             else:
                 log.info("request '%s' is not handled by this client", request)
                 proto.send_disconnect([PROTOCOL_ERROR])
-        elif packet_type in (Protocol.CONNECTION_LOST, Protocol.GIBBERISH):
+        elif packet_type in (CONNECTION_LOST, GIBBERISH):
             close()
             return
         else:

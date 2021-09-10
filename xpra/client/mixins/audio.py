@@ -8,7 +8,7 @@ from gi.repository import GLib
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.net.compression import Compressed
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import CONNECTION_LOST
 from xpra.os_util import get_machine_id, get_user_uuid, bytestostr, OSX, POSIX
 from xpra.util import envint, typedict, csv, updict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -490,7 +490,7 @@ class AudioClient(StubClientMixin):
             ss.connect("state-changed", self.sound_sink_state_changed)
             ss.connect("error", self.sound_sink_error)
             ss.connect("exit", self.sound_sink_exit)
-            ss.connect(Protocol.CONNECTION_LOST, self.sound_process_stopped)
+            ss.connect(CONNECTION_LOST, self.sound_process_stopped)
             ss.start()
             log("%s sound sink started", codec)
             return True

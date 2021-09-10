@@ -240,7 +240,7 @@ class DisplayClient(StubClientMixin):
         self.server_display = c.strget("display")
         self.server_desktop_size = c.intpair("desktop_size")
         log("server desktop size=%s", self.server_desktop_size)
-        self.server_max_desktop_size = c.intpair("max_desktop_size")
+        self.server_max_desktop_size = c.intpair("max_desktop_size", (2**15, 2**15))
         self.server_actual_desktop_size = c.intpair("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
         self.server_randr = c.boolget("resize_screen")
@@ -280,6 +280,9 @@ class DisplayClient(StubClientMixin):
         self.set_max_packet_size()
 
     def set_max_packet_size(self):
+        p = self._protocol
+        if not p or p.TYPE!="xpra":
+            return
         root_w, root_h = self.cp(*self.get_root_size())
         maxw, maxh = root_w, root_h
         try:
@@ -298,12 +301,10 @@ class DisplayClient(StubClientMixin):
         #max packet size to accomodate
         # a full screen RGBX (32 bits) uncompressed image
         # also with enough headroom for some metadata (4k)
-        p = self._protocol
-        if p:
-            #we can't assume to have a real ClientConnection object:
-            p.max_packet_size = max(MAX_PACKET_SIZE, maxw*maxh*4 + 4*1024)
-            p.abs_max_packet_size = maxw*maxh*4*4 + 4*1024
-            log("maximum packet size set to %i", p.max_packet_size)
+        #we can't assume to have a real ClientConnection object:
+        p.max_packet_size = max(MAX_PACKET_SIZE, maxw*maxh*4 + 4*1024)
+        p.abs_max_packet_size = maxw*maxh*4*4 + 4*1024
+        log("maximum packet size set to %i", p.max_packet_size)
 
 
     def has_transparency(self) -> bool:

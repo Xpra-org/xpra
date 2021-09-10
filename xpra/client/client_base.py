@@ -18,7 +18,7 @@ from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
 from xpra.net.common import may_log_packet, PACKET_TYPES
 from xpra.net.protocol_classes import get_client_protocol_class
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_salt, gendigest
 from xpra.net.crypto import (
@@ -957,6 +957,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def parse_server_capabilities(self, c : typedict) -> bool:
         for bc in XpraClientBase.__bases__:
             if not bc.parse_server_capabilities(self, c):
+                log.info("server capabilities rejected by %s", bc)
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
         self.server_compressors = c.strtupleget("compressors", ("zlib",))
@@ -964,6 +965,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def parse_network_capabilities(self, caps : typedict) -> bool:
         p = self._protocol
+        if p.TYPE=="rfb":
+            return True
         if not p or not p.enable_encoder_from_caps(caps):
             return False
         p.set_compression_level(self.compression_level)
@@ -1048,9 +1051,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             "disconnect":               self._process_disconnect,
             "set_deflate":              self._process_set_deflate,
             "startup-complete":         self._process_startup_complete,
-            Protocol.CONNECTION_LOST:   self._process_connection_lost,
-            Protocol.GIBBERISH:         self._process_gibberish,
-            Protocol.INVALID:           self._process_invalid,
+            CONNECTION_LOST:            self._process_connection_lost,
+            GIBBERISH:                  self._process_gibberish,
+            INVALID:                    self._process_invalid,
             })
 
     def init_authenticated_packet_handlers(self):

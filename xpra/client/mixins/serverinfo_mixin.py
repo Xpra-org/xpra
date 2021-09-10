@@ -33,6 +33,7 @@ def get_remote_lib_versions(c : typedict,
 class ServerInfoMixin(StubClientMixin):
 
     def __init__(self):  #pylint: disable=super-init-not-called
+        self._remote_protocol = None
         self._remote_machine_id = None
         self._remote_uuid = None
         self._remote_version = None
@@ -53,6 +54,10 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_server_log = None
 
     def parse_server_capabilities(self, c : typedict) -> bool:
+        p = self._protocol
+        if p.TYPE=="rfb":
+            #only the xpra protocol provides the server info
+            return True
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
         self._remote_version = c.strget("build.version", c.strget("version"))

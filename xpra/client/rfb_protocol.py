@@ -12,6 +12,8 @@ from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
 
+WID = 1
+
 
 class RFBClientProtocol(RFBProtocol):
 
@@ -21,7 +23,21 @@ class RFBClientProtocol(RFBProtocol):
         super().__init__(scheduler, conn, process_packet_cb)
 
     def source_has_more(self):
-        log.warn("source_has_more")
+        log("source_has_more()")
+        while True:
+            pdata = self.next_packet()
+            packet = pdata[0]
+            start_send_cb = pdata[1]
+            end_send_cb = pdata[2]
+            has_more = pdata[5]
+            if start_send_cb:
+                start_send_cb()
+            log("packet: %s", packet[0])
+            if end_send_cb:
+                end_send_cb()
+            if not has_more:
+                break
+            #packet, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, has_more=False, wait_for_more=False)
 
     def handshake_complete(self):
         log.info("RFB connected to %s", self._conn.target)
@@ -66,18 +82,42 @@ class RFBClientProtocol(RFBProtocol):
         return 4
 
     def _parse_client_init(self, packet):
-        log.info("_parse_client_init(%s)", packet)
+        log("_parse_client_init(%s)", packet)
         ci_size = struct.calcsize(CLIENT_INIT)
         if len(packet)<ci_size:
             return 0
         #the last item in client init is the length of the session name:
-        name_size =  struct.unpack(CLIENT_INIT, packet[:ci_size])[-1]
+        client_init = struct.unpack(CLIENT_INIT, packet[:ci_size])
+        name_size =  client_init[-1]
         #do we have enough to parse that too?
         if len(packet)<ci_size+name_size:
             return 0
-        #TODO: parse size and create a window
+        w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
         session_name = bytestostr(packet[ci_size:ci_size+name_size])
-        log.info("RFB server session '%s'", session_name)
+        log.info("RFB server session '%s': %ix%i %i bits", session_name, w, h, depth)
+        if not truecolor:
+            self.invalid("server is not true color", packet)
+            return 0
+        #simulate hello:
+        self._process_packet_cb(self, ["hello", {
+            "session-name"  : session_name,
+            "protocol"      : "rfb",
+            }])
+        #simulate an xpra window packet:
+        metadata = {
+            "title" : session_name,
+            "size-constraints" : {
+                "maximum-size" : (w, h),
+                "minimum-size" : (w, h),
+                },
+            #"set-initial-position" : False,
+            "window-type" : ("NORMAL",),
+            "has-alpha" : False,
+            #"decorations" : True,
+            "content-type" : "desktop",
+            }
+        client_properties = {}
+        self._process_packet_cb(self, ["new-window", WID, 0, 0, w, h, metadata, client_properties])
         self._packet_parser = self._parse_rfb_packet
         self.send_set_encodings()
         return ci_size+name_size
@@ -87,7 +127,7 @@ class RFBClientProtocol(RFBProtocol):
         self.send(packet)
 
     def _parse_rfb_packet(self, packet):
-        log.info("parse_rfb_packet(%s)", repr_ellipsized(packet))
+        log("parse_rfb_packet(%s)", repr_ellipsized(packet))
         header_size = struct.calcsize(b"!BBHHHHHi")
         if len(packet)<=header_size:
             return 0
@@ -98,8 +138,10 @@ class RFBClientProtocol(RFBProtocol):
         if encoding!=RFBEncoding.RAW:
             self.invalid("invalid encoding: %s" % encoding, packet)
             return
-        log.info("screen update: %s", (x, y, w, h))
+        log("screen update: %s", (x, y, w, h))
         if len(packet)<header_size + w*h*4:
             return 0
+        pixels = packet[header_size:header_size + w*h*4]
+        draw = ["draw", WID, x, y, w, h, "rgb32", pixels, 0, w*4, {}]
+        self._process_packet_cb(self, draw)
         return header_size + w*h*4
-        #rect = struct.pack(b"!HHHHi", x, y, w, h, encoding)

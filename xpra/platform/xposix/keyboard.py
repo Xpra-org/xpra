@@ -28,6 +28,7 @@ class Keyboard(KeyboardBase):
                 log.error(" %s", str(e) or type(e))
 
     def init_vars(self):
+        super().init_vars()
         self.keymap_modifiers = None
         self.keyboard_bindings = None
 

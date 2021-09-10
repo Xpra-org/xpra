@@ -109,6 +109,10 @@ def do_verify_packet(tree, packet):
         r = False
     return r
 
+CONNECTION_LOST = "connection-lost"
+GIBBERISH = "gibberish"
+INVALID = "invalid"
+
 
 class Protocol:
     """
@@ -116,10 +120,6 @@ class Protocol:
         it will encode and compress them before sending,
         and decompress and decode when receiving.
     """
-
-    CONNECTION_LOST = "connection-lost"
-    GIBBERISH = "gibberish"
-    INVALID = "invalid"
 
     TYPE = "xpra"
 
@@ -753,12 +753,12 @@ class Protocol:
 
 
     def invalid(self, msg, data):
-        self.idle_add(self._process_packet_cb, self, [Protocol.INVALID, msg, data])
+        self.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
         # Then hang up:
         self.timeout_add(1000, self._connection_lost, msg)
 
     def gibberish(self, msg, data):
-        self.idle_add(self._process_packet_cb, self, [Protocol.GIBBERISH, msg, data])
+        self.idle_add(self._process_packet_cb, self, [GIBBERISH, msg, data])
         # Then hang up:
         self.timeout_add(self.hangup_delay, self._connection_lost, msg)
 
@@ -1141,7 +1141,7 @@ class Protocol:
         if self._closed:
             return
         self._closed = True
-        packet = [Protocol.CONNECTION_LOST]
+        packet = [CONNECTION_LOST]
         if message:
             packet.append(message)
         self.idle_add(self._process_packet_cb, self, packet)

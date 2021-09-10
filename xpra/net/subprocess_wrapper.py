@@ -12,7 +12,7 @@ from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.util import repr_ellipsized, envint, envbool
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException, PACKET_TYPES
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import Protocol, CONNECTION_LOST, GIBBERISH
 from xpra.os_util import setbinarymode, SIGNAMES, bytestostr, hexstr, WIN32
 from xpra.child_reaper import getChildReaper
 from xpra.log import Logger
@@ -251,11 +251,11 @@ class subprocess_callee:
 
     def process_packet(self, proto, packet):
         command = bytestostr(packet[0])
-        if command==Protocol.CONNECTION_LOST:
+        if command==CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
             self.net_stop()
             return
-        if command==Protocol.GIBBERISH:
+        if command==GIBBERISH:
             log.warn("gibberish received:")
             log.warn(" %s", repr_ellipsized(packet[1], limit=80))
             log.warn(" stopping")
@@ -341,8 +341,8 @@ class subprocess_caller:
         self.signal_callbacks = {}
         self.large_packets = []
         #hook a default packet handlers:
-        self.connect(Protocol.CONNECTION_LOST, self.connection_lost)
-        self.connect(Protocol.GIBBERISH, self.gibberish)
+        self.connect(CONNECTION_LOST, self.connection_lost)
+        self.connect(GIBBERISH, self.gibberish)
         from gi.repository import GLib
         self.idle_add = GLib.idle_add
         self.timeout_add = GLib.timeout_add

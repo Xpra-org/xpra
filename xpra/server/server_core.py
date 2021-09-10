@@ -39,7 +39,7 @@ from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
     )
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import Protocol, CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.paths import (
@@ -920,11 +920,11 @@ class ServerCore:
     def init_packet_handlers(self):
         netlog("initializing packet handlers")
         self._default_packet_handlers = {
-            "hello":                                self._process_hello,
-            "disconnect":                           self._process_disconnect,
-            Protocol.CONNECTION_LOST:               self._process_connection_lost,
-            Protocol.GIBBERISH:                     self._process_gibberish,
-            Protocol.INVALID:                       self._process_invalid,
+            "hello":                       self._process_hello,
+            "disconnect":                  self._process_disconnect,
+            CONNECTION_LOST:               self._process_connection_lost,
+            GIBBERISH:                     self._process_gibberish,
+            INVALID:                       self._process_invalid,
             }
 
     def init_aliases(self):

@@ -12,7 +12,7 @@ from multiprocessing import Process
 from xpra.server.proxy.proxy_instance import ProxyInstance
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol_classes import get_client_protocol_class, get_server_protocol_class
-from xpra.net.protocol import Protocol
+from xpra.net.protocol import Protocol, CONNECTION_LOST
 from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.os_util import (
     SIGNAMES, POSIX,
@@ -287,7 +287,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     def do_process_control_packet(self, proto, packet):
         log("process_control_packet(%s, %s)", proto, packet)
         packet_type = bytestostr(packet[0])
-        if packet_type==Protocol.CONNECTION_LOST:
+        if packet_type==CONNECTION_LOST:
             log.info("Connection lost")
             if proto in self.potential_protocols:
                 self.potential_protocols.remove(proto)
