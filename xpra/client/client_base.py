@@ -752,12 +752,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.disconnect_and_quit(code, server_message)
 
     def validate_challenge_packet(self, packet):
+        p = self._protocol
+        if not p:
+            return False
         digest = bytestostr(packet[3]).split(":", 1)[0]
         #don't send XORed password unencrypted:
         if digest in ("xor", "des"):
-            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss")
+            encrypted = p.is_sending_encrypted()
             local = self.display_desc.get("local", False)
-            authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
+            authlog("%s challenge, encrypted=%s, local=%s", digest, encrypted, local)
             if local and ALLOW_LOCALHOST_PASSWORDS:
                 return True
             if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
@@ -809,20 +812,23 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         server_salt = bytestostr(packet[1])
         digest = bytestostr(packet[3])
         actual_digest = digest.split(":", 1)[0]
-        l = len(server_salt)
-        salt_digest = "xor"
-        if len(packet)>=5:
-            salt_digest = bytestostr(packet[4])
-        if salt_digest=="xor":
-            #with xor, we have to match the size
-            assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
-            assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+        if actual_digest=="des":
+            salt = client_salt = server_salt
         else:
-            #other digest, 32 random bytes is enough:
-            l = 32
-        client_salt = get_salt(l)
-        salt = gendigest(salt_digest, client_salt, server_salt)
-        authlog("combined %s salt(%s, %s)=%s", salt_digest, hexstr(server_salt), hexstr(client_salt), hexstr(salt))
+            l = len(server_salt)
+            salt_digest = "xor"
+            if len(packet)>=5:
+                salt_digest = bytestostr(packet[4])
+            if salt_digest=="xor":
+                #with xor, we have to match the size
+                assert l>=16, "server salt is too short: only %i bytes, minimum is 16" % l
+                assert l<=256, "server salt is too long: %i bytes, maximum is 256" % l
+            else:
+                #other digest, 32 random bytes is enough:
+                l = 32
+            client_salt = get_salt(l)
+            salt = gendigest(salt_digest, client_salt, server_salt)
+            authlog("combined %s salt(%s, %s)=%s", salt_digest, hexstr(server_salt), hexstr(client_salt), hexstr(salt))
 
         challenge_response = gendigest(actual_digest, password, salt)
         if not challenge_response:
@@ -835,7 +841,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def do_send_challenge_reply(self, challenge_response, client_salt):
         self.password_sent = True
-        self.send_hello(challenge_response, client_salt)
+        if self._protocol.TYPE=="rfb":
+            self._protocol.send_challenge_reply(challenge_response)
+        else:
+            self.send_hello(challenge_response, client_salt)
 
     ########################################
     # Encryption

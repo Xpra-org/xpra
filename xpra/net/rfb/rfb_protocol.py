@@ -57,6 +57,9 @@ class RFBProtocol:
     def is_closed(self):
         return self._closed
 
+    def is_sending_encrypted(self):
+        return False
+
 
     def send_protocol_handshake(self):
         self.send(b"RFB 003.008\n")

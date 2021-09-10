@@ -211,6 +211,8 @@ class Protocol:
     def is_closed(self) -> bool:
         return self._closed
 
+    def is_sending_encrypted(self):
+        return self.cipher_out or self._conn.socktype in ("ssl", "wss")
 
     def wait_for_io_threads_exit(self, timeout=None):
         io_threads = (self._read_thread, self._write_thread)

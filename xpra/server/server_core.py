@@ -1888,7 +1888,7 @@ class ServerCore:
         return tuple(authenticators)
 
     def send_challenge(self, proto, salt, auth_caps, digest, salt_digest, prompt="password"):
-        proto.send_now(("challenge", salt, auth_caps or "", digest, salt_digest, prompt))
+        proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
     def auth_failed(self, proto, msg):

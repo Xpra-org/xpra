@@ -6,7 +6,7 @@
 import struct
 from xpra.net.rfb.rfb_protocol import RFBProtocol
 from xpra.net.rfb.rfb_const import RFBEncoding, RFBClientMessage, RFBAuth, CLIENT_INIT, AUTH_STR
-from xpra.os_util import hexstr, bytestostr
+from xpra.os_util import hexstr, bytestostr, strtobytes
 from xpra.util import repr_ellipsized, csv
 from xpra.log import Logger
 
@@ -78,14 +78,16 @@ class RFBClientProtocol(RFBProtocol):
         if len(packet)<16:
             return 0
         challenge = packet[:16]
-        password = b"vnc123"
-        from xpra.net.d3des import generate_response
-        password = password.ljust(8, b"\x00")[:8]
-        challenge = challenge.ljust(16, b"\x00")[:16]
-        data = generate_response(password, challenge)
-        self._packet_parser = self._parse_security_result
-        self.send(data)
+        auth_caps = {}
+        self.challenge = challenge  #FIXME: remove this
+        self._process_packet_cb(self, ["challenge", challenge, auth_caps, "des", "none"])
         return 16
+
+    def send_challenge_reply(self, challenge_response):
+        log("send_challenge_reply(%s)", challenge_response)
+        self._packet_parser = self._parse_security_result
+        import binascii #pylint: disable=import-outside-toplevel
+        self.send(binascii.unhexlify(challenge_response))
 
     def _parse_security_result(self, packet):
         if len(packet)<4:
@@ -164,7 +166,7 @@ class RFBClientProtocol(RFBProtocol):
             self.invalid("unknown packet", packet)
             return 0
         self.rectangles = struct.unpack(b"!H", packet[2:4])[0]
-        log("%i rectangles coming up")
+        log("%i rectangles coming up", self.rectangles)
         if self.rectangles>0:
             self._packet_parser = self._parse_rectangle
         return 4

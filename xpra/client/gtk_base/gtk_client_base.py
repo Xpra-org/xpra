@@ -289,6 +289,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.pinentry_proc = None
             noerr(pp.terminate)
 
+    def get_server_authentication_string(self):
+        p = self._protocol
+        if p:
+            server_type = {
+                "xpra"  : "Xpra ",
+                "rfb"   : "VNC ",
+                }.get(p.TYPE, p.TYPE)
+        else:
+            server_type = ""
+        return "%sServer Authentication:" % server_type
 
     def handle_challenge_with_pinentry(self, packet, prompt="password", cmd="pinentry"):
         authlog = Logger("auth")
@@ -313,12 +323,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             def no_pin():
                 self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
             from xpra.scripts.main import pinentry_getpin
-            pinentry_getpin(proc, "Xpra Server Authentication:", q, got_pin, no_pin)
+            title = self.get_server_authentication_string()
+            pinentry_getpin(proc, title, q, got_pin, no_pin)
             return True
         return self.do_process_challenge_prompt_dialog(packet, prompt)
 
     def do_process_challenge_prompt_dialog(self, packet, prompt="password"):
-        dialog = Gtk.Dialog("Server Authentication",
+        title = self.get_server_authentication_string()
+        dialog = Gtk.Dialog(title,
                None,
                Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT)
         dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.REJECT)
@@ -332,7 +344,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         import gi
         gi.require_version("Pango", "1.0")
         from gi.repository import Pango
-        title = Gtk.Label("Server Authentication")
+        title = Gtk.Label(title)
         title.modify_font(Pango.FontDescription("sans 14"))
         add(title, 16)
         add(Gtk.Label(self.get_challenge_prompt(prompt)), 10)
