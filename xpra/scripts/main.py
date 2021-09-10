@@ -1494,16 +1494,21 @@ def do_run_pinentry(proc, get_input, process_output):
     log = Logger("exec")
     message = "connection"
     while proc.poll() is None:
-        line = proc.stdout.readline()
-        process_output(message, line)
-        message = get_input()
-        if message is None:
+        try:
+            line = proc.stdout.readline()
+            process_output(message, line)
+            message = get_input()
+            if message is None:
+                break
+            log("sending %r", message)
+            r = proc.stdin.write(("%s\n" % message).encode())
+            proc.stdin.flush()
+            log("write returned: %s", r)
+        except OSError:
+            log("error running pinentry", exc_info=True)
             break
-        log("sending %r", message)
-        r = proc.stdin.write(("%s\n" % message).encode())
-        proc.stdin.flush()
-        log("write returned: %s", r)
-    proc.terminate()
+    if proc.poll() is None:
+        proc.terminate()
     log("pinentry ended: %s" % proc.poll())
 
 def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
