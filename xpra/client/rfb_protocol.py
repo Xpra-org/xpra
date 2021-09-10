@@ -115,7 +115,11 @@ class RFBClientProtocol(RFBProtocol):
         if len(packet)<ci_size+name_size:
             return 0
         w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
-        session_name = bytestostr(packet[ci_size:ci_size+name_size])
+        sn = packet[ci_size:ci_size+name_size]
+        try:
+            session_name = sn.decode("utf8")
+        except UnicodeDecodeError:
+            session_name = bytestostr(sn)
         log.info("RFB server session '%s': %ix%i %i bits", session_name, w, h, depth)
         if not truecolor:
             self.invalid("server is not true color", packet)
