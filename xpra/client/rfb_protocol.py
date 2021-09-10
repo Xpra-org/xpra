@@ -114,13 +114,15 @@ class RFBClientProtocol(RFBProtocol):
         #do we have enough to parse that too?
         if len(packet)<ci_size+name_size:
             return 0
-        w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
+        #w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = client_init[:12]
+        w, h, bpp, depth, bigendian, truecolor = client_init[:6]
         sn = packet[ci_size:ci_size+name_size]
         try:
             session_name = sn.decode("utf8")
         except UnicodeDecodeError:
             session_name = bytestostr(sn)
         log.info("RFB server session '%s': %ix%i %i bits", session_name, w, h, depth)
+        log("bpp=%i, bigendian=%s", bpp, bool(bigendian))
         if not truecolor:
             self.invalid("server is not true color", packet)
             return 0
