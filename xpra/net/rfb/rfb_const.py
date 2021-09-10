@@ -138,6 +138,7 @@ class RFBAuth(IntEnum):
     NONE = 1
     VNC = 2
     TIGHT = 16
+    VeNCrypt = 19
 
 AUTH_STR = {
     RFBAuth.INVALID     : "Invalid",
@@ -148,7 +149,7 @@ AUTH_STR = {
     6                   : "RA2ne",
     17                  : "Ultra",
     18                  : "TLS",
-    19                  : "VeNCrypt",
+    RFBAuth.VeNCrypt    : "VeNCrypt",
     20                  : "SASL",
     21                  : "MD5",
     22                  : "xvp",

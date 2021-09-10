@@ -47,7 +47,7 @@ class RFBServerProtocol(RFBProtocol):
             self._packet_parser = self._parse_challenge
             assert self._authenticator
             challenge, digest = self._authenticator.get_challenge("des")
-            assert digest=="des"
+            assert digest=="des", "invalid digest %r, only 'des' is supported" % digest
             self._challenge = challenge[:16]
             log("sending RFB challenge value: %s", hexstr(self._challenge))
             self.send(self._challenge)
@@ -62,8 +62,10 @@ class RFBServerProtocol(RFBProtocol):
         return 1
 
     def _parse_challenge(self, response):
-        assert self._authenticator
         log("parse_challenge(%s)", hexstr(response))
+        if len(response)<16:
+            return 0
+        assert self._authenticator
         try:
             assert len(response)==16
             hex_response = hexstr(response)
