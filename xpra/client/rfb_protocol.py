@@ -5,8 +5,11 @@
 
 import struct
 from xpra.net.rfb.rfb_protocol import RFBProtocol
-from xpra.net.rfb.rfb_const import RFBEncoding, RFBClientMessage, RFBAuth, CLIENT_INIT, AUTH_STR
-from xpra.os_util import hexstr, bytestostr, strtobytes
+from xpra.net.rfb.rfb_const import (
+    RFBEncoding, RFBClientMessage, RFBAuth,
+    CLIENT_INIT, AUTH_STR, RFB_KEYS,
+    )
+from xpra.os_util import hexstr, bytestostr
 from xpra.util import repr_ellipsized, csv
 from xpra.log import Logger
 
@@ -21,6 +24,13 @@ class RFBClientProtocol(RFBProtocol):
         #TODO: start a thread to process this:
         self.next_packet = next_packet
         self.rectangles = 0
+        self.position = 0, 0
+        self._rfb_converters = {
+            "pointer-position"  : self.send_pointer_position,
+            "button-action"     : self.send_button_action,
+            "key-action"        : self.send_key_action,
+            "configure-window"  : self.track_window,
+            }
         super().__init__(scheduler, conn, process_packet_cb)
 
     def source_has_more(self):
@@ -34,11 +44,94 @@ class RFBClientProtocol(RFBProtocol):
             if start_send_cb:
                 start_send_cb()
             log("packet: %s", packet[0])
+            handler = self._rfb_converters.get(packet[0])
+            if handler:
+                handler(packet)
             if end_send_cb:
                 end_send_cb()
             if not has_more:
                 break
             #packet, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, has_more=False, wait_for_more=False)
+
+    def check_wid(self, wid):
+        if wid!=WID:
+            log("ignoring pointer movement outside the VNC window")
+            return False
+        return True
+
+    def send_pointer_position(self, packet):
+        log("send_pointer_position(%s)", packet)
+        #['pointer-position', 1, (3348, 582), ['mod2'], []]
+        if not self.check_wid(packet[1]):
+            return
+        x, y = packet[2]
+        #modifiers = packet[3]
+        buttons = packet[4]
+        button_mask = 0
+        for i in range(8):
+            if i+1 in buttons:
+                button_mask |= 2**i
+        self.do_send_pointer_event(button_mask, x, y)
+
+    def send_button_action(self, packet):
+        log.warn("send_button_action(%s)", packet)
+        if not self.check_wid(packet[1]):
+            return
+        #["button-action", wid, button, pressed, (x, y), modifiers, buttons]
+        #['button-action', 1, 1, False, (2768, 257), ['mod2'], [1]]
+        button = packet[2]
+        pressed = packet[3]
+        x, y = packet[4]
+        button_mask = 0
+        if pressed:
+            button_mask |= 2**button
+        if len(packet)>=7:
+            buttons = packet[6]
+            for i in range(8):
+                if i+1 in buttons:
+                    button_mask |= 2**i
+        self.do_send_pointer_event(button_mask, x, y)
+
+    def do_send_pointer_event(self, button_mask, x, y):
+        #adjust for window position:
+        wx, wy = self.position
+        packet = struct.pack(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x-wx, y-wy)
+        self.send(packet)
+
+    def send_key_action(self, packet):
+        log("send_key_action(%s)", packet)
+        if not self.check_wid(packet[1]):
+            return
+        #["key-action", "wid", "keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"]
+        keyname = packet[2]
+        if len(keyname)==1:
+            keysym = ord(keyname[0])
+        else:
+            keysym = RFB_KEYS.get(keyname.lower())
+        if not keysym:
+            log("no keysym found for %s", packet[2:])
+            return
+        pressed = packet[3]
+        packet = struct.pack(b"!BBHI", RFBClientMessage.KeyEvent, pressed, 0, keysym)
+        self.send(packet)
+
+    def track_window(self, packet):
+        log("track_window(%s)", packet)
+        if not self.check_wid(packet[1]):
+            return
+        self.position = packet[2], packet[3]
+        log("window offset: %s", self.position)
+        #["configure-window", self._id, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
+        #['configure-window', 1, 0, 37, 1280, 1024,
+        #    {'encodings.rgb_formats': ['BGRA', 'BGRX', 'RGBA', 'RGBX', 'BGR', 'RGB', 'r210', 'BGR565'],
+        #     'encoding.transparency': False,
+        #     'encoding.full_csc_modes': {'h264': ['ARGB', 'BGRA', 'BGRX', 'GBRP', 'GBRP10', 'GBRP9LE', 'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'], 'vp8': ['YUV420P'], 'h265': ['BGRX', 'GBRP', 'GBRP10', 'GBRP9LE', 'RGB', 'XRGB', 'YUV420P', 'YUV422P', 'YUV444P', 'YUV444P10', 'r210'], 'mpeg4': ['YUV420P'], 'mpeg1': ['YUV420P'], 'mpeg2': ['YUV420P'], 'vp9': ['YUV420P', 'YUV444P', 'YUV444P10'], 'webp': ['BGRA', 'BGRX', 'RGBA', 'RGBX']},
+        #     'encoding.send-window-size': True,
+        #     'encoding.render-size': (1280, 1024),
+        #     'encoding.scrolling': True},
+        #     0, {}, False, 1, (4582, 1055), ['mod2']))
+
+
 
     def handshake_complete(self):
         log.info("RFB connected to %s", self._conn.target)
@@ -185,9 +278,9 @@ class RFBClientProtocol(RFBProtocol):
         if encoding!=RFBEncoding.RAW:
             self.invalid("invalid encoding: %s" % encoding, packet)
             return 0
-        log("screen update: %s", (x, y, w, h))
         if len(packet)<header_size + w*h*4:
             return 0
+        log("screen update: %s", (x, y, w, h))
         pixels = packet[header_size:header_size + w*h*4]
         draw = ["draw", WID, x, y, w, h, "rgb32", pixels, 0, w*4, {}]
         self._process_packet_cb(self, draw)

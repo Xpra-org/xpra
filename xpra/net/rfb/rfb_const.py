@@ -257,3 +257,7 @@ RFB_KEYNAMES = {
 
 for i in range(1, 13):
     RFB_KEYNAMES[0xffbe+(i-1)] = "F%i" % i
+
+RFB_KEYS = {}
+for keysym, name in RFB_KEYNAMES.items():
+    RFB_KEYS[name.lower()] = keysym

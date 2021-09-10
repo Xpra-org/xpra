@@ -148,7 +148,7 @@ class RFBServer:
                     mask = 2**button
                     if buttons & mask != self.rfb_buttons & mask:
                         pressed = bool(buttons & mask)
-                        mouselog(" %spressing %i", ["un",""][pressed], 1+button)
+                        mouselog(" %spressing button %i", ["un",""][pressed], 1+button)
                         self.button_action((x, y), 1+button, pressed, -1)
                 self.rfb_buttons = buttons
         self.idle_add(process_pointer_event)
