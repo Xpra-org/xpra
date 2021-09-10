@@ -269,7 +269,8 @@ class NetworkState(StubClientMixin):
     def send_ping(self):
         p = self._protocol
         if not p or p.TYPE!="xpra":
-            return
+            self.ping_timer = None
+            return False
         now_ms = int(1000.0*monotonic_time())
         self.send("ping", now_ms)
         wait = 2.0
