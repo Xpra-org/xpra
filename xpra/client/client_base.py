@@ -46,7 +46,7 @@ from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
 from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_UNSUPPORTED,
         EXIT_PASSWORD_REQUIRED, EXIT_PASSWORD_FILE_ERROR, EXIT_INCOMPATIBLE_VERSION,
-        EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE,
+        EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE, EXIT_CONNECTION_FAILED,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR, EXIT_UPGRADE,
         )
 
@@ -1011,15 +1011,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_gibberish(self, packet):
         log("process_gibberish(%s)", ellipsizer(packet))
         message, data = packet[1:3]
-        from xpra.net.socket_util import guess_packet_type
+        from xpra.net.socket_util import guess_packet_type #pylint: disable=import-outside-toplevel
         packet_type = guess_packet_type(data)
         p = self._protocol
-        pcount = p.input_packetcount==0 if p else 0
+        exit_code = EXIT_PACKET_FAILURE
+        pcount = p.input_packetcount if p else 0
         if pcount<=1:
+            exit_code = EXIT_CONNECTION_FAILED
             netlog.error("Error: failed to connect")
         else:
             netlog.error("Error: received an invalid packet")
-        if packet_type and packet_type=="xpra":
+        if packet_type=="xpra":
             netlog.error(" xpra server bug or mangled packet")
         if packet_type and packet_type!="xpra":
             netlog.error(" this is a '%s' packet,", packet_type)
@@ -1037,13 +1039,17 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 netlog.error(" data: %r", data)
         else:
             netlog.error(" packet no %i data: %s", pcount, nonl(repr_ellipsized(data)))
-        self.quit(EXIT_PACKET_FAILURE)
+        self.quit(exit_code)
 
     def _process_invalid(self, packet):
         message, data = packet[1:3]
         netlog.info("Received invalid packet: %s", message)
         netlog(" data: %s", ellipsizer(data))
-        self.quit(EXIT_PACKET_FAILURE)
+        p = self._protocol
+        exit_code = EXIT_PACKET_FAILURE
+        if not p or p.input_packetcount<=1:
+            exit_code = EXIT_CONNECTION_FAILED
+        self.quit(exit_code)
 
 
     ######################################################################
