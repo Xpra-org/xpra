@@ -4,6 +4,8 @@
 # later version. See the file COPYING for details.
 
 import struct
+from threading import RLock
+
 from xpra.net.rfb.rfb_protocol import RFBProtocol
 from xpra.net.rfb.rfb_const import (
     RFBEncoding, RFBClientMessage, RFBAuth,
@@ -21,37 +23,42 @@ WID = 1
 class RFBClientProtocol(RFBProtocol):
 
     def __init__(self, scheduler, conn, process_packet_cb, next_packet):
-        #TODO: start a thread to process this:
         self.next_packet = next_packet
         self.rectangles = 0
         self.position = 0, 0
+        #translate xpra packets into rfb packets:
         self._rfb_converters = {
             "pointer-position"  : self.send_pointer_position,
             "button-action"     : self.send_button_action,
             "key-action"        : self.send_key_action,
             "configure-window"  : self.track_window,
             }
+        self.send_lock = RLock()
         super().__init__(scheduler, conn, process_packet_cb)
 
     def source_has_more(self):
         log("source_has_more()")
-        while True:
-            pdata = self.next_packet()
-            packet = pdata[0]
-            start_send_cb = pdata[1]
-            end_send_cb = pdata[2]
-            has_more = pdata[5]
-            if start_send_cb:
-                start_send_cb()
-            log("packet: %s", packet[0])
-            handler = self._rfb_converters.get(packet[0])
-            if handler:
-                handler(packet)
-            if end_send_cb:
-                end_send_cb()
-            if not has_more:
-                break
-            #packet, start_send_cb=None, end_send_cb=None, fail_cb=None, synchronous=True, has_more=False, wait_for_more=False)
+        if not self.send_lock.acquire(False):
+            return
+        try:
+            while True:
+                pdata = self.next_packet()
+                packet = pdata[0]
+                start_send_cb = pdata[1]
+                end_send_cb = pdata[2]
+                has_more = pdata[5]
+                if start_send_cb:
+                    start_send_cb()
+                log("packet: %s", packet[0])
+                handler = self._rfb_converters.get(packet[0])
+                if handler:
+                    handler(packet)
+                if end_send_cb:
+                    end_send_cb()
+                if not has_more:
+                    break
+        finally:
+            self.send_lock.release()
 
     def check_wid(self, wid):
         if wid!=WID:
@@ -95,8 +102,7 @@ class RFBClientProtocol(RFBProtocol):
     def do_send_pointer_event(self, button_mask, x, y):
         #adjust for window position:
         wx, wy = self.position
-        packet = struct.pack(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x-wx, y-wy)
-        self.send(packet)
+        self.send_struct(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x-wx, y-wy)
 
     def send_key_action(self, packet):
         log("send_key_action(%s)", packet)
@@ -112,8 +118,7 @@ class RFBClientProtocol(RFBProtocol):
             log("no keysym found for %s", packet[2:])
             return
         pressed = packet[3]
-        packet = struct.pack(b"!BBHI", RFBClientMessage.KeyEvent, pressed, 0, keysym)
-        self.send(packet)
+        self.send_struct(b"!BBHI", RFBClientMessage.KeyEvent, pressed, 0, keysym)
 
     def track_window(self, packet):
         log("track_window(%s)", packet)
@@ -130,7 +135,6 @@ class RFBClientProtocol(RFBProtocol):
         #     'encoding.render-size': (1280, 1024),
         #     'encoding.scrolling': True},
         #     0, {}, False, 1, (4582, 1055), ['mod2']))
-
 
 
     def handshake_complete(self):
@@ -163,16 +167,19 @@ class RFBClientProtocol(RFBProtocol):
         else:
             self._internal_error("no supported security types in %r" % csv(AUTH_STR.get(v, v) for v in st))
             return 0
-        packet = struct.pack(b"B", auth_type)
-        self.send(packet)
+        self.send_struct(b"B", auth_type)
         return 1+n
 
     def _parse_vnc_security_challenge(self, packet):
         if len(packet)<16:
             return 0
         challenge = packet[:16]
+        log("parse_vnc_security_challenge(%s)", packet)
         auth_caps = {}
-        self.challenge = challenge  #FIXME: remove this
+        #this will end up calling send_challenge_reply() with the response,
+        #the password will be obtained from the client's challenge handlers,
+        #which may prompt the user.
+        #(see client base for details)
         self._process_packet_cb(self, ["challenge", challenge, auth_caps, "des", "none"])
         return 16
 
@@ -192,8 +199,7 @@ class RFBClientProtocol(RFBProtocol):
         log("parse_security_result(%s) success", hexstr(packet))
         self._packet_parser = self._parse_client_init
         share = False
-        packet = struct.pack(b"B", bool(share))
-        self.send(packet)
+        self.send_struct(b"B", bool(share))
         return 4
 
     def _parse_client_init(self, packet):
@@ -250,12 +256,10 @@ class RFBClientProtocol(RFBProtocol):
         return ci_size+name_size
 
     def send_set_encodings(self):
-        packet = struct.pack("!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
-        self.send(packet)
+        self.send_struct("!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
 
     def send_refresh_request(self, incremental, x, y, w, h):
-        packet = struct.pack("!BBHHHH", RFBClientMessage.FramebufferUpdateRequest, incremental, x, y, w, h)
-        self.send(packet)
+        self.send_struct("!BBHHHH", RFBClientMessage.FramebufferUpdateRequest, incremental, x, y, w, h)
 
     def _parse_rfb_packet(self, packet):
         log("parse_rfb_packet(%s)", repr_ellipsized(packet))
@@ -288,3 +292,7 @@ class RFBClientProtocol(RFBProtocol):
         if self.rectangles==0:
             self._packet_parser = self._parse_rfb_packet
         return header_size + w*h*4
+
+    def send_struct(self, fmt, *args):
+        packet = struct.pack(fmt, *args)
+        self.send(packet)
