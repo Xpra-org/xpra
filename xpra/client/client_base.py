@@ -964,7 +964,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         from xpra.net.socket_util import guess_packet_type
         packet_type = guess_packet_type(data)
         p = self._protocol
-        pcount = p.input_packetcount==0 if p else 0
+        pcount = p.input_packetcount if p else 0
         if pcount<=1:
             netlog.error("Error: failed to connect")
         else:
