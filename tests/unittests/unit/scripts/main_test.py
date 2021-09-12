@@ -22,7 +22,7 @@ from xpra.scripts.main import (
     isdisplaytype,
     check_display,
     get_host_target_string,
-    parse_display_name, find_session_by_name,
+    find_session_by_name,
     parse_ssh_string, add_ssh_args, add_ssh_proxy_args, parse_proxy_attributes,
     connect_to,
     )
@@ -72,67 +72,6 @@ class TestMain(unittest.TestCase):
         t({"type" : "ssh", "username" : "foo", "host" : "bar"}, "ssh://foo@bar/")
         t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : -1}, "ssh://foo@bar/")
         t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : 2222}, "ssh://foo@bar:2222/")
-
-    def test_parse_display_name(self):
-        socket_dir = _get_test_socket_dir()
-        opts = AdHocStruct()
-        opts.socket_dirs = [socket_dir]
-        opts.socket_dir = socket_dir
-        opts.exit_ssh = False
-        opts.ssh = "ssh -v "
-        opts.remote_xpra = "run-xpra"
-        if WIN32:
-            fd = parse_display_name(None, opts, "named-pipe://FOO")["named-pipe"]
-            sd = parse_display_name(None, opts, "FOO")["named-pipe"]
-        else:
-            fd = parse_display_name(None, opts, "socket:///FOO")
-            sd = parse_display_name(None, opts, "/FOO")
-        assert sd==fd, "expected %s but got %s" % (fd, sd)
-        def t(s, e):
-            r = parse_display_name(None, opts, s)
-            if e:
-                for k,v in e.items():
-                    actual = r.get(k)
-                    assert actual==v, "expected %s but got %s from parse_display_name(%s)=%s" % (v, actual, s, r)
-        def e(s):
-            try:
-                parse_display_name(None, opts, s)
-            except Exception:
-                pass
-            else:
-                raise Exception("parse_display_name should fail for %s" % s)
-        if POSIX:
-            e("ZZZZZZ")
-            t("10", {"display_name" : "10", "local" : True, "type" : "unix-domain"})
-            t(socket_dir+"/thesocket", {"display_name" : "socket://"+socket_dir+"/thesocket"})
-            t("socket:"+socket_dir+"/thesocket", {"display_name" : "socket:"+socket_dir+"/thesocket"})
-        e("tcp://host:NOTANUMBER/")
-        e("tcp://host:0/")
-        e("tcp://host:65536/")
-        t("tcp://username@host/", {"username" : "username", "password" : None})
-        for socktype in ("tcp", "ws", "wss", "ssl", "ssh"):
-            #e(socktype+"://a/b/c/d")
-            t(socktype+"://username:password@host:10000/DISPLAY?key1=value1", {
-                "type"      : socktype,
-                "display"   : "DISPLAY",
-                "key1"      : "value1",
-                "username"  : "username",
-                "password"  : "password",
-                "port"      : 10000,
-                "host"      : "host",
-                "local"     : False,
-                })
-        t("tcp://fe80::c1:ac45:7351:ea69:14500", {"host" : "fe80::c1:ac45:7351:ea69", "port" : 14500})
-        t("tcp://fe80::c1:ac45:7351:ea69%eth1:14500", {"host" : "fe80::c1:ac45:7351:ea69%eth1", "port" : 14500})
-        t("tcp://[fe80::c1:ac45:7351:ea69]:14500", {"host" : "fe80::c1:ac45:7351:ea69", "port" : 14500})
-        t("tcp://host/100,key1=value1", {"key1" : "value1"})
-        t("tcp://host/key1=value1", {"key1" : "value1"})
-        try:
-            from xpra.net.vsock import CID_ANY, PORT_ANY    #@UnresolvedImport
-            t("vsock://any:any/", {"vsock" : (CID_ANY, PORT_ANY)})
-            t("vsock://10:2000/", {"vsock" : (10, 2000)})
-        except ImportError:
-            pass
 
 
     def test_find_session_by_name(self):
