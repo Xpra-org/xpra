@@ -779,7 +779,7 @@ def _sep_pos(display_name):
     slpos = display_name.find("/")
     if scpos<0:
         return slpos
-    elif slpos<0:
+    if slpos<0:
         return scpos
     return min(scpos, slpos)
 
@@ -952,6 +952,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
             display = ""
             attr_sep = ","
             parts = ["", s]
+            options_str = parts[1]
         else:
             parts = []
         if display is None:
