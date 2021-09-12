@@ -154,7 +154,7 @@ class ServerCore:
         self.dotxpra = None
 
         self._closing = False
-        self._upgrading = False
+        self._upgrading = None
         #networking bits:
         self._socket_info = {}
         self._potential_protocols = []
@@ -298,7 +298,8 @@ class ServerCore:
 
     def clean_quit(self, upgrading=False):
         log("clean_quit(%s)", upgrading)
-        self._upgrading = upgrading
+        if self._upgrading is None:
+            self._upgrading = upgrading
         self.timeout_add(5000, self.force_quit)
         self.closing()
         self.cleanup()
@@ -343,7 +344,7 @@ class ServerCore:
 
     def quit(self, upgrading=False):
         log("quit(%s)", upgrading)
-        if upgrading is not None:
+        if self._upgrading is None:
             self._upgrading = upgrading
         self.closing()
         noerr(sys.stdout.flush)

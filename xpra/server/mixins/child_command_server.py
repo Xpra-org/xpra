@@ -60,7 +60,7 @@ class ChildCommandServer(StubServerMixin):
         self.reaper_exit = self.reaper_exit_check
         #does not belong here...
         if not hasattr(self, "_upgrading"):
-            self._upgrading = False
+            self._upgrading = None
         if not hasattr(self, "session_name"):
             self.session_name = ""
         self.menu_provider = None
