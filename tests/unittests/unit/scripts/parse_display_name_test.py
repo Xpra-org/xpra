@@ -10,7 +10,7 @@ import unittest
 
 from xpra.os_util import WIN32, POSIX
 from xpra.util import AdHocStruct
-from xpra.scripts.main import parse_display_name
+from xpra.scripts.parsing import parse_display_name
 
 
 def _get_test_socket_dir():
@@ -30,14 +30,16 @@ class TestMain(unittest.TestCase):
 
     def _test_parse_display_name(self, s, e=None):
         opts = self._test_opts()
-        r = parse_display_name(None, opts, s)
+        def err(*args):
+            raise Exception(*args)
+        r = parse_display_name(err, opts, s)
         if e:
             for k,v in e.items():
                 actual = r.get(k)
                 assert actual==v, "expected %s but got %s from parse_display_name(%s)=%s" % (v, actual, s, r)
         return r
 
-    def test_parse_display_name(self):
+    def Xtest_parse_display_name(self):
         socket_dir = _get_test_socket_dir()
         if WIN32:
             fd = self._test_parse_display_name("named-pipe://FOO")["named-pipe"]
@@ -86,6 +88,10 @@ class TestMain(unittest.TestCase):
             t("vsock://10:2000/", {"vsock" : (10, 2000)})
         except ImportError:
             pass
+
+    def test_parse_display_name(self):
+        self._test_parse_display_name("vnc+ssh://host/0")
+
 
 def main():
     unittest.main()

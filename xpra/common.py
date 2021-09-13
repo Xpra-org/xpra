@@ -51,6 +51,9 @@ DEFAULT_XDG_DATA_DIRS = ":".join(
         )
     )
 
+def noop(*_args):
+    """ do nothing """
+
 
 class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
