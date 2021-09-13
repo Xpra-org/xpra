@@ -258,13 +258,13 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
 
             start_command = (LPTSTR) malloc(1024);
             StringCbPrintfA(start_command, 1024,
-            		"%s\\paexec.exe -w \"%s\" -s \"%s\\Xpra-Proxy.exe\" start",
-					cwd, cwd, cwd);
+                    "%s\\paexec.exe -w \"%s\" -s \"%s\\Xpra-Proxy.exe\" start",
+                    cwd, cwd, cwd);
 
             stop_command = (LPTSTR) malloc(1024);
             StringCbPrintfA(stop_command, 1024,
-            		"%s\\paexec.exe -w \"%s\" -s \"%s\\Xpra-Proxy.exe\" stop",
-					cwd, cwd, cwd);
+                    "%s\\paexec.exe -w \"%s\" -s \"%s\\Xpra-Proxy.exe\" stop",
+                    cwd, cwd, cwd);
         }
         else {
             snprintf(buf, 512, "Registry key entry 'InstallPath' is missing, using default path '%s'\n", cwd);
@@ -310,73 +310,73 @@ VOID SvcInit(DWORD dwArgc, LPTSTR *lpszArgv)
     ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
     ReportSvcStatus( SERVICE_RUNNING, NO_ERROR, 0 );
 
-	WaitForSingleObject(ghSvcStopEvent, INFINITE);
+    WaitForSingleObject(ghSvcStopEvent, INFINITE);
 
-	DWORD status = WaitForSingleObject(process, 10);
-	if(status == WAIT_OBJECT_0)
-	{
-		ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
-	}
+    DWORD status = WaitForSingleObject(process, 10);
+    if(status == WAIT_OBJECT_0)
+    {
+        ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
+    }
 
-	message = "Xpra service asked to close";
-	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+    message = "Xpra service asked to close";
+    ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
 
-	//ask politely:
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-	si.dwFlags = STARTF_USESHOWWINDOW;
-	si.wShowWindow = SW_HIDE;
-	if (!CreateProcess(NULL, stop_command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
-	{
-		snprintf(buf, 64, "Xpra stop command failed (%d).\n", GetLastError());
-		message = (const char*) &buf;
-		ReportEvent(event_log, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &message, NULL);
-		DeregisterEventSource(event_log);
-	}
-	status = WaitForSingleObject(process, 5000);
-	if(status == WAIT_OBJECT_0)
-	{
-		message = "Xpra service terminated after 'stop'";
-		ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-		ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
-		return;
-	}
+    //ask politely:
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+    if (!CreateProcess(NULL, stop_command, NULL, NULL, FALSE, 0, NULL, cwd, &si, &pi))
+    {
+        snprintf(buf, 64, "Xpra stop command failed (%d).\n", GetLastError());
+        message = (const char*) &buf;
+        ReportEvent(event_log, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &message, NULL);
+        DeregisterEventSource(event_log);
+    }
+    status = WaitForSingleObject(process, 5000);
+    if(status == WAIT_OBJECT_0)
+    {
+        message = "Xpra service terminated after 'stop'";
+        ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+        ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
+        return;
+    }
 
-	PostMessage((HWND) pi.hProcess, WM_CLOSE, 0, 0);
-	status = WaitForSingleObject(process, 1000);
-	if(status == WAIT_OBJECT_0)
-	{
-		message = "Xpra service terminated after WM_CLOSE";
-		ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-		ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
-		return;
-	}
-	PostMessage((HWND) pi.hProcess, WM_QUIT, 0, 0);
-	status = WaitForSingleObject(process, 1000);
-	if(status == WAIT_OBJECT_0)
-	{
-		message = "Xpra service terminated after WM_QUIT";
-		ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-		ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
-		return;
-	}
-	PostMessage((HWND) pi.hProcess, WM_DESTROY, 0, 0);
-	status = WaitForSingleObject(process, 1000);
-	if(status == WAIT_OBJECT_0)
-	{
-		message = "Xpra service terminated after WM_DESTROY";
-		ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-		ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
-		return;
-	}
+    PostMessage((HWND) pi.hProcess, WM_CLOSE, 0, 0);
+    status = WaitForSingleObject(process, 1000);
+    if(status == WAIT_OBJECT_0)
+    {
+        message = "Xpra service terminated after WM_CLOSE";
+        ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+        ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
+        return;
+    }
+    PostMessage((HWND) pi.hProcess, WM_QUIT, 0, 0);
+    status = WaitForSingleObject(process, 1000);
+    if(status == WAIT_OBJECT_0)
+    {
+        message = "Xpra service terminated after WM_QUIT";
+        ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+        ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
+        return;
+    }
+    PostMessage((HWND) pi.hProcess, WM_DESTROY, 0, 0);
+    status = WaitForSingleObject(process, 1000);
+    if(status == WAIT_OBJECT_0)
+    {
+        message = "Xpra service terminated after WM_DESTROY";
+        ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+        ReportSvcStatus(SERVICE_STOPPED, NO_ERROR, 0);
+        return;
+    }
 
-	message = "Xpra Service forced to terminate";
-	ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
-	DeregisterEventSource(event_log);
-	TerminateProcess(process, 0);
+    message = "Xpra Service forced to terminate";
+    ReportEvent(event_log, EVENTLOG_SUCCESS, 0, 0, NULL, 1, 0, &message, NULL);
+    DeregisterEventSource(event_log);
+    TerminateProcess(process, 0);
 
-	ReportSvcStatus( SERVICE_STOPPED, NO_ERROR, 0 );
+    ReportSvcStatus( SERVICE_STOPPED, NO_ERROR, 0 );
 }
 
 //

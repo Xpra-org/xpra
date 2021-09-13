@@ -13,11 +13,11 @@ VIRTUAL_DISPLAY=:14500
 PORT=14500
 LOGFILE=xpra.log
 if [ "$(id -u)" != "0" ]; then
-	PIDFILE=$HOME/.xpra/proxy.pid
-	LOGDIR=$HOME/.xpra
+  PIDFILE=$HOME/.xpra/proxy.pid
+  LOGDIR=$HOME/.xpra
 else
-	PIDFILE=/run/xpra/proxy.pid
-	LOGDIR=/var/log/
+  PIDFILE=/run/xpra/proxy.pid
+  LOGDIR=/var/log/
 fi
 
 # Read configuration variable file if it is present
@@ -48,26 +48,26 @@ fi
 start() {
   echo 'Starting service…' >&2
   xpra proxy $VIRTUAL_DISPLAY \
-	--bind=/run/xpra/system --auth=$AUTH \
-	--bind-tcp=0.0.0.0:$PORT --tcp-auth=$TCP_AUTH --ssl-cert=/etc/xpra/ssl-cert.pem \
-	--socket-permissions=666 --debug=$DEBUG \
-	--daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR --pidfile=$PIDFILE
+    --bind=/run/xpra/system --auth=$AUTH \
+    --bind-tcp=0.0.0.0:$PORT --tcp-auth=$TCP_AUTH --ssl-cert=/etc/xpra/ssl-cert.pem \
+    --socket-permissions=666 --debug=$DEBUG \
+    --daemon=yes --log-file=$LOGFILE --log-dir=$LOGDIR --pidfile=$PIDFILE
   if [ "$?" = "0" ];then
-	echo 'Service started' >&2
+    echo 'Service started' >&2
   else
-  	echo 'Service failed to start' >&2
-  	exit 1
+    echo 'Service failed to start' >&2
+    exit 1
   fi
 }
 
 stop() {
   PID=`cat $PIDFILE 2> /dev/null`
   if [ -z "$PID" ]; then
-	echo "Service not started, pidfile not found"
+    echo "Service not started, pidfile not found"
   else
-	echo "Stopping service with pid $PID…" >&2
-  	kill $PID
-  	echo 'Service stopped' >&2
+    echo "Stopping service with pid $PID…" >&2
+    kill $PID
+    echo 'Service stopped' >&2
   fi
 }
 

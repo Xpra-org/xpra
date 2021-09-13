@@ -83,12 +83,12 @@ if [ -u "$XORG_BIN" ]; then
 		#fallback to making a copy of the binary:
 		DOTXPRA_DIR="$HOME/.xpra"
 		if [ ! -d "$DOTXPRA_DIR" ]; then
-	 		mkdir "$DOTXPRA_DIR"
-	 		chmod 700 "$DOTXPRA_DIR"
-	 	fi
+			mkdir "$DOTXPRA_DIR"
+			chmod 700 "$DOTXPRA_DIR"
+		fi
 		NOSUID_XORG="$DOTXPRA_DIR/Xorg-nosuid"
-	 	cp -f "$XORG_BIN" "$NOSUID_XORG"
-	 	exec "$NOSUID_XORG" "$@"
+		cp -f "$XORG_BIN" "$NOSUID_XORG"
+		exec "$NOSUID_XORG" "$@"
 	 fi
 else
 	# setuid is not set on xorg_bin

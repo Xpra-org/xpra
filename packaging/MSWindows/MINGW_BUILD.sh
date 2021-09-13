@@ -490,9 +490,9 @@ if [ "${DO_VERPATCH}" == "1" ]; then
 		tool_name=`echo $exe | sed 's+dist/++g;s+Xpra_++g;s+Xpra-++g;s+_+ +g;s+-+ +g;s+\.exe++g'`
 		verpatch $exe				//s desc "Xpra $tool_name"		//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	done
-	verpatch dist/Xpra_cmd.exe 		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	verpatch dist/Xpra_cmd.exe		//s desc "Xpra command line"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 	verpatch dist/Xpra-Proxy.exe	//s desc "Xpra Proxy Server"	//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
-	verpatch dist/Xpra.exe 			//s desc "Xpra" 				//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
+	verpatch dist/Xpra.exe			//s desc "Xpra"					//va "${ZERO_PADDED_VERSION}" //s company "xpra.org" //s copyright "(c) xpra.org 2020" //s product "xpra" //pv "${ZERO_PADDED_VERSION}"
 fi
 
 ################################################################################

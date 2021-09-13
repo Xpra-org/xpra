@@ -48,13 +48,13 @@
 		${prefix}/lib/libgtkmacintegration-gtk3*.dylib
 	</binary>
 	<binary>
- 		${prefix}/lib/libexpat.*.dylib
+		${prefix}/lib/libexpat.*.dylib
 	</binary>
 	<binary>
- 		${prefix}/lib/libjpeg.*.dylib
+		${prefix}/lib/libjpeg.*.dylib
 	</binary>
 	<binary>
- 		${prefix}/lib/libturbojpeg.*.dylib
+		${prefix}/lib/libturbojpeg.*.dylib
 	</binary>
 	<binary>
 		${prefix}/lib/libtiff.*.dylib

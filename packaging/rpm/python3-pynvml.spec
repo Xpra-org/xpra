@@ -17,7 +17,7 @@ URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source0:       	https://files.pythonhosted.org/packages/aa/7f/e72320ff97134628aff67816bcc2803b7d1bdf535e3b3e41fc764685239b/nvidia-ml-py-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/aa/7f/e72320ff97134628aff67816bcc2803b7d1bdf535e3b3e41fc764685239b/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 
