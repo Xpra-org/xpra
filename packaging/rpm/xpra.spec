@@ -377,9 +377,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
 %{_datadir}/xpra/*.wav
-%if %{with_cuda}
 %{_datadir}/xpra/cuda
-%endif
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*
 %{_docdir}/xpra
