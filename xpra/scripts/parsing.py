@@ -442,14 +442,15 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                 else:
                     desc[k] = v
 
-    if protocol=="ssh":
+    if protocol in ("ssh", "vnc+ssh"):
         desc.update({
-                "type"             : "ssh",
+                "type"             : protocol,
                 "proxy_command"    : ["_proxy"],
                 "exit_ssh"         : opts.exit_ssh,
+                "display"          : None,
+                "display_as_args"  : [],
                  })
-        desc["display"] = None
-        desc["display_as_args"] = []
+        desc["proxy_command"] = ["_proxy" if protocol=="ssh" else "_proxy_vnc"]
         host = parts[0]
         if len(parts)>1:
             parse_remote_display(parts[1])
@@ -507,7 +508,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                         warn("Error: failed to read the password file '%s':\n" % x)
                         warn(" %s\n" % e)
         return desc
-    elif protocol=="socket":
+
+    if protocol=="socket":
         assert not WIN32, "unix-domain sockets are not supported on MS Windows"
         #use the socketfile specified:
         slash = afterproto.find("/")
@@ -532,7 +534,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                 })
         opts.display = None
         return desc
-    elif display_name.startswith(":"):
+
+    if display_name.startswith(":"):
         assert not WIN32, "X11 display names are not supported on MS Windows"
         desc.update({
                 "type"          : "unix-domain",
@@ -543,7 +546,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
         return desc
-    elif protocol in ("tcp", "ssl", "ws", "wss", "vnc"):
+
+    if protocol in ("tcp", "ssl", "ws", "wss", "vnc"):
         desc.update({
                      "type"     : protocol,
                      })
@@ -558,7 +562,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         username, password, host, port = parse_host_string(host)
         assert port>0, "no port specified in %s" % host
         return desc
-    elif protocol=="vsock":
+
+    if protocol=="vsock":
         #use the vsock specified:
         cid, iport = parse_vsock(parts[0])
         desc.update({
@@ -569,7 +574,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                 })
         opts.display = display_name
         return desc
-    elif WIN32 or display_name.startswith("named-pipe:"):   # pragma: no cover
+
+    if WIN32 or display_name.startswith("named-pipe:"):   # pragma: no cover
         if afterproto.find("@")>=0:
             parts = afterproto.split("@")
             parse_username_and_password("@".join(parts[:-1]))
@@ -586,8 +592,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                      })
         opts.display = display_name
         return desc
-    else:
-        error_cb("unknown format for display name: %s" % display_name)
+
+    error_cb("unknown format for display name: %s" % display_name)
 
 
 def parse_ssh_string(ssh_setting):

@@ -515,7 +515,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode == "html5":
         return run_html5()
     elif (
-        mode=="_proxy" or
+        mode in ("_proxy", "_proxy_vnc") or
         (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
         (mode=="_proxy_shadow_start" and supports_shadow)
         ):
@@ -707,6 +707,26 @@ def display_desc_to_uri(display_desc):
         uri += display.lstrip(":")
     return uri
 
+
+def pick_vnc_display(error_cb, opts, extra_args):
+    if extra_args and len(extra_args)==1:
+        try:
+            display = extra_args[0].lstrip(":")
+            display_no = int(display)
+        except (ValueError, TypeError):
+            pass
+        else:
+            return {
+                "display"   : ":%i" % display_no,
+                "display_name" : display,
+                "host"      : "localhost",
+                "port"      : 5900+display_no,
+                "local"     : True,
+                "type"      : "tcp",
+                }
+    error_cb("cannot find vnc displays yet")
+
+
 def pick_display(error_cb, opts, extra_args):
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     return do_pick_display(dotxpra, error_cb, opts, extra_args)
@@ -872,11 +892,16 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT, SocketConnection
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
-    if dtype == "ssh":
+    if dtype in ("ssh", "vnc+ssh"):
         from xpra.net.ssh import ssh_paramiko_connect_to, ssh_exec_connect_to
         if display_desc.get("is_paramiko", False):
-            return ssh_paramiko_connect_to(display_desc)
-        return ssh_exec_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
+            conn = ssh_paramiko_connect_to(display_desc)
+        else:
+            conn = ssh_exec_connect_to(display_desc, opts, debug_cb, ssh_fail_cb)
+        if dtype=="vnc+ssh":
+            conn.socktype = "vnc"
+            conn.socktype_wrapped = "ssh"
+        return conn
 
     if dtype == "unix-domain":
         if not hasattr(socket, "AF_UNIX"):  # pragma: no cover
@@ -2530,8 +2555,11 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 from xpra.make_thread import start_thread
                 start_thread(proc.wait, "server-startup-reaper")
     if not display:
-        #use display specified on command line:
-        display = pick_display(error_cb, opts, args)
+        if mode=="_proxy_vnc":
+            display = pick_vnc_display(error_cb, opts, args)
+        else:
+            #use display specified on command line:
+            display = pick_display(error_cb, opts, args)
     server_conn = connect_or_fail(display, opts)
     from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection
