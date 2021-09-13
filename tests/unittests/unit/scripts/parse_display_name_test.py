@@ -26,6 +26,7 @@ class TestMain(unittest.TestCase):
         opts.exit_ssh = False
         opts.ssh = "ssh -v "
         opts.remote_xpra = "run-xpra"
+        opts.password_file = None
         return opts
 
     def _test_parse_display_name(self, s, e=None):
@@ -39,7 +40,7 @@ class TestMain(unittest.TestCase):
                 assert actual==v, "expected %s but got %s from parse_display_name(%s)=%s" % (v, actual, s, r)
         return r
 
-    def Xtest_parse_display_name(self):
+    def test_parse_display_name(self):
         socket_dir = _get_test_socket_dir()
         if WIN32:
             fd = self._test_parse_display_name("named-pipe://FOO")["named-pipe"]
@@ -88,9 +89,7 @@ class TestMain(unittest.TestCase):
             t("vsock://10:2000/", {"vsock" : (10, 2000)})
         except ImportError:
             pass
-
-    def test_parse_display_name(self):
-        self._test_parse_display_name("vnc+ssh://host/0")
+        t("vnc+ssh://host/0")
 
 
 def main():
