@@ -250,7 +250,7 @@ def parse_proxy_attributes(display_name):
         display_name = display_name[:reout.start()] + display_name[reout.end():]
         return display_name, desc_tmp
 
-def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
+def parse_display_name(error_cb, opts, display_name, find_session_by_name=False):
     if WIN32:
         from xpra.platform.win32.dotxpra import PIPE_PREFIX # pragma: no cover
     else:
@@ -277,7 +277,7 @@ def parse_display_name(error_cb, opts, display_name, session_name_lookup=False):
         elif WIN32: # pragma: no cover
             display_name = "named-pipe://%s%s" % (PIPE_PREFIX, display_name)
             match = True
-        if session_name_lookup and not match:
+        if find_session_by_name and not match:
             #try to find a session whose "session-name" matches:
             match = find_session_by_name(opts, display_name)
             if match:
