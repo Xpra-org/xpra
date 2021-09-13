@@ -139,7 +139,7 @@ skip_build = "--skip-build" in sys.argv
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and DEFAULT
-rfb_ENABLED = server_ENABLED
+rfb_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
@@ -1811,6 +1811,7 @@ toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.aut
 toggle_packages(rfb_ENABLED, "xpra.net.rfb")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
+toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
 toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.mixins", "xpra.server.source")
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
