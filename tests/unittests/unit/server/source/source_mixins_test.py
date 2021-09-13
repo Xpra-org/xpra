@@ -241,7 +241,7 @@ class SourceMixinsTest(unittest.TestCase):
             pass
         m.send = noop
         out,err = m.shell_exec("print('hello')")
-        assert out==b"hello\n", "expected 'hello' but got '%s'" % out
+        assert out.rstrip("\n")=="hello", "expected 'hello' but got '%s'" % out.rstrip("\n")
         assert not err
         with silence_error(shell_mixin):
             out,err = m.shell_exec("--not-a-statement--")
