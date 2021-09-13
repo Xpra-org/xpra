@@ -13,7 +13,7 @@ import optparse
 
 from xpra.version_util import full_version_str
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED, CAN_DAEMONIZE
-from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT
+from xpra.util import envbool, csv, parse_simple_dict, DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import getuid, WIN32, OSX, POSIX
 from xpra.scripts.config import (
     OPTION_TYPES, FALSE_OPTIONS,
@@ -559,7 +559,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
             parse_remote_display(parts[-1])
             parts = parts[:-1]
         host = ":".join(parts)
-        username, password, host, port = parse_host_string(host)
+        default_port = DEFAULT_PORTS.get(protocol, DEFAULT_PORT)
+        username, password, host, port = parse_host_string(host, default_port)
         assert port>0, "no port specified in %s" % host
         return desc
 

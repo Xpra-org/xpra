@@ -74,6 +74,7 @@ DEFAULT_PORT = 14500
 DEFAULT_PORTS = {
     "ws"    : 80,
     "wss"   : 443,
+    "ssl"   : DEFAULT_PORT, #could also default to 443?
     "ssh"   : 22,
     "tcp"   : DEFAULT_PORT,
     "vnc"   : 5900,
