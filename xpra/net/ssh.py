@@ -683,7 +683,8 @@ keymd5(host_key),
         class iauthhandler:
             def __init__(self):
                 self.authcount = 0
-            def handlestuff(self, _title, _instructions, prompt_list):
+            def handle_request(self, title, instructions, prompt_list):
+                log("handle_request%s counter=%i", (title, instructions, prompt_list), self.authcount)
                 p = []
                 for pent in prompt_list:
                     if self.authcount==0 and password:
@@ -691,6 +692,7 @@ keymd5(host_key),
                     else:
                         p.append(input_pass(pent[0]))
                     self.authcount += 1
+                log("handle_request(..) returning %i values", len(p))
                 return p
         try:
             myiauthhandler = iauthhandler()
