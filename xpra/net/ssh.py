@@ -78,6 +78,7 @@ def force_focus():
 
 def dialog_run(dialog) -> int:
     from gi.repository import GLib
+    log("dialog_run(%s) is_main_thread=%s", dialog, is_main_thread())
     if is_main_thread():
         force_focus()
         dialog.show()
@@ -91,6 +92,7 @@ def dialog_run(dialog) -> int:
     e = Event()
     code = []
     def main_thread_run():
+        log("main_thread_run()")
         force_focus()
         dialog.show()
         try:
@@ -100,11 +102,13 @@ def dialog_run(dialog) -> int:
         code.append(r)
         e.set()
     GLib.idle_add(main_thread_run)
+    log("dialog_run(%s) waiting for main thread to run")
     e.wait()
     log("dialog_run(%s) code=%s", dialog, code)
     return code[0]
 
 def dialog_pass(title="Password Input", prompt="enter password", icon="") -> str:
+    log("dialog_pass%s PINENTRY=%s", (title, prompt, icon), PINENTRY)
     if PINENTRY:
         pinentry_cmd = get_pinentry_command()
         if pinentry_cmd:
@@ -159,8 +163,10 @@ def input_pass(prompt) -> str:
     from xpra.platform.paths import get_icon_filename
     if PINENTRY or use_gui_prompt():
         icon = get_icon_filename("authentication", "png") or ""
+        log("input_pass(%s) using dialog", prompt)
         return dialog_pass("Password Input", prompt, icon)
     from getpass import getpass
+    log("input_pass(%s) using getpass", prompt)
     try:
         return getpass(prompt)
     except KeyboardInterrupt:
