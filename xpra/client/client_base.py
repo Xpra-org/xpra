@@ -676,7 +676,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.error("Error: failed to receive anything, not an xpra server?")
             netlog.error("  could also be the wrong protocol, username, password or port")
             netlog.error("  or the session was not found")
-            if c!="unknown" or e!="rencode":
+            if c!="unknown" or not e.startswith("rencode"):
                 netlog.error("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
             exit_code = EXIT_CONNECTION_FAILED
             exit_str = "Connection failed"
