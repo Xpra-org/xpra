@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 import os.path
 import socket
 from time import sleep
@@ -13,7 +14,7 @@ from xpra.exit_codes import (
     EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
     EXIT_SERVER_ALREADY_EXISTS, EXIT_SOCKET_CREATION_ERROR,
     )
-from xpra.net.bytestreams import set_socket_timeout, pretty_socket
+from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SOCKET_TIMEOUT
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
     path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
@@ -21,7 +22,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     envint, envbool, csv, parse_simple_dict,
-    ellipsizer,
+    ellipsizer, noerr,
     DEFAULT_PORT,
     )
 from xpra.make_thread import start_thread
@@ -472,7 +473,7 @@ def setup_vsock_socket(cid, iport):
 def parse_bind_vsock(bind_vsock):
     vsock_sockets = {}
     if bind_vsock:
-        from xpra.scripts.main import parse_vsock
+        from xpra.scripts.parsing import parse_vsock  #pylint: disable=import-outside-toplevel
         for spec in bind_vsock:
             parts = spec.split(",", 1)
             cid, iport = parse_vsock(parts[0])
@@ -946,7 +947,7 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
             SSLEOFError = getattr(ssl, "SSLEOFError", None)
             if SSLEOFError and isinstance(e, SSLEOFError):
                 return None
-            raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e))
+            raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e)) from None
         if not server_side:
             try:
                 ssl_sock.do_handshake(True)
@@ -966,6 +967,36 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                     #ssllog.warn("host failed SSL verification: %s", msg)
                 else:
                     msg = str(e)
-                raise InitExit(status, "SSL handshake failed: %s" % msg)
+                raise InitExit(status, "SSL handshake failed: %s" % msg) from None
         return ssl_sock
     return do_wrap_socket
+
+
+def socket_connect(host, port, timeout=SOCKET_TIMEOUT):
+    socktype = socket.SOCK_STREAM
+    family = 0  #0 means any
+    try:
+        addrinfo = socket.getaddrinfo(host, port, family, socktype)
+    except Exception as e:
+        raise InitException("cannot get %s address for %s: %s" % ({
+            socket.AF_INET6 : "IPv6",
+            socket.AF_INET  : "IPv4",
+            0               : "any",
+            }.get(family, ""), (host, port), e)) from None
+    log = get_network_logger()
+    log("socket_connect%s addrinfo=%s", (host, port), addrinfo)
+    #try each one:
+    for addr in addrinfo:
+        sockaddr = addr[-1]
+        family = addr[0]
+        sock = socket.socket(family, socktype)
+        sock.settimeout(timeout)
+        try:
+            log("socket.connect(%s)", sockaddr)
+            sock.connect(sockaddr)
+            sock.settimeout(None)
+            return sock
+        except Exception as e:
+            log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
+            noerr(sock.close)
+    return None

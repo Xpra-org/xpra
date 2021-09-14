@@ -342,7 +342,7 @@ def ssh_paramiko_connect_to(display_desc):
                     return conn
 
         keys = get_keyfiles(host_config)
-        from xpra.scripts.main import socket_connect
+        from xpra.net.socket_util import socket_connect
         from paramiko.transport import Transport
         from paramiko import SSHException
         if "proxy_host" in display_desc:
@@ -351,7 +351,7 @@ def ssh_paramiko_connect_to(display_desc):
             proxy_username = display_desc.get("proxy_username", username)
             proxy_password = display_desc.get("proxy_password", password)
             proxy_keys = get_keyfiles(host_config, "proxy_key")
-            sock = socket_connect(dtype, proxy_host, proxy_port)
+            sock = socket_connect(proxy_host, proxy_port)
             middle_transport = Transport(sock)
             middle_transport.use_compression(False)
             try:
@@ -391,7 +391,7 @@ def ssh_paramiko_connect_to(display_desc):
 
         #plain TCP connection to the server,
         #we open it then give the socket to paramiko:
-        sock = socket_connect(dtype, host, port)
+        sock = socket_connect(host, port)
         sockname = sock.getsockname()
         peername = sock.getpeername()
         log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
@@ -871,6 +871,10 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         env = display_desc.get("env")
         if env is None:
             env = get_saved_env()
+        if display_desc.get("is_putty"):
+            #special env used by plink:
+            env = os.environ.copy()
+            env["PLINK_PROTOCOL"] = "ssh"
         kwargs["stderr"] = sys.stderr
         if WIN32:
             from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW

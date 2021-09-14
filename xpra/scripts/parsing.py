@@ -221,10 +221,11 @@ def parse_proxy_attributes(display_name):
             raise RuntimeError("bad format: missing host in '%s'" % hostport)
         desc_tmp["proxy_host"] = host
         if hostport_match.group("port"):
+            port_str = hostport_match.group("port")
             try:
-                desc_tmp["proxy_port"] = int(hostport_match.group("port"))
+                desc_tmp["proxy_port"] = int(port_str)
             except ValueError:
-                raise RuntimeError("bad format: proxy port '%s' is not a number" % hostport_match.group("port")) from None
+                raise RuntimeError("bad format: proxy port '%s' is not a number" % port_str) from None
         userpass = reout.group("userpass")
         if userpass:
             # The username ends at the first colon. This decision was not unique: I could have
@@ -250,6 +251,152 @@ def parse_proxy_attributes(display_name):
         display_name = display_name[:reout.start()] + display_name[reout.end():]
         return display_name, desc_tmp
 
+def parse_remote_display(s):
+    if not s:
+        return {}
+    qpos = s.find("?")
+    cpos = s.find(",")
+    display = None
+    options_str = None
+    if qpos>=0 and (qpos<cpos or cpos<0):
+        #query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
+        attr_sep = "&"
+        parts = s.split("?", 1)
+        s = parts[0].split("#")[0]
+        options_str = parts[1]
+    elif cpos>0 and (cpos<qpos or qpos<0):
+        #csv string format,
+        # ie: DISPLAY,key1=value1,key2=value2
+        # or: key1=value1,key2=value2
+        attr_sep = ","
+        parts = s.split(",", 1)
+        if parts[0].find("=")>0:
+            #if the first part is a key=value,
+            #assume it is part of the parameters
+            parts = ["", s]
+            display = ""
+        if len(parts)==2:
+            options_str = parts[1]
+    elif s.find("=")>0:
+        #ie: just one key=value
+        #(so this is not a display)
+        display = ""
+        attr_sep = ","
+        parts = ["", s]
+        options_str = parts[1]
+    else:
+        parts = []
+    if display is None:
+        try:
+            assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
+            display = ":" + s       #ie: ":10.0"
+        except ValueError:
+            display = s             #ie: "tcp://somehost:10000/"
+    desc = {
+        "display"   : display,
+        "display_as_args"   : [display],
+        }
+    if options_str:
+        #parse extra attributes
+        d = parse_simple_dict(options_str, attr_sep)
+        for k,v in d.items():
+            if k in desc:
+                warn("Warning: cannot override '%s' with URI" % k)
+            else:
+                desc[k] = v
+    return desc
+
+def parse_username_and_password(s):
+    ppos = s.find(":")
+    if ppos>=0:
+        password = s[ppos+1:]
+        username = s[:ppos]
+    else:
+        username = s
+        password = ""
+    #fugly: we override the command line option after parsing the string:
+    desc = {}
+    if username:
+        desc["username"] = username
+    if password:
+        desc["password"] = password
+    return desc
+
+def parse_host_string(host, default_port=DEFAULT_PORT):
+    """
+        Parses [username[:password]@]host[:port]
+        and returns username, password, host, port
+        missing arguments will be empty (username and password) or 0 (port)
+    """
+    upos = host.rfind("@")
+    if upos>=0:
+        #HOST=username@host
+        desc = parse_username_and_password(host[:upos])
+        host = host[upos+1:]
+    else:
+        desc = {}
+    port_str = None
+    if host.count(":")>=2:
+        #more than 2 ":", assume this is IPv6:
+        if host.startswith("["):
+            #if we have brackets, we can support: "[HOST]:SSHPORT"
+            epos = host.find("]")
+            if epos<0:
+                raise ValueError("invalid host format, expected IPv6 [..]")
+            port_str = host[epos+1:]        #ie: ":22"
+            if port_str.startswith(":"):
+                port_str = port_str[1:]     #ie: "22"
+            host = host[1:epos]            #ie: "[HOST]"
+        else:
+            #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
+            devsep = host.split("%")
+            if len(devsep)==2:
+                parts = devsep[1].split(":", 1)     #ie: "eth1:14500" -> ["eth1", "14500"]
+                if len(parts)==2:
+                    host = "%s%%%s" % (devsep[0], parts[0])
+                    port_str = parts[1]     #ie: "14500"
+            else:
+                parts = host.split(":")
+                if len(parts[-1])>4:
+                    port_str = parts[-1]
+                    host = ":".join(parts[:-1])
+                else:
+                    #otherwise, we have to assume they are all part of IPv6
+                    #we could count them at split at 8, but that would be just too fugly
+                    pass
+    elif host.find(":")>0:
+        host, port_str = host.split(":", 1)
+    if port_str:
+        try:
+            port = int(port_str)
+        except ValueError:
+            raise ValueError("invalid port number specified: %s" % port_str) from None
+    else:
+        port = default_port
+    if port<=0 or port>=2**16:
+        raise ValueError("invalid port number: %s" % port)
+    desc.update({
+        "host"  : host or "127.0.0.1",
+        "port"  : port,
+        "local" : is_local(host),
+        })
+    return desc
+
+def load_password_file(password_file):
+    if not password_file:
+        return None
+    if not os.path.exists(password_file):
+        warn("Error: password file '%s' does not exist:\n" % password_file)
+        return None
+    try:
+        with open(password_file, "rb") as f:
+            return f.read()
+    except Exception as e:
+        warn("Error: failed to read the password file '%s':\n" % password_file)
+        warn(" %s\n" % e)
+    return None
+
+
 def parse_display_name(error_cb, opts, display_name, find_session_by_name=False):
     if WIN32:
         from xpra.platform.win32.dotxpra import PIPE_PREFIX # pragma: no cover
@@ -257,6 +404,7 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         PIPE_PREFIX = None
     if display_name.startswith("/") and POSIX:
         display_name = "socket://"+display_name
+
     desc = {"display_name" : display_name}
     display_name, proxy_attrs = parse_proxy_attributes(display_name)
     desc.update(proxy_attrs)
@@ -313,134 +461,29 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
     separator = psep[-1]                    #ie: "/"
     parts = afterproto.split(separator, 1)     #ie: "host:port", "DISPLAY"
 
-    def parse_username_and_password(s):
-        ppos = s.find(":")
-        if ppos>=0:
-            password = s[ppos+1:]
-            username = s[:ppos]
-        else:
-            username = s
-            password = ""
-        #fugly: we override the command line option after parsing the string:
-        if username:
-            desc["username"] = username
-            opts.username = username
-        if password:
-            opts.password = password
-            desc["password"] = password
-        return username, password
+    def _set_password():
+        password = desc.get("password")
+        if password is None:
+            password = load_password_file(opts.password_file)
+            if password:
+                desc["password"] = password
 
-    def parse_host_string(host, default_port=DEFAULT_PORT):
-        """
-            Parses [username[:password]@]host[:port]
-            and returns username, password, host, port
-            missing arguments will be empty (username and password) or 0 (port)
-        """
-        upos = host.rfind("@")
-        username = None
-        password = None
-        port = default_port
-        if upos>=0:
-            #HOST=username@host
-            username, password = parse_username_and_password(host[:upos])
-            host = host[upos+1:]
-        port_str = None
-        if host.count(":")>=2:
-            #more than 2 ":", assume this is IPv6:
-            if host.startswith("["):
-                #if we have brackets, we can support: "[HOST]:SSHPORT"
-                epos = host.find("]")
-                if epos<0:
-                    error_cb("invalid host format, expected IPv6 [..]")
-                port_str = host[epos+1:]        #ie: ":22"
-                if port_str.startswith(":"):
-                    port_str = port_str[1:]     #ie: "22"
-                host = host[1:epos]            #ie: "[HOST]"
-            else:
-                #ie: fe80::c1:ac45:7351:ea69%eth1:14500 -> ["fe80::c1:ac45:7351:ea69", "eth1:14500"]
-                devsep = host.split("%")
-                if len(devsep)==2:
-                    parts = devsep[1].split(":", 1)     #ie: "eth1:14500" -> ["eth1", "14500"]
-                    if len(parts)==2:
-                        host = "%s%%%s" % (devsep[0], parts[0])
-                        port_str = parts[1]     #ie: "14500"
-                else:
-                    parts = host.split(":")
-                    if len(parts[-1])>4:
-                        port_str = parts[-1]
-                        host = ":".join(parts[:-1])
-                    else:
-                        #otherwise, we have to assume they are all part of IPv6
-                        #we could count them at split at 8, but that would be just too fugly
-                        pass
-        elif host.find(":")>0:
-            host, port_str = host.split(":", 1)
-        if port_str:
-            try:
-                port = int(port_str)
-            except ValueError:
-                error_cb("invalid port number specified: %s" % port_str)
-        if port<=0 or port>=2**16:
-            error_cb("invalid port number: %s" % port)
-        desc["port"] = port
-        if host=="":
-            host = "127.0.0.1"
-        desc["host"] = host
-        desc["local"] = is_local(host)
-        return username, password, host, port
+    def _parse_username_and_password(s):
+        d = parse_username_and_password(s)
+        desc.update(d)
+        opts.username = d.get("username", opts.username)
+        opts.password = d.get("password", opts.password)
+        _set_password()
 
-    def parse_remote_display(s):
-        if not s:
-            return
-        qpos = s.find("?")
-        cpos = s.find(",")
-        display = None
-        options_str = None
-        if qpos>=0 and (qpos<cpos or cpos<0):
-            #query string format, ie: "DISPLAY?key1=value1&key2=value2#extra_stuff
-            attr_sep = "&"
-            parts = s.split("?", 1)
-            s = parts[0].split("#")[0]
-            options_str = parts[1]
-        elif cpos>0 and (cpos<qpos or qpos<0):
-            #csv string format,
-            # ie: DISPLAY,key1=value1,key2=value2
-            # or: key1=value1,key2=value2
-            attr_sep = ","
-            parts = s.split(",", 1)
-            if parts[0].find("=")>0:
-                #if the first part is a key=value,
-                #assume it is part of the parameters
-                parts = ["", s]
-                display = ""
-            if len(parts)==2:
-                options_str = parts[1]
-        elif s.find("=")>0:
-            #ie: just one key=value
-            #(so this is not a display)
-            display = ""
-            attr_sep = ","
-            parts = ["", s]
-            options_str = parts[1]
-        else:
-            parts = []
-        if display is None:
-            try:
-                assert [int(x) for x in s.split(".")]   #ie: ":10.0" -> [10, 0]
-                display = ":" + s       #ie: ":10.0"
-            except ValueError:
-                display = s             #ie: "tcp://somehost:10000/"
-        desc["display"] = display
-        opts.display = display
-        desc["display_as_args"] = [display]
-        if options_str:
-            #parse extra attributes
-            d = parse_simple_dict(options_str, attr_sep)
-            for k,v in d.items():
-                if k in desc:
-                    warn("Warning: cannot override '%s' with URI" % k)
-                else:
-                    desc[k] = v
+    def _parse_host_string(host, default_port=DEFAULT_PORT):
+        d = parse_host_string(host, default_port)
+        desc.update(d)
+        _set_password()
+
+    def _parse_remote_display(s):
+        d = parse_remote_display(s)
+        desc.update(d)
+        opts.display = desc.get("display")
 
     if protocol in ("ssh", "vnc+ssh"):
         desc.update({
@@ -450,10 +493,22 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                 "display"          : None,
                 "display_as_args"  : [],
                  })
-        desc["proxy_command"] = ["_proxy" if protocol=="ssh" else "_proxy_vnc"]
+        #desc["proxy_command"] = ["_proxy" if protocol=="ssh" else "_proxy_vnc"]
         host = parts[0]
         if len(parts)>1:
-            parse_remote_display(parts[1])
+            _parse_remote_display(parts[1])
+            if protocol=="vnc+ssh":
+                #use a vnc display string with the proxy command
+                #and specify the vnc port if we know the display number:
+                vnc_uri = "vnc://localhost"
+                if opts.display:
+                    try:
+                        vnc_port = 5900+int(opts.display.lstrip(":"))
+                    except ValueError:
+                        vnc_uri += "/"
+                    else:
+                        vnc_uri += ":%i/" % vnc_port
+                desc["display_as_args"] = [vnc_uri]
         #ie: ssh=["/usr/bin/ssh", "-v"]
         ssh = parse_ssh_string(opts.ssh)
         full_ssh = ssh[:]
@@ -469,17 +524,14 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                 desc["paramiko-config"] = parse_simple_dict(opts.ssh.split(":", 1)[1])
         if is_putty:
             desc["is_putty"] = True
-            #special env used by plink:
-            env = os.environ.copy()
-            env["PLINK_PROTOCOL"] = "ssh"
 
-        username, password, host, ssh_port = parse_host_string(host, 22)
-        if username:
-            #TODO: let parse_host_string set it?
-            desc["username"] = username
-            opts.username = username
-        if ssh_port and ssh_port!=22:
+        _parse_host_string(host, 22)
+        ssh_port = desc.pop("port", 22)
+        if ssh_port!=22:
             desc["ssh-port"] = ssh_port
+        username = desc.get("username")
+        password = desc.get("password")
+        host = desc.get("host")
         key = desc.get("key", None)
         full_ssh += add_ssh_args(username, password, host, ssh_port, key, is_putty, is_paramiko)
         if "proxy_host" in desc:
@@ -497,16 +549,6 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
             })
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
-        if password is None and opts.password_file:
-            for x in opts.password_file:
-                if os.path.exists(x):
-                    try:
-                        with open(opts.password_file, "rb") as f:
-                            desc["password"] = f.read()
-                        break
-                    except Exception as e:
-                        warn("Error: failed to read the password file '%s':\n" % x)
-                        warn(" %s\n" % e)
         return desc
 
     if protocol=="socket":
@@ -516,12 +558,12 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         if 0<afterproto.find(":")<slash:
             #ie: username:password/run/user/1000/xpra/hostname-number
             #remove username and password prefix:
-            parse_username_and_password(afterproto[:slash])
+            _parse_username_and_password(afterproto[:slash])
             sockfile = afterproto[slash:]
         elif afterproto.find("@")>=0:
             #ie: username:password@/run/user/1000/xpra/hostname-number
             parts = afterproto.split("@")
-            parse_username_and_password("@".join(parts[:-1]))
+            _parse_username_and_password("@".join(parts[:-1]))
             sockfile = parts[-1]
         else:
             sockfile = afterproto
@@ -548,20 +590,17 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         return desc
 
     if protocol in ("tcp", "ssl", "ws", "wss", "vnc"):
-        desc.update({
-                     "type"     : protocol,
-                     })
+        desc["type"] = protocol
         if len(parts) not in (1, 2, 3):
             error_cb("invalid %s connection string,\n" % protocol
                      +" use %s://[username[:password]@]host[:port][/display]\n" % protocol)
         #display (optional):
         if separator=="/" and len(parts)==2:
-            parse_remote_display(parts[-1])
+            _parse_remote_display(parts[-1])
             parts = parts[:-1]
         host = ":".join(parts)
         default_port = DEFAULT_PORTS.get(protocol, DEFAULT_PORT)
-        username, password, host, port = parse_host_string(host, default_port)
-        assert port>0, "no port specified in %s" % host
+        _parse_host_string(host, default_port)
         return desc
 
     if protocol=="vsock":
@@ -579,7 +618,7 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
     if WIN32 or display_name.startswith("named-pipe:"):   # pragma: no cover
         if afterproto.find("@")>=0:
             parts = afterproto.split("@")
-            parse_username_and_password("@".join(parts[:-1]))
+            _parse_username_and_password("@".join(parts[:-1]))
             pipe_name = parts[-1]
         else:
             pipe_name = afterproto
@@ -1906,7 +1945,7 @@ def show_sound_codec_help(is_server, speaker_codecs, microphone_codecs):
 
 
 def parse_vsock(vsock_str):
-    from xpra.net.vsock import STR_TO_CID, CID_ANY, PORT_ANY    #@UnresolvedImport
+    from xpra.net.vsock import STR_TO_CID, CID_ANY, PORT_ANY    #@UnresolvedImport pylint: disable=import-outside-toplevel
     if not vsock_str.find(":")>=0:
         raise InitException("invalid vsocket format '%s'" % vsock_str)
     cid_str, port_str = vsock_str.split(":", 1)

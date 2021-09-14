@@ -515,7 +515,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode == "html5":
         return run_html5()
     elif (
-        mode in ("_proxy", "_proxy_vnc") or
+        mode=="_proxy" or
         (mode in ("_proxy_start", "_proxy_start_desktop") and supports_server) or
         (mode=="_proxy_shadow_start" and supports_shadow)
         ):
@@ -724,10 +724,33 @@ def pick_vnc_display(error_cb, opts, extra_args):
                 "local"     : True,
                 "type"      : "tcp",
                 }
+
     error_cb("cannot find vnc displays yet")
 
 
 def pick_display(error_cb, opts, extra_args):
+    if len(extra_args)==1 and extra_args[0].startswith("vnc"):
+        #can't identify vnc displays with xpra sockets
+        #try the first N standard vnc ports:
+        #(we could use threads to port scan more quickly)
+        N = 100
+        from xpra.net.socket_util import socket_connect
+        for i in range(N):
+            if not os.path.exists("%s/X%i" % (X11_SOCKET_DIR, i)):
+                #no X11 socket, assume no VNC server
+                continue
+            port = 5900+i
+            sock = socket_connect("localhost", port, timeout=0.1)
+            if sock:
+                return {
+                    "type"          : "vnc",
+                    "local"         : True,
+                    "host"          : "localhost",
+                    "port"          : port,
+                    "display"       : ":%i" % i,
+                    "display_name"  : ":%i" % i,
+                    }
+        #if not, then fall through and hope that the xpra server supports vnc:
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     return do_pick_display(dotxpra, error_cb, opts, extra_args)
 
@@ -816,50 +839,21 @@ def connect_or_fail(display_desc, opts):
         raise InitException("connection failed: %s" % e) from None
 
 
-def socket_connect(dtype, host, port):
-    socktype = socket.SOCK_STREAM
-    family = 0  #any
-    try:
-        addrinfo = socket.getaddrinfo(host, port, family, socktype)
-    except Exception as e:
-        raise InitException("cannot get %s address of%s: %s" % ({
-            socket.AF_INET6 : " IPv6",
-            socket.AF_INET  : " IPv4",
-            }.get(family, ""), (host, port), e)) from None
-    retry = 0
+def retry_socket_connect(dtype, host, port, timeout=20):
+    from xpra.net.socket_util import socket_connect
     start = monotonic_time()
-    log = Logger("network")
-    log("socket_connect%s addrinfo=%s", (dtype, host, port), addrinfo)
-    errs = []
-    from xpra.net.bytestreams import SOCKET_TIMEOUT  #pylint: disable=import-outside-toplevel
+    retry = 0
     while True:
-        #try each one:
-        for addr in addrinfo:
-            sockaddr = addr[-1]
-            family = addr[0]
-            sock = socket.socket(family, socktype)
-            sock.settimeout(SOCKET_TIMEOUT)
-            try:
-                log("socket.connect(%s)", sockaddr)
-                sock.connect(sockaddr)
-                sock.settimeout(None)
-                return sock
-            except Exception as e:
-                log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
-                if str(e) not in errs:
-                    errs.append(str(e))
-            noerr(sock.close)
-        if monotonic_time()-start>=CONNECT_TIMEOUT:
+        sock = socket_connect(host, port, timeout=timeout)
+        if sock:
+            return sock
+        if monotonic_time()-start>=timeout:
             break
         if retry==0:
-            werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, CONNECT_TIMEOUT))
+            werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, timeout))
         retry += 1
         time.sleep(1)
-    errinfo = ""
-    if errs:
-        errinfo = " : %s" % csv(errs)
-    raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s:%s%s" % (host, port, errinfo))
-
+    raise InitExit(EXIT_CONNECTION_FAILED, "failed to connect to %s socket %s:%s" % (dtype, host, port))
 
 def get_host_target_string(display_desc, port_key="port", prefix=""):
     dtype = display_desc["type"]
@@ -973,7 +967,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
         host = display_desc["host"]
         port = display_desc["port"]
-        sock = socket_connect(dtype, host, port)
+        sock = retry_socket_connect(dtype, host, port)
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, socket_options=display_desc)
 
@@ -1441,9 +1435,10 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
             app.show_progress(100, "connection established")
             log = get_util_logger()
             try:
-                conn = app._protocol._conn
+                p = app._protocol
+                conn = p._conn
                 if conn:
-                    log.info("Attached to %s", conn.target)
+                    log.info("Attached to %s server at %s", p.TYPE, conn.target)
                     log.info(" (press Control-C to detach)\n")
             except AttributeError:
                 return
@@ -1535,7 +1530,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
     except Exception as e:
         app.show_progress(100, "failure: %s" % e)
         may_notify = getattr(app, "may_notify", None)
-        if may_notify:
+        if callable(may_notify):
             from xpra.util import XPRA_FAILURE_NOTIFICATION_ID
             body = str(e)
             if body.startswith("failed to connect to"):
@@ -2555,11 +2550,8 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
                 from xpra.make_thread import start_thread
                 start_thread(proc.wait, "server-startup-reaper")
     if not display:
-        if mode=="_proxy_vnc":
-            display = pick_vnc_display(error_cb, opts, args)
-        else:
-            #use display specified on command line:
-            display = pick_display(error_cb, opts, args)
+        #use display specified on command line:
+        display = pick_display(error_cb, opts, args)
     server_conn = connect_or_fail(display, opts)
     from xpra.scripts.fdproxy import XpraProxy
     from xpra.net.bytestreams import TwoFileConnection
