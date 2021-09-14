@@ -251,7 +251,6 @@ class SSHProxyCommandConnection(SSHSocketConnection):
 
 def ssh_paramiko_connect_to(display_desc):
     #plain socket attributes:
-    dtype = display_desc["type"]
     host = display_desc["host"]
     port = display_desc.get("ssh-port", 22)
     #ssh and command attributes:
@@ -405,7 +404,14 @@ def ssh_paramiko_connect_to(display_desc):
                                    host_config or ssh_config.lookup("*"),
                                    keys,
                                    paramiko_config)
-        chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+        remote_port = display_desc.get("remote_port", 0)
+        if remote_port:
+            #we want to connect directly to a remote port,
+            #we don't need to run a command
+            chan = transport.open_channel("direct-tcpip", ("localhost", remote_port), ('localhost', 0))
+            log("direct channel to remote port %i : %s", remote_port, chan)
+        else:
+            chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), socket_info)
         conn.target = host_target_string("ssh", username, host, port, display)
         conn.timeout = SOCKET_TIMEOUT

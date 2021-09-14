@@ -504,6 +504,7 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
                 if opts.display:
                     try:
                         vnc_port = 5900+int(opts.display.lstrip(":"))
+                        desc["remote_port"] = vnc_port
                     except ValueError:
                         vnc_uri += "/"
                     else:
