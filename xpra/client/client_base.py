@@ -678,8 +678,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.error("  or the session was not found")
             if c!="unknown" or e!="rencode":
                 netlog.error("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
+            exit_code = EXIT_CONNECTION_FAILED
+            exit_str = "Connection failed"
+        else:
+            exit_code = EXIT_CONNECTION_LOST
+            exit_str = "Connection lost"
         if self.exit_code is None:
-            self.warn_and_quit(EXIT_CONNECTION_LOST, "Connection lost")
+            self.warn_and_quit(exit_code, exit_str)
 
 
     ########################################
