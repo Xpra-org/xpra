@@ -206,11 +206,13 @@ def create_runtime_dir(xrd, uid, gid):
         return None
     if not os.path.exists(xrd):
         os.mkdir(xrd, 0o700)
-        os.lchown(xrd, uid, gid)
+        if POSIX:
+            os.lchown(xrd, uid, gid)
     xpra_dir = os.path.join(xrd, "xpra")
     if not os.path.exists(xpra_dir):
         os.mkdir(xpra_dir, 0o700)
-        os.lchown(xpra_dir, uid, gid)
+        if POSIX:
+            os.lchown(xpra_dir, uid, gid)
     return xrd
 
 
@@ -882,7 +884,8 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
             import tempfile
             session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
             os.makedirs(session_dir, 0o750)
-        os.lchown(session_dir, uid, gid)
+        if POSIX:
+            os.lchown(session_dir, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     #populate it:
     if run_xpra_script:
