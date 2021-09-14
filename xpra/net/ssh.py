@@ -86,6 +86,7 @@ def dialog_run(dialog) -> int:
             return dialog.run()
         finally:
             dialog.destroy()
+    log("dialog_run(%s) main_depth=%s", GLib.main_depth())
     #do a little dance if we're not running in the main thread:
     #block this thread and wait for the main thread to run the dialog
     from threading import Event
