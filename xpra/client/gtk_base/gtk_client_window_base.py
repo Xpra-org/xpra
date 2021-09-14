@@ -1008,7 +1008,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         d = ImageDraw.Draw(img)
         for x,y,w,h in rectangles:
             d.rectangle([x, y, x+w, y+h], fill=1)
-        img = img.resize((ww, wh))
+        shapelog("drawing complete")
+        img = img.resize((ww, wh), resample=Image.NEAREST)
         shapelog("resized %s bitmap to window size %sx%s: %s", kind_name, ww, wh, img)
         #now convert back to rectangles...
         rectangles = []
@@ -1028,6 +1029,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 end = x
                 if start<end:
                     rectangles.append((start, y, end-start, 1))
+        shapelog("back to rectangles")
         return rectangles
 
     def set_bypass_compositor(self, v):
