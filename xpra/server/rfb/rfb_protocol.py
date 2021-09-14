@@ -5,12 +5,14 @@
 
 import struct
 
+from xpra.util import typedict
 from xpra.os_util import hexstr, strtobytes
 from xpra.net.rfb.rfb_protocol import RFBProtocol
 from xpra.net.rfb.rfb_const import RFBAuth, AUTH_STR, CLIENT_INIT
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
+authlog = Logger("auth", "rfb")
 
 
 class RFBServerProtocol(RFBProtocol):
@@ -35,7 +37,7 @@ class RFBServerProtocol(RFBProtocol):
         self.send(packet)
 
     def _parse_security_handshake(self, packet):
-        log("parse_security_handshake(%s)", hexstr(packet))
+        authlog("parse_security_handshake(%s)", hexstr(packet))
         try:
             auth = struct.unpack(b"B", packet)[0]
         except struct.error:
@@ -49,20 +51,20 @@ class RFBServerProtocol(RFBProtocol):
             challenge, digest = self._authenticator.get_challenge("des")
             assert digest=="des", "invalid digest %r, only 'des' is supported" % digest
             self._challenge = challenge[:16]
-            log("sending RFB challenge value: %s", hexstr(self._challenge))
+            authlog("sending RFB challenge value: %s", hexstr(self._challenge))
             self.send(self._challenge)
             return 1
         if self._authenticator and self._authenticator.requires_challenge():
             self.invalid_header(self, packet, "invalid security handshake response, authentication is required")
             return 0
-        log("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
+        authlog("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
         #Security Handshake, send SecurityResult Handshake
         self._packet_parser = self._parse_security_result
         self.send(struct.pack(b"!I", 0))
         return 1
 
     def _parse_challenge(self, response):
-        log("parse_challenge(%s)", hexstr(response))
+        authlog("parse_challenge(%s)", hexstr(response))
         if len(response)<16:
             return 0
         assert self._authenticator
@@ -70,17 +72,20 @@ class RFBServerProtocol(RFBProtocol):
             assert len(response)==16
             hex_response = hexstr(response)
             #log("padded password=%s", password)
-            if self._authenticator.authenticate(hex_response):
-                log("challenge authentication succeeded")
+            caps = typedict({
+                "challenge_response" : hex_response,
+                })
+            if self._authenticator.authenticate(caps):
+                authlog("challenge authentication succeeded")
                 self.send(struct.pack(b"!I", 0))
                 self._packet_parser = self._parse_security_result
                 return 16
-            log.warn("Warning: authentication challenge response failure")
-            log.warn(" password does not match")
+            authlog.warn("Warning: authentication challenge response failure")
+            authlog.warn(" password does not match")
         except Exception as e:
-            log("parse_challenge(%s)", hexstr(response), exc_info=True)
-            log.error("Error: authentication challenge failure:")
-            log.error(" %s", e)
+            authlog("parse_challenge(%s)", hexstr(response), exc_info=True)
+            authlog.error("Error: authentication challenge failure:")
+            authlog.error(" %s", e)
         self.timeout_add(1000, self.send_fail_challenge)
         return len(response)
 
@@ -90,7 +95,8 @@ class RFBServerProtocol(RFBProtocol):
 
     def _parse_security_result(self, packet):
         self.share  = packet != b"\0"
-        log("parse_security_result: sharing=%s, sending ClientInit with session-name=%s", self.share, self.session_name)
+        authlog("parse_security_result: sharing=%s, sending ClientInit with session-name=%s",
+                self.share, self.session_name)
         #send ServerInit
         self._packet_parser = self._parse_rfb
         try:

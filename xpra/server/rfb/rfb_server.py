@@ -8,7 +8,7 @@
 from xpra.os_util import POSIX, OSX, bytestostr
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.net.rfb.rfb_const import RFB_KEYNAMES
-from xpra.net.rfb.rfb_protocol import RFBProtocol
+from xpra.server.rfb.rfb_protocol import RFBServerProtocol
 from xpra.server.rfb.rfb_source import RFBSource
 from xpra.server import server_features
 from xpra.scripts.config import parse_bool, parse_number
@@ -73,7 +73,7 @@ class RFBServer:
             if len(auths)==1:
                 auth = auths[0]
             log("creating RFB protocol with authentication=%s", auth)
-            return RFBProtocol(self, conn, auth,
+            return RFBServerProtocol(self, conn, auth,
                                self.process_rfb_packet, self.get_rfb_pixelformat,
                                self.session_name or "Xpra Server",
                                data)
