@@ -703,7 +703,7 @@ keymd5(host_key),
                 return p
         try:
             myiauthhandler = iauthhandler()
-            transport.auth_interactive(username, myiauthhandler.handlestuff, "")
+            transport.auth_interactive(username, myiauthhandler.handle_request, "")
         except SSHException as e:
             log("auth_interactive(..)", exc_info=True)
             log.info("SSH password authentication failed:")
