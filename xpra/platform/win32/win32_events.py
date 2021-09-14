@@ -196,7 +196,7 @@ class Win32EventListener:
                     ut = "WM_APP"
                 elif msg>=0xC000 and msg<=0xFFFF:
                     ut = "string"
-                    l = log.info
+                    l = log.debug
                 else:
                     ut = "/ unexpected"
                 l("unknown %s message: %s / %#x / %#x", ut, event_name, int(wParam), int(lParam))
