@@ -35,10 +35,10 @@ from xpra.make_thread import start_thread
 from xpra.client.gtk_base.menu_helper import make_encodingsmenu
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
-    connect_to, make_client, is_local,
-    add_ssh_args, parse_ssh_string, add_ssh_proxy_args,
+    connect_to, make_client,
     configure_network, configure_env, configure_logging,
     )
+from xpra.scripts.parsing import is_local, add_ssh_args, parse_ssh_string, add_ssh_proxy_args
 from xpra.exit_codes import RETRY_EXIT_CODES, EXIT_STR
 from xpra.platform import get_username
 from xpra.log import Logger, enable_debug_for
