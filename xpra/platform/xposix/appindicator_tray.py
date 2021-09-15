@@ -15,9 +15,10 @@ import os
 import sys
 import tempfile
 import gi
+from time import monotonic
 
 from xpra.util import envbool
-from xpra.os_util import monotonic_time, osexpand
+from xpra.os_util import osexpand
 from xpra.client.tray_base import TrayBase
 from xpra.platform.paths import get_icon_dir, get_icon_filename, get_xpra_tmp_dir
 from xpra.log import Logger
@@ -121,7 +122,7 @@ class AppindicatorTray(TrayBase):
         except AttributeError:
             self.tray_widget.set_icon(noext)
         self._has_icon = True
-        self.icon_timestamp = monotonic_time()
+        self.icon_timestamp = monotonic()
 
     def clean_last_tmp_icon(self):
         if self.tmp_filename and DELETE_TEMP_FILE:

@@ -3,9 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from gi.repository import GdkPixbuf
 
-from xpra.os_util import monotonic_time
 from xpra.client.tray_base import TrayBase
 from xpra.gtk_common.gtk_util import get_pixbuf_from_data
 from xpra.platform.darwin.osx_menu import getOSXMenuHelper
@@ -74,14 +74,14 @@ class OSXTray(TrayBase):
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.macapp.set_dock_icon_pixbuf(tray_icon)
-        self.icon_timestamp = monotonic_time()
+        self.icon_timestamp = monotonic()
 
     def do_set_icon_from_file(self, filename):
         if not self.macapp:
             return
         pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename)
         self.macapp.set_dock_icon_pixbuf(pixbuf)
-        self.icon_timestamp = monotonic_time()
+        self.icon_timestamp = monotonic()
 
 
     def set_global_menu(self):

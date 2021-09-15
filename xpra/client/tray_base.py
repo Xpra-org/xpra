@@ -4,11 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from collections import deque
 
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
-from xpra.os_util import monotonic_time
 
 log = Logger("tray")
 
@@ -101,7 +101,7 @@ class TrayBase:
         if not self.tray_widget:
             return
         self.do_set_icon_from_file(filename)
-        self.icon_timestamp = monotonic_time()
+        self.icon_timestamp = monotonic()
 
     def do_set_icon_from_file(self, filename):
         raise NotImplementedError

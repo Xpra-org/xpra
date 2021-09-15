@@ -7,10 +7,10 @@
 # A tray implemented using Gtk.StatusIcon
 
 import os
-from time import time
+from time import time, monotonic
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
-from xpra.os_util import WIN32, OSX, POSIX, monotonic_time
+from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util import envbool
 from xpra.client.tray_base import TrayBase, log
 from xpra.gtk_common.gtk_util import (
@@ -173,7 +173,7 @@ class GTKStatusIconTray(TrayBase):
             tray_icon.savev(filename, "png")
             log.info("statusicon tray saved to %s", filename)
         self.tray_widget.set_from_pixbuf(tray_icon)
-        self.icon_timestamp = monotonic_time()
+        self.icon_timestamp = monotonic()
 
 
 def main():
