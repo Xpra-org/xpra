@@ -110,7 +110,12 @@ WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
 UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
 XSHAPE = envbool("XPRA_XSHAPE", True)
-LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", True)
+try:
+    from xpra.codecs.argb.argb import bit_to_rectangles
+except ImportError:
+    bit_to_rectangles = None
+LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", not callable(bit_to_rectangles))
+
 def parse_padding_colors(colors_str):
     padding_colors = 0, 0, 0
     if colors_str:
@@ -1009,26 +1014,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         for x,y,w,h in rectangles:
             d.rectangle([x, y, x+w, y+h], fill=1)
         shapelog("drawing complete")
-        img = img.resize((ww, wh), resample=Image.NEAREST)
+        img = img.resize((ww, wh), resample=Image.BICUBIC)
         shapelog("resized %s bitmap to window size %sx%s: %s", kind_name, ww, wh, img)
         #now convert back to rectangles...
-        rectangles = []
-        for y in range(wh):
-            #for debugging, this is very useful, but costly!
-            #shapelog("pixels[%3i]=%s", y, "".join([str(img.getpixel((x, y))) for x in range(ww)]))
-            x = 0
-            start = None
-            while x<ww:
-                #find first white pixel:
-                while x<ww and img.getpixel((x, y))==0:
-                    x += 1
-                start = x
-                #find next black pixel:
-                while x<ww and img.getpixel((x, y))!=0:
-                    x += 1
-                end = x
-                if start<end:
-                    rectangles.append((start, y, end-start, 1))
+        monodata = img.tobytes("raw", "1")
+        #log.warn("monodata: %s (%i bytes) %ix%i", repr_ellipsized(monodata), len(monodata), ww, wh)
+        rectangles = bit_to_rectangles(monodata, ww, wh)
         shapelog("back to rectangles")
         return rectangles
 

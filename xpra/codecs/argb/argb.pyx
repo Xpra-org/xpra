@@ -18,6 +18,9 @@ log = Logger("encoding")
 assert sizeof(int) == 4
 
 
+cdef inline unsigned int roundup(unsigned int n, unsigned int m):
+    return (n + m - 1) & ~(m - 1)
+
 cdef inline unsigned char clamp(int v):
     if v>255:
         return 255
@@ -481,3 +484,70 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
         log.warn("Warning: no matching argb function,")
         log.warn(" cannot convert %s to one of: %s", pixel_format, rgb_formats)
     return False
+
+
+def bit_to_rectangles(buf, unsigned int w, unsigned int h):
+    cdef const unsigned char* bits
+    with buffer_context(buf) as bc:
+        bits = <const unsigned char*> (<uintptr_t> int(bc))
+        return bitdata_to_rectangles(bits, len(bc), w, h)
+
+cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len, const unsigned int w, const unsigned int h):
+    rectangles = []
+    cdef unsigned int rowstride = roundup(w, 8)//8
+    cdef unsigned char b
+    cdef unsigned int start = 0, end, x, y
+    for y in range(h):
+        x = 0
+        b = 0
+        while x<w:
+            #find the first black pixel,
+            if b==0:
+                #if there are no left-overs in b then
+                #we can move 8 pixels at a time (1 byte):
+                while x<w and bitdata[y*rowstride+x//8]==0:
+                    x += 8
+                if x>=w:
+                    break
+                #there is a black pixel in this byte (8 pixels):
+                b = bitdata[y*rowstride+x//8]
+                assert b!=0
+            while (b & (1<<(7-x%8)))==0:
+                x += 1
+            if x>=w:
+                break
+            start = x
+            end = 0
+            x += 1
+            #find the next white pixel,
+            #first, continue searching in the current byte:
+            while (x%8)>0:
+                if (b & (1<<(7-x%8)))==0:
+                    end = x
+                    break
+                b &= ~(1<<(7-x%8))
+                x += 1
+            if x>=w:
+                end = x = w
+            if end==0:
+                #now we can move 8 pixels at a time (1 byte):
+                while x<w and bitdata[y*rowstride+x//8]==0xff:
+                    x += 8
+                if x>=w:
+                    end = x = w
+                else:
+                    #there is a white pixel in this byte (8 pixels):
+                    b = bitdata[y*rowstride+x//8]
+                    while (b & (1<<(7-x%8)))!=0:
+                        #clear this bit so we can continue looking for black pixels in b
+                        #when we re-enter the loop at the top
+                        b &= ~(1<<(7-x%8))
+                        x += 1
+                    if x>w:
+                        x = w
+                    end = x
+                    if b==0:
+                        x = roundup(x, 8)
+            if start<end:
+                rectangles.append((start, y, end-start, 1))
+    return rectangles
