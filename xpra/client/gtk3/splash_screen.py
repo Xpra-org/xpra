@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -9,7 +9,7 @@ import signal
 from gi.repository import Gtk, Gdk, GLib, Pango
 
 from xpra import __version__
-from xpra.util import envint, envbool
+from xpra.util import envint
 from xpra.os_util import SIGNAMES, OSX
 from xpra.exit_codes import EXIT_TIMEOUT, EXIT_CONNECTION_LOST
 from xpra.common import SPLASH_EXIT_DELAY
@@ -42,6 +42,8 @@ class SplashScreen(Gtk.Window):
         self.exit_code = None
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.connect("delete_event", self.exit)
+        self.add_events(Gdk.EventType.BUTTON_PRESS)
+        self.connect("button-press-event", self.exit)
         title = "Xpra %s" % __version__
         self.set_title(title)
         self.set_size_request(W, 40+40*LINES)
