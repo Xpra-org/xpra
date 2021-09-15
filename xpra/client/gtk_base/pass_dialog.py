@@ -73,6 +73,12 @@ class PasswordInputDialogWindow(Gtk.Dialog):
             self.password_input.grab_focus()
         GLib.idle_add(show)
 
+    def run(self):
+        r = super().run()
+        if r==0:
+            return self.get_password()
+        return None
+
     def quit(self, *args):
         log("quit%s", args)
         self.destroy()
@@ -110,12 +116,12 @@ def show_pass_dialog(argv):
     register_os_signals(app.quit, "Password Dialog")
     gui_ready()
     app.show()
-    r = app.run()
-    if r==0:
-        password = app.get_password()
-        sys.stdout.write(password)
+    p = app.run()
+    if p is not None:
+        sys.stdout.write(p)
         sys.stdout.flush()
-    return r
+        return 0
+    return 1
 
 
 def main():

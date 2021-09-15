@@ -77,9 +77,11 @@ def force_focus():
     _force_focus()
 
 def dialog_run(run_fn) -> int:
-    from gi.repository import GLib
-    log("dialog_run(%s) is_main_thread=%s", run_fn, is_main_thread())
-    if is_main_thread():
+    import gi
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import GLib, Gtk
+    log("dialog_run(%s) is_main_thread=%s, main_level=%i", run_fn, is_main_thread(), Gtk.main_level())
+    if is_main_thread() or Gtk.main_level()==0:
         return run_fn()
     log("dialog_run(%s) main_depth=%s", run_fn, GLib.main_depth())
     #do a little dance if we're not running in the main thread:
@@ -88,7 +90,7 @@ def dialog_run(run_fn) -> int:
     e = Event()
     code = []
     def main_thread_run():
-        log("main_thread_run()")
+        log("main_thread_run() calling %s", run_fn)
         try:
             code.append(run_fn())
         finally:
