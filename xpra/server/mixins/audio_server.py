@@ -7,11 +7,12 @@
 
 import shlex
 import os.path
+from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
 from gi.repository import GLib
 
-from xpra.os_util import pollwait, monotonic_time, bytestostr, osexpand, OSX, POSIX
+from xpra.os_util import pollwait, bytestostr, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
 from xpra.make_thread import start_thread
 from xpra.platform import get_username
@@ -177,7 +178,7 @@ class AudioServer(StubServerMixin):
                 self.clean_pulseaudio_private_dir()
                 return
             cmd[0] = pa_cmd
-        started_at = monotonic_time()
+        started_at = monotonic()
         def pulseaudio_warning():
             soundlog.warn("Warning: pulseaudio has terminated shortly after startup.")
             soundlog.warn(" pulseaudio is limited to a single instance per user account,")
@@ -190,7 +191,7 @@ class AudioServer(StubServerMixin):
             if self.pulseaudio_proc is None or self._closing:
                 #cleared by cleanup already, ignore
                 return
-            elapsed = monotonic_time()-started_at
+            elapsed = monotonic()-started_at
             if elapsed<2:
                 self.timeout_add(1000, pulseaudio_warning)
             else:
@@ -256,8 +257,8 @@ class AudioServer(StubServerMixin):
             #wait for the socket to get cleaned up
             #(it should be removed by the pulseaudio server as it exits)
             import time
-            now = monotonic_time()
-            while (monotonic_time()-now)<1 and os.path.exists(self.pulseaudio_private_socket):
+            now = monotonic()
+            while (monotonic()-now)<1 and os.path.exists(self.pulseaudio_private_socket):
                 time.sleep(0.1)
         self.clean_pulseaudio_private_dir()
         if not self.is_child_alive(proc):

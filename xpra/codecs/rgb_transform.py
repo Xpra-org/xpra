@@ -4,10 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
+from time import monotonic
 from PIL import Image
 
-from xpra.os_util import bytestostr, monotonic_time
+from xpra.os_util import bytestostr
 from xpra.util import first_time
 from xpra.log import Logger
 try:
@@ -64,7 +64,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
             log.warn("Warning: cannot convert '%s' to one of: %s" % (pixel_format, rgb_formats))
         return False
     input_format, target_format = target_rgb[0]
-    start = monotonic_time()
+    start = monotonic()
     w = image.get_width()
     h = image.get_height()
     #PIL cannot use the memoryview directly:
@@ -77,7 +77,7 @@ def rgb_reformat(image, rgb_formats, supports_transparency) -> bool:
     image.set_pixels(data)
     image.set_rowstride(rowstride)
     image.set_pixel_format(target_format)
-    end = monotonic_time()
+    end = monotonic()
     log("rgb_reformat(%s, %s, %s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s",
         image, rgb_formats, supports_transparency, pixel_format, len(pixels),
         target_format, len(data), (end-start)*1000.0, rowstride)

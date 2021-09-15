@@ -10,7 +10,6 @@ import unittest
 from gi.repository import GLib
 
 from xpra.util import csv, envint, envbool
-from xpra.os_util import monotonic_time
 from xpra.net.protocol import Protocol, verify_packet, log
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
@@ -67,7 +66,7 @@ def make_profiling_protocol_class(protocol_class):
             from pycallgraph import PyCallGraph, Config     #@UnresolvedImport
             from pycallgraph.output import GraphvizOutput   #@UnresolvedImport
             config = Config()
-            graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, monotonic_time()))
+            graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, time.monotonic()))
             return PyCallGraph(output=graphviz, config=config)
 
         def write_format_thread_loop(self):
@@ -189,10 +188,10 @@ class ProtocolTest(unittest.TestCase):
         loop = GLib.MainLoop()
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
         protocol = self.make_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
-        start = monotonic_time()
+        start = time.monotonic()
         protocol.start()
         loop.run()
-        end = monotonic_time()
+        end = time.monotonic()
         assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
         elapsed = (end-start)
         log("do_test_read_speed(%i) %iMB in %ims", pixel_data_size, total_size, elapsed*1000)
@@ -238,9 +237,9 @@ class ProtocolTest(unittest.TestCase):
         protocol.enable_encoder("rencode")
         protocol.start()
         protocol.source_has_more()
-        start = monotonic_time()
+        start = time.monotonic()
         loop.run()
-        end = monotonic_time()
+        end = time.monotonic()
         assert protocol.is_closed()
         log("protocol: %s", protocol)
         log("%s write-data=%s", conn, len(conn.write_data))

@@ -6,7 +6,9 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
-from xpra.os_util import monotonic_time, bytestostr
+from time import monotonic
+
+from xpra.os_util import bytestostr
 from xpra.util import typedict, net_utf8
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -94,7 +96,7 @@ class InputServer(StubServerMixin):
         self.set_keymap(ss)
 
     def get_keyboard_info(self) -> dict:
-        start = monotonic_time()
+        start = monotonic()
         info = {
              "repeat"           : {
                                    "delay"      : self.key_repeat_delay,
@@ -106,7 +108,7 @@ class InputServer(StubServerMixin):
         kc = self.keyboard_config
         if kc:
             info.update(kc.get_info())
-        keylog("get_keyboard_info took %ims", (monotonic_time()-start)*1000)
+        keylog("get_keyboard_info took %ims", (monotonic()-start)*1000)
         return info
 
 
@@ -234,13 +236,13 @@ class InputServer(StubServerMixin):
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
-            now = monotonic_time()
+            now = monotonic()
             self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout,
                                                      now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
     def _key_repeat_timeout(self, when, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod):
         self.key_repeat_timer = None
-        now = monotonic_time()
+        now = monotonic()
         keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s",
                keyname, keycode, now, when, delay_ms)
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
@@ -273,7 +275,7 @@ class InputServer(StubServerMixin):
             when_timedout = self.keys_timedout.get(keycode, None)
             if when_timedout:
                 del self.keys_timedout[keycode]
-            now = monotonic_time()
+            now = monotonic()
             if when_timedout and (now-when_timedout)<30:
                 #not so long ago, just re-press it now:
                 keylog("key %s/%s, had timed out, re-pressing it", keycode, keyname)

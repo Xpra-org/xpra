@@ -12,11 +12,11 @@ using python-xdg
 import os
 import sys
 import glob
-
+from time import monotonic
 from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
 
 from xpra.util import envbool, print_nested_dict, first_time, engs
-from xpra.os_util import load_binary_file, monotonic_time, OSEnvContext
+from xpra.os_util import load_binary_file, OSEnvContext
 from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger, add_debug_category
@@ -218,9 +218,9 @@ def remove_icons(menu_data):
 
 def load_xdg_menu_data():
     icon_util.large_icons.clear()
-    start = monotonic_time()
+    start = monotonic()
     xdg_menu_data = do_load_xdg_menu_data()
-    end = monotonic_time()
+    end = monotonic()
     if xdg_menu_data:
         l = sum(len(x) for x in xdg_menu_data.values())
         log.info("loaded %i start menu entries from %i sub-menus in %.1f seconds",

@@ -7,7 +7,7 @@
 
 import os
 from math import sqrt
-from time import sleep
+from time import sleep, monotonic
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window import batch_config
@@ -15,7 +15,7 @@ from xpra.server.server_core import ClientException
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.codecs.codec_constants import video_spec
 from xpra.net.compression import use
-from xpra.os_util import monotonic_time, bytestostr
+from xpra.os_util import bytestostr
 from xpra.server.background_worker import add_work_item
 from xpra.util import csv, typedict, envint
 from xpra.log import Logger
@@ -122,7 +122,7 @@ class EncodingsMixin(StubSourceMixin):
         self.calculate_timer = 0
         if self.is_closed():
             return
-        now = monotonic_time()
+        now = monotonic()
         self.calculate_last_time = now
         p = self.protocol
         if not p:
@@ -201,7 +201,7 @@ class EncodingsMixin(StubSourceMixin):
         if self.calculate_timer:
             #already due
             return
-        delta = monotonic_time() - self.calculate_last_time
+        delta = monotonic() - self.calculate_last_time
         RECALCULATE_DELAY = 1.0           #1s
         if delta>RECALCULATE_DELAY:
             add_work_item(self.recalculate_delays)

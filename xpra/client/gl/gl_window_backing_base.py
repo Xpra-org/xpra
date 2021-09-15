@@ -6,6 +6,7 @@
 
 import os
 import time
+from time import monotonic
 
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
@@ -50,7 +51,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
     )
 
 from xpra.os_util import (
-    monotonic_time, strtobytes, bytestostr, hexstr,
+    strtobytes, bytestostr, hexstr,
     POSIX,
     DummyContextManager,
     )
@@ -247,7 +248,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.pending_fbo_paint = []
-        self.last_flush = monotonic_time()
+        self.last_flush = monotonic()
         self.last_present_fbo_error = None
 
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
@@ -835,7 +836,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def draw_pointer(self):
         px, py, _, _, size, start_time = self.pointer_overlay
-        elapsed = monotonic_time()-start_time
+        elapsed = monotonic()-start_time
         log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s",
             self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
         if elapsed>=CURSOR_IDLE_TIMEOUT:
@@ -1263,9 +1264,9 @@ class GLWindowBackingBase(WindowBackingBase):
 
 
     def gl_show(self, rect_count):
-        start = monotonic_time()
+        start = monotonic()
         self.do_gl_show(rect_count)
-        end = monotonic_time()
+        end = monotonic()
         flush_elapsed = end-self.last_flush
         self.last_flush = end
         fpslog("gl_show after %3ims took %2ims, %2i updates", flush_elapsed*1000, (end-start)*1000, rect_count)

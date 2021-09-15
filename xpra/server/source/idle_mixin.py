@@ -4,8 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from xpra.util import envint, typedict, IDLE_TIMEOUT, XPRA_IDLE_NOTIFICATION_ID
-from xpra.os_util import monotonic_time
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -34,7 +34,7 @@ class IdleMixin(StubSourceMixin):
         self.idle_timeout = server.idle_timeout
 
     def init_state(self):
-        self.last_user_event = monotonic_time()
+        self.last_user_event = monotonic()
         #grace duration is at least 10 seconds:
         self.idle_grace_duration = max(10, int(self.idle_timeout*(100-GRACE_PERCENT)//100))
         self.idle = False
@@ -47,7 +47,7 @@ class IdleMixin(StubSourceMixin):
 
     def get_info(self) -> dict:
         return {
-                "idle_time"         : int(monotonic_time()-self.last_user_event),
+                "idle_time"         : int(monotonic()-self.last_user_event),
                 "idle"              : self.idle,
                 }
 
@@ -59,7 +59,7 @@ class IdleMixin(StubSourceMixin):
 
     def user_event(self):
         log("user_event()")
-        self.last_user_event = monotonic_time()
+        self.last_user_event = monotonic()
         self.cancel_idle_grace_timeout()
         self.schedule_idle_grace_timeout()
         self.cancel_idle_timeout()

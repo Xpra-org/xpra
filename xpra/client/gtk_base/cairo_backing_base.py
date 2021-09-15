@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 import cairo
 from cairo import (  #pylint: disable=no-name-in-module
     Context, ImageSurface,
@@ -14,7 +15,7 @@ from gi.repository import GLib, Gdk
 
 from xpra.client.paint_colors import get_paint_box_color
 from xpra.client.window_backing_base import WindowBackingBase, fire_paint_callbacks, SCROLL_ENCODING
-from xpra.os_util import memoryview_to_bytes, monotonic_time
+from xpra.os_util import memoryview_to_bytes
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -31,7 +32,7 @@ for attr in dir(cairo):
 def cairo_paint_pointer_overlay(context, cursor_data, px : int, py : int, start_time):
     if not cursor_data:
         return
-    elapsed = max(0, monotonic_time()-start_time)
+    elapsed = max(0, monotonic()-start_time)
     if elapsed>6:
         return
     from xpra.gtk_common.gtk_util import get_pixbuf_from_data

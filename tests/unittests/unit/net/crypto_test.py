@@ -6,7 +6,8 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from xpra.os_util import monotonic_time, hexstr
+from time import monotonic
+from xpra.os_util import hexstr
 from xpra.util import envbool
 
 from xpra.net.crypto import (
@@ -56,7 +57,7 @@ class TestCrypto(unittest.TestCase):
         dec = self.backend.get_decryptor(*args)
         log("%s%s=%s" % (self.backend.get_decryptor, args, dec))
         assert dec is not None
-        #print("init took %ims", (monotonic_time()-start)//1000)
+        #print("init took %ims", (monotonic()-start)//1000)
         #test encoding of a message:
         encrypted = []
         for i in range(encrypt_count):
@@ -85,9 +86,9 @@ class TestCrypto(unittest.TestCase):
         asize = (size+15)//16
         times = []
         data = b"0123456789ABCDEF"*asize
-        start = monotonic_time()
+        start = monotonic()
         self.do_test_backend(data, enc_iterations, dec_iterations)
-        end = monotonic_time()
+        end = monotonic()
         elapsed = max(0.0001, end-start)
         speed = (asize*16) * (enc_iterations + dec_iterations) / elapsed
         iter_time = elapsed*1000/(enc_iterations + dec_iterations)

@@ -12,10 +12,10 @@ import unittest
 import tempfile
 import uuid
 import hmac
+from time import monotonic
 
 from xpra.os_util import (
     strtobytes, bytestostr,
-    monotonic_time,
     WIN32, OSX, POSIX,
     get_hex_uuid,
     )
@@ -24,7 +24,7 @@ from xpra.net.digest import get_digests, get_digest_module, gendigest
 
 
 def temp_filename(prefix=""):
-    return os.path.join(tempfile.gettempdir(), "file-auth-%s-test-%s" % (prefix, monotonic_time()))
+    return os.path.join(tempfile.gettempdir(), "file-auth-%s-test-%s" % (prefix, monotonic()))
 
 
 class TempFileContext:

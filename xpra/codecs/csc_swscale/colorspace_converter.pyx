@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from xpra.log import Logger
 log = Logger("csc", "swscale")
 
@@ -15,7 +16,6 @@ from xpra.buffers.membuf cimport padbuf, MemBuf
 
 from libc.string cimport memset #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t
-from xpra.monotonic_time cimport monotonic_time
 
 
 cdef extern from "Python.h":
@@ -409,7 +409,7 @@ cdef class ColorspaceConverter:
         cdef int input_stride[4]
         cdef int i
         cdef size_t pad
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
         pixels = image.get_pixels()
         strides = image.get_rowstride()
@@ -486,7 +486,7 @@ cdef class ColorspaceConverter:
             oplanes = ImageWrapper.PACKED
             strides = self.out_stride[0]
             out = memoryview(output_buf[0])
-        cdef double elapsed = monotonic_time()-start
+        cdef double elapsed = monotonic()-start
         log("%s took %.1fms", self, 1000.0*elapsed)
         self.time += elapsed
         self.frames += 1

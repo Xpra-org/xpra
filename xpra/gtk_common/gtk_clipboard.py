@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from gi.repository import GObject, Gtk, Gdk
 
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
@@ -11,7 +12,6 @@ from xpra.clipboard.clipboard_core import (
     )
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper
 from xpra.util import ellipsizer, envint, net_utf8
-from xpra.os_util import bytestostr, monotonic_time
 from xpra.log import Logger
 
 
@@ -44,7 +44,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def __init__(self, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
-        self._block_owner_change = monotonic_time()
+        self._block_owner_change = monotonic()
         self._want_targets = False
         self.clipboard = Gtk.Clipboard.get(Gdk.Atom.intern(selection, False))
         self.clipboard.connect("owner-change", self.owner_change)
@@ -74,7 +74,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 text = net_utf8(data)
                 log("setting text data %s / %s of size %i: %s",
                     dtype, dformat, len(text), ellipsizer(text))
-                self._block_owner_change = monotonic_time()
+                self._block_owner_change = monotonic()
                 self.clipboard.set_text(text, len(text))
                 return
             #we should handle more datatypes here..
@@ -115,7 +115,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.do_owner_changed()
 
     def do_owner_changed(self):
-        elapsed = monotonic_time()-self._block_owner_change
+        elapsed = monotonic()-self._block_owner_change
         log("do_owner_changed() enabled=%s, elapsed=%s",
             self._enabled, elapsed)
         if not self._enabled or elapsed<BLOCK_DELAY:

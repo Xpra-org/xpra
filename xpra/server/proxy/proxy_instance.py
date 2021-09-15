@@ -5,12 +5,12 @@
 # later version. See the file COPYING for details.
 
 import socket
-from time import sleep, time
+from time import sleep, time, monotonic
 from queue import Queue
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
-from xpra.net.protocol import Protocol, CONNECTION_LOST
+from xpra.net.protocol import CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE
 from xpra.net.digest import get_salt, gendigest
 from xpra.codecs.loader import load_codec, get_codec
@@ -18,8 +18,7 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.video_helper import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, parse_bool
 from xpra.os_util import (
-    get_hex_uuid,
-    monotonic_time, bytestostr, strtobytes,
+    get_hex_uuid, bytestostr, strtobytes,
     )
 from xpra.util import (
     flatten_dict, typedict, updict, ellipsizer, envint, envbool,
@@ -206,7 +205,7 @@ class ProxyInstance:
 
     def get_window_info(self) -> dict:
         info = {}
-        now = monotonic_time()
+        now = monotonic()
         for wid, encoder in self.video_encoders.items():
             einfo = encoder.get_info()
             einfo["idle_time"] = int(now-self.video_encoders_last_used_time.get(wid, 0))
@@ -333,7 +332,7 @@ class ProxyInstance:
         if packet_type=="ping_echo" and self.client_ping_timer and len(packet)>=7 and strtobytes(packet[6])==strtobytes(self.uuid):
             #this is one of our ping packets:
             self.client_last_ping_echo = packet[1]
-            self.client_last_ping_latency = 1000*monotonic_time()-self.client_last_ping_echo
+            self.client_last_ping_latency = 1000*monotonic()-self.client_last_ping_echo
             log("ping-echo: client latency=%.1fms", self.client_last_ping_latency)
             return
         #the packet types below are forwarded:
@@ -393,13 +392,13 @@ class ProxyInstance:
     def schedule_server_ping(self):
         log("schedule_server_ping()")
         self.cancel_server_ping_timer()
-        self.server_last_ping_echo = monotonic_time()
+        self.server_last_ping_echo = monotonic()
         self.server_ping_timer = self.timeout_add(PING_INTERVAL, self.send_server_ping)
 
     def schedule_client_ping(self):
         log("schedule_client_ping()")
         self.cancel_client_ping_timer()
-        self.client_last_ping_echo = monotonic_time()
+        self.client_last_ping_echo = monotonic()
         self.client_ping_timer = self.timeout_add(PING_INTERVAL, self.send_client_ping)
 
     def send_server_ping(self):
@@ -413,7 +412,7 @@ class ProxyInstance:
                 log.error("Error: server ping timeout, %i seconds", delta)
                 self.stop(None, "proxy to server ping timeout")
                 return False
-        now = monotonic_time()
+        now = monotonic()
         self.server_last_ping = now
         self.queue_server_packet(("ping", int(now*1000), int(time()*1000), self.uuid))
         return True
@@ -429,7 +428,7 @@ class ProxyInstance:
                 log.error("Error: client ping timeout, %i seconds", delta)
                 self.stop(None, "proxy to client ping timeout")
                 return False
-        now = monotonic_time()
+        now = monotonic()
         self.client_last_ping = now
         self.queue_client_packet(("ping", int(now*1000), int(time()*1000), self.uuid))
         return True
@@ -468,7 +467,7 @@ class ProxyInstance:
         elif packet_type=="ping_echo" and self.server_ping_timer and len(packet)>=7 and strtobytes(packet[6])==strtobytes(self.uuid):
             #this is one of our ping packets:
             self.server_last_ping_echo = packet[1]
-            self.server_last_ping_latency = 1000*monotonic_time()-self.server_last_ping_echo
+            self.server_last_ping_latency = 1000*monotonic()-self.server_last_ping_echo
             log("ping-echo: server latency=%.1fms", self.server_last_ping_latency)
             return
         elif packet_type=="info-response":
@@ -595,7 +594,7 @@ class ProxyInstance:
                     #not a real packet, this is added by the timeout check:
                     wid = packet[1]
                     ve = self.video_encoders.get(wid)
-                    now = monotonic_time()
+                    now = monotonic()
                     idle_time = now-self.video_encoders_last_used_time.get(wid, 0)
                     if ve and idle_time>VIDEO_TIMEOUT:
                         enclog("timing out the video encoder context for window %s", wid)
@@ -725,7 +724,7 @@ class ProxyInstance:
                 dst_formats = self.video_encoders_dst_formats
             ve.init_context(width, height, rgb_format, dst_formats, encoding, quality, speed, scaling, {})
             self.video_encoders[wid] = ve
-            self.video_encoders_last_used_time[wid] = monotonic_time()      #just to make sure this is always set
+            self.video_encoders_last_used_time[wid] = monotonic()      #just to make sure this is always set
         #actual video compression:
         enclog("proxy compression using %s with quality=%s, speed=%s", ve, quality, speed)
         data, out_options = ve.compress_image(image, quality, speed, encoder_options)
@@ -734,14 +733,14 @@ class ProxyInstance:
         for k in ("timestamp", "rgb_format", "depth", "csc"):
             if k not in out_options and k in client_options:
                 out_options[k] = client_options[k]
-        self.video_encoders_last_used_time[wid] = monotonic_time()
+        self.video_encoders_last_used_time[wid] = monotonic()
         return send_updated(ve.get_encoding(), Compressed(encoding, data), out_options)
 
     def timeout_video_encoders(self):
         #have to be careful as another thread may come in...
         #so we just ask the encode thread (which deals with encoders already)
         #to do what may need to be done if we find a timeout:
-        now = monotonic_time()
+        now = monotonic()
         for wid in tuple(self.video_encoders_last_used_time.keys()):
             vetime = self.video_encoders_last_used_time.get(wid)
             if not vetime:

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
+from time import monotonic
 
 from xpra.log import Logger
 log = Logger("decoder", "jpeg")
@@ -13,7 +14,6 @@ from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t
-from xpra.monotonic_time cimport monotonic_time
 
 LOG_PERF = envbool("XPRA_JPEG_LOG_PERF", False)
 
@@ -183,7 +183,7 @@ def decompress_to_yuv(data):
             pystrides.append(strides[i])
             pyplanes.append(memoryview(membuf))
         #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
-        start = monotonic_time()
+        start = monotonic()
         with nogil:
             r = tjDecompressToYUVPlanes(decompressor,
                                         <const unsigned char*> py_buf.buf, py_buf.len,
@@ -193,7 +193,7 @@ def decompress_to_yuv(data):
     finally:
         close()
     if LOG_PERF:
-        elapsed = monotonic_time()-start
+        elapsed = monotonic()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",
             subsamp_str, total_size/elapsed//1024//1024, total_size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper.PLANAR_3)
@@ -237,7 +237,7 @@ def decompress_to_rgb(rgb_format, data):
     cdef double start, elapsed
     try:
         #TODO: add padding and rounding?
-        start = monotonic_time()
+        start = monotonic()
         stride = w*4
         size = stride*h
         membuf = getbuf(size)
@@ -251,7 +251,7 @@ def decompress_to_rgb(rgb_format, data):
     finally:
         close()
     if LOG_PERF:
-        elapsed = monotonic_time()-start
+        elapsed = monotonic()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",
             rgb_format, size/elapsed//1024//1024, size, 1000*elapsed)
     return ImageWrapper(0, 0, w, h, memoryview(membuf), rgb_format, 24, stride, ImageWrapper.PACKED)

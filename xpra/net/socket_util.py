@@ -3,10 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import os.path
 import socket
-from time import sleep
+from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
 
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -17,7 +16,7 @@ from xpra.exit_codes import (
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SOCKET_TIMEOUT
 from xpra.os_util import (
     getuid, get_username_for_uid, get_groups, get_group_id,
-    path_permission_info, monotonic_time, umask_context, WIN32, OSX, POSIX,
+    path_permission_info, umask_context, WIN32, OSX, POSIX,
     parse_encoded_bin_data,
     )
 from xpra.util import (
@@ -187,7 +186,7 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
     log = get_network_logger()
     log("peek_connection(%s, %i, %i)", conn, timeout, size)
     peek_data = b""
-    start = monotonic_time()
+    start = monotonic()
     elapsed = 0
     set_socket_timeout(conn, PEEK_TIMEOUT_MS/1000)
     while elapsed<=timeout:
@@ -201,7 +200,7 @@ def peek_connection(conn, timeout=PEEK_TIMEOUT_MS, size=PEEK_SIZE):
             log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
             break
         sleep(timeout/4000.0)
-        elapsed = int(1000*(monotonic_time()-start))
+        elapsed = int(1000*(monotonic()-start))
         log("peek: elapsed=%s, timeout=%s", elapsed, timeout)
     log("socket %s peek: got %i bytes", conn, len(peek_data))
     return peek_data
@@ -628,8 +627,8 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 def timeout_probe(sockpath):
                     #we need a loop because "DEAD" sockets may return immediately
                     #(ie: when the server is starting up)
-                    start = monotonic_time()
-                    while monotonic_time()-start<WAIT_PROBE_TIMEOUT:
+                    start = monotonic()
+                    while monotonic()-start<WAIT_PROBE_TIMEOUT:
                         state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
                         log("timeout_probe() get_server_state(%s)=%s", sockpath, state)
                         if state not in (DotXpra.UNKNOWN, DotXpra.DEAD):

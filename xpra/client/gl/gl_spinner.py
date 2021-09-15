@@ -4,19 +4,18 @@
 # later version. See the file COPYING for details.
 
 import math
+from time import monotonic
 from OpenGL.GL import (
     glBegin, glEnd,
     glVertex2i, glColor4f,
     GL_POLYGON,
     )
-
-from xpra.os_util import monotonic_time
 from xpra.client.spinner import cv
 
 
 def draw_spinner(bw, bh):
     dim = min(bw/3.0, bh/3.0)
-    t = monotonic_time()
+    t = monotonic()
     count = int(t*4.0)
     bx = bw//2
     by = bh//2

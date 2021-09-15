@@ -4,10 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 import numpy
 from pycuda import driver       #@UnresolvedImport
 
-from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 
@@ -34,13 +34,13 @@ class CUDAImageWrapper(ImageWrapper):
         if self.pixels is not None or not ctx or self.freed:
             return
         assert self.cuda_device_buffer, "bug: no device buffer"
-        start = monotonic_time()
+        start = monotonic()
         ctx.push()
         host_buffer = driver.pagelocked_empty(self.buffer_size, dtype=numpy.byte)   #pylint: disable=no-member
         driver.memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream) #pylint: disable=no-member
         self.wait_for_stream()
         self.pixels = host_buffer.tobytes()
-        elapsed = monotonic_time()-start
+        elapsed = monotonic()-start
         log("may_download() from %#x to %s, size=%s, elapsed=%ims - %iMB/s",
             int(self.cuda_device_buffer), host_buffer, self.buffer_size,
             int(1000*elapsed), self.buffer_size/elapsed/1024/1024)

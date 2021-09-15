@@ -41,7 +41,7 @@ def make_test_image(pixel_format, w, h):
     from xpra.codecs.image_wrapper import ImageWrapper
     from xpra.codecs.codec_constants import get_subsampling_divs
     #import time
-    #start = monotonic_time()
+    #start = monotonic()
     if pixel_format.startswith("YUV") or pixel_format.startswith("GBRP") or pixel_format=="NV12":
         divs = get_subsampling_divs(pixel_format)
         try:
@@ -74,7 +74,7 @@ def make_test_image(pixel_format, w, h):
     else:
         raise Exception("don't know how to create a %s image" % pixel_format)
     #log("make_test_image%30s took %3ims for %6iMBytes",
-    #    (pixel_format, w, h), 1000*(monotonic_time()-start), l//1024//1024)
+    #    (pixel_format, w, h), 1000*(monotonic()-start), l//1024//1024)
     return image
 
 

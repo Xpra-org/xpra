@@ -4,8 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from xpra.util import roundup
-from xpra.os_util import memoryview_to_bytes, monotonic_time
+from xpra.os_util import memoryview_to_bytes
 
 def clone_plane(plane):
     if isinstance(plane, memoryview):
@@ -42,7 +43,7 @@ class ImageWrapper:
         self.planes = planes
         self.thread_safe = thread_safe
         self.freed = False
-        self.timestamp = int(monotonic_time()*1000)
+        self.timestamp = int(monotonic()*1000)
         self.palette = palette
         assert x>=0 and y>=0 and width>0 and height>0
 

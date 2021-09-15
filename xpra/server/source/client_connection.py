@@ -7,15 +7,14 @@
 # later version. See the file COPYING for details.
 
 import sys
-from time import sleep
+from time import sleep, monotonic
 from threading import Event
 from collections import deque
 from queue import Queue
 
 from xpra.make_thread import start_thread
-from xpra.os_util import monotonic_time
 from xpra.util import notypedict, envbool, envint, typedict, AtomicInteger
-from xpra.net.compression import compressed_wrapper, Compressed
+from xpra.net.compression import compressed_wrapper
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -60,7 +59,7 @@ class ClientConnection(StubSourceMixin):
         global counter
         self.counter = counter.increase()
         self.protocol = protocol
-        self.connection_time = monotonic_time()
+        self.connection_time = monotonic()
         self.close_event = Event()
         self.disconnect = disconnect_cb
         self.session_name = session_name
@@ -260,7 +259,7 @@ class ClientConnection(StubSourceMixin):
             This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
         """
-        self.statistics.compression_work_qsizes.append((monotonic_time(), self.encode_queue_size()))
+        self.statistics.compression_work_qsizes.append((monotonic(), self.encode_queue_size()))
         self.queue_encode(fn_and_args)
 
     def queue_packet(self, packet, wid=0, pixels=0,
@@ -269,7 +268,7 @@ class ClientConnection(StubSourceMixin):
             Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
         """
-        now = monotonic_time()
+        now = monotonic()
         self.statistics.packet_qsizes.append((now, len(self.packet_queue)))
         if wid>0:
             self.statistics.damage_packet_qpixels.append(
@@ -349,7 +348,7 @@ class ClientConnection(StubSourceMixin):
         info = {
                 "protocol"          : "xpra",
                 "connection_time"   : int(self.connection_time),
-                "elapsed_time"      : int(monotonic_time()-self.connection_time),
+                "elapsed_time"      : int(monotonic()-self.connection_time),
                 "counter"           : self.counter,
                 "hello-sent"        : self.hello_sent,
                 "jitter"            : self.jitter,

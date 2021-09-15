@@ -8,6 +8,7 @@
 
 import os
 import threading
+from time import monotonic
 from gi.repository import Gdk
 
 from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings     #@UnresolvedImport
@@ -23,7 +24,7 @@ from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE
-from xpra.os_util import monotonic_time, strtobytes
+from xpra.os_util import strtobytes
 from xpra.util import typedict, iround, envbool, first_time, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
@@ -349,7 +350,7 @@ class X11ServerCore(GTKServerBase):
         return capabilities
 
     def do_get_info(self, proto, server_sources) -> dict:
-        start = monotonic_time()
+        start = monotonic()
         info = super().do_get_info(proto, server_sources)
         sinfo = info.setdefault("server", {})
         sinfo.update({
@@ -357,7 +358,7 @@ class X11ServerCore(GTKServerBase):
             "fakeXinerama"          : bool(self.libfakeXinerama_so),
             "libfakeXinerama"       : self.libfakeXinerama_so or "",
             })
-        log("X11ServerCore.do_get_info took %ims", (monotonic_time()-start)*1000)
+        log("X11ServerCore.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
     def get_ui_info(self, proto, wids=None, *args) -> dict:

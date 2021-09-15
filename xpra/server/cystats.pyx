@@ -6,7 +6,7 @@
 
 #cython: boundscheck=False, wraparound=False
 
-from xpra.monotonic_time cimport monotonic_time  #pylint: disable=syntax-error
+from time import monotonic
 
 cdef extern from "math.h":
     double log(double x)
@@ -30,7 +30,7 @@ def calculate_time_weighted_average(data):
         recent values matter a lot more than more ancient ones.
     """
     assert len(data)>0
-    cdef double now = monotonic_time()
+    cdef double now = monotonic()
     cdef double tv = 0.0
     cdef double tw = 0.0
     cdef double rv = 0.0
@@ -59,7 +59,7 @@ def time_weighted_average(data, double min_offset=0.1, double rpow=2.0):
         (defaults to 2, which means we square it)
     """
     assert len(data)>0
-    cdef double now = monotonic_time()
+    cdef double now = monotonic()
     cdef double tv = 0.0
     cdef double tw = 0.0
     cdef double w
@@ -80,7 +80,7 @@ def calculate_timesize_weighted_average_score(data):
         Data format: (event_time, size, value)
     """
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
-    cdef double now = monotonic_time()
+    cdef double now = monotonic()
     cdef double tv = 0.0
     cdef double tw = 0.0
     cdef double rv = 0.0
@@ -120,7 +120,7 @@ def calculate_size_weighted_average(data):
     cdef double size_avg = sum(x for _, x, _ in data)/len(data)
     if size_avg<=0:
         size_avg = 1
-    cdef double now = monotonic_time()
+    cdef double now = monotonic()
     cdef double tv = 0.0
     cdef double tw = 0.0
     cdef double rv = 0.0

@@ -8,7 +8,7 @@ import os
 import shlex
 import socket
 import signal
-from time import sleep
+from time import sleep, monotonic
 from subprocess import PIPE, Popen
 
 from xpra.scripts.main import (
@@ -26,7 +26,7 @@ from xpra.exit_codes import (
     EXIT_CONNECTION_FAILED,
     )
 from xpra.os_util import (
-    bytestostr, osexpand, load_binary_file, monotonic_time,
+    bytestostr, osexpand, load_binary_file,
     nomodule_context, umask_context, is_main_thread,
     use_gui_prompt, restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
@@ -779,9 +779,9 @@ def paramiko_run_test_command(transport, cmd):
         raise InitExit(EXIT_SSH_FAILURE, "failed to open SSH session: %s" % e) from None
     chan.exec_command(cmd)
     log("exec_command returned")
-    start = monotonic_time()
+    start = monotonic()
     while not chan.exit_status_ready():
-        if monotonic_time()-start>TEST_COMMAND_TIMEOUT:
+        if monotonic()-start>TEST_COMMAND_TIMEOUT:
             chan.close()
             raise InitException("SSH test command '%s' timed out" % cmd)
         log("exit status is not ready yet, sleeping")

@@ -7,6 +7,7 @@
 
 import os
 import weakref
+from time import monotonic
 from subprocess import Popen, PIPE
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
@@ -17,7 +18,7 @@ from xpra.util import (
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
-    bytestostr, strtobytes, hexstr, monotonic_time, load_binary_file,
+    bytestostr, strtobytes, hexstr, load_binary_file,
     WIN32, OSX, POSIX, is_Wayland,
     )
 from xpra.simple_stats import std_unit
@@ -1426,7 +1427,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         clipboardlog("clipboard_notify(%s) notification timer=%s", n, self.clipboard_notification_timer)
         self.cancel_clipboard_notification_timer()
         if n>0 and self.clipboard_enabled:
-            self.last_clipboard_notification = monotonic_time()
+            self.last_clipboard_notification = monotonic()
             tray.set_icon("clipboard")
             tray.set_tooltip("%s clipboard requests in progress" % n)
             tray.set_blinking(True)
@@ -1435,7 +1436,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             #reset the tray icon,
             #but wait at least N seconds after the last clipboard transfer:
             N = 1
-            delay = int(max(0, 1000*(self.last_clipboard_notification+N-monotonic_time())))
+            delay = int(max(0, 1000*(self.last_clipboard_notification+N-monotonic())))
             def reset_tray_icon():
                 self.clipboard_notification_timer = None
                 tray = self.tray

@@ -5,9 +5,10 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from time import monotonic
+
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.util import envbool
-from xpra.os_util import monotonic_time
 
 SHOW_PERF = envbool("XPRA_SHOW_PERF")
 
@@ -63,9 +64,9 @@ class TestImageWrapper(unittest.TestCase):
                     if av!=v:
                         raise Exception("""expected value %#x for pixel (0, %i)
                                         of sub-image %s at (%i, 0), but got %#x""" % (v, y, sub, x, av))
-        start = monotonic_time()
+        start = monotonic()
         copy = img.get_sub_image(0, 0, W, H)
-        end = monotonic_time()
+        end = monotonic()
         if SHOW_PERF:
             print("image wrapper full %ix%i copy speed: %iMB/s" % (W, H, (W*4*H)/(end-start)/1024/1024))
         assert copy.get_pixels()==img.get_pixels()
@@ -73,9 +74,9 @@ class TestImageWrapper(unittest.TestCase):
         N = 10
         for i in range(N):
             region = (W//4-N//2+i, H//4-N//2+i, W//2, H//2)
-            start = monotonic_time()
+            start = monotonic()
             copy = img.get_sub_image(*region)
-            end = monotonic_time()
+            end = monotonic()
             total += end-start
         if SHOW_PERF:
             print("image wrapper sub image %ix%i copy speed: %iMB/s" % (W//2, H//2, N*(W//2*4*H//2)/total/1024/1024))

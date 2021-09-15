@@ -6,10 +6,10 @@
 import sys
 import logging
 import traceback
+from time import monotonic
 from threading import Lock
 
 from xpra.util import csv, typedict, repr_ellipsized, net_utf8
-from xpra.os_util import monotonic_time, strtobytes, bytestostr
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
 
@@ -31,7 +31,7 @@ class RemoteLogging(StubClientMixin):
         self.logging_lock = Lock()
         self.log_both = False
         self.request_server_log = False
-        self.monotonic_start_time = monotonic_time()
+        self.monotonic_start_time = monotonic()
 
     def init(self, opts):
         self.remote_logging = opts.remote_logging
@@ -110,7 +110,7 @@ class RemoteLogging(StubClientMixin):
         def local_warn(*args):
             self.local_logging(logger_log, logging.WARNING, *args)
         try:
-            dtime = int(1000*(monotonic_time() - self.monotonic_start_time))
+            dtime = int(1000*(monotonic() - self.monotonic_start_time))
             if args:
                 data = msg % args
             else:

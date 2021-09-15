@@ -11,8 +11,9 @@ import hashlib
 import threading
 from math import sqrt
 from collections import deque
+from time import monotonic
 
-from xpra.os_util import strtobytes, bytestostr, monotonic_time
+from xpra.os_util import strtobytes, bytestostr
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
@@ -147,7 +148,7 @@ class WindowSource(WindowIconSource):
 
         self.init_vars()
 
-        self.start_time = monotonic_time()
+        self.start_time = monotonic()
         self.ui_thread = threading.current_thread()
 
         self.record_congestion_event = record_congestion_event  #callback for send latency problems
@@ -481,7 +482,7 @@ class WindowSource(WindowIconSource):
                 "delay"         : self.auto_refresh_delay,
                 "base-delay"    : self.base_auto_refresh_delay,
                 "last-event"    : {
-                    "elapsed"    : int(1000*(monotonic_time()-larm[0])),
+                    "elapsed"    : int(1000*(monotonic()-larm[0])),
                     "message"    : larm[1],
                     }
                 }
@@ -534,7 +535,7 @@ class WindowSource(WindowIconSource):
         return info
 
     def get_damage_fps(self):
-        now = monotonic_time()
+        now = monotonic()
         cutoff = now-5
         lde = tuple(x[0] for x in tuple(self.statistics.last_damage_events) if x[0]>=cutoff)
         fps = 0
@@ -1089,7 +1090,7 @@ class WindowSource(WindowIconSource):
             bc.delay = bc.min_delay
             return
         #calculations take time (CPU), see if we can just skip it this time around:
-        now = monotonic_time()
+        now = monotonic()
         lr = self.statistics.last_recalculate
         elapsed = now-lr
         statslog("calculate_batch_delay for wid=%i current batch delay=%i, last update %.1f seconds ago",
@@ -1163,13 +1164,13 @@ class WindowSource(WindowIconSource):
         if self._sequence<10:
             self._encoding_speed_info = {"pending" : True}
             return
-        now = monotonic_time()
+        now = monotonic()
         #make a copy to work on:
         speed_data = list(self._encoding_speed)
         info, target, max_speed = get_target_speed(self.window_dimensions, self.batch_config,
                                                    self.global_statistics, self.statistics,
                                                    self.bandwidth_limit, self._fixed_min_speed, speed_data)
-        speed_data.append((monotonic_time(), target))
+        speed_data.append((monotonic(), target))
         speed = int(time_weighted_average(speed_data, min_offset=1, rpow=1.1))
         speed = max(0, self._fixed_min_speed, speed)
         speed = int(min(max_speed, speed))
@@ -1177,7 +1178,7 @@ class WindowSource(WindowIconSource):
         statslog("update_speed() speed=%2i (target=%2i, max=%2i) for wid=%i, info=%s",
                  speed, target, max_speed, self.wid, info)
         self._encoding_speed_info = info
-        self._encoding_speed.append((monotonic_time(), speed))
+        self._encoding_speed.append((monotonic(), speed))
         ww, wh = self.window_dimensions
         self.global_statistics.speed.append((now, ww*wh, speed))
 
@@ -1231,7 +1232,7 @@ class WindowSource(WindowIconSource):
             self._encoding_quality_info = {"lossless-window-type" : self.window_type}
             self._current_quality = 100
             return
-        now = monotonic_time()
+        now = monotonic()
         info, target = get_target_quality(self.window_dimensions, self.batch_config,
                                           self.global_statistics, self.statistics,
                                           self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
@@ -1355,7 +1356,7 @@ class WindowSource(WindowIconSource):
             #in which case the dimensions may be zero (if so configured by the client)
             return
         ww, wh = self.window.get_dimensions()
-        now = monotonic_time()
+        now = monotonic()
         if options is None:
             options = {}
         if options.pop("damage", False):
@@ -1385,7 +1386,7 @@ class WindowSource(WindowIconSource):
         self.statistics.last_damage_event_time = now
 
     def do_damage(self, ww, wh, x, y, w, h, options):
-        now = monotonic_time()
+        now = monotonic()
         if self.refresh_timer and options.get("quality", self._current_quality)<self.refresh_quality:
             rr = tuple(self.refresh_regions)
             if rr:
@@ -1460,7 +1461,7 @@ class WindowSource(WindowIconSource):
                 if self.is_cancelled():
                     return
                 self.window.acknowledge_changes()
-                self.batch_config.last_event = monotonic_time()
+                self.batch_config.last_event = monotonic()
                 self.process_damage_region(now, x, y, w, h, actual_encoding, options)
             self.idle_add(damage_now)
             return
@@ -1501,7 +1502,7 @@ class WindowSource(WindowIconSource):
             return True
         if self.batch_config.always or delay>self.batch_config.min_delay or self.bandwidth_limit>0:
             return True
-        now = monotonic_time()
+        now = monotonic()
         gs = self.global_statistics
         if gs and now-gs.last_congestion_time<60:
             return True
@@ -1538,7 +1539,7 @@ class WindowSource(WindowIconSource):
         try:
             t, _ = self.batch_config.last_delays[-5]
             #do batch if we got more than 5 damage events in the last 10 milliseconds:
-            return monotonic_time()-t<0.010
+            return monotonic()-t<0.010
         except IndexError:
             #probably not enough events to grab -5
             return False
@@ -1549,7 +1550,7 @@ class WindowSource(WindowIconSource):
         if not s or not gs:
             return 0
         latency_tolerance_pct = int(min(self._damage_packet_sequence, 10) *
-                                    min(monotonic_time()-gs.last_congestion_time, 10))
+                                    min(monotonic()-gs.last_congestion_time, 10))
         latency = s.target_latency + ACK_JITTER/1000*(1+latency_tolerance_pct/100)
         #log("get_packets_backlog() latency=%s (target=%i, tolerance=%i)",
         #         1000*latency, 1000*s.target_latency, latency_tolerance_pct)
@@ -1576,7 +1577,7 @@ class WindowSource(WindowIconSource):
         if not self._damage_delayed:
             #got sent
             return False
-        now = monotonic_time()
+        now = monotonic()
         if now<due:
             damagelog("expire_delayed_region() not due yet: now=%s, due=%s (%i ms)",
                       now, due, 1000*(due-now))
@@ -1603,7 +1604,7 @@ class WindowSource(WindowIconSource):
                 #otherwise we end up perpetuating it
                 #because congestion events lower the latency tolerance
                 #which makes us more sensitive to packets backlog
-                celapsed = monotonic_time()-self.global_statistics.last_congestion_time
+                celapsed = monotonic()-self.global_statistics.last_congestion_time
                 if celapsed<10:
                     late_pct = 2*100*self.soft_expired
                     delay = now-due
@@ -1634,7 +1635,7 @@ class WindowSource(WindowIconSource):
             #this is a different region
             return False
         #ouch: same region!
-        now = monotonic_time()
+        now = monotonic()
         options = delayed.options
         elapsed = int(1000 * (now - region_time))
         log.warn("Warning: delayed region timeout")
@@ -1652,7 +1653,7 @@ class WindowSource(WindowIconSource):
     def _log_late_acks(self, log_fn):
         dap = dict(self.statistics.damage_ack_pending)
         if dap:
-            now = monotonic_time()
+            now = monotonic()
             log_fn(" %i late responses:", len(dap))
             for seq in sorted(dap.keys()):
                 ack_data = dap[seq]
@@ -1679,7 +1680,7 @@ class WindowSource(WindowIconSource):
             return
         damage_time = dd.damage_time
         packets_backlog = self.get_packets_backlog()
-        now = monotonic_time()
+        now = monotonic()
         actual_delay = int(1000 * (now-damage_time))
         if packets_backlog>0:
             if actual_delay>self.batch_config.timeout_delay:
@@ -1752,7 +1753,7 @@ class WindowSource(WindowIconSource):
         if delayed:
             damagelog("do_send_delayed() damage delayed=%s", delayed)
             self._damage_delayed = None
-            now = monotonic_time()
+            now = monotonic()
             actual_delay = int(1000 * (now-delayed.damage_time))
             lad = (now, actual_delay)
             self.batch_config.last_actual_delays.append(lad)
@@ -1774,7 +1775,7 @@ class WindowSource(WindowIconSource):
         if not self.window.is_managed():
             return
         self.window.acknowledge_changes()
-        self.batch_config.last_event = monotonic_time()
+        self.batch_config.last_event = monotonic()
         if not self.is_cancelled():
             dr = delayed_regions
             self.do_send_delayed_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
@@ -1911,7 +1912,7 @@ class WindowSource(WindowIconSource):
             log("process_damage_region: dropping damage request with sequence=%s", sequence)
             return
 
-        rgb_request_time = monotonic_time()
+        rgb_request_time = monotonic()
         image = self.window.get_image(x, y, w, h)
         if image is None:
             log("process_damage_region: no pixel data for window %s, wid=%s", self.window, self.wid)
@@ -1926,7 +1927,7 @@ class WindowSource(WindowIconSource):
         if self.send_window_size:
             options["window-size"] = self.window_dimensions
 
-        now = monotonic_time()
+        now = monotonic()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
@@ -1986,7 +1987,7 @@ class WindowSource(WindowIconSource):
                 client_options.get("scaled_size") is not None
                 )
         refresh_exclude = self.get_refresh_exclude()  #pylint: disable=assignment-from-none
-        now = monotonic_time()
+        now = monotonic()
         def rec(msg):
             self.last_auto_refresh_message = now, msg
             refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s),"
@@ -2114,7 +2115,7 @@ class WindowSource(WindowIconSource):
         ret = self.refresh_event_time
         if ret==0:
             return False
-        delta = self.refresh_target_time - monotonic_time()
+        delta = self.refresh_target_time - monotonic()
         if delta<0.050:
             #this is about right (due already or due shortly)
             self.timer_full_refresh()
@@ -2131,11 +2132,11 @@ class WindowSource(WindowIconSource):
         regions = self.refresh_regions
         self.refresh_regions = []
         if self.can_refresh() and regions and ret>0:
-            now = monotonic_time()
+            now = monotonic()
             options = self.get_refresh_options()
             refresh_exclude = self.get_refresh_exclude()    #pylint: disable=assignment-from-none
             refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s",
-                       1000.0*(monotonic_time()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
+                       1000.0*(monotonic()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
             WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
         return False
 
@@ -2179,7 +2180,7 @@ class WindowSource(WindowIconSource):
         refreshlog("full_quality_refresh() using %s with options=%s", encoding, new_options)
         #just refresh the whole window:
         regions = [rectangle(0, 0, w, h)]
-        now = monotonic_time()
+        now = monotonic()
         damage = DelayedRegions(now, regions, encoding, new_options)
         self.send_delayed_regions(damage)
 
@@ -2208,10 +2209,10 @@ class WindowSource(WindowIconSource):
         statistics = self.statistics
         statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
         def start_send(bytecount):
-            ack_pending[0] = monotonic_time()
+            ack_pending[0] = monotonic()
             ack_pending[2] = bytecount
         def damage_packet_sent(bytecount):
-            now = monotonic_time()
+            now = monotonic()
             ack_pending[3] = now
             ack_pending[4] = bytecount
             if process_damage_time>0:
@@ -2228,11 +2229,11 @@ class WindowSource(WindowIconSource):
                     self.networksend_congestion_event("slow send", late_pct, send_speed)
             self.schedule_auto_refresh(packet, options)
         if process_damage_time>0:
-            now = monotonic_time()
+            now = monotonic()
             damage_in_latency = now-process_damage_time
             statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         #log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
-        self.statistics.last_packet_time = monotonic_time()
+        self.statistics.last_packet_time = monotonic()
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent,
                           self.get_fail_cb(packet), client_options.get("flush", 0))
 
@@ -2241,7 +2242,7 @@ class WindowSource(WindowIconSource):
         if not gs:
             return
         #calculate the send speed for the packet we just sent:
-        now = monotonic_time()
+        now = monotonic()
         send_speed = cur_send_speed
         avg_send_speed = 0
         if len(gs.bytes_sent)>=5:
@@ -2316,7 +2317,7 @@ class WindowSource(WindowIconSource):
         statslog("packet decoding sequence %s for window %s: %sx%s took %.1fms",
                       damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
-            self.statistics.client_decode_time.append((monotonic_time(), width*height, decode_time))
+            self.statistics.client_decode_time.append((monotonic(), width*height, decode_time))
         elif decode_time<0:
             self.client_decode_error(decode_time, message)
         pending = self.statistics.damage_ack_pending.pop(damage_packet_sequence, None)
@@ -2330,7 +2331,7 @@ class WindowSource(WindowIconSource):
         #that we get the ack before we've had a chance to call
         #damage_packet_sent, so we must validate the data:
         if bytecount>0 and end_send_at>0:
-            now = monotonic_time()
+            now = monotonic()
             if decode_time>0:
                 latency = int(1000*(now-damage_time))
                 self.global_statistics.record_latency(self.wid, decode_time,
@@ -2441,7 +2442,7 @@ class WindowSource(WindowIconSource):
         #since we generally don't send the padding with it:
         psize = w*h*4
         log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
-        start = monotonic_time()
+        start = monotonic()
 
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
@@ -2479,7 +2480,7 @@ class WindowSource(WindowIconSource):
             client_options["flush"] = flush
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()
-        end = monotonic_time()
+        end = monotonic()
         if DAMAGE_STATISTICS:
             client_options['damage_time'] = int(damage_time * 1000)
             client_options['process_damage_time'] = int(process_damage_time * 1000)

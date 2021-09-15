@@ -7,9 +7,9 @@
 # Augments the win32_NotifyIcon "system tray" support class
 # with methods for integrating with win32_balloon and the popup menu
 
+from time import monotonic
 from ctypes import wintypes, byref
 
-from xpra.os_util import monotonic_time
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import EnumDisplayMonitors, GetMonitorInfo
 from xpra.platform.win32.win32_NotifyIcon import win32NotifyIcon
@@ -85,12 +85,12 @@ class Win32Tray(TrayBase):
     def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
         if self.tray_widget:
             self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
-            self.icon_timestamp = monotonic_time()
+            self.icon_timestamp = monotonic()
 
     def do_set_icon_from_file(self, filename):
         if self.tray_widget:
             self.tray_widget.set_icon(filename)
-            self.icon_timestamp = monotonic_time()
+            self.icon_timestamp = monotonic()
 
     def set_blinking(self, on):
         if self.tray_widget:

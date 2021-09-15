@@ -287,14 +287,6 @@ def get_user_uuid() -> str:
     return u.hexdigest()
 
 
-try:
-    from xpra.monotonic_time import _monotonic_time     #@UnresolvedImport
-    assert _monotonic_time()>0
-    monotonic_time = _monotonic_time
-except (ImportError, AssertionError):
-    monotonic_time = time.time
-
-
 def is_X11() -> bool:
     if OSX or WIN32:
         return False
@@ -846,9 +838,9 @@ def find_lib(libname):
 
 
 def pollwait(process, timeout=5):
-    start = monotonic_time()
+    start = time.monotonic()
     v = None
-    while monotonic_time()-start<timeout:
+    while time.monotonic()-start<timeout:
         v = process.poll()
         if v is not None:
             break

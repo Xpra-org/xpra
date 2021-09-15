@@ -930,7 +930,6 @@ def clean():
     #ensure we remove the files we generate:
     CLEAN_FILES = [
                    "xpra/build_info.py",
-                   "xpra/monotonic_time.c",
                    "xpra/gtk_common/gtk3/gdk_atoms.c",
                    "xpra/gtk_common/gtk3/gdk_bindings.c",
                    "xpra/x11/gtk3/gdk_bindings.c",
@@ -1834,16 +1833,6 @@ if OSX:
             language="objc",
             **quartz_pkgconfig
             )
-
-if cython_ENABLED:
-    monotonic_time_pkgconfig = pkgconfig()
-    if not OSX and not WIN32 and not OPENBSD:
-        add_to_keywords(monotonic_time_pkgconfig, 'extra_link_args', "-lrt")
-    add_cython_ext("xpra.monotonic_time",
-                ["xpra/monotonic_time.pyx", "xpra/monotonic_ctime.c"],
-                **monotonic_time_pkgconfig
-                )
-
 
 toggle_packages(x11_ENABLED, "xpra.x11", "xpra.x11.bindings")
 if x11_ENABLED:

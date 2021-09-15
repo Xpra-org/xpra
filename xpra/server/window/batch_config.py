@@ -7,11 +7,11 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 
 from collections import deque
 from xpra.simple_stats import get_list_stats
 from xpra.util import envint
-from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
 #how many historical records to keep
@@ -106,7 +106,7 @@ class DamageBatchConfig:
         if self.delay_per_megapixel>=0:
             info["normalized"] = self.delay_per_megapixel
         if self.last_event>0:
-            info["last-event"] = int(monotonic_time()-self.last_event)
+            info["last-event"] = int(monotonic()-self.last_event)
         if self.locked:
             info["delay"] = self.delay
         else:

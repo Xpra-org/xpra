@@ -7,11 +7,12 @@
 import os
 import struct
 import re
+from time import monotonic
 from io import BytesIO
 from gi.repository import GLib
 
 from xpra.net.compression import Compressible
-from xpra.os_util import POSIX, monotonic_time, strtobytes, bytestostr, hexstr
+from xpra.os_util import POSIX, strtobytes, bytestostr, hexstr
 from xpra.util import csv, envint, envbool, repr_ellipsized, ellipsizer, typedict
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.log import Logger, is_debug_enabled
@@ -615,7 +616,7 @@ class ClipboardProxyCore:
             self.do_schedule_emit_token()
 
     def do_schedule_emit_token(self):
-        now = monotonic_time()
+        now = monotonic()
         elapsed = int((now-self._last_emit_token)*1000)
         log("do_schedule_emit_token() selection=%s, elapsed=%i (max=%i)", self._selection, elapsed, DELAY_SEND_TOKEN)
         if elapsed>=DELAY_SEND_TOKEN:
@@ -629,7 +630,7 @@ class ClipboardProxyCore:
         boc = self._block_owner_change
         self._block_owner_change = True
         self._have_token = False
-        self._last_emit_token = monotonic_time()
+        self._last_emit_token = monotonic()
         self.do_emit_token()
         self._sent_token_events += 1
         if boc is False:

@@ -5,10 +5,11 @@
 
 import os
 import uuid
+from time import monotonic
 from hashlib import sha1
 from base64 import b64encode
 
-from xpra.os_util import strtobytes, bytestostr, monotonic_time
+from xpra.os_util import strtobytes, bytestostr
 from xpra.util import u
 from xpra.log import Logger
 
@@ -56,14 +57,14 @@ def client_upgrade(read, write, host, port):
     lines.append(b"")
     http_request = b"\r\n".join(lines)
     log("client_upgrade: sending http headers: %s", headers)
-    now = monotonic_time()
-    while http_request and monotonic_time()-now<MAX_WRITE_TIME:
+    now = monotonic()
+    while http_request and monotonic()-now<MAX_WRITE_TIME:
         w = write(http_request)
         http_request = http_request[w:]
 
-    now = monotonic_time()
+    now = monotonic()
     response = b""
-    while ("sec-websocket-protocol" not in u(response).lower()) and monotonic_time()-now<MAX_READ_TIME:
+    while ("sec-websocket-protocol" not in u(response).lower()) and monotonic()-now<MAX_READ_TIME:
         response += read(READ_CHUNK_SIZE)
     headers = parse_response_header(response)
     verify_response_headers(headers, key)

@@ -10,6 +10,7 @@
 # (also do not import anything that imports gtk)
 import shlex
 import signal
+from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
 
@@ -18,7 +19,7 @@ from xpra.util import envbool, envint
 from xpra.os_util import (
     shellsub,
     setuidgid, getuid, getgid,
-    strtobytes, bytestostr, osexpand, monotonic_time,
+    strtobytes, bytestostr, osexpand,
     pollwait,
     POSIX, OSX,
     )
@@ -355,11 +356,11 @@ def xauth_add(filename, display_name, xauth_data, uid, gid):
             if getuid()==0 and uid:
                 setuidgid(uid, gid)
         xauth_cmd = ["xauth"]+xauth_args
-        start = monotonic_time()
+        start = monotonic()
         log = get_vfb_logger()
         log("xauth command: %s", xauth_cmd)
         code = call(xauth_cmd, preexec_fn=preexec)
-        end = monotonic_time()
+        end = monotonic()
         if code!=0 and (end-start>=10):
             log.warn("Warning: xauth command took %i seconds and failed" % (end-start))
             #took more than 10 seconds to fail, check for stale locks:

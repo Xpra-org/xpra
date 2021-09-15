@@ -7,6 +7,7 @@
 # later version. See the file COPYING for details.
 
 from math import sqrt
+from time import monotonic
 from collections import deque
 
 from xpra.server.cystats import (                                           #@UnresolvedImport
@@ -14,7 +15,6 @@ from xpra.server.cystats import (                                           #@Un
     calculate_for_target, time_weighted_average, queue_inspect,             #@UnresolvedImport
     )
 from xpra.simple_stats import get_list_stats
-from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
 log = Logger("network")
@@ -94,7 +94,7 @@ class GlobalPerformanceStatistics:
         self.avg_frame_total_latency = 0
 
     def record_latency(self, wid : int, decode_time, start_send_at, end_send_at, pixels, bytecount, latency):
-        now = monotonic_time()
+        now = monotonic()
         send_diff = now-start_send_at
         echo_diff = now-end_send_at
         send_latency = max(0, send_diff-decode_time/1000.0/1000.0)
@@ -130,7 +130,7 @@ class GlobalPerformanceStatistics:
             self.min_server_ping_latency = min(x for _,x in server_ping_latency)
             self.avg_server_ping_latency, self.recent_server_ping_latency = latency_averages(server_ping_latency)
         #set to 0 if we have less than 2 events in the last 60 seconds:
-        now = monotonic_time()
+        now = monotonic()
         min_time = now-60
         css = tuple(x for x in tuple(self.congestion_send_speed) if x[0]>min_time)
         acss = 0
@@ -205,7 +205,7 @@ class GlobalPerformanceStatistics:
 
     def get_connection_info(self) -> dict:
         latencies = tuple(int(x*1000) for (_, _, _, x) in tuple(self.client_latency))
-        now = monotonic_time()
+        now = monotonic()
         info = {
             "mmap_bytecount"  : self.mmap_bytes_sent,
             "latency"           : get_list_stats(latencies),
@@ -228,7 +228,7 @@ class GlobalPerformanceStatistics:
     def get_info(self) -> dict:
         cwqsizes = tuple(x[1] for x in tuple(self.compression_work_qsizes))
         pqsizes = tuple(x[1] for x in tuple(self.packet_qsizes))
-        now = monotonic_time()
+        now = monotonic()
         time_limit = now-60             #ignore old records (60s)
         client_latency = max(0, self.avg_frame_total_latency-
                              int((self.avg_client_ping_latency+self.avg_server_ping_latency)//2))

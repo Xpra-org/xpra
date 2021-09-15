@@ -9,12 +9,13 @@
 import os
 import signal
 import math
+from time import monotonic
 from collections import deque
 from gi.repository import GObject, Gtk, Gdk, GdkX11
 
 from xpra.version_util import XPRA_VERSION
 from xpra.util import net_utf8, updict, rindex, envbool, envint, typedict, WORKSPACE_NAMES
-from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
+from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE
 from xpra.server import server_features, EXITING_CODE
 from xpra.gtk_common.gobject_util import one_arg_signal
@@ -634,7 +635,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #TODO: find a better way to choose the timer delay:
         #for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
         #(lcce should always be in the past, so min(..) should be redundant here)
-        delay = max(100, min(250, 250 + 1000 * (lcce-monotonic_time())))
+        delay = max(100, min(250, 250 + 1000 * (lcce-monotonic())))
         self.snc_timer = self.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce=-1):
@@ -1049,7 +1050,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     damage = True
             else:
                 assert skip_geometry or not window.is_OR(), "received a configure packet with geometry for OR window %s from %s: %s" % (window, proto, packet)
-                self.last_client_configure_event = monotonic_time()
+                self.last_client_configure_event = monotonic()
                 if is_ui_driver and len(packet)>=9:
                     changes = self._set_window_state(proto, wid, window, packet[8])
                     if changes:

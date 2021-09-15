@@ -10,6 +10,7 @@ import uuid
 import signal
 import socket
 import string
+from time import monotonic
 
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
@@ -33,7 +34,7 @@ from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
     filedata_nocrlf, force_quit,
     SIGNAMES, BITS,
-    strtobytes, bytestostr, hexstr, monotonic_time, use_gui_prompt,
+    strtobytes, bytestostr, hexstr, use_gui_prompt,
     parse_encoded_bin_data,
     )
 from xpra.util import (
@@ -528,7 +529,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self._mouse_position_pending = packet
             return
         self._mouse_position_pending = packet
-        now = monotonic_time()
+        now = monotonic()
         elapsed = int(1000*(now-self._mouse_position_send_time))
         delay = self._mouse_position_delay-elapsed
         mouselog("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
@@ -539,7 +540,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def do_send_mouse_position(self):
         self._mouse_position_timer = 0
-        self._mouse_position_send_time = monotonic_time()
+        self._mouse_position_send_time = monotonic()
         self._mouse_position = self._mouse_position_pending
         mouselog("do_send_mouse_position() position=%s", self._mouse_position)
         self.have_more()

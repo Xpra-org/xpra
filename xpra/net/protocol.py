@@ -9,11 +9,12 @@
 # but it works on win32, for whatever that's worth.
 
 import os
+from time import monotonic
 from socket import error as socket_error
 from threading import Lock, Event
 from queue import Queue
 
-from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr, monotonic_time
+from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
 from xpra.util import repr_ellipsized, ellipsizer, csv, envint, envbool, typedict
 from xpra.make_thread import make_thread, start_thread
 from xpra.net.common import (
@@ -129,7 +130,7 @@ class Protocol:
         """
         assert scheduler is not None
         assert conn is not None
-        self.start_time = monotonic_time()
+        self.start_time = monotonic()
         self.timeout_add = scheduler.timeout_add
         self.idle_add = scheduler.idle_add
         self.source_remove = scheduler.source_remove

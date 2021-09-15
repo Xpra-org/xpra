@@ -6,9 +6,10 @@
 
 import os
 import re
+from time import monotonic
 from collections import deque
 
-from xpra.os_util import monotonic_time, POSIX
+from xpra.os_util import POSIX
 from xpra.util import envint, envbool, csv, typedict
 from xpra.exit_codes import EXIT_CONNECTION_LOST
 from xpra.net.packet_encoding import ALL_ENCODERS
@@ -235,7 +236,7 @@ class NetworkState(StubClientMixin):
             return False
         last = self._server_ok
         if FAKE_BROKEN_CONNECTION>0:
-            self._server_ok = (int(monotonic_time()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
+            self._server_ok = (int(monotonic()) % FAKE_BROKEN_CONNECTION) <= (FAKE_BROKEN_CONNECTION//2)
         else:
             self._server_ok = self.last_ping_echoed_time>=ping_sent_time
         if not self._server_ok:
@@ -271,7 +272,7 @@ class NetworkState(StubClientMixin):
         if not p or p.TYPE!="xpra":
             self.ping_timer = None
             return False
-        now_ms = int(1000.0*monotonic_time())
+        now_ms = int(1000.0*monotonic())
         self.send("ping", now_ms)
         wait = 2.0
         spl = tuple(self.server_ping_latency)
@@ -289,11 +290,11 @@ class NetworkState(StubClientMixin):
         echoedtime, l1, l2, l3, cl = packet[1:6]
         self.last_ping_echoed_time = echoedtime
         self.check_server_echo(0)
-        server_ping_latency = monotonic_time()-echoedtime/1000.0
-        self.server_ping_latency.append((monotonic_time(), server_ping_latency))
+        server_ping_latency = monotonic()-echoedtime/1000.0
+        self.server_ping_latency.append((monotonic(), server_ping_latency))
         self.server_load = l1, l2, l3
         if cl>=0:
-            self.client_ping_latency.append((monotonic_time(), cl/1000.0))
+            self.client_ping_latency.append((monotonic(), cl/1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet):

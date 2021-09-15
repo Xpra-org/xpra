@@ -4,9 +4,10 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 
 from xpra.log import Logger
-from xpra.os_util import monotonic_time, POSIX
+from xpra.os_util import POSIX
 from xpra.util import envint
 
 DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
@@ -16,12 +17,12 @@ def write_displayfd(w_pipe, display, timeout=10):
     import select   #@UnresolvedImport
     import errno
     buf = ("%s\n" % display).encode("ascii")
-    limit = monotonic_time()+timeout
+    limit = monotonic()+timeout
     log = Logger("util")
     log("write_displayfd%s", (w_pipe, display, timeout))
-    while buf and monotonic_time()<limit:
+    while buf and monotonic()<limit:
         try:
-            timeout = max(0, limit-monotonic_time())
+            timeout = max(0, limit-monotonic())
             if POSIX:
                 w = select.select([], [w_pipe], [], timeout)[1]
                 log("select.select(..) writeable=%s", w)
@@ -51,11 +52,11 @@ def read_displayfd(r_pipe, timeout=DISPLAY_FD_TIMEOUT, proc=None):
     import errno
     # Read the display number from the pipe we gave to Xvfb
     # waiting up to 10 seconds for it to show up
-    limit = monotonic_time()+timeout
+    limit = monotonic()+timeout
     buf = b""
     log = Logger("util")
     log("read_displayfd%s", (r_pipe, timeout, proc))
-    while monotonic_time()<limit and len(buf)<8 and (proc is None or proc.poll() is None):
+    while monotonic()<limit and len(buf)<8 and (proc is None or proc.poll() is None):
         try:
             timeout = 1
             if POSIX:

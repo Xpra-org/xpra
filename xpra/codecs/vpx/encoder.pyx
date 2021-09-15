@@ -6,6 +6,7 @@
 import os
 import math
 from collections import deque
+from time import monotonic
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
@@ -17,7 +18,6 @@ from xpra.util import AtomicInteger, envint, envbool, typedict
 from libc.stdint cimport uint8_t
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset
-from xpra.monotonic_time cimport monotonic_time
 
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
@@ -524,7 +524,7 @@ cdef class Encoder:
             })
         #calculate fps:
         cdef unsigned int f = 0
-        cdef double now = monotonic_time()
+        cdef double now = monotonic()
         cdef double last_time = now
         cdef double cut_off = now-10.0
         cdef double ms_per_frame = 0
@@ -676,14 +676,14 @@ cdef class Encoder:
             #cap the deadline at 250ms, which is already plenty
             deadline = MIN(250*1000, deadline)
             deadline_str = "%8.3fms" % deadline
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         with nogil:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
         if ret!=0:
             free(image)
             log.error("%s codec encoding error %s: %s", self.encoding, ret, get_error_string(ret))
             return None
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         log("vpx_codec_encode for %s took %ims (deadline=%16s for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline_str, self.speed, self.quality)
         cdef const vpx_codec_cx_pkt_t *pkt
         with nogil:
@@ -700,7 +700,7 @@ cdef class Encoder:
         img = (<char*> pkt.data.frame.buf)[:size]
         free(image)
         log("vpx returning %s data: %s bytes", self.encoding, size)
-        end = monotonic_time()
+        end = monotonic()
         self.last_frame_times.append((start, end))
         if self.file and size>0:
             self.file.write(img)

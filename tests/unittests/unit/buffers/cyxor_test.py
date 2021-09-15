@@ -6,8 +6,9 @@
 
 import unittest
 import binascii
+from time import monotonic
 
-from xpra.os_util import strtobytes, monotonic_time
+from xpra.os_util import strtobytes
 try:
     from xpra.buffers.cyxor import xor_str       #@UnresolvedImport
 except ImportError:
@@ -54,14 +55,14 @@ class TestHMAC(unittest.TestCase):
 
 
     def test_large_xor_speed(self):
-        start = monotonic_time()
+        start = monotonic()
         size = 1*1024*1024       #1MB
         zeroes  = strtobytes(chr(0)*size)
         ones    = strtobytes(chr(1)*size)
         count = 10
         for _ in range(count):
             self.check_xor(zeroes, ones, ones)
-        end = monotonic_time()
+        end = monotonic()
         if end>start:
             speed = size/(end-start)/1024/1024
             #print("%iMB/s: took %ims on average (%s iterations)" % (speed, 1000*(end-start)/count, count))

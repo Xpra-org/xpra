@@ -6,6 +6,7 @@
 #cython: wraparound=False
 
 import os
+from time import monotonic
 
 from xpra.log import Logger
 log = Logger("encoder", "x264")
@@ -16,7 +17,6 @@ from xpra.codecs.codec_constants import video_spec
 from collections import deque
 
 from libc.string cimport memset
-from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
 
 
@@ -723,7 +723,7 @@ cdef class Encoder:
                 })
         #calculate fps:
         cdef unsigned int f = 0
-        cdef double now = monotonic_time()
+        cdef double now = monotonic()
         cdef double last_time = now
         cdef double cut_off = now-10.0
         cdef double ms_per_frame = 0
@@ -891,7 +891,7 @@ cdef class Encoder:
         cdef int i_nals = 0
         cdef x264_picture_t pic_out
         assert self.context!=NULL
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
 
         if speed>=0:
             self.set_encoding_speed(speed)
@@ -958,7 +958,7 @@ cdef class Encoder:
         if self.export_nals:
             client_options["nals"] = nal_indexes
         #accounting:
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         self.time += end-start
         self.frames += 1
         self.last_frame_times.append((start, end))

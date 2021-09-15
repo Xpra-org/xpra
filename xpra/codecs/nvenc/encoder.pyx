@@ -8,6 +8,7 @@ import os
 import numpy
 import platform
 from collections import deque
+from time import monotonic
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
@@ -34,7 +35,6 @@ log = Logger("encoder", "nvenc")
 from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t, int32_t, uint64_t  #pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset, memcpy
-from xpra.monotonic_time cimport monotonic_time
 
 TEST_ENCODINGS = os.environ.get("XPRA_NVENC_ENCODINGS", "h264,h265").split(",")
 assert (x for x in TEST_ENCODINGS in ("h264", "h265")), "invalid list of encodings: %s" % (TEST_ENCODINGS,)
@@ -1389,7 +1389,7 @@ def get_runtime_factor() -> float:
     low_limit = min(CONTEXT_LIMIT, 1 + CONTEXT_LIMIT// 2) * device_count
     f = max(0, 1.0 - (max(0, cc-low_limit)/max(1, max_contexts-low_limit)))
     #if we have had errors recently, lower our chances further:
-    cdef double failure_elapsed = monotonic_time()-last_context_failure
+    cdef double failure_elapsed = monotonic()-last_context_failure
     #discount factor gradually for 1 minute:
     f /= 61-min(60, failure_elapsed)
     log("nvenc.get_runtime_factor()=%s", f)
@@ -1449,7 +1449,7 @@ def get_info() -> dict:
     if LINUX:
         info["kernel_version"] = platform.uname()[2]
     if last_context_failure>0:
-        info["last_failure"] = int(monotonic_time()-last_context_failure)
+        info["last_failure"] = int(monotonic()-last_context_failure)
     return info
 
 
@@ -1697,7 +1697,7 @@ cdef class Encoder:
 
     def init_device(self, options : typedict):
         global bad_presets
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         with self.cuda_device_context as cuda_context:
             self.init_cuda(cuda_context)
             self.init_cuda_kernel(cuda_context)
@@ -1718,7 +1718,7 @@ cdef class Encoder:
                 record_device_failure(device_id)
 
             raise
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         self.ready = 1
         log("init_device(%s) took %1.fms", options, (end-start)*1000.0)
 
@@ -1784,7 +1784,7 @@ cdef class Encoder:
                 log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <uintptr_t> self.cuda_context_ptr)
             assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
         except driver.MemoryError as e:
-            last_context_failure = monotonic_time()
+            last_context_failure = monotonic()
             log("init_cuda %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e) from None
 
@@ -2113,7 +2113,7 @@ cdef class Encoder:
             info["free_memory_pct"] = int(100.0*self.free_memory/m)
         #calculate fps:
         cdef int f = 0
-        cdef double now = monotonic_time()
+        cdef double now = monotonic()
         cdef double last_time = now
         cdef double cut_off = now-10.0
         cdef double ms_per_frame = 0
@@ -2397,7 +2397,7 @@ cdef class Encoder:
         else:
             #this is a numpy.ndarray type:
             buf = self.inputBuffer.data
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         cdef unsigned long copy_len
         cdef unsigned long pix_len = len(pixels)
         assert pix_len>=(h*image_stride), "image pixel buffer is too small: expected at least %ix%i=%i bytes but got %i bytes" % (h, image_stride, h*image_stride, pix_len)
@@ -2443,7 +2443,7 @@ cdef class Encoder:
                 log.error(" at line %i of %i", i+1, h)
                 raise
             copy_len = min_stride * h
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         cdef double elapsed = end-start
         if elapsed==0:
             #mswindows monotonic time minimum precision is 1ms...
@@ -2482,7 +2482,7 @@ cdef class Encoder:
             #scaling so scale exact dimensions, not padded input dimensions:
             in_w, in_h = w, h
 
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         args = (self.cudaInputBuffer, numpy.int32(in_w), numpy.int32(in_h), numpy.int32(stride),
                self.cudaOutputBuffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(self.outputPitch),
                numpy.int32(w), numpy.int32(h))
@@ -2495,7 +2495,7 @@ cdef class Encoder:
             log("calling %s%s with block=%s, grid=%s", self.kernel_name, log_args, (blockw,blockh,1), (gridw, gridh))
         self.kernel(*args, block=(blockw,blockh,1), grid=(gridw, gridh))
         cuda_context.synchronize()
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         cdef elapsed = end-start
         if elapsed==0:
             #mswindows monotonic time minimum precision is 1ms...
@@ -2529,7 +2529,7 @@ cdef class Encoder:
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         assert input_size>0, "invalid input size %i" % input_size
 
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         if DEBUG_API:
             log("nvEncEncodePicture(%#x)", <uintptr_t> &picParams)
         memset(&picParams, 0, sizeof(NV_ENC_PIC_PARAMS))
@@ -2620,7 +2620,7 @@ cdef class Encoder:
             client_options["quality"] = min(99, self.quality)   #ensure we cap it at 99 because this is lossy
         if self.scaling!=(1,1):
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         self.frames += 1
         self.last_frame_times.append((start, end))
         cdef double elapsed = end-start
@@ -2901,7 +2901,7 @@ cdef class Encoder:
         if DEBUG_API:
             log("nvEncOpenEncodeSessionEx(..)=%s", r)
         if r in OPEN_TRANSIENT_ERROR:
-            last_context_failure = monotonic_time()
+            last_context_failure = monotonic()
             msg = "could not open encode session: %s" % (nvencStatusInfo(r) or r)
             log(msg)
             raise TransientCodecException(msg)
@@ -2910,7 +2910,7 @@ cdef class Encoder:
                 msg = nvencStatusInfo(r) or str(r)
             else:
                 msg = "context is NULL"
-            last_context_failure = monotonic_time()
+            last_context_failure = monotonic()
             raise Exception("cannot open encoding session: %s, %i contexts are in use" % (msg, context_counter.get()))
         raiseNVENC(r, "opening session")
         context_counter.increase()

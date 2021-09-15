@@ -7,11 +7,12 @@
 
 import os
 from io import BytesIO
+from time import monotonic
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.net.compression import Compressed
-from xpra.os_util import monotonic_time, strtobytes, bytestostr
+from xpra.os_util import strtobytes, bytestostr
 from xpra.util import typedict, envint, envbool, DEFAULT_METADATA_SUPPORTED, XPRA_BANDWIDTH_NOTIFICATION_ID
 from xpra.log import Logger
 
@@ -584,7 +585,7 @@ class WindowsMixin(StubSourceMixin):
             damage_options = {}
         s = self.statistics
         if s:
-            s.damage_last_events.append((wid, monotonic_time(), w*h))
+            s.damage_last_events.append((wid, monotonic(), w*h))
         ws = self.make_window_source(wid, window)
         ws.damage(x, y, w, h, damage_options)
 
@@ -599,7 +600,7 @@ class WindowsMixin(StubSourceMixin):
             log.error("client_ack_damage when we don't send any window data!?")
             return
         if decode_time>0:
-            self.statistics.client_decode_time.append((wid, monotonic_time(), width*height, decode_time))
+            self.statistics.client_decode_time.append((wid, monotonic(), width*height, decode_time))
         ws = self.window_sources.get(wid)
         if ws:
             ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message)
@@ -615,7 +616,7 @@ class WindowsMixin(StubSourceMixin):
         if not gs:
             #window cleaned up?
             return
-        now = monotonic_time()
+        now = monotonic()
         elapsed = now-self.bandwidth_warning_time
         bandwidthlog("record_congestion_event(%s, %i, %i) bandwidth_warnings=%s, elapsed time=%i",
                      source, late_pct, send_speed, self.bandwidth_warnings, elapsed)

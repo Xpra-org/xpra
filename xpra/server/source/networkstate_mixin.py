@@ -6,9 +6,10 @@
 
 import os
 import time
+from time import monotonic
 
 from xpra.util import envbool, envint, typedict, CLIENT_PING_TIMEOUT
-from xpra.os_util import monotonic_time, POSIX
+from xpra.os_util import POSIX
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -42,7 +43,7 @@ class NetworkStateMixin(StubSourceMixin):
     def get_info(self) -> dict:
         lpe = 0
         if self.last_ping_echoed_time>0:
-            lpe = int(monotonic_time()*1000-self.last_ping_echoed_time)
+            lpe = int(monotonic()*1000-self.last_ping_echoed_time)
         info = {
                 "bandwidth-limit"   : {
                     "setting"       : self.bandwidth_limit or 0,
@@ -56,7 +57,7 @@ class NetworkStateMixin(StubSourceMixin):
     def ping(self):
         self.ping_timer = None
         #NOTE: all ping time/echo time/load avg values are in milliseconds
-        now_ms = int(1000*monotonic_time())
+        now_ms = int(1000*monotonic())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send_async("ping", now_ms, int(time.time()*1000), will_have_more=False)
         timeout = PING_TIMEOUT
@@ -104,13 +105,13 @@ class NetworkStateMixin(StubSourceMixin):
         if timer:
             self.source_remove(timer)
         self.last_ping_echoed_time = echoedtime
-        client_ping_latency = monotonic_time()-echoedtime/1000.0
+        client_ping_latency = monotonic()-echoedtime/1000.0
         stats = getattr(self, "statistics", None)
         if stats and 0<client_ping_latency<60:
-            stats.client_ping_latency.append((monotonic_time(), client_ping_latency))
+            stats.client_ping_latency.append((monotonic(), client_ping_latency))
         self.client_load = l1, l2, l3
         if 0<=server_ping_latency<60000 and stats:
-            stats.server_ping_latency.append((monotonic_time(), server_ping_latency/1000.0))
+            stats.server_ping_latency.append((monotonic(), server_ping_latency/1000.0))
         log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
 
 

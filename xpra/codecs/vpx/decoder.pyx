@@ -6,6 +6,7 @@
 #cython: wraparound=False
 
 import os
+from time import monotonic
 
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
@@ -19,7 +20,6 @@ from libc.stdint cimport uintptr_t, uint8_t
 from libc.string cimport memset, memcpy
 from libc.stdlib cimport malloc
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
-from xpra.monotonic_time cimport monotonic_time
 
 
 cpus = os.cpu_count()
@@ -256,7 +256,7 @@ cdef class Decoder:
         cdef int stride
         assert self.context!=NULL
 
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         cdef vpx_codec_err_t ret = -1
         cdef uint8_t* src
         cdef Py_ssize_t src_len
@@ -297,7 +297,7 @@ cdef class Decoder:
 
             pixels.append(memoryview(output_buf))
         self.frames += 1
-        cdef double elapsed = 1000*(monotonic_time()-start)
+        cdef double elapsed = 1000*(monotonic()-start)
         log("%s frame %4i decoded in %3ims", self.encoding, self.frames, elapsed)
         return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
 

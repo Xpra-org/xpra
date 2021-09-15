@@ -7,11 +7,12 @@
 
 import shlex
 import os.path
+from time import monotonic
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import (
-    monotonic_time, bytestostr,
+    bytestostr,
     restore_script_env,
     OSX, WIN32, POSIX,
     )
@@ -309,8 +310,8 @@ class ChildCommandServer(StubServerMixin):
         if not wait_for:
             return
         log("waiting for child commands to exit: %s", wait_for)
-        start = monotonic_time()
-        while monotonic_time()-start<TERMINATE_DELAY and wait_for:
+        start = monotonic()
+        while monotonic()-start<TERMINATE_DELAY and wait_for:
             self.child_reaper.poll()
             #this is called from the UI thread, we cannot sleep
             #sleep(1)

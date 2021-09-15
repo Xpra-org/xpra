@@ -7,13 +7,14 @@
 #pylint: disable=wrong-import-position
 
 import os
+from time import monotonic
 
 from xpra.sound.gstreamer_util import import_gst, GST_FLOW_OK
 gst = import_gst()
 from gi.repository import GLib, GObject
 
 from xpra.util import envint, AtomicInteger, noerr, first_time
-from xpra.os_util import monotonic_time, register_SIGUSR_signals
+from xpra.os_util import register_SIGUSR_signals
 from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.log import Logger
 
@@ -131,7 +132,7 @@ class SoundPipeline(GObject.GObject):
         gstlog("pipeline elements=%s", elements)
         self.pipeline_str = " ! ".join([x for x in elements if x is not None])
         gstlog("pipeline=%s", self.pipeline_str)
-        self.start_time = monotonic_time()
+        self.start_time = monotonic()
         try:
             self.pipeline = gst.parse_launch(self.pipeline_str)
         except Exception as e:

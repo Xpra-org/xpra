@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 from collections import namedtuple
 from ctypes import (
     create_string_buffer, create_unicode_buffer,
@@ -12,7 +13,7 @@ from ctypes import (
     )
 from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
 
-from xpra.os_util import strtobytes, monotonic_time
+from xpra.os_util import strtobytes
 from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
@@ -476,7 +477,7 @@ class ShadowServer(GTKShadowServerBase):
             if not SetPhysicalCursorPos(x, y):
                 #rate limit the warnings:
                 start, count = self.cursor_errors
-                now = monotonic_time()
+                now = monotonic()
                 elapsed = now-start
                 if count==0 or (count>1 and elapsed>10):
                     log.warn("Warning: cannot move cursor")

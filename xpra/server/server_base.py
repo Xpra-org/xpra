@@ -7,12 +7,13 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 
 from xpra.server.server_core import ServerCore
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 from xpra.server.background_worker import add_work_item
 from xpra.net.common import may_log_packet
-from xpra.os_util import monotonic_time, bytestostr, strtobytes, WIN32
+from xpra.os_util import bytestostr, strtobytes, WIN32
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool,
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
@@ -141,9 +142,9 @@ class ServerBase(ServerBaseClass):
         from xpra.scripts import config
         config.warn = log.warn
         for c in SERVER_BASES:
-            start = monotonic_time()
+            start = monotonic()
             c.init(self, opts)
-            end = monotonic_time()
+            end = monotonic()
             log("%3ims in %s.init", 1000*(end-start), c)
         self.sharing = opts.sharing
         self.lock = opts.lock
@@ -153,9 +154,9 @@ class ServerBase(ServerBaseClass):
     def setup(self):
         log("starting component init")
         for c in SERVER_BASES:
-            start = monotonic_time()
+            start = monotonic()
             c.setup(self)
-            end = monotonic_time()
+            end = monotonic()
             log("%3ims in %s.setup", 1000*(end-start), c)
 
     def threaded_init(self):
@@ -558,10 +559,10 @@ class ServerBase(ServerBaseClass):
 
     def send_hello_info(self, proto):
         self.wait_for_threaded_init()
-        start = monotonic_time()
+        start = monotonic()
         def cb(proto, info):
             self.do_send_info(proto, info)
-            end = monotonic_time()
+            end = monotonic()
             log.info("processed info request from %s in %ims",
                      proto._conn, (end-start)*1000)
         self.get_all_info(cb, proto, None)
@@ -581,14 +582,14 @@ class ServerBase(ServerBaseClass):
 
     def get_info(self, proto=None, client_uuids=None) -> dict:
         log("ServerBase.get_info%s", (proto, client_uuids))
-        start = monotonic_time()
+        start = monotonic()
         if client_uuids:
             sources = [ss for ss in self._server_sources.values() if ss.uuid in client_uuids]
         else:
             sources = tuple(self._server_sources.values())
         log("info-request: sources=%s", sources)
         info = self.do_get_info(proto, sources)
-        log("ServerBase.get_info took %.1fms", 1000.0*(monotonic_time()-start))
+        log("ServerBase.get_info took %.1fms", 1000.0*(monotonic()-start))
         return info
 
     def get_packet_handlers_info(self) -> dict:
@@ -610,16 +611,16 @@ class ServerBase(ServerBaseClass):
 
     def do_get_info(self, proto, server_sources=None) -> dict:
         log("ServerBase.do_get_info%s", (proto, server_sources))
-        start = monotonic_time()
+        start = monotonic()
         info = {}
         def up(prefix, d):
             merge_dicts(info, {prefix : d})
 
         for c in SERVER_BASES:
             try:
-                cstart = monotonic_time()
+                cstart = monotonic()
                 merge_dicts(info, c.get_info(self, proto))
-                cend = monotonic_time()
+                cend = monotonic()
                 log("%s.get_info(%s) took %ims", c, proto, int(1000*(cend-cstart)))
             except Exception:
                 log.error("Error collecting information from %s", c, exc_info=True)
@@ -649,7 +650,7 @@ class ServerBase(ServerBaseClass):
                 sinfo["ui-driver"] = self.ui_driver==ss.uuid
                 cinfo[i] = sinfo
             up("client", cinfo)
-        log("ServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
+        log("ServerBase.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
 

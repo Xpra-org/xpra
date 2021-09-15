@@ -5,12 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from collections import deque
 
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.platform.features import CLIPBOARDS
 from xpra.util import envint, typedict
-from xpra.os_util import monotonic_time
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -102,7 +102,7 @@ class ClipboardConnection(StubSourceMixin):
             return
         if getattr(self, "suspended", False):
             return
-        now = monotonic_time()
+        now = monotonic()
         self.clipboard_stats.append(now)
         if len(self.clipboard_stats)>=MAX_CLIPBOARD_LIMIT:
             event = self.clipboard_stats[-MAX_CLIPBOARD_LIMIT]

@@ -11,13 +11,14 @@
 import sys
 import os.path
 import gi
+from time import monotonic
 gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
 from gi.repository import GLib, Gdk, Gtk  #pylint: disable=no-name-in-module
 
 from xpra.util import flatten_dict, envbool
-from xpra.os_util import monotonic_time, load_binary_file
+from xpra.os_util import load_binary_file
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.server import server_features
 from xpra.server.server_base import ServerBase
@@ -189,12 +190,12 @@ class GTKServerBase(ServerBase):
         return cinfo
 
     def do_get_info(self, proto, *args):
-        start = monotonic_time()
+        start = monotonic()
         info = super().do_get_info(proto, *args)
         vi = get_gtk_version_info()
         vi["type"] = "Python/gtk"
         info.setdefault("server", {}).update(vi)
-        log("GTKServerBase.do_get_info took %ims", (monotonic_time()-start)*1000)
+        log("GTKServerBase.do_get_info took %ims", (monotonic()-start)*1000)
         return info
 
     def get_root_window_size(self):

@@ -8,12 +8,13 @@
 #pylint: disable=no-member
 
 import os
+from time import monotonic
 from threading import RLock
 import pycuda               #@UnresolvedImport
 from pycuda import driver   #@UnresolvedImport
 
 from xpra.util import engs, print_nested_dict, envint, csv, first_time
-from xpra.os_util import monotonic_time, load_binary_file
+from xpra.os_util import load_binary_file
 from xpra.log import Logger
 
 log = Logger("cuda")
@@ -448,10 +449,10 @@ class cuda_device_context:
     def __enter__(self):
         assert self.lock.acquire(False), "failed to acquire cuda device lock"
         if not self.context:
-            start = monotonic_time()
+            start = monotonic()
             cf = driver.ctx_flags
             self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
-            end = monotonic_time()
+            end = monotonic()
             self.context.pop()
             log("cuda context allocation took %ims", 1000*(end-start))
         self.context.push()
@@ -584,7 +585,7 @@ def get_CUDA_function(function_name):
         log(" loaded %s bytes", len(data))
         KERNELS[function_name] = data
     #now load from cubin:
-    start = monotonic_time()
+    start = monotonic()
     try:
         mod = driver.module_from_buffer(data)
     except Exception as e:
@@ -598,7 +599,7 @@ def get_CUDA_function(function_name):
         CUDA_function = mod.get_function(fn)
     except driver.LogicError as e:
         raise Exception("failed to load '%s' from %s: %s" % (function_name, mod, e)) from None
-    end = monotonic_time()
+    end = monotonic()
     log("loading function %s from pre-compiled cubin took %.1fms", function_name, 1000.0*(end-start))
     return CUDA_function
 

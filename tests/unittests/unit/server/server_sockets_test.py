@@ -8,9 +8,10 @@ import os
 import shutil
 import unittest
 import tempfile
+from time import monotonic
 
 from xpra.util import repr_ellipsized, envint
-from xpra.os_util import load_binary_file, pollwait, monotonic_time, OSX, POSIX
+from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.net.net_util import get_free_tcp_port
 from xpra.platform.dotxpra import DISPLAY_PREFIX
@@ -42,7 +43,7 @@ class ServerSocketsTest(ServerTestUtil):
 		server = self.start_server(display, "--auth=%s" % auth, "--printing=no", *server_args)
 		#we should always be able to get the version:
 		uri = uri_prefix + str(display_no)
-		start = monotonic_time()
+		start = monotonic()
 		while True:
 			client = self.run_xpra(["version", uri] + server_args)
 			r = pollwait(client, CONNECT_WAIT)
@@ -50,7 +51,7 @@ class ServerSocketsTest(ServerTestUtil):
 				break
 			if r is None:
 				client.terminate()
-			if monotonic_time()-start>SUBPROCESS_WAIT:
+			if monotonic()-start>SUBPROCESS_WAIT:
 				raise Exception("version client failed to connect, returned %s" % estr(r))
 		#try to connect
 		cmd = ["connect-test", uri] + client_args

@@ -4,9 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from gi.repository import Gdk
 
-from xpra.os_util import monotonic_time
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.gtk_common.gtk_util import pixbuf_save_to_memory
 from xpra.log import Logger
@@ -18,7 +18,7 @@ def get_rgb_rawdata(window, x, y, width, height):
     """
         Extracts pixels from the given pixmap
     """
-    start = monotonic_time()
+    start = monotonic()
     pixmap_w, pixmap_h = window.get_geometry()[2:4]
     # Just in case we somehow end up with damage larger than the pixmap,
     # we don't want to start requesting random chunks of memory (this
@@ -33,7 +33,7 @@ def get_rgb_rawdata(window, x, y, width, height):
     if width <= 0 or height <= 0:
         return None
     pixbuf = Gdk.pixbuf_get_from_window(window, x, y, width, height)
-    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000*(monotonic_time()-start)))
+    log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000*(monotonic()-start)))
     raw_data = pixbuf.get_pixels()
     rowstride = pixbuf.get_rowstride()
     return (x, y, width, height, raw_data, "RGB", 24, rowstride, 3)

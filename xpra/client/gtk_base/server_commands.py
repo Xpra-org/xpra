@@ -5,10 +5,10 @@
 # later version. See the file COPYING for details.
 
 import sys
+from time import monotonic
 from gi.repository import GLib, Gtk
 
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.os_util import monotonic_time
 from xpra.util import AdHocStruct, typedict
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, get_icon_pixbuf,
@@ -206,7 +206,7 @@ def main(): # pragma: no cover
             enable_debug_for("util")
 
         client = AdHocStruct()
-        client.server_last_info_time = monotonic_time()
+        client.server_last_info_time = monotonic()
         commands_info = {
             0: {'returncode': None, 'name': 'xterm', 'pid': 542, 'dead': False, 'ignore': True, 'command': ('xterm',), 'forget': False},
             'start-child'              : (),

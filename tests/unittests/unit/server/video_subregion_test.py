@@ -5,10 +5,10 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from time import monotonic
 from collections import deque
 from gi.repository import GLib
 
-from xpra.os_util import monotonic_time
 try:
     from xpra.server.window import video_subregion
     from xpra import rectangle
@@ -47,7 +47,7 @@ class TestVideoSubregion(unittest.TestCase):
         r.identify_video_subregion(ww, wh, video_subregion.MIN_EVENTS, last_damage_events)
         assert r.rectangle is None
 
-        vr = (monotonic_time(), 100, 100, 320, 240)
+        vr = (monotonic(), 100, 100, 320, 240)
         log("* easiest case: all updates in one region")
         last_damage_events = []
         for _ in range(50):
@@ -62,7 +62,7 @@ class TestVideoSubregion(unittest.TestCase):
         assert r.rectangle is None
 
         log("* checking that full window can be a region")
-        vr = (monotonic_time(), 0, 0, ww, wh)
+        vr = (monotonic(), 0, 0, ww, wh)
         last_damage_events = []
         for _ in range(50):
             last_damage_events.append(vr)
@@ -73,13 +73,13 @@ class TestVideoSubregion(unittest.TestCase):
         last_damage_events = deque(maxlen=150)
         for x in range(4):
             for y in range(4):
-                vr = (monotonic_time(), ww*x/4, wh*y/4, ww/4, wh/4)
+                vr = (monotonic(), ww*x/4, wh*y/4, ww/4, wh/4)
                 for _ in range(3):
                     last_damage_events.append(vr)
         r.identify_video_subregion(ww, wh, 150, last_damage_events)
         assertiswin()
 
-        vr = (monotonic_time(), ww/4, wh/4, ww/2, wh/2)
+        vr = (monotonic(), ww/4, wh/4, ww/2, wh/2)
         log("* mixed with region using 1/4 of window and 1/3 of updates: %s", vr)
         for _ in range(24):
             last_damage_events.append(vr)
@@ -91,8 +91,8 @@ class TestVideoSubregion(unittest.TestCase):
         log("* checking that two video regions quite far apart do not get merged")
         last_damage_events = deque(maxlen=150)
         r.reset()
-        v1 = (monotonic_time(), 100, 100, 320, 240)
-        v2 = (monotonic_time(), 500, 500, 320, 240)
+        v1 = (monotonic(), 100, 100, 320, 240)
+        v2 = (monotonic(), 500, 500, 320, 240)
         for _ in range(50):
             last_damage_events.append(v1)
             last_damage_events.append(v2)
@@ -103,10 +103,10 @@ class TestVideoSubregion(unittest.TestCase):
         for N1, N2 in ((50, 50), (60, 40), (50, 30)):
             last_damage_events = deque(maxlen=150)
             r.reset()
-            v1 = (monotonic_time(), 100, 100, 320, 240)
+            v1 = (monotonic(), 100, 100, 320, 240)
             for _ in range(N1):
                 last_damage_events.append(v1)
-            v2 = (monotonic_time(), 460, 120, 320, 240)
+            v2 = (monotonic(), 460, 120, 320, 240)
             for _ in range(N2):
                 last_damage_events.append(v2)
             r.identify_video_subregion(ww, wh, 100, last_damage_events)

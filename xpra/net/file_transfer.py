@@ -8,9 +8,10 @@ import os
 import subprocess
 import hashlib
 import uuid
+from time import monotonic
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import monotonic_time, bytestostr, strtobytes, umask_context, POSIX, WIN32
+from xpra.os_util import bytestostr, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, envint, envbool, engs, net_utf8, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.simple_stats import std_unit
@@ -324,7 +325,7 @@ class FileTransferHandler(FileTransferAttributes):
             start = chunk_state[0]
             send_id = chunk_state[-3]
             filesize = chunk_state[6]
-            self.transfer_progress_update(False, send_id, monotonic_time()-start, position, filesize, error)
+            self.transfer_progress_update(False, send_id, monotonic()-start, position, filesize, error)
         fd = chunk_state[1]
         if chunk_state[-1]+1!=chunk:
             filelog.error("Error: chunk number mismatch, expected %i but got %i", chunk_state[-1]+1, chunk)
@@ -374,7 +375,7 @@ class FileTransferHandler(FileTransferAttributes):
 
         progress(written)
         start_time = chunk_state[0]
-        elapsed = monotonic_time()-start_time
+        elapsed = monotonic()-start_time
         mimetype = bytestostr(mimetype)
         filelog("%i bytes received in %i chunks, took %ims", filesize, chunk, elapsed*1000)
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
@@ -406,7 +407,7 @@ class FileTransferHandler(FileTransferAttributes):
 
     def _process_send_file(self, packet):
         #the remote end is sending us a file
-        start = monotonic_time()
+        start = monotonic()
         basefilename, mimetype, printit, openit, filesize, file_data, options = packet[1:8]
         send_id = ""
         if len(packet)>=9:
@@ -463,7 +464,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk = 0
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             chunk_state = [
-                monotonic_time(),
+                monotonic(),
                 fd, filename, mimetype,
                 printit, openit, filesize,
                 options, digest, 0, False, send_id,
@@ -494,7 +495,7 @@ class FileTransferHandler(FileTransferAttributes):
             os.write(fd, file_data)
         finally:
             os.close(fd)
-        self.transfer_progress_update(False, send_id, monotonic_time()-start, filesize, filesize, None)
+        self.transfer_progress_update(False, send_id, monotonic()-start, filesize, filesize, None)
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
 
@@ -571,14 +572,14 @@ class FileTransferHandler(FileTransferAttributes):
             printlog("printing failed and returned %i", job)
             delfile()
             return
-        start = monotonic_time()
+        start = monotonic()
         def check_printing_finished():
             done = printing_finished(job)
             printlog("printing_finished(%s)=%s", job, done)
             if done:
                 delfile()
                 return False
-            if monotonic_time()-start>=PRINT_JOB_TIMEOUT:
+            if monotonic()-start>=PRINT_JOB_TIMEOUT:
                 printlog.warn("Warning: print job %s timed out", job)
                 delfile()
                 return False
@@ -874,7 +875,7 @@ class FileTransferHandler(FileTransferAttributes):
             options["file-chunk-id"] = chunk_id
             #timer to check that the other end is requesting more chunks:
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, 0)
-            chunk_state = [monotonic_time(), data, chunk_size, timer, 0]
+            chunk_state = [monotonic(), data, chunk_size, timer, 0]
             self.send_chunks_in_progress[chunk_id] = chunk_state
             cdata = ""
             filelog("using chunks, sending initial file-chunk-id=%s, for chunk size=%s",
@@ -929,7 +930,7 @@ class FileTransferHandler(FileTransferAttributes):
         start_time, data, chunk_size, timer, chunk = chunk_state
         if not data:
             #all sent!
-            elapsed = monotonic_time()-start_time
+            elapsed = monotonic()-start_time
             filelog("%i chunks of %i bytes sent in %ims (%sB/s)",
                     chunk, chunk_size, elapsed*1000, std_unit(chunk*chunk_size/elapsed))
             self.cancel_sending(chunk_id)

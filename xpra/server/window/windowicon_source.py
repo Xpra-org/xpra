@@ -10,8 +10,9 @@ import os
 import threading
 from io import BytesIO
 from PIL import Image
+from time import monotonic
 
-from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes
+from xpra.os_util import load_binary_file, memoryview_to_bytes
 from xpra.net import compression
 from xpra.util import envbool, envint, csv
 from xpra.log import Logger
@@ -223,7 +224,7 @@ class WindowIconSource:
                 log("scaling window icon down to %sx%s", rw, rh)
                 image = image.resize((rw, rh), Image.ANTIALIAS)
             if SAVE_WINDOW_ICONS:
-                filename = "server-window-%i-icon-%i.png" % (self.wid, int(monotonic_time()))
+                filename = "server-window-%i-icon-%i.png" % (self.wid, int(monotonic()))
                 image.save(filename, 'PNG')
                 log("server window icon saved to %s", filename)
 

@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
+from time import monotonic
 from xpra.util import envint, AtomicInteger
-from xpra.os_util import monotonic_time
 from xpra.util import typedict
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -52,7 +52,7 @@ class RPCClient(StubClientMixin):
         rpcid = self.rpc_counter.increase()
         self.rpc_filter_pending(rpcid)
         #keep track of this request (for timeout / error and reply callbacks):
-        req = monotonic_time(), rpc_type, rpc_args, reply_handler, error_handler
+        req = monotonic(), rpc_type, rpc_args, reply_handler, error_handler
         self.rpc_pending_requests[rpcid] = req
         log("sending %s rpc request %s to server: %s", rpc_type, rpcid, req)
         packet = ["rpc", rpc_type, rpcid] + rpc_args
@@ -67,7 +67,7 @@ class RPCClient(StubClientMixin):
             if v is None:
                 continue
             t, rpc_type, rpc_args, reply_handler, ecb = v
-            if 1000*(monotonic_time()-t)>=RPC_TIMEOUT:
+            if 1000*(monotonic()-t)>=RPC_TIMEOUT:
                 log.warn("Warning: %s rpc request: %s has timed out", rpc_type, reply_handler)
                 log.warn(" args: %s", rpc_args)
                 try:

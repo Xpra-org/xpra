@@ -6,6 +6,7 @@
 
 import os.path
 import sys
+from time import monotonic
 
 from gi.repository import GLib
 from gi.repository import GObject
@@ -17,9 +18,8 @@ from xpra.util import (
     SERVER_UPGRADE, DONE,
     )
 from xpra.os_util import (
-    bytestostr, strtobytes,
+    bytestostr,
     get_hex_uuid, hexstr,
-    monotonic_time,
     POSIX, OSX,
     )
 from xpra.simple_stats import std_unit
@@ -483,7 +483,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.cancel_info_timer()
         self.info_request_pending = False
         self.server_last_info = typedict(packet[1])
-        self.server_last_info_time = monotonic_time()
+        self.server_last_info_time = monotonic()
         #log.info("server_last_info=%s", self.server_last_info)
         self.update_screen()
 

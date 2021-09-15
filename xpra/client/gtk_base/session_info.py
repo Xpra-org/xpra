@@ -8,12 +8,13 @@
 import sys
 import datetime
 import platform
+from time import monotonic
 from collections import deque
 from gi.repository import GLib, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
-from xpra.os_util import bytestostr, strtobytes, get_linux_distribution, monotonic_time
-from xpra.util import prettify_plug_name, typedict, envint, csv, iround, repr_ellipsized
+from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
+from xpra.util import prettify_plug_name, typedict, envint, csv, iround
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client import mixin_features
@@ -65,7 +66,7 @@ def fpsstr(v):
     return "%s" % (int(v*10)/10.0)
 
 def average(seconds, pixel_counter):
-    now = monotonic_time()
+    now = monotonic()
     total = 0
     total_n = 0
     mins = None
@@ -630,7 +631,7 @@ class SessionInfo(Gtk.Window):
         if self.is_closed or not conn:
             return False
         self.client.send_ping()
-        self.last_populate_time = monotonic_time()
+        self.last_populate_time = monotonic()
 
         if self.show_client:
             self.show_opengl_state()
@@ -646,7 +647,7 @@ class SessionInfo(Gtk.Window):
 
         if self.show_client and mixin_features.windows:
             #count pixels in the last second:
-            since = monotonic_time()-1
+            since = monotonic()-1
             decoded = [0]+[pixels for _,t,pixels in self.client.pixel_counter if t>since]
             self.pixel_in_data.append(sum(decoded))
         #update latency values
@@ -655,7 +656,7 @@ class SessionInfo(Gtk.Window):
         def get_ping_latency_records(src, size=25):
             recs = {}
             src_list = list(src)
-            now = int(monotonic_time())
+            now = int(monotonic())
             while src_list and len(recs)<size:
                 when, value = src_list.pop()
                 if when>=(now-1):           #ignore last second
@@ -1017,10 +1018,10 @@ class SessionInfo(Gtk.Window):
 
     def populate_statistics(self):
         log("populate_statistics()")
-        if monotonic_time()-self.last_populate_statistics<1.0:
+        if monotonic()-self.last_populate_statistics<1.0:
             #don't repopulate more than every second
             return True
-        self.last_populate_statistics = monotonic_time()
+        self.last_populate_statistics = monotonic()
         self.client.send_info_request()
         def setall(labels, values):
             assert len(labels)==len(values), "%s labels and %s values (%s vs %s)" % (
@@ -1148,7 +1149,7 @@ class SessionInfo(Gtk.Window):
         bh = self.tab_button_box.get_preferred_height()[0]
         if h<=0:
             return True
-        start_x_offset = min(1.0, (monotonic_time()-self.last_populate_time)*0.95)
+        start_x_offset = min(1.0, (monotonic()-self.last_populate_time)*0.95)
         rect = box.get_allocation()
         maxw, maxh = self.client.get_root_size()
         ngraphs = 2+int(SHOW_SOUND_STATS)

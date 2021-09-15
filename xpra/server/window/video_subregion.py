@@ -5,8 +5,8 @@
 # later version. See the file COPYING for details.
 
 import math
+from time import monotonic
 
-from xpra.os_util import monotonic_time
 from xpra.util import envint, envbool
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all    #@UnresolvedImport
 from xpra.log import Logger
@@ -81,7 +81,7 @@ class VideoSubregion:
         self.nonvideo_refresh_timer = 0
         #keep track of how much extra we batch non-video regions (milliseconds):
         self.non_max_wait = 150
-        self.min_time = monotonic_time()
+        self.min_time = monotonic()
 
     def reset(self):
         self.cancel_refresh_timer()
@@ -293,8 +293,8 @@ class VideoSubregion:
             if not self.rectangle:
                 return
             #just update the fps:
-            from_time = max(starting_at, monotonic_time()-MAX_TIME, self.min_time)
-            self.time = monotonic_time()
+            from_time = max(starting_at, monotonic()-MAX_TIME, self.min_time)
+            self.time = monotonic()
             lde = tuple(x for x in tuple(last_damage_events) if x[0]>=from_time)
             incount = 0
             for _,x,y,w,h in lde:
@@ -302,7 +302,7 @@ class VideoSubregion:
                 inregion = r.intersection_rect(self.rectangle)
                 if inregion:
                     incount += inregion.width*inregion.height
-            elapsed = monotonic_time()-from_time
+            elapsed = monotonic()-from_time
             if elapsed<=0:
                 self.fps = 0
             else:
@@ -335,11 +335,11 @@ class VideoSubregion:
 
         def update_markers():
             self.counter = damage_events_count
-            self.time = monotonic_time()
+            self.time = monotonic()
 
         if self.counter+10>damage_events_count:
             #less than 10 events since last time we called update_markers:
-            elapsed = monotonic_time()-self.time
+            elapsed = monotonic()-self.time
             #how many damage events occurred since we chose this region:
             event_count = max(0, damage_events_count - self.set_at)
             #make the timeout longer when the region has worked longer:
@@ -352,7 +352,7 @@ class VideoSubregion:
                   event_count, self.counter, damage_events_count)
             return
 
-        from_time = max(starting_at, monotonic_time()-MAX_TIME, self.min_time)
+        from_time = max(starting_at, monotonic()-MAX_TIME, self.min_time)
         #create a list (copy) to work on:
         lde = tuple(x for x in tuple(last_damage_events) if x[0]>=from_time)
         dc = len(lde)
@@ -447,10 +447,10 @@ class VideoSubregion:
 
         def updateregion(rect):
             self.rectangle = rect
-            self.time = monotonic_time()
+            self.time = monotonic()
             self.inout = inoutcount(rect)
             self.score = scoreinout(ww, wh, rect, *self.inout)
-            elapsed = monotonic_time()-from_time
+            elapsed = monotonic()-from_time
             if elapsed<=0:
                 self.fps = 0
             else:

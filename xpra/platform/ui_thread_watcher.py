@@ -4,10 +4,10 @@
 # later version. See the file COPYING for details.
 
 import threading
+from time import monotonic
 from threading import Event
 
 from xpra.make_thread import start_thread
-from xpra.os_util import monotonic_time
 from xpra.util import envint
 from xpra.log import Logger
 
@@ -99,12 +99,12 @@ class UI_thread_watcher:
 
     def UI_thread_wakeup(self, scheduled_at=0):
         if scheduled_at:
-            elapsed = monotonic_time()-scheduled_at
+            elapsed = monotonic()-scheduled_at
         else:
             elapsed = 0
         self.ui_wakeup_timer = None
         log("UI_thread_wakeup(%s) elapsed=%.2fms", scheduled_at, 1000*elapsed)
-        self.last_UI_thread_time = monotonic_time()
+        self.last_UI_thread_time = monotonic()
         #UI thread was blocked?
         if self.UI_blocked:
             if self.announced_blocked:
@@ -117,7 +117,7 @@ class UI_thread_watcher:
     def poll_UI_loop(self):
         log("poll_UI_loop() running")
         while not self.exit.isSet():
-            delta = monotonic_time()-self.last_UI_thread_time
+            delta = monotonic()-self.last_UI_thread_time
             log("poll_UI_loop() last_UI_thread_time was %.1f seconds ago (max %i), UI_blocked=%s",
                 delta, self.max_delta/1000, self.UI_blocked)
             if delta>self.max_delta/1000.0:
@@ -132,13 +132,13 @@ class UI_thread_watcher:
                 #seems to be ok:
                 log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
-            now = monotonic_time()
+            now = monotonic()
             self.ui_wakeup_timer = self.timeout_add(0, self.UI_thread_wakeup, now)
-            wstart = monotonic_time()
+            wstart = monotonic()
             wait_time = self.polling_timeout/1000.0     #convert to seconds
             self.exit.wait(wait_time)
             if not self.exit.isSet():
-                wdelta = monotonic_time() - wstart
+                wdelta = monotonic() - wstart
                 log("wait(%.4f) actually waited %.4f", self.polling_timeout/1000.0, wdelta)
                 if wdelta>(wait_time+1):
                     #this can be caused by suspend + resume

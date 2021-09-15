@@ -8,11 +8,12 @@ import shlex
 import socket
 from subprocess import Popen, PIPE
 from threading import Event
+from time import monotonic
 import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
 from xpra.util import csv, envint, first_time, decode_str
-from xpra.os_util import osexpand, getuid, WIN32, POSIX, monotonic_time
+from xpra.os_util import osexpand, getuid, WIN32, POSIX
 from xpra.platform.paths import get_ssh_conf_dirs
 from xpra.log import Logger
 
@@ -130,8 +131,8 @@ class SSHServer(paramiko.ServerInterface):
             if not data:
                 return
             size = len(data)
-            start = monotonic_time()
-            while data and monotonic_time()-start<timeout:
+            start = monotonic()
+            while data and monotonic()-start<timeout:
                 sent = send_fn(data)
                 log("chan_send: sent %i bytes out of %i using %s", sent, size, send_fn)
                 if not sent:

@@ -12,7 +12,7 @@ import errno
 import signal
 import datetime
 from collections import deque
-from time import sleep, time
+from time import sleep, time, monotonic
 from queue import Queue
 from gi.repository import GLib
 
@@ -25,7 +25,7 @@ from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import start_thread
 from xpra.os_util import (
-    bytestostr, monotonic_time, memoryview_to_bytes,
+    bytestostr, memoryview_to_bytes,
     OSX, POSIX, is_Ubuntu,
     )
 from xpra.util import (
@@ -364,7 +364,7 @@ class WindowClient(StubClientMixin):
         else:
             rx, ry = -1, -1
         cx, cy = self.get_mouse_position()
-        start_time = monotonic_time()
+        start_time = monotonic()
         mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
                  x, y, rx, ry, wid, cx, cy)
         size = 10
@@ -1437,10 +1437,10 @@ class WindowClient(StubClientMixin):
         dtype = DRAW_TYPES.get(type(data), type(data))
         drawlog("process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i using %6s encoding with options=%s",
                 len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
-        start = monotonic_time()
+        start = monotonic()
         def record_decode_time(success, message=""):
             if success>0:
-                end = monotonic_time()
+                end = monotonic()
                 decode_time = int(end*1000*1000-start*1000*1000)
                 self.pixel_counter.append((start, end, width*height))
                 dms = "%sms" % (int(decode_time/100)/10.0)

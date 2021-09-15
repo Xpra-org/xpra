@@ -4,9 +4,9 @@
 # later version. See the file COPYING for details.
 
 import time
+from time import monotonic
 
 from libc.stdint cimport uintptr_t
-from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from pycuda import driver
@@ -310,13 +310,13 @@ cdef nvjpegChromaSubsampling_t get_subsampling(int quality):
 
 def encode(image, int quality=50, speed=50):
     from xpra.codecs.cuda_common.cuda_context import select_device
-    cdef double start = monotonic_time()
+    cdef double start = monotonic()
     cuda_device_id, cuda_device = select_device()
     if cuda_device_id<0 or not cuda_device:
         raise Exception("failed to select a cuda device")
     log("using device %s", cuda_device)
     cuda_ctx = cuda_device.make_context(flags=driver.ctx_flags.SCHED_AUTO | driver.ctx_flags.MAP_HOST)
-    cdef double end = monotonic_time()
+    cdef double end = monotonic()
     log("device init took %.1fms", 1000*(end-start))
     try:
         return device_encode(cuda_device, image, quality, speed)
@@ -374,7 +374,7 @@ cdef do_device_encode(device, image, int quality, int speed):
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
 
-    cdef double start = monotonic_time()
+    cdef double start = monotonic()
     cuda_buffer, buf_stride = driver.mem_alloc_pitch(stride, height, 4)
     log("wanted stride %i got %i", stride, buf_stride)
     if buf_stride>stride:
@@ -388,10 +388,10 @@ cdef do_device_encode(device, image, int quality, int speed):
     #pfstr = bytestostr(image.get_pixel_format())
     cdef Py_ssize_t buf_len = len(pixels)
     assert buf_len>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, buf_len, stride, height, stride*height)
-    cdef double end = monotonic_time()
+    cdef double end = monotonic()
     log("prepared in %.1fms", 1000*(end-start))
 
-    start = monotonic_time()
+    start = monotonic()
     log("uploading %i bytes to %#x", buf_len, <uintptr_t> int(cuda_buffer))
     driver.memcpy_htod(cuda_buffer, pixels)
     #nv_image.channel[0] = <unsigned char*> buf
@@ -424,7 +424,7 @@ cdef do_device_encode(device, image, int quality, int speed):
     errcheck(r, "nvjpegEncoderParamsDestroy %#x", <uintptr_t> nv_enc_params)
     r = nvjpegEncoderStateDestroy(nv_enc_state)
     errcheck(r, "nvjpegEncoderStateDestroy")
-    end = monotonic_time()
+    end = monotonic()
     log("got %i bytes in %.1fms", length, 1000*(end-start))
     if SAVE_TO_FILE:    # pragma: no cover
         filename = "./%s.jpeg" % time.time()

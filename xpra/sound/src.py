@@ -7,9 +7,10 @@
 import sys
 import os.path
 from queue import Queue
+from time import monotonic
 from gi.repository import GObject
 
-from xpra.os_util import SIGNAMES, monotonic_time
+from xpra.os_util import SIGNAMES
 from xpra.util import csv, envint, envbool, envfloat
 from xpra.sound.sound_pipeline import SoundPipeline
 from xpra.gtk_common.gobject_util import n_arg_signal
@@ -249,7 +250,7 @@ class SoundSource(SoundPipeline):
         if self.timestamp:
             delta = self.timestamp.get_property("delta")
             ts = (pts+delta)//1000000           #ns to ms
-            now = monotonic_time()
+            now = monotonic()
             latency = int(1000*now)-ts
             #log.info("emit_buffer: delta=%i, pts=%i, ts=%s, time=%s, latency=%ims",
             #    delta, pts, ts, now, (latency//1000000))
@@ -328,7 +329,7 @@ class SoundSource(SoundPipeline):
         for x in self.pending_metadata:
             self.inc_buffer_count()
             self.inc_byte_count(len(x))
-        metadata["time"] = int(monotonic_time()*1000)
+        metadata["time"] = int(monotonic()*1000)
         self.save_to_file(*(self.pending_metadata+[data]))
         self.idle_emit("new-buffer", data, metadata, self.pending_metadata)
         self.pending_metadata = []

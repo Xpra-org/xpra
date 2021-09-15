@@ -14,7 +14,7 @@ import subprocess
 from xpra.util import envbool, envint, repr_ellipsized
 from xpra.os_util import (
     OSX, OSEnvContext, POSIX,
-    pollwait, osexpand, bytestostr, monotonic_time,
+    pollwait, osexpand, bytestostr,
     )
 from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
@@ -144,8 +144,8 @@ class ProcessTestUtil(unittest.TestCase):
         def get_wait_for():
             return tuple(proc for proc in cls.processes if proc.poll() is None)
         wait_for = get_wait_for()
-        start = monotonic_time()
-        while wait_for and monotonic_time()-start<5:
+        start = time.monotonic()
+        while wait_for and time.monotonic()-start<5:
             if len(wait_for)==1:
                 pollwait(wait_for[0])
             else:

@@ -7,11 +7,12 @@
 
 import math
 import os.path
+from time import monotonic
 from urllib.parse import unquote
 from cairo import OPERATOR_OVER, LINE_CAP_ROUND #pylint: disable=no-name-in-module
 from gi.repository import Gtk, Gdk, Gio
 
-from xpra.os_util import bytestostr, strtobytes, is_X11, monotonic_time, WIN32, OSX, POSIX
+from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX
 from xpra.util import (
     typedict, envint, envbool, csv, first_time, net_utf8,
     WORKSPACE_UNSET, WORKSPACE_ALL, WORKSPACE_NAMES, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
@@ -1751,7 +1752,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         context.set_line_cap(LINE_CAP_ROUND)
         context.translate(w/2, h/2)
         from xpra.client.spinner import cv
-        count = int(monotonic_time()*4.0)
+        count = int(monotonic()*4.0)
         for i in range(8):      #8 lines
             context.set_source_rgba(0, 0, 0, cv.trs[count%8][i])
             context.move_to(0.0, -dim/4.0)

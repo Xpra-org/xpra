@@ -7,6 +7,7 @@ import os
 import curses
 import signal
 import traceback
+from time import monotonic
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
@@ -14,7 +15,7 @@ from xpra.version_util import caps_to_version, full_version_str
 from xpra.util import u, noerr, typedict, std, envint, csv, engs, repr_ellipsized
 from xpra.os_util import (
     platform_name, get_machine_id,
-    bytestostr, strtobytes, monotonic_time,
+    bytestostr, strtobytes,
     POSIX, SIGNAMES,
     )
 from xpra.exit_codes import EXIT_STR
@@ -136,14 +137,14 @@ class TopClient:
     def update_loop(self):
         while self.exit_code is None:
             self.update_screen()
-            elapsed = int(1000*monotonic_time()-self.last_getch)
+            elapsed = int(1000*monotonic()-self.last_getch)
             delay = max(100, min(1000, 1000-elapsed))//100
             curses.halfdelay(delay)
             try:
                 v = self.stdscr.getch()
             except Exception:
                 v = -1
-            self.last_getch = int(1000*monotonic_time())
+            self.last_getch = int(1000*monotonic())
             if v in EXIT_KEYS:
                 self.exit_code = 0
             if v in SIGNAL_KEYS:
@@ -170,7 +171,7 @@ class TopClient:
             env["XPRA_CONNECT_TIMEOUT"] = "3"
             proc = self.do_run_subcommand("top", env=env)
             if not proc:
-                self.message = monotonic_time(), "failed to execute subprocess", curses.color_pair(RED)
+                self.message = monotonic(), "failed to execute subprocess", curses.color_pair(RED)
                 return
             exit_code = proc.wait()
             txt = "top subprocess terminated"
@@ -182,7 +183,7 @@ class TopClient:
                     txt += " (%s)" % EXIT_STR.get(exit_code, "").replace("_", " ")
                 elif (exit_code-128) in SIGNAMES:   #pylint: disable=superfluous-parens
                     txt += " (%s)" % SIGNAMES[exit_code-128]
-            self.message = monotonic_time(), txt, attr
+            self.message = monotonic(), txt, attr
         finally:
             self.setup()
 
@@ -232,7 +233,7 @@ class TopClient:
                 return
             if self.message:
                 ts, txt, attr = self.message
-                if monotonic_time()-ts<10:
+                if monotonic()-ts<10:
                     self.stdscr.addstr(hpos, 0, txt, attr)
                     hpos += 1
                     if height<=hpos:
@@ -539,7 +540,7 @@ class TopSessionClient(InfoTimerClient):
             cpuinfo = self.slidictget("cpuinfo")
             if cpuinfo:
                 rinfo += ", %s" % cpuinfo.strget("hz_actual")
-            elapsed = monotonic_time()-self.server_last_info_time
+            elapsed = monotonic()-self.server_last_info_time
             color = WHITE
             if self.server_last_info_time==0:
                 rinfo += " - no server data"

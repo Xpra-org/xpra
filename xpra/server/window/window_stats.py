@@ -7,10 +7,10 @@
 # later version. See the file COPYING for details.
 
 from math import sqrt
+from time import monotonic
 
 from collections import deque
 from xpra.simple_stats import get_list_stats, get_weighted_list_stats
-from xpra.os_util import monotonic_time
 from xpra.util import engs, csv, envint
 from xpra.server.cystats import (logp,      #@UnresolvedImport
     calculate_time_weighted_average,        #@UnresolvedImport
@@ -43,7 +43,7 @@ class WindowPerformanceStatistics:
     DEFAULT_TARGET_LATENCY = 0.1
 
     def reset(self):
-        self.init_time = monotonic_time()
+        self.init_time = monotonic()
         self.client_decode_time = deque(maxlen=NRECS)       #records how long it took the client to decode frames:
                                                             #(ack_time, no of pixels, decoding_time*1000*1000)
         self.encoding_stats = deque(maxlen=NRECS)           #encoding: (time, coding, pixels, bpp, compressed_size, encoding_time)
@@ -138,7 +138,7 @@ class WindowPerformanceStatistics:
             #If nothing happens for a while then we can reduce the batch delay,
             #however we must ensure this is not caused by a high system latency
             #so we ignore short elapsed times.
-            elapsed = monotonic_time()-ldet
+            elapsed = monotonic()-ldet
             mtime = max(0, elapsed-self.max_latency*2)
             #the longer the time, the more we slash:
             weight = sqrt(mtime)
@@ -150,7 +150,7 @@ class WindowPerformanceStatistics:
         if bandwidth_limit>0:
             #calculate how much bandwith we have used in the last second (in bps):
             #encoding_stats.append((end, coding, w*h, bpp, len(data), end-start))
-            cutoff = monotonic_time()-1
+            cutoff = monotonic()-1
             used = sum(v[4] for v in tuple(self.encoding_stats) if v[0]>cutoff) * 8
             info = {
                 "budget"  : bandwidth_limit,
@@ -232,8 +232,8 @@ class WindowPerformanceStatistics:
     def get_client_backlog(self):
         packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
         if self.damage_ack_pending:
-            sent_before = monotonic_time()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
-            dropped_acks_time = monotonic_time()-60      #1 minute
+            sent_before = monotonic()-(self.target_latency+TARGET_LATENCY_TOLERANCE)
+            dropped_acks_time = monotonic()-60      #1 minute
             drop_missing_acks = []
             for sequence, item in tuple(self.damage_ack_pending.items()):
                 start_send_at = item[0]
@@ -263,7 +263,7 @@ class WindowPerformanceStatistics:
         return sum(1 for x in self.damage_ack_pending.values() if x[0]!=0)
 
     def get_late_acks(self, latency):
-        now = monotonic_time()
+        now = monotonic()
         sent_before = now-latency
         #start_send_at = item[0]
         #end_send_at = item[3]
@@ -280,7 +280,7 @@ class WindowPerformanceStatistics:
         return pixels, count
 
     def get_bitrate(self, max_elapsed=1):
-        cutoff = monotonic_time()-max_elapsed
+        cutoff = monotonic()-max_elapsed
         recs = tuple((v[0], v[4]) for v in tuple(self.encoding_stats) if v[0]>=cutoff)
         if len(recs)<2:
             return 0
@@ -291,5 +291,5 @@ class WindowPerformanceStatistics:
         return int(bits/elapsed)
 
     def get_damage_pixels(self, elapsed=1):
-        cutoff = monotonic_time()-elapsed
+        cutoff = monotonic()-elapsed
         return sum(v[3]*v[4] for v in tuple(self.last_damage_events) if v[0]>cutoff)

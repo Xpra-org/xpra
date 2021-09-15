@@ -8,6 +8,7 @@
 
 import os
 from weakref import WeakSet
+from time import monotonic
 
 from xpra.util import csv, roundup, envbool
 from xpra.codecs.image_wrapper import ImageWrapper
@@ -30,7 +31,6 @@ except:
 
 from libc.stdint cimport uintptr_t, uint32_t, uint64_t  #pylint: disable=syntax-error
 from libc.string cimport memset, memcpy
-from xpra.monotonic_time cimport monotonic_time
 from xpra.buffers.membuf cimport padbuf, MemBuf
 
 
@@ -534,7 +534,7 @@ cdef class NvFBC_SysCapture:
         self.clean()
 
     def refresh(self):
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         memset(&self.grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
         memset(&self.grab, 0, sizeof(NVFBC_TOSYS_GRAB_FRAME_PARAMS))
         self.grab.dwVersion = NVFBC_TOSYS_GRAB_FRAME_PARAMS_VER
@@ -548,7 +548,7 @@ cdef class NvFBC_SysCapture:
             ret = function_list.nvFBCToSysGrabFrame(self.context, &self.grab)
         self.raiseNvFBC(ret, "NvFBCToSysGrabFrame")
         log("NvFBCToSysGrabFrame(%#x)=%i", <uintptr_t> &self.grab, ret)
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         log("NvFBCToSysGrabFrame: framebuffer=%#x, info=%s, elapsed=%ims", <uintptr_t> self.framebuffer, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
         return bool(self.grab_info.bIsNewFrame)
 
@@ -562,7 +562,7 @@ cdef class NvFBC_SysCapture:
         assert x>=0 and y>=0 and width>0 and height>0
         assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
         assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         #TODO: only copy when the next frame is going to overwrite the buffer,
         #or when closing the context
         cdef unsigned int Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
@@ -589,7 +589,7 @@ cdef class NvFBC_SysCapture:
             with nogil:
                 memcpy(<void *> buf_ptr, <void *> grab_ptr, size)
         image = ImageWrapper(0, 0, width, height, memoryview(buf), self.pixel_format, Bpp*8, stride, Bpp)
-        end = monotonic_time()
+        end = monotonic()
         log("image=%s buffer len=%i, (copy took %ims)", image, len(buf), int((end-start)*1000))
         return image
 
@@ -666,7 +666,7 @@ cdef class NvFBC_CUDACapture:
         self.clean()
 
     def refresh(self):
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         memset(&self.grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
         memset(&self.grab, 0, sizeof(NVFBC_TOCUDA_GRAB_FRAME_PARAMS))
         self.grab.dwVersion = NVFBC_TOCUDA_GRAB_FRAME_PARAMS_VER
@@ -680,7 +680,7 @@ cdef class NvFBC_CUDACapture:
             self.raiseNvFBC(res, "NvFBCToSysGrabFrame")
         elif res!=0:
             raise Exception("CUDA Grab Frame failed: %s" % CUDA_ERRORS_INFO.get(res, res))
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         log("NvFBCCudaGrabFrame: cuDevicePtr=%#x, info=%s, elapsed=%ims", <uintptr_t> self.cuDevicePtr, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
         return bool(self.grab_info.bIsNewFrame)
 

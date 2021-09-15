@@ -5,6 +5,8 @@
 
 #cython: wraparound=False
 
+from time import monotonic
+
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
@@ -13,7 +15,6 @@ from xpra.codecs.codec_constants import video_spec
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
 from libc.string cimport memset #pylint: disable=syntax-error
-from xpra.monotonic_time cimport monotonic_time
 
 
 LOG_NALS = envbool("XPRA_X265_LOG_NALS", False)
@@ -508,7 +509,7 @@ cdef class Encoder:
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
 
         cdef char *out
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         data = []
         log("x265.compress_image(%s, %s)", image, options)
         if self.frames==0:
@@ -572,7 +573,7 @@ cdef class Encoder:
                 "frame"     : self.frames,
                 "pts"     : image.get_timestamp()-self.first_frame_timestamp,
                 }
-        cdef double end = monotonic_time()
+        cdef double end = monotonic()
         self.time += end-start
         self.frames += 1
         log("x265 compressed data size: %s, client options=%s", frame_size, client_options)

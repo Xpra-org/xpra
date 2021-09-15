@@ -12,6 +12,7 @@ import stat
 import socket
 import time
 import logging
+from time import monotonic
 from subprocess import Popen, PIPE, TimeoutExpired
 import signal
 import shlex
@@ -34,7 +35,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
-    monotonic_time, bytestostr, use_tty,
+    bytestostr, use_tty,
     set_proc_title,
     is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
@@ -649,8 +650,8 @@ def find_session_by_name(opts, session_name):
         cmd = get_nodock_command()+["id", "socket://%s" % socket_path]
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
         id_sessions[socket_path] = proc
-    now = monotonic_time()
-    while any(proc.poll() is None for proc in id_sessions.values()) and monotonic_time()-now<10:
+    now = monotonic()
+    while any(proc.poll() is None for proc in id_sessions.values()) and monotonic()-now<10:
         time.sleep(0.5)
     session_uuid_to_path = {}
     for socket_path, proc in id_sessions.items():
@@ -841,13 +842,13 @@ def connect_or_fail(display_desc, opts):
 
 def retry_socket_connect(dtype, host, port, timeout=20):
     from xpra.net.socket_util import socket_connect
-    start = monotonic_time()
+    start = monotonic()
     retry = 0
     while True:
         sock = socket_connect(host, port, timeout=timeout)
         if sock:
             return sock
-        if monotonic_time()-start>=timeout:
+        if monotonic()-start>=timeout:
             break
         if retry==0:
             werr("failed to connect to %s:%s, retrying for %i seconds" % (host, port, timeout))
@@ -1210,9 +1211,9 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
                 else:
                     werr("server socket for display %s not found" % display)
                 werr(" waiting up to %i seconds" % timeout)
-                start = monotonic_time()
+                start = monotonic()
                 log = Logger("network")
-                while monotonic_time()-start<timeout:
+                while monotonic()-start<timeout:
                     state = dotxpra.get_display_state(display)
                     log("get_display_state(%s)=%s", display, state)
                     if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
@@ -1581,7 +1582,7 @@ def run_opengl_probe():
         env["NOTTY"] = "1"
     env["XPRA_HIDE_DOCK"] = "1"
     env["XPRA_REDIRECT_OUTPUT"] = "0"
-    start = monotonic_time()
+    start = monotonic()
     try:
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
     except Exception as e:
@@ -1603,7 +1604,7 @@ def run_opengl_probe():
     for line in stderr.decode().splitlines():
         log(" %s", line)
     log("OpenGL probe command returned %s for command=%s", r, cmd)
-    end = monotonic_time()
+    end = monotonic()
     log("probe took %ims", 1000*(end-start))
     props = {}
     for line in stdout.decode().splitlines():
@@ -2283,7 +2284,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
         cmd.append("--debug=%s" % debug_args)
     log("proxy shadow start command: %s", cmd)
     proc = Popen(cmd, executable=exe, env=env, cwd=cwd)
-    start = monotonic_time()
+    start = monotonic()
     elapsed = 0
     while elapsed<WAIT_SERVER_TIMEOUT:
         state = dotxpra.get_display_state(display_name)
@@ -2297,7 +2298,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
         if proc.poll() not in (None, 0):
             raise Exception("shadow subprocess command returned %s", proc.returncode)
         time.sleep(0.10)
-        elapsed = monotonic_time()-start
+        elapsed = monotonic()-start
     proc.terminate()
     raise Exception("timeout: failed to identify the new shadow server '%s'" % display_name)
 
@@ -2453,11 +2454,11 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
     log("identify_new_socket%s",
         (proc, dotxpra, existing_sockets, matching_display, new_server_uuid, display_name, matching_uid))
     #wait until the new socket appears:
-    start = monotonic_time()
+    start = monotonic()
     UUID_PREFIX = "uuid="
     DISPLAY_PREFIX = "display="
     from xpra.platform.paths import get_nodock_command
-    while monotonic_time()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
+    while monotonic()-start<WAIT_SERVER_TIMEOUT and (proc is None or proc.poll() in (None, 0)):
         sockets = set(dotxpra.socket_paths(check_uid=matching_uid, matching_state=dotxpra.LIVE, matching_display=matching_display))
         #sort because we prefer a socket in /run/* to one in /home/*:
         new_sockets = tuple(reversed(tuple(sockets-existing_sockets)))
@@ -2619,9 +2620,9 @@ def run_stopexit(mode, error_cb, opts, extra_args):
             dcmd = cmd + [display]
             proc = Popen(dcmd)
             procs.append(proc)
-        start = monotonic_time()
+        start = monotonic()
         live = procs
-        while monotonic_time()-start<10 and live:
+        while monotonic()-start<10 and live:
             live = [x for x in procs if x.poll() is None]
         return 0
 

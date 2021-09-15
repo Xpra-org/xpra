@@ -4,11 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from xpra.net import compression
 from xpra.codecs.loader import get_codec
 from xpra.util import envbool, first_time
 from xpra.codecs.rgb_transform import rgb_reformat
-from xpra.os_util import memoryview_to_bytes, bytestostr, monotonic_time
+from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.log import Logger
 
 #"pixels_to_bytes" gets patched up by the OSX shadow server
@@ -129,11 +130,11 @@ def mmap_send(mmap, mmap_size, image, rgb_formats, supports_transparency):
             if first_time(warning_key):
                 log.warn("Waening: cannot use mmap to send %s" % image.get_pixel_format())
             return None
-    start = monotonic_time()
+    start = monotonic()
     data = image.get_pixels()
     assert data, "failed to get pixels from %s" % image
     mmap_data, mmap_free_size = mmap_write(mmap, mmap_size, data)
-    elapsed = monotonic_time()-start+0.000000001 #make sure never zero!
+    elapsed = monotonic()-start+0.000000001 #make sure never zero!
     log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
     if mmap_data is None:
         return None

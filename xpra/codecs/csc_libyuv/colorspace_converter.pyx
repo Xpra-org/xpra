@@ -6,6 +6,8 @@
 
 #cython: wraparound=False
 
+from time import monotonic
+
 from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
@@ -13,7 +15,6 @@ from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context   #pylint: disable=syntax-error
 
-from xpra.monotonic_time cimport monotonic_time
 from libc.stdint cimport uint8_t, uintptr_t
 from libc.stdlib cimport free
 
@@ -395,7 +396,7 @@ cdef class ColorspaceConverter:
         cdef uint8_t *scaled_buffer
         cdef uint8_t *scaled_planes[3]
         cdef int i
-        cdef double start = monotonic_time()
+        cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
         assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
         cdef int width = image.get_width()
@@ -439,14 +440,14 @@ cdef class ColorspaceConverter:
                                         out_planes[2], self.out_stride[2],
                                         width, height)
         assert result==0, "libyuv BGRAToI420/NV12 failed and returned %i" % result
-        cdef double elapsed = monotonic_time()-start
+        cdef double elapsed = monotonic()-start
         log("libyuv.ARGBToI420/NV12 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
         cdef object planes = []
         cdef object strides = []
         cdef object out_image
         if self.yuv_scaling:
-            start = monotonic_time()
+            start = monotonic()
             scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
             if scaled_buffer==NULL:
                 raise Exception("failed to allocate %i bytes for scaled buffer" % self.scaled_buffer_size)
@@ -458,7 +459,7 @@ cdef class ColorspaceConverter:
                                scaled_planes[i], self.scaled_stride[i],
                                self.scaled_width[i], self.scaled_height[i],
                                self.filtermode)
-            elapsed = monotonic_time()-start
+            elapsed = monotonic()-start
             log("libyuv.ScalePlane %i times, took %.1fms", self.planes, 1000.0*elapsed)
             for i in range(self.planes):
                 strides.append(self.scaled_stride[i])

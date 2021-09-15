@@ -7,9 +7,8 @@
 # Special guard to work around Fedora/RH's pygtk2 silliness
 # see http://partiwm.org/ticket/34 for details
 
-from time import sleep
+from time import sleep, monotonic
 from xpra.os_util import bytestostr
-from xpra.monotonic_time cimport monotonic_time  #pylint: disable=syntax-error
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct Display:
@@ -27,8 +26,8 @@ def wait_for_x_server(display_name, int timeout):
     else:
         name = NULL
     t = 100
-    cdef double start = monotonic_time()
-    while (monotonic_time() - start) < timeout:
+    cdef double start = monotonic()
+    while (monotonic() - start) < timeout:
         d = XOpenDisplay(name)
         if d is not NULL:
             XCloseDisplay(d)

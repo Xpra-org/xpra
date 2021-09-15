@@ -6,8 +6,8 @@
 
 import unittest
 import random
+from time import monotonic
 
-from xpra.os_util import monotonic_time
 from xpra.util import iround
 try:
     from xpra.server import cystats
@@ -19,7 +19,7 @@ class TestCystats(unittest.TestCase):
 
     def test_calculate_timesize_weighted_average(self):
         #event_time, size, elapsed_time
-        now = monotonic_time()
+        now = monotonic()
         sample_size = 1000
         data = []
         ts = now - sample_size
@@ -65,7 +65,7 @@ class TestCystats(unittest.TestCase):
         self.assertEqual(iround(a), iround(ra))
         self.assertGreater(a, 75)
         #real data:
-        T = monotonic_time()
+        T = monotonic()
         v =[(T-21.557095, 157684, 9110), (T-22.23345, 3744, 1279), (T-22.376621, 3744, 706),
             (T-22.515456, 3744, 1302), (T-23.013887, 78, 1342), (T-43.707768, 78, 920),
             (T-44.043399, 78, 1558), (T-44.046686, 78, 1119), (T-44.048169, 78, 1007),
@@ -90,7 +90,7 @@ class TestCystats(unittest.TestCase):
         self.assertGreater(ra, min_v)
 
     def test_calculate_time_weighted_average(self):
-        now = monotonic_time()
+        now = monotonic()
         sample_size = 100
         data = []
         t = now - sample_size

@@ -15,7 +15,7 @@ import platform
 import threading
 from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
-from time import sleep, time
+from time import sleep, time, monotonic
 from threading import Thread, Lock
 
 from xpra.version_util import (
@@ -52,7 +52,7 @@ from xpra.os_util import (
     get_frame_info, get_info_env, get_sysconfig_info,
     filedata_nocrlf, get_machine_id, get_user_uuid, platform_name, get_ssh_port,
     strtobytes, bytestostr, get_hex_uuid,
-    getuid, monotonic_time, hexstr,
+    getuid, hexstr,
     WIN32, POSIX, BITS,
     parse_encoded_bin_data, load_binary_file,
     osexpand,
@@ -1712,7 +1712,7 @@ class ServerCore:
         if self.is_timedout(protocol):
             conn = getattr(protocol, "_conn", None)
             log.error("Error: connection timed out: %s", conn or protocol)
-            elapsed = monotonic_time()-protocol.start_time
+            elapsed = monotonic()-protocol.start_time
             log.error(" after %i seconds", elapsed)
             if conn:
                 log.error(" received %i bytes", conn.input_bytecount)
@@ -2231,22 +2231,22 @@ class ServerCore:
         proto.send_now(("hello", notypedict(info)))
 
     def get_all_info(self, callback, proto=None, *args):
-        start = monotonic_time()
+        start = monotonic()
         ui_info = self.get_ui_info(proto, *args)
-        end = monotonic_time()
+        end = monotonic()
         log("get_all_info: ui info collected in %ims", (end-start)*1000)
         start_thread(self._get_info_in_thread, "Info", daemon=True, args=(callback, ui_info, proto, args))
 
     def _get_info_in_thread(self, callback, ui_info, proto, args):
         log("get_info_in_thread%s", (callback, {}, proto, args))
-        start = monotonic_time()
+        start = monotonic()
         #this runs in a non-UI thread
         try:
             info = self.get_info(proto, *args)
             merge_dicts(ui_info, info)
         except Exception:
             log.error("Error during info collection using %s", self.get_info, exc_info=True)
-        end = monotonic_time()
+        end = monotonic()
         log("get_all_info: non ui info collected in %ims", (end-start)*1000)
         callback(proto, ui_info)
 
@@ -2302,7 +2302,7 @@ class ServerCore:
         return si
 
     def get_info(self, proto, *_args):
-        start = monotonic_time()
+        start = monotonic()
         #this function is for non UI thread info
         info = {}
         def up(prefix, d):
@@ -2341,7 +2341,7 @@ class ServerCore:
                 "pid"   : self.dbus_pid,
                 "env"   : self.dbus_env,
                 })
-        end = monotonic_time()
+        end = monotonic()
         log("ServerCore.get_info took %ims", (end-start)*1000)
         return info
 

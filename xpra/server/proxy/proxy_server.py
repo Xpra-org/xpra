@@ -7,6 +7,7 @@
 import os
 import sys
 import time
+from time import monotonic
 from multiprocessing import Queue as MQueue, freeze_support #@UnresolvedImport
 from gi.repository import GLib
 
@@ -17,7 +18,7 @@ from xpra.util import (
 from xpra.os_util import (
     get_username_for_uid, get_groups, get_home_for_uid, bytestostr,
     getuid, getgid, WIN32, POSIX, OSX,
-    monotonic_time, umask_context, get_group_id,
+    umask_context, get_group_id,
     )
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.server_core import ServerCore
@@ -238,10 +239,10 @@ class ProxyServer(ServerCore):
     def cleanup(self):
         self.stop_all_proxies()
         super().cleanup()
-        start = monotonic_time()
+        start = monotonic()
         live = True
         log("cleanup() proxy instances: %s", self.instances)
-        while monotonic_time()-start<PROXY_CLEANUP_GRACE_PERIOD and live:
+        while monotonic()-start<PROXY_CLEANUP_GRACE_PERIOD and live:
             live = tuple(x for x in tuple(self.instances.keys()) if x.is_alive())
             if live:
                 log("cleanup() still %i proxies alive: %s", len(live), live)

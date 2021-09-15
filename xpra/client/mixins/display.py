@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 
 from xpra.exit_codes import EXIT_INTERNAL_ERROR
 from xpra.platform.features import REINIT_WINDOWS
@@ -15,7 +16,6 @@ from xpra.platform.gui import (
 from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
-from xpra.os_util import monotonic_time
 from xpra.util import (
     iround, envint, envfloat, envbool, log_screen_sizes, flatten_dict, typedict,
     XPRA_SCALING_NOTIFICATION_ID,
@@ -444,7 +444,7 @@ class DisplayClient(StubClientMixin):
         delay = 1000
         #if we are suspending, wait longer:
         #(better chance that the suspend-resume cycle will have completed)
-        if self._suspended_at>0 and self._suspended_at-monotonic_time()<5*1000:
+        if self._suspended_at>0 and self._suspended_at-monotonic()<5*1000:
             delay = 5*1000
         self.screen_size_change_timer = self.timeout_add(delay, self.do_process_screen_size_change)
 
@@ -550,7 +550,7 @@ class DisplayClient(StubClientMixin):
         if self.screen_size_change_timer:
             scalinglog("scale_change(%s, %s) screen size change is already pending", xchange, ychange)
             return
-        if monotonic_time()<self.scale_change_embargo:
+        if monotonic()<self.scale_change_embargo:
             scalinglog("scale_change(%s, %s) screen size change not permitted during embargo time - try again",
                        xchange, ychange)
             return
@@ -593,7 +593,7 @@ class DisplayClient(StubClientMixin):
 
     def scale_reinit(self, xchange=1.0, ychange=1.0):
         #wait at least one second before changing again:
-        self.scale_change_embargo = monotonic_time()+SCALING_EMBARGO_TIME
+        self.scale_change_embargo = monotonic()+SCALING_EMBARGO_TIME
         if fequ(self.xscale, self.yscale):
             scalinglog.info("setting scaling to %i%%:", iround(100*self.xscale))
         else:

@@ -6,6 +6,7 @@
 
 import os
 import traceback
+from time import monotonic
 
 import gi
 gi.require_version('GdkX11', '3.0')
@@ -18,7 +19,6 @@ from gi.repository import Gtk               #@UnresolvedImport
 from xpra.os_util import strtobytes, bytestostr
 from xpra.gtk_common.error import trap, XError
 from xpra.x11.common import X11Event
-from xpra.monotonic_time cimport monotonic_time     #pylint: disable=syntax-error
 from xpra.util import csv
 
 from xpra.log import Logger
@@ -1044,7 +1044,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
                                     void * userdata) with gil:
     cdef object event_args
     cdef object pyev
-    cdef double start = monotonic_time()
+    cdef double start = monotonic()
     cdef int etype
 
     try:
@@ -1063,7 +1063,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
         if event_args is not None:
             signal, parent_signal = event_args
             _route_event(etype, pyev, signal, parent_signal)
-        log("x_event_filter event=%s/%s took %.1fms", event_args, x_event_type_names.get(etype, etype), 1000.0*(monotonic_time()-start))
+        log("x_event_filter event=%s/%s took %.1fms", event_args, x_event_type_names.get(etype, etype), 1000.0*(monotonic()-start))
     except (KeyboardInterrupt, SystemExit):
         verbose("exiting on KeyboardInterrupt/SystemExit")
         Gtk.main_quit()

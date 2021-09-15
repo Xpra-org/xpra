@@ -8,9 +8,10 @@
 import sys
 import logging
 import traceback
+from time import monotonic
 from threading import Lock
 
-from xpra.os_util import bytestostr, monotonic_time
+from xpra.os_util import bytestostr
 from xpra.util import repr_ellipsized, net_utf8
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -69,7 +70,7 @@ class LoggingServer(StubServerMixin):
             log.warn("Warning: logging already enabled for client %s", protocol)
         else:
             log.info("sending log output to %s", protocol)
-            self.logging_clients[protocol] = monotonic_time()
+            self.logging_clients[protocol] = monotonic()
         if n==0:
             self.start_capturing_logging()
 
@@ -128,7 +129,7 @@ class LoggingServer(StubServerMixin):
                 if not source:
                     continue
                 try:
-                    dtime = int(1000*(monotonic_time() - start_time))
+                    dtime = int(1000*(monotonic() - start_time))
                     if len(data)>=32:
                         try:
                             data = source.compressed_wrapper("text", data.encode("utf8"), level=1)

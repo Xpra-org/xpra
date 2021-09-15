@@ -6,9 +6,10 @@
 
 import os
 import unittest
+from time import monotonic
 
 from unit.test_util import silence_warn
-from xpra.os_util import OSEnvContext, monotonic_time
+from xpra.os_util import OSEnvContext
 from xpra.server.window.batch_config import DamageBatchConfig, ival, log
 
 
@@ -30,7 +31,7 @@ class TestBatchConfig(unittest.TestCase):
                     assert ival(k, 0, 20, 100)==20
 
     def test_batch_config(self):
-        now = monotonic_time()
+        now = monotonic()
         bc = DamageBatchConfig()
         bc.delay_per_megapixel = 100
         bc.last_event = now

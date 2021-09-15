@@ -5,8 +5,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
 from xpra.x11.x11_server_core import X11ServerCore
-from xpra.os_util import monotonic_time, is_Wayland, get_loaded_kernel_modules
+from xpra.os_util import is_Wayland, get_loaded_kernel_modules
 from xpra.util import (
     envbool, envint, merge_dicts,
     XPRA_DISPLAY_NOTIFICATION_ID, XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
@@ -88,7 +89,7 @@ class XImageCapture:
             log("no xshm, cannot get image")
             return None
         try:
-            start = monotonic_time()
+            start = monotonic()
             with xsync:
                 log("X11 shadow get_image, xshm=%s", self.xshm)
                 image = self.xshm.get_image(self.xwindow, x, y, width, height)
@@ -97,7 +98,7 @@ class XImageCapture:
             self._err(e)
             return None
         finally:
-            end = monotonic_time()
+            end = monotonic()
             log("X11 shadow captured %s pixels at %i MPixels/s using %s",
                 width*height, (width*height/(end-start))//1024//1024, ["GTK", "XSHM"][USE_XSHM])
 

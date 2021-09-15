@@ -5,12 +5,13 @@
 #pylint: disable-msg=E1101
 
 import os
+from time import monotonic
 from threading import RLock
 
 from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
-from xpra.os_util import OSEnvContext, monotonic_time, WIN32
+from xpra.os_util import OSEnvContext, WIN32
 from xpra.util import envint, envbool, csv, typedict, XPRA_WEBCAM_NOTIFICATION_ID
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 
@@ -256,7 +257,7 @@ class WebcamForwarder(StubClientMixin):
             preferred_order = ["jpeg", "png", "png/L", "png/P", "webp"]
             formats = [x for x in preferred_order if x in common_encodings] + common_encodings
             encoding = formats[0]
-            start = monotonic_time()
+            start = monotonic()
             import cv2
             ret, frame = self.webcam_device.read()
             assert ret, "capture failed"
@@ -264,9 +265,9 @@ class WebcamForwarder(StubClientMixin):
             h, w, Bpp = frame.shape
             assert Bpp==3 and frame.size==w*h*Bpp
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # @UndefinedVariable
-            end = monotonic_time()
+            end = monotonic()
             log("webcam frame capture took %ims", (end-start)*1000)
-            start = monotonic_time()
+            start = monotonic()
             from PIL import Image
             from io import BytesIO
             image = Image.fromarray(rgb)
@@ -274,7 +275,7 @@ class WebcamForwarder(StubClientMixin):
             image.save(buf, format=encoding)
             data = buf.getvalue()
             buf.close()
-            end = monotonic_time()
+            end = monotonic()
             log("webcam frame compression to %s took %ims", encoding, (end-start)*1000)
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1

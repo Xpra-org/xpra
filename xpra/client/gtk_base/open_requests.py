@@ -7,6 +7,7 @@
 import sys
 import os.path
 import subprocess
+from time import monotonic
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -15,7 +16,7 @@ gi.require_version("Pango", "1.0")
 from gi.repository import GLib, Gtk, Pango
 
 from xpra.util import envint
-from xpra.os_util import monotonic_time, bytestostr, WIN32, OSX
+from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.child_reaper import getChildReaper
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
@@ -103,7 +104,7 @@ class OpenRequestsWindow:
 
 
     def add_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit, timeout):
-        expires = monotonic_time()+timeout
+        expires = monotonic()+timeout
         self.requests.append((cb_answer, send_id, dtype, url, filesize, printit, openit, expires))
         self.populate_table()
         if not self.populate_timer:
@@ -112,7 +113,7 @@ class OpenRequestsWindow:
     def update_expires_label(self):
         expired = 0
         for label, expiry in self.expire_labels.values():
-            seconds = max(0, expiry-monotonic_time())
+            seconds = max(0, expiry-monotonic())
             label.set_text("%i" % seconds)
             if seconds==0:
                 expired += 1
@@ -128,7 +129,7 @@ class OpenRequestsWindow:
         if self.table:
             self.alignment.remove(self.table)
         #remove expired requests:
-        now = monotonic_time()
+        now = monotonic()
         self.requests = [x for x in self.requests if x[-1]>now]
         self.expire_labels = {}
         tb = TableBuilder(rows=1, columns=4, row_spacings=15)

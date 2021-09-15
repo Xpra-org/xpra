@@ -5,8 +5,9 @@
 
 import os
 import sys
-
+from time import monotonic
 from collections import namedtuple
+
 from xpra.sound.gstreamer_util import (
     parse_sound_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
     import_gst, format_element_options,
@@ -14,7 +15,7 @@ from xpra.sound.gstreamer_util import (
     )
 from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
 from xpra.platform.paths import get_sound_command
-from xpra.os_util import WIN32, OSX, POSIX, BITS, monotonic_time, bytestostr
+from xpra.os_util import WIN32, OSX, POSIX, BITS, bytestostr
 from xpra.util import typedict, parse_simple_dict, envint, envbool
 from xpra.scripts.config import InitExit, InitException
 from xpra.log import Logger
@@ -297,7 +298,7 @@ class sound_subprocess_wrapper(subprocess_caller):
     def info_update(self, _wrapper, info):
         log("info_update: %s", info)
         self.info.update(info)
-        self.info["time"] = int(monotonic_time())
+        self.info["time"] = int(monotonic())
         p = self.process
         if p and not p.poll():
             self.info["pid"] = p.pid
