@@ -18,8 +18,8 @@ log = Logger("encoding")
 assert sizeof(int) == 4
 
 
-cdef inline unsigned int roundup(unsigned int n, unsigned int m):
-    return (n + m - 1) & ~(m - 1)
+cdef inline unsigned int round8up(unsigned int n):
+    return (n + 7) & ~7
 
 cdef inline unsigned char clamp(int v):
     if v>255:
@@ -494,7 +494,7 @@ def bit_to_rectangles(buf, unsigned int w, unsigned int h):
 
 cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len, const unsigned int w, const unsigned int h):
     rectangles = []
-    cdef unsigned int rowstride = roundup(w, 8)//8
+    cdef unsigned int rowstride = round8up(w)//8
     cdef unsigned char b
     cdef unsigned int start = 0, end, x, y
     for y in range(h):
@@ -538,7 +538,7 @@ cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len, 
                 else:
                     #there is a white pixel in this byte (8 pixels):
                     b = bitdata[y*rowstride+x//8]
-                    while (b & (1<<(7-x%8)))!=0:
+                    while b & (1<<(7-x%8)):
                         #clear this bit so we can continue looking for black pixels in b
                         #when we re-enter the loop at the top
                         b &= ~(1<<(7-x%8))
@@ -547,7 +547,7 @@ cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len, 
                         x = w
                     end = x
                     if b==0:
-                        x = roundup(x, 8)
+                        x = round8up(x)
             if start<end:
                 rectangles.append((start, y, end-start, 1))
     return rectangles

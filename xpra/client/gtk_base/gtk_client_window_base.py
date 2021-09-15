@@ -1018,6 +1018,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         shapelog("resized %s bitmap to window size %sx%s: %s", kind_name, ww, wh, img)
         #now convert back to rectangles...
         monodata = img.tobytes("raw", "1")
+        shapelog("got %i bytes", len(monodata))
         #log.warn("monodata: %s (%i bytes) %ix%i", repr_ellipsized(monodata), len(monodata), ww, wh)
         rectangles = bit_to_rectangles(monodata, ww, wh)
         shapelog("back to rectangles")
