@@ -90,10 +90,6 @@ def get_encodings():
     return ["jpeg"]
 
 
-cdef inline int roundup(int n, int m):
-    return (n + m - 1) & ~(m - 1)
-
-
 def get_error_str():
     cdef char *err = tjGetErrorStr()
     return str(err)

@@ -132,9 +132,6 @@ cdef extern from "./video.h":
         uint32_t type
         v4l2_format_fmt fmt
 
-cdef inline int roundup(int n, int m):
-    return (n + m - 1) & ~(m - 1)
-
 
 #these fields are defined in the v4l2 headers,
 #but they may not all be defined, and probably aren't on some platforms (ie: NetBSD)
