@@ -34,7 +34,6 @@ from ctypes import wintypes
 
 from libc.stdint cimport uintptr_t, uint8_t, int64_t  #pylint: disable=syntax-error
 from libc.string cimport memset, memcpy
-from xpra.monotonic cimport monotonic
 from xpra.buffers.membuf cimport padbuf, MemBuf
 
 DEFAULT_PIXEL_FORMAT = os.environ.get("XPRA_NVFBC_DEFAULT_PIXEL_FORMAT", "RGB")
