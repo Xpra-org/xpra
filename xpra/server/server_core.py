@@ -1993,6 +1993,7 @@ class ServerCore:
                         auth_failed("insecure salt digest '%s' rejected" % salt_digest)
                         return
                     log.warn("Warning: using legacy support for '%s' salt digest", salt_digest)
+                authlog("sending challenge: %r", authenticator.prompt)
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
