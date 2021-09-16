@@ -15,7 +15,7 @@ from xpra.server.background_worker import add_work_item
 from xpra.net.common import may_log_packet
 from xpra.os_util import bytestostr, strtobytes, WIN32
 from xpra.util import (
-    typedict, flatten_dict, updict, merge_dicts, envbool,
+    typedict, flatten_dict, updict, merge_dicts, envbool, csv,
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
     NEW_CLIENT, DONE, SESSION_BUSY,
     )
@@ -75,6 +75,7 @@ ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
 
 log = Logger("server")
 netlog = Logger("network")
+authlog = Logger("auth")
 httplog = Logger("http")
 timeoutlog = Logger("timeout")
 screenlog = Logger("screen")
@@ -231,24 +232,29 @@ class ServerBase(ServerBaseClass):
         disconnected = 0
         existing_sources = set(ss for p,ss in self._server_sources.items() if p!=proto)
         is_existing_client = uuid and any(ss.uuid==uuid for ss in existing_sources)
-        log("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
+        authlog("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
             (proto, ui_client, detach_request, share, uuid),
             self.lock, self.sharing, existing_sources, is_existing_client)
         #if other clients are connected, verify we can steal or share:
         if existing_sources and not is_existing_client:
             if self.sharing is True or (self.sharing is None and share and all(ss.share for ss in existing_sources)):
-                log("handle_sharing: sharing with %s", tuple(existing_sources))
+                authlog("handle_sharing: sharing with %s", tuple(existing_sources))
             elif self.lock is True:
+                authlog("handle_sharing: session is locked")
                 self.disconnect_client(proto, SESSION_BUSY, "this session is locked")
                 return False, 0, 0
             elif self.lock is not False and any(ss.lock for ss in existing_sources):
+                authlog("handle_sharing: another client has locked the session: %s", csv(ss for ss in existing_sources if ss.lock))
                 self.disconnect_client(proto, SESSION_BUSY, "a client has locked this session")
                 return False, 0, 0
         for p,ss in tuple(self._server_sources.items()):
             if detach_request and p!=proto:
+                authlog("handle_sharing: detaching %s", ss)
                 self.disconnect_client(p, DETACH_REQUEST)
                 disconnected += 1
             elif uuid and ss.uuid==uuid and ui_client and ss.ui_client:
+                authlog("uuid %s is the same as %s", uuid, ss)
+                authlog("existing sources: %s", existing_sources)
                 self.disconnect_client(p, NEW_CLIENT, "new connection from the same uuid")
                 disconnected += 1
             elif ui_client and ss.ui_client:
