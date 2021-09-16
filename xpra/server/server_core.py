@@ -2117,6 +2117,8 @@ class ServerCore:
             self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
 
     def hello_oked(self, proto, _packet, c, _auth_caps):
+        #from now on, this connection should not be sending new hello packets:
+        self._default_packet_handlers.pop("hello", None)
         generic_request = c.strget("request")
         def is_req(mode):
             return generic_request==mode or c.boolget("%s_request" % mode)
