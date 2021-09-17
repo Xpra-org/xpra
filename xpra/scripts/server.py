@@ -520,7 +520,7 @@ def reload_dbus_attributes(display_name):
             if dbus_address:
                 dbus_env[b"DBUS_SESSION_BUS_ADDRESS"] = dbus_address.encode()
     if dbus_pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % dbus_pid):
-        dbuslog("dbus pid %s is no longer valid")
+        dbuslog("dbus pid %s is no longer valid", dbus_pid)
         dbus_pid = 0
     if dbus_pid and dbus_address:
         dbuslog("retrieved dbus pid: %s, environment: %s", dbus_pid, dbus_env)
