@@ -878,14 +878,22 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     #XPRA_SESSION_DIR:
     session_dir = osexpand(os.path.join(opts.sessions_dir, display_name.lstrip(":")))
     if not os.path.exists(session_dir):
-        try:
-            os.makedirs(session_dir, 0o750)
-        except OSError:
-            import tempfile
-            session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
-            os.makedirs(session_dir, 0o750)
-        if POSIX:
-            os.lchown(session_dir, uid, gid)
+        if ROOT and uid==0:
+            #there is usually no $XDG_RUNTIME_DIR when running as root
+            #and even if there was, that's probably not a good path to use,
+            #so try to find a directory we can use safely:
+            for d in ("/run/xpra", "/var/run/xpra", "/tmp"):
+                if os.path.exists(d):
+                    session_dir = d
+        else:
+            try:
+                os.makedirs(session_dir, 0o750)
+            except OSError:
+                import tempfile
+                session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
+                os.makedirs(session_dir, 0o750)
+            if POSIX:
+                os.lchown(session_dir, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     #populate it:
     if run_xpra_script:
