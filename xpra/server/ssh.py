@@ -162,7 +162,7 @@ class SSHServer(paramiko.ServerInterface):
                 return True
             #we don't want to use a shell,
             #but we need to expand the file argument:
-            cmd[1] = osexpand(xpra_cmd)
+            cmd[-1] = osexpand(xpra_cmd)
             try:
                 proc = Popen(cmd, stdout=PIPE, stderr=PIPE, close_fds=not WIN32)
                 out, err = proc.communicate()
