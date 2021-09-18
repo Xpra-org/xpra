@@ -1,17 +1,21 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import shlex
 import socket
+import base64
+import hashlib
+import binascii
 from subprocess import Popen, PIPE
 from threading import Event
 from time import monotonic
 import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
+from xpra.net.bytestreams import pretty_socket
 from xpra.util import csv, envint, first_time, decode_str
 from xpra.os_util import osexpand, getuid, WIN32, POSIX
 from xpra.platform.paths import get_ssh_conf_dirs
@@ -21,7 +25,8 @@ log = Logger("network", "ssh")
 
 SERVER_WAIT = envint("XPRA_SSH_SERVER_WAIT", 20)
 AUTHORIZED_KEYS = "~/.ssh/authorized_keys"
-AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES", "md5,sha1,sha224,sha256,sha384,sha512").split(",")
+AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
+                                        "md5,sha1,sha224,sha256,sha384,sha512").split(",")
 
 
 class SSHServer(paramiko.ServerInterface):
@@ -78,8 +83,6 @@ class SSHServer(paramiko.ServerInterface):
         if not os.path.exists(authorized_keys_filename) or not os.path.isfile(authorized_keys_filename):
             log("file '%s' does not exist", authorized_keys_filename)
             return paramiko.AUTH_FAILED
-        import base64
-        import binascii
         fingerprint = key.get_fingerprint()
         hex_fingerprint = binascii.hexlify(fingerprint)
         log("looking for key fingerprint '%s' in '%s'", hex_fingerprint, authorized_keys_filename)
@@ -94,7 +97,6 @@ class SSHServer(paramiko.ServerInterface):
                 except Exception as e:
                     log("ignoring line '%s': %s", line, e)
                     continue
-                import hashlib
                 for hash_algo in AUTHORIZED_KEYS_HASHES:
                     hash_instance = None
                     try:
@@ -346,11 +348,13 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
     log("client authenticated, channel=%s", chan)
     ssh_server.event.wait(SERVER_WAIT)
     log("proxy channel=%s", ssh_server.proxy_channel)
-    if not ssh_server.event.is_set() or not ssh_server.proxy_channel:
-        from xpra.net.bytestreams import pretty_socket
+    proxy_channel = ssh_server.proxy_channel
+    if not ssh_server.event.is_set() or not proxy_channel:
         log.warn("Warning: timeout waiting for xpra SSH subcommand,")
         log.warn(" closing connection from %s", pretty_socket(conn.target))
         close()
         return None
     log("client authenticated, channel=%s", chan)
-    return SSHSocketConnection(ssh_server.proxy_channel, sock, conn.local, conn.endpoint, conn.target, socket_options=socket_options)
+    return SSHSocketConnection(proxy_channel, sock,
+                               conn.local, conn.endpoint, conn.target,
+                               socket_options=socket_options)
