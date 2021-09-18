@@ -6,6 +6,6 @@ Version: 1.0
 Maintainer: Antoine Martin <antoine@xpra.org>
 Architecture: all
 Multi-Arch: foreign
-Description: fake fbc package 
+Description: fake fbc package
  this allows us to install cuda using binary installers
  and still statisfy the 'libnvidia-fbc1' package dependency

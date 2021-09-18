@@ -7,7 +7,7 @@
  * Make the progress bar more visible
  * (but we can't set the min-width this way...)
  */
- 
+
 progress, trough {
   min-height: 30px;
 }

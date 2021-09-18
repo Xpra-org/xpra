@@ -6,7 +6,7 @@
  *
  * Reduce the height of the Gtk.HeaderBar
  */
- 
+
 .titlebar, headerbar {
     min-height: 0px;
     padding: 0px;

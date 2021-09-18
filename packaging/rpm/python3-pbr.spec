@@ -21,7 +21,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 if [ "${sha256}" != "42df03e7797b796625b1029c0400279c7c34fd7df24a7d7818a1abb5b38710dd" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
-fi 
+fi
 %setup -qn pbr-%{version}
 
 %build
