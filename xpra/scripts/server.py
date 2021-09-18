@@ -885,6 +885,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
             for d in ("/run/xpra", "/var/run/xpra", "/tmp"):
                 if os.path.exists(d):
                     session_dir = d
+                    break
         else:
             try:
                 os.makedirs(session_dir, 0o750)
