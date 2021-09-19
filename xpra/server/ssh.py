@@ -180,7 +180,25 @@ class SSHServer(paramiko.ServerInterface):
         elif cmd[0].endswith("xpra") and len(cmd)>=2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log("ssh xpra subcommand: %s", subcommand)
-            if subcommand!="_proxy":
+            if subcommand in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
+                proxy_command = {
+                    "_proxy_start"          : "start",
+                    "_proxy_start_desktop"  : "start-desktop",
+                    "_proxy_shadow_start"   : "shadow",
+                    }[subcommand]
+                log.warn("Warning: received a proxy %r session request", proxy_command)
+                log.warn(" this feature is not yet implemented with the builtin ssh server")
+                return False
+            elif subcommand!="_proxy":
+                if len(cmd)==3:
+                    #only the display can be specified here
+                    display = cmd[2]
+                    display_name = getattr(self, "display_name", None)
+                    if display_name!=display:
+                        log.warn("Warning: the display requested (%r)", display)
+                        log.warn(" is not the current display (%r)", display_name)
+                        return False
+            else:
                 log.warn("Warning: unsupported xpra subcommand '%s'", cmd[1])
                 return False
             #we're ready to use this socket as an xpra channel
