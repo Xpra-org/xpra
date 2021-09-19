@@ -32,7 +32,7 @@ from xpra.gtk_common.gtk_util import (
     enable_alpha,
     gio_File, query_info_async, load_contents_async, load_contents_finish,
     WINDOW_POPUP, WINDOW_TOPLEVEL, GRAB_STATUS_STRING, GRAB_SUCCESS,
-    SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT,
+    SCROLL_UP, SCROLL_DOWN, SCROLL_LEFT, SCROLL_RIGHT, SCROLL_SMOOTH,
     DEST_DEFAULT_MOTION, DEST_DEFAULT_HIGHLIGHT, ACTION_COPY,
     BUTTON_PRESS_MASK, BUTTON_RELEASE_MASK, POINTER_MOTION_MASK,
     POINTER_MOTION_HINT_MASK, ENTER_NOTIFY_MASK, LEAVE_NOTIFY_MASK,
@@ -2121,7 +2121,8 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def _do_scroll_event(self, event):
         if self._client.readonly:
             return
-        if SMOOTH_SCROLL_MASK and event.direction==SMOOTH_SCROLL_MASK:
+        if ((SMOOTH_SCROLL_MASK and event.direction==SMOOTH_SCROLL_MASK) or
+            (SCROLL_SMOOTH and event.direction==SCROLL_SMOOTH)):
             mouselog("smooth scroll event: %s", event)
             self._client.wheel_event(self._id, event.delta_x, -event.delta_y)
             return

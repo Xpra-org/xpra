@@ -322,6 +322,7 @@ if is_gtk3():
     SCROLL_DOWN     = gdk.ScrollDirection.DOWN
     SCROLL_LEFT     = gdk.ScrollDirection.LEFT
     SCROLL_RIGHT    = gdk.ScrollDirection.RIGHT
+    SCROLL_SMOOTH   = gdk.ScrollDirection.SMOOTH
 
     ORIENTATION_HORIZONTAL = gtk.Orientation.HORIZONTAL
     ORIENTATION_VERTICAL = gtk.Orientation.VERTICAL
@@ -627,6 +628,7 @@ else:
     SCROLL_DOWN     = gdk.SCROLL_DOWN
     SCROLL_LEFT     = gdk.SCROLL_LEFT
     SCROLL_RIGHT    = gdk.SCROLL_RIGHT
+    SCROLL_SMOOTH   = 0
 
     ORIENTATION_HORIZONTAL = gtk.ORIENTATION_HORIZONTAL
     ORIENTATION_VERTICAL = gtk.ORIENTATION_VERTICAL
