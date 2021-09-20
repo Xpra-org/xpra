@@ -1263,8 +1263,8 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % EXIT_STR.get(r, r))
         if WIN32:
-            if not os.path.isabs(cmdline):
-                cmdline = os.path.abspath(cmdline)
+            if not os.path.isabs(script_file):
+                script_file = os.path.abspath(script_file)
             Popen(args=cmdline, executable=script_file)
             #we can't keep re-spawning ourselves without freeing memory,
             #so exit with "no error":
