@@ -174,7 +174,6 @@ class WindowPerformanceStatistics:
         #encoding stats:
         estats = tuple(self.encoding_stats)
         if estats:
-            encodings_used = [x[1] for x in estats]
             def add_compression_stats(enc_stats, encoding=None):
                 comp_ratios_pct = []
                 comp_times_ns = []
@@ -195,8 +194,9 @@ class WindowPerformanceStatistics:
                 if total_time>0:
                     einfo["pixels_encoded_per_second"] = int(total_pixels / total_time)
             add_compression_stats(estats)
+            encodings_used = tuple(x[1] for x in estats)
             for encoding in encodings_used:
-                enc_stats = [x for x in estats if x[1]==encoding]
+                enc_stats = tuple(x for x in estats if x[1]==encoding)
                 add_compression_stats(enc_stats, encoding)
 
         dinfo = info.setdefault("damage", {})
