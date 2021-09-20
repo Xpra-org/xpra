@@ -345,6 +345,34 @@ def write_displayfd(display_name, fd):
         log.error("Error: failed to write '%s' to fd=%s", display_name, fd)
         log.error(" %s", str(e) or type(e))
 
+
+def get_session_dir(sessions_dir, display_name, uid=0):
+    session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")))
+    if not os.path.exists(session_dir):
+        ROOT = POSIX and getuid()==0
+        if ROOT and uid==0:
+            #there is usually no $XDG_RUNTIME_DIR when running as root
+            #and even if there was, that's probably not a good path to use,
+            #so try to find a more suitable directory we can use:
+            for d in ("/run/xpra", "/var/run/xpra", "/tmp"):
+                if os.path.exists(d):
+                    session_dir = d
+                    break
+    return session_dir
+
+def make_session_dir(sessions_dir, display_name, uid=0, gid=0):
+    session_dir = get_session_dir(sessions_dir, display_name)
+    if not os.path.exists(session_dir):
+        try:
+            os.makedirs(session_dir, 0o750)
+        except OSError:
+            import tempfile
+            session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
+            os.makedirs(session_dir, 0o750)
+        if POSIX and (session_dir.startswith("/run/user") or session_dir.startswith("/run/xpra")):
+            os.lchown(session_dir, uid, gid)
+    return session_dir
+
 def session_file_path(filename):
     session_dir = os.environ["XPRA_SESSION_DIR"]
     return os.path.join(session_dir, filename)
@@ -875,26 +903,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
 
-    #XPRA_SESSION_DIR:
-    session_dir = osexpand(os.path.join(opts.sessions_dir, display_name.lstrip(":")))
-    if not os.path.exists(session_dir):
-        if ROOT and uid==0:
-            #there is usually no $XDG_RUNTIME_DIR when running as root
-            #and even if there was, that's probably not a good path to use,
-            #so try to find a directory we can use safely:
-            for d in ("/run/xpra", "/var/run/xpra", "/tmp"):
-                if os.path.exists(d):
-                    session_dir = d
-                    break
-        else:
-            try:
-                os.makedirs(session_dir, 0o750)
-            except OSError:
-                import tempfile
-                session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
-                os.makedirs(session_dir, 0o750)
-            if POSIX:
-                os.lchown(session_dir, uid, gid)
+    session_dir = make_session_dir(opts.sessions_dir, display_name, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     #populate it:
     if run_xpra_script:
@@ -1095,20 +1104,21 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
                 if pam:
                     pam.set_items({"XDISPLAY" : display_name})
                 if session_dir:
-                    new_session_dir = osexpand(os.path.join(opts.sessions_dir, display_name.lstrip(":")))
-                    try:
-                        if os.path.exists(new_session_dir):
-                            for x in os.listdir(session_dir):
-                                os.rename(os.path.join(session_dir, x), os.path.join(new_session_dir, x))
-                            os.rmdir(session_dir)
-                        else:
-                            os.rename(session_dir, new_session_dir)
-                    except OSError as e:
-                        log.error("Error moving the session directory")
-                        log.error(" from '%s' to '%s'", session_dir, new_session_dir)
-                        log.error(" %s", e)
-                    session_dir = new_session_dir
-                    os.environ["XPRA_SESSION_DIR"] = new_session_dir
+                    new_session_dir = get_session_dir(opts.sessions_dir, display_name, uid)
+                    if new_session_dir!=session_dir:
+                        try:
+                            if os.path.exists(new_session_dir):
+                                for x in os.listdir(session_dir):
+                                    os.rename(os.path.join(session_dir, x), os.path.join(new_session_dir, x))
+                                os.rmdir(session_dir)
+                            else:
+                                os.rename(session_dir, new_session_dir)
+                        except OSError as e:
+                            log.error("Error moving the session directory")
+                            log.error(" from '%s' to '%s'", session_dir, new_session_dir)
+                            log.error(" %s", e)
+                        session_dir = new_session_dir
+                        os.environ["XPRA_SESSION_DIR"] = new_session_dir
         elif POSIX and not OSX and not shadowing and not proxying:
             try:
                 xvfb_pid = int(load_session_file("xvfb.pid") or 0)
