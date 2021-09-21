@@ -156,7 +156,7 @@ class ClipboardClient(StubClientMixin):
             if self.clipboard_enabled:
                 #tell the server about which selections we really want to sync with
                 #(could have been translated, or limited if the client only has one, etc)
-                self.send_clipboard_selections(ch.remote_clipboards)
+                self.send_clipboard_selections(ch.get_remote_selections())
                 ch.send_all_tokens()
         #ui may want to know this is now set:
         self.emit("clipboard-toggled")
@@ -250,10 +250,8 @@ class ClipboardClient(StubClientMixin):
             if self.clipboard_enabled:
                 ch = self.clipboard_helper
                 assert ch is not None
-                self.send_clipboard_selections(ch.remote_clipboards)
+                self.send_clipboard_selections(ch.get_remote_selections())
                 ch.send_all_tokens()
-            else:
-                pass    #FIXME: todo!
 
     def send_clipboard_selections(self, selections):
         log("send_clipboard_selections(%s)", selections)

@@ -151,6 +151,13 @@ class ClipboardProtocolHelperCore:
     def remote_to_local(self, selection):
         return self._remote_to_local.get(selection, selection)
 
+    def get_remote_selections(self):
+        #figure out which remote selections we are interested in:
+        selections = []
+        for selection in self._clipboard_proxies.keys():
+            selections.append(self.local_to_remote(selection))
+        return selections
+
     def __repr__(self):
         return "ClipboardProtocolHelperCore"
 
@@ -267,6 +274,7 @@ class ClipboardProtocolHelperCore:
 
     # Used by the client during startup:
     def send_tokens(self, selections=()):
+        log("send_tokens(%s)", selections)
         for selection in selections:
             proxy = self._clipboard_proxies.get(selection)
             if proxy:
@@ -274,7 +282,8 @@ class ClipboardProtocolHelperCore:
                 proxy.do_emit_token()
 
     def send_all_tokens(self):
-        self.send_tokens(CLIPBOARDS)
+        #only send the tokens that we're actually handling:
+        self.send_tokens(tuple(self._clipboard_proxies.keys()))
 
 
     def _process_clipboard_token(self, packet):
