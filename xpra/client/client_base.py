@@ -273,12 +273,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def install_signal_handlers(self):
         def os_signal(signum, _frame=None):
-            try:
-                sys.stderr.write("\n")
-                sys.stderr.flush()
-                log.info("client got signal %s", SIGNAMES.get(signum, signum))
-            except Exception:
-                pass
+            if self.exit_code is None:
+                try:
+                    sys.stderr.write("\n")
+                    sys.stderr.flush()
+                    log.info("client got signal %s", SIGNAMES.get(signum, signum))
+                except Exception:
+                    pass
             self.handle_app_signal(signum)
         signal.signal(signal.SIGINT, os_signal)
         signal.signal(signal.SIGTERM, os_signal)
