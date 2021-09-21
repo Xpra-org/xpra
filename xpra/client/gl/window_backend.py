@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # This file is part of Xpra.
-# Copyright (C) 2018, 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from io import BytesIO
 from math import cos, sin
 
 from xpra.util import typedict, envint, AdHocStruct, AtomicInteger, iround
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
 
@@ -139,10 +139,16 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
             noalpha = Image.new("RGB", img.size, (255, 255, 255))
             noalpha.paste(img, mask=img.split()[3]) # 3 is the alpha channel
             buf = BytesIO()
-            noalpha.save(buf, format="JPEG")
-            icon_data = buf.getvalue()
-            buf.close()
-            icon_format = "jpeg"
+            try:
+                noalpha.save(buf, format="JPEG")
+                icon_data = buf.getvalue()
+                buf.close()
+                icon_format = "jpeg"
+            except KeyError as e:
+                log("save()", exc_info=True)
+                log.warn("OpenGL using png as jpeg is not supported by Pillow: %s", e)
+                icon_data = load_binary_file(gl_icon)
+                icon_format = "png"
         if not icon_data:
             icon_w = 32
             icon_h = 32
