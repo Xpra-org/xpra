@@ -2964,7 +2964,7 @@ def init_module():
             global CLIENT_KEY_GUID
             CLIENT_KEY_GUID = c_parseguid(client_key)
 
-        for device_id in devices:
+        for device_id in tuple(devices):
             log("testing encoder with device %s", device_id)
             device = load_device(device_id)
             cdc = cuda_device_context(device_id, device)
@@ -2981,6 +2981,11 @@ def init_module():
                     log("init_encoder() %s", test_encoder)
                     codecs = test_encoder.query_codecs()
                     log("device %i supports: %s", device_id, codecs)
+                except Exception as e:
+                    log("failed to test encoder with %s", cdc, exc_info=True)
+                    log.warn(" device %s is not supported: %s", get_device_name(device_id) or device_id, e)
+                    devices.remove(device_id)
+                    continue
                 finally:
                     test_encoder.clean()
                     test_encoder = None
@@ -3074,6 +3079,10 @@ def init_module():
             log.info("NVENC on device %s:", get_device_name(device_id) or device_id)
             for encoding, warnings in encoding_warnings.items():
                 log.info(" %s encoding does not support %s mode", encoding, " or ".join(warnings))
+    if not devices:
+        ENCODINGS[:] = []
+        log.warn("no valid NVENC devices found")
+        return
     if success:
         #pick the first valid license key:
         if len(valid_keys)>0:
