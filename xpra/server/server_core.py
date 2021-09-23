@@ -1847,6 +1847,14 @@ class ServerCore:
             for auth, _, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["connection"] = conn
+                def parse_socket_dirs(v):
+                    if isinstance(v, (tuple, list)):
+                        return v
+                    #FIXME: this can never actually match ","
+                    # because we already split connection options with it.
+                    # We need to change the connection options parser to be smarter
+                    return str(v).split(",")
+                opts["socket-dirs"] = parse_socket_dirs(opts.get("socket-dirs", self.dotxpra._sockdirs))
                 try:
                     for o in ("self", "username"):
                         if o in opts:
