@@ -78,7 +78,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
                 log.error(" %s", e)
                 self.send_error(403, "failed to handle websocket: %s" % e)
             return
-        if self.redirect_https:
+        if self.headers.get("Upgrade-Insecure-Requests", "")=="1" and self.redirect_https:
             self.do_redirect_https()
             return
         super().do_GET()
