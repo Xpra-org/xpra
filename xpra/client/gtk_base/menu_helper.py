@@ -5,11 +5,13 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
 
 from gi.repository import Gtk, GdkPixbuf
 
 from xpra.util import envbool, repr_ellipsized
 from xpra.os_util import OSX, bytestostr
+from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.gtk_common.gtk_util import (
     menuitem,
     get_pixbuf_from_data, scaled_image,
@@ -87,6 +89,11 @@ def set_sensitive(widget, sensitive):
             widget.hide()
     widget.set_sensitive(sensitive)
 
+def load_pixbuf(data):
+    loader = GdkPixbuf.PixbufLoader()
+    loader.write(data)
+    loader.close()
+    return loader.get_pixbuf()
 
 def get_appimage(app_name, icondata=None, menu_icon_size=24):
     pixbuf = None
@@ -99,22 +106,32 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24):
         icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
         if os.path.exists(icon_filename):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+    def err(e):
+        log("failed to load icon", exc_info=True)
+        log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
+        log.error(" %s", e)
+        log.error(" data=%s", repr_ellipsized(icondata))
     if not pixbuf and icondata:
         #gtk pixbuf loader:
         try:
-            loader = GdkPixbuf.PixbufLoader()
-            loader.write(icondata)
-            loader.close()
-            pixbuf = loader.get_pixbuf()
+            pixbuf = load_pixbuf(icondata)
         except Exception as e:
             log("pixbuf loader failed", exc_info=True)
-            log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
-            log.error(" %s", e)
-            log.error(" data=%s", repr_ellipsized(icondata))
+            if re.findall(INKSCAPE_RE, icondata):
+                try:
+                    pixbuf = load_pixbuf(re.sub(INKSCAPE_RE, b"", icondata))
+                    e = None
+                except Exception:
+                    #there is almost no chance pillow will be able to load it
+                    #(it doesn't even have svg support at time of writing)
+                    #so don't bother showing another error for the same data:
+                    icondata = None
+            if e:
+                err(e)
     if not pixbuf and icondata:
         #let's try pillow:
         try:
-            from xpra.codecs.pillow.decoder import open_only
+            from xpra.codecs.pillow.decoder import open_only  #pylint: disable=import-outside-toplevel
             img = open_only(icondata)
             has_alpha = img.mode=="RGBA"
             width, height = img.size
@@ -122,8 +139,7 @@ def get_appimage(app_name, icondata=None, menu_icon_size=24):
             pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
             return scaled_image(pixbuf, icon_size=menu_icon_size)
         except Exception:
-            log.error("Error: failed to load icon data for %s", bytestostr(app_name), exc_info=True)
-            log.error(" data=%s", repr_ellipsized(icondata))
+            err(e)
     if pixbuf:
         return scaled_image(pixbuf, icon_size=menu_icon_size)
     return None
