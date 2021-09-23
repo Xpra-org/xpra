@@ -214,7 +214,7 @@ class SysAuthenticatorBase:
 class SysAuthenticator(SysAuthenticatorBase):
 
     def __init__(self, username, **kwargs):
-        super().__init__(username)
+        super().__init__(username, **kwargs)
         self.pw = None
         if POSIX:
             try:
