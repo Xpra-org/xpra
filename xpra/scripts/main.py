@@ -1188,12 +1188,21 @@ def get_sockpath(display_desc, error_cb, timeout=CONNECT_TIMEOUT):
     sockpath = display_desc.get("socket_path")
     if not sockpath:
         #find the socket using the display:
+        # if uid, gid or username are missing or not found on the local system,
+        # use the uid, gid and username of the current user:
+        uid = display_desc.get("uid", getuid())
+        gid = display_desc.get("gid", getgid())
+        username = display_desc.get("username", get_username_for_uid(uid))
+        if not username:
+            uid = getuid()
+            gid = getgid()
+            username = get_username_for_uid(uid)
         dotxpra = DotXpra(
             display_desc.get("socket_dir"),
             display_desc.get("socket_dirs"),
-            display_desc.get("username", ""),
-            display_desc.get("uid", 0),
-            display_desc.get("gid", 0),
+            username,
+            uid,
+            gid,
             )
         display = display_desc["display"]
         def socket_details(state=DotXpra.LIVE):
