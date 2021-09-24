@@ -1415,13 +1415,16 @@ class ServerCore(object):
         return self.send_http_response(handler, "ready")
 
     def send_http_response(self, handler, content, content_type="text/plain"):
-        handler.send_response(200)
-        headers = {
-            "Content-type"      : content_type,
-            "Content-Length"    : len(content),
-            }
-        for k,v in headers.items():
-            handler.send_header(k, v)
+        if content is None:
+            handler.send_response(404)
+        else:
+            handler.send_response(200)
+            headers = {
+                "Content-type"      : content_type,
+                "Content-Length"    : len(content),
+                }
+            for k,v in headers.items():
+                handler.send_header(k, v)
         handler.end_headers()
         if isinstance(content, str):
             content = content.encode("latin1")
