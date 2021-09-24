@@ -901,7 +901,7 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
                 pass
             dbus_address = wminfo.get("dbus-address")
             if dbus_pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % dbus_pid):
-                dbuslog("dbus pid %s is no longer valid")
+                dbuslog("dbus pid %s is no longer valid", dbus_pid)
                 dbus_pid = 0
             if dbus_pid and dbus_address:
                 dbus_env["DBUS_SESSION_BUS_PID"] = str(dbus_pid)
