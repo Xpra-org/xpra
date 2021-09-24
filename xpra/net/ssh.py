@@ -73,56 +73,60 @@ def force_focus():
     from xpra.platform.gui import force_focus as _force_focus
     _force_focus()
 
-def dialog_run(dialog) -> int:
-    from gi.repository import GLib
-    if is_main_thread():
-        force_focus()
-        dialog.show()
-        try:
-            return dialog.run()
-        finally:
-            dialog.destroy()
+def dialog_run(run_fn) -> int:
+    import gi
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import GLib, Gtk
+    log("dialog_run(%s) is_main_thread=%s, main_level=%i", run_fn, is_main_thread(), Gtk.main_level())
+    if is_main_thread() or Gtk.main_level()==0:
+        return run_fn()
+    log("dialog_run(%s) main_depth=%s", run_fn, GLib.main_depth())
     #do a little dance if we're not running in the main thread:
     #block this thread and wait for the main thread to run the dialog
     from threading import Event
     e = Event()
     code = []
     def main_thread_run():
+        log("main_thread_run() calling %s", run_fn)
+        try:
+            code.append(run_fn())
+        finally:
+            e.set()
+    GLib.idle_add(main_thread_run)
+    log("dialog_run(%s) waiting for main thread to run", run_fn)
+    e.wait()
+    log("dialog_run(%s) code=%s", run_fn, code)
+    return code[0]
+
+def do_run_dialog(dialog):
+    try:
         force_focus()
         dialog.show()
         try:
-            r = dialog.run()
+            return dialog.run()
         finally:
             dialog.destroy()
-        code.append(r)
-        e.set()
-    GLib.idle_add(main_thread_run)
-    e.wait()
-    log("dialog_run(%s) code=%s", dialog, code)
-    return code[0]
+    finally:
+        dialog.destroy()
 
 def dialog_pass(title="Password Input", prompt="enter password", icon="") -> str:
+    log("dialog_pass%s PINENTRY=%s", (title, prompt, icon), PINENTRY)
     if PINENTRY:
         pinentry_cmd = get_pinentry_command()
         if pinentry_cmd:
             return run_pinentry_getpin(pinentry_cmd, title, prompt)
-    from xpra.client.gtk_base.pass_dialog import PasswordInputDialogWindow
-    dialog = PasswordInputDialogWindow(title, prompt, icon)
-    try:
-        if dialog_run(dialog)==0:
-            return dialog.get_password()
-        return None
-    finally:
-        dialog.destroy()
+    def password_input_run():
+        from xpra.client.gtk_base.pass_dialog import PasswordInputDialogWindow
+        dialog = PasswordInputDialogWindow(title, prompt, icon)
+        return do_run_dialog(dialog)
+    return dialog_run(password_input_run)
 
 def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)) -> int:
-    from xpra.client.gtk_base.confirm_dialog import ConfirmDialogWindow
-    dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
-    try:
-        r = dialog_run(dialog)
-    finally:
-        dialog.destroy()
-    return r
+    def confirm_run():
+        from xpra.client.gtk_base.confirm_dialog import ConfirmDialogWindow
+        dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
+        return do_run_dialog(dialog)
+    return dialog_run(confirm_run)
 
 
 def confirm_key(info=(), title="Confirm Key", prompt="Are you sure you want to continue connecting?") -> bool:
