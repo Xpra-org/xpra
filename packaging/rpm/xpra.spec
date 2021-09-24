@@ -603,7 +603,7 @@ fi
 
 
 %changelog
-* Sat Sep 04 2021 Antoine Martin <antoine@xpra.org> 4.2.3-10
+* Fri Sep 24 2021 Antoine Martin <antoine@xpra.org> 4.2.3-10
 - network layer:
    ensure the http headers cache is never modified unintentionally
    invalid packet encoder names should not cause fatal errors
@@ -611,10 +611,17 @@ fi
    prefer https links
    prefer sha256 to sha1 for file transfer checksums
    mmap setup error handling
-   'sndbuf_bytes' value was incorrect (currently unused)
+   `sndbuf_bytes` value was incorrect (currently unused)
    socket timeout too long - broke VNC connections
    AES DoS with unreasonably large number of password stretching iterations
    tone down http content security policy for the HTML5 client
+   parsing of remote ssh command output
+   reply with a 404 if we have no http data to send
+   stricter validation of challenge digest attribute
+   stricter validation of packet indexes
+   specifying invalid compressors should not be fatal
+   handle more VNC clients correctly
+   server errors when VNC clients are connected
 - encodings:
    don't enable video encoders not present in 'encodings' option
    ffmpeg H264 errors with unreleased version
@@ -625,14 +632,26 @@ fi
    incorrect error messages with the jpeg YUV decoder
    error in 'void' paint events (currently unused)
    CUDA 11.4 and Ampere cards
+   RPM build errors when CUDA is disabled
+   restrict the number of NVENC errors tagged as transient
+   more robust OpenGL picture decoding sanity checks
+- packaging and platforms:
+   find the fakeXinerama library more reliably on all platforms
+   platform detection for CentOS / RedHat
+   missing default configuration files on MS Windows
+   missing webp with latest Pillow builds on MacOS
+- clipboard selections getting stuck with MS Windows and MacOS clients
+- clipboard errors with some packet encoders sending strings
+- authentication modules not honouring `socket-dirs` option
+- make it easier to dismiss the splash screen
+- ssh password and key dialogs timing out without being shown
 - window size hints may not have been honoured (rare case)
 - honour the force-replace-wm flag when upgrading
 - correctly handle command timeouts when probing servers
-- find the fakeXinerama library more reliably on all platforms
-- platform detection for CentOS / RedHat
 - test scripts and command line tools fixups: unit tests, U2F tool, audio test, etc
 - system tray save-to-file debugging failures
-- minor cosmetic fixes to logging messages, unreachable code
+- minor cosmetic fixes to logging messages, unreachable code, icon loading errors
+- make it easier to run in a prefixed installation
 
 * Mon Aug 09 2021 Antoine Martin <antoine@xpra.org> 4.2.2-10
 - don't build ffmpeg codecs on i386 (crashy)
