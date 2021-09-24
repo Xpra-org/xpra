@@ -1271,16 +1271,19 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % EXIT_STR.get(r, r))
+        log = Logger("exec")
         if WIN32:
             #the cx_Freeze wrapper changes the cwd to the directory containing the exe,
             #so we have to re-construct the actual path to the exe:
             if not os.path.isabs(script_file):
                 script_file = os.path.join(os.getcwd(), os.path.basename(script_file))
             cmdline[0] = script_file
+            log("Popen(args=%s, executable=%s)", cmdline, script_file)
             Popen(args=cmdline, executable=script_file)
             #we can't keep re-spawning ourselves without freeing memory,
             #so exit the current process with "no error":
             return EXIT_OK
+        log("execv%s", (script_file, cmdline))
         os.execv(script_file, cmdline)
     return r
 
