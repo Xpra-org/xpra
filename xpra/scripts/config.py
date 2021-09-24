@@ -93,7 +93,7 @@ def get_Xdummy_confdir():
         base = "${HOME}/.xpra"
     return base+"/xorg.conf.d/$PID"
 
-def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/etc/xpra/xorg.conf"):
+def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf"):
     cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
     cmd += [
           "-noreset", "-novtswitch",
@@ -106,7 +106,7 @@ def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_LOG_DIR}", xorg_conf="/e
           #must be specified with some Xorg versions (ie: arch linux)
           #this directory can store xorg config files, it does not need to be created:
           "-configdir", '"%s"' % get_Xdummy_confdir(),
-          "-config", xorg_conf
+          "-config", '"%s"' % xorg_conf,
           ]
     return cmd
 
@@ -165,7 +165,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
                 use_wrapper = True
             else:
                 use_wrapper = False
-        xorg_conf = os.path.join(conf_dir, "xorg.conf")
+        xorg_conf = "${XORG_CONFIG_PREFIX}"+os.path.join(conf_dir, "xorg.conf")
         if use_wrapper:
             xorg_cmd = "xpra_Xdummy"
         else:
