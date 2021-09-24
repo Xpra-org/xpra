@@ -167,6 +167,7 @@ class ServerCore:
         self._socket_timeout = SERVER_SOCKET_TIMEOUT
         self._ws_timeout = 5
         self._socket_dir = None
+        self._socket_dirs = []
         self.dbus_pid = 0
         self.dbus_env = {}
         self.dbus_control = False
@@ -224,6 +225,7 @@ class ServerCore:
         self._socket_dir = opts.socket_dir or ""
         if not self._socket_dir and opts.socket_dirs:
             self._socket_dir = opts.socket_dirs[0]
+        self._socket_dirs = opts.socket_dirs
         self.encryption = opts.encryption
         self.encryption_keyfile = opts.encryption_keyfile
         self.tcp_encryption = opts.tcp_encryption
@@ -1632,6 +1634,11 @@ class ServerCore:
             for auth, _, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["connection"] = conn
+                def parse_socket_dirs(v):
+                    if isinstance(v, (tuple, list)):
+                        return v
+                    return str(v).split(",")
+                opts["socket-dirs"] = parse_socket_dirs(opts.get("socket-dirs", self._socket_dirs))
                 authenticator = aclass(username, **opts)
                 authlog("authenticator %i: %s(%s, %s)=%s", i, auth, username, opts, authenticator)
                 authenticators.append(authenticator)
