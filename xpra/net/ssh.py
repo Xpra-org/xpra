@@ -812,12 +812,15 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
             r = rtc("which %s" % xpra_cmd)
             if r[2]!=0:
                 continue
-            if r[0]:
-                #use the actual path returned by 'which':
+            out = r[0]
+            if out:
+                #use the actual path returned by 'command -v':
+                if not isinstance(out, str):
+                    out = bytestostr(out)
                 try:
-                    xpra_cmd = r[0].decode().splitlines()[-1].rstrip("\n\r ").lstrip("\t ")
-                except Exception:
-                    pass
+                    xpra_cmd = out.splitlines()[-1].rstrip("\n\r ").lstrip("\t ")
+                except Exception as e:
+                    log("cannot get command from %r: %s", xpra_cmd, e)
         log("adding xpra_cmd='%s'", xpra_cmd)
         if xpra_cmd in tried:
             continue
