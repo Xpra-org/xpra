@@ -655,9 +655,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.disconnect_and_quit(code, server_message)
 
     def validate_challenge_packet(self, packet):
-        digest = bytestostr(packet[3])
+        digest = bytestostr(packet[3]).split(":", 1)[0]
         #don't send XORed password unencrypted:
-        if digest=="xor":
+        if digest in ("xor", "des"):
             encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss")
             local = self.display_desc.get("local", False)
             authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
