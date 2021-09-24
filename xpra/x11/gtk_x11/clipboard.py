@@ -30,7 +30,7 @@ from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
     constants, PropertyError,                   #@UnresolvedImport
     X11WindowBindings,                          #@UnresolvedImport
     )
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, strtobytes
 from xpra.util import csv, repr_ellipsized, ellipsizer, first_time, envbool
 from xpra.log import Logger
 
@@ -449,6 +449,10 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
             with xsync:
                 xid = get_xwindow(requestor)
                 if data is not None:
+                    if isinstance(data, str):
+                        #the data is already in the correct format,
+                        #but the cython bindings require real 'bytes'
+                        data = strtobytes(data)
                     X11Window.XChangeProperty(xid, prop, dtype, dformat, data)
                 else:
                     #maybe even delete the property?
