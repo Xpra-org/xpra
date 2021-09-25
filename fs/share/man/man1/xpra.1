@@ -387,6 +387,14 @@ Displays a summary of command line usage.
 \fB-d\fP \fIFILTER1,FILTER2,...\fP, \fB--debug\fP=\fIFILTER1,FILTER2,...\fP
 Enable debug logging.  The special value \fBall\fP enables all
 debugging.
+To get the full list of logging categories, run \fIxpra -d help\fP.
+To target loggers that use more than one logging category (as some
+categories can be quite broad), join them with a '\fB+\fP'.
+For example, to enable logging for \fIserver\fP and \fIkeyboard\fP,
+use \fI--debug server+keyboard\fP.
+You can also exclude a category with the '\fB-\fP' prefix.
+For example, to enable \fIshadow\fP debugging but not \fIclipboard\fP,
+use: \fI--debug shadow,-clipboard\fP.
 .TP
 \fB--mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP|\fIDIRECTORY\fP
 Enable or disable memory mapped pixel data transfer.
