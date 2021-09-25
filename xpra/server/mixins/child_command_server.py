@@ -151,14 +151,11 @@ class ChildCommandServer(StubServerMixin):
         if ss.xdg_menu_update:
             #this method may block if the menus are still being loaded,
             #so do it in a throw-away thread:
-            start_thread(self.send_xdg_menu_data, "send-xdg-menu-data", True, (ss,))
+            start_thread(self.prepare_xdg_menu_data, "send-xdg-menu-data", True, ())
 
-    def send_xdg_menu_data(self, ss):
-        if ss.is_closed():
-            return
+    def prepare_xdg_menu_data(self):
         xdg_menu = self._get_xdg_menu_data() or {}
-        log("%i entries sent in initial data", len(xdg_menu))
-        ss.send_setting_change("xdg-menu", xdg_menu)
+        log("%i entries prepared", len(xdg_menu))
 
     def send_updated_menu(self, xdg_menu):
         log("send_updated_menu(%s)", ellipsizer(xdg_menu))
