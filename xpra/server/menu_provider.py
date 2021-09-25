@@ -150,6 +150,7 @@ class MenuProvider:
             return None
         menu_data = self.menu_data
         if self.load_lock.acquire(wait):
+            menu_data = self.menu_data
             try:
                 if not self.menu_data or force_reload:
                     if POSIX:
