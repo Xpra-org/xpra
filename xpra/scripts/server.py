@@ -346,7 +346,7 @@ def write_displayfd(display_name, fd):
         log.error(" %s", str(e) or type(e))
 
 
-def get_session_dir(sessions_dir, display_name, uid=0):
+def get_session_dir(sessions_dir, display_name, uid):
     session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")))
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid()==0
@@ -361,7 +361,7 @@ def get_session_dir(sessions_dir, display_name, uid=0):
     return session_dir
 
 def make_session_dir(sessions_dir, display_name, uid=0, gid=0):
-    session_dir = get_session_dir(sessions_dir, display_name)
+    session_dir = get_session_dir(sessions_dir, display_name, uid)
     if not os.path.exists(session_dir):
         try:
             os.makedirs(session_dir, 0o750)
