@@ -161,6 +161,7 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
     subs.update({
         "DISPLAY"       : display_name,
         "XPRA_LOG_DIR"  : pathexpand(os.environ.get("XPRA_LOG_DIR")),
+        "XORG_CONFIG_PREFIX" : os.environ.get("XORG_CONFIG_PREFIX", ""),
         })
 
     #identify logfile argument if it exists,
