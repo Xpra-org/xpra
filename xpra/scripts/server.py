@@ -645,8 +645,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     else:
         def noprogressshown(*_args):
             """ messages aren't shown """
-        def stop_progress_process():
-            """ nothing to stop """
         progress = noprogressshown
 
     progress(10, "initializing environment")
@@ -1136,12 +1134,14 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     def check_xvfb(timeout=0):
         if xvfb is None:
             return True
-        return check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb)
+        if not check_xvfb_process(xvfb, timeout=timeout, command=opts.xvfb):
+            progress(100, "xvfb failed")
+            return False
+        return True
 
     write_displayfd(display_name, displayfd)
 
     if not check_xvfb(1):
-        stop_progress_process()
         noerr(stderr.write, "vfb failed to start, exiting\n")
         return EXIT_VFB_ERROR
 
@@ -1175,7 +1175,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     del stderr
 
     if not check_xvfb():
-        stop_progress_process()
         noerr(stderr.write, "vfb failed to start, exiting\n")
         return EXIT_VFB_ERROR
 
@@ -1264,7 +1263,6 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
 
     if not proxying and POSIX and not OSX:
         if not check_xvfb():
-            stop_progress_process()
             return  1
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         if os.environ.get("NO_AT_BRIDGE") is None:
@@ -1314,7 +1312,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         app.display_name = display_name
         app.init(opts)
         if not app.validate():
-            stop_progress_process()
+            progress(100, "server validation failed")
             return 1
         init_local_sockets()
         app.init_sockets(sockets)
