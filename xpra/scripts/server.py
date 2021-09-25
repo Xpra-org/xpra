@@ -645,6 +645,8 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     else:
         def noprogressshown(*_args):
             """ messages aren't shown """
+        def stop_progress_process():
+            """ nothing to stop """
         progress = noprogressshown
 
     progress(10, "initializing environment")
