@@ -873,10 +873,12 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     if ROOT and (uid>0 or gid>0):
         #we're going to chown the directory if we create it,
         #ensure this cannot be abused, only use "safe" paths:
-        if not any(x for x in ("/run/user/%i" % uid, "/tmp", "/var/tmp") if xrd.startswith(x)):
+        if x=="/run/user/%i" % uid:
+            pass    #OK!
+        elif not any(True for x in ("/tmp", "/var/tmp") if xrd.startswith(x)):
             xrd = ""
         #these paths could cause problems if we were to create and chown them:
-        if xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
+        elif xrd.startswith(X11_SOCKET_DIR) or xrd.startswith("/tmp/.XIM-unix"):
             xrd = ""
     if not xrd:
         xrd = os.environ.get("XDG_RUNTIME_DIR")
