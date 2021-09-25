@@ -1139,6 +1139,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     write_displayfd(display_name, displayfd)
 
     if not check_xvfb(1):
+        stop_progress_process()
         noerr(stderr.write, "vfb failed to start, exiting\n")
         return EXIT_VFB_ERROR
 
@@ -1172,6 +1173,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
     del stderr
 
     if not check_xvfb():
+        stop_progress_process()
         noerr(stderr.write, "vfb failed to start, exiting\n")
         return EXIT_VFB_ERROR
 
@@ -1260,6 +1262,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
 
     if not proxying and POSIX and not OSX:
         if not check_xvfb():
+            stop_progress_process()
             return  1
         from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
         if os.environ.get("NO_AT_BRIDGE") is None:
@@ -1309,6 +1312,7 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         app.display_name = display_name
         app.init(opts)
         if not app.validate():
+            stop_progress_process()
             return 1
         init_local_sockets()
         app.init_sockets(sockets)
