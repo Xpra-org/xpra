@@ -77,6 +77,7 @@ AV_SYNC_RATE_CHANGE = envint("XPRA_AV_SYNC_RATE_CHANGE", 20)
 AV_SYNC_TIME_CHANGE = envint("XPRA_AV_SYNC_TIME_CHANGE", 500)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
+WINDOW_FOCUS_VIDEO_ENCODER = envbool("XPRA_WINDOW_FOCUS_VIDEO_ENCODER", True)
 
 SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
 FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
@@ -235,6 +236,7 @@ class WindowSource(WindowIconSource):
         self.is_tray = window.is_tray()
         self.is_shadow = window.is_shadow()
         self.has_alpha = HAS_ALPHA and window.has_alpha()
+        self.has_focus = False
         self.window_dimensions = ww, wh
         #where the window is mapped on the client:
         self.mapped_at = None
@@ -955,6 +957,9 @@ class WindowSource(WindowIconSource):
             return self.hardcoded_encoding
         if self._encoding_hint and self._encoding_hint in self._encoders:
             return self.encoding_is_hint
+
+        if WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus:
+            return self.get_best_encoding_impl_default()
         #choose which method to use for selecting an encoding
         #first the easy ones (when there is no choice):
         if self._mmap_size>0 and self.encoding!="grayscale":
@@ -1000,6 +1005,7 @@ class WindowSource(WindowIconSource):
         return self.get_best_encoding_impl_default()
 
     def get_best_encoding_impl_default(self):
+        log("get_best_encoding_impl_default(..)")
         #stick to what is specified or use rgb for small regions:
         if self.encoding=="auto":
             return self.get_auto_encoding
@@ -1204,6 +1210,7 @@ class WindowSource(WindowIconSource):
 
 
     def calculate_batch_delay(self, has_focus, other_is_fullscreen, other_is_maximized):
+        self.has_focus = has_focus
         bc = self.batch_config
         if bc.locked:
             return
@@ -1906,6 +1913,7 @@ class WindowSource(WindowIconSource):
         ww,wh = self.window_dimensions
         options = self.assign_sq_options(options)
         get_best_encoding = get_best_encoding or self.get_best_encoding
+        log("do_send_delayed_regions(..): get_best_encoding: %s", get_best_encoding)
         def get_encoding(w, h):
             return get_best_encoding(w, h, options, coding)
 

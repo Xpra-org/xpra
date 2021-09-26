@@ -107,6 +107,9 @@ if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
 
 COMPRESS_SCROLL_FMT = COMPRESS_FMT_PREFIX+" as %3i rectangles  (%5iKB to     0KB)"+COMPRESS_FMT_SUFFIX
 
+WINDOW_FOCUS_VIDEO_ENCODER = envbool("XPRA_WINDOW_FOCUS_VIDEO_ENCODER", True)
+
+
 
 class WindowVideoSource(WindowSource):
     """
@@ -449,6 +452,7 @@ class WindowVideoSource(WindowSource):
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
         """
+        log("get_best_encoding_video(..)")
         pixel_count = ww*wh
         def nonvideo(qdiff=None, info=""):
             if qdiff:
@@ -467,13 +471,13 @@ class WindowVideoSource(WindowSource):
         if self.is_tray:
             return nonvideo(100, "system tray")
         text_hint = self.content_type.find("text")>=0
-        if text_hint and not TEXT_USE_VIDEO:
+        if text_hint and not TEXT_USE_VIDEO and not (WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus):
             return nonvideo(100, info="text content-type")
 
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
         cwh = wh & self.height_mask
-        video_hint = self.content_type.find("video")>=0
+        video_hint = self.content_type.find("video")>=0 or (WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus)
 
         rgbmax = self._rgb_auto_threshold
         videomin = cww*cwh // (1+video_hint*2)
@@ -483,7 +487,7 @@ class WindowVideoSource(WindowSource):
             rgbmax = min(rgbmax, sr.width*sr.height//2)
         elif not text_hint:
             videomin = min(640*480, cww*cwh)
-        if pixel_count<=rgbmax or cww<8 or cwh<8:
+        if not (WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus) and (pixel_count<=rgbmax or cww<8 or cwh<8):
             return nonvideo(info="low pixel count")
 
         if current_encoding not in ("auto", "grayscale") and current_encoding not in self.common_video_encodings:
@@ -688,6 +692,8 @@ class WindowVideoSource(WindowSource):
         return vr
 
     def subregion_is_video(self):
+        if WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus:
+            return True
         vs = self.video_subregion
         if not vs:
             return False
@@ -750,7 +756,7 @@ class WindowVideoSource(WindowSource):
         assert not self.full_frames_only
 
         actual_vr = None
-        if vr in regions:
+        if vr in regions or (WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus):
             #found the video region the easy way: exact match in list
             actual_vr = vr
         else:
@@ -795,6 +801,7 @@ class WindowVideoSource(WindowSource):
             #TODO: encode delay can be derived rather than hard-coded
             encode_delay = 50
             video_options["av-delay"] = max(0, self.get_frame_encode_delay(options) - encode_delay)
+            sublog("send data using video encoder, opts%s", (damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options, 0))
             self.process_damage_region(damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height,
                                        coding, video_options)
 
@@ -1060,22 +1067,35 @@ class WindowVideoSource(WindowSource):
         """
         super().update_encoding_options(force_reload)
         vs = self.video_subregion
+        log("update_encoding_options(%s): vs: %s, check %s", force_reload, vs, (True if vs else False))
         if vs:
-            if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
+            if not (WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus) and \
+                ((self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
                 self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
                 self.content_type.find("text")>=0 or \
-                self._mmap_size>0:
+                self._mmap_size>0):
                 #cannot use video subregions
                 #FIXME: small race if a refresh timer is due when we change encoding - meh
+                log("cannot use video subregions, reset")
                 vs.reset()
             else:
                 old = vs.rectangle
                 ww, wh = self.window_dimensions
-                vs.identify_video_subregion(ww, wh,
+                
+
+                log("update_encoding_options check setregion override")
+                if WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus:
+                    vs.set_detection(False)
+                    vs.set_region(0, 0, ww, wh)
+                else:
+                    vs.identify_video_subregion(ww, wh,
                                             self.statistics.damage_events_count,
                                             self.statistics.last_damage_events,
                                             self.statistics.last_resized,
                                             self.children)
+
+                log("vs after identify: %s", vs)
+
                 newrect = vs.rectangle
                 if ((newrect is None) ^ (old is None)) or newrect!=old:
                     if old is None and newrect and newrect.get_geometry()==(0, 0, ww, wh):
@@ -1127,8 +1147,12 @@ class WindowVideoSource(WindowSource):
         if self._mmap_size>0:
             scorelog("cannot score: mmap enabled")
             return
-        if self.content_type.find("text")>=0 and self.non_video_encodings:
-            scorelog("no pipelines for content-type %r", self.content_type)
+
+        if WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus:
+            scorelog("found has_focus and is true")
+
+        if self.content_type.find("text")>=0 and self.non_video_encodings and not (WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus):
+            scorelog("no pipelines for 'text' content-type")
             return
         elapsed = monotonic()-self._last_pipeline_check
         max_elapsed = 0.75
@@ -1840,6 +1864,10 @@ class WindowVideoSource(WindowSource):
     def may_use_scrolling(self, image, options):
         scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video encodings=%s",
                   image, options, self.supports_scrolling, image.has_pixels, self.content_type, self.non_video_encodings)
+
+        if WINDOW_FOCUS_VIDEO_ENCODER and self.has_focus:
+            scrolllog("no scrolling: has focus")
+            return False
         if self._mmap_size>0 and self.encoding!="scroll":
             scrolllog("no scrolling: using mmap")
             return False
