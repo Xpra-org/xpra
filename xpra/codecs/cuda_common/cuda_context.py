@@ -437,7 +437,7 @@ def get_device_context(options):
 
 
 class cuda_device_context:
-    __slots__ = ("device_id", "device", "context", "lock", "opengl")
+    __slots__ = ("device_id", "device", "context", "lock", "opengl", "cleanup_instances")
     def __init__(self, device_id, device, opengl=False):
         assert device, "no cuda device"
         self.device_id = device_id
@@ -445,6 +445,7 @@ class cuda_device_context:
         self.opengl = opengl
         self.context = None
         self.lock = RLock()
+        self.cleanup_instances = []
         log("%r", self)
 
     def __bool__(self):
@@ -505,12 +506,20 @@ class cuda_device_context:
             info["api_version"] = self.context.get_api_version()
         return info
 
+    def add_cleanup_instance(self, inst):
+        self.cleanup_instances.append(inst)
 
     def __del__(self):
+        log("cuda_context() del called")
         self.free()
 
     def free(self):
         log("free() context=%s", self.context)
+        
+        log("Freeing cleanup instances: %s", self.cleanup_instances)
+        for i in self.cleanup_instances:
+            i.clean(actualClean=True)
+
         c = self.context
         if c:
             self.device_id = 0
