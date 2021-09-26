@@ -605,18 +605,15 @@ def request_exit(uri):
         return False
     return p.poll()==0
 
-
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
         "start", "start-desktop",
         "upgrade", "upgrade-desktop",
         "shadow", "proxy",
         )
-    desktop_display = nox()
     validate_encryption(opts)
     if opts.encoding=="help" or "help" in opts.encodings:
         return show_encoding_help(opts)
-
     ################################################################################
     # splash screen:
     splash_process = None
@@ -646,8 +643,19 @@ def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, displa
         def noprogressshown(*_args):
             """ messages aren't shown """
         progress = noprogressshown
-
     progress(10, "initializing environment")
+    try:
+        return _do_run_server(script_file, cmdline,
+                              error_cb, opts, extra_args, mode, display_name, defaults,
+                              splash_process, progress)
+    except Exception as e:
+        progress(100, "error: %s" % e)
+        raise
+
+def _do_run_server(script_file, cmdline,
+                   error_cb, opts, extra_args, mode, display_name, defaults,
+                   splash_process, progress):
+    desktop_display = nox()
     try:
         cwd = os.getcwd()
     except OSError:
