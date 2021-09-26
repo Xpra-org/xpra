@@ -1242,9 +1242,12 @@ class WindowVideoSource(WindowSource):
                      force_reload, ve.get_src_format(), enc_in_format)
             clean = True
         elif ve.get_width()!=enc_width or ve.get_height()!=enc_height:
-            scorelog("check_pipeline_score(%s) change of video input dimensions from %ix%i to %ix%i",
-                     force_reload, ve.get_width(), ve.get_height(), enc_width, enc_height)
-            clean = True
+            if hasattr(ve, 'can_ignore_dim_changes') and ve.can_ignore_dim_changes():
+                pass
+            else:
+                scorelog("check_pipeline_score(%s) change of video input dimensions from %ix%i to %ix%i",
+                        force_reload, ve.get_width(), ve.get_height(), enc_width, enc_height)
+                clean = True
         elif not isinstance(ve, encoder_spec.codec_class):
             scorelog("check_pipeline_score(%s) found a better video encoder class than %s: %s",
                      force_reload, type(ve), scores[0])
@@ -1677,9 +1680,12 @@ class WindowVideoSource(WindowSource):
                                             ve.get_encoding(), csv(encodings))
             return False
         if ve.get_width()!=encoder_src_width or ve.get_height()!=encoder_src_height:
-            videolog("do_check_pipeline video: window dimensions have changed from %sx%s to %sx%s",
-                                            ve.get_width(), ve.get_height(), encoder_src_width, encoder_src_height)
-            return False
+            if hasattr(ve, 'can_ignore_dim_changes') and ve.can_ignore_dim_changes():
+                pass
+            else: 
+                videolog("do_check_pipeline video: window dimensions have changed from %sx%s to %sx%s",
+                                                ve.get_width(), ve.get_height(), encoder_src_width, encoder_src_height)
+                return False
         return True
 
 
