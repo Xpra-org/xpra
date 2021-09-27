@@ -7,7 +7,7 @@ import os
 from ctypes import c_ubyte, c_char, c_uint32
 
 from xpra.util import roundup
-from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, get_groups, WIN32, POSIX
+from xpra.os_util import memoryview_to_bytes, shellsub, get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.simple_stats import std_unit
 from xpra.log import Logger
