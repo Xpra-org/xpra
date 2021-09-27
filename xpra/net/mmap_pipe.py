@@ -31,12 +31,10 @@ def get_socket_group(socket_filename) -> int:
 def xpra_group() -> int:
     if POSIX:
         try:
-            username = os.getgroups()
-            groups = get_groups(username)
-            if MMAP_GROUP in groups:
-                group_id = get_group_id(MMAP_GROUP)
-                if group_id>=0:
-                    return group_id
+            groups = os.getgroups()
+            group_id = get_group_id(MMAP_GROUP)
+            if group_id and group_id in groups:
+                return group_id
         except Exception:
             log("xpra_group()", exc_info=True)
     return 0
