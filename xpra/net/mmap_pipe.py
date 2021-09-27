@@ -33,6 +33,7 @@ def xpra_group() -> int:
         try:
             groups = os.getgroups()
             group_id = get_group_id(MMAP_GROUP)
+            log("xpra_group() group(%s)=%s, groups=%s", MMAP_GROUP, group_id, groups)
             if group_id and group_id in groups:
                 return group_id
         except Exception:
