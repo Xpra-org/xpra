@@ -158,10 +158,13 @@ def start_Xvfb(xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, use
     subs = {}
     def pathexpand(s):
         return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
+    etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")
+    if etc_prefix.endswith("/usr"):
+        etc_prefix = etc_prefix[:-4]
     subs.update({
         "DISPLAY"       : display_name,
         "XPRA_LOG_DIR"  : pathexpand(os.environ.get("XPRA_LOG_DIR")),
-        "XORG_CONFIG_PREFIX" : os.environ.get("XORG_CONFIG_PREFIX", ""),
+        "XORG_CONFIG_PREFIX" : os.environ.get("XORG_CONFIG_PREFIX", etc_prefix),
         })
 
     #identify logfile argument if it exists,
