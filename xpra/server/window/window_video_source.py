@@ -421,6 +421,7 @@ class WindowVideoSource(WindowSource):
             properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
     def get_best_encoding_impl_default(self):
+        log("get_best_encoding_impl_default() window_type=%s, encoding=%s", self.window_type, self.encoding)
         if self.window_type.intersection(LOSSLESS_WINDOW_TYPES):
             return super().get_best_encoding_impl_default()
         if self.encoding!="grayscale" or has_codec("csc_libyuv"):
@@ -875,6 +876,7 @@ class WindowVideoSource(WindowSource):
             The damage thread will call make_data_packet_cb which does the actual compression.
             This runs in the UI thread.
         """
+        log("process_damage_region%s", (damage_time, x, y, w, h, coding, options, flush))
         assert self.ui_thread == threading.current_thread()
         assert coding is not None
         if w==0 or h==0:

@@ -1550,6 +1550,7 @@ cdef class Encoder:
     cdef object __weakref__
 
     cdef GUID init_codec(self) except *:
+        log("init_codec()")
         codecs = self.query_codecs()
         #codecs={'H264': {"guid" : '6BC82762-4E63-4CA4-AA85-1E50F321F6BF', .. }
         internal_name = {"H265" : "HEVC"}.get(self.codec_name.upper(), self.codec_name.upper())
@@ -1781,14 +1782,17 @@ cdef class Encoder:
             context_pointer = <uintptr_t> (&self.cuda_context_ptr)
             result = cuCtxGetCurrent(ctypes.cast(context_pointer, POINTER(ctypes.c_void_p)))
             if DEBUG_API:
-                log("cuCtxGetCurrent() returned %s, cuda context pointer=%#x", CUDA_ERRORS_INFO.get(result, result), <uintptr_t> self.cuda_context_ptr)
+                log("cuCtxGetCurrent() returned %s, context_pointer=%#x, cuda context pointer=%#x",
+                    CUDA_ERRORS_INFO.get(result, result), context_pointer, <uintptr_t> self.cuda_context_ptr)
             assert result==0, "failed to get current cuda context, cuCtxGetCurrent returned %s" % CUDA_ERRORS_INFO.get(result, result)
+            assert (<uintptr_t> self.cuda_context_ptr)!=0, "invalid cuda context pointer"
         except driver.MemoryError as e:
             last_context_failure = monotonic()
             log("init_cuda %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e) from None
 
     cdef init_cuda_kernel(self, cuda_context):
+        log("init_cuda_kernel(..)")
         global YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT, NATIVE_RGB
         cdef unsigned int plane_size_div, wmult, hmult, max_input_stride
         #use alias to make code easier to read:
@@ -1870,11 +1874,13 @@ cdef class Encoder:
 
 
     def init_nvenc(self):
+        log("init_nvenc()")
         self.open_encode_session()
         self.init_encoder()
         self.init_buffers()
 
     def init_encoder(self):
+        log("init_encoder()")
         cdef GUID codec = self.init_codec()
         cdef NVENCSTATUS r
         cdef NV_ENC_INITIALIZE_PARAMS *params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
@@ -2017,6 +2023,7 @@ cdef class Encoder:
             #config.encodeCodecConfig.hevcConfig.hevcVUIParameters.videoFormat = ...
 
     def init_buffers(self):
+        log("init_buffers()")
         cdef NV_ENC_REGISTER_RESOURCE registerResource
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
         assert self.context, "context is not initialized"
@@ -2200,6 +2207,7 @@ cdef class Encoder:
 
 
     cdef cuda_clean(self):
+        log("cuda_clean()")
         cdef NVENCSTATUS r
         if self.context!=NULL and self.frames>0:
             self.flushEncoder()
@@ -2237,10 +2245,13 @@ cdef class Encoder:
             with nogil:
                 r = self.functionList.nvEncDestroyEncoder(self.context)
             raiseNVENC(r, "destroying context")
+            self.functionList = NULL
             self.context = NULL
             global context_counter
             context_counter.decrease()
             log("cuda_clean() (still %s context%s in use)", context_counter, engs(context_counter))
+        else:
+            log("skipping encoder context cleanup")
         self.cuda_context_ptr = <void *> 0
 
     def get_width(self) -> int:
@@ -2357,6 +2368,7 @@ cdef class Encoder:
                 log("GPU memcopy %i bytes from %#x to %#x", stride*h, int(gpu_buffer), int(self.cudaInputBuffer))
             else:
                 stride = self.copy_image(image, False)
+                log("memcpy_htod(cudaOutputBuffer=%s, inputBuffer=%s)", self.cudaOutputBuffer, self.inputBuffer)
                 driver.memcpy_htod(self.cudaInputBuffer, self.inputBuffer)
             self.exec_kernel(cuda_context, w, h, stride)
             input_size = self.inputPitch * self.input_height
