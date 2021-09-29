@@ -8,6 +8,7 @@ import os
 import time
 import operator
 import threading
+import traceback
 from math import sqrt
 from functools import reduce
 from time import monotonic
@@ -328,8 +329,8 @@ class WindowVideoSource(WindowSource):
         if csce or ve:
             if DEBUG_VIDEO_CLEAN:
                 log.warn("video_context_clean() for wid %i: %s and %s", self.wid, csce, ve)
-                import traceback
-                traceback.print_stack()
+                for x in traceback.extract_stack():
+                    log.warn(" %s", x)
             self._csc_encoder = None
             self._video_encoder = None
             def clean():
