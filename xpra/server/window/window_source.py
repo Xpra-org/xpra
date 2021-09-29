@@ -199,7 +199,6 @@ class WindowSource(WindowIconSource):
         self.is_tray = window.is_tray()
         self.is_shadow = window.is_shadow()
         self.has_alpha = window.has_alpha()
-        self.has_focus = window.has_focus()
         self.window_dimensions = ww, wh
         #where the window is mapped on the client:
         self.mapped_at = None

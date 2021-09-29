@@ -755,7 +755,7 @@ class WindowVideoSource(WindowSource):
             if self.b_frame_flush_timer and exclude_region is None:
                 #a b-frame is already due, don't clobber it!
                 exclude_region = vr
-            super().do_send_delayed_regions(damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
+            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
