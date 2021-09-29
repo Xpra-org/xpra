@@ -1277,6 +1277,14 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode):
             #so we have to re-construct the actual path to the exe:
             if not os.path.isabs(script_file):
                 script_file = os.path.join(os.getcwd(), os.path.basename(script_file))
+            if not os.path.exists(script_file):
+                #perhaps the extension is missing?
+                if not os.path.splitext(script_file)[1]:
+                    log("script file '%s' not found, retrying with %PATHEXT%", script_file)
+                    for ext in os.environ.get("PATHEXT", ".COM;.EXE").split(os.path.pathsep):
+                        tmp = script_file+ext
+                        if os.path.exists(tmp):
+                            script_file = tmp
             cmdline[0] = script_file
             log("Popen(args=%s, executable=%s)", cmdline, script_file)
             Popen(args=cmdline, executable=script_file)
