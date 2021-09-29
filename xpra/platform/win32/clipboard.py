@@ -491,7 +491,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             return
         self._got_token_events += 1
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
-            self._selection, targets, target_data, claim, self._can_receive)
+            self._selection, targets, ellipsizer(target_data), claim, self._can_receive)
         if self._can_receive:
             self.targets = _filter_targets(targets or ())
             self.target_data = target_data or {}
@@ -525,7 +525,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 #request it:
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
         elif dformat==8 and dtype in TEXT_TARGETS:
-            log("we got a byte string: %s", data)
+            log("we got a byte string: %s", ellipsizer(data))
             self.set_clipboard_text(net_utf8(data))
         elif dformat==8 and dtype.startswith("image/"):
             img_format = dtype.split("/")[-1]   #ie: 'png'

@@ -266,7 +266,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self._got_token_events += 1
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
-            self._selection, targets, target_data, claim, self._can_receive)
+            self._selection, targets, ellipsizer(target_data), claim, self._can_receive)
         if claim:
             self._have_token = True
         if self._can_receive:

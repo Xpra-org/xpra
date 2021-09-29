@@ -16,7 +16,7 @@ from xpra.clipboard.clipboard_core import (
     _filter_targets, ClipboardProxyCore, TEXT_TARGETS,
     )
 from xpra.platform.ui_thread_watcher import get_UI_watcher
-from xpra.util import csv, net_utf8
+from xpra.util import csv, net_utf8, ellipsizer
 from xpra.os_util import bytestostr
 from xpra.log import Logger
 
@@ -185,7 +185,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
             return
         self._got_token_events += 1
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
-            self._selection, targets, target_data, claim, self._can_receive)
+            self._selection, targets, ellipsizer(target_data), claim, self._can_receive)
         if self._can_receive:
             self.targets = _filter_targets(targets or ())
             self.target_data = target_data or {}
@@ -220,7 +220,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
                 self.send_clipboard_request_handler(self, self._selection, image_types[0])
             return
         if dformat==8 and dtype in TEXT_TARGETS:
-            log("we got a byte string: %s", data)
+            log("we got a byte string: %s", ellipsizer(data))
             self.set_clipboard_text(net_utf8(data))
         if dformat==8 and dtype in IMAGE_FORMATS:
             log("we got a %s image", dtype)
