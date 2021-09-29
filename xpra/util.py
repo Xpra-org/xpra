@@ -722,13 +722,13 @@ class ellipsizer:
 def repr_ellipsized(obj, limit=100):
     if isinstance(obj, str):
         if len(obj)>limit>6:
-            return obj[:limit//2-2]+" .. "+obj[2-limit//2:]
-        return obj
+            return nonl(obj[:limit//2-2]+" .. "+obj[2-limit//2:])
+        return nonl(obj)
     if isinstance(obj, memoryview):
         obj = obj.tobytes()
     if isinstance(obj, bytes):
         try:
-            s = repr(obj)
+            s = nonl(repr(obj))
         except Exception:
             s = binascii.hexlify(obj).decode()
         if len(s)>limit>6:
