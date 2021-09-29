@@ -2210,26 +2210,11 @@ cdef class Encoder:
         log("cuda_clean()")
         cdef NVENCSTATUS r
         if self.context!=NULL and self.frames>0:
-            self.flushEncoder()
-        if self.inputHandle!=NULL and self.context!=NULL:
-            log("cuda_clean() unregistering CUDA output buffer input handle %#x", <uintptr_t> self.inputHandle)
-            if DEBUG_API:
-                log("nvEncUnregisterResource(%#x)", <uintptr_t> self.inputHandle)
-            with nogil:
-                r = self.functionList.nvEncUnregisterResource(self.context, self.inputHandle)
-            raiseNVENC(r, "unregistering CUDA input buffer")
-            self.inputHandle = NULL
-        if self.inputBuffer is not None:
-            log("cuda_clean() freeing CUDA host buffer %s", self.inputBuffer)
-            self.inputBuffer = None
-        if self.cudaInputBuffer is not None:
-            log("cuda_clean() freeing CUDA input buffer %#x", int(self.cudaInputBuffer))
-            self.cudaInputBuffer.free()
-            self.cudaInputBuffer = None
-        if self.cudaOutputBuffer is not None:
-            log("cuda_clean() freeing CUDA output buffer %#x", int(self.cudaOutputBuffer))
-            self.cudaOutputBuffer.free()
-            self.cudaOutputBuffer = None
+            try:
+                self.flushEncoder()
+            except Exception as e:
+                log.warn("got exception on flushEncoder, continuing anyway", exc_info=True)
+        self.buffer_clean()
         if self.context!=NULL:
             if self.bitstreamBuffer!=NULL:
                 log("cuda_clean() destroying output bitstream buffer %#x", <uintptr_t> self.bitstreamBuffer)
@@ -2253,6 +2238,27 @@ cdef class Encoder:
         else:
             log("skipping encoder context cleanup")
         self.cuda_context_ptr = <void *> 0
+
+    def buffer_clean(self):
+        if self.inputHandle!=NULL and self.context!=NULL:
+            log("buffer_clean() unregistering CUDA output buffer input handle %#x", <uintptr_t> self.inputHandle)
+            if DEBUG_API:
+                log("nvEncUnregisterResource(%#x)", <uintptr_t> self.inputHandle)
+            with nogil:
+                r = self.functionList.nvEncUnregisterResource(self.context, self.inputHandle)
+            raiseNVENC(r, "unregistering CUDA input buffer")
+            self.inputHandle = NULL
+        if self.inputBuffer is not None:
+            log("buffer_clean() freeing CUDA host buffer %s", self.inputBuffer)
+            self.inputBuffer = None
+        if self.cudaInputBuffer is not None:
+            log("buffer_clean() freeing CUDA input buffer %#x", int(self.cudaInputBuffer))
+            self.cudaInputBuffer.free()
+            self.cudaInputBuffer = None
+        if self.cudaOutputBuffer is not None:
+            log("buffer_clean() freeing CUDA output buffer %#x", int(self.cudaOutputBuffer))
+            self.cudaOutputBuffer.free()
+            self.cudaOutputBuffer = None
 
     def get_width(self) -> int:
         return self.width
