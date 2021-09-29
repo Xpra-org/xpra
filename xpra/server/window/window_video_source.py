@@ -592,7 +592,7 @@ class WindowVideoSource(WindowSource):
             vsr.cancel_refresh_timer()
         self.free_scroll_data()
         self.last_scroll_time = 0
-        WindowSource.cancel_damage(self, limit)
+        super().cancel_damage(limit)
         #we must clean the video encoder to ensure
         #we will resend a key frame because we may be missing a frame
         self.cleanup_codecs()
@@ -755,7 +755,7 @@ class WindowVideoSource(WindowSource):
             if self.b_frame_flush_timer and exclude_region is None:
                 #a b-frame is already due, don't clobber it!
                 exclude_region = vr
-            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
+            super().do_send_delayed_regions(damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
