@@ -301,11 +301,8 @@ class ClipboardClient(StubClientMixin):
         class ProtocolCompressible(compression.Compressible):
             __slots__ = ()
             def compress(self):
-                log.error("compress() 1")
-                v = client.compressed_wrapper(self.datatype, self.data,
+                return client.compressed_wrapper(self.datatype, self.data,
                                                  level=9, can_inline=False, brotli=True)
-                log.error("compress() 2")
-                return v
         return ProtocolCompressible(compressible.datatype, compressible.data)
 
     def clipboard_notify(self, n):
