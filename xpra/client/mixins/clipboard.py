@@ -31,7 +31,6 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard_direction = "both"
         self.server_clipboard = False
         self.server_clipboard_direction = ""
-        self.server_clipboard_contents_slice_fix = False
         self.server_clipboard_preferred_targets = False
         self.server_clipboards = []
         self.clipboard_helper = None
@@ -94,7 +93,7 @@ class ClipboardClient(StubClientMixin):
                 "greedy"                    : CLIPBOARD_GREEDY,
                 "preferred-targets"         : CLIPBOARD_PREFERRED_TARGETS,
                 "set_enabled"               : True,     #v4 servers no longer use or show this flag
-                "contents-slice-fix"        : True,     #fixed in v2.4
+                "contents-slice-fix"        : True,     #fixed in v2.4, removed check in v4.3
                 },
              })
         return caps
@@ -133,10 +132,7 @@ class ClipboardClient(StubClientMixin):
                      self.client_supports_clipboard, self.client_clipboard_direction)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
-        self.server_clipboard_contents_slice_fix = c.boolget("clipboard.contents-slice-fix")
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
-        if self.server_clipboard and not self.server_clipboard_contents_slice_fix:
-            log.info("server clipboard does not include contents slice fix")
         return True
 
     def process_ui_capabilities(self, caps : typedict):
@@ -147,8 +143,6 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: no clipboard support")
                 if is_Wayland():
                     log.warn(" (wayland display)")
-            else:
-                ch.set_clipboard_contents_slice_fix(self.server_clipboard_contents_slice_fix)
             self.clipboard_helper = ch
             self.clipboard_enabled = ch is not None
             log("clipboard helper=%s", ch)

@@ -1519,6 +1519,7 @@ cdef class Encoder:
     cdef uint64_t total_memory
     #NVENC:
     cdef NV_ENCODE_API_FUNCTION_LIST *functionList
+    cdef NV_ENC_INITIALIZE_PARAMS *params
     cdef void *context
     cdef GUID codec
     cdef NV_ENC_REGISTERED_PTR inputHandle

@@ -106,7 +106,6 @@ class ClipboardProtocolHelperCore:
         self.max_clipboard_packet_size = d.intget("max-packet-size", MAX_CLIPBOARD_PACKET_SIZE)
         self.max_clipboard_receive_size = d.intget("max-receive-size", MAX_CLIPBOARD_RECEIVE_SIZE)
         self.max_clipboard_send_size = d.intget("max-send-size", MAX_CLIPBOARD_SEND_SIZE)
-        self.clipboard_contents_slice_fix = False
         self.disabled_by_loop = []
         self.filter_res = []
         filter_res = d.strtupleget("filters")
@@ -207,9 +206,6 @@ class ClipboardProtocolHelperCore:
             self.max_clipboard_send_size = max_send_size
         if max_receive_size is not None:
             self.max_clipboard_receive_size = max_receive_size
-
-    def set_clipboard_contents_slice_fix(self, v):
-        self.clipboard_contents_slice_fix = v
 
     def enable_selections(self, selections):
         #when clients first connect or later through the "clipboard-enable-selections" packet,
@@ -457,10 +453,7 @@ class ClipboardProtocolHelperCore:
         wire_data = self._may_compress(dtype, dformat, wire_data)
         if wire_data is not None:
             packet = ["clipboard-contents", request_id, selection,
-                    dtype, dformat, wire_encoding, wire_data]
-            if self.clipboard_contents_slice_fix:
-                #sending the extra argument requires the fix
-                packet.append(truncated)
+                    dtype, dformat, wire_encoding, wire_data, truncated]
             self.send(*packet)
 
     def _may_compress(self, dtype, dformat, wire_data):

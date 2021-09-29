@@ -75,7 +75,7 @@ class ClipboardServer(StubServerMixin):
             "clipboard" : {
                 ""                      : True,
                 "enable-selections"     : True,             #client check removed in v4
-                "contents-slice-fix"    : True,             #fixed in v2.4
+                "contents-slice-fix"    : True,             #fixed in v2.4, removed check in v4.3
                 "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
                 },
             }
@@ -162,7 +162,6 @@ class ClipboardServer(StubServerMixin):
             ch.set_greedy_client(ss.clipboard_greedy)
             ch.set_want_targets_client(ss.clipboard_want_targets)
             ch.enable_selections(ss.clipboard_client_selections)
-            ch.set_clipboard_contents_slice_fix(ss.clipboard_contents_slice_fix)
             ch.set_preferred_targets(ss.clipboard_preferred_targets)
             ch.send_tokens(ss.clipboard_client_selections)
         else:
