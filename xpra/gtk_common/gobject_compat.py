@@ -26,13 +26,17 @@ def register_os_signals(callback, commandtype="", signals=(signal.SIGINT, signal
                 get_util_logger().info("%sgot signal %s", cstr, SIGNAMES.get(signum, signum))
             except OSError:
                 pass
-    def handle_signal(signum):
-        write_signal(signum)
+    def do_handle_signal(signum):
         callback(signum)
         return True
+    def handle_signal(signum):
+        write_signal(signum)
+        return do_handle_signal(signum)
     def os_signal(signum, _frame):
         write_signal(signum)
-        GLib.idle_add(handle_signal, signum)
+        #warning: we run the signal handler repeatedly...
+        # (because otherwise the client does not exit!)
+        GLib.idle_add(do_handle_signal, signum)
     for signum in signals:
         if POSIX:
             #replace the previous definition if we had one:
