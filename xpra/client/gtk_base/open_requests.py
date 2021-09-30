@@ -158,6 +158,7 @@ class OpenRequestsWindow:
                 main_label.set_line_wrap(True)
                 main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
                 main_label.set_size_request(URI_MAX_WIDTH, -1)
+                main_label.set_selectable(True)
                 items = (main_label, l(details), expires_label, buttons)
                 tb.add_row(*items)
             self.update_expires_label()
