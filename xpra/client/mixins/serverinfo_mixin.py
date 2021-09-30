@@ -69,6 +69,7 @@ class ServerInfoMixin(StubClientMixin):
         else:
             self._remote_modifications = c.intget("build.local_modifications", 0)
         self._remote_commit = c.strget("build.commit")
+        self._remote_branch = c.strget("build.branch")
         self._remote_build_date = c.strget("build.date")
         self._remote_build_time = c.strget("build.time")
         self._remote_hostname = c.strget("hostname")
