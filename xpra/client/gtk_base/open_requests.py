@@ -15,7 +15,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("Pango", "1.0")
 from gi.repository import GLib, Gtk, Pango
 
-from xpra.util import envint
+from xpra.util import envint, net_utf8
 from xpra.os_util import bytestostr, WIN32, OSX
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.child_reaper import getChildReaper
@@ -105,7 +105,7 @@ class OpenRequestsWindow:
 
     def add_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit, timeout):
         expires = monotonic()+timeout
-        self.requests.append((cb_answer, send_id, dtype, url, filesize, printit, openit, expires))
+        self.requests.append((cb_answer, net_utf8(send_id), net_utf8(dtype), net_utf8(url), filesize, printit, openit, expires))
         self.populate_table()
         if not self.populate_timer:
             self.schedule_timer()
@@ -144,14 +144,14 @@ class OpenRequestsWindow:
             tb.add_row(*headers)
             for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
                 details = ""
-                if dtype==b"file" and filesize>0:
+                if dtype=="file" and filesize>0:
                     details = "%sB" % std_unit_dec(filesize)
                 expires_label = l()
                 self.expire_labels[send_id] = (expires_label, expires)
                 buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
                 s = bytestostr(url)
                 main_label = l(s)
-                if dtype==b"url" and s.find("?")>0 and len(s)>48:
+                if dtype=="url" and s.find("?")>0 and len(s)>48:
                     parts = s.split("?", 1)
                     main_label.set_label(parts[0]+"?..")
                     main_label.set_tooltip_text(s)
