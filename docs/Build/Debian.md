@@ -8,7 +8,7 @@ For general information, see [building](./README.md).
 
 ## Build and runtime requirements
 ```shell
-apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev \
+apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev libxres-dev \
                 libxkbfile-dev \
                 python-all-dev \
                 pandoc \
