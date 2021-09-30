@@ -202,16 +202,16 @@ class subprocess_callee:
         """ subclasses may override this method """
 
     def stop(self):
-        self.cleanup()
         p = self.protocol
         log("stop() protocol=%s", p)
+        self.cleanup()
         if p:
             self.protocol = None
             p.close()
         self.do_stop()
 
     def do_stop(self):
-        log("stop() stopping mainloop %s", self.mainloop)
+        log("do_stop() stopping mainloop %s", self.mainloop)
         self.mainloop.quit()
 
     def handle_signal(self, sig):
@@ -415,7 +415,8 @@ class subprocess_caller:
                 proc.terminate()
                 self.process = None
             except Exception as e:
-                log.warn("failed to stop the wrapped subprocess %s: %s", proc, e)
+                log("stop_process() proc=%s", proc, exc_info=True)
+                log.warn("Warning: failed to stop the wrapped subprocess %s: %s", proc, e)
 
     def stop_protocol(self):
         p = self.protocol
@@ -425,7 +426,8 @@ class subprocess_caller:
             try:
                 p.close()
             except Exception as e:
-                log.warn("failed to close the subprocess connection: %s", p, e)
+                log("stop_protocol() protocol=%s", p, exc_info=True)
+                log.warn("Warning: failed to close the subprocess connection %s: %s", p, e)
 
 
     def connection_lost(self, *args):
