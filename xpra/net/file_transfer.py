@@ -675,7 +675,7 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         if self.remote_open_url_ask:
             #ask the client if it is OK to send
-            return self.send_data_request("open", b"url", url)
+            return self.send_data_request("open", "url", url)
         self.do_send_open_url(url)
         return True
 
@@ -720,7 +720,7 @@ class FileTransferHandler(FileTransferAttributes):
         if not self.check_file_size(action, filename, filesize):
             return False
         if ask:
-            return self.send_data_request(action, b"file", filename, mimetype, data, filesize, printit, openit, options)
+            return self.send_data_request(action, "file", filename, mimetype, data, filesize, printit, openit, options)
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options)
         return True
 
@@ -820,7 +820,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.info("the request to send %s '%s' has been denied", dtype, url)
             return
         assert accept in (ACCEPT, OPEN), "unknown value for send-data response: %s" % (accept,)
-        if dtype==b"file":
+        if dtype=="file":
             mimetype, data, filesize, printit, openit, options = v[2:]
             if accept==ACCEPT:
                 self.do_send_file(url, mimetype, data, filesize, printit, openit, options, send_id)
@@ -828,7 +828,7 @@ class FileTransferHandler(FileTransferAttributes):
                 assert openit and accept==OPEN
                 #try to open at this end:
                 self._open_file(url)
-        elif dtype==b"url":
+        elif dtype=="url":
             if accept==ACCEPT:
                 self.do_send_open_url(url, send_id)
             else:
