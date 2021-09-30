@@ -26,6 +26,8 @@ def get_remote_lib_versions(c : typedict,
             if isinstance(d, dict):
                 v = typedict(d).get("version", None)
         if v:
+            if isinstance(v, (tuple, list)):
+                v = ".".join(str(p) for p in v)
             versions[x] = bytestostr(v)
     return versions
 
