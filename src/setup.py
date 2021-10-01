@@ -2232,6 +2232,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         if WIN32:
             CUDA_BIN = "CUDA"
         add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
+add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/README.md"])
 
 if nvenc_ENABLED:
     nvencmodule = "nvenc"
