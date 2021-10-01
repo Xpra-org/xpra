@@ -126,7 +126,7 @@ def is_RH():
         with open("/etc/redhat-release", mode='rb') as rel:
             data = rel.read()
         return data.startswith(b"CentOS") or data.startswith(b"RedHat")
-    except OSError:
+    except (FileNotFoundError, OSError):
         pass
     return False
 
