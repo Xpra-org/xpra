@@ -25,6 +25,13 @@ Other packages you will need:
 
 ***
 
+# Raspberry Pi OS
+
+Follow https://github.com/Xpra-org/xpra/issues/3288#issuecomment-931851564
+
+
+***
+
 # OrangePI
 These instructions are based on this mailing list post:
  [XPRA - installation on Orange PI Plus 2E](http://lists.devloop.org.uk/pipermail/shifter-users/2017-August/001999.html) running an Ubuntu Xenial variant:\
