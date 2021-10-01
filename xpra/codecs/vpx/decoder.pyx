@@ -247,10 +247,9 @@ cdef class Decoder:
 
     def decompress_image(self, data, options=None):
         cdef vpx_codec_iter_t iter = NULL
-        cdef int i = 0
         cdef MemBuf output_buf
         cdef void *output
-        cdef Py_ssize_t plane_len = 0
+        cdef Py_ssize_t plane_len
         cdef uint8_t dy
         cdef unsigned int height
         cdef int stride
@@ -277,6 +276,7 @@ cdef class Decoder:
         strides = []
         pixels = []
         divs = get_subsampling_divs(self.get_colorspace())
+        cdef int i
         for i in range(3):
             _, dy = divs[i]
             if dy==1:

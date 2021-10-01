@@ -787,8 +787,8 @@ def flagscsv(flag_dict, value=0):
 
 
 def get_muxer_formats():
-    cdef AVOutputFormat *fmt = NULL
-    cdef void* opaque = NULL
+    cdef AVOutputFormat *fmt
+    cdef void* opaque
     formats = {}
     while True:
         fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
@@ -802,8 +802,8 @@ log("AV Output Formats:")
 print_nested_dict(get_muxer_formats(), print_fn=log.debug)
 
 cdef AVOutputFormat* get_av_output_format(name):
-    cdef AVOutputFormat *fmt = NULL
-    cdef void* opaque = NULL
+    cdef AVOutputFormat *fmt
+    cdef void* opaque
     while True:
         fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
         if fmt==NULL:
@@ -873,10 +873,10 @@ def init_vaapi():
     global VAAPI_CODECS
     #can we find a device:
     cdef AVBufferRef *hw_device_ctx = init_vaapi_device()
-    cdef AVCodecContext *avctx = NULL
-    cdef const AVCodec *codec = NULL
-    cdef AVFrame *sw_frame = NULL
-    cdef AVFrame *hw_frame = NULL
+    cdef AVCodecContext *avctx
+    cdef const AVCodec *codec
+    cdef AVFrame *sw_frame
+    cdef AVFrame *hw_frame
     cdef int WIDTH = 640
     cdef int HEIGHT = 480
     for c in VAAPI_ENCODINGS:
@@ -1085,7 +1085,7 @@ cdef list_options(void *obj, const AVClass *av_class, int skip=1):
             option = av_opt_next(obj, option)
         log("%s options: %s", bytestostr(av_class.class_name), csv(options))
     cdef void *child = NULL
-    cdef const AVClass *child_class = NULL
+    cdef const AVClass *child_class
     while True:
         child = av_opt_child_next(obj, child)
         if child==NULL:
@@ -1368,6 +1368,8 @@ cdef class Encoder:
             log("init_encoder() level=%s", level)
             if level>0:
                 r = av_dict_set_int(&opts, b"level", level, 0)
+                if r!=0:
+                    raise Exception("failed to set level=%i", level)
 
         if self.vaapi:
             self.video_ctx.pix_fmt = AV_PIX_FMT_VAAPI
@@ -1587,7 +1589,7 @@ cdef class Encoder:
 
     def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
         cdef int ret, i
-        cdef AVFrame *frame = NULL
+        cdef AVFrame *frame
         cdef AVFrame *hw_frame = NULL
         cdef Py_buffer py_buf[4]
         assert self.video_ctx, "no codec context! (not initialized or already closed)"

@@ -1580,7 +1580,7 @@ cdef class Encoder:
                 continue
             preset_quality = PRESET_QUALITY.get(name, 50)
             distance = abs(self.quality-preset_quality)
-            l = options.setdefault(distance, []).append((name, guid))
+            options.setdefault(distance, []).append((name, guid))
         #TODO: figure out why the new-style presets fail
         options = {}
         #no new-style presets found,
@@ -2910,10 +2910,10 @@ cdef class Encoder:
         params.device = self.cuda_context_ptr
         params.reserved = &CLIENT_KEY_GUID
         params.apiVersion = NVENCAPI_VERSION
-        cstr = <unsigned char*> &params
-        pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
         if DEBUG_API:
-            log("calling nvEncOpenEncodeSessionEx @ %#x", <uintptr_t> self.functionList.nvEncOpenEncodeSessionEx)
+            cstr = <unsigned char*> &params
+            pstr = cstr[:sizeof(NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS)]
+            log("calling nvEncOpenEncodeSessionEx @ %#x, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS=%s", <uintptr_t> self.functionList.nvEncOpenEncodeSessionEx, pstr)
         self.context = NULL
         with nogil:
             r = self.functionList.nvEncOpenEncodeSessionEx(&params, &self.context)

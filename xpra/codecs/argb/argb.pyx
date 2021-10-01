@@ -496,7 +496,7 @@ cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len, 
     rectangles = []
     cdef unsigned int rowstride = round8up(w)//8
     cdef unsigned char b
-    cdef unsigned int start = 0, end, x, y
+    cdef unsigned int start, end, x, y
     for y in range(h):
         x = 0
         b = 0
