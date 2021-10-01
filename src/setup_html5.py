@@ -46,6 +46,10 @@ def install_symlink(symlink_options, dst):
             print("symlinked %s from %s" % (dst, symlink_option))
             if os.path.exists(dst):
                 os.unlink(dst)
+            else:
+                ddir = os.path.dirname(dst)
+                if not os.path.exists(ddir):
+                    os.makedirs(ddir, mode=0o755)
             os.symlink(symlink_option, dst)
             return True
     #print("no symlinks found for %s from %s" % (dst, symlink_options))
