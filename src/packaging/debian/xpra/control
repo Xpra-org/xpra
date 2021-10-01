@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 8)
               ,libxdamage-dev
               ,libxtst-dev
               ,libxkbfile-dev
-              ,libnvidia-fbc1
+              ,libnvidia-fbc1 [amd64]
               ,libx264-dev
               ,uglifyjs
               ,brotli
