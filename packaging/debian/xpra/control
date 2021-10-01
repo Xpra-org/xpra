@@ -9,7 +9,7 @@ Build-Depends: debhelper (>= 8)
               ,libxdamage-dev
               ,libxtst-dev
               ,libxkbfile-dev
-              ,libnvidia-fbc1
+              ,libnvidia-fbc1 [amd64]
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
