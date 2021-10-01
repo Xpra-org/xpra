@@ -16,11 +16,16 @@ apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev libxres-
 ```
 GTK3 for the server and GUI client:
 ```shell
-apt-get install libgtk-3-dev python3-dev python3-cairo-dev python-gi-dev cython3
+apt-get install libgtk-3-dev python3-dev python3-cairo-dev python-gi-dev cython3 
 ```
 Also install some X11 utilities if not installed already:
 ```shell
 apt-get install xauth x11-xkb-utils
+```
+To be able to run xpra, you are likely to need:
+```shell
+apt-get install xvfb python3-cairo python3-gi-cairo \
+    python3-opengl python3-lz4 python3-rencode python3-pil
 ```
 
 ### Optional:
