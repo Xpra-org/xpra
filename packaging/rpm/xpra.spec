@@ -603,7 +603,7 @@ fi
 
 
 %changelog
-* Fri Sep 24 2021 Antoine Martin <antoine@xpra.org> 4.2.3-10
+* Fri Oct 01 2021 Antoine Martin <antoine@xpra.org> 4.2.3-10
 - network layer:
    ensure the http headers cache is never modified unintentionally
    invalid packet encoder names should not cause fatal errors
@@ -622,6 +622,8 @@ fi
    specifying invalid compressors should not be fatal
    handle more VNC clients correctly
    server errors when VNC clients are connected
+   proxy sessions not found due to socket-dirs
+   mmap group lookup
 - encodings:
    don't enable video encoders not present in 'encodings' option
    ffmpeg H264 errors with unreleased version
@@ -640,11 +642,13 @@ fi
    platform detection for CentOS / RedHat
    missing default configuration files on MS Windows
    missing webp with latest Pillow builds on MacOS
+   build fix for non-amd64 Debian (missing nvfbc)
 - clipboard selections getting stuck with MS Windows and MacOS clients
 - clipboard errors with some packet encoders sending strings
 - authentication modules not honouring `socket-dirs` option
 - make it easier to dismiss the splash screen
 - ssh password and key dialogs timing out without being shown
+- menu loading race condition causing empty start menu
 - window size hints may not have been honoured (rare case)
 - honour the force-replace-wm flag when upgrading
 - correctly handle command timeouts when probing servers

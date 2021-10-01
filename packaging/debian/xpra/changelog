@@ -17,6 +17,8 @@ xpra (4.2.3-1) UNRELEASED; urgency=low
     - specifying invalid compressors should not be fatal
     - handle more VNC clients correctly
     - server errors when VNC clients are connected
+    - proxy sessions not found due to socket-dirs
+    - mmap group lookup
   * encodings:
     - don't enable video encoders not present in 'encodings' option
     - ffmpeg H264 errors with unreleased version
@@ -35,11 +37,13 @@ xpra (4.2.3-1) UNRELEASED; urgency=low
     - platform detection for CentOS / RedHat
     - missing default configuration files on MS Windows
     - missing webp with latest Pillow builds on MacOS
+    - build fix for non-amd64 Debian (missing nvfbc)
   * clipboard selections getting stuck with MS Windows and MacOS clients
   * clipboard errors with some packet encoders sending strings
   * authentication modules not honouring `socket-dirs` option
   * make it easier to dismiss the splash screen
   * ssh password and key dialogs timing out without being shown
+  * menu loading race condition causing empty start menu
   * window size hints may not have been honoured (rare case)
   * honour the force-replace-wm flag when upgrading
   * correctly handle command timeouts when probing servers
@@ -48,7 +52,7 @@ xpra (4.2.3-1) UNRELEASED; urgency=low
   * minor cosmetic fixes to logging messages, unreachable code, icon loading errors
   * make it easier to run in a prefixed installation
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 24 Sep 2021 14:32:53 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 01 Oct 2021 21:36:11 +0700
 
 xpra (4.2.2-1) UNRELEASED; urgency=low
   * don't build ffmpeg codecs on i386 (crashy)
