@@ -2089,6 +2089,9 @@ toggle_packages(nvenc_ENABLED, "xpra.codecs.nvenc")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.cuda_common")
 toggle_packages(nvenc_ENABLED or nvfbc_ENABLED, "xpra.codecs.nv_util")
 
+CUDA_BIN = "%s/cuda" % share_xpra
+if WIN32:
+    CUDA_BIN = "CUDA"
 if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
     #find nvcc:
     from xpra.util import sorted_nicely
@@ -2228,9 +2231,6 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 print(stdout or "")
                 print(stderr or "")
                 sys.exit(1)
-        CUDA_BIN = "%s/cuda" % share_xpra
-        if WIN32:
-            CUDA_BIN = "CUDA"
         add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/%s.fatbin" % x for x in kernels])
 add_data_files(CUDA_BIN, ["xpra/codecs/cuda_common/README.md"])
 
