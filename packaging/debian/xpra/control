@@ -10,8 +10,7 @@ Build-Depends: debhelper (>= 8)
               ,libxtst-dev
               ,libxkbfile-dev
               ,libxres-dev
-#you may need to disable nvfbc on some platforms (ie: arm):
-              ,libnvidia-fbc1
+              ,libnvidia-fbc1 [amd64]
               ,libvpx-dev
               ,libx264-dev
               ,libwebp-dev
