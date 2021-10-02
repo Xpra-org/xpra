@@ -51,7 +51,11 @@ MATCH=`find $REPO_ARCH_PATH/ -name "${DEB_FILENAME}" | wc -l`
 if [ "$MATCH" != "0" ]; then
 	echo "package already exists"
 else
-	debuild -us -uc -b
+	if [ `arch` == "aarch64" ]; then
+		debuild -us -uc -b --no-lintian
+	else
+		debuild -us -uc -b
+	fi
 	ls -la ../xpra*deb
 	mv ../python*xpra*deb ../xpra*deb ../python*xpra*changes ../xpra*changes "$REPO_ARCH_PATH"
 fi
