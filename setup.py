@@ -135,6 +135,8 @@ if "--minimal" in sys.argv:
     sys.argv.remove("--minimal")
     DEFAULT = False
 skip_build = "--skip-build" in sys.argv
+ARCH = get_status_output(["uname", "-m"])[1]
+print("ARCH=%s" % (ARCH,))
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
@@ -185,7 +187,8 @@ webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
-enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
+enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec") and not (
+    ARCH.startswith("arm") or ARCH.startswith("aarch"))
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
