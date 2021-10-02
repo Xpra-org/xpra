@@ -5,6 +5,8 @@ if [ "${DEBUG:-0}" == "1" ]; then
 	BASH="bash -x"
 fi
 
-$BASH ./libcuda1.sh
-$BASH ./libnvidia-fbc1.sh
+if [ `arch` == "x86_64" ]; then
+	$BASH ./libcuda1.sh
+	$BASH ./libnvidia-fbc1.sh
+fi
 $BASH ./xpra.sh
