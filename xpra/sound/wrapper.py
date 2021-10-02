@@ -111,7 +111,10 @@ class sound_subprocess(subprocess_callee):
         if wo:
             #this will stop the sound pipeline:
             self.wrapped_object = None
-            wo.cleanup()
+            try:
+                wo.cleanup()
+            except Exception:
+                log("cleanup() failed to clean %s", wo, exc_info=True)
         self.timeout_add(1000, self.do_stop)
 
     def export_info(self):
