@@ -52,7 +52,7 @@ if [ "$MATCH" != "0" ]; then
 	echo "package already exists"
 else
 	if [ `arch` == "aarch64" ]; then
-		debuild -us -uc -b --no-lintian
+		debuild --no-lintian -us -uc -b
 	else
 		debuild -us -uc -b
 	fi
