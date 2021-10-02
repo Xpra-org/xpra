@@ -1,0 +1,11 @@
+libfakeXinerama
+xorg-x11-drv-dummy
+libyuv
+x264-xpra
+ffmpeg-xpra
+python3-pbr
+python3-rencode
+python3-pyu2f
+python3-uinput
+python3-cairo
+xpra
