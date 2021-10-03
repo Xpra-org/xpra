@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,40 +14,43 @@ from xpra.os_util import SIGNAMES, POSIX, get_util_logger
 
 _glib_unix_signals = {}
 def register_os_signals(callback, commandtype="", signals=(signal.SIGINT, signal.SIGTERM)):
-    from gi.repository import GLib
-    def write_signal(signum):
-        if commandtype is not None:
-            try:
-                sys.stderr.write("\n")
-                sys.stderr.flush()
-                cstr = ""
-                if commandtype:
-                    cstr = commandtype+" "
-                get_util_logger().info("%sgot signal %s", cstr, SIGNAMES.get(signum, signum))
-            except OSError:
-                pass
-    def do_handle_signal(signum):
-        callback(signum)
-        return True
-    def handle_signal(signum):
-        write_signal(signum)
-        return do_handle_signal(signum)
-    def os_signal(signum, _frame):
-        write_signal(signum)
-        #warning: we run the signal handler repeatedly...
-        # (because otherwise the client does not exit!)
-        GLib.idle_add(do_handle_signal, signum)
     for signum in signals:
-        if POSIX:
-            #replace the previous definition if we had one:
-            global _glib_unix_signals
-            current = _glib_unix_signals.get(signum, None)
-            if current:
-                GLib.source_remove(current)
-            source_id = GLib.unix_signal_add(GLib.PRIORITY_HIGH, signum, handle_signal, signum)
-            _glib_unix_signals[signum] = source_id
-        else:
-            signal.signal(signum, os_signal)
+        register_os_signal(callback, commandtype, signum)
+
+def register_os_signal(callback, commandtype="", signum=signal.SIGINT):
+    from gi.repository import GLib  #pylint: disable=import-outside-toplevel
+    signame = SIGNAMES.get(signum, str(signum))
+    def write_signal():
+        if commandtype is None:
+            return
+        try:
+            sys.stderr.write("\n")
+            sys.stderr.flush()
+            cstr = ""
+            if commandtype:
+                cstr = commandtype+" "
+            get_util_logger().info("%sgot signal %s", cstr, signame)
+        except OSError:
+            pass
+    def do_handle_signal():
+        callback(signum)
+    if POSIX:
+        #replace the previous definition if we had one:
+        global _glib_unix_signals
+        current = _glib_unix_signals.get(signum, None)
+        if current:
+            GLib.source_remove(current)
+        def handle_signal(_signum):
+            write_signal()
+            do_handle_signal()
+            return True
+        source_id = GLib.unix_signal_add(GLib.PRIORITY_HIGH, signum, handle_signal, signum)
+        _glib_unix_signals[signum] = source_id
+    else:
+        def os_signal(_signum, _frame):
+            write_signal()
+            GLib.idle_add(do_handle_signal)
+        signal.signal(signum, os_signal)
 
 def register_SIGUSR_signals(commandtype="Server"):
     if not POSIX:
@@ -72,5 +75,5 @@ def install_signal_handlers(sstr, signal_handler):
     def do_install_signal_handlers():
         register_os_signals(signal_handler, sstr)
         register_SIGUSR_signals(sstr)
-    from gi.repository import GLib
+    from gi.repository import GLib  #pylint: disable=import-outside-toplevel
     GLib.idle_add(do_install_signal_handlers)
