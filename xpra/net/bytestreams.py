@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,6 +11,7 @@ import socket
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util import envint, envbool, csv
+from xpra.make_thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
 from xpra.platform.features import TCP_OPTIONS, IP_OPTIONS, SOCKET_OPTIONS
 from xpra.log import Logger
@@ -226,15 +227,24 @@ class TwoFileConnection(Connection):
         if cc:
             self._close_cb = None
             log("%s.close() calling %s", self, cc)
-            cc()
-        try:
-            self._readable.close()
-        except IOError as e:
-            log("%s.close() %s", self._readable, e)
-        try:
-            self._writeable.close()
-        except IOError as e:
-            log("%s.close() %s", self._writeable, e)
+            try:
+                cc()
+            except Exception:
+                log.error("%s.close() error on callback %s", self, cc, exc_info=True)
+        def close_files_thread():
+            log("close_files_thread() _readable=%s", self._readable)
+            log("close_files_thread() calling %s", self._readable.close)
+            try:
+                self._readable.close()
+            except IOError as e:
+                log("close_files_thread() %s", self._readable, e)
+            log("close_files_thread() _writeable=%s", self._writeable)
+            log("close_files_thread() calling %s", self._writeable.close)
+            try:
+                self._writeable.close()
+            except IOError as e:
+                log("close_files_thread() %s", self._writeable, e)
+        start_thread(close_files_thread, "close-files-thread", daemon=True)
         log("%s.close() done", self)
 
     def __repr__(self):
