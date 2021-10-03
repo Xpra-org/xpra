@@ -12,7 +12,7 @@ Those are required by almost every component.
 |[glib](https://developer.gnome.org/glib/)|[https://ftp.gnome.org/pub/gnome/sources/glib/](https://ftp.gnome.org/pub/gnome/sources/glib/)|low-level library|both|Required|
 |[gtk](http://www.gtk.org/)|http://ftp.gnome.org/pub/gnome/sources/gtk+/|UI Toolkit|both|Required|
 |[pyopengl](http://pyopengl.sourceforge.net/)|https://pypi.python.org/pypi/PyOpenGL and <br /> https://pypi.python.org/pypi/PyOpenGL-accelerate|[client OpenGL accelerated rendering](./Client-OpenGL)|client| |
-|[pycups](https://github.com/zdohnal/pycups)|https://pypi.org/project/pycups/)|[Printing](./Printing)|both| |
+|[pycups](https://github.com/zdohnal/pycups)|https://pypi.org/project/pycups/|[Printing](./Printing)|both| |
 </details>
 
 <details>
