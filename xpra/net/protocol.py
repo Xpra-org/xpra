@@ -68,10 +68,10 @@ def force_flush_queue(q):
             while q.qsize()>0:
                 q.read(False)
         except Exception:
-            pass
+            log("force_flush_queue(%s)", q, exc_info=True)
         q.put_nowait(None)
     except Exception:
-        pass
+        log("force_flush_queue(%s)", q, exc_info=True)
 
 
 def verify_packet(packet):
@@ -1140,7 +1140,8 @@ class Protocol:
         wait_for_write_lock()
 
     def close(self, message=None):
-        log("Protocol.close(%s) closed=%s, connection=%s", message, self._closed, self._conn)
+        c = self._conn
+        log("Protocol.close(%s) closed=%s, connection=%s", message, self._closed, c)
         if self._closed:
             return
         self._closed = True
@@ -1148,7 +1149,6 @@ class Protocol:
         if message:
             packet.append(message)
         self.idle_add(self._process_packet_cb, self, packet)
-        c = self._conn
         if c:
             self._conn = None
             try:
