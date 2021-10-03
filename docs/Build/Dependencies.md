@@ -25,8 +25,6 @@ See [Network](../Network/README.md)
 |[pyyaml](http://pyyaml.org/)|https://pypi.python.org/pypi/PyYAML/|alternative packet encoder|both |optional (usually unused)|
 |[lz4](https://github.com/lz4/lz4)|https://github.com/lz4/lz4/releases|[packet compression](./PacketEncoding)|both|Recommended|
 |[python-lz4](https://pypi.python.org/pypi/lz4)|https://github.com/python-lz4/python-lz4|python wrapper for lz4|both|Recommended|
-|[lzo](https://www.lzop.org/)|http://www.oberhumer.com/opensource/lzo/#download|[packet compression](./PacketEncoding)|both|optional - deprecated (usually unused as lz4 is better) - win32 build, see [#1044](../../issues/1044)|
-|[python-lzo](https://github.com/jd-boyd/python-lzo)|https://pypi.org/project/python-lzo/|python wrapper for lzo|both|optional|
 |[python-cryptography](https://cryptography.io/en/latest/)|https://pypi.python.org/pypi/cryptography|[Encryption](./Encryption)|both||
 |[python-zeroconf](https://github.com/jstasiak/python-zeroconf)|https://pypi.org/project/zeroconf/|[Multicast DNS](./Multicast-DNS) session publishing|server||
 |[python-netifaces](http://alastairs-place.net/projects/netifaces/)|https://pypi.python.org/pypi/netifaces|[Multicast DNS](./Multicast-DNS) session publishing|server||
