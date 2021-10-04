@@ -14,7 +14,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
     updict, pver, iround, flatten_dict, noerr,
-    envbool, envint, repr_ellipsized, csv, first_time, typedict,
+    envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
@@ -905,7 +905,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
         display = Gdk.Display.get_default()
-        cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
+        cursorlog("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
+                  ellipsizer(cursor_data),
                   len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         pixbuf = None
         if len(cursor_data)>=10 and cursor_types:
