@@ -802,7 +802,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def make_cursor(self, cursor_data):
         #if present, try cursor ny name:
         display = display_get_default()
-        cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
+        cursorlog("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
                   ellipsizer(cursor_data),
                   len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         #named cursors cannot be scaled
