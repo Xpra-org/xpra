@@ -30,7 +30,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     iround, envint, envbool, typedict,
-    make_instance, updict, repr_ellipsized, csv,
+    make_instance, updict, repr_ellipsized, u,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -454,29 +454,17 @@ class WindowClient(StubClientMixin):
         else:
             if len(packet)<9:
                 raise Exception("invalid cursor packet: %s items" % len(packet))
-            encoding = packet[1]
-            if isinstance(encoding, bytes):
-                encoding = encoding.decode("latin1")
-            if not isinstance(encoding, str):
-                log.warn("Warning: received an invalid cursor packet:")
-                tmp_packet = list(packet)
-                try:
-                    tmp_packet[9] = ".."
-                except IndexError:
-                    pass
-                log.warn(" %s", repr_ellipsized(tmp_packet))
-                log.warn(" data types:")
-                log.warn(" %s", csv(type(x) for x in packet))
-                raise Exception("invalid cursor packet format: cursor type is a %s" % type(encoding))
             #trim packet-type:
             new_cursor = packet[1:]
-            pixels = new_cursor[8]
+            encoding = u(new_cursor[0])
+            new_cursor[0] = encoding
             if encoding=="png":
+                pixels = new_cursor[8]
                 if SAVE_CURSORS:
                     serial = new_cursor[7]
                     with open("raw-cursor-%#x.png" % serial, 'wb') as f:
                         f.write(pixels)
-                from xpra.codecs.pillow.decoder import open_only
+                from xpra.codecs.pillow.decoder import open_only  #pylint: disable=import-outside-toplevel
                 img = open_only(pixels, ("png",))
                 new_cursor[8] = img.tobytes("raw", "BGRA")
                 cursorlog("used PIL to convert png cursor to raw")
