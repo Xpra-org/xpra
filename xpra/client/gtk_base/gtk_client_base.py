@@ -12,7 +12,7 @@ from xpra.gtk_common.gobject_compat import import_gobject, import_gtk, import_gd
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.gtk_common.quit import gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
 from xpra.util import (
-    updict, pver, iround, flatten_dict, envbool, repr_ellipsized, csv, first_time,
+    updict, pver, iround, flatten_dict, envbool, repr_ellipsized, ellipsizer, csv, first_time,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
 from xpra.os_util import (
@@ -803,6 +803,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         #if present, try cursor ny name:
         display = display_get_default()
         cursorlog("make_cursor: has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
+                  ellipsizer(cursor_data),
                   len(cursor_data)>=10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         #named cursors cannot be scaled
         #(round to 10 to compare so 0.95 and 1.05 are considered the same as 1.0, no scaling):
