@@ -2114,10 +2114,6 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             print(" using version %s from %s" % (version, nvcc))
     else:
         version = nvcc = None
-    if WIN32:
-        if nvcc:
-            cuda_path = os.path.dirname(nvcc)       #strip nvcc.exe
-        cuda_path = os.path.dirname(cuda_path)      #strip /bin/
     if (nvenc_ENABLED and cuda_kernels_ENABLED):
         assert nvcc_versions, "cannot find nvcc compiler!"
         #first compile the cuda kernels
@@ -2248,7 +2244,9 @@ toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:
     if WIN32:
         nvjpeg_pkgconfig = pkgconfig()
-        assert cuda_path
+        assert nvcc, "cannot enable nvjpeg without the CUDA path"
+        cuda_path = os.path.dirname(nvcc)       #strip nvcc.exe
+        cuda_path = os.path.dirname(cuda_path)      #strip /bin/
         cuda_include = os.path.join(cuda_path, "include")
         cuda_bin = os.path.join(cuda_path, "bin")
         add_to_keywords(nvjpeg_pkgconfig, 'extra_compile_args', "-I%s" % cuda_include)
