@@ -462,7 +462,7 @@ class WindowClient(StubClientMixin):
             encoding = packet[0]
             if isinstance(encoding, bytes):
                 encoding = encoding.decode("latin1")
-            if isinstance(encoding, str):
+            if encoding in ("png", "raw"):
                 #we have the encoding in the packet already
                 new_cursor = packet
             else:
