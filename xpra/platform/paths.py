@@ -68,6 +68,12 @@ def do_get_default_conf_dirs():
     return []
 
 
+def get_sessions_dir():
+    return envaslist_or_delegate("XPRA_SESSIONS_DIRS", do_get_sessions_dir)
+def do_get_sessions_dir():
+    return "$XDG_RUNTIME_DIR/xpra"
+
+
 def get_socket_dirs():
     return envaslist_or_delegate("XPRA_SOCKET_DIRS", do_get_socket_dirs)
 def do_get_socket_dirs():
@@ -285,6 +291,7 @@ platform_import(globals(), "paths", False,
                 "do_get_ssh_conf_dirs",
                 "do_get_ssh_known_hosts_files",
                 "do_get_user_conf_dirs",
+                "do_get_sessions_dir",
                 "do_get_socket_dirs",
                 "do_get_client_socket_dirs",
                 "do_get_default_log_dirs",
@@ -312,6 +319,7 @@ def get_info():
         "system_conf"       : {"dirs"   : get_system_conf_dirs()},
         "ssh_conf"          : {"dirs"   : get_ssh_conf_dirs()},
         "user_conf"         : {"dirs"   : get_user_conf_dirs()},
+        "sessions"          : {"dir"    : do_get_sessions_dir()},
         "socket"            : {"dirs"   : get_socket_dirs()},
         "client-socket"     : {"dirs"   : get_client_socket_dirs()},
         "log"               : {"dirs"   : get_default_log_dirs()},

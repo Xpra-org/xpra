@@ -106,6 +106,10 @@ def do_get_ssh_known_hosts_files():
     return ("~/ssh/known_hosts", "~/.ssh/known_hosts")
 
 
+def do_get_sessions_dir():
+    return "%APPDATA%\\Xpra"
+
+
 def do_get_default_conf_dirs():
     #ie: C:\Program Files\Xpra\
     from xpra.platform.paths import get_app_dir

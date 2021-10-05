@@ -871,7 +871,10 @@ def get_defaults():
         OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
         SOURCE, DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
         )
-    from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts, get_socket_dirs, get_client_socket_dirs
+    from xpra.platform.paths import (
+        get_download_dir, get_remote_run_xpra_scripts,
+        get_sessions_dir, get_socket_dirs, get_client_socket_dirs,
+        )
     try:
         from xpra.platform.info import get_username
         username = get_username()
@@ -948,7 +951,7 @@ def get_defaults():
                     "xvfb"              : xvfb_str,
                     "chdir"             : "",
                     "socket-dir"        : "",
-                    "sessions-dir"      : "$XDG_RUNTIME_DIR/xpra",
+                    "sessions-dir"      : get_sessions_dir(),
                     "log-dir"           : "auto",
                     "log-file"          : "server.log",
                     "border"            : "auto,5:off",
