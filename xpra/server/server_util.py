@@ -307,7 +307,8 @@ def write_pidfile(pidfile):
     inode = 0
     try:
         with open(pidfile, "w") as f:
-            os.fchmod(f.fileno(), 0o600)
+            if POSIX:
+                os.fchmod(f.fileno(), 0o600)
             f.write("%s\n" % pidstr)
             try:
                 inode = os.fstat(f.fileno()).st_ino
