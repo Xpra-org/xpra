@@ -869,7 +869,7 @@ def get_defaults():
         return GLOBAL_DEFAULTS
     from xpra.platform.features import (
         OPEN_COMMAND, DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS,
-        DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
+        SOURCE, DEFAULT_ENV, CAN_DAEMONIZE, SYSTEM_PROXY_SOCKET,
         )
     from xpra.platform.paths import get_download_dir, get_remote_run_xpra_scripts, get_socket_dirs, get_client_socket_dirs
     try:
@@ -1091,7 +1091,7 @@ def get_defaults():
                     "ssh-auth"          : [],
                     "rfb-auth"          : [],
                     "password-file"     : [],
-                    "source"            : ["/etc/profile"],
+                    "source"            : SOURCE,
                     "source-start"      : [],
                     "start"             : [],
                     "start-late"        : [],

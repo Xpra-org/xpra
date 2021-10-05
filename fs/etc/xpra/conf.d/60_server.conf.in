@@ -17,7 +17,7 @@ start-via-proxy = no
 
 # Scripts that can modify the environment of the server:
 #source = /etc/xpra/server.env
-source = /etc/profile
+%(source)s
 
 # Scripts that can modify the environment of the commands started by the server
 # This one is useful for avoiding delays when running gnome applications:

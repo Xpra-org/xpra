@@ -821,12 +821,13 @@ def build_xpra_conf(install_dir):
     if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
         from xpra.x11.fakeXinerama import find_libfakeXinerama
         fake_xinerama = find_libfakeXinerama() or "auto"
-    from xpra.platform.features import DEFAULT_ENV
+    from xpra.platform.features import DEFAULT_ENV, SOURCE
     def bstr(b):
         if b is None:
             return "auto"
         return "yes" if int(b) else "no"
     start_env = "\n".join("start-env = %s" % x for x in DEFAULT_ENV)
+    source = "\n".join("source = %s" % x for x in SOURCE)
     conf_dir = get_conf_dir(install_dir)
     print("get_conf_dir(%s)=%s" % (install_dir, conf_dir))
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
@@ -880,6 +881,7 @@ def build_xpra_conf(install_dir):
             'systemd_run'           : get_default_systemd_run(),
             'socket_dirs'           : "".join(("socket-dirs = %s\n" % x) for x in socket_dirs),
             'log_dir'               : "auto",
+            "source"                : source,
             'mdns'                  : bstr(mdns),
             'notifications'         : bstr(OSX or WIN32 or dbus_ENABLED),
             'dbus_proxy'            : bstr(not OSX and not WIN32 and dbus_ENABLED),

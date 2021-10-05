@@ -19,6 +19,8 @@ AUTOSTART = False
 
 INPUT_DEVICES = ["auto"]
 
+SOURCE = ["/etc/profile"]
+
 SYSTEM_PROXY_SOCKET = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
 
 CLIPBOARDS = []
@@ -65,6 +67,7 @@ _features_list_ = [
                    "SYSTEM_TRAY_SUPPORTED",
                    "REINIT_WINDOWS",
                    "COMMAND_SIGNALS",
+                   "SOURCE",
                    "DEFAULT_ENV",
                    "DEFAULT_SSH_COMMAND",
                    "DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS",

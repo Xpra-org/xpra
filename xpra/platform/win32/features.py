@@ -11,6 +11,8 @@ REINIT_WINDOWS = True
 CLIPBOARDS=["CLIPBOARD"]
 CLIPBOARD_GREEDY = True
 
+SOURCE = []
+
 EXECUTABLE_EXTENSION = "exe"
 
 #these don't make sense on win32:

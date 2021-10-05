@@ -24,11 +24,15 @@ UINPUT_UUID_LEN = 12
 
 def source_env(source=()) -> dict:
     log = get_util_logger()
+    log("source_env(%s)", source)
     env = {}
     for f in source:
+        if not f:
+            continue
         e = env_from_sourcing(f)
         log("source_env %s=%s", f, e)
         env.update(e)
+    log("source_env(%s)=%s", source, env)
     return env
 
 
