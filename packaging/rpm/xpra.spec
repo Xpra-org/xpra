@@ -43,9 +43,9 @@ exit 1
 %endif
 
 %if 0%{?xpra_revision_no}
-%define revision_no 10.r%{xpra_revision_no}
+%define revision_no 11.r%{xpra_revision_no}
 %else
-%define revision_no 10
+%define revision_no 11
 %endif
 
 Name:				xpra
@@ -607,6 +607,9 @@ fi
 
 
 %changelog
+* Tue Oct 05 2021 Antoine Martin <antoine@xpra.org> 4.2.3-11
+- rebuild with vp8 fix
+
 * Fri Oct 01 2021 Antoine Martin <antoine@xpra.org> 4.2.3-10
 - network layer:
    ensure the http headers cache is never modified unintentionally

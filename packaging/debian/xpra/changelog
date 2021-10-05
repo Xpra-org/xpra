@@ -1,3 +1,8 @@
+xpra (4.2.3-2) UNRELEASED; urgency=low
+  * rebuild with vp8 fix
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 05 Oct 2021 20:43:59 +0700
+
 xpra (4.2.3-1) UNRELEASED; urgency=low
   * network layer:
     - ensure the http headers cache is never modified unintentionally
