@@ -93,7 +93,7 @@ cdef extern from "vpx/vpx_decoder.h":
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
 CODECS = ("vp8", "vp9")
 COLORSPACES = {
-    "vp8"   : ("YUV420P"),
+    "vp8"   : ("YUV420P", ),
     "vp9"   : ("YUV420P", "YUV444P"),
     }
 
