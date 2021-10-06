@@ -911,6 +911,8 @@ class WindowVideoSource(WindowSource):
         #TODO: encode delay can be derived rather than hard-coded
         encode_delay = 50
         av_delay = max(0, av_delay - encode_delay)
+        if self.content_type in ("text", "desktop", "picture"):
+            av_delay = 0
         #freeze if:
         # * we want av-sync
         # * the video encoder needs a thread safe image
