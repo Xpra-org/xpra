@@ -32,6 +32,7 @@ PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DE
 SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
 DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
 OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
+FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -731,7 +732,7 @@ class ClientWindowBase(ClientWidgetBase):
         if backing.draw_needs_refresh:
             if not backing.repaint_all:
                 self.pending_refresh.append((x, y, width, height))
-            if options.intget("flush", 0)==0:
+            if options.intget("flush", 0)==0 or FORCE_FLUSH:
                 callbacks.append(self.after_draw_refresh)
         if coding=="void":
             fire_paint_callbacks(callbacks)
