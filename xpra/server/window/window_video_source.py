@@ -2017,6 +2017,7 @@ class WindowVideoSource(WindowSource):
                 ret = encode_fn(encoding, sub, options)
                 self.free_image_wrapper(sub)
                 if not ret:
+                    scrolllog("no result for %s encoding of %s with options %s", encoding, sub, options)
                     #cancelled?
                     return None
                 coding, data, client_options, outw, outh, outstride, _ = ret
@@ -2042,9 +2043,8 @@ class WindowVideoSource(WindowSource):
             scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles",
                       encoding, self._current_quality, self._current_speed, (monotonic()-nsstart)*1000, len(non_scroll))
         else:
-            #we can't send the non-scroll areas, ouch!
-            flush = 0
-        assert flush==0
+            scrolllog("no non_scroll areas")
+        assert flush==0, "flush counter mismatch: %s" % flush
         self.last_scroll_time = monotonic()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         self.free_image_wrapper(image)
