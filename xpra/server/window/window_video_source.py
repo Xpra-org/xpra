@@ -923,7 +923,7 @@ class WindowVideoSource(WindowSource):
             av_delay, must_freeze, (w, h), coding)
         if must_freeze:
             image.freeze()
-        def call_encode(ew, eh, eimage, encoding, eflush):
+        def call_encode(ew, eh, eimage, encoding):
             self._sequence += 1
             sequence = self._sequence
             if self.is_cancelled(sequence):
@@ -933,27 +933,28 @@ class WindowVideoSource(WindowSource):
             now = monotonic()
             log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms, frame delay=%3ims",
                     self.wid, sequence, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
-            item = (ew, eh, damage_time, now, eimage, encoding, sequence, options, eflush)
+            item = (ew, eh, damage_time, now, eimage, encoding, sequence, options, flush)
             if av_delay<=0:
                 self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
             else:
                 self.encode_queue.append(item)
                 self.schedule_encode_from_queue(av_delay)
         #now figure out if we need to send edges separately:
-        if video_mode and self.edge_encoding:
+        ee = self.edge_encoding
+        if video_mode and ee:
             dw = w - (w & self.width_mask)
             dh = h - (h & self.height_mask)
             if dw>0 and h>0:
                 sub = image.get_sub_image(w-dw, 0, dw, h)
-                call_encode(dw, h, sub, self.edge_encoding, flush)
+                call_encode(dw, h, sub, ee)
                 w = w & self.width_mask
             if dh>0 and w>0:
                 sub = image.get_sub_image(0, h-dh, w, dh)
-                call_encode(dw, h, sub, self.edge_encoding, flush)
+                call_encode(dw, h, sub, ee)
                 h = h & self.height_mask
         #the main area:
         if w>0 and h>0:
-            call_encode(w, h, image, coding, flush)
+            call_encode(w, h, image, coding)
         return True
 
     def get_frame_encode_delay(self, options):
