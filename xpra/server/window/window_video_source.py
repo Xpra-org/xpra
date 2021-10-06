@@ -927,6 +927,7 @@ class WindowVideoSource(WindowSource):
             self._sequence += 1
             sequence = self._sequence
             if self.is_cancelled(sequence):
+                image.free()
                 nodata("call_encode: sequence %s is cancelled", sequence)
                 return
             now = monotonic()
