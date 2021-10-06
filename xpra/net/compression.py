@@ -132,9 +132,7 @@ def get_compression_caps() -> dict:
             pcaps[""] = True
             if c.python_version is not None:
                 pcaps["version"] = c.python_version
-        #legacy format - only used for zlib:
-        if x=="zlib":
-            ccaps[""] = True
+        ccaps[""] = True
     return caps
 
 def get_enabled_compressors(order=ALL_COMPRESSORS):
