@@ -880,27 +880,25 @@ class WindowVideoSource(WindowSource):
         log("process_damage_region%s", (damage_time, x, y, w, h, coding, options, flush))
         assert self.ui_thread == threading.current_thread()
         assert coding is not None
+        def nodata(msg, *args):
+            log("process_damage_region: "+msg, *args)
+            return False
         if w==0 or h==0:
-            log("process_damage_region: dropped, zero dimensions")
-            return
+            return nodata("dropped, zero dimensions")
         if not self.window.is_managed():
-            log("process_damage_region: the window %s is not managed", self.window)
-            return
+            return nodata("the window %s is not managed", self.window)
         self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
-            log("process_damage_region: dropping damage request with sequence=%s", sequence)
-            return
+            return nodata("sequence %s is cancelled", sequence)
 
         rgb_request_time = monotonic()
         image = self.window.get_image(x, y, w, h)
         if image is None:
-            log("process_damage_region: no pixel data for window %s, wid=%s", self.window, self.wid)
-            return
+            return nodata("no pixel data for window %s, wid=%s", self.window, self.wid)
         if self.is_cancelled(sequence):
-            log("process_damage_region: dropping damage request with sequence=%s", sequence)
             image.free()
-            return
+            return nodata("sequence %s is cancelled", sequence)
         self.pixel_format = image.get_pixel_format()
         self.image_depth = image.get_depth()
         #image may have been clipped to the new window size during resize:
@@ -927,7 +925,7 @@ class WindowVideoSource(WindowSource):
             self._sequence += 1
             sequence = self._sequence
             if self.is_cancelled(sequence):
-                log("call_encode: dropping damage request with sequence=%s", sequence)
+                nodata("call_encode: sequence %s is cancelled", sequence)
                 return
             now = monotonic()
             log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms, frame delay=%3ims",
@@ -944,15 +942,16 @@ class WindowVideoSource(WindowSource):
             dh = h - (h & self.height_mask)
             if dw>0 and h>0:
                 sub = image.get_sub_image(w-dw, 0, dw, h)
-                call_encode(dw, h, sub, self.edge_encoding, flush+1+int(dh>0))
+                call_encode(dw, h, sub, self.edge_encoding, flush)
                 w = w & self.width_mask
             if dh>0 and w>0:
                 sub = image.get_sub_image(0, h-dh, w, dh)
-                call_encode(dw, h, sub, self.edge_encoding, flush+1)
+                call_encode(dw, h, sub, self.edge_encoding, flush)
                 h = h & self.height_mask
         #the main area:
         if w>0 and h>0:
             call_encode(w, h, image, coding, flush)
+        return True
 
     def get_frame_encode_delay(self, options):
         if FORCE_AV_DELAY>0:

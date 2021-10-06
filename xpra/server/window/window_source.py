@@ -1866,7 +1866,8 @@ class WindowSource(WindowIconSource):
 
         #reversed so that i=0 is last for flushing
         for i, region, actual_encoding in reversed(i_reg_enc):
-            self.process_damage_region(damage_time, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i)
+            if not self.process_damage_region(damage_time, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i):
+                log("failed on %i: %s", i, region)
         log("send_delayed_regions: sent %i regions using %s", len(i_reg_enc), [v[2] for v in i_reg_enc])
 
 
@@ -1900,27 +1901,25 @@ class WindowSource(WindowIconSource):
         """
         assert self.ui_thread == threading.current_thread()
         assert coding is not None
+        def nodata(msg, *args):
+            log("process_damage_region: "+msg, *args)
+            return False
         if w==0 or h==0:
-            log("process_damage_region: dropped, zero dimensions")
-            return
+            return nodata("dropped, zero dimensions")
         if not self.window.is_managed():
-            log("process_damage_region: the window %s is not managed", self.window)
-            return
+            return nodata("the window %s is not managed", self.window)
         self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
-            log("process_damage_region: dropping damage request with sequence=%s", sequence)
-            return
+            return nodata("sequence %s is cancelled", sequence)
 
         rgb_request_time = monotonic()
         image = self.window.get_image(x, y, w, h)
         if image is None:
-            log("process_damage_region: no pixel data for window %s, wid=%s", self.window, self.wid)
-            return
+            return nodata("no pixel data for window %s, wid=%s", self.window, self.wid)
         if self.is_cancelled(sequence):
-            log("process_damage_region: sequence %i is cancelled", sequence)
             image.free()
-            return
+            return nodata("sequence %i is cancelled", sequence)
         self.pixel_format = image.get_pixel_format()
         self.image_depth = image.get_depth()
 
@@ -1932,6 +1931,7 @@ class WindowSource(WindowIconSource):
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
                 self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
+        return True
 
 
     def make_data_packet_cb(self, w, h, damage_time, process_damage_time, image, coding, sequence, options, flush):
