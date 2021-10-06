@@ -1750,18 +1750,18 @@ class WindowSource(WindowIconSource):
         self.cancel_timeout_timer()
         self.cancel_soft_timer()
         delayed = self._damage_delayed
-        if delayed:
-            damagelog("do_send_delayed() damage delayed=%s", delayed)
-            self._damage_delayed = None
-            now = monotonic()
-            actual_delay = int(1000 * (now-delayed.damage_time))
-            lad = (now, actual_delay)
-            self.batch_config.last_actual_delays.append(lad)
-            self.batch_config.last_actual_delay = lad
-            self.batch_config.last_delays.append(lad)
-            self.batch_config.last_delay = lad
-            self.send_delayed_regions(delayed)
-        return False
+        if not delayed:
+            return
+        self._damage_delayed = None
+        damagelog("do_send_delayed() damage delayed=%s", delayed)
+        now = monotonic()
+        actual_delay = int(1000 * (now-delayed.damage_time))
+        lad = (now, actual_delay)
+        self.batch_config.last_actual_delays.append(lad)
+        self.batch_config.last_actual_delay = lad
+        self.batch_config.last_delays.append(lad)
+        self.batch_config.last_delay = lad
+        self.send_delayed_regions(delayed)
 
     def send_delayed_regions(self, delayed_regions):
         """ Called by 'send_delayed' when we expire a delayed region,
@@ -1865,10 +1865,13 @@ class WindowSource(WindowIconSource):
             i_reg_enc.append((i, region, actual_encoding))
 
         #reversed so that i=0 is last for flushing
+        log("send_delayed_regions: queuing %i regions", len(i_reg_enc))
+        encodings = []
         for i, region, actual_encoding in reversed(i_reg_enc):
             if not self.process_damage_region(damage_time, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i):
                 log("failed on %i: %s", i, region)
-        log("send_delayed_regions: sent %i regions using %s", len(i_reg_enc), [v[2] for v in i_reg_enc])
+            encodings.append(actual_encoding)
+        log("send_delayed_regions: queued %i regions for encoding using %s", len(i_reg_enc), encodings)
 
 
     def must_encode_full_frame(self, _encoding):
@@ -2425,13 +2428,15 @@ class WindowSource(WindowIconSource):
             * 'rgb24' and 'rgb32' use 'rgb_encode'
             * etc..
         """
-        if self.is_cancelled(sequence) or self.suspended:
-            log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
-            return None
-        if SCROLL_ALL and self.may_use_scrolling(image, options):
-            log("used scrolling, no packet")
+        def nodata(msg, *args):
+            log.warn("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
             image.free()
-            return None
+        if self.is_cancelled(sequence):
+            return nodata("cancelled")
+        if self.suspended:
+            return nodata("suspended")
+        if SCROLL_ALL and self.may_use_scrolling(image, options):
+            return nodata("used scrolling instead")
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
@@ -2448,22 +2453,22 @@ class WindowSource(WindowIconSource):
         encoder = self._encoders.get(coding)
         if encoder is None:
             if self.is_cancelled(sequence):
-                log("make_data_packet: skipped, sequence no %i is cancelled", sequence)
-                return None
+                return nodata("cancelled")
             raise Exception("BUG: no encoder found for %s" % coding)
         ret = encoder(coding, image, options)
         if ret is None:
-            log("%s%s returned None", encoder, (coding, image, options))
-            #something went wrong.. nothing we can do about it here!
-            return  None
+            return nodata("encoder %s returned None for %s", encoder, (coding, image, options))
 
         coding, data, client_options, outw, outh, outstride, bpp = ret
         coding = bytestostr(coding)
-        #check cancellation list again since the code above may take some time:
-        #but always send mmap data so we can reclaim the space!
-        if coding!="mmap" and (self.is_cancelled(sequence) or self.suspended):
-            log("make_data_packet: dropping data packet for window %s with sequence=%s", self.wid, sequence)
-            return None
+        #check for cancellation again since the code above may take some time to encode:
+        #but never cancel mmap after encoding because we need to reclaim the space
+        #by getting the client to move the mmap received pointer
+        if coding!="mmap":
+            if self.is_cancelled(sequence):
+                return nodata("cancelled after encoding")
+            if self.suspended:
+                return nodata("suspended after encoding")
         csize = len(data)
         if INTEGRITY_HASH and coding!="mmap":
             #could be a compressed wrapper or just raw bytes:
