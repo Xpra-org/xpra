@@ -607,8 +607,9 @@ fi
 
 
 %changelog
-* Tue Oct 05 2021 Antoine Martin <antoine@xpra.org> 4.2.3-11
+* Wed Oct 06 2021 Antoine Martin <antoine@xpra.org> 4.2.3-11
 - rebuild with vp8 fix
+- packet compression flags not exposed
 
 * Fri Oct 01 2021 Antoine Martin <antoine@xpra.org> 4.2.3-10
 - network layer:

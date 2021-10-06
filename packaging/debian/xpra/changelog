@@ -1,7 +1,8 @@
 xpra (4.2.3-2) UNRELEASED; urgency=low
   * rebuild with vp8 fix
+  * packet compression flags not exposed
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 05 Oct 2021 20:43:59 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 06 Oct 2021 16:09:57 +0700
 
 xpra (4.2.3-1) UNRELEASED; urgency=low
   * network layer:
