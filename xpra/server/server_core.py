@@ -2083,7 +2083,7 @@ class ServerCore:
             cryptolog("server cipher=%s", auth_caps)
             return auth_caps
         conn = proto._conn
-        if proto.encryption and conn.socktype in ENCRYPTED_SOCKET_TYPES:
+        if proto.encryption:
             cryptolog("client does not provide encryption tokens")
             return auth_failed("missing encryption tokens")
         return {}
