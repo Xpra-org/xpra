@@ -43,7 +43,7 @@ Name: "{group}\Xpra"; Filename: {app}\Xpra.exe; WorkingDir: {app}
 Name: "{group}\Xpra Session Browser"; Filename: {app}\Xpra_Browser.exe; WorkingDir: {app}
 Name: "{group}\Xpra Homepage"; Filename: "{app}\website.url"
 Name: "{group}\Xpra Command Manual"; Filename: "{app}\manual.html"
-Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14000,auth=sys --ssl-cert=""{commonappdata}\Xpra\ssl-cert.pem"""; IconFilename: {app}\icons\server-connected.ico
+Name: "{group}\Xpra Shadow Server"; Filename: {app}\Xpra.exe; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14000,auth=sys --ssl-cert=auto"; IconFilename: {app}\icons\server-connected.ico
 
 
 [Run]

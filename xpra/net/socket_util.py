@@ -15,7 +15,7 @@ from xpra.exit_codes import (
     )
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SOCKET_TIMEOUT
 from xpra.os_util import (
-    getuid, get_username_for_uid, get_groups, get_group_id,
+    getuid, get_username_for_uid, get_groups, get_group_id, osexpand,
     path_permission_info, umask_context, WIN32, OSX, POSIX,
     parse_encoded_bin_data,
     )
@@ -809,6 +809,32 @@ def ssl_wrap_socket(sock, **kwargs):
     fn = get_ssl_wrap_socket_fn(**kwargs)
     return fn(sock)
 
+def find_ssl_cert(filename="ssl-cert.pem"):
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    #try to locate the cert file from known locations
+    from xpra.platform.paths import get_ssl_cert_dirs  #pylint: disable=import-outside-toplevel
+    dirs = get_ssl_cert_dirs()
+    ssllog("find_ssl_cert(%s) get_ssl_cert_dirs()=%s", filename, dirs)
+    for d in dirs:
+        p = osexpand(d)
+        if not os.path.exists(p):
+            ssllog("ssl cert dir '%s' does not exist", p)
+            continue
+        f = os.path.join(p, "ssl-cert.pem")
+        if not os.path.exists(f):
+            ssllog("ssl cert '%s' does not exist", f)
+            continue
+        if not os.path.isfile(f):
+            ssllog.warn("Warning: '%s' is not a file", f)
+            continue
+        if not os.access(p, os.R_OK):
+            ssllog.info("SSL certificate file '%s' is not accessible", f)
+            continue
+        ssllog("found ssl cert '%s'", f)
+        return f
+    return None
+
 def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                         protocol="TLSv1_2",
                         client_verify_mode="optional", server_verify_mode="required", verify_flags="X509_STRICT",
@@ -834,6 +860,8 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
     #ca-certs:
     if ca_certs=="default":
         ca_certs = None
+    elif ca_certs=="auto":
+        ca_certs = find_ssl_cert("ca-cert.pem")
     ssllog(" ca_certs=%s", ca_certs)
     #parse verify-mode:
     ssl_cert_reqs = getattr(ssl, "CERT_%s" % verify_mode.upper(), None)
@@ -886,6 +914,11 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
     context.options = ssl_options
     ssllog(" cert=%s, key=%s", cert, key)
     if cert:
+        if cert=="auto":
+            #try to locate the cert file from known locations
+            cert = find_ssl_cert()
+            if not cert:
+                raise InitException("failed to locate an ssl certificate to use")
         SSL_KEY_PASSWORD = os.environ.get("XPRA_SSL_KEY_PASSWORD")
         ssllog("context.load_cert_chain%s", (cert or None, key or None, SSL_KEY_PASSWORD))
         context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=SSL_KEY_PASSWORD)

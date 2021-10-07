@@ -18,12 +18,16 @@ SHGetFolderPath = shell32.SHGetFolderPathW
 CSIDL_APPDATA = 26
 CSIDL_LOCAL_APPDATA = 28
 CSIDL_COMMON_APPDATA = 35
+CSIDL_PROFILE = 40
+
 
 def sh_get_folder_path(v):
     try:
         buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
         SHGetFolderPath(0, v, None, 0, buf)
-        return buf.value
+        if not buf.value:
+            return buf.value
+        return os.path.normpath(buf.value)
     except Exception:
         return None
 
@@ -74,10 +78,7 @@ def do_get_default_log_dirs():
 def get_program_data_dir():
     #ie: "C:\ProgramData"
     try:
-        buf = ctypes.create_unicode_buffer(ctypes.wintypes.MAX_PATH)
-        SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
-        if buf.value:
-            return buf.value
+        return sh_get_folder_path(CSIDL_COMMON_APPDATA) or "C:\\ProgramData"
     except Exception:
         get_util_logger().debug("get_program_data_dir()", exc_info=True)
     return "C:\\ProgramData"
@@ -85,6 +86,16 @@ def get_program_data_dir():
 def do_get_system_conf_dirs():
     #ie: C:\ProgramData\Xpra
     return [os.path.join(get_program_data_dir(), "Xpra")]
+
+
+def do_get_ssl_cert_dirs():
+    dirs = []
+    for i in (CSIDL_PROFILE, CSIDL_COMMON_APPDATA, CSIDL_LOCAL_APPDATA, CSIDL_APPDATA):
+        d = os.path.join(sh_get_folder_path(i), "Xpra")
+        dirs.append(d)
+    dirs += do_get_default_conf_dirs()
+    return dirs
+
 
 def do_get_ssh_conf_dirs():
     if platform.architecture()[0]=="32bit":

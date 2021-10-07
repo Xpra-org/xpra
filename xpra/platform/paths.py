@@ -44,6 +44,14 @@ def do_get_system_conf_dirs():
     #overriden in all platforms
     return []
 
+def get_ssl_cert_dirs():
+    return envaslist_or_delegate("XPRA_SSL_CERT_PATHS", do_get_ssl_cert_dirs)
+def do_get_ssl_cert_dirs():
+    if os.name=="posix" and os.getuid()==0:
+        d = ["/etc/xpra/", "/usr/local/etc/xpra"]
+    else:
+        d = ["~/.config/xpra/", "~/.xpra/", "/etc/xpra/", "/usr/local/etc/xpra", "./"]
+    return d
 
 def get_ssh_conf_dirs():
     return envaslist_or_delegate("XPRA_SSH_CONF_DIRS", do_get_ssh_conf_dirs)
@@ -288,6 +296,7 @@ platform_import(globals(), "paths", False,
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
                 "do_get_system_conf_dirs",
+                "do_get_ssl_cert_dirs",
                 "do_get_ssh_conf_dirs",
                 "do_get_ssh_known_hosts_files",
                 "do_get_user_conf_dirs",
@@ -317,6 +326,7 @@ def get_info():
         "install"           : {"prefix" : get_install_prefix()},
         "default_conf"      : {"dirs"   : get_default_conf_dirs()},
         "system_conf"       : {"dirs"   : get_system_conf_dirs()},
+        "ssl_cert"          : {"dirs"   : get_ssl_cert_dirs()},
         "ssh_conf"          : {"dirs"   : get_ssh_conf_dirs()},
         "user_conf"         : {"dirs"   : get_user_conf_dirs()},
         "sessions"          : {"dir"    : do_get_sessions_dir()},
