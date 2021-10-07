@@ -12,7 +12,7 @@ PY3BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/l
 # Disable CUDA on Ubuntu Hirsute and Debian Sid
 # (nvcc fails to compile with the new glibc headers: #3293)
 dvariant := $(shell lsb_release -is)
-ifeq ($(dvariant),hirsute)
+ifeq ($(dvariant),impish)
 PY2BUILDOPTS := --without-nvenc
 PY3BUILDOPTS := --without-nvenc
 endif
