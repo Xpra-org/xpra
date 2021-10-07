@@ -27,7 +27,9 @@ ArchitecturesInstallIn64BitMode=
 ArchitecturesAllowed=
 
 [Dirs]
-Name: {app}; Flags: uninsalwaysuninstall;
+Name: "{app}"; Flags: uninsalwaysuninstall;
+Name: "{commonappdata}\Xpra"; Permissions: users-readexec admins-full;
+Name: "{commonappdata}\SSH"; Permissions: users-readexec admins-full; Attribs: notcontentindexed;
 
 [Files]
 Source: dist\*; Excludes: "etc\xpra"; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
@@ -200,7 +202,6 @@ begin
   if (FileExists(ssh_keygen)) then
   begin
     Log('found ssh_keygen');
-    CreateDir(ExpandConstant('{commonappdata}\SSH'));
     rsa_key := ExpandConstant('{commonappdata}\SSH\ssh_host_rsa_key');
     if (NOT FileExists(rsa_key)) then
     begin
