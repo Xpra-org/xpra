@@ -9,6 +9,18 @@ endif
 PY2BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ --without-html5 --without-printing
 PY3BUILDOPTS= --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/
 
+# Disable CUDA on Ubuntu Hirsute and Debian Sid
+# (nvcc fails to compile with the new glibc headers: #3293)
+dvariant := $(shell lsb_release -is)
+ifeq ($(dvariant),hirsute)
+PY2BUILDOPTS := --without-nvenc
+PY3BUILDOPTS := --without-nvenc
+endif
+ifeq ($(dvariant),sid)
+PY2BUILDOPTS := --without-nvenc
+PY3BUILDOPTS := --without-nvenc
+endif
+
 %:
 	dh $@ --with python2,python3 --with systemd
 
