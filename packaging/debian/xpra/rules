@@ -7,6 +7,16 @@ export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 ifneq (,$(filter i386,$(DEB_HOST_ARCH)))
 EXTRA_BUILDOPTS := --without-csc_swscale --without-enc_ffmpeg --without-dec_avcodec2
 endif
+# Disable CUDA on Ubuntu Hirsute and Debian Sid
+# (nvcc fails to compile with the new glibc headers: #3293)
+dvariant := $(shell lsb_release -is)
+ifeq ($(dvariant),hirsute)
+EXTRA_BUILDOPTS := --without-nvenc
+endif
+ifeq ($(dvariant),sid)
+EXTRA_BUILDOPTS := --without-nvenc
+endif
+
 
 NPROC := $(shell nproc 2> /dev/null || echo 1)
 
