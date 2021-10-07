@@ -54,8 +54,9 @@ def exec_command(cmd):
 
 class GUI(Gtk.Window):
 
-    def __init__(self, title="Xpra"):
+    def __init__(self, title="Xpra", argv=()):
         self.exit_code = 0
+        self.argv = argv
         super().__init__()
 
         hb = Gtk.HeaderBar()
@@ -184,8 +185,14 @@ class GUI(Gtk.Window):
     def show_about(self, *_args):
         about()
 
+    def get_xpra_command(self, arg="shadow"):
+        args = list(self.argv[1:])
+        if args.index("gui")>=0:
+            args.pop(args.index("gui"))
+        return get_xpra_command()+[arg]+args
+
     def start_shadow(self, *_args):
-        cmd = get_xpra_command()+["shadow"]
+        cmd = self.get_xpra_command()
         if WIN32 or OSX:
             cmd.append("--bind-tcp=0.0.0.0:14500,auth=sys")
         proc = exec_command(cmd)
@@ -193,19 +200,19 @@ class GUI(Gtk.Window):
             self.busy_cursor(self.shadow_button)
 
     def browse(self, *_args):
-        cmd = get_xpra_command()+["sessions"]
+        cmd = self.get_xpra_command("sessions")
         proc = exec_command(cmd)
         if proc.poll() is None:
             self.busy_cursor(self.browse_button)
 
     def show_launcher(self, *_args):
-        cmd = get_xpra_command()+["launcher"]
+        cmd = self.get_xpra_command("launcher")
         proc = exec_command(cmd)
         if proc.poll() is None:
             self.busy_cursor(self.connect_button)
 
     def start(self, *_args):
-        cmd = get_xpra_command()+["start-gui"]
+        cmd = self.get_xpra_command("start-gui")
         proc = exec_command(cmd)
         if proc.poll() is None:
             self.busy_cursor(self.start_button)
@@ -237,14 +244,14 @@ class GUI(Gtk.Window):
             GLib.timeout_add(2000, may_exit)
 
 
-def main(): # pragma: no cover
+def main(argv): # pragma: no cover
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready
     with program_context("xpra-gui", "Xpra GUI"):
         enable_color()
         init()
-        gui = GUI()
+        gui = GUI(argv=argv)
         register_os_signals(gui.app_signal)
         ready()
         if OSX:
@@ -258,5 +265,5 @@ def main(): # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover
-    r = main()
+    r = main(sys.argv)
     sys.exit(r)

@@ -500,7 +500,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode == "gui":
         check_gtk()
         from xpra.gtk_common import gui
-        return gui.main()
+        return gui.main(cmdline)
     elif mode == "start-gui":
         check_gtk()
         from xpra.gtk_common import start_gui
