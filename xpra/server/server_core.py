@@ -1318,36 +1318,33 @@ class ServerCore:
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
-        protocol.encryption = None
-        protocol.keyfile = None
-        protocol.keydata = None
+        protocol.encryption = socket_options.get("encryption", None)
+        protocol.keyfile = socket_options.get("encryption-keyfile") or socket_options.get("keyfile")
+        protocol.keydata = parse_encoded_bin_data(socket_options.get("encryption-keydata") or socket_options.get("keydata"))
         if socktype in ENCRYPTED_SOCKET_TYPES:
             #special case for legacy encryption code:
-            protocol.encryption = socket_options.get("encryption", self.tcp_encryption)
-            protocol.keyfile = socket_options.get("encryption-keyfile") or socket_options.get("keyfile") or self.tcp_encryption_keyfile
-            protocol.keydata = parse_encoded_bin_data(socket_options.get("encryption-keydata") or socket_options.get("keydata"))
-            netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
-            if protocol.encryption:
-                from xpra.net.crypto import crypto_backend_init
-                crypto_backend_init()
-                from xpra.net.crypto import (
-                    ENCRYPT_FIRST_PACKET,
-                    DEFAULT_IV,
-                    DEFAULT_SALT,
-                    DEFAULT_KEY_HASH,
-                    DEFAULT_KEYSIZE,
-                    DEFAULT_ITERATIONS,
-                    INITIAL_PADDING,
-                    )
-                if ENCRYPT_FIRST_PACKET:
-                    authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
-                    password = protocol.keydata or self.get_encryption_key(None, protocol.keyfile)
-                    protocol.set_cipher_in(protocol.encryption,
-                                           DEFAULT_IV, password,
-                                           DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                           DEFAULT_ITERATIONS, INITIAL_PADDING)
-        else:
-            netlog("no encryption for %s", socktype)
+            protocol.encryption = protocol.encryption or self.tcp_encryption
+            protocol.keyfile = protocol.keyfile or self.tcp_encryption_keyfile
+        netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
+        if protocol.encryption:
+            from xpra.net.crypto import crypto_backend_init
+            crypto_backend_init()
+            from xpra.net.crypto import (
+                ENCRYPT_FIRST_PACKET,
+                DEFAULT_IV,
+                DEFAULT_SALT,
+                DEFAULT_KEY_HASH,
+                DEFAULT_KEYSIZE,
+                DEFAULT_ITERATIONS,
+                INITIAL_PADDING,
+                )
+            if ENCRYPT_FIRST_PACKET:
+                authlog("encryption=%s, keyfile=%s", protocol.encryption, protocol.keyfile)
+                password = protocol.keydata or self.get_encryption_key(None, protocol.keyfile)
+                protocol.set_cipher_in(protocol.encryption,
+                                       DEFAULT_IV, password,
+                                       DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
+                                       DEFAULT_ITERATIONS, INITIAL_PADDING)
         protocol.invalid_header = self.invalid_header
         authlog("socktype=%s, encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         protocol.start()
