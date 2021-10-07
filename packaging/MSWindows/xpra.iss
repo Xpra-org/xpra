@@ -187,8 +187,11 @@ begin
     config := ExpandConstant('{app}\openssl.cfg');
     args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -config "'+config+'" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -out "'+cert+'" -keyout "'+cert+'"';
     openssl := ExpandConstant('{app}\OpenSSL.exe');
-    Log('PostInstall() generating ssl-cert.pem');
-    Exec(openssl, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    if (FileExists(openssl)) then
+    begin
+      Log('PostInstall() generating ssl-cert.pem');
+      Exec(openssl, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    end;
   end;
   //move old config file:
   config := ExpandConstant('{app}\xpra.conf');
