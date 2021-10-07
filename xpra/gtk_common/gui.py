@@ -194,7 +194,7 @@ class GUI(Gtk.Window):
     def start_shadow(self, *_args):
         cmd = self.get_xpra_command()
         if WIN32 or OSX:
-            cmd.append("--bind-tcp=0.0.0.0:14500,auth=sys")
+            cmd.append("--bind-tcp=0.0.0.0:14500,auth=sys,ssl=auto")
         proc = exec_command(cmd)
         if proc.poll() is None:
             self.busy_cursor(self.shadow_button)
