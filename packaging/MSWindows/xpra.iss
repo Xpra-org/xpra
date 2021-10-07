@@ -31,7 +31,7 @@ Name: {app}; Flags: uninsalwaysuninstall;
 
 [Files]
 Source: dist\*; Excludes: "etc\xpra"; DestDir: {app}; Flags: ignoreversion recursesubdirs createallsubdirs;
-Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall; AfterInstall: PostInstall()
+Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall; 
 
 [InstallDelete]
 Type: filesandordirs; Name: "{app}\lib\*.py*"
@@ -263,6 +263,10 @@ begin
     begin
       UnInstallOldVersion();
     end;
+  end;
+  if (CurStep=ssPostInstall) then
+  begin
+    PostInstall();
   end;
 end;
 
