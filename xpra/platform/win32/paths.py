@@ -104,13 +104,16 @@ def do_get_ssh_conf_dirs():
         system32 = "System32"
     windows_dir = os.environ.get("SystemRoot", os.environ.get("WINDIR", "C:\\Windows"))
     openssh_dir = os.path.join(windows_dir, system32, "OpenSSH")
-    return [
-        os.path.join(get_program_data_dir(), "ssh"),    #ie: C:\ProgramData\ssh
-        "%APPDATA%\\ssh",   #ie: C:\Users\Username\AppData\Roaming\ssh
+    dirs = []
+    for i in (CSIDL_PROFILE, CSIDL_COMMON_APPDATA, CSIDL_LOCAL_APPDATA, CSIDL_APPDATA):
+        d = os.path.join(sh_get_folder_path(i), "SSH")
+        dirs.append(d)
+    dirs += do_get_default_conf_dirs()+[
         openssh_dir,        #ie: C:\Windows\system32\OpenSSH
         "~/.ssh",
         "~/ssh",
         ]
+    return dirs
 
 def do_get_ssh_known_hosts_files():
     #reverse the order (avoid dotfiles on win32):
