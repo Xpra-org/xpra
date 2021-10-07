@@ -2429,7 +2429,7 @@ class WindowSource(WindowIconSource):
             * etc..
         """
         def nodata(msg, *args):
-            log.warn("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
+            log("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
             image.free()
         if self.is_cancelled(sequence):
             return nodata("cancelled")
