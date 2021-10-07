@@ -900,7 +900,7 @@ fi
 
 
 %changelog
-* Fri Sep 24 2021 Antoine Martin <antoine@xpra.org> 3.1.1-10.1xpra1
+* Thu Oct 07 2021 Antoine Martin <antoine@xpra.org> 3.1.1-10.1xpra1
 - critical bugs:
     fix crashes during printer enumeration on MS Windows
     fix crashes when starting audio forwarding via the command line
@@ -913,6 +913,7 @@ fi
 - build, packaging and platform fixes:
     Python 3.10 support
     default to using CUDA 11.4
+    don't try to build NVENC against newer glibc headers (CUDA bug)
     support NVidia Ampere cards natively
     compatibility with experimental version of ffmpeg (GBRP9LE)
     more reliable git branch detection
@@ -936,8 +937,10 @@ fi
     libwebp 1.2.1
     pynvml 11.470.66
     patched rencode - override the buggy version from EPEL
+    arm64 build and packaging tweaks
 - network:
     handle mmap client setup errors correctly
+    mmap unix group lookup API
     support improved packet encoders
     use the correct exit code for encryption problems
     http script errors
@@ -949,6 +952,7 @@ fi
     better compatibility with packet encoders (start menu, clipboard)
     reply with 404 if we don't find any data to send
     correctly parse ssh remote command output
+    MacOS and MS Windows shadow servers missing the default TCP socket (port 14500)
 - authentication:
     stricter validation of challenge digest
     honour the `socket-dirs` option in authentication modules
@@ -960,6 +964,7 @@ fi
     re-enable non-fatal ffmpeg logging outside suppressed code blocks
     vpx encoder uninitialized variable undefined behaviour
     restrict the number of NVENC errors tagged as transient
+    don't use AV sync for 'text', 'desktop' and 'picture' content types
 - window geometry:
     errors with StackMode requests
     size hints not being honoured in some rare cases
@@ -980,6 +985,7 @@ fi
     prefer https for links to the xpra.org website
     fix saving icons with gi bindings (Python 3)
     make it easier to run in a prefixed installation
+    cursor regression with Python 2 builds
 - proxy fixes:
     preserve audio packets chunking (avoids an HTML5 client bug)
     avoid potential race conditions with video encoder re-framing
