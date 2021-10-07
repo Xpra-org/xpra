@@ -213,7 +213,7 @@ class Protocol:
         return self._closed
 
     def is_sending_encrypted(self):
-        return self.cipher_out or self._conn.socktype in ("ssl", "wss")
+        return self.cipher_out or self._conn.socktype in ("ssl", "wss", "ssh")
 
     def wait_for_io_threads_exit(self, timeout=None):
         io_threads = (self._read_thread, self._write_thread)
