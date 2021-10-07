@@ -189,7 +189,7 @@ class SSHServer(paramiko.ServerInterface):
                 log.warn("Warning: received a proxy %r session request", proxy_command)
                 log.warn(" this feature is not yet implemented with the builtin ssh server")
                 return False
-            elif subcommand!="_proxy":
+            elif subcommand=="_proxy":
                 if len(cmd)==3:
                     #only the display can be specified here
                     display = cmd[2]
