@@ -194,7 +194,7 @@ class SplashScreen(Gtk.Window):
             self.exit_timer = GLib.timeout_add(SPLASH_EXIT_DELAY*1000, exit_splash)
         else:
             self.progress_timer = GLib.timeout_add(40, self.increase_fraction, pct)
-            self.opacity = min(100, max(50, 100-pct//2))
+            self.opacity = min(100, max(50, 130-pct))
             self.set_opacity(self.opacity/100.0)
 
     def cancel_exit_timer(self):
