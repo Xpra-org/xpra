@@ -46,11 +46,20 @@ def read_link(path):
         log("error parsing '%s': %s", path, e)
         return None
 
+def listdir(d):
+    try:
+        return os.listdir(d)
+    except PermissionError as e:
+        log("listdir(%s)", d, exc_info=True)
+        log.warn("Warning: cannot access directory '%s':", d)
+        log.warn(" %s", e)
+        return ()
+
 def load_subdir(d):
     #recurse down directories
     #and return a dictionary of entries
     menu = {}
-    for x in os.listdir(d):
+    for x in listdir(d):
         if x.endswith(".ini"):
             continue
         name = os.path.join(d, x)
@@ -67,7 +76,7 @@ def load_subdir(d):
 def load_dir(d):
     log("load_dir(%s)", d)
     menu = {}
-    for x in os.listdir(d):
+    for x in listdir(d):
         log(" %s" % (x))
         if x.endswith(".ini"):
             continue
@@ -94,7 +103,7 @@ def load_menu():
         if not d:
             continue
         #ie: "C:\ProgramData\Microsoft\Windows\Start Menu"
-        for x in os.listdir(d):
+        for x in listdir(d):
             subdir = os.path.join(d, x)
             if os.path.isdir(subdir):
                 #ie: "C:\ProgramData\Microsoft\Windows\Start Menu\Programs"
