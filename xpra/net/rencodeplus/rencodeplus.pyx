@@ -157,7 +157,7 @@ cdef encode_char(char **buf, unsigned int *pos, signed char x):
         write_buffer_char(buf, pos, INT_POS_FIXED_START + x)
     elif -INT_NEG_FIXED_COUNT <= x < 0:
         write_buffer_char(buf, pos, INT_NEG_FIXED_START - 1 - x)
-    elif -128 <= x < 128:
+    else:
         write_buffer_char(buf, pos, CHR_INT1)
         write_buffer_char(buf, pos, x)
 
