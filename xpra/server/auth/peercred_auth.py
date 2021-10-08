@@ -15,12 +15,12 @@ class Authenticator(SysAuthenticator):
 
     def __init__(self, **kwargs):
         log("peercred.Authenticator(%s)", kwargs)
-        if not POSIX:
-            log.warn("Warning: peercred authentication is not supported on %s", os.name)
-            return
         self.uid = -1
         self.gid = -1
         self.peercred_check = False
+        if not POSIX:
+            log.warn("Warning: peercred authentication is not supported on %s", os.name)
+            return
         connection = kwargs.get("connection", None)
         uids = kwargs.pop("uid", "")
         gids = kwargs.pop("gid", "")
