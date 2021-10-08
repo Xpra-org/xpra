@@ -42,6 +42,7 @@ from xpra.net.net_util import (
 from xpra.net.protocol import Protocol, CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name, threaded_server_init
+from xpra.platform.info import get_username
 from xpra.platform.paths import (
     get_app_dir, get_system_conf_dirs, get_user_conf_dirs,
     get_icon_filename,
@@ -841,7 +842,6 @@ class ServerCore:
         return socktypes
 
     def get_mdns_info(self) -> dict:
-        from xpra.platform.info import get_username
         mdns_info = {
             "display"  : self.display_name,
             "username" : get_username(),
@@ -1877,7 +1877,11 @@ class ServerCore:
             for auth, _, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["connection"] = conn
-                opts["username"] = opts.get("username", username)
+                if opts.get("username", "")=="-":
+                    #use the current user
+                    opts["username"] = get_username() or username
+                else:
+                    opts["username"] = opts.get("username", username)
                 def parse_socket_dirs(v):
                     if isinstance(v, (tuple, list)):
                         return v
