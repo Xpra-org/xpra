@@ -38,14 +38,14 @@ def check_host(peername, host):
 
 class Authenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
-        log("hosts.Authenticator(%s, %s)", username, kwargs)
+    def __init__(self, **kwargs):
+        log("hosts.Authenticator(%s)", kwargs)
         if not POSIX:
             log.warn("Warning: hosts authentication is not supported on %s", os.name)
             return
         connection = kwargs.get("connection", None)
         try:
-            from xpra.net.bytestreams import SocketConnection
+            from xpra.net.bytestreams import SocketConnection  #pylint: disable=import-outside-toplevel
             if not connection and isinstance(connection, SocketConnection):
                 raise Exception("hosts: invalid connection '%s' (not a socket connection)" % connection)
             info = connection.get_info()
@@ -58,7 +58,7 @@ class Authenticator(SysAuthenticator):
             raise
         self.peername = peername
         self.host = host
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
 
     def requires_challenge(self) -> bool:
         return False

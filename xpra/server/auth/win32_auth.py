@@ -25,8 +25,8 @@ LogonUser.restype = BOOL
 
 class Authenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
-        super().__init__(username, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         #fugly: keep hold of the password so the win32 proxy can use it
         self.password = None
 
@@ -83,7 +83,7 @@ def main(argv):
             return 1
         username = argv[1]
         password = argv[2]
-        a = Authenticator(username)
+        a = Authenticator(username=username)
         if a.check(password):
             log.info("authentication succeeded")
             return 0

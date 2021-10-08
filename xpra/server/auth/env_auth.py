@@ -9,9 +9,9 @@ from xpra.server.auth.sys_auth_base import SysAuthenticator
 
 class Authenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.var_name = kwargs.pop("name", "XPRA_PASSWORD")
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
         self.authenticate_check = self.authenticate_hmac
 
     def __repr__(self):

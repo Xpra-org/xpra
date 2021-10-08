@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,12 +11,12 @@ from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 class SQLAuthenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.password_query = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
         self.sessions_query = kwargs.pop("sessions_query",
                                          "SELECT uid, gid, displays, env_options, session_options "+
                                          "FROM users WHERE username=(%s) AND password=(%s)")
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
         self.authenticate_check = self.authenticate_hmac
 
     def db_cursor(self, *sqlargs):

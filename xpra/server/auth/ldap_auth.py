@@ -22,7 +22,7 @@ LDAP_ENCODING = os.environ.get("XPRA_LDAP_ENCODING", "utf-8")
 
 class Authenticator(SysAuthenticatorBase):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.tls = bool(int(kwargs.pop("tls", "0")))
         self.host = kwargs.pop("host", "localhost")
         self.cacert = kwargs.pop("cacert", LDAP_CACERTFILE)
@@ -36,7 +36,7 @@ class Authenticator(SysAuthenticatorBase):
         self.port = int(kwargs.pop("port", default_port))
         self.username_format = kwargs.pop("username_format", "cn=%username, o=%domain")
         #self.username_format = kwargs.pop("username_format", "%username@%domain")
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s, username_format=%s, cacert=%s, encoding=%s",
             self.host, self.port, self.tls, self.username_format, self.cacert, self.encoding)
 
@@ -135,7 +135,7 @@ def main(argv):
             return 1
         username = argv[1]
         password = argv[2]
-        kwargs = {}
+        kwargs = {"username" : username}
         if len(argv)>=4:
             kwargs["host"] = argv[3]
         if len(argv)>=5:
@@ -144,7 +144,7 @@ def main(argv):
             kwargs["tls"] = argv[5]
         if len(argv)>=7:
             kwargs["username_format"] = argv[6]
-        a = Authenticator(username, **kwargs)
+        a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest=="xor"

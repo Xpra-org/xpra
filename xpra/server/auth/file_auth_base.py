@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ log = Logger("auth")
 
 
 class FileAuthenticatorBase(SysAuthenticator):
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         password_file = kwargs.pop("filename", None)
         log("FileAuthenticatorBase password_file=%s", password_file)
         if not password_file:
@@ -24,7 +24,7 @@ class FileAuthenticatorBase(SysAuthenticator):
             exec_cwd = kwargs.get("exec_cwd", os.getcwd())
             password_file = os.path.join(exec_cwd, password_file)
         log("FileAuthenticatorBase filename=%s", password_file)
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
         self.password_filename = password_file
         self.password_filedata = None
         self.password_filetime = None

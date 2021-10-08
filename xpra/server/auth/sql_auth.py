@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,9 +13,10 @@ from xpra.server.auth.sys_auth_base import log
 
 class Authenticator(SQLAuthenticator):
 
-    def __init__(self, username, uri, **kwargs):
-        super().__init__(username, **kwargs)
-        self.uri = uri
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.uri = kwargs.get("uri")
+        assert self.uri, "missing database uri"
 
     def db_cursor(self, *sqlargs):
         from sqlalchemy import create_engine    #@UnresolvedImport

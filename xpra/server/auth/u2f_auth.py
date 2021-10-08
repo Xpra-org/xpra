@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -25,10 +25,10 @@ APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
 
 class Authenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.app_id = kwargs.pop("app_id", APP_ID)
         key_hexstring = kwargs.pop("public_key", "")
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
         self.public_keys = {}
         key_strs = {}
         if key_hexstring:

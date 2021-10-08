@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -36,10 +36,10 @@ def check(username, password, service=PAM_AUTH_SERVICE, check_account=PAM_CHECK_
 
 class Authenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)
         self.check_account = parse_bool("check-account", kwargs.pop("check-account", PAM_CHECK_ACCOUNT), False)
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
 
     def check(self, password) -> bool:
         log("pam.check(..) pw=%s", self.pw)
@@ -63,7 +63,8 @@ def main(args):
         print("usage:")
         print("%s username password" % (args[0],))
         return 1
-    a = Authenticator(args[1])
+    username = args[1]
+    a = Authenticator(username=username)
     if a.check(args[2]):
         print("success")
         return 0

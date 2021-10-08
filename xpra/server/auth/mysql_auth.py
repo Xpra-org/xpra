@@ -42,9 +42,10 @@ def db_from_uri(uri):
 
 class Authenticator(SQLAuthenticator):
 
-    def __init__(self, username, uri, **kwargs):
-        super().__init__(username, **kwargs)
-        self.uri = uri
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.uri = kwargs.get("uri", "")
+        assert self.uri, "missing database uri"
 
     def db_cursor(self, *sqlargs):
         db = db_from_uri(self.uri)

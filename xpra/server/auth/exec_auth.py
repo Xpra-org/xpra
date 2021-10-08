@@ -18,8 +18,8 @@ TIMEOUT = envint("XPRA_EXEC_AUTH_TIMEOUT", 600)
 
 class Authenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
-        log("exec.Authenticator(%s, %s)", username, kwargs)
+    def __init__(self, **kwargs):
+        log("exec.Authenticator(%s)", kwargs)
         self.command = kwargs.pop("command", "")
         self.timeout = kwargs.pop("timeout", TIMEOUT)
         self.timer = None
@@ -45,7 +45,7 @@ class Authenticator(SysAuthenticator):
         log("exec connection info: %s", connection)
         assert connection, "connection object is missing"
         self.connection_str = str(connection)
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
 
     def requires_challenge(self) -> bool:
         return False

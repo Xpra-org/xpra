@@ -13,8 +13,8 @@ from xpra.util import csv, typedict
 
 class Authenticator(SysAuthenticator):
 
-    def __init__(self, username, **kwargs):
-        log("peercred.Authenticator(%s, %s)", username, kwargs)
+    def __init__(self, **kwargs):
+        log("peercred.Authenticator(%s)", kwargs)
         if not POSIX:
             log.warn("Warning: peercred authentication is not supported on %s", os.name)
             return
@@ -86,7 +86,7 @@ class Authenticator(SysAuthenticator):
             log("peercred", exc_info=True)
             log.error("Error: cannot get peer uid")
             log.error(" %s", e)
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
 
     def get_uid(self):
         return self.uid

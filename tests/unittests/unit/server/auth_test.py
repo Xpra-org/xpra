@@ -57,13 +57,13 @@ class TestAuth(unittest.TestCase):
         assert str(mod)
         return mod
 
-    def _init_auth(self, mod_name, username="foo", **kwargs):
+    def _init_auth(self, mod_name, **kwargs):
         mod = self.a(mod_name)
-        a = self.do_init_auth(mod, username, **kwargs)
+        a = self.do_init_auth(mod, **kwargs)
         assert repr(a)
         return a
 
-    def do_init_auth(self, module, username="foo", **kwargs):
+    def do_init_auth(self, module, **kwargs):
         try:
             c = module.Authenticator
         except AttributeError:
@@ -74,7 +74,8 @@ class TestAuth(unittest.TestCase):
         #exec auth would fail during rpmbuild without a default command:
         if "command" not in kwargs:
             kwargs["command"] = "/bin/true"
-        return c(username, **kwargs)
+        kwargs["username"] = kwargs.get("username", "foo")
+        return c(**kwargs)
 
     def _test_module(self, module):
         a = self._init_auth(module)
@@ -323,7 +324,7 @@ class TestAuth(unittest.TestCase):
             #can't be used!
             return
         #no connection supplied:
-        pc = self._init_auth("peercred", {})
+        pc = self._init_auth("peercred")
         assert not pc.requires_challenge()
         assert not self.capsauth(pc)
         assert pc.get_uid()==-1 and pc.get_gid()==-1
@@ -345,7 +346,7 @@ class TestAuth(unittest.TestCase):
         def wait_for_connection():
             conn, addr = sock.accept()
             s = SocketConnection(conn, sockpath, addr, sockpath, "unix")
-            pc = self._init_auth("peercred", username="foo", connection=s)
+            pc = self._init_auth("peercred", connection=s)
             assert not pc.requires_challenge()
             assert pc.get_uid()==os.getuid()
             verified.append(True)

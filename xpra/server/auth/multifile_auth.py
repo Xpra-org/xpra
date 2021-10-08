@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -39,8 +39,8 @@ def parse_auth_line(line):
 
 
 class Authenticator(FileAuthenticatorBase):
-    def __init__(self, username, **kwargs):
-        super().__init__(username, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.sessions = None
 
     def parse_filedata(self, data):

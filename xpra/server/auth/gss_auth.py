@@ -13,14 +13,13 @@ from xpra.net.digest import get_salt, get_digests, gendigest
 
 class Authenticator(SysAuthenticatorBase):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.service = kwargs.pop("service", "")
         self.uid = parse_uid(kwargs.pop("uid", None))
         self.gid = parse_gid(kwargs.pop("gid", None))
-        username = kwargs.pop("username", username)
         kwargs["prompt"] = kwargs.pop("prompt", "GSS token")
-        super().__init__(username, **kwargs)
-        log("gss auth: service=%s, username=%s", self.service, username)
+        super().__init__(**kwargs)
+        log("gss auth: service=%r, username=%r", self.service, kwargs.get("username"))
 
     def get_uid(self) -> int:
         return self.uid
@@ -66,8 +65,8 @@ def main(argv):
             return 1
         username = argv[1]
         token = argv[2]
-        kwargs = {}
-        a = Authenticator(username, **kwargs)
+        kwargs = {"username" : username}
+        a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["gss"])
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest.startswith("gss:"), "unexpected digest %r" % digest

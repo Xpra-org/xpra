@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,14 +14,13 @@ from xpra.os_util import WIN32
 
 class Authenticator(SysAuthenticatorBase):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.service = kwargs.pop("service", "")
         self.uid = parse_uid(kwargs.pop("uid", None))
         self.gid = parse_gid(kwargs.pop("gid", None))
-        username = kwargs.pop("username", username)
         kwargs["prompt"] = kwargs.pop("prompt", "kerberos token")
-        super().__init__(username, **kwargs)
-        log("kerberos-token auth: service=%s, username=%s", self.service, username)
+        super().__init__(**kwargs)
+        log("kerberos-token auth: service=%r, username=%r", self.service, kwargs.get("username"))
 
     def get_uid(self) -> int:
         return self.uid
@@ -83,8 +82,8 @@ def main(argv):
             return 1
         username = argv[1]
         token = argv[2]
-        kwargs = {}
-        a = Authenticator(username, **kwargs)
+        kwargs = {"username" : username}
+        a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest=="xor"

@@ -1,11 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from collections import deque
 
+from xpra.platform import get_username
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
 from xpra.util import envint, obsc, typedict
@@ -58,8 +59,8 @@ def parse_gid(v) -> int:
 class SysAuthenticatorBase:
     USED_SALT = deque(maxlen=USED_SALT_CACHE_SIZE)
 
-    def __init__(self, username, **kwargs):
-        self.username = username
+    def __init__(self, **kwargs):
+        self.username = kwargs.get("username", get_username())
         self.salt = None
         self.digest = None
         self.salt_digest = None
@@ -213,15 +214,15 @@ class SysAuthenticatorBase:
 
 class SysAuthenticator(SysAuthenticatorBase):
 
-    def __init__(self, username, **kwargs):
-        super().__init__(username, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.pw = None
         if POSIX:
             try:
                 import pwd
-                self.pw = pwd.getpwnam(username)
+                self.pw = pwd.getpwnam(self.username)
             except Exception:
-                log("cannot load password database entry for '%s'", username, exc_info=True)
+                log("cannot load password database entry for '%s'", self.username, exc_info=True)
 
     def get_uid(self) -> int:
         if self.pw is None:

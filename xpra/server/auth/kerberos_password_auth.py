@@ -14,14 +14,13 @@ from xpra.os_util import WIN32
 
 class Authenticator(SysAuthenticatorBase):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.service = kwargs.pop("service", "")
         self.realm = kwargs.pop("realm", "")
         self.uid = parse_uid(kwargs.pop("uid", None))
         self.gid = parse_gid(kwargs.pop("gid", None))
-        username = kwargs.pop("username", username)
-        super().__init__(username, **kwargs)
-        log("kerberos-password auth: service=%s, realm=%s, username=%s", self.service, self.realm, username)
+        super().__init__(**kwargs)
+        log("kerberos-password auth: service=%r, realm=%r, username=%r", self.service, self.realm, kwargs.get("username"))
 
     def get_uid(self) -> int:
         return self.uid
@@ -68,12 +67,12 @@ def main(argv):
             return 1
         username = argv[1]
         password = argv[2]
-        kwargs = {}
+        kwargs = {"username" : username}
         if len(argv)>=4:
             kwargs["service"] = argv[3]
         if len(argv)==5:
             kwargs["realm"] = argv[4]
-        a = Authenticator(username, **kwargs)
+        a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
         assert digest=="xor"

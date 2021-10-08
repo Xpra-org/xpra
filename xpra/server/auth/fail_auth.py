@@ -5,5 +5,5 @@
 
 
 class Authenticator:
-    def __init__(self, username="", **kwargs):
+    def __init__(self, **kwargs):
         raise Exception("failing")

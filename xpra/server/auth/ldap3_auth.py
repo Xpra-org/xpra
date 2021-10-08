@@ -17,7 +17,7 @@ LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
 
 class Authenticator(SysAuthenticatorBase):
 
-    def __init__(self, username, **kwargs):
+    def __init__(self, **kwargs):
         self.tls = bool(int(kwargs.pop("tls", "0")))
         self.host = kwargs.pop("host", "localhost")
         self.cacert = kwargs.pop("cacert", LDAP_CACERTFILE)
@@ -37,8 +37,7 @@ class Authenticator(SysAuthenticatorBase):
         self.port = int(kwargs.pop("port", default_port))
         self.authentication = kwargs.pop("authentication", "NTLM").upper()
         assert self.authentication in ("SIMPLE", "SASL", "NTLM"), "invalid authentication mechanism '%s'" % self.authentication
-        username = kwargs.pop("username", username)
-        super().__init__(username, **kwargs)
+        super().__init__(**kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s",
             self.host, self.port, self.tls)
 
@@ -114,14 +113,14 @@ def main(argv):
             return 1
         username = argv[1]
         password = argv[2]
-        kwargs = {}
+        kwargs = {"username" : username}
         if len(argv)>=4:
             kwargs["host"] = argv[3]
         if len(argv)>=5:
             kwargs["port"] = argv[4]
         if len(argv)>=6:
             kwargs["tls"] = argv[5]
-        a = Authenticator(username, **kwargs)
+        a = Authenticator(**kwargs)
         server_salt, digest = a.get_challenge(["xor"])
         salt_digest = a.choose_salt_digest(get_digests())
         client_salt = get_salt(len(server_salt))
