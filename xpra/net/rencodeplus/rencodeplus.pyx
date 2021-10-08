@@ -70,6 +70,7 @@ cdef enum:
     # Lists with length embedded in typecode.
     LIST_FIXED_START = STR_FIXED_START+STR_FIXED_COUNT
     LIST_FIXED_COUNT = 64
+assert LIST_FIXED_START + LIST_FIXED_COUNT == 256
 
 cdef swap_byte_order_ushort(unsigned short *s):
     s[0] = (s[0] >> 8) | (s[0] << 8)
@@ -486,7 +487,8 @@ cdef decode(char *data, unsigned int *pos, long long data_length):
     elif typecode == CHR_FALSE:
         pos[0] += 1
         return False
-    elif LIST_FIXED_START <= typecode < LIST_FIXED_START + LIST_FIXED_COUNT:
+    elif LIST_FIXED_START <= typecode:
+        #LIST_FIXED_START + LIST_FIXED_COUNT = 256
         return decode_fixed_list(data, pos, data_length)
     elif typecode == CHR_LIST:
         return decode_list(data, pos, data_length)
