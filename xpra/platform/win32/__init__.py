@@ -94,7 +94,7 @@ def get_csidl_folder(csidl):
         shell32 = WinDLL("shell32", use_last_error=True)
         SHGetFolderPath = shell32.SHGetFolderPathW
         SHGetFolderPath(0, csidl, None, 0, buf)
-        return buf.value
+        return os.path.normpath(buf.value)
     except Exception:
         return None
 
