@@ -25,8 +25,11 @@ class Authenticator(SysAuthenticator):
         uids = kwargs.pop("uid", "")
         gids = kwargs.pop("gid", "")
         allow_owner= kwargs.pop("allow-owner", "yes").lower() in TRUE_OPTIONS
-        allow_uids = None
-        allow_gids = None
+        self.check_peercred(connection, uids, gids, allow_owner)
+        super().__init__(**kwargs)
+
+    def check_peercred(self, connection, uids="", gids="", allow_owner=False):
+        allow_uids = allow_gids = None
         if uids or allow_owner:
             allow_uids = []
             if allow_owner:
@@ -60,6 +63,9 @@ class Authenticator(SysAuthenticator):
                     else:
                         log.warn("Warning: unknown group '%s'", x)
             log("peercred: allow_gids(%s)=%s", gids, allow_gids)
+        self.do_check_peercred(connection, allow_uids, allow_gids)
+
+    def do_check_peercred(self, connection, allow_uids=None, allow_gids=None):
         try:
             from xpra.net.bytestreams import SocketConnection
             if connection and isinstance(connection, SocketConnection):
@@ -86,7 +92,6 @@ class Authenticator(SysAuthenticator):
             log("peercred", exc_info=True)
             log.error("Error: cannot get peer uid")
             log.error(" %s", e)
-        super().__init__(**kwargs)
 
     def get_uid(self):
         return self.uid
