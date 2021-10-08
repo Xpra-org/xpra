@@ -1877,6 +1877,7 @@ class ServerCore:
             for auth, _, aclass, options in auth_classes:
                 opts = dict(options)
                 opts["connection"] = conn
+                opts["username"] = opts.get("username", username)
                 def parse_socket_dirs(v):
                     if isinstance(v, (tuple, list)):
                         return v
@@ -1886,14 +1887,14 @@ class ServerCore:
                     return str(v).split(",")
                 opts["socket-dirs"] = parse_socket_dirs(opts.get("socket-dirs", self._socket_dirs))
                 try:
-                    for o in ("self", "username"):
+                    for o in ("self", ):
                         if o in opts:
                             raise Exception("illegal authentication module options '%s'" % o)
-                    authenticator = aclass(username, **opts)
+                    authenticator = aclass(**opts)
                 except Exception:
-                    authlog("%s%s", aclass, (username, opts), exc_info=True)
+                    authlog("%s%s", aclass, (opts,), exc_info=True)
                     raise
-                authlog("authenticator %i: %s(%s, %s)=%s", i, auth, username, opts, authenticator)
+                authlog("authenticator %i: %s(%s)=%s", i, auth, opts, authenticator)
                 authenticators.append(authenticator)
                 i += 1
         return tuple(authenticators)
