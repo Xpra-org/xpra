@@ -1372,7 +1372,7 @@ class ServerCore:
             sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             if sock is None:
                 return False, None, None
-            conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl")
+            conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
             #we cannot peek on SSL sockets, just clear the unencrypted data:
             http = False
