@@ -239,7 +239,7 @@ def get_sockopt_tcp_info(sock, TCP_INFO, attributes=POSIX_TCP_INFO):
         tcpinfo = tcpinfo_class.from_buffer_copy(data[:tcpinfo_size])
     except ValueError as e:
         log("getsockopt(SOL_TCP, TCP_INFO, %i)", tcpinfo_size, exc_info=True)
-        log("TCPInfo fields=%s", csv(tcpinfo_class._fields_))
+        log("TCPInfo fields=%s", csv(attributes))
         log.warn("Warning: failed to get TCP_INFO for %s", sock)
         log.warn(" %s", e)
         return {}
