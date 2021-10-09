@@ -74,6 +74,7 @@ class SysAuthenticatorBase:
         if unused:
             log.warn("Warning: unused keyword arguments for %s authentication:", self)
             log.warn(" %s", unused)
+        log("auth prompt=%s, socket_dirs=%s", self.prompt, self.socket_dirs)
 
     def get_uid(self) -> int:
         raise NotImplementedError()
