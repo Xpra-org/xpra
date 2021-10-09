@@ -58,13 +58,15 @@ def parse_gid(v) -> int:
 
 class SysAuthenticatorBase:
     USED_SALT = deque(maxlen=USED_SALT_CACHE_SIZE)
+    DEFAULT_PROMPT = "password for user {username}"
 
     def __init__(self, **kwargs):
         self.username = kwargs.get("username", get_username())
         self.salt = None
         self.digest = None
         self.salt_digest = None
-        self.prompt = kwargs.pop("prompt", "password")
+        prompt_attr = {"username" : self.username}
+        self.prompt = kwargs.pop("prompt", self.DEFAULT_PROMPT).format(**prompt_attr)
         self.socket_dirs = kwargs.pop("socket-dirs", get_socket_dirs())
         self.challenge_sent = False
         self.passed = False
