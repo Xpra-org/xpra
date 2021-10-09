@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -22,7 +22,7 @@ def get_digests():
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES
                 and getattr(hashlib, x, None) is not None]
     try:
-        from xpra.net import d3des
+        from xpra.net import d3des  #pylint: disable=import-outside-toplevel
         assert d3des
         digests.append("des")
     except (ImportError, TypeError):    # pragma: no cover
@@ -62,7 +62,7 @@ def gendigest(digest, password, salt):
     salt = memoryview_to_bytes(salt)
     password = strtobytes(password)
     if digest=="des":
-        from xpra.net.d3des import generate_response
+        from xpra.net.d3des import generate_response  #pylint: disable=import-outside-toplevel
         password = password.ljust(8, b"\x00")[:8]
         salt = salt.ljust(16, b"\x00")[:16]
         v = generate_response(password, salt)
@@ -71,14 +71,15 @@ def gendigest(digest, password, salt):
         #kerberos and gss use xor because we need to use the actual token
         #at the other end
         salt = salt.ljust(len(password), b"\x00")[:len(password)]
-        from xpra.buffers.cyxor import xor_str           #@UnresolvedImport
+        from xpra.buffers.cyxor import xor_str           #@UnresolvedImport pylint: disable=import-outside-toplevel
         v = xor_str(password, salt)
         return memoryview_to_bytes(v)
     digestmod = get_digest_module(digest)
     if not digestmod:
         log("invalid digest module '%s'", digest)
         return None
-        #warn_server_and_exit(EXIT_UNSUPPORTED, "server requested digest '%s' but it is not supported" % digest, "invalid digest")
+        #warn_server_and_exit(EXIT_UNSUPPORTED,
+        #    "server requested digest '%s' but it is not supported" % digest, "invalid digest")
     v = hmac.HMAC(password, salt, digestmod=digestmod).hexdigest()
     return v
 
