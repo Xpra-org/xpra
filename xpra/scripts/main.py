@@ -1492,7 +1492,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode):
             if extra_args:
                 raise InitException("cannot specify extra arguments with 'listen' mode")
             app.show_progress(80, "listening for incoming connections")
-            from xpra.platform import get_username
+            from xpra.platform.info import get_username
             from xpra.net.socket_util import (
                 get_network_logger, setup_local_sockets, peek_connection,
                 create_sockets, add_listen_socket, accept_connection,
@@ -2287,7 +2287,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
         paexec = os.path.join(app_dir, "paexec.exe")
         if os.path.exists(paexec) and os.path.isfile(paexec):
             from xpra.platform.win32.wtsapi import find_session
-            from xpra.platform import get_username
+            from xpra.platform.info import get_username
             username = get_username()
             info = find_session(username)
             if info:
@@ -3474,7 +3474,7 @@ def run_showsetting(args):
         else:
             settings.append(arg)
 
-    from xpra.platform import get_username
+    from xpra.platform.info import get_username
     dirs = get_xpra_defaults_dirs(username=get_username(), uid=getuid(), gid=getgid())
 
     #default config:

@@ -6,7 +6,7 @@
 import os
 from collections import deque
 
-from xpra.platform import get_username
+from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
 from xpra.util import envint, obsc, typedict

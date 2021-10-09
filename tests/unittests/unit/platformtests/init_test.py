@@ -10,7 +10,6 @@ import unittest
 from xpra.platform import (
     program_context, threaded_server_init,
     get_application_name, get_prgname,
-    get_username,
     )
 
 
@@ -34,9 +33,6 @@ class PlatformInitTest(unittest.TestCase):
             assert get_application_name()=="app"
             assert get_prgname()=="prg"
 
-        USERNAME = os.environ.get("USERNAME")
-        if USERNAME:
-            assert get_username()==USERNAME
 
 def main():
     unittest.main()

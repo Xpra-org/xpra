@@ -15,7 +15,7 @@ from gi.repository import GLib
 from xpra.os_util import pollwait, bytestostr, osexpand, OSX, POSIX
 from xpra.util import typedict, envbool, csv, engs
 from xpra.make_thread import start_thread
-from xpra.platform import get_username
+from xpra.platform.info import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import sound_option
 from xpra.scripts.server import save_session_file

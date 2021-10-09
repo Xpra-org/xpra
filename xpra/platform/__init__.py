@@ -107,22 +107,6 @@ def get_application_name():
     return _appname
 
 
-def get_username():
-    return do_get_username()
-
-def do_get_username():
-    try:
-        import pwd
-        return pwd.getpwuid(os.getuid()).pw_name
-    except Exception:   # pragma: no cover
-        try:
-            import getpass
-            return getpass.getuser()
-        except Exception:
-            pass
-        return ""
-
-
 def platform_import(where, pm, required, *imports):
     from xpra.os_util import OSX, POSIX
     if os.name == "nt": # pragma: no cover
@@ -160,4 +144,5 @@ platform_import(globals(), None, False,
                 "do_init", "do_clean",
                 "threaded_server_init",
                 "set_prgname", "set_application_name", "program_context",
-                "command_error", "command_info", "do_get_username")
+                "command_error", "command_info"
+                )

@@ -40,7 +40,7 @@ from xpra.scripts.main import (
     )
 from xpra.scripts.parsing import is_local, add_ssh_args, parse_ssh_string, add_ssh_proxy_args
 from xpra.exit_codes import RETRY_EXIT_CODES, EXIT_STR
-from xpra.platform import get_username
+from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
 
 log = Logger("launcher")

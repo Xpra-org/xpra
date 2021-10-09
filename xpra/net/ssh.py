@@ -17,7 +17,7 @@ from xpra.scripts.main import (
     get_pinentry_command, run_pinentry_getpin, run_pinentry_confirm,
     )
 from xpra.platform.paths import get_ssh_known_hosts_files
-from xpra.platform import get_username
+from xpra.platform.info import get_username
 from xpra.scripts.config import parse_bool
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.make_thread import start_thread

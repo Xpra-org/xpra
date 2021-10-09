@@ -14,7 +14,6 @@ from xpra.platform import (
     #set_name, set_prgname, set_application_name,
     get_prgname,
     get_application_name,
-    get_username,
     command_error, command_info,
     )
 from xpra.make_thread import start_thread
@@ -46,7 +45,6 @@ class PlatformInfoTest(unittest.TestCase):
         command_error("error")
         command_info("info")
         assert len(calls)==2, "expected 2 messages but got: %s" % (calls,)
-        assert get_username()
         set_prgname(None)
         clean()
 

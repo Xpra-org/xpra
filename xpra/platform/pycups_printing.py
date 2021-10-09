@@ -250,7 +250,7 @@ def exec_lpadmin(args, success_cb=None):
         log("returncode(%s)=%s", command, returncode)
         if returncode!=0:
             log.warn("lpadmin failed and returned error code: %s", returncode)
-            from xpra.platform import get_username
+            from xpra.platform.info import get_username
             log.warn(" verify that user '%s' has all the required permissions", get_username())
             log.warn(" for running: '%s'", LPADMIN)
             log.warn(" full command: %s", " ".join("'%s'" % x for x in command))

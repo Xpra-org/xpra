@@ -9,10 +9,6 @@ import os
 def get_sys_info():
     return  {}
 
-def get_username():
-    import getpass
-    return getpass.getuser()
-
 def get_name():
     try:
         from ctypes import byref, create_string_buffer, WinError, get_last_error

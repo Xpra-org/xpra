@@ -49,6 +49,8 @@ def get_version_info():
     return {}
 
 def _get_pwd():
+    if not os.name=="posix":
+        return None
     try:
         import pwd
         USER_ID = os.getuid()
@@ -59,6 +61,11 @@ def _get_pwd():
 def get_username():
     p = _get_pwd()
     if p is None:       # pragma: no cover
+        try:
+            import getpass
+            return getpass.getuser()
+        except Exception:
+            pass
         return ""
     return p.pw_name
 
