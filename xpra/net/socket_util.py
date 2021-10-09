@@ -850,7 +850,7 @@ def ssl_handshake(ssl_sock):
         SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
         if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
             try:
-                msg = e.args[1].split(":", 2)[2]
+                msg = getattr(e, "verify_message") or (e.args[1].split(":", 2)[2])
             except (ValueError, IndexError):
                 msg = str(e)
             status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
