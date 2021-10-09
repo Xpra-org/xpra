@@ -53,18 +53,18 @@ class Authenticator(SysAuthenticator):
     def authenticate(self, caps : typedict) -> bool:
         info = "Connection request from %s" % self.connection_str
         cmd = [self.command, info, str(self.timeout)]
-        proc = Popen(cmd)
-        self.proc = proc
-        log("authenticate(..) Popen(%s)=%s", cmd, proc)
-        #if required, make sure we kill the command when it times out:
-        if self.timeout>0:
-            self.timer = GLib.timeout_add(self.timeout*1000, self.command_timedout)
-            if not OSX:
-                #python on macos may set a 0 returncode when we use poll()
-                #so we cannot use the ChildReaper on macos,
-                #and we can't cancel the timer
-                getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
-        v = proc.wait()
+        with Popen(cmd) as proc:
+            self.proc = proc
+            log("authenticate(..) Popen(%s)=%s", cmd, proc)
+            #if required, make sure we kill the command when it times out:
+            if self.timeout>0:
+                self.timer = GLib.timeout_add(self.timeout*1000, self.command_timedout)
+                if not OSX:
+                    #python on macos may set a 0 returncode when we use poll()
+                    #so we cannot use the ChildReaper on macos,
+                    #and we can't cancel the timer
+                    getChildReaper().add_process(proc, "exec auth", cmd, True, True, self.command_ended)
+        v = proc.returncode
         log("authenticate(..) returncode(%s)=%s", cmd, v)
         if self.timeout_event:
             return False
