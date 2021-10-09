@@ -30,6 +30,7 @@ from xpra.net.socket_util import (
     hosts, mdns_publish, peek_connection,
     PEEK_TIMEOUT_MS, UNIXDOMAIN_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
+    ssl_wrap_socket,
     )
 from xpra.net.bytestreams import (
     SocketConnection, SSLSocketConnection,
@@ -1207,7 +1208,6 @@ class ServerCore:
     def _ssl_wrap_socket(self, socktype, sock, socket_options):
         ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
         try:
-            from xpra.net.socket_util import ssl_wrap_socket
             kwargs = self._ssl_attributes.copy()
             for k,v in socket_options.items():
                 #options use '-' but attributes and parameters use '_':
