@@ -805,10 +805,6 @@ def get_ssl_attributes(opts, server_side=True, overrides=None):
         args[attr] = v
     return args
 
-def ssl_wrap_socket(sock, **kwargs):
-    fn = get_ssl_wrap_socket_fn(**kwargs)
-    return fn(sock)
-
 def find_ssl_cert(filename="ssl-cert.pem"):
     from xpra.log import Logger
     ssllog = Logger("ssl")
@@ -835,7 +831,36 @@ def find_ssl_cert(filename="ssl-cert.pem"):
         return f
     return None
 
-def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
+def ssl_wrap_socket(sock, **kwargs):
+    context, wrap_kwargs = get_ssl_wrap_socket_context(**kwargs)
+    return do_wrap_socket(sock, context, **wrap_kwargs)
+
+def ssl_handshake(ssl_sock):
+    try:
+        ssl_sock.do_handshake(True)
+    except Exception as e:
+        from xpra.log import Logger
+        ssllog = Logger("ssl")
+        ssllog.debug("do_handshake", exc_info=True)
+        import ssl
+        SSLEOFError = getattr(ssl, "SSLEOFError", None)
+        if SSLEOFError and isinstance(e, SSLEOFError):
+            return None
+        status = EXIT_SSL_FAILURE
+        SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
+        if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
+            try:
+                msg = e.args[1].split(":", 2)[2]
+            except (ValueError, IndexError):
+                msg = str(e)
+            status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
+            #ssllog.warn("host failed SSL verification: %s", msg)
+        else:
+            msg = str(e)
+        raise InitExit(status, "SSL handshake failed: %s" % msg) from None
+    return ssl_sock
+
+def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None,
                         protocol="TLSv1_2",
                         client_verify_mode="optional", server_verify_mode="required", verify_flags="X509_STRICT",
                         check_hostname=False, server_hostname=None,
@@ -849,7 +874,7 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
         verify_mode = server_verify_mode
     from xpra.log import Logger
     ssllog = Logger("ssl")
-    ssllog("get_ssl_wrap_socket_fn%s", (cert, key, ca_certs, ca_data,
+    ssllog("get_ssl_wrap_socket_context%s", (cert, key, ca_certs, ca_data,
                                     protocol,
                                     client_verify_mode, server_verify_mode, verify_flags,
                                     check_hostname, server_hostname,
@@ -961,47 +986,31 @@ def get_ssl_wrap_socket_fn(cert=None, key=None, ca_certs=None, ca_data=None,
                 context.load_verify_locations(cafile=f.name)
     elif check_hostname and not server_side:
         ssllog("cannot check hostname client side with verify mode %s", verify_mode)
+    return context, kwargs
+
+def do_wrap_socket(tcp_socket, context, **kwargs):
     wrap_socket = context.wrap_socket
-    def do_wrap_socket(tcp_socket):
-        assert tcp_socket
-        ssllog("do_wrap_socket(%s)", tcp_socket)
-        if WIN32:
-            #on win32, setting the tcp socket to blocking doesn't work?
-            #we still hit the following errors that we need to retry:
-            from xpra.net import bytestreams
-            bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
-        else:
-            tcp_socket.setblocking(True)
-        try:
-            ssl_sock = wrap_socket(tcp_socket, **kwargs)
-        except Exception as e:
-            ssllog.debug("wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
-            SSLEOFError = getattr(ssl, "SSLEOFError", None)
-            if SSLEOFError and isinstance(e, SSLEOFError):
-                return None
-            raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e)) from None
-        if not server_side:
-            try:
-                ssl_sock.do_handshake(True)
-            except Exception as e:
-                ssllog.debug("do_handshake", exc_info=True)
-                SSLEOFError = getattr(ssl, "SSLEOFError", None)
-                if SSLEOFError and isinstance(e, SSLEOFError):
-                    return None
-                status = EXIT_SSL_FAILURE
-                SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
-                if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
-                    try:
-                        msg = e.args[1].split(":", 2)[2]
-                    except (ValueError, IndexError):
-                        msg = str(e)
-                    status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
-                    #ssllog.warn("host failed SSL verification: %s", msg)
-                else:
-                    msg = str(e)
-                raise InitExit(status, "SSL handshake failed: %s" % msg) from None
-        return ssl_sock
-    return do_wrap_socket
+    assert tcp_socket
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    ssllog("do_wrap_socket(%s, %s)", tcp_socket, context)
+    import ssl
+    if WIN32:
+        #on win32, setting the tcp socket to blocking doesn't work?
+        #we still hit the following errors that we need to retry:
+        from xpra.net import bytestreams
+        bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
+    else:
+        tcp_socket.setblocking(True)
+    try:
+        ssl_sock = wrap_socket(tcp_socket, **kwargs)
+    except Exception as e:
+        ssllog.debug("wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
+        SSLEOFError = getattr(ssl, "SSLEOFError", None)
+        if SSLEOFError and isinstance(e, SSLEOFError):
+            return None
+        raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e)) from None
+    return ssl_sock
 
 
 def socket_connect(host, port, timeout=SOCKET_TIMEOUT):
