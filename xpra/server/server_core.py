@@ -1858,7 +1858,8 @@ class ServerCore:
 
     def make_authenticators(self, socktype, username, conn):
         authlog("make_authenticators%s socket options=%s", (socktype, username, conn), conn.options)
-        sock_auth = conn.options.get("auth", "")
+        sock_options = conn.options
+        sock_auth = sock_options.get("auth", "")
         if sock_auth:
             #per socket authentication option:
             #ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=pass.txt:foo=bar
@@ -1872,10 +1873,11 @@ class ServerCore:
         i = 0
         authenticators = []
         if auth_classes:
-            authlog("creating authenticators %s for %s, with username=%s, connection=%s",
-                    csv(auth_classes), socktype, username, conn)
-            for auth, _, aclass, options in auth_classes:
+            authlog("creating authenticators %s for %s",
+                    csv(auth_classes), socktype)
+            for auth_name, _, aclass, options in auth_classes:
                 opts = dict(options)
+                opts.update(sock_options)
                 opts["connection"] = conn
                 if opts.get("username", "")=="-":
                     #use the current user
@@ -1894,11 +1896,12 @@ class ServerCore:
                     for o in ("self", ):
                         if o in opts:
                             raise Exception("illegal authentication module options '%s'" % o)
+                    authlog("%s : %s(%s)", auth_name, aclass, opts)
                     authenticator = aclass(**opts)
                 except Exception:
                     authlog("%s%s", aclass, (opts,), exc_info=True)
                     raise
-                authlog("authenticator %i: %s(%s)=%s", i, auth, opts, authenticator)
+                authlog("authenticator %i=%s", i, authenticator)
                 authenticators.append(authenticator)
                 i += 1
         return tuple(authenticators)
