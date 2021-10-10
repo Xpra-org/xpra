@@ -72,6 +72,8 @@ from xpra.util import (
     )
 from xpra.log import Logger
 
+#pylint: disable=import-outside-toplevel
+
 log = Logger("server")
 netlog = Logger("network")
 ssllog = Logger("ssl")
