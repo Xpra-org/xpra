@@ -274,7 +274,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         authlog = Logger("auth")
         self.show_progress(100, "authentication")
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
-        from xpra.scripts.main import get_pinentry_command
+        from xpra.scripts.pinentry_wrapper import get_pinentry_command
         pinentry_cmd = get_pinentry_command(PINENTRY)
         authlog("do_process_challenge_prompt%s get_pinentry_command(%s)=%s",
                 (packet, prompt), PINENTRY, pinentry_cmd)
@@ -323,7 +323,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 self.idle_add(self.send_challenge_reply, packet, value)
             def no_pin():
                 self.idle_add(self.quit, EXIT_PASSWORD_REQUIRED)
-            from xpra.scripts.main import pinentry_getpin
+            from xpra.scripts.pinentry_wrapper import pinentry_getpin
             title = self.get_server_authentication_string()
             pinentry_getpin(proc, title, q, got_pin, no_pin)
             return True

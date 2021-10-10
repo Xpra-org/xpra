@@ -21,7 +21,7 @@ import traceback
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
-    csv, envbool, envint, nonl, pver,
+    csv, envbool, envint, nonl, pver, std,
     noerr, sorted_nicely, typedict,
     DEFAULT_PORTS,
     )
@@ -66,6 +66,7 @@ SYSTEMD_RUN = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_X11_SOCKET_TIMEOUT = envint("XPRA_VERIFY_X11_SOCKET_TIMEOUT", 1)
 LIST_REPROBE_TIMEOUT = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 
+#pylint: disable=import-outside-toplevel
 
 def nox():
     DISPLAY = os.environ.get("DISPLAY")
@@ -529,6 +530,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         return run_sound(mode, error_cb, options, args)
     elif mode=="pinentry":
         check_gtk()
+        from xpra.scripts.pinentry_wrapper import run_pinentry
         return run_pinentry(args)
     elif mode=="_dialog":
         check_gtk()
@@ -1003,133 +1005,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         return conn
     raise InitException("unsupported display type: %s" % dtype)
 
-
-def get_pinentry_command(setting="yes"):
-    log = Logger("exec")
-    log("get_pinentry_command(%s)", setting)
-    if setting.lower() in FALSE_OPTIONS:
-        return None
-    from xpra.os_util import is_gnome, is_kde, which
-    def find_pinentry_bin():
-        if is_gnome():
-            return which("pinentry-gnome3")
-        if is_kde():
-            return which("pinentry-qt")
-        return None
-    if setting.lower() in TRUE_OPTIONS:
-        return find_pinentry_bin() or which("pinentry")
-    if setting=="" or setting.lower()=="auto":
-        #figure out if we should use it:
-        if WIN32 or OSX:
-            #not enabled by default on those platforms
-            return None
-        return find_pinentry_bin()
-    return setting
-
-def popen_pinentry(pinentry_cmd):
-    try:
-        return Popen([pinentry_cmd], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-    except OSError as e:
-        log = Logger("exec")
-        log("popen_pinentry(%s) failed", pinentry_cmd, exc_info=True)
-        log.error("Error: failed to run '%s'", pinentry_cmd)
-        log.error(" %s", e)
-        return None
-
-def run_pinentry(extra_args):
-    messages = list(extra_args)
-    log = Logger("exec")
-    def get_input():
-        if not messages:
-            return None
-        return messages.pop(0)
-    def process_output(message, line):
-        if line.startswith(b"ERR "):
-            log.error("Error: pinentry responded to '%s' with:", message)
-            log.error(" %s", line.rstrip(b"\n\r").decode())
-        else:
-            log("pinentry sent %r", line)
-    pinentry_cmd = get_pinentry_command() or "pinentry"
-    proc = popen_pinentry(pinentry_cmd)
-    if not proc:
-        raise InitExit(EXIT_UNSUPPORTED, "cannot run pinentry")
-    return do_run_pinentry(proc, get_input, process_output)
-
-def do_run_pinentry(proc, get_input, process_output):
-    log = Logger("exec")
-    message = "connection"
-    while proc.poll() is None:
-        try:
-            line = proc.stdout.readline()
-            process_output(message, line)
-            message = get_input()
-            if message is None:
-                break
-            log("sending %r", message)
-            r = proc.stdin.write(("%s\n" % message).encode())
-            proc.stdin.flush()
-            log("write returned: %s", r)
-        except OSError:
-            log("error running pinentry", exc_info=True)
-            break
-    if proc.poll() is None:
-        proc.terminate()
-    log("pinentry ended: %s" % proc.poll())
-
-def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
-    messages = [
-        "SETPROMPT %s" % title,
-        "SETDESC %s:" % description,
-        "GETPIN",
-        ]
-    def get_input():
-        if not messages:
-            return None
-        return messages.pop(0)
-    def process_output(message, output):
-        if message=="GETPIN":
-            if output.startswith(b"D "):
-                pin_value = output[2:].rstrip(b"\n\r").decode()
-                pin_cb(pin_value)
-            else:
-                err_cb()
-    do_run_pinentry(pinentry_proc, get_input, process_output)
-    return True
-
-def run_pinentry_getpin(pinentry_cmd, title, description):
-    proc = popen_pinentry(pinentry_cmd)
-    if proc is None:
-        return None
-    values = []
-    def rec(value=None):
-        values.append(value)
-    try:
-        pinentry_getpin(proc, title, description, rec, rec)
-    finally:
-        noerr(proc.terminate)
-    if not values:
-        return None
-    return values[0]
-
-def run_pinentry_confirm(pinentry_cmd, title, prompt):
-    proc = popen_pinentry(pinentry_cmd)
-    if proc is None:
-        return None
-    messages = [
-        "SETPROMPT %s" % title,
-        "SETDESC %s:" % prompt,
-        "CONFIRM",
-        ]
-    def get_input():
-        if not messages:
-            return None
-        return messages.pop(0)
-    confirm_values = []
-    def process_output(message, output):
-        if message=="CONFIRM":
-            confirm_values.append(output.strip(b"\n\r"))
-    do_run_pinentry(proc, get_input, process_output)
-    return len(confirm_values)==1 and confirm_values[0]==b"OK"
 
 
 def run_dialog(extra_args):

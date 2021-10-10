@@ -14,6 +14,8 @@ from subprocess import PIPE, Popen
 from xpra.scripts.main import (
     InitException, InitExit,
     shellquote, host_target_string,
+    )
+from xpra.scripts.pinentry_wrapper import (
     get_pinentry_command, run_pinentry_getpin, run_pinentry_confirm,
     )
 from xpra.platform.paths import get_ssh_known_hosts_files
@@ -33,6 +35,8 @@ from xpra.os_util import (
     )
 from xpra.util import envint, envbool, envfloat, engs, csv
 from xpra.log import Logger, is_debug_enabled
+
+#pylint: disable=import-outside-toplevel
 
 log = Logger("network", "ssh")
 if log.is_debug_enabled():
@@ -135,13 +139,13 @@ def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)) -> in
 def confirm_key(info=(), title="Confirm Key", prompt="Are you sure you want to continue connecting?") -> bool:
     if SKIP_UI:
         return False
-    from xpra.platform.paths import get_icon_filename
     if PINENTRY:
         pinentry_cmd = get_pinentry_command()
         if pinentry_cmd:
             messages = list(info)+["", prompt]
-            return run_pinentry_confirm(pinentry_cmd, title, "%0A".join(messages))
+            return run_pinentry_confirm(pinentry_cmd, title, "%0A".join(messages))=="OK"
     if use_gui_prompt():
+        from xpra.platform.paths import get_icon_filename
         icon = get_icon_filename("authentication", "png") or ""
         code = dialog_confirm(title, prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
         log("dialog return code=%s", code)
@@ -160,8 +164,8 @@ def confirm_key(info=(), title="Confirm Key", prompt="Are you sure you want to c
 def input_pass(prompt) -> str:
     if SKIP_UI:
         return None
-    from xpra.platform.paths import get_icon_filename
     if PINENTRY or use_gui_prompt():
+        from xpra.platform.paths import get_icon_filename
         icon = get_icon_filename("authentication", "png") or ""
         log("input_pass(%s) using dialog", prompt)
         return dialog_pass("Password Input", prompt, icon)

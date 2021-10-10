@@ -1947,8 +1947,7 @@ if crypto_ENABLED and (OSX or WIN32):
 if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.mixins", "xpra.client.auth")
-    add_modules("xpra.scripts.gtk_info")
-    add_modules("xpra.scripts.show_webcam")
+    add_modules("xpra.scripts.gtk_info", "xpra.scripts.show_webcam", "xpra.scripts.pinentry_wrapper")
 if gtk3_ENABLED:
     add_modules("xpra.scripts.bug_report")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or sound_ENABLED or server_ENABLED, "xpra.gtk_common")
