@@ -20,11 +20,13 @@ from xpra.os_util import (
     parse_encoded_bin_data,
     )
 from xpra.util import (
-    envint, envbool, csv, parse_simple_dict,
+    envint, envbool, csv, parse_simple_dict, print_nested_dict,
     ellipsizer, noerr,
     DEFAULT_PORT,
     )
 from xpra.make_thread import start_thread
+
+#pylint: disable=import-outside-toplevel
 
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
@@ -835,13 +837,26 @@ def ssl_wrap_socket(sock, **kwargs):
     context, wrap_kwargs = get_ssl_wrap_socket_context(**kwargs)
     return do_wrap_socket(sock, context, **wrap_kwargs)
 
+def log_ssl_info(ssl_sock):
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    ssllog.info("SSL handshake complete, %s", ssl_sock.version())
+    cipher = ssl_sock.cipher()
+    ssllog.info(" %s, %s bits", cipher[0], cipher[2])
+    cert = ssl_sock.getpeercert()
+    if cert:
+        ssllog.info("certificate:")
+        print_nested_dict(ssl_sock.getpeercert(), prefix=" ", print_fn=ssllog.info)
+
 def ssl_handshake(ssl_sock):
     try:
         ssl_sock.do_handshake(True)
+        log_ssl_info(ssl_sock)
     except Exception as e:
         from xpra.log import Logger
         ssllog = Logger("ssl")
-        ssllog.debug("do_handshake", exc_info=True)
+        ssllog("do_handshake", exc_info=True)
+        ssllog("server_hostname=%s", ssl_sock.server_hostname)
         import ssl
         SSLEOFError = getattr(ssl, "SSLEOFError", None)
         if SSLEOFError and isinstance(e, SSLEOFError):
@@ -854,7 +869,7 @@ def ssl_handshake(ssl_sock):
             except (ValueError, IndexError):
                 msg = str(e)
             status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
-            #ssllog.warn("host failed SSL verification: %s", msg)
+            ssllog("host failed SSL verification: %s", msg)
         else:
             msg = str(e)
         raise InitExit(status, "SSL handshake failed: %s" % msg) from None
