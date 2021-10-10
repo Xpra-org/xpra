@@ -71,11 +71,12 @@ class SysAuthenticatorBase:
         self.challenge_sent = False
         self.passed = False
         self.password_used = None
-        #warn about unused options:
-        unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "username"))
-        if unused:
-            log.warn("Warning: unused keyword arguments for %s authentication:", self)
-            log.warn(" %s", unused)
+        #we can't warn about unused options
+        #because the options are shared with other socket options (nodelay, cork, etc)
+        #unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "username"))
+        #if unused:
+        #    log.warn("Warning: unused keyword arguments for %s authentication:", self)
+        #    log.warn(" %s", unused)
         log("auth prompt=%s, socket_dirs=%s", self.prompt, self.socket_dirs)
 
     def get_uid(self) -> int:
