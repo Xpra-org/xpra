@@ -22,7 +22,7 @@ from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
     csv, envbool, envint, nonl, pver, std,
-    noerr, sorted_nicely, typedict,
+    noerr, sorted_nicely, typedict, ellipsizer,
     DEFAULT_PORTS,
     )
 from xpra.exit_codes import (
@@ -35,7 +35,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
-    bytestostr, use_tty,
+    bytestostr, use_tty, osexpand,
     set_proc_title,
     is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
@@ -838,7 +838,7 @@ def connect_or_fail(display_desc, opts):
     except InitInfo:
         raise
     except Exception as e:
-        get_util_logger().debug("failed to connect", exc_info=True)
+        Logger("network").debug("failed to connect", exc_info=True)
         raise InitException("connection failed: %s" % e) from None
 
 
@@ -1197,6 +1197,13 @@ def connect_to_server(app, display_desc, opts):
             werr("failed to connect:", " %s" % e)
             GLib.idle_add(app.quit, EXIT_OK)
         except InitExit as e:
+            from xpra.net.socket_util import ssl_retry
+            mods = ssl_retry(e, opts.ssl_ca_certs)
+            if mods:
+                for k,v in mods.items():
+                    setattr(opts, k, v)
+                do_setup_connection()
+                return
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Warning: failed to connect:", " %s" % e)
             GLib.idle_add(app.quit, e.status)

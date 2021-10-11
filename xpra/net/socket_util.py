@@ -20,7 +20,7 @@ from xpra.os_util import (
     parse_encoded_bin_data,
     )
 from xpra.util import (
-    envint, envbool, csv, parse_simple_dict, print_nested_dict,
+    envint, envbool, csv, parse_simple_dict, print_nested_dict, std,
     ellipsizer, noerr,
     DEFAULT_PORT,
     )
@@ -840,23 +840,48 @@ def ssl_wrap_socket(sock, **kwargs):
 def log_ssl_info(ssl_sock):
     from xpra.log import Logger
     ssllog = Logger("ssl")
-    ssllog.info("SSL handshake complete, %s", ssl_sock.version())
+    ssllog("server_hostname=%s", ssl_sock.server_hostname)
     cipher = ssl_sock.cipher()
-    ssllog.info(" %s, %s bits", cipher[0], cipher[2])
-    cert = ssl_sock.getpeercert()
-    if cert:
-        ssllog.info("certificate:")
-        print_nested_dict(ssl_sock.getpeercert(), prefix=" ", print_fn=ssllog.info)
+    if cipher:
+        ssllog.info(" %s, %s bits", cipher[0], cipher[2])
+    try:
+        cert = ssl_sock.getpeercert()
+    except ValueError:
+        pass
+    else:
+        if cert:
+            ssllog.info("certificate:")
+            print_nested_dict(ssl_sock.getpeercert(), prefix=" ", print_fn=ssllog.info)
+
+SSL_VERIFY_EXPIRED = 10
+SSL_VERIFY_WRONG_HOST = 20
+SSL_VERIFY_SELF_SIGNED = 18
+SSL_VERIFY_UNTRUSTED_ROOT = 19
+SSL_VERIFY_IP_MISMATCH = 64
+SSL_VERIFY_CODES = {
+    SSL_VERIFY_EXPIRED          : "expired",    #also revoked!
+    SSL_VERIFY_WRONG_HOST       : "wrong host",
+    SSL_VERIFY_SELF_SIGNED      : "self-signed",
+    SSL_VERIFY_UNTRUSTED_ROOT   : "untrusted-root",
+    SSL_VERIFY_IP_MISMATCH      : "ip-mismatch",
+    }
+
+class SSLVerifyFailure(InitExit):
+    def __init__(self, status, msg, verify_code, ssl_sock):
+        super().__init__(status, msg)
+        self.verify_code = verify_code
+        self.ssl_sock = ssl_sock
 
 def ssl_handshake(ssl_sock):
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
     try:
         ssl_sock.do_handshake(True)
+        ssllog.info("SSL handshake complete, %s", ssl_sock.version())
         log_ssl_info(ssl_sock)
     except Exception as e:
-        from xpra.log import Logger
-        ssllog = Logger("ssl")
         ssllog("do_handshake", exc_info=True)
-        ssllog("server_hostname=%s", ssl_sock.server_hostname)
+        log_ssl_info(ssl_sock)
         import ssl
         SSLEOFError = getattr(ssl, "SSLEOFError", None)
         if SSLEOFError and isinstance(e, SSLEOFError):
@@ -864,15 +889,16 @@ def ssl_handshake(ssl_sock):
         status = EXIT_SSL_FAILURE
         SSLCertVerificationError = getattr(ssl, "SSLCertVerificationError", None)
         if SSLCertVerificationError and isinstance(e, SSLCertVerificationError):
+            verify_code = getattr(e, "verify_code", 0)
+            ssllog("verify_code=%s", SSL_VERIFY_CODES.get(verify_code, verify_code))
             try:
                 msg = getattr(e, "verify_message") or (e.args[1].split(":", 2)[2])
             except (ValueError, IndexError):
                 msg = str(e)
             status = EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
             ssllog("host failed SSL verification: %s", msg)
-        else:
-            msg = str(e)
-        raise InitExit(status, "SSL handshake failed: %s" % msg) from None
+            raise SSLVerifyFailure(status, msg, verify_code, ssl_sock) from None
+        raise InitExit(status, "SSL handshake failed: %s" % str(e)) from None
     return ssl_sock
 
 def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None,
@@ -958,10 +984,14 @@ def get_ssl_wrap_socket_context(cert=None, key=None, ca_certs=None, ca_data=None
             #try to locate the cert file from known locations
             cert = find_ssl_cert()
             if not cert:
-                raise InitException("failed to locate an ssl certificate to use")
+                raise InitException("failed to automatically locate an SSL certificate to use")
         SSL_KEY_PASSWORD = os.environ.get("XPRA_SSL_KEY_PASSWORD")
         ssllog("context.load_cert_chain%s", (cert or None, key or None, SSL_KEY_PASSWORD))
-        context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=SSL_KEY_PASSWORD)
+        try:
+            context.load_cert_chain(certfile=cert or None, keyfile=key or None, password=SSL_KEY_PASSWORD)
+        except ssl.SSLError as e:
+            ssllog("load_cert_chain", exc_info=True)
+            raise InitException("SSL error, failed to load certificate chain: %s" % e) from e
     if ssl_cert_reqs!=ssl.CERT_NONE:
         if server_side:
             purpose = ssl.Purpose.CLIENT_AUTH   #@UndefinedVariable
@@ -1026,6 +1056,123 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
             return None
         raise InitExit(EXIT_SSL_FAILURE, "Cannot wrap socket %s: %s" % (tcp_socket, e)) from None
     return ssl_sock
+
+
+def ssl_retry(e, ssl_ca_certs):
+    SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
+    if not SSL_RETRY:
+        return None
+    if not isinstance(e, SSLVerifyFailure):
+        return None
+    #we may be able to ask the user if we wants to accept this certificate
+    from xpra.log import Logger
+    ssllog = Logger("ssl")
+    verify_code = e.verify_code
+    ssl_sock = e.ssl_sock
+    msg = str(e)
+    del e
+    server_hostname = ssl_sock.server_hostname
+    ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s",
+           server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code))
+    if verify_code not in (SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH):
+        return None
+    if not server_hostname:
+        return None
+    from xpra.platform.paths import get_ssl_hosts_config_dirs
+    from xpra.scripts.pinentry_wrapper import get_pinentry_command, run_pinentry_confirm
+    host_dirname = std(server_hostname, extras="-.:#_")
+    #self-signed cert:
+    if verify_code==SSL_VERIFY_SELF_SIGNED:
+        if ssl_ca_certs not in ("", "default"):
+            ssllog("self-signed cert does not match %r", ssl_ca_certs)
+            return None
+        #perhaps we already have the certificate for this hostname
+        dirs = get_ssl_hosts_config_dirs()
+        host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
+        cert_filename = "cert.pem"
+        for d in host_dirs:
+            f = os.path.join(d, cert_filename)
+            if os.path.exists(f):
+                ssllog("found certificate for %s: %s", server_hostname, f)
+                ssllog("retrying")
+                return {"ssl_ca_certs" : f}
+        #ask the user if he wants to accept this certificate:
+        pinentry_cmd = get_pinentry_command()
+        if not pinentry_cmd:
+            return None
+        #download the certificate data
+        import ssl
+        addr = ssl_sock.getpeername()
+        #addr = (server_hostname, port)
+        try:
+            cert_data = ssl.get_server_certificate(addr)
+        except ssl.SSLError:
+            cert_data = None
+        if not cert_data:
+            ssllog("failed to get server certificate from %s", addr)
+            return None
+        ssllog("ssl cert data for %s: %s", addr, ellipsizer(cert_data))
+        #ask the user if he wants to accept this certificate:
+        title = "SSL Certificate Verification Failure"
+        prompt = "%0A".join((
+            msg,
+            "",
+            "Do you want to accept this certificate?",
+            ))
+        r = run_pinentry_confirm(pinentry_cmd, title, prompt)   #, "save it")
+        ssllog("run_pinentry_confirm(..) returned %r", r)
+        if r!="OK":
+            return None
+        #if there is an existing host config dir, try to use it:
+        for d in [x for x in host_dirs if os.path.exists(x)]:
+            try:
+                filename = os.path.join(d, cert_filename)
+                with open(filename, "wb") as f:
+                    f.write(cert_data.encode("latin1"))
+                return {"ssl_ca_certs" : f}
+            except OSError:
+                ssllog("failed to save cert data to %r", filename, exc_info=True)
+        #try to create a host config dir:
+        for d in host_dirs:
+            folders = os.path.normpath(d).split(os.sep)
+            #we have to be careful and create the 'ssl' dir with 0o700 permissions
+            #but any directory above that can use 0o755
+            try:
+                ssl_dir_index = len(folders)-1
+                while ssl_dir_index>0 and folders[ssl_dir_index]!="ssl":
+                    ssl_dir_index -= 1
+                if ssl_dir_index>1:
+                    parent = os.path.join(*folders[:ssl_dir_index-1])
+                    ssl_dir = os.path.join(*folders[:ssl_dir_index])
+                    os.makedirs(parent, exist_ok=True)
+                    os.makedirs(ssl_dir, mode=0o700, exist_ok=True)
+                os.makedirs(d, mode=0o700)
+                filename = os.path.join(d, cert_filename)
+                with open(filename, "wb") as f:
+                    f.write(cert_data.encode("latin1"))
+                ssllog("saving certificate to %r", f)
+                ssllog("retrying")
+                return {"ssl_ca_certs" : f}
+            except OSError:
+                ssllog("failed to save cert data to %r", d, exc_info=True)
+        ssllog.warn("Warning: failed to save certificate data")
+        return None
+    if verify_code in (SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH):
+        #ask the user if he wants to skip verifying the host
+        pinentry_cmd = get_pinentry_command()
+        if not pinentry_cmd:
+            return None
+        title = "SSL Certificate Verification Failure"
+        prompt = "%0A".join((
+            msg,
+            "",
+            "Do you want to connect anyway?",
+            ))
+        r = run_pinentry_confirm(pinentry_cmd, title, prompt)
+        ssllog("run_pinentry_confirm(..) returned %r", r)
+        if r=="OK":
+            return {"ssl_check_hostname" : False}
+    return None
 
 
 def socket_connect(host, port, timeout=SOCKET_TIMEOUT):
