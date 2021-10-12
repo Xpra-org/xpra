@@ -1547,7 +1547,7 @@ def run_opengl_probe():
 def make_client(error_cb, opts):
     progress_process = None
     if opts.splash is not False:
-        progress_process = make_progress_process("Xpra Client %s" % XPRA_VERSION)
+        progress_process = make_progress_process("Xpra Client v%s" % XPRA_VERSION)
 
     try:
         from xpra.platform.gui import init as gui_init
