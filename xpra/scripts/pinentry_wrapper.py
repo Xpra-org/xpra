@@ -120,19 +120,23 @@ def run_pinentry_getpin(pinentry_cmd, title, description):
         return None
     return values[0]
 
-def run_pinentry_confirm(pinentry_cmd, title, prompt, notok=None):
+def run_pinentry_confirm(pinentry_cmd, title, prompt):
     proc = popen_pinentry(pinentry_cmd)
     if proc is None:
         return None
-    messages = []
-    if notok:
-        messages.append("SETNOTOK %s" % notok)
+    messages = [
+        #we can't use those as the response is multi-line:
+        #"GETINFO flavor",
+        #"GETINFO version",
+        #"GETINFO pid",
+        ]
     messages += [
         "SETPROMPT %s" % title,
         "SETDESC %s" % prompt,
+        #"SETKEYINFO %c/%s"
         ]
     messages.append("CONFIRM")
-    log("run_pinentry_confirm%s messages=%s", (pinentry_cmd, title, prompt, notok), messages)
+    log("run_pinentry_confirm%s messages=%s", (pinentry_cmd, title, prompt), messages)
     def get_input():
         if not messages:
             return None

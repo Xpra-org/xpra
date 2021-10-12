@@ -1119,7 +1119,7 @@ def ssl_retry(e, ssl_ca_certs):
             "",
             "Do you want to accept this certificate?",
             ))
-        r = run_pinentry_confirm(pinentry_cmd, title, prompt)   #, "save it")
+        r = run_pinentry_confirm(pinentry_cmd, title, prompt)
         ssllog("run_pinentry_confirm(..) returned %r", r)
         if r!="OK":
             return None
