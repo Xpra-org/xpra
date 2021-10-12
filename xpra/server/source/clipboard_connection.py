@@ -34,7 +34,7 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_stats = deque(maxlen=MAX_CLIPBOARD_LIMIT*MAX_CLIPBOARD_LIMIT_DURATION)
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
-        self.clipboard_client_selections = CLIPBOARDS
+        self.clipboard_selections = CLIPBOARDS
         self.clipboard_preferred_targets = ()
 
     def cleanup(self):
@@ -47,11 +47,10 @@ class ClipboardConnection(StubSourceMixin):
             self.clipboard_enabled, self.clipboard_notifications)
         self.clipboard_greedy = c.boolget("clipboard.greedy")
         self.clipboard_want_targets = c.boolget("clipboard.want_targets")
-        self.clipboard_client_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
+        self.clipboard_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
         self.clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
-        log("client clipboard: greedy=%s, want_targets=%s, client_selections=%s",
-            self.clipboard_greedy, self.clipboard_want_targets,
-            self.clipboard_client_selections)
+        log("client clipboard: greedy=%s, want_targets=%s, selections=%s",
+            self.clipboard_greedy, self.clipboard_want_targets, self.clipboard_selections)
 
     def get_info(self) -> dict:
         return {
@@ -61,7 +60,7 @@ class ClipboardConnection(StubSourceMixin):
                 "greedy"                : self.clipboard_greedy,
                 "want-targets"          : self.clipboard_want_targets,
                 "preferred-targets"     : self.clipboard_preferred_targets,
-                "selections"            : self.clipboard_client_selections,
+                "selections"            : self.clipboard_selections,
                 },
             }
 

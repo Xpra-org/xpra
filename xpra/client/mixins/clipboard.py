@@ -31,8 +31,11 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard_direction = "both"
         self.server_clipboard = False
         self.server_clipboard_direction = ""
-        self.server_clipboard_preferred_targets = False
-        self.server_clipboards = []
+        self.server_clipboard_preferred_targets = ()
+        self.server_clipboards = ()
+        self.server_clipboard_greedy = False
+        self.server_clipboard_want_targets = False
+        self.server_clipboard_selections = ()
         self.clipboard_helper = None
         self.local_clipboard_requests = 0
         self.remote_clipboard_requests = 0
@@ -131,6 +134,12 @@ class ClipboardClient(StubClientMixin):
         log("client clipboard: supported=%s, direction=%s",
                      self.client_supports_clipboard, self.client_clipboard_direction)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
+        self.server_clipboard_greedy = c.boolget("clipboard.greedy")
+        self.server_clipboard_want_targets = c.boolget("clipboard.want_targets")
+        self.server_clipboard_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
+        self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
+        log("server clipboard: greedy=%s, want_targets=%s, selections=%s",
+            self.server_clipboard_greedy, self.server_clipboard_want_targets, self.server_clipboard_selections)
         log("parse_clipboard_caps() clipboard enabled=%s", self.clipboard_enabled)
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         return True
@@ -289,6 +298,9 @@ class ClipboardClient(StubClientMixin):
             self.clipboard_notify(n)
         hc = helperClass(clipboard_send, clipboard_progress, **kwargs)
         hc.set_preferred_targets(self.server_clipboard_preferred_targets)
+        hc.set_greedy_client(self.server_clipboard_greedy)
+        hc.set_want_targets_client(self.server_clipboard_want_targets)
+        hc.enable_selections(self.server_clipboard_selections)
         return hc
 
     def compressible_item(self, compressible):

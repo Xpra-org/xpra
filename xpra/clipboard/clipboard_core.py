@@ -207,13 +207,13 @@ class ClipboardProtocolHelperCore:
         if max_receive_size is not None:
             self.max_clipboard_receive_size = max_receive_size
 
-    def enable_selections(self, selections):
+    def enable_selections(self, selections=None):
         #when clients first connect or later through the "clipboard-enable-selections" packet,
         #they can tell us which clipboard selections they want enabled
         #(ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
         log("enabling selections: %s", csv(selections))
         for selection, proxy in self._clipboard_proxies.items():
-            proxy.set_enabled(bytestostr(selection) in selections)
+            proxy.set_enabled(selections and bytestostr(selection) in selections)
 
     def set_greedy_client(self, greedy):
         for proxy in self._clipboard_proxies.values():

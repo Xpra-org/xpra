@@ -7,7 +7,10 @@
 
 import os.path
 
-from xpra.platform.features import CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS
+from xpra.platform.features import (
+    CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
+    CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY,
+    )
 from xpra.util import csv
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -74,11 +77,17 @@ class ClipboardServer(StubServerMixin):
             "clipboard-direction"   : self.clipboard_direction,
             "clipboard" : {
                 ""                      : True,
+                "notifications"         : True,
+                "selections"            : CLIPBOARDS,
                 "enable-selections"     : True,             #client check removed in v4
                 "contents-slice-fix"    : True,             #fixed in v2.4, removed check in v4.3
                 "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
+                "want_targets"          : CLIPBOARD_WANT_TARGETS,
+                "greedy"                : CLIPBOARD_GREEDY,
+                "preferred-targets"     : CLIPBOARD_PREFERRED_TARGETS,
+                "set_enabled"           : True,     #v4 servers no longer use or show this flag
                 },
-            }
+             }
         return f
 
     def init_clipboard(self):
@@ -158,14 +167,14 @@ class ClipboardServer(StubServerMixin):
             log(" greedy=%s", ss.clipboard_greedy)
             log(" want targets=%s", ss.clipboard_want_targets)
             log(" server has selections: %s", csv(self._clipboards))
-            log(" client initial selections: %s", csv(ss.clipboard_client_selections))
+            log(" client initial selections: %s", csv(ss.clipboard_selections))
             ch.set_greedy_client(ss.clipboard_greedy)
             ch.set_want_targets_client(ss.clipboard_want_targets)
-            ch.enable_selections(ss.clipboard_client_selections)
+            ch.enable_selections(ss.clipboard_selections)
             ch.set_preferred_targets(ss.clipboard_preferred_targets)
-            ch.send_tokens(ss.clipboard_client_selections)
+            ch.send_tokens(ss.clipboard_selections)
         else:
-            ch.enable_selections([])
+            ch.enable_selections(None)
 
 
     def last_client_exited(self):
