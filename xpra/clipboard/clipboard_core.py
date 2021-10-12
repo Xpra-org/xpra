@@ -534,7 +534,7 @@ class ClipboardProxyCore:
         self._greedy_client = False
         self._want_targets = False
         #semaphore to block the sending of the token when we change the owner ourselves:
-        self._block_owner_change = False
+        self._block_owner_change = 0
         self._last_emit_token = 0
         self._emit_token_timer = None
         #counters for info:
@@ -579,6 +579,7 @@ class ClipboardProxyCore:
     def cleanup(self):
         self._enabled = False
         self.cancel_emit_token()
+        self.cancel_unblock()
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -634,13 +635,12 @@ class ClipboardProxyCore:
     def emit_token(self):
         self._emit_token_timer = None
         boc = self._block_owner_change
-        self._block_owner_change = True
+        if not boc:
+            self._block_owner_change = GLib.idle_add(self.remove_block)
         self._have_token = False
         self._last_emit_token = monotonic()
         self.do_emit_token()
         self._sent_token_events += 1
-        if boc is False:
-            GLib.idle_add(self.remove_block)
 
     def do_emit_token(self):
         #self.emit("send-clipboard-token")
@@ -652,6 +652,11 @@ class ClipboardProxyCore:
             self._emit_token_timer = None
             GLib.source_remove(ett)
 
+    def cancel_unblock(self):
+        boc = self._block_owner_change
+        if boc:
+            self._block_owner_change = 0
+            GLib.source_remove(boc)
 
     #def do_selection_request_event(self, event):
     #    pass
@@ -664,7 +669,7 @@ class ClipboardProxyCore:
 
     def remove_block(self, *_args):
         log("remove_block: %s", self._selection)
-        self._block_owner_change = False
+        self._block_owner_change = 0
 
     def claim(self):
         """

@@ -712,10 +712,15 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         finally:
             GlobalUnlock(locked)
         #we're going to alter the clipboard ourselves,
-        #ignore messages until we're done:
-        self._block_owner_change = True
+        #ignore messages until we're done,
+        #this may take a while so ensure we do unblock eventually:
+        long_timeout = GLib.timeout_add(2000, self.remove_block)
+        self._block_owner_change = long_timeout
         def cleanup():
-            GLib.idle_add(self.remove_block)
+            if self._block_owner_change==long_timeout:
+                #now safe to re-schedule and run now in the UI thread:
+                self.cancel_unblock()
+                self._block_owner_change = GLib.idle_add(self.remove_block)
         def set_clipboard_data():
             r = EmptyClipboard()
             log("EmptyClipboard()=%s", r)
