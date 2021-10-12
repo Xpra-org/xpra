@@ -21,8 +21,8 @@ import traceback
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
-    csv, envbool, envint, nonl, pver, std,
-    noerr, sorted_nicely, typedict, ellipsizer,
+    csv, envbool, envint, nonl, pver,
+    noerr, sorted_nicely, typedict,
     DEFAULT_PORTS,
     )
 from xpra.exit_codes import (
@@ -35,7 +35,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
-    bytestostr, use_tty, osexpand,
+    bytestostr, use_tty,
     set_proc_title,
     is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
