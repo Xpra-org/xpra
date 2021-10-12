@@ -37,7 +37,7 @@ from xpra.clipboard.clipboard_core import (
     TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE,
     )
 from xpra.util import net_utf8, csv, ellipsizer, envint, envbool, roundup
-from xpra.os_util import bytestostr, strtobytes
+from xpra.os_util import bytestostr
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
 CP_UTF8 = 65001
@@ -116,10 +116,12 @@ log("win32 clipboard: RETRY=%i, DELAY=%i, CONVERT_LINE_ENDINGS=%s",
     RETRY, DELAY, CONVERT_LINE_ENDINGS)
 #can be used to blacklist problematic clipboard peers:
 #ie: VBoxTray.exe
-BLACKLISTED_CLIPBOARD_CLIENTS = [x for x in
-                                 os.environ.get("XPRA_BLACKLISTED_CLIPBOARD_CLIENTS", "").split(",")
-                                 if x]
+def get_clients(envvar, default=""):
+    return tuple(x for x in os.environ.get("XPRA_%s_CLIPBOARD_CLIENTS" % envvar, default).split(",") if x)
+BLACKLISTED_CLIPBOARD_CLIENTS = get_clients("BLACKLISTED")
+SYNCDELAY_CLIPBOARD_CLIENTS = get_clients("NOSYNC", "VBoxTray.exe")
 log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
+log("SYNCDELAY_CLIPBOARD_CLIENTS=%s", SYNCDELAY_CLIPBOARD_CLIENTS)
 COMPRESSED_IMAGES = envbool("XPRA_CLIPBOARD_COMPRESSED_IMAGES", True)
 
 CLIPBOARD_WINDOW_CLASS_NAME = "XpraWin32Clipboard"
@@ -127,6 +129,10 @@ CLIPBOARD_WINDOW_CLASS_NAME = "XpraWin32Clipboard"
 
 def is_blacklisted(owner_info):
     return any(owner_info.find(x)>=0 for x in BLACKLISTED_CLIPBOARD_CLIENTS)
+
+def is_syncdelay(owner_info):
+    return any(owner_info.find(x)>=0 for x in SYNCDELAY_CLIPBOARD_CLIENTS)
+
 
 #initialize the window we will use
 #for communicating with the OS clipboard API:
@@ -265,9 +271,11 @@ class Win32Clipboard(ClipboardTimeoutHelper):
                 #ie: don't try to sync from VirtualBox
                 log("CLIPBOARDUPDATE coming from '%s' ignored", owner_info)
                 return r
+            min_delay = 500*int(is_syncdelay(owner_info))
+            log("CLIPBOARDUPDATE coming from '%s', min_delay=%i", owner_info, min_delay)
             for proxy in self._clipboard_proxies.values():
                 if not proxy._block_owner_change:
-                    proxy.schedule_emit_token()
+                    proxy.schedule_emit_token(min_delay)
         return r
 
 

@@ -610,24 +610,26 @@ class ClipboardProxyCore:
         if self._have_token or ((self._greedy_client or self._want_targets) and self._can_send):
             self.schedule_emit_token()
 
-    def schedule_emit_token(self):
-        if self._have_token or (not self._want_targets and not self._greedy_client) or DELAY_SEND_TOKEN<0:
+    def schedule_emit_token(self, min_delay=0):
+        if min_delay==0 and (self._have_token or (not self._want_targets and not self._greedy_client) or DELAY_SEND_TOKEN<0):
             #token ownership will change or told not to wait
             GLib.idle_add(self.emit_token)
         elif not self._emit_token_timer:
             #we already had sent the token,
             #or sending it is expensive, so wait a bit:
-            self.do_schedule_emit_token()
+            self.do_schedule_emit_token(min_delay)
 
-    def do_schedule_emit_token(self):
+    def do_schedule_emit_token(self, min_delay=0):
         now = monotonic()
         elapsed = int((now-self._last_emit_token)*1000)
-        log("do_schedule_emit_token() selection=%s, elapsed=%i (max=%i)", self._selection, elapsed, DELAY_SEND_TOKEN)
-        if elapsed>=DELAY_SEND_TOKEN:
+        delay = max(min_delay, DELAY_SEND_TOKEN-elapsed)
+        log("do_schedule_emit_token(%i) selection=%s, elapsed=%i (max=%i), delay=%i",
+            min_delay, self._selection, elapsed, DELAY_SEND_TOKEN, delay)
+        if delay<=0:
             #enough time has passed
             self.emit_token()
         else:
-            self._emit_token_timer = GLib.timeout_add(DELAY_SEND_TOKEN-elapsed, self.emit_token)
+            self._emit_token_timer = GLib.timeout_add(delay, self.emit_token)
 
     def emit_token(self):
         self._emit_token_timer = None
