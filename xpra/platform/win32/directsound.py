@@ -4,9 +4,8 @@
 # later version. See the file COPYING for details.
 
 import ctypes
-from ctypes import WinDLL
-from ctypes import oledll
-from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID
+from ctypes import WinDLL, oledll, c_int, c_wchar_p
+from ctypes.wintypes import BOOL, LPVOID, LPCWSTR, LPCVOID, LPOLESTR
 
 
 dsound = WinDLL("dsound", use_last_error=True)
@@ -20,7 +19,8 @@ GetDeviceID = dsound.GetDeviceID
 
 LPDSENUMCALLBACK = ctypes.WINFUNCTYPE(BOOL, LPVOID, LPCWSTR, LPCWSTR, LPCVOID)
 StringFromGUID2 = oledll.ole32.StringFromGUID2
-
+StringFromGUID2.restype = c_int
+StringFromGUID2.argtypes = [LPVOID, LPOLESTR, c_int]
 
 def _enum_devices(fn):
     devices = []
@@ -28,7 +28,8 @@ def _enum_devices(fn):
         dev = ""
         if lpGUID is not None:
             buf = ctypes.create_unicode_buffer(256)
-            if StringFromGUID2(lpGUID, ctypes.byref(buf), 256):
+            pbuf = ctypes.byref(buf)
+            if StringFromGUID2(lpGUID, ctypes.cast(pbuf, LPOLESTR), 256):
                 dev = buf.value
         devices.append((dev, lpszDesc))
         return True
