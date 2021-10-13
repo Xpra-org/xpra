@@ -27,7 +27,7 @@ class Authenticator(SysAuthenticator):
         self.timeout_event = False
         if not self.command:
             #try to find the default auth_dialog executable:
-            from xpra.platform.paths import get_libexec_dir
+            from xpra.platform.paths import get_libexec_dir  #pylint: disable=import-outside-toplevel
             libexec = get_libexec_dir()
             xpralibexec = os.path.join(libexec, "xpra")
             log("libexec=%s, xpralibexec=%s", libexec, xpralibexec)

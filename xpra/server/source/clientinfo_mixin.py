@@ -26,6 +26,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.machine_id = ""
         self.hostname = ""
         self.username = ""
+        self.user = ""
         self.name = ""
         self.argv = ()
         self.sharing = False
@@ -58,6 +59,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.machine_id = c.strget("machine_id")
         self.hostname = c.strget("hostname")
         self.username = c.strget("username")
+        self.user = c.strget("user")
         self.name = c.strget("name")
         self.argv = c.strtupleget("argv")
         self.sharing = c.boolget("share")
@@ -143,6 +145,8 @@ class ClientInfoMixin(StubSourceMixin):
                 "session-id"        : self.session_id or "",
                 "uuid"              : self.uuid or "",
                 "hostname"          : self.hostname or "",
+                "user"              : self.user,
+                "name"              : self.name,
                 "argv"              : self.argv or (),
                 "sharing"           : bool(self.sharing),
                 }

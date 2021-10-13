@@ -12,6 +12,7 @@ from xpra.net.digest import get_salt, get_digests, gendigest
 
 
 class Authenticator(SysAuthenticatorBase):
+    CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
         self.service = kwargs.pop("service", "")

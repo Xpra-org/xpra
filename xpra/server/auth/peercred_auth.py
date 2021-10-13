@@ -41,7 +41,7 @@ class Authenticator(SysAuthenticator):
                 try:
                     allow_uids.append(int(x))
                 except ValueError:
-                    import pwd
+                    import pwd  #pylint: disable=import-outside-toplevel
                     try:
                         pw = pwd.getpwnam(x)
                         allow_uids.append(pw.pw_uid)

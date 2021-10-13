@@ -16,6 +16,7 @@ LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
 
 
 class Authenticator(SysAuthenticatorBase):
+    CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
         self.tls = bool(int(kwargs.pop("tls", "0")))

@@ -39,6 +39,8 @@ def parse_auth_line(line):
 
 
 class Authenticator(FileAuthenticatorBase):
+    CLIENT_USERNAME = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.sessions = None

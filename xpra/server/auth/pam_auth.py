@@ -7,7 +7,7 @@ import os
 import sys
 
 from xpra.util import envbool
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, getuid
 from xpra.scripts.config import parse_bool
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
@@ -35,6 +35,7 @@ def check(username, password, service=PAM_AUTH_SERVICE, check_account=PAM_CHECK_
 
 
 class Authenticator(SysAuthenticator):
+    CLIENT_USERNAME = getuid()==0
 
     def __init__(self, **kwargs):
         self.service = kwargs.pop("service", PAM_AUTH_SERVICE)

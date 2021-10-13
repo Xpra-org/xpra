@@ -9,7 +9,8 @@ from collections import deque
 from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
-from xpra.util import envint, obsc, typedict
+from xpra.util import envint, obsc, typedict, std
+from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
 from xpra.os_util import hexstr, POSIX
 from xpra.log import Logger
@@ -58,14 +59,18 @@ def parse_gid(v) -> int:
 
 class SysAuthenticatorBase:
     USED_SALT = deque(maxlen=USED_SALT_CACHE_SIZE)
-    DEFAULT_PROMPT = "password for user {username}"
+    DEFAULT_PROMPT = "password for user '{username}'"
+    CLIENT_USERNAME = False
 
     def __init__(self, **kwargs):
         self.username = kwargs.get("username", get_username())
+        if str(kwargs.get("client-username", self.CLIENT_USERNAME)).lower() in TRUE_OPTIONS:
+            #allow the client to specify the username to authenticate with:
+            self.username = kwargs.get("remote", {}).get("username", self.username)
         self.salt = None
         self.digest = None
         self.salt_digest = None
-        prompt_attr = {"username" : self.username}
+        prompt_attr = {"username" : std(self.username)}
         self.prompt = kwargs.pop("prompt", self.DEFAULT_PROMPT).format(**prompt_attr)
         self.socket_dirs = kwargs.pop("socket-dirs", get_socket_dirs())
         self.challenge_sent = False

@@ -21,6 +21,7 @@ LDAP_ENCODING = os.environ.get("XPRA_LDAP_ENCODING", "utf-8")
 
 
 class Authenticator(SysAuthenticatorBase):
+    CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
         self.tls = bool(int(kwargs.pop("tls", "0")))

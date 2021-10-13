@@ -29,7 +29,7 @@ from xpra.net.crypto import (
     DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, KEY_HASHES, DEFAULT_KEY_STRETCH,
     )
 from xpra.version_util import get_version_info, XPRA_VERSION
-from xpra.platform.info import get_name
+from xpra.platform.info import get_name, get_username
 from xpra.os_util import (
     get_machine_id, get_user_uuid, register_SIGUSR_signals,
     filedata_nocrlf, force_quit,
@@ -424,7 +424,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 "hostname"              : socket.gethostname(),
                 "uuid"                  : self.uuid,
                 "session-id"            : self.session_id,
-                "username"              : self.username,
+                "username"              : self.username,    #for authentication
+                "user"                  : get_username(),
                 "name"                  : get_name(),
                 "client_type"           : self.client_type(),
                 "python.version"        : sys.version_info[:3],
@@ -790,8 +791,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         try:
             from xpra.net.bytestreams import pretty_socket
             conn = self._protocol._conn
-            text += " for user '%s',\n connecting to %s server %s" % (
-                self.username, conn.socktype, pretty_socket(conn.remote),
+            text += ",\n connecting to %s server %s" % (
+                conn.socktype, pretty_socket(conn.remote),
                 )
         except Exception:
             pass

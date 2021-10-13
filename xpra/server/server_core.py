@@ -1251,7 +1251,7 @@ class ServerCore:
                     sshlog.warn(" username does not match:")
                     sshlog.warn(" expected '%s', got '%s'", sysusername, username)
                     return False
-            auth_modules = self.make_authenticators(socktype, username, conn)
+            auth_modules = self.make_authenticators(socktype, {"username" : username}, conn)
             sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*"*len(password), auth_modules)
             for auth in auth_modules:
                 #mimic a client challenge:
@@ -1858,8 +1858,8 @@ class ServerCore:
         #in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
-    def make_authenticators(self, socktype, username, conn):
-        authlog("make_authenticators%s socket options=%s", (socktype, username, conn), conn.options)
+    def make_authenticators(self, socktype, remote, conn):
+        authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
         sock_options = conn.options
         sock_auth = sock_options.get("auth", "")
         if sock_auth:
@@ -1879,13 +1879,9 @@ class ServerCore:
                     csv(auth_classes), socktype)
             for auth_name, _, aclass, options in auth_classes:
                 opts = dict(options)
+                opts["remote"] = remote
                 opts.update(sock_options)
                 opts["connection"] = conn
-                if opts.get("username", "")=="-":
-                    #use the current user
-                    opts["username"] = get_username() or username
-                else:
-                    opts["username"] = opts.get("username", username)
                 def parse_socket_dirs(v):
                     if isinstance(v, (tuple, list)):
                         return v
@@ -1920,17 +1916,17 @@ class ServerCore:
     def verify_auth(self, proto, packet, c):
         def auth_failed(msg):
             self.auth_failed(proto, msg)
-
-        username = c.strget("username")
-        if not username:
-            import getpass
-            username = getpass.getuser()
+        remote = {}
+        for key in ("hostname", "uuid", "session-id", "username", "name"):
+            v = c.strget(key)
+            if v:
+                remote[key] = v
         conn = proto._conn
         #authenticator:
         if not proto.authenticators:
             socktype = conn.socktype_wrapped
             try:
-                proto.authenticators = self.make_authenticators(socktype, username, conn)
+                proto.authenticators = self.make_authenticators(socktype, remote, conn)
             except Exception as e:
                 authlog("instantiating authenticator for %s", socktype, exc_info=True)
                 authlog.error("Error instantiating authenticator for %s:", proto.socket_type)
@@ -1999,8 +1995,11 @@ class ServerCore:
                 salt, digest = challenge
                 actual_digest = digest.split(":", 1)[0]
                 authlog("get_challenge(%s)= %s, %s", digest_modes, hexstr(salt), digest)
-                authlog.info("Authentication required by %s authenticator module %i", authenticator, (index+1))
-                authlog.info(" sending challenge for username '%s' using %s digest", username, actual_digest)
+                countinfo = ""
+                if len(proto.authenticators)>1:
+                    countinfo += " (%i of %i)" % (index+1, len(proto.authenticators))
+                authlog.info("Authentication required by %s authenticator module%s", authenticator, countinfo)
+                authlog.info(" sending challenge using %s digest over %s connection", actual_digest, conn.socktype_wrapped)
                 if actual_digest not in digest_modes:
                     auth_failed("cannot proceed without %s digest support" % actual_digest)
                     return

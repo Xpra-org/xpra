@@ -41,6 +41,7 @@ def db_from_uri(uri):
 
 
 class Authenticator(SQLAuthenticator):
+    CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

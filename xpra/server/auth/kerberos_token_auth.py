@@ -13,6 +13,7 @@ from xpra.os_util import WIN32
 
 
 class Authenticator(SysAuthenticatorBase):
+    CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
         self.service = kwargs.pop("service", "")

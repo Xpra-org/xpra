@@ -10,6 +10,7 @@ from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
 
 class SQLAuthenticator(SysAuthenticator):
+    CLIENT_USERNAME = True
 
     def __init__(self, **kwargs):
         self.password_query = kwargs.pop("password_query", "SELECT password FROM users WHERE username=(%s)")
