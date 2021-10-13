@@ -546,6 +546,10 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 assert display_name is not None
                 for sockpath in dotxpra.norm_socket_paths(display_name):
                     sockpaths[sockpath] = options
+                session_dir = os.environ.get("XPRA_SESSION_DIR")
+                if session_dir:
+                    session_socket = os.path.join(session_dir, "socket")
+                    sockpaths[session_socket] = options
                 log("sockpaths(%s)=%s (uid=%i, gid=%i)", display_name, sockpaths, uid, gid)
             else:
                 sockpath = dotxpra.osexpand(sockpath)
