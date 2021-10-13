@@ -24,5 +24,5 @@ class Handler:
         if digest.startswith("gss:") or digest.startswith("kerberos:"):
             prompt = "%s token" % (digest.split(":", 1)[0])
         if len(packet)>=6:
-            prompt = std(bytestostr(packet[5]))
+            prompt = std(bytestostr(packet[5]), extras="-,./: '")
         return self.client.do_process_challenge_prompt(packet, prompt)

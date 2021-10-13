@@ -96,9 +96,10 @@ def do_run_pinentry(proc, get_input, process_output):
     log("pinentry ended: %s" % proc.poll())
 
 def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
+    from urllib.parse import quote
     messages = [
-        "SETPROMPT %s" % title,
-        "SETDESC %s:" % description,
+        "SETPROMPT %s" % quote(title),
+        "SETDESC %s:" % quote(description),
         "GETPIN",
         ]
     def get_input():

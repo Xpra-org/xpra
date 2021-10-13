@@ -318,7 +318,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     from xpra.net.bytestreams import pretty_socket
                     cinfo = conn.get_info()
                     endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
-                    q += " at %s" % endpoint
+                    q += "\n at %s" % endpoint
             def got_pin(value):
                 self.idle_add(self.send_challenge_reply, packet, value)
             def no_pin():
