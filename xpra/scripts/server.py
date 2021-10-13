@@ -389,6 +389,9 @@ def save_session_file(filename, contents):
     try:
         path = session_file_path(filename)
         with open(path, "wb+") as f:
+            if POSIX:
+                from xpra.server.server_util import set_session_file_permissions
+                set_session_file_permissions(f.fileno())
             f.write(contents)
     except OSError as e:
         from xpra.log import Logger

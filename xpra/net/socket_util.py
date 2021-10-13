@@ -8,6 +8,7 @@ import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
 
+from xpra.common import GROUP
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import (
     EXIT_SSL_FAILURE, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE,
@@ -30,7 +31,6 @@ from xpra.make_thread import start_thread
 
 #what timeout value to use on the socket probe attempt:
 WAIT_PROBE_TIMEOUT = envint("XPRA_WAIT_PROBE_TIMEOUT", 6)
-GROUP = os.environ.get("XPRA_GROUP", "xpra")
 PEEK_TIMEOUT = envint("XPRA_PEEK_TIMEOUT", 1)
 PEEK_TIMEOUT_MS = envint("XPRA_PEEK_TIMEOUT_MS", PEEK_TIMEOUT*1000)
 UNIXDOMAIN_PEEK_TIMEOUT_MS = envint("XPRA_UNIX_DOMAIN_PEEK_TIMEOUT_MS", 100)

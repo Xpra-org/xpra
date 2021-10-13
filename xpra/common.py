@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from xpra.util import envint
 
 #X11 constants we use for gravity:
@@ -37,6 +38,9 @@ CLOBBER_USE_DISPLAY = 0x2
 #you will need to change those values, but some broken toolkits
 #will then misbehave (they use signed shorts instead of signed ints..)
 MAX_WINDOW_SIZE = 2**15-2**13
+
+
+GROUP = os.environ.get("XPRA_GROUP", "xpra")
 
 
 SPLASH_EXIT_DELAY = envint("XPRA_SPLASH_EXIT_DELAY", 4)
