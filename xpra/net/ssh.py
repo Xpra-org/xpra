@@ -7,7 +7,6 @@ import sys
 import os
 import shlex
 import socket
-import signal
 from time import sleep, monotonic
 from subprocess import PIPE, Popen
 
@@ -15,12 +14,10 @@ from xpra.scripts.main import (
     InitException, InitExit,
     shellquote, host_target_string,
     )
-from xpra.scripts.pinentry_wrapper import (
-    get_pinentry_command, run_pinentry_getpin, run_pinentry_confirm,
-    )
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import parse_bool
+from xpra.scripts.pinentry_wrapper import input_pass, confirm
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT, ConnectionClosedException
 from xpra.make_thread import start_thread
 from xpra.exit_codes import (
@@ -29,8 +26,8 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     bytestostr, osexpand, load_binary_file,
-    nomodule_context, umask_context, is_main_thread,
-    use_gui_prompt, restore_script_env, get_saved_env,
+    nomodule_context, umask_context,
+    restore_script_env, get_saved_env,
     WIN32, OSX, POSIX,
     )
 from xpra.util import envint, envbool, envfloat, engs, csv
@@ -47,8 +44,6 @@ if log.is_debug_enabled():
 INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "")    #"xpra initenv"
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2**27-1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
-SKIP_UI = envbool("XPRA_SKIP_UI", False)
-PINENTRY = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
 
 VERIFY_HOSTKEY = envbool("XPRA_SSH_VERIFY_HOSTKEY", True)
 VERIFY_STRICT = envbool("XPRA_SSH_VERIFY_STRICT", False)
@@ -74,107 +69,6 @@ def keymd5(k) -> str:
         s += ":"+f[:2]
         f = f[2:]
     return s
-
-
-def force_focus():
-    from xpra.platform.gui import force_focus as _force_focus
-    _force_focus()
-
-def dialog_run(run_fn) -> int:
-    import gi
-    gi.require_version('Gtk', '3.0')
-    from gi.repository import GLib, Gtk
-    log("dialog_run(%s) is_main_thread=%s, main_level=%i", run_fn, is_main_thread(), Gtk.main_level())
-    if is_main_thread() or Gtk.main_level()==0:
-        return run_fn()
-    log("dialog_run(%s) main_depth=%s", run_fn, GLib.main_depth())
-    #do a little dance if we're not running in the main thread:
-    #block this thread and wait for the main thread to run the dialog
-    from threading import Event
-    e = Event()
-    code = []
-    def main_thread_run():
-        log("main_thread_run() calling %s", run_fn)
-        try:
-            code.append(run_fn())
-        finally:
-            e.set()
-    GLib.idle_add(main_thread_run)
-    log("dialog_run(%s) waiting for main thread to run", run_fn)
-    e.wait()
-    log("dialog_run(%s) code=%s", run_fn, code)
-    return code[0]
-
-def do_run_dialog(dialog):
-    try:
-        force_focus()
-        dialog.show()
-        try:
-            return dialog.run()
-        finally:
-            dialog.destroy()
-    finally:
-        dialog.destroy()
-
-def dialog_pass(title="Password Input", prompt="enter password", icon="") -> str:
-    log("dialog_pass%s PINENTRY=%s", (title, prompt, icon), PINENTRY)
-    if PINENTRY:
-        pinentry_cmd = get_pinentry_command()
-        if pinentry_cmd:
-            return run_pinentry_getpin(pinentry_cmd, title, prompt)
-    def password_input_run():
-        from xpra.client.gtk_base.pass_dialog import PasswordInputDialogWindow
-        dialog = PasswordInputDialogWindow(title, prompt, icon)
-        return do_run_dialog(dialog)
-    return dialog_run(password_input_run)
-
-def dialog_confirm(title, prompt, qinfo=(), icon="", buttons=(("OK", 1),)) -> int:
-    def confirm_run():
-        from xpra.client.gtk_base.confirm_dialog import ConfirmDialogWindow
-        dialog = ConfirmDialogWindow(title, prompt, qinfo, icon, buttons)
-        return do_run_dialog(dialog)
-    return dialog_run(confirm_run)
-
-
-def confirm_key(info=(), title="Confirm Key", prompt="Are you sure you want to continue connecting?") -> bool:
-    if SKIP_UI:
-        return False
-    if PINENTRY:
-        pinentry_cmd = get_pinentry_command()
-        if pinentry_cmd:
-            messages = list(info)+["", prompt]
-            return run_pinentry_confirm(pinentry_cmd, title, "%0A".join(messages))=="OK"
-    if use_gui_prompt():
-        from xpra.platform.paths import get_icon_filename
-        icon = get_icon_filename("authentication", "png") or ""
-        code = dialog_confirm(title, prompt, info, icon, buttons=[("yes", 200), ("NO", 201)])
-        log("dialog return code=%s", code)
-        r = code==200
-        log.info("host key %sconfirmed", ["not ", ""][r])
-        return r
-    log("confirm_key(%r) will use stdin prompt", info)
-    prompt = "Are you sure you want to continue connecting (yes/NO)? "
-    sys.stderr.write(os.linesep.join(info)+os.linesep+prompt)
-    try:
-        v = sys.stdin.readline().rstrip(os.linesep)
-    except KeyboardInterrupt:
-        sys.exit(128+signal.SIGINT)
-    return v and v.lower() in ("y", "yes")
-
-def input_pass(prompt) -> str:
-    if SKIP_UI:
-        return None
-    if PINENTRY or use_gui_prompt():
-        from xpra.platform.paths import get_icon_filename
-        icon = get_icon_filename("authentication", "png") or ""
-        log("input_pass(%s) using dialog", prompt)
-        return dialog_pass("Password Input", prompt, icon)
-    from getpass import getpass
-    log("input_pass(%s) using getpass", prompt)
-    try:
-        return getpass(prompt)
-    except KeyboardInterrupt:
-        sys.exit(128+signal.SIGINT)
 
 
 class SSHSocketConnection(SocketConnection):
@@ -539,10 +433,10 @@ keymd5(host_key),
                     sys.stderr.write(os.linesep.join(qinfo))
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
-                if not confirm_key(qinfo):
+                if not confirm(qinfo):
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "SSH Host key has changed")
-
+                log.info("host key confirmed")
             else:
                 assert (not keys) or (host_key.get_name() not in keys)
                 if not keys:
@@ -555,10 +449,10 @@ keymd5(host_key),
                     keymd5(host_key),
                     ]
                 adddnscheckinfo(qinfo)
-                if not confirm_key(qinfo):
+                if not confirm(qinfo):
                     transport.close()
                     raise InitExit(EXIT_SSH_KEY_FAILURE, "Unknown SSH host '%s'" % host)
-
+                log.info("host key confirmed")
             if configbool("addkey", ADD_KEY):
                 try:
                     if not host_keys_filename:
@@ -971,8 +865,9 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
             log.info("executing ssh command: %s" % (" ".join("\"%s\"" % x for x in cmd)))
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
+        cmd_info = " ".join("%r" % x for x in cmd)
         raise InitExit(EXIT_SSH_FAILURE,
-                       "Error running ssh command '%s': %s" % (" ".join("\"%s\"" % x for x in cmd), e))
+                       "Error running ssh command '%s': %s" % (cmd_info, e)) from None
     def abort_test(action):
         """ if ssh dies, we don't need to try to read/write from its sockets """
         e = child.poll()

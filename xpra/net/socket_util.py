@@ -1083,7 +1083,7 @@ def ssl_retry(e, ssl_ca_certs):
     ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s (%i)",
            server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
     from xpra.platform.paths import get_ssl_hosts_config_dirs
-    from xpra.scripts.pinentry_wrapper import get_pinentry_command, run_pinentry_confirm
+    from xpra.scripts.pinentry_wrapper import confirm
     host_dirname = std(server_hostname, extras="-.:#_")+":%i" % port
     #self-signed cert:
     if verify_code==SSL_VERIFY_SELF_SIGNED:
@@ -1101,11 +1101,6 @@ def ssl_retry(e, ssl_ca_certs):
                 ssllog("found certificate for %s: %s", server_hostname, f)
                 ssllog("retrying")
                 return {"ssl_ca_certs" : f}
-        #ask the user if he wants to accept this certificate:
-        pinentry_cmd = get_pinentry_command()
-        if not pinentry_cmd:
-            ssllog("no pinentry command, cannot prompt user")
-            return None
         #download the certificate data
         import ssl
         try:
@@ -1115,17 +1110,13 @@ def ssl_retry(e, ssl_ca_certs):
         if not cert_data:
             ssllog("failed to get server certificate from %s", addr)
             return None
-        ssllog("ssl cert data for %s: %s", addr, ellipsizer(cert_data))
+        ssllog("downloaded ssl cert data for %s: %s", addr, ellipsizer(cert_data))
         #ask the user if he wants to accept this certificate:
         title = "SSL Certificate Verification Failure"
-        prompt = "%0A".join((
-            msg,
-            "",
-            "Do you want to accept this certificate?",
-            ))
-        r = run_pinentry_confirm(pinentry_cmd, title, prompt)
+        prompt = "Do you want to accept this certificate?"
+        r = confirm((msg, ), title, prompt)
         ssllog("run_pinentry_confirm(..) returned %r", r)
-        if r!="OK":
+        if not r:
             return None
         #if there is an existing host config dir, try to use it:
         for d in [x for x in host_dirs if os.path.exists(x)]:
@@ -1156,25 +1147,18 @@ def ssl_retry(e, ssl_ca_certs):
                 with open(filename, "wb") as f:
                     f.write(cert_data.encode("latin1"))
                 ssllog("retrying")
-                return {"ssl_ca_certs" : f}
+                return {"ssl_ca_certs" : filename}
             except OSError:
                 ssllog("failed to save cert data to %r", d, exc_info=True)
         ssllog.warn("Warning: failed to save certificate data")
         return None
     if verify_code in (SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH):
         #ask the user if he wants to skip verifying the host
-        pinentry_cmd = get_pinentry_command()
-        if not pinentry_cmd:
-            return None
         title = "SSL Certificate Verification Failure"
-        prompt = "%0A".join((
-            msg,
-            "",
-            "Do you want to connect anyway?",
-            ))
-        r = run_pinentry_confirm(pinentry_cmd, title, prompt)
+        prompt = "Do you want to connect anyway?"
+        r = confirm((msg,), title, prompt)
         ssllog("run_pinentry_confirm(..) returned %r", r)
-        if r=="OK":
+        if r:
             return {"ssl_check_hostname" : False}
     return None
 
