@@ -1124,7 +1124,8 @@ def ssl_retry(e, ssl_ca_certs):
                 filename = os.path.join(d, cert_filename)
                 with open(filename, "wb") as f:
                     f.write(cert_data.encode("latin1"))
-                return {"ssl_ca_certs" : f}
+                ssllog.info("saved SSL certificate to %s", filename)
+                return {"ssl_ca_certs" : filename}
             except OSError:
                 ssllog("failed to save cert data to %r", filename, exc_info=True)
         #try to create a host config dir:
@@ -1143,10 +1144,9 @@ def ssl_retry(e, ssl_ca_certs):
                     os.makedirs(ssl_dir, mode=0o700, exist_ok=True)
                 os.makedirs(d, mode=0o700)
                 filename = os.path.join(d, cert_filename)
-                ssllog("saving certificate to %r", filename)
                 with open(filename, "wb") as f:
                     f.write(cert_data.encode("latin1"))
-                ssllog("retrying")
+                ssllog.info("saved SSL certificate to %s", filename)
                 return {"ssl_ca_certs" : filename}
             except OSError:
                 ssllog("failed to save cert data to %r", d, exc_info=True)
@@ -1159,6 +1159,7 @@ def ssl_retry(e, ssl_ca_certs):
         r = confirm((msg,), title, prompt)
         ssllog("run_pinentry_confirm(..) returned %r", r)
         if r:
+            ssllog.info("retrying without checking the hostname")
             return {"ssl_check_hostname" : False}
     return None
 
