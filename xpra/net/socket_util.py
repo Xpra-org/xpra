@@ -850,8 +850,8 @@ def log_ssl_info(ssl_sock):
         pass
     else:
         if cert:
-            ssllog.info("certificate:")
-            print_nested_dict(ssl_sock.getpeercert(), prefix=" ", print_fn=ssllog.info)
+            ssllog("certificate:")
+            print_nested_dict(ssl_sock.getpeercert(), prefix=" ", print_fn=ssllog)
 
 SSL_VERIFY_EXPIRED = 10
 SSL_VERIFY_WRONG_HOST = 20
