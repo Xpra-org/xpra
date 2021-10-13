@@ -17,6 +17,7 @@ from xpra.os_util import (
     close_all_fds,
     getuid, getgid, get_username_for_uid, get_groups, get_group_id,
     )
+from xpra.common import GROUP
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
