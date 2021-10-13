@@ -275,7 +275,7 @@ class SessionsGUI(Gtk.Window):
             if uuid:
                 key = uuid
             else:
-                key = (host, display)
+                key = (host.rstrip("."), display)
             log("populate_table: key[%i]=%s", i, key)
             d.setdefault(key, []).append((interface, protocol, name, stype, domain, host, address, port, text))
             #older servers expose the "session-name" as "session":
