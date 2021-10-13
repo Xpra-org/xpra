@@ -93,6 +93,8 @@ def do_get_ssl_cert_dirs():
     for i in (CSIDL_PROFILE, CSIDL_COMMON_APPDATA, CSIDL_LOCAL_APPDATA, CSIDL_APPDATA):
         d = os.path.join(sh_get_folder_path(i), "Xpra")
         dirs.append(d)
+        d = os.path.join(sh_get_folder_path(i), "Xpra", "ssl")
+        dirs.append(d)
     dirs += do_get_default_conf_dirs()
     return dirs
 
