@@ -168,6 +168,9 @@ class SessionsGUI(Gtk.Window):
                     #try to query it
                     try:
                         info = self.get_session_info(sockpath)
+                        if not info:
+                            log(" no data for '%s'", sockpath)
+                            continue
                         if info.get("session-type")=="client":
                             log(" skipped client socket '%s': %s", sockpath, info)
                             continue
