@@ -1071,16 +1071,20 @@ def ssl_retry(e, ssl_ca_certs):
     ssl_sock = e.ssl_sock
     msg = str(e)
     del e
+    addr = ssl_sock.getpeername()
+    port = addr[-1]
     server_hostname = ssl_sock.server_hostname
-    ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s",
-           server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code))
     if verify_code not in (SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH):
+        ssllog("ssl_retry: %s not handled here", SSL_VERIFY_CODES.get(verify_code, verify_code))
         return None
     if not server_hostname:
+        ssllog("ssl_retry: not server hostname")
         return None
+    ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s (%i)",
+           server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     from xpra.scripts.pinentry_wrapper import get_pinentry_command, run_pinentry_confirm
-    host_dirname = std(server_hostname, extras="-.:#_")
+    host_dirname = std(server_hostname, extras="-.:#_")+":%i" % port
     #self-signed cert:
     if verify_code==SSL_VERIFY_SELF_SIGNED:
         if ssl_ca_certs not in ("", "default"):
@@ -1090,6 +1094,7 @@ def ssl_retry(e, ssl_ca_certs):
         dirs = get_ssl_hosts_config_dirs()
         host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
         cert_filename = "cert.pem"
+        ssllog("looking for %s in %s", cert_filename, host_dirs)
         for d in host_dirs:
             f = os.path.join(d, cert_filename)
             if os.path.exists(f):
@@ -1099,11 +1104,10 @@ def ssl_retry(e, ssl_ca_certs):
         #ask the user if he wants to accept this certificate:
         pinentry_cmd = get_pinentry_command()
         if not pinentry_cmd:
+            ssllog("no pinentry command, cannot prompt user")
             return None
         #download the certificate data
         import ssl
-        addr = ssl_sock.getpeername()
-        #addr = (server_hostname, port)
         try:
             cert_data = ssl.get_server_certificate(addr)
         except ssl.SSLError:
@@ -1148,9 +1152,9 @@ def ssl_retry(e, ssl_ca_certs):
                     os.makedirs(ssl_dir, mode=0o700, exist_ok=True)
                 os.makedirs(d, mode=0o700)
                 filename = os.path.join(d, cert_filename)
+                ssllog("saving certificate to %r", filename)
                 with open(filename, "wb") as f:
                     f.write(cert_data.encode("latin1"))
-                ssllog("saving certificate to %r", f)
                 ssllog("retrying")
                 return {"ssl_ca_certs" : f}
             except OSError:
