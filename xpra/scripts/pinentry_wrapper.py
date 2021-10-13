@@ -24,6 +24,8 @@ log = Logger("exec")
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
 PINENTRY = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
 
+#pylint: disable=import-outside-toplevel
+
 
 def get_pinentry_command(setting="yes"):
     log("get_pinentry_command(%s)", setting)
