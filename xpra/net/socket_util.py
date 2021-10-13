@@ -520,10 +520,11 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                                   mmap_group, socket_permissions, username, uid, gid))
     if not bind:
         return {}
+    session_dir = os.environ.get("XPRA_SESSION_DIR")
     if not socket_dir and (not socket_dirs or (len(socket_dirs)==1 and not socket_dirs[0])):
         if WIN32:
             socket_dirs = [""]
-        else:
+        elif not session_dir:
             raise InitExit(EXIT_SOCKET_CREATION_ERROR,
                            "at least one socket directory must be set to use unix domain sockets")
     from xpra.platform.dotxpra import DotXpra, norm_makepath
@@ -546,7 +547,6 @@ def setup_local_sockets(bind, socket_dir, socket_dirs, display_name, clobber,
                 assert display_name is not None
                 for sockpath in dotxpra.norm_socket_paths(display_name):
                     sockpaths[sockpath] = options
-                session_dir = os.environ.get("XPRA_SESSION_DIR")
                 if session_dir:
                     session_socket = os.path.join(session_dir, "socket")
                     sockpaths[session_socket] = options
