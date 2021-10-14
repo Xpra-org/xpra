@@ -19,7 +19,7 @@ from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
 from xpra.exit_codes import EXIT_UNSUPPORTED
 from xpra.log import Logger
 
-log = Logger("exec")
+log = Logger("exec", "auth")
 
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
 PINENTRY = envbool("XPRA_SSH_PINENTRY", POSIX and not OSX)
@@ -82,7 +82,8 @@ def do_run_pinentry(proc, get_input, process_output):
     while proc.poll() is None:
         try:
             line = proc.stdout.readline()
-            process_output(message, line)
+            while process_output(message, line):
+                pass
             message = get_input()
             if message is None:
                 break
@@ -110,6 +111,10 @@ def pinentry_getpin(pinentry_proc, title, description, pin_cb, err_cb):
         return messages.pop(0)
     def process_output(message, output):
         if message=="GETPIN":
+            if output.startswith(b"S "):
+                log("getpin message: %s", bytestostr(output[2:]))
+                #ie: 'S PASSWORD_FROM_CACHE'
+                return True     #read more data
             if output.startswith(b"D "):
                 pin_value = output[2:].rstrip(b"\n\r").decode()
                 pin_cb(pin_value)
