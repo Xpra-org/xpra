@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -30,6 +30,22 @@ def strip_display_prefix(s):
 def debug(msg, *args, **kwargs):
     log = get_util_logger()
     log(msg, *args, **kwargs)
+
+def is_socket(sockpath, check_uid=None):
+    try:
+        s = os.stat(sockpath)
+    except OSError as e:
+        debug("is_socket(%s) path cannot be accessed: %s", sockpath, e)
+        #socket cannot be accessed
+        return False
+    if not stat.S_ISSOCK(s.st_mode):
+        return False
+    if check_uid is not None:
+        if s.st_uid!=check_uid:
+            #socket uid does not match
+            debug("is_socket(%s) uid %i does not match %s", sockpath, s.st_uid, check_uid)
+            return False
+    return True
 
 
 class DotXpra:
@@ -139,63 +155,89 @@ class DotXpra:
                 paths.append(socket_path)
         return paths
 
-    def get_display_state(self, display):
+
+    def _unique_sock_dirs(self):
         dirs = []
         if self._sockdir!="undefined":
             dirs.append(self._sockdir)
         dirs += [x for x in self._sockdirs if x not in dirs]
-        debug("get_display_state(%s) sockdir=%s, sockdirs=%s, testing=%s",
-              display, self._sockdir, self._sockdirs, dirs)
         seen = set()
-        state = None
         for d in dirs:
-            if not d or not os.path.exists(d):
-                debug("get_display_state: '%s' path does not exist", d)
+            if d in seen or not d:
                 continue
-            real_dir = os.path.realpath(d)
-            if real_dir in seen:
-                continue
-            seen.add(real_dir)
-            #ie: "~/.xpra/HOSTNAME-"
-            base = os.path.join(d, PREFIX)
-            potential_sockets = glob.glob(base + strip_display_prefix(display))
-            for sockpath in sorted(potential_sockets):
-                try:
-                    s = os.stat(sockpath)
-                except OSError as e:
-                    debug("get_display_state: '%s' path cannot be accessed: %s", sockpath, e)
-                    #socket cannot be accessed
+            seen.add(d)
+            real_dir = os.path.realpath(osexpand(d))
+            if real_dir!=d:
+                if real_dir in seen:
                     continue
-                if stat.S_ISSOCK(s.st_mode):
-                    local_display = DISPLAY_PREFIX+sockpath[len(base):]
-                    if local_display!=display:
-                        debug("get_display_state: '%s' display does not match (%s vs %s)",
-                              sockpath, local_display, display)
-                        continue
-                    state = self.get_server_state(sockpath)
-                    if state not in (self.DEAD, self.INACCESSIBLE):
+                seen.add(real_dir)
+            if not os.path.exists(real_dir):
+                debug("socket_details: directory '%s' does not exist", real_dir)
+                continue
+            yield real_dir
+
+    def get_display_state(self, display):
+        state = None
+        for d in self._unique_sock_dirs():
+            #look for a 'socket' in the session directory
+            #ie: /run/user/1000/xpra/10
+            session_dir = os.path.join(d, strip_display_prefix(display))
+            if os.path.exists(session_dir):
+                #ie: /run/user/1000/xpra/10/socket
+                sockpath = os.path.join(session_dir, "socket")
+                if os.path.exists(sockpath):
+                    state = self.is_socket_match(sockpath, None, (self.LIVE, self.UNKNOWN))
+                    if state:
                         return state
+            #when not using a session directory,
+            #add the prefix to prevent clashes on NFS:
+            #ie: "~/.xpra/HOSTNAME-10"
+            sockpath = os.path.join(d, PREFIX+strip_display_prefix(display))
+            state = self.is_socket_match(sockpath, None, (self.LIVE, self.UNKNOWN))
+            if state:
+                return state
         return state or self.DEAD
 
     #find the matching sockets, and return:
     #(state, local_display, sockpath) for each socket directory we probe
-    def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
+    def socket_details(self, check_uid=None, matching_state=None, matching_display=None):
         sd = {}
-        dirs = []
-        if self._sockdir!="undefined":
-            dirs.append(self._sockdir)
-        dirs += [x for x in self._sockdirs if x not in dirs]
-        debug("socket_details%s sockdir=%s, sockdirs=%s, testing=%s",
-              (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs, dirs)
-        seen = set()
-        for d in dirs:
-            if not d or not os.path.exists(d):
-                debug("socket_details: '%s' path does not exist", d)
-                continue
-            real_dir = os.path.realpath(d)
-            if real_dir in seen:
-                continue
-            seen.add(real_dir)
+        debug("socket_details%s sockdir=%s, sockdirs=%s",
+              (check_uid, matching_state, matching_display), self._sockdir, self._sockdirs)
+        def add_result(d, item):
+            results = sd.setdefault(d, [])
+            if item not in results:
+                results.append(item)
+        def add_session_dir(session_dir, display):
+            if not os.path.exists(session_dir):
+                debug("add_session_dir%s path does not exist", (session_dir, display))
+                return
+            if not os.path.isdir(session_dir):
+                debug("add_session_dir%s not a directory", (session_dir, display))
+                return
+            #ie: /run/user/1000/xpra/10/socket
+            sockpath = os.path.join(session_dir, "socket")
+            if os.path.exists(sockpath):
+                state = self.is_socket_match(sockpath, None, matching_state)
+                debug("add_session_dir(%s) state(%s)=%s", (session_dir, display), sockpath, state)
+                if state:
+                    local_display = DISPLAY_PREFIX+strip_display_prefix(display)
+                    add_result(session_dir, (state, local_display, sockpath))
+        for d in self._unique_sock_dirs():
+            #if we know the display name,
+            #we know the corresponding session dir:
+            if matching_display:
+                session_dir = os.path.join(d, strip_display_prefix(matching_display))
+                add_session_dir(session_dir, matching_display)
+            else:
+                #find all the directories that could be session directories:
+                for p in os.listdir(d):
+                    try:
+                        int(p)
+                    except ValueError:
+                        continue
+                    session_dir = os.path.join(d, p)
+                    add_session_dir(session_dir, p)
             #ie: "~/.xpra/HOSTNAME-"
             base = os.path.join(d, PREFIX)
             if matching_display:
@@ -203,29 +245,21 @@ class DotXpra:
             else:
                 dstr = "*"
             potential_sockets = glob.glob(base + dstr)
-            results = []
             for sockpath in sorted(potential_sockets):
-                try:
-                    s = os.stat(sockpath)
-                except OSError as e:
-                    debug("socket_details: '%s' path cannot be accessed: %s", sockpath, e)
-                    #socket cannot be accessed
-                    continue
-                if stat.S_ISSOCK(s.st_mode):
-                    if check_uid>0:
-                        if s.st_uid!=check_uid:
-                            #socket uid does not match
-                            debug("socket_details: '%s' uid does not match (%s vs %s)", sockpath, s.st_uid, check_uid)
-                            continue
-                    state = self.get_server_state(sockpath)
-                    if matching_state and state!=matching_state:
-                        debug("socket_details: '%s' state does not match (%s vs %s)", sockpath, state, matching_state)
-                        continue
+                state = self.is_socket_match(sockpath, check_uid, matching_state)
+                if state:
                     local_display = DISPLAY_PREFIX+sockpath[len(base):]
-                    results.append((state, local_display, sockpath))
-            if results:
-                sd[d] = results
+                    add_result(d, (state, local_display, sockpath))
         return sd
+
+    def is_socket_match(self, sockpath, check_uid=None, matching_state=None):
+        if not is_socket(sockpath, check_uid):
+            return None
+        state = self.get_server_state(sockpath)
+        if matching_state and state!=matching_state:
+            debug("is_socket_match%s state '%s' does not match", (sockpath, check_uid, matching_state), state)
+            return None
+        return state
 
 
 #win32 re-defines DotXpra for namedpipes:
