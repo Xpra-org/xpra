@@ -216,7 +216,9 @@ class WindowClient(StubClientMixin):
 
         if 0<ICON_OVERLAY<=100:
             icon_filename = opts.tray_icon
-            if not icon_filename or not os.path.isabs(icon_filename):
+            if icon_filename and not os.path.isabs(icon_filename):
+                icon_filename = get_icon_filename(icon_filename)
+            if not icon_filename or not os.path.exists(icon_filename):
                 icon_filename = get_icon_filename("xpra")
             traylog("window icon overlay: %s", icon_filename)
             if icon_filename:
