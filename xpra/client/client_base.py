@@ -844,7 +844,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self.auth_error(EXIT_UNSUPPORTED,
                             "server requested '%s' digest but it is not supported" % actual_digest, "invalid digest")
             return
-        authlog("%s(%s, %s)=%s", actual_digest, repr(password), repr(salt), repr(challenge_response))
+        authlog("%s(%s, %s)=%s", actual_digest, obsc(password), repr(salt), obsc(challenge_response))
         self.do_send_challenge_reply(challenge_response, client_salt)
 
     def do_send_challenge_reply(self, challenge_response, client_salt):
