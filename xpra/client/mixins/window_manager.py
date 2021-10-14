@@ -215,7 +215,10 @@ class WindowClient(StubClientMixin):
         mouselog("wheel_map(%s)=%s", mw, self.wheel_map)
 
         if 0<ICON_OVERLAY<=100:
-            icon_filename = get_icon_filename("xpra")
+            icon_filename = opts.tray_icon
+            if not icon_filename or not os.path.isabs(icon_filename):
+                icon_filename = get_icon_filename("xpra")
+            traylog("window icon overlay: %s", icon_filename)
             if icon_filename:
                 try:
                     #make sure Pillow's PNG image loader doesn't spam the output with debug messages:
