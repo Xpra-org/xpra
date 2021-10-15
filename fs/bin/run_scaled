@@ -67,14 +67,21 @@ def get_screen_spec():
 #default value:
 scale = 2
 command_argv = []
-extra_xpra_args = []
-for i, x in enumerate(sys.argv[1:]):
+
+# Split at last "--" and pass the args after that to Xpra
+if "--" in sys.argv:
+    split_ridx = sys.argv[::-1].index("--")
+    args = sys.argv[1:-split_ridx-1]
+    extra_xpra_args = sys.argv[-split_ridx:]
+else:
+    args = sys.argv[1:]
+    extra_xpra_args = []
+
+for i, x in enumerate(args):
     if x in ("--help", "-h"):
         usage(None, 0)
     elif x.startswith("--scale="):
         scale = parse_scale(x[len("--scale="):])
-    elif x == "--":
-        extra_xpra_args = sys.argv[i+2:]
     else:
         command_argv.append(x)
 if not command_argv:
