@@ -9,7 +9,7 @@ EXTRA_BUILDOPTS := --without-csc_swscale --without-enc_ffmpeg --without-dec_avco
 endif
 # Disable CUDA on Ubuntu Impish and Debian Sid
 # (nvcc fails to compile with the new glibc headers: #3293)
-dvariant := $(shell lsb_release -is)
+dvariant := $(shell lsb_release -cs)
 ifeq ($(dvariant),impish)
 EXTRA_BUILDOPTS := --without-nvenc
 endif
