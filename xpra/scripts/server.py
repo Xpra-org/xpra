@@ -884,7 +884,7 @@ def _do_run_server(script_file, cmdline,
     if ROOT and (uid>0 or gid>0):
         #we're going to chown the directory if we create it,
         #ensure this cannot be abused, only use "safe" paths:
-        if x=="/run/user/%i" % uid:
+        if xrd=="/run/user/%i" % uid:
             pass    #OK!
         elif not any(True for x in ("/tmp", "/var/tmp") if xrd.startswith(x)):
             xrd = ""
