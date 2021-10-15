@@ -621,10 +621,15 @@ class ProxyInstance(object):
 
     def process_draw(self, packet):
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
+        encoding = bytestostr(encoding)
         #never modify mmap packets
-        if encoding in (b"mmap", b"scroll"):
+        if encoding in ("mmap", "scroll"):
             return True
-
+        #we can only use video encoders on RGB data:
+        if encoding not in ("rgb24", "rgb32", "r210", "BGR565"):
+            #this prevents compression and inlining of pixel data:
+            packet[7] = Compressed("%s pixels" % encoding, pixels)
+            return True
         client_options = typedict(client_options)
         #we have a proxy video packet:
         rgb_format = client_options.strget("rgb_format", "")
@@ -660,10 +665,10 @@ class ProxyInstance(object):
                 new_client_options = client_options
             wrapped = Compressed("%s pixels" % encoding, cdata)
             #rgb32 is always supported by all clients:
-            return send_updated("rgb32", wrapped, new_client_options)
+            return send_updated(encoding, wrapped, new_client_options)
 
         proxy_video = client_options.boolget("proxy", False)
-        if PASSTHROUGH_RGB and (encoding in ("rgb32", "rgb24") or proxy_video):
+        if PASSTHROUGH_RGB:
             #we are dealing with rgb data, so we can pass it through:
             return passthrough(proxy_video)
         if not self.video_encoder_types or not client_options or not proxy_video:
