@@ -10,7 +10,10 @@ endif
 # Disable CUDA on Ubuntu Impish and Debian Sid
 # (nvcc fails to compile with the new glibc headers: #3293)
 OS_CODENAME := $(shell lsb_release -s -c)
-ifeq (,$(filter $(OS_CODENAME),sid impish))
+ifeq ($(OS_CODENAME),impish))
+EXTRA_BUILDOPTS := --without-nvenc
+endif
+ifeq ($(OS_CODENAME),sid))
 EXTRA_BUILDOPTS := --without-nvenc
 endif
 
