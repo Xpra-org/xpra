@@ -97,19 +97,19 @@ packages to be installed):
 .SS :DISPLAY
 Local displays: this is the simplest form and is only valid for the
 current local displays of the current user.
-.SS tcp://[USERNAME@]HOST:PORT[/DISPLAY]
+.SS tcp://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY]
 TCP mode uses port numbers and not display numbers. If multiple displays
 are available through a single TCP port (ie: using a proxy server),
-then one can also specify the display number.
-.SS ssl://[USERNAME@]HOST:PORT[/DISPLAY]
+then one can also specify the display number at the end of the string:
+.SS ssl://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY]
 SSL adds a secure socket layer on top of the TCP mode.
-.SS vsock://[USERNAME[:PASSWORD]@]HOST:PORT
+.SS vsock://[[USERNAME]:[PASSWORD]@]HOST:PORT
 Almost identical to the TCP mode, but using AF_VSOCK for transport.
-.SS ws://[USERNAME[:PASSWORD]@]HOST:PORT/[DISPLAY]
+.SS ws://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY]
 Connect using websocket protocol.
-.SS wss://[USERNAME[:PASSWORD]@]HOST:PORT/[DISPLAY]
+.SS wss://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY]
 Connect using secure websocket protocol. (websocket with SSL)
-.SS ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?QUERYSTRING]
+.SS ssh://[[USERNAME]:[PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?QUERYSTRING]
 Connect using secure shell. (SSH)
 
 Further options can be specified using the \fB--ssh\fP command line option.
