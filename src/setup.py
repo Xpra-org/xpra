@@ -2352,7 +2352,7 @@ if csc_libyuv_ENABLED:
     libyuv_pkgconfig = pkgconfig("libyuv")
     if not PYTHON3:
         if is_CentOS():
-            remove_from_keywords(avcodec2_pkgconfig, 'extra_compile_args', "-Werror")
+            remove_from_keywords(libyuv_pkgconfig, 'extra_compile_args', "-Werror")
         elif get_gcc_version()>=[8, 0]:
             add_to_keywords(libyuv_pkgconfig, 'extra_compile_args', "-Wno-error=register")
     cython_add(Extension("xpra.codecs.csc_libyuv.colorspace_converter",
