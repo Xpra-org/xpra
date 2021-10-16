@@ -12,6 +12,8 @@ Source0:     https://github.com/webmproject/libvpx/archive/v%{version}/libvpx-%{
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
+BuildRequires:	gcc
+BuildRequires:	make
 #Requires:
 
 %description
