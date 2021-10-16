@@ -13,6 +13,7 @@ BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:	yasm
 BuildRequires:	gcc
+BuildRequires:	gcc-c++
 BuildRequires:	make
 #Requires:
 
