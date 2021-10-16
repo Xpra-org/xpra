@@ -130,6 +130,10 @@ The password need only be specified when the server authentication module
 requires it. (ie: often when authenticating against MS Windows servers,
 or with \fBmultifile\fP and \fBsqlite\fP authentication modules)
 .P
+.SS vnc://[[USERNAME]:[PASSWORD]@]HOST[:VNC_PORT]/
+Connect using ther RFB protocol. (aka VNC)
+This mode only works against VNC servers or an xpra server in desktop or
+shadow mode.
 .\" --------------------------------------------------------------------
 .SH EXAMPLES
 .TP \w'xpra\ 'u
