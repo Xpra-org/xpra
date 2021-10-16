@@ -467,12 +467,13 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
             password = load_password_file(opts.password_file)
             if password:
                 desc["password"] = password
+        if password:
+            opts.password = password
 
     def _parse_username_and_password(s):
         d = parse_username_and_password(s)
         desc.update(d)
         opts.username = d.get("username", opts.username)
-        opts.password = d.get("password", opts.password)
         _set_password()
 
     def _parse_host_string(host, default_port=DEFAULT_PORT):
