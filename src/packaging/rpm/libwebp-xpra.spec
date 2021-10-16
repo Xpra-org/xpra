@@ -80,9 +80,13 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/libwebp.so
 %{_libdir}/xpra/libwebpdemux.a
 %{_libdir}/xpra/libwebpdemux.la
-%{_libdir}/xpra/libwebpdemux.so
+%{_libdir}/xpra/libwebpdemux.so*
+%{_libdir}/xpra/libwebpmux.a
+%{_libdir}/xpra/libwebpmux.la
+%{_libdir}/xpra/libwebpmux.so*
 %{_libdir}/xpra/pkgconfig/libwebp.pc
 %{_libdir}/xpra/pkgconfig/libwebpdemux.pc
+%{_libdir}/xpra/pkgconfig/libwebpmux.pc
 
 
 %changelog
