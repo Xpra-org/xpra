@@ -15,6 +15,7 @@ BuildRequires: gcc
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
+BuildRequires: make
 
 %description
 WebP library and conversion tools, private version for Xpra
