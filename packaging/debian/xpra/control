@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Antoine Martin <antoine@xpra.org>
 X-Python3-Version: >= 3.6
 Build-Depends: debhelper (>= 8)
+              ,xz-utils
               ,lsb-release
               ,libx11-dev
               ,libxcomposite-dev
