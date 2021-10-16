@@ -51,7 +51,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python2_sitearch}/netifaces*
 
 %changelog
-* Sat Jul 24 2019 Antoine Martin <antoine@xpra.org> - 0.11.0-1
+* Wed Jul 24 2019 Antoine Martin <antoine@xpra.org> - 0.11.0-1
 - new upstream release
 
 * Fri Jan 11 2019 Antoine Martin <antoine@xpra.org> - 0.10.9-1
