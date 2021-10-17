@@ -187,13 +187,16 @@ class WindowBackingBase:
         now = monotonic()
         elapsed = now-self.fps_buffer_update_time
         if elapsed>0.2:
-            self.fps_buffer_update_time = now
-            self.fps_value = self.calculate_fps()
-            text = "%i fps" % self.fps_value
-            width, height = 64, 32
-            self.fps_buffer_size = (width, height)
-            pixels = self.rgba_text(text, width, height)
-            self.update_fps_buffer(width, height, pixels)
+            self.update_fps()
+
+    def update_fps(self):
+        self.fps_buffer_update_time = monotonic()
+        self.fps_value = self.calculate_fps()
+        text = "%i fps" % self.fps_value
+        width, height = 64, 32
+        self.fps_buffer_size = (width, height)
+        pixels = self.rgba_text(text, width, height)
+        self.update_fps_buffer(width, height, pixels)
 
     def update_fps_buffer(self, width, height, pixels):
         raise NotImplementedError

@@ -930,11 +930,13 @@ class GLWindowBackingBase(WindowBackingBase):
         self.blend_texture(self.textures[TEX_FPS], x, y, width, height)
         self.cancel_fps_refresh()
         def refresh_screen():
+            self.fps_refresh_timer = 0
             log("refresh_screen()")
             if not self.paint_screen:
                 return
             context = self.gl_context()
             with context:
+                self.update_fps()
                 self.managed_present_fbo()
         self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
 

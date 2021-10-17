@@ -175,6 +175,8 @@ class ClientWindowBase(ClientWidgetBase):
         self._backing.border = self.border
         self._backing.default_cursor_data = self.default_cursor_data
         self._backing.gravity = self.window_gravity
+        #this is only used by cairo to request a repaint for the fps counter:
+        self._backing.repaint = self.repaint
         return self._backing._backing
 
 

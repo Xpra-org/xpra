@@ -267,8 +267,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.add(widget)
 
     def repaint(self, x, y, w, h):
-        #self.queue_draw_area(0, 0, *self._size)
         widget = self.drawing_area
+        #log("repaint%s widget=%s", (x, y, w, h), widget)
         if widget:
             widget.queue_draw_area(x, y, w, h)
 

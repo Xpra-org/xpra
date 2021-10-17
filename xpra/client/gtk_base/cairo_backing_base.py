@@ -308,3 +308,13 @@ class CairoBackingBase(WindowBackingBase):
             context.set_operator(OPERATOR_OVER)
             context.set_source_surface(self.fps_image, 0, 0)
             context.paint()
+            self.cancel_fps_refresh()
+            #width, height = self.fps_buffer_size
+            def refresh_screen():
+                self.fps_refresh_timer = 0
+                b = self._backing
+                if b:
+                    self.update_fps()
+                    w, h = self.render_size
+                    self.repaint(0, 0, w, h)
+            self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
