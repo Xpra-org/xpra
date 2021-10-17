@@ -7,7 +7,6 @@
 import os
 import time
 from time import monotonic
-from collections import deque
 from gi.repository import GLib
 
 from OpenGL import version as OpenGL_version
@@ -72,7 +71,6 @@ from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
-SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
@@ -252,10 +250,6 @@ class GLWindowBackingBase(WindowBackingBase):
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.pending_fbo_paint = []
-        self.fps_texture_update = 0
-        self.fps_value = 0
-        self.fps_refresh_timer = 0
-        self.present_events = deque(maxlen=120)
         self.last_flush = monotonic()
         self.last_present_fbo_error = None
 
@@ -360,6 +354,7 @@ class GLWindowBackingBase(WindowBackingBase):
         #(see gl_init)
         self.render_size = ww, wh
         if self.size!=(bw, bh):
+            self.cancel_fps_refresh()
             self.gl_setup = False
             oldw, oldh = self.size
             self.size = bw, bh
@@ -584,7 +579,6 @@ class GLWindowBackingBase(WindowBackingBase):
         """
 
     def close(self):
-        self.cancel_fps_refresh()
         self.close_gl_config()
         #This seems to cause problems, so we rely
         #on destroying the context to clear textures and fbos...
@@ -598,6 +592,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if b:
             self._backing = None
             b.destroy()
+        super().close()
 
 
     def paint_scroll(self, scroll_data, options, callbacks):    #pylint: disable=arguments-differ
@@ -714,7 +709,7 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         #flush>0 means we should wait for the final flush=0 paint
         if flush==0 or not PAINT_FLUSH:
-            self.present_events.append(monotonic())
+            self.record_fps_event()
             self.managed_present_fbo()
 
     def managed_present_fbo(self):
@@ -802,7 +797,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.border and self.border.shown:
             self.draw_border()
 
-        if self.paint_box_line_width>0 or SHOW_FPS:
+        if self.is_show_fps():
             self.draw_fps()
 
         # Show the backbuffer on screen
@@ -924,77 +919,25 @@ class GLWindowBackingBase(WindowBackingBase):
             glVertex2i(px, py)
         glEnd()
 
+    def update_fps_buffer(self, width, height, pixels):
+        #we always call 'record_fps_event' from a gl context,
+        #so it is safe to upload the texture:
+        self.upload_rgba_texture(self.textures[TEX_FPS], width, height, pixels)
 
     def draw_fps(self):
-        width, height = 64, 32
-        now = monotonic()
-        elapsed = now-self.fps_texture_update
-        if elapsed>0.2:
-            self.fps_texture_update = now
-            self.fps_value = self.calculate_fps()
-            text = "%i fps" % self.fps_value
-            pixels = self.rgba_text(text, width, height)
-            self.upload_rgba_texture(self.textures[TEX_FPS], width, height, pixels)
-        log("draw_fps() elapsed=%s, fps=%s", elapsed, self.fps_value)
-        show_fps = self.fps_value>0
-        if not show_fps:
-            pe = list(self.present_events)
-            if not pe:
+        x, y = 2, 5
+        width, height = self.fps_buffer_size
+        self.blend_texture(self.textures[TEX_FPS], x, y, width, height)
+        self.cancel_fps_refresh()
+        def refresh_screen():
+            log("refresh_screen()")
+            if not self.paint_screen:
                 return
-            last_present_event = pe[-1]
-            show_fps = now-last_present_event<4
-        if show_fps:
-            x, y = 2, 5
-            self.blend_texture(self.textures[TEX_FPS], x, y, width, height)
-            self.cancel_fps_refresh()
-            self.fps_refresh_timer = GLib.timeout_add(1000, self.refresh_screen)
+            context = self.gl_context()
+            with context:
+                self.managed_present_fbo()
+        self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
 
-    def cancel_fps_refresh(self):
-        GLib.source_remove(self.fps_refresh_timer)
-
-    def refresh_screen(self):
-        log("refresh_screen()")
-        if not self.paint_screen:
-            return
-        context = self.gl_context()
-        with context:
-            self.managed_present_fbo()
-
-    def calculate_fps(self):
-        pe = list(self.present_events)
-        if not pe:
-            return 0
-        e0 = pe[0]
-        now = monotonic()
-        elapsed = now-e0
-        if elapsed<=1 and len(pe)>=5:
-            return len(pe)//elapsed
-        cutoff = now-1
-        count = 0
-        while pe and pe.pop()>=cutoff:
-            count += 1
-        return count
-
-    def rgba_text(self, text, width=64, height=32):
-        from PIL import Image, ImageFont, ImageDraw #pylint: disable=import-outside-toplevel
-        rgb_format = "RGBA"
-        img = Image.new(rgb_format, (width, height), (128, 128, 128, 32))
-        draw = ImageDraw.Draw(img)
-        #font = ImageFont.truetype("Courrier", 16)
-        font = None
-        for font_file in (
-            "/usr/share/fonts/gnu-free/FreeMono.ttf",
-            "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
-            ):
-            if os.path.exists(font_file):
-                try:
-                    font = ImageFont.load_path(font_file)
-                    break
-                except OSError:
-                    pass
-        font = font or ImageFont.load_default()
-        draw.text((20, 10), text, "blue", font=font)
-        return img.tobytes("raw", rgb_format)
 
     def validate_cursor(self):
         cursor_data = self.cursor_data

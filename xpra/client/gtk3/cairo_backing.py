@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from cairo import ImageSurface  #pylint: disable=no-name-in-module
+from cairo import ImageSurface, FORMAT_ARGB32  #pylint: disable=no-name-in-module
 from gi.repository import GLib              #@UnresolvedImport
 from gi.repository import GdkPixbuf         #@UnresolvedImport
 
@@ -87,3 +87,7 @@ class CairoBacking(CairoBackingBase):
         img_data = memoryview(img_data)
         self.nasty_rgb_via_png_paint(cairo_format, has_alpha, img_data, x, y, width, height, rowstride, rgb_format)
         return True
+
+    def update_fps_buffer(self, width, height, pixels):
+        self.fps_image = ImageSurface(FORMAT_ARGB32, width, height)
+        set_image_surface_data(self.fps_image, "RGBA", pixels, width, height, width*4)

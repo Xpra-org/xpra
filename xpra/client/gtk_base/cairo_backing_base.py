@@ -66,6 +66,7 @@ class CairoBackingBase(WindowBackingBase):
         self.idle_add = GLib.idle_add
         self.size = 0, 0
         self.render_size = 0, 0
+        self.fps_image = None
 
     def init(self, ww : int, wh : int, bw : int, bh : int):
         mod = self.size!=(bw, bh) or self.render_size!=(ww, wh)
@@ -166,8 +167,12 @@ class CairoBackingBase(WindowBackingBase):
 
         if self.paint_box_line_width:
             gc.restore()
-            encoding = options.get("encoding")
+            encoding = options.strget("encoding")
             self.cairo_paint_box(gc, encoding, x, y, width, height)
+
+        flush = options.intget("flush", 0)
+        if flush==0:
+            self.record_fps_event()
 
     def cairo_paint_box(self, gc, encoding, x, y, w, h):
         color = get_paint_box_color(encoding)
@@ -297,3 +302,9 @@ class CairoBackingBase(WindowBackingBase):
             spx = round(w*px/ww)
             spy = round(h*py/wh)
             cairo_paint_pointer_overlay(context, self.cursor_data, x+spx, y+spy, start_time)
+        if self.is_show_fps() and self.fps_image:
+            x, y = 10, 10
+            context.translate(x, y)
+            context.set_operator(OPERATOR_OVER)
+            context.set_source_surface(self.fps_image, 0, 0)
+            context.paint()

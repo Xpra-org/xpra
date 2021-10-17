@@ -1,11 +1,16 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import hashlib
+from time import monotonic
 from threading import Lock
+from collections import deque
+from PIL import Image, ImageFont, ImageDraw
+from gi.repository import GLib
 
 from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
@@ -36,6 +41,26 @@ PAINT_BOX = envint("XPRA_PAINT_BOX", 0) or envint("XPRA_OPENGL_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
+SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
+
+
+_PIL_font = None
+def load_PIL_font():
+    global _PIL_font
+    if _PIL_font:
+        return _PIL_font
+    for font_file in (
+        "/usr/share/fonts/gnu-free/FreeMono.ttf",
+        "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
+        ):
+        if os.path.exists(font_file):
+            try:
+                _PIL_font = ImageFont.load_path(font_file)
+                return _PIL_font
+            except OSError:
+                pass
+    _PIL_font = ImageFont.load_default()
+    return _PIL_font
 
 
 #ie:
@@ -130,6 +155,11 @@ class WindowBackingBase:
         self.repaint_all = REPAINT_ALL
         self.mmap = None
         self.mmap_enabled = False
+        self.fps_events = deque(maxlen=120)
+        self.fps_buffer_size = 0, 0
+        self.fps_buffer_update_time = 0
+        self.fps_value = 0
+        self.fps_refresh_timer = 0
 
     def idle_add(self, *_args, **_kwargs):
         raise NotImplementedError()
@@ -142,6 +172,7 @@ class WindowBackingBase:
             "size"          : self.size,
             "render-size"   : self.render_size,
             "offsets"       : self.offsets,
+            "fps"           : self.fps_value,
             }
         vd = self._video_decoder
         if vd:
@@ -150,6 +181,66 @@ class WindowBackingBase:
         if csc:
             info["csc"] = self._csc_decoder
         return info
+
+    def record_fps_event(self):
+        self.fps_events.append(monotonic())
+        now = monotonic()
+        elapsed = now-self.fps_buffer_update_time
+        if elapsed>0.2:
+            self.fps_buffer_update_time = now
+            self.fps_value = self.calculate_fps()
+            text = "%i fps" % self.fps_value
+            width, height = 64, 32
+            self.fps_buffer_size = (width, height)
+            pixels = self.rgba_text(text, width, height)
+            self.update_fps_buffer(width, height, pixels)
+
+    def update_fps_buffer(self, width, height, pixels):
+        raise NotImplementedError
+
+    def calculate_fps(self):
+        pe = list(self.fps_events)
+        if not pe:
+            return 0
+        e0 = pe[0]
+        now = monotonic()
+        elapsed = now-e0
+        if elapsed<=1 and len(pe)>=5:
+            return len(pe)//elapsed
+        cutoff = now-1
+        count = 0
+        while pe and pe.pop()>=cutoff:
+            count += 1
+        return count
+
+    def is_show_fps(self):
+        if SHOW_FPS:
+            return True
+        if self.paint_box_line_width>0:
+            return True
+        #show fps if the value is non-zero:
+        if self.fps_value>0:
+            return True
+        pe = list(self.fps_events)
+        if not pe:
+            return False
+        last_fps_event = pe[-1]
+        #or if there was an event less than N seconds ago:
+        N = 4
+        return monotonic()-last_fps_event<N
+
+    def rgba_text(self, text, width=64, height=32, x=20, y=10, bg=(128, 128, 128, 32)):
+        rgb_format = "RGBA"
+        img = Image.new(rgb_format, (width, height), color=bg)
+        draw = ImageDraw.Draw(img)
+        font = load_PIL_font()
+        draw.text((x, y), text, "blue", font=font)
+        return img.tobytes("raw", rgb_format)
+
+    def cancel_fps_refresh(self):
+        frt = self.fps_refresh_timer
+        if frt:
+            GLib.source_remove(frt)
 
 
     def enable_mmap(self, mmap_area):
@@ -274,6 +365,7 @@ class WindowBackingBase:
 
 
     def close(self):
+        self.cancel_fps_refresh()
         self._backing = None
         log("%s.close() video_decoder=%s", self, self._video_decoder)
         #try without blocking, if that fails then
