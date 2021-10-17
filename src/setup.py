@@ -81,7 +81,7 @@ if "pkg-info" in sys.argv:
         for k in ("Metadata-Version", "Name", "Version", "Summary", "Home-page",
                   "Author", "Author-email", "License", "Download-URL", "Description"):
             v = pkg_info_values[k.lower().replace("-", "_")]
-            f.write(b"%s: %s\n" % (k, v))
+            f.write(("%s: %s\n" % (k, v)).encode())
     sys.exit(0)
 
 
