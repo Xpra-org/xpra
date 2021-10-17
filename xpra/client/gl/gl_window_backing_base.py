@@ -1,12 +1,14 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
 from time import monotonic
+from collections import deque
+from gi.repository import GLib
 
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
@@ -70,6 +72,7 @@ from xpra.log import Logger
 log = Logger("opengl", "paint")
 fpslog = Logger("opengl", "fps")
 
+SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
@@ -208,7 +211,8 @@ TEX_RGB = 3
 TEX_FBO = 4         #FBO texture (guaranteed up-to-date window contents)
 TEX_TMP_FBO = 5
 TEX_CURSOR = 6
-N_TEXTURES = 7
+TEX_FPS = 7
+N_TEXTURES = 8
 
 # Shader number assignment
 YUV2RGB_SHADER = 0
@@ -248,6 +252,10 @@ class GLWindowBackingBase(WindowBackingBase):
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.pending_fbo_paint = []
+        self.fps_texture_update = 0
+        self.fps_value = 0
+        self.fps_refresh_timer = 0
+        self.present_events = deque(maxlen=120)
         self.last_flush = monotonic()
         self.last_present_fbo_error = None
 
@@ -265,12 +273,14 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def get_info(self):
         info = super().get_info()
+        tpf = self.texture_pixel_format
+        tif = self.internal_format
         info.update({
             "type"                  : "OpenGL",
             "bit-depth"             : self.bit_depth,
             "pixel-format"          : self.pixel_format,
-            "texture-pixel-format"  : CONSTANT_TO_PIXEL_FORMAT.get(self.texture_pixel_format, str(self.texture_pixel_format)),
-            "internal-format"       : INTERNAL_FORMAT_TO_STR.get(self.internal_format, str(self.internal_format)),
+            "texture-pixel-format"  : CONSTANT_TO_PIXEL_FORMAT.get(tpf) or str(tpf),
+            "internal-format"       : INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
             })
         return info
 
@@ -398,7 +408,6 @@ class GLWindowBackingBase(WindowBackingBase):
                 with context:
                     self.pending_fbo_paint = ((0, 0, bw, bh), )
                     self.do_present_fbo()
-            from gi.repository import GLib
             GLib.timeout_add(FBO_RESIZE_DELAY, redraw)
 
 
@@ -575,6 +584,7 @@ class GLWindowBackingBase(WindowBackingBase):
         """
 
     def close(self):
+        self.cancel_fps_refresh()
         self.close_gl_config()
         #This seems to cause problems, so we rely
         #on destroying the context to clear textures and fbos...
@@ -704,14 +714,18 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         #flush>0 means we should wait for the final flush=0 paint
         if flush==0 or not PAINT_FLUSH:
-            try:
-                with paint_context_manager:
-                    self.do_present_fbo()
-            except Exception as e:
-                log.error("Error presenting FBO:")
-                log.error(" %s", e)
-                log("Error presenting FBO", exc_info=True)
-                self.last_present_fbo_error = str(e)
+            self.present_events.append(monotonic())
+            self.managed_present_fbo()
+
+    def managed_present_fbo(self):
+        try:
+            with paint_context_manager:
+                self.do_present_fbo()
+        except Exception as e:
+            log.error("Error presenting FBO:")
+            log.error(" %s", e)
+            log("Error presenting FBO", exc_info=True)
+            self.last_present_fbo_error = str(e)
 
     def do_present_fbo(self):
         bw, bh = self.size
@@ -788,6 +802,9 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.border and self.border.shown:
             self.draw_border()
 
+        if self.paint_box_line_width>0 or SHOW_FPS:
+            self.draw_fps()
+
         # Show the backbuffer on screen
         glFlush()
         self.gl_show(rect_count)
@@ -859,17 +876,20 @@ class GLWindowBackingBase(WindowBackingBase):
             glEnd()
             return
 
-        cw = self.cursor_data[3]
-        ch = self.cursor_data[4]
+        w = self.cursor_data[3]
+        h = self.cursor_data[4]
         xhot = self.cursor_data[5]
         yhot = self.cursor_data[6]
         x = px-xhot
         y = py-yhot
-        #paint the texture containing the cursor:
+        self.blend_texture(self.textures[TEX_CURSOR], x, y, w, h)
+
+    def blend_texture(self, texture, x, y, w, h):
+        #paint this texture
         glActiveTexture(GL_TEXTURE0)
         target = GL_TEXTURE_RECTANGLE_ARB
         glEnable(target)
-        glBindTexture(target, self.textures[TEX_CURSOR])
+        glBindTexture(target, texture)
         glEnable(GL_BLEND)
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
         #glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
@@ -877,12 +897,12 @@ class GLWindowBackingBase(WindowBackingBase):
         glBegin(GL_QUADS)
         glTexCoord2i(0, 0)
         glVertex2i(x, y)
-        glTexCoord2i(0, ch)
-        glVertex2i(x, y+ch)
-        glTexCoord2i(cw, ch)
-        glVertex2i(x+cw, y+ch)
-        glTexCoord2i(cw, 0)
-        glVertex2i(x+cw, y)
+        glTexCoord2i(0, h)
+        glVertex2i(x, y+h)
+        glTexCoord2i(w, h)
+        glVertex2i(x+w, y+h)
+        glTexCoord2i(w, 0)
+        glVertex2i(x+w, y)
         glEnd()
 
         glDisable(GL_BLEND)
@@ -904,6 +924,77 @@ class GLWindowBackingBase(WindowBackingBase):
             glVertex2i(px, py)
         glEnd()
 
+
+    def draw_fps(self):
+        width, height = 64, 32
+        now = monotonic()
+        elapsed = now-self.fps_texture_update
+        if elapsed>0.2:
+            self.fps_texture_update = now
+            self.fps_value = self.calculate_fps()
+            text = "%i fps" % self.fps_value
+            pixels = self.rgba_text(text, width, height)
+            self.upload_rgba_texture(self.textures[TEX_FPS], width, height, pixels)
+        log("draw_fps() elapsed=%s, fps=%s", elapsed, self.fps_value)
+        show_fps = self.fps_value>0
+        if not show_fps:
+            pe = list(self.present_events)
+            if not pe:
+                return
+            last_present_event = pe[-1]
+            show_fps = now-last_present_event<4
+        if show_fps:
+            x, y = 2, 5
+            self.blend_texture(self.textures[TEX_FPS], x, y, width, height)
+            self.cancel_fps_refresh()
+            self.fps_refresh_timer = GLib.timeout_add(1000, self.refresh_screen)
+
+    def cancel_fps_refresh(self):
+        GLib.source_remove(self.fps_refresh_timer)
+
+    def refresh_screen(self):
+        log("refresh_screen()")
+        if not self.paint_screen:
+            return
+        context = self.gl_context()
+        with context:
+            self.managed_present_fbo()
+
+    def calculate_fps(self):
+        pe = list(self.present_events)
+        if not pe:
+            return 0
+        e0 = pe[0]
+        now = monotonic()
+        elapsed = now-e0
+        if elapsed<=1 and len(pe)>=5:
+            return len(pe)//elapsed
+        cutoff = now-1
+        count = 0
+        while pe and pe.pop()>=cutoff:
+            count += 1
+        return count
+
+    def rgba_text(self, text, width=64, height=32):
+        from PIL import Image, ImageFont, ImageDraw #pylint: disable=import-outside-toplevel
+        rgb_format = "RGBA"
+        img = Image.new(rgb_format, (width, height), (128, 128, 128, 32))
+        draw = ImageDraw.Draw(img)
+        #font = ImageFont.truetype("Courrier", 16)
+        font = None
+        for font_file in (
+            "/usr/share/fonts/gnu-free/FreeMono.ttf",
+            "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
+            ):
+            if os.path.exists(font_file):
+                try:
+                    font = ImageFont.load_path(font_file)
+                    break
+                except OSError:
+                    pass
+        font = font or ImageFont.load_default()
+        draw.text((20, 10), text, "blue", font=font)
+        return img.tobytes("raw", rgb_format)
 
     def validate_cursor(self):
         cursor_data = self.cursor_data
@@ -936,22 +1027,22 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         with context:
             self.gl_init()
-            self.upload_cursor_texture(cw, ch, pixels)
+            self.upload_rgba_texture(self.textures[TEX_CURSOR], cw, ch, pixels)
 
-    def upload_cursor_texture(self, width : int, height : int, pixels):
+    def upload_rgba_texture(self, texture, width : int, height : int, pixels):
         upload, pixel_data = self.pixels_for_upload(pixels)
         rgb_format = "RGBA"
         glActiveTexture(GL_TEXTURE0)
         target = GL_TEXTURE_RECTANGLE_ARB
         glEnable(target)
-        glBindTexture(target, self.textures[TEX_CURSOR])
+        glBindTexture(target, texture)
         self.set_alignment(width, width*4, rgb_format)
         glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
         glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
         glTexImage2D(target, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel_data)
-        log("GL cursor %ix%i uploaded %i bytes of %s pixel data using %s",
+        log("upload_rgba_texture %ix%i uploaded %i bytes of %s pixel data using %s",
             width, height, len(pixels), rgb_format, upload)
         glBindTexture(target, 0)
         glDisable(target)
