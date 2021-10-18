@@ -944,17 +944,19 @@ class WindowVideoSource(WindowSource):
                 self.schedule_encode_from_queue(av_delay)
         #now figure out if we need to send edges separately:
         ee = self.edge_encoding
+        ow = w
+        oh = h
+        w = w & self.width_mask
+        h = h & self.height_mask
         if video_mode and ee:
-            dw = w - (w & self.width_mask)
-            dh = h - (h & self.height_mask)
+            dw = ow - w
+            dh = oh - h
             if dw>0:
-                sub = image.get_sub_image(w-dw, 0, dw, h)
+                sub = image.get_sub_image(w, 0, dw, h)
                 call_encode(dw, h, sub, ee)
-                w = w & self.width_mask
             if dh>0:
-                sub = image.get_sub_image(0, h-dh, w, dh)
+                sub = image.get_sub_image(0, h, w, dh)
                 call_encode(dw, h, sub, ee)
-                h = h & self.height_mask
         #the main area:
         if w>0 and h>0:
             call_encode(w, h, image, coding)
