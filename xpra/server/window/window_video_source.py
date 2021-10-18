@@ -904,6 +904,8 @@ class WindowVideoSource(WindowSource):
         #image may have been clipped to the new window size during resize:
         w = image.get_width()
         h = image.get_height()
+        if w==0 or h==0:
+            return nodata("invalid dimensions: %ix%i", w, h)
         if self.send_window_size:
             options["window-size"] = self.window_dimensions
 
@@ -945,11 +947,11 @@ class WindowVideoSource(WindowSource):
         if video_mode and ee:
             dw = w - (w & self.width_mask)
             dh = h - (h & self.height_mask)
-            if dw>0 and h>0:
+            if dw>0:
                 sub = image.get_sub_image(w-dw, 0, dw, h)
                 call_encode(dw, h, sub, ee)
                 w = w & self.width_mask
-            if dh>0 and w>0:
+            if dh>0:
                 sub = image.get_sub_image(0, h-dh, w, dh)
                 call_encode(dw, h, sub, ee)
                 h = h & self.height_mask
