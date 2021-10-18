@@ -556,7 +556,7 @@ class WindowVideoSource(WindowSource):
                 #assume that we have "turbojpeg",
                 #which beats everything in terms of efficiency for lossy compression:
                 return "jpeg"
-        if "webp" in options and pixel_count>=16384 and ww>=2 and wh>=2 and depth in (24, 32):
+        if "webp" in options and pixel_count>=512 and 16383>=ww>=2 and 16383>=wh>=2 and depth in (24, 32):
             return "webp"
         #lossless options:
         if speed==100 or (speed>=95 and pixel_count<MAX_RGB) or depth>24:
