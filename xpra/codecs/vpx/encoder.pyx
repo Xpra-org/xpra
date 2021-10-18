@@ -315,7 +315,8 @@ def get_spec(encoding, colorspace):
                       codec_class=Encoder, codec_type=get_type(),
                       quality=quality, speed=speed,
                       size_efficiency=60,
-                      setup_cost=20, max_w=max_w, max_h=max_h)
+                      setup_cost=20, max_w=max_w, max_h=max_h,
+                      width_mask=0xFFFE, height_mask=0xFFFE)
 
 
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
