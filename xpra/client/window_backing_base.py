@@ -243,6 +243,7 @@ class WindowBackingBase:
     def cancel_fps_refresh(self):
         frt = self.fps_refresh_timer
         if frt:
+            self.fps_refresh_timer = 0
             GLib.source_remove(frt)
 
 
