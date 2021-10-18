@@ -551,7 +551,7 @@ class WindowVideoSource(WindowSource):
         #take into account how many pixels need to be encoded:
         #more pixels means we switch to lossless more easily
         if self.content_type!="text":
-            lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh))
+            lossless_q = min(100, int(self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count / (ww*wh)))
             if quality<lossless_q and depth>16 and "jpeg" in options and ww>=8 and wh>=8:
                 #assume that we have "turbojpeg",
                 #which beats everything in terms of efficiency for lossy compression:
