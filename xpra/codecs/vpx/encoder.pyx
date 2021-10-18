@@ -617,8 +617,8 @@ cdef class Encoder:
                 if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                     raise Exception("failed to read pixel data from %s" % type(pixels[i]))
                 assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
-                assert py_buf[i].len>=istrides[i]*self.height//ydiv, "invalid buffer length %i, at least %i needed" % (
-                    py_buf[i].len, istrides[i]*self.height//ydiv)
+                assert py_buf[i].len>=istrides[i]*self.height//ydiv, "invalid buffer length %i for plane %s, at least %i needed" % (
+                    py_buf[i].len, "YUV"[i], istrides[i]*self.height//ydiv)
                 pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
             return self.do_compress_image(pic_in, strides), {
