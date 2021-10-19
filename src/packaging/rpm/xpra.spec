@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.1.1
+%define version 3.1.2
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
