@@ -70,25 +70,25 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
             strut = strut.todict()
         if not strut and skip_defaults:
             return {}
-        return {"strut": strut}
+        return {propname : strut}
     if propname == "class-instance":
         c_i = raw()
         if c_i is None:
             return {}
-        return {"class-instance": c_i}
+        return {propname : c_i}
     if propname == "client-machine":
         client_machine = raw()
         if client_machine is None:
             client_machine = socket.gethostname()
             if not client_machine:
                 return {}
-        return {"client-machine": client_machine}
+        return {propname : client_machine}
     if propname == "transient-for":
         wid = None
         if get_transient_for:
             wid = get_transient_for(window)
         if wid:
-            return {"transient-for" : wid}
+            return {propname : wid}
         return {}
     if propname in ("window-type", "shape", "children"):
         v = raw()
@@ -127,7 +127,7 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
             return {}
         return {propname : v}
     if propname == "xid":
-        return {"xid" : hex(raw() or 0)}
+        return {propname : hex(raw() or 0)}
     if propname == "group-leader":
         gl = raw()
         if not gl or not get_window_id:
@@ -147,10 +147,10 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
     if propname in ("state", "protocols"):
         return {propname : tuple(raw() or [])}
     if propname == "allowed-actions":
-        return {"allowed-actions" : tuple(raw())}
+        return {propname : tuple(raw())}
     if propname == "frame":
         frame = raw()
         if not frame:
             return {}
-        return {"frame" : tuple(frame)}
+        return {propname : tuple(frame)}
     raise Exception("unhandled property name: %s" % propname)
