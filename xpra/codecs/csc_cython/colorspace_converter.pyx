@@ -110,14 +110,21 @@ def get_spec(in_colorspace, out_colorspace):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     can_scale = True
+    width_mask = height_mask = 0xFFFF
     if in_colorspace=="r210" or out_colorspace=="r210":
         can_scale = False
     elif in_colorspace=="GBRP10":
         can_scale = False
+    if in_colorspace=="YUV420P":
+        #safer not to try to handle odd dimensions as input:
+        width_mask = height_mask = 0xFFFE
     #low score as this should be used as fallback only:
     return csc_spec(in_colorspace, out_colorspace,
                     ColorspaceConverter, codec_type=get_type(),
-                    quality=50, speed=10, setup_cost=10, min_w=2, min_h=2, max_w=16*1024, max_h=16*1024, can_scale=can_scale)
+                    quality=50, speed=10, setup_cost=10, min_w=2, min_h=2,
+                    max_w=16*1024, max_h=16*1024,
+                    can_scale=can_scale,
+                    width_mask=width_mask, height_mask=height_mask)
 
 
 class CythonImageWrapper(ImageWrapper):
@@ -338,8 +345,8 @@ cdef class ColorspaceConverter:
             assert divs, "invalid pixel format '%s'" % fmt
             for i, div in enumerate(divs):
                 xdiv, ydiv = div
-                self.dst_strides[i] = roundup(self.dst_width*Bpp//xdiv, STRIDE_ROUNDUP)
-                self.dst_sizes[i] = self.dst_strides[i] * self.dst_height//ydiv
+                self.dst_strides[i] = roundup(roundup(self.dst_width*Bpp, xdiv)//xdiv, STRIDE_ROUNDUP)
+                self.dst_sizes[i] = self.dst_strides[i] * roundup(self.dst_height, ydiv)//ydiv
             #U channel follows Y with 1 line padding, V follows U with another line of padding:
             self.offsets[0] = 0
             self.offsets[1] = self.offsets[0] + self.dst_sizes[0] + self.dst_strides[0]
@@ -535,8 +542,8 @@ cdef class ColorspaceConverter:
         cdef unsigned int dst_height = self.dst_height
 
         #we process 4 pixels at a time:
-        cdef unsigned int workw = roundup(dst_width//2, 2)
-        cdef unsigned int workh = roundup(dst_height//2, 2)
+        cdef unsigned int workw = roundup(dst_width, 2)//2
+        cdef unsigned int workh = roundup(dst_height, 2)//2
 
         cdef Py_buffer py_buf
         if PyObject_GetBuffer(pixels, &py_buf, PyBUF_ANY_CONTIGUOUS):
