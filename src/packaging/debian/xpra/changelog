@@ -1,3 +1,13 @@
+xpra (3.1.2-1) UNRELEASED; urgency=low
+  * encoding errors with vpx
+  * fix pkg-info build command
+  * packaging workarounds for Ubuntu Impish
+  * fixup missing import in backport
+  * minor RPM build fixes
+  * rebuild with small fixes
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 19 Oct 2021 16:41:34 +0700
+
 xpra (3.1.1-1) UNRELEASED; urgency=low
   * critical bugs:
    - fix crashes during printer enumeration on MS Windows

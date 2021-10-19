@@ -900,6 +900,14 @@ fi
 
 
 %changelog
+* Tue Oct 19 2021 Antoine Martin <antoine@xpra.org> 3.1.2-10.1xpra1
+- encoding errors with vpx
+- fix pkg-info build command
+- packaging workarounds for Ubuntu Impish
+- fixup missing import in backport
+- minor RPM build fixes
+- rebuild with small fixes
+
 * Thu Oct 07 2021 Antoine Martin <antoine@xpra.org> 3.1.1-10.1xpra1
 - critical bugs:
     fix crashes during printer enumeration on MS Windows
