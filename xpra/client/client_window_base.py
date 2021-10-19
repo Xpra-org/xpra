@@ -68,6 +68,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._skip_taskbar = False
         self._iconified = False
         self._focused = False
+        self._opaque_region = ()
         self.window_gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
         self.border = border
         self.cursor_data = None
@@ -468,6 +469,12 @@ class ClientWindowBase(ClientWidgetBase):
             if self._skip_pager!=skip_pager:
                 self._skip_pager = skip_pager
                 self.set_skip_pager_hint(skip_pager)
+
+        if "opaque-region" in metadata:
+            opaque_region = metadata.inttupleget("opaque-region", None, 0, 4)
+            if self._opaque_region!=opaque_region:
+                self._opaque_region = opaque_region
+                self.set_opaque_region(opaque_region)
 
         if "workspace" in metadata:
             self.set_workspace(metadata.intget("workspace"))

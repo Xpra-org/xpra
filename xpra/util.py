@@ -97,7 +97,9 @@ DEFAULT_METADATA_SUPPORTED = ("title", "icon-title", "pid", "iconic",
                               "transient-for", "window-type",
                               "fullscreen", "maximized", "decorations", "skip-taskbar", "skip-pager",
                               "has-alpha", "override-redirect", "tray", "modal",
-                              "role", "opacity", "xid", "group-leader")
+                              "role", "opacity", "xid", "group-leader",
+                              "opaque-region",
+                              )
 
 
 #initiate-moveresize X11 constants

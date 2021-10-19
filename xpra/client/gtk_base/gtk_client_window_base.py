@@ -1,11 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import math
+import cairo
 import os.path
 from time import monotonic
 from urllib.parse import unquote
@@ -1136,6 +1137,18 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if w>0 and h>0:
                     self.set_size_constraints(self.size_constraints, self.max_window_size)
         self.when_realized("fullscreen", do_set_fullscreen)
+
+    def set_opaque_region(self, region=None):
+        if region and len(region)==4:
+            rect = cairo.RectangleInt(*self._client.srect(*region))
+            v = cairo.Region(rect)
+        else:
+            v = None
+        def do_set_region():
+            log("set_opaque_region(%s)", v)
+            self.get_window().set_opaque_region(v)
+        self.when_realized("set-opaque-region", do_set_region)
+
 
     def set_xid(self, xid):
         if not HAS_X11_BINDINGS:

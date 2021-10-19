@@ -82,7 +82,7 @@ grablog("detail constants: %s", DETAIL_CONSTANTS)
 
 #these properties are not handled, and we don't want to spam the log file
 #whenever an app decides to change them:
-PROPERTIES_IGNORED = os.environ.get("XPRA_X11_PROPERTIES_IGNORED", "_NET_WM_OPAQUE_REGION").split(",")
+PROPERTIES_IGNORED = [x for x in os.environ.get("XPRA_X11_PROPERTIES_IGNORED", "").split(",") if x]
 #make it easier to debug property changes, just add them here:
 #ie: {"WM_PROTOCOLS" : ["atom"]}
 X11_PROPERTIES_DEBUG = {}
@@ -176,6 +176,10 @@ class CoreX11WindowModel(WindowModelStub):
         "allowed-actions": (GObject.TYPE_PYOBJECT,
                 "Supported WM actions", "",
                 GObject.ParamFlags.READWRITE),
+        #synced to "_NET_WM_OPAQUE_REGION"
+        "opaque-region": (GObject.TYPE_PYOBJECT,
+                "Compositor can assume that there is no transparency for this region", "",
+                GObject.ParamFlags.READWRITE),
            }
 
     __common_signals__ = {
@@ -208,15 +212,18 @@ class CoreX11WindowModel(WindowModelStub):
         "title", "role",
         "command", "shape",
         "class-instance", "protocols",
+        "opaque-region",
         ]
     #exposed and changing (should be watched for notify signals):
-    _dynamic_property_names = ["title", "command", "shape", "class-instance", "protocols"]
+    _dynamic_property_names = ["title", "command", "shape", "class-instance", "protocols", "opaque-region"]
     #should not be exported to the clients:
     _internal_property_names = ["frame", "allowed-actions"]
     _initial_x11_properties = ["_NET_WM_PID", "WM_CLIENT_MACHINE",
                                #_NET_WM_NAME is redundant, as it calls the same handler as "WM_NAME"
                                "WM_NAME", "_NET_WM_NAME",
-                               "WM_PROTOCOLS", "WM_CLASS", "WM_WINDOW_ROLE"]
+                               "WM_PROTOCOLS", "WM_CLASS", "WM_WINDOW_ROLE",
+                               "_NET_WM_OPAQUE_REGION",
+                               ]
     _DEFAULT_NET_WM_ALLOWED_ACTIONS = []
     _MODELTYPE = "Core"
     _scrub_x11_properties       = [
@@ -606,6 +613,11 @@ class CoreX11WindowModel(WindowModelStub):
         metalog("WM_CLASS=%s", class_instance)
         self._updateprop("class-instance", class_instance)
 
+    def _handle_opaque_region_change(self):
+        region = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
+        metalog("_NET_WM_OPAQUE_REGION=%s", region)
+        self._updateprop("opaque-region", region)
+
     #these handlers must not generate X11 errors (must use XSync)
     _x11_property_handlers = {
         "_NET_WM_PID"       : _handle_pid_change,
@@ -616,6 +628,7 @@ class CoreX11WindowModel(WindowModelStub):
         "WM_PROTOCOLS"      : _handle_protocols_change,
         "WM_COMMAND"        : _handle_command_change,
         "WM_CLASS"          : _handle_class_change,
+        "_NET_WM_OPAQUE_REGION" : _handle_opaque_region_change,
         }
 
 
