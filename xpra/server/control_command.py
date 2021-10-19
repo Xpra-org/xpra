@@ -152,4 +152,4 @@ class DebugControl(ArgsControlCommand):
             log.info("%sd debugging for:", log_cmd)
             for l in loggers:
                 log.info(" - %s", l)
-        return "logging %sd for %s" % (log_cmd, csv(loggers))
+        return "logging %sd for %s" % (log_cmd, csv(loggers) or "<no match found")
