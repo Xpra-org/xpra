@@ -44,7 +44,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def __init__(self, selection="CLIPBOARD"):
         ClipboardProxyCore.__init__(self, selection)
         GObject.GObject.__init__(self)
-        self._block_owner_change = monotonic()
+        self._owner_change_embargo = 0
         self._want_targets = False
         self.clipboard = Gtk.Clipboard.get(Gdk.Atom.intern(selection, False))
         self.clipboard.connect("owner-change", self.owner_change)
@@ -74,7 +74,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 text = net_utf8(data)
                 log("setting text data %s / %s of size %i: %s",
                     dtype, dformat, len(text), ellipsizer(text))
-                self._block_owner_change = monotonic()
+                self._owner_change_embargo = monotonic()
                 self.clipboard.set_text(text, len(text))
                 return
             #we should handle more datatypes here..
@@ -115,7 +115,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.do_owner_changed()
 
     def do_owner_changed(self):
-        elapsed = monotonic()-self._block_owner_change
+        elapsed = monotonic()-self._owner_change_embargo
         log("do_owner_changed() enabled=%s, elapsed=%s",
             self._enabled, elapsed)
         if not self._enabled or elapsed<BLOCK_DELAY:
