@@ -67,13 +67,27 @@ def get_screen_spec():
 #default value:
 scale = 2
 command_argv = []
-for i, x in enumerate(sys.argv[1:]):
+extra_xpra_args = None
+
+# If "--" is present, the command is after that
+if "--" in sys.argv:
+    split_idx = sys.argv.index("--")
+    args = sys.argv[1:split_idx]
+    command_argv = sys.argv[split_idx+1:]
+    extra_xpra_args = []
+else:
+    args = sys.argv[1:]
+
+for i, x in enumerate(args):
     if x in ("--help", "-h"):
         usage(None, 0)
-    if x.startswith("--scale="):
+    elif x.startswith("--scale="):
         scale = parse_scale(x[len("--scale="):])
     else:
-        command_argv.append(x)
+        if extra_xpra_args is None:
+            command_argv.append(x)
+        else:
+            extra_xpra_args.append(x)
 if not command_argv:
     usage("missing command argument")
 
@@ -94,6 +108,8 @@ xpra_argv = [
     "--compress=0",
     "--systemd-run=no",
     ]
+if extra_xpra_args:
+    xpra_argv += extra_xpra_args
 
 width, height, dpi = get_screen_spec()
 #if found, prefer Xvfb, as it is faster to startup:

@@ -14,7 +14,10 @@ run_scaled - run an X11 application upscaled or downscaled
 .PD 0
 .HP \w'run_scaled\ 'u
 \fBrun_scaled\fP
-[\fB--scaling\fP=\fIVALUE\fP] application [application-arguments]\fB
+[\fB--scale\fP=\fIVALUE\fP] application [application-arguments]
+.HP \w'run_scaled\ 'u
+\fBrun_scaled\fP
+[\fB--scale\fP=\fIVALUE\fP] [xpra-arguments] \fB--\fP application [application-arguments]
 .PD
 
 .\" --------------------------------------------------------------------
@@ -30,14 +33,17 @@ Starts the command "\fBxterm -ls\fP", with the default scaling of \fB2\fP.
 .br
 The xterm window will be twice as big as it normally would be.
 .TP
-\fBrun_scaled --scaling=250% firefox\fP
+\fBrun_scaled --scale=250% firefox\fP
 Start firefox, upscaled by 250%.
+.TP
+\fBrun_scaled --speaker=off --microphone=off -- wine notepad.exe\fP
+Starts the command "\fBwine notepad.exe\fP", with audio inputs and outputs disabled (by additional Xpra arguments) and the default scaling of \fB2\fP.
 
 .\" --------------------------------------------------------------------
 .SH OPTIONS
 
 .TP
-\fB--scaling\fP=\fIVALUE\fP
+\fB--scale\fP=\fIVALUE\fP
 The scaling factor to apply, specified as:
 .RS
 .IP \fBnumber\fP
