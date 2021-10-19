@@ -888,7 +888,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             return []
         nws = typedict(new_window_state)
         metadatalog("set_window_state%s", (wid, window, new_window_state))
-        changes = []
+        changes = {}
         if "frame" in new_window_state:
             #the size of the window frame may have changed
             frame = nws.inttupleget("frame", (0, 0, 0, 0))
@@ -901,7 +901,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             else:
                 if window.get_property("iconic")!=bool(iconified):
                     window.set_property("iconic", iconified)
-                    changes.append("iconified")
+                    changes["iconified"] = bool(iconified)
         #handle wm_state virtual booleans:
         for k in (
             "maximized", "above",
@@ -917,9 +917,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #metadatalog.info("set window state for '%s': current state=%s, new state=%s", k, cur_state, new_state)
             if cur_state!=new_state:
                 window.update_wm_state(k, new_state)
-                changes.append(k)
+                changes[k] = new_state
         metadatalog("set_window_state: changes=%s", changes)
-        return changes
+        return tuple(changes.keys())
 
 
     def get_window_position(self, window):
