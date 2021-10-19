@@ -5,6 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+set -e
+
 if [ -z "$1" ]; then
 	if [ "$MSYSTEM" == "MINGW64" ]; then
 		export XPKG="mingw-w64-x86_64-"
@@ -28,27 +30,27 @@ PACMAN="pacman"
 #PACMAN="echo pacman"
 
 #most packages get installed here: (python, gtk, etc):
-$PACMAN --noconfirm -S ${XPKG}python ${XPKG}libnotify
+$PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify
 #media libraries (more than we actually need):
-$PACMAN --noconfirm -S ${XPKG}ffmpeg ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+$PACMAN --noconfirm --needed -S ${XPKG}ffmpeg ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
-$PACMAN --noconfirm -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
+$PACMAN --noconfirm --needed -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
 #python GStreamer bindings:
-$PACMAN --noconfirm -S ${XPKG}gst-python
+$PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
-$PACMAN --noconfirm -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkg-config ${XPKG}libffi ${XPKG}pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli PyOpenGL nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil; do
-	$PACMAN --noconfirm -S ${XPKG}python-${x}
+$PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil; do
+	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
-$PACMAN --noconfirm -S ${XPKG}cython
+$PACMAN --noconfirm --needed -S ${XPKG}cython
 
 #this needs to be converted to a PKGBUILD:
-$PACMAN --noconfirm -S ${XPKG}python-pip ${XPKG}gcc
+$PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}gcc
 for x in browser-cookie3 qrencode; do
 	pip3 install $x
 done
 #for webcam support:
-#$PACMAN --noconfirm -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
+#$PACMAN --noconfirm --needed -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
 
 echo "for printing support, install libpdfium"
 echo "by downloading the plain x64 pdfium binary from"
