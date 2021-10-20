@@ -1905,6 +1905,44 @@ class WindowSource(WindowIconSource):
             self.idle_add(image.free)
 
 
+    def get_damage_image(self, x, y, w, h):
+        assert self.ui_thread == threading.current_thread()
+        def nodata(msg, *args):
+            log("get_damage_image: "+msg, *args)
+            return None
+        if w==0 or h==0:
+            return nodata("dropped, zero dimensions")
+        if not self.window.is_managed():
+            return nodata("the window %s is not managed", self.window)
+        self._sequence += 1
+        sequence = self._sequence
+        if self.is_cancelled(sequence):
+            return nodata("sequence %s is cancelled", sequence)
+        image = self.window.get_image(x, y, w, h)
+        if image is None:
+            return nodata("no pixel data for window %s, wid=%s", self.window, self.wid)
+        #image may have been clipped to the new window size during resize:
+        w = image.get_width()
+        h = image.get_height()
+        if w==0 or h==0:
+            return nodata("invalid dimensions: %ix%i", w, h)
+        if self.is_cancelled(sequence):
+            image.free()
+            return nodata("sequence %i is cancelled", sequence)
+        pixel_format = image.get_pixel_format()
+        image_depth = image.get_depth()
+        opr = self._opaque_region
+        if image_depth==32 and pixel_format.find("A")>=0 and opr:
+            r = rectangle(*opr)
+            if r.contains(x, y, w, h):
+                pixel_format = pixel_format.replace("A", "X")   #ie: BGRA -> BGRX
+                image.set_pixel_format(pixel_format)
+                image_depth = 24
+                log("removed alpha from image metadata: %s", pixel_format)
+        self.image_depth = image_depth
+        self.pixel_format = pixel_format
+        return image
+
     def process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=None):
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
@@ -1917,29 +1955,12 @@ class WindowSource(WindowIconSource):
             The damage thread will call make_data_packet_cb which does the actual compression.
             This runs in the UI thread.
         """
-        assert self.ui_thread == threading.current_thread()
         assert coding is not None
-        def nodata(msg, *args):
-            log("process_damage_region: "+msg, *args)
-            return False
-        if w==0 or h==0:
-            return nodata("dropped, zero dimensions")
-        if not self.window.is_managed():
-            return nodata("the window %s is not managed", self.window)
-        self._sequence += 1
-        sequence = self._sequence
-        if self.is_cancelled(sequence):
-            return nodata("sequence %s is cancelled", sequence)
-
         rgb_request_time = monotonic()
-        image = self.window.get_image(x, y, w, h)
+        image = self.get_damage_image(x, y, w, h)
         if image is None:
-            return nodata("no pixel data for window %s, wid=%s", self.window, self.wid)
-        if self.is_cancelled(sequence):
-            image.free()
-            return nodata("sequence %i is cancelled", sequence)
-        self.pixel_format = image.get_pixel_format()
-        self.image_depth = image.get_depth()
+            return False
+        sequence = self._sequence
 
         if self.send_window_size:
             options["window-size"] = self.window_dimensions

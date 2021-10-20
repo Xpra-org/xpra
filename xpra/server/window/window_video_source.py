@@ -878,34 +878,14 @@ class WindowVideoSource(WindowSource):
             This runs in the UI thread.
         """
         log("process_damage_region%s", (damage_time, x, y, w, h, coding, options, flush))
-        assert self.ui_thread == threading.current_thread()
         assert coding is not None
-        def nodata(msg, *args):
-            log("process_damage_region: "+msg, *args)
-            return False
-        if w==0 or h==0:
-            return nodata("dropped, zero dimensions")
-        if not self.window.is_managed():
-            return nodata("the window %s is not managed", self.window)
-        self._sequence += 1
-        sequence = self._sequence
-        if self.is_cancelled(sequence):
-            return nodata("sequence %s is cancelled", sequence)
-
         rgb_request_time = monotonic()
-        image = self.window.get_image(x, y, w, h)
+        image = self.get_damage_image(x, y, w, h)
         if image is None:
-            return nodata("no pixel data for window %s, wid=%s", self.window, self.wid)
-        if self.is_cancelled(sequence):
-            image.free()
-            return nodata("sequence %s is cancelled", sequence)
-        self.pixel_format = image.get_pixel_format()
-        self.image_depth = image.get_depth()
-        #image may have been clipped to the new window size during resize:
+            return False
+
         w = image.get_width()
         h = image.get_height()
-        if w==0 or h==0:
-            return nodata("invalid dimensions: %ix%i", w, h)
         if self.send_window_size:
             options["window-size"] = self.window_dimensions
 
@@ -931,7 +911,7 @@ class WindowVideoSource(WindowSource):
             sequence = self._sequence
             if self.is_cancelled(sequence):
                 image.free()
-                nodata("call_encode: sequence %s is cancelled", sequence)
+                log("call_encode: sequence %s is cancelled", sequence)
                 return
             now = monotonic()
             log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms, frame delay=%3ims",
