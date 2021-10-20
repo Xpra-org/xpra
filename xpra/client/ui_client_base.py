@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -31,7 +31,7 @@ from xpra.scripts.config import parse_bool
 from xpra.exit_codes import EXIT_CONNECTION_FAILED, EXIT_CONNECTION_LOST
 from xpra.version_util import get_version_info_full, get_platform_info
 from xpra.client import mixin_features
-from xpra.log import Logger
+from xpra.log import Logger, get_info as get_log_info
 
 
 CLIENT_BASES = [XpraClientBase]
@@ -278,6 +278,7 @@ class UIXpraClient(ClientBaseClass):
             "env"       : get_info_env(),
             "sys"       : get_sys_info(),
             "network"   : get_net_info(),
+            "logging"   : get_log_info(),
             }
         if SYSCONFIG:
             info["sysconfig"] = get_sysconfig_info()
