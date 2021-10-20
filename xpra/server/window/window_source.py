@@ -282,6 +282,10 @@ class WindowSource(WindowIconSource):
             self.window_type = set(self.window.get_property("window-type"))
             sid = window.connect("notify::window-type", self.window_type_changed)
             self.window_signal_handlers.append(sid)
+        self._opaque_region = self.window.get("opaque-region", ())
+        if "opaque-region" in dyn_props:
+            sid = window.connect("notify::opaque-region", self.window_opaque_region_changed)
+            self.window_signal_handlers.append(sid)
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
         nobwl = (self.bandwidth_limit or 0)<=0
@@ -674,6 +678,11 @@ class WindowSource(WindowIconSource):
         log("window_type_changed(window, %s) window_type=%s", window, args, self.window_type)
         self.assign_encoding_getter()
 
+    def window_opaque_region_changed(self, window, *args):
+        self._opaque_region = window.get_property("opaque-region") or ()
+        log("window_opaque_region_changed(window, %s) opaque-region=%s", window, args, self._opaque_region)
+        self.update_encoding_options()
+
     def set_client_properties(self, properties):
         #filter out stuff we don't care about
         #to see if there is anything to set at all,
@@ -831,6 +840,13 @@ class WindowSource(WindowIconSource):
 
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
+        ww, wh = self.window_dimensions
+        opr = self._opaque_region
+        if opr and len(opr)==4:
+            r = rectangle(*opr)
+            if r.contains(0, 0, ww, wh):
+                #window is fully opaque
+                self._want_alpha = False
         ml = self._more_lossless()
         self._lossless_threshold_base = min(90-10*ml, 60-ml*20+self._current_speed//5)
         if self.content_type=="text" or self.is_shadow:
@@ -853,7 +869,6 @@ class WindowSource(WindowIconSource):
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
         crs = self.client_render_size
         if crs and DOWNSCALE:
-            ww, wh = self.window_dimensions
             if crs[0]<ww or crs[1]<wh:
                 #client will downscale, best to avoid sending rgb,
                 #so we can more easily downscale at this end:
