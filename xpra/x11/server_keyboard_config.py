@@ -118,13 +118,14 @@ class KeyboardConfig(KeyboardConfigBase):
             for mod, mod_name in self.xkbmap_mod_meanings.items():
                 modinfo[mod] = mod_name
         info["x11_keycode"] = self.xkbmap_x11_keycodes
-        for x in ("layout", "variant", "mod_managed", "mod_pointermissing", "raw", "layout_groups"):
+        for x in ("layout", "variant", "options", "mod_managed", "mod_pointermissing", "raw", "layout_groups"):
             v = getattr(self, "xkbmap_%s" % x)
             if v:
                 info[x] = v
         modsinfo["nuisance"] = tuple(self.xkbmap_mod_nuisance or [])
         info["modifier"] = modinfo
         info["modifiers"] = modsinfo
+        info["keys-pressed"] = self.keys_pressed
         #this would need to always run in the UI thread:
         #info["state"] = {
         #    "modifiers" : self.get_current_mask(),
