@@ -103,3 +103,13 @@ xpra shadow --clipboard=yes --printing=no --windows=no --speaker=no ssh://SERVER
 xpra shadow --printing=yes --windows=no --speaker=no ssh://SERVERHOST/ 
 ```
 The local printers should be virtualized on the server.
+
+## Other Documentation Links
+* [Client OpenGL](./Client-OpenGL.md) - for better window rendering performance
+* [OpenGL](./OpenGL.md) - running accelerated OpenGL application on the server
+* [Configuration](./Configuration.md) - using configuration files
+* [Encodings](./Encodings.md) - advanced picture encoding configuration, ie: [NVENC](./NVENC.md)
+* [Logging](./Logging.md] - debugging
+* [Proxy Server](./Proxy-Server.md) - using the proxy server as a single entry point
+* [WSL](./WSL.md) - Windows Subsystem for Linux
+* [Xdummy](./Xdummy.md) - the alternative virtual framebuffer
