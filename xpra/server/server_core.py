@@ -70,7 +70,7 @@ from xpra.util import (
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
     )
-from xpra.log import Logger
+from xpra.log import Logger, get_info as get_log_info
 
 #pylint: disable=import-outside-toplevel
 
@@ -2346,6 +2346,7 @@ class ServerCore:
                    })
         up("network", ni)
         up("threads",   self.get_thread_info(proto))
+        up("logging", get_log_info())
         from xpra.platform.info import get_sys_info
         up("sys", get_sys_info())
         up("env", get_info_env())

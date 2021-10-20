@@ -14,7 +14,7 @@ LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", "")
 LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", "%(asctime)s %(message)s")
 NOPREFIX_FORMAT = "%(message)s"
 
-DEBUG_MODULES = os.environ.get("XPRA_DEBUG_MODULES", "").split(",")
+DEBUG_MODULES = [x for x in os.environ.get("XPRA_DEBUG_MODULES", "").split(",") if x]
 
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
@@ -333,6 +333,21 @@ for d in STRUCT_KNOWN_FILTERS.values():
 
 def isenvdebug(category : str) -> bool:
     return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0")=="1"
+
+
+def get_info():
+    return {
+        "filters" : STRUCT_KNOWN_FILTERS,
+        "categories" : {
+            "enabled"   : tuple(debug_enabled_categories),
+            "disabled"  : tuple(debug_disabled_categories),
+            },
+        "handler"   : getattr(global_logging_handler, "__name__", "<unknown>"),
+        "prefix"    : LOG_PREFIX,
+        "format"    : LOG_FORMAT,
+        "debug-modules" : DEBUG_MODULES,
+        #all_loggers
+        }
 
 
 class Logger:
