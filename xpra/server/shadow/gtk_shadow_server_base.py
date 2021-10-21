@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from gi.repository import Gtk, GdkPixbuf  #pylint: disable=no-name-in-module
+from gi.repository import Gtk   #pylint: disable=no-name-in-module
 
-from xpra.util import envbool, XPRA_APP_ID
+from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
 from xpra.server import server_features
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -137,6 +137,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         models = []
         screen = self.root.get_screen()
         n = screen.get_n_monitors()
+        match = self.display_options.split(",")
+        found = []
         for i in range(n):
             geom = screen.get_monitor_geometry(i)
             x, y, width, height = geom.x, geom.y, geom.width, geom.height
@@ -146,15 +148,25 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 screenlog("no scale factor: %s", e)
             else:
                 screenlog("scale factor for monitor %i: %i", i, scale_factor)
-            model = RootWindowModel(self.root, self.capture)
+            title = prettify_plug_name(self.root.get_screen().get_display().get_name())
+            plug_name = None
             if hasattr(screen, "get_monitor_plug_name"):
                 plug_name = screen.get_monitor_plug_name(i)
-                if plug_name or n>1:
-                    model.title = plug_name or str(i)
+            if title or n>1:
+                title = plug_name or str(i)
+            found.append(plug_name or title)
+            if match and not(title in match or plug_name in match):
+                screenlog.info(" skipped monitor %s", plug_name or title)
+                continue
+            model = RootWindowModel(self.root, self.capture)
+            model.title = title
             model.geometry = (x, y, width, height)
-            screenlog("monitor %i: %10s geometry=%s", i, model.get_property("title"), model.get_property("geometry"))
             models.append(model)
-        log("makeRootWindowModels()=%s", models)
+            screenlog("monitor %i: %10s geometry=%s", i, title, model.geometry)
+        screenlog("makeRootWindowModels()=%s", models)
+        if not models and match:
+            screenlog.warn("Warning: no monitors found matching %s", self.display_options)
+            screenlog.warn(" only found: %s", csv(found))
         return models
 
 

@@ -155,6 +155,7 @@ class ServerCore:
         self.original_desktop_display = None
         self.session_type = "unknown"
         self.display_name = ""
+        self.display_options = ""
         self.dotxpra = None
 
         self._closing = False

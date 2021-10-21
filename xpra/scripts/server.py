@@ -709,6 +709,7 @@ def _do_run_server(script_file, cmdline,
         #so change None ('auto') to False
         opts.pulseaudio = False
 
+    display_options = ""
     #get the display name:
     if shadowing and not extra_args:
         if WIN32 or OSX:
@@ -725,6 +726,10 @@ def _do_run_server(script_file, cmdline,
             error_cb("too many extra arguments (%i): only expected a display number" % len(extra_args))
         if len(extra_args) == 1:
             display_name = extra_args[0]
+            #look for display options:
+            #ie: ":1,DP-2" -> ":1" "DP-2"
+            if display_name and display_name.find(",")>0:
+                display_name, display_options = display_name.split(",", 1)
             if not shadowing and not upgrading and not use_display:
                 display_name_check(display_name)
         else:
@@ -1321,6 +1326,7 @@ def _do_run_server(script_file, cmdline,
         app.splash_process = splash_process
         app.exec_cwd = opts.chdir or cwd
         app.display_name = display_name
+        app.display_options = display_options
         app.init(opts)
         if not app.validate():
             progress(100, "server validation failed")
