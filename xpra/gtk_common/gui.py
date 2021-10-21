@@ -8,6 +8,10 @@ import os
 import sys
 import subprocess
 
+import gi
+gi.require_version('Gdk', '3.0')
+gi.require_version('Gtk', '3.0')
+gi.require_version('Pango', '1.0')
 from gi.repository import GLib, Pango, Gtk, Gdk, Gio
 
 from xpra.gtk_common.gobject_compat import register_os_signals
@@ -92,7 +96,7 @@ class GUI(Gtk.Window):
         self.connect("delete_event", self.quit)
         self.set_wmclass("xpra-gui", "Xpra-GUI")
 
-        self.vbox = Gtk.VBox(False, 10)
+        self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
         #with most window managers,
         #the window's title bar already shows "Xpra"
@@ -127,7 +131,7 @@ class GUI(Gtk.Window):
                                             label, clicked_callback=self.start,
                                             icon_size=48, label_font=label_font)
             self.widgets.append(self.start_button)
-        table = Gtk.Table(2, 2, True)
+        table = Gtk.Table(n_rows=2, n_columns=2, homogeneous=True)
         for i, widget in enumerate(self.widgets):
             table.attach(widget, i%2, i%2+1, i//2, i//2+1, xpadding=10, ypadding=10)
         self.vbox.add(table)
