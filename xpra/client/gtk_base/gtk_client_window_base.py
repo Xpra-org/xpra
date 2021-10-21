@@ -6,11 +6,13 @@
 # later version. See the file COPYING for details.
 
 import math
-import cairo
 import os.path
 from time import monotonic
 from urllib.parse import unquote
-from cairo import OPERATOR_OVER, LINE_CAP_ROUND #pylint: disable=no-name-in-module
+from cairo import ( #pylint: disable=no-name-in-module
+    RectangleInt, Region,
+    OPERATOR_OVER, LINE_CAP_ROUND,
+    )
 from gi.repository import Gtk, Gdk, Gio
 
 from xpra.os_util import bytestostr, strtobytes, is_X11, WIN32, OSX, POSIX
@@ -1140,8 +1142,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def set_opaque_region(self, region=None):
         if region and len(region)==4:
-            rect = cairo.RectangleInt(*self._client.srect(*region))
-            v = cairo.Region(rect)
+            rect = RectangleInt(*self._client.srect(*region))
+            v = Region(rect)
         else:
             v = None
         def do_set_region():
