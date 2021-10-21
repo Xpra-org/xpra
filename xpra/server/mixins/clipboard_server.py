@@ -218,6 +218,8 @@ class ClipboardServer(StubServerMixin):
             log.warn(" but we do not support clipboard at all! Ignoring it.")
             return
         cc = self._clipboard_client
+        if not cc:
+            return
         cc.clipboard_enabled = clipboard_enabled
         log("toggled clipboard to %s for %s", clipboard_enabled, ss.protocol)
         if cc!=ss or ss is None:
