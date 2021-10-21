@@ -111,6 +111,8 @@ class WindowInfo(Gtk.Window):
         tb.new_row("Focus", self.focus_image)
         self.button_state_label = slabel()
         tb.new_row("Button State", self.button_state_label)
+        self.fps_label = slabel()
+        tb.new_row("Frames Per Second", self.fps_label)
         #self.group_leader_label = slabel()
         #tb.new_row("Group Leader", self.group_leader_label)
         tb.new_row("")
@@ -209,6 +211,7 @@ class WindowInfo(Gtk.Window):
         w = self._window
         if not w:
             return
+        b = w._backing
         self.wid_label.set_text(str(w._id))
         self.title_label.set_text(w.get_title())
         self.bool_icon(self.or_image, w._override_redirect)
@@ -216,6 +219,13 @@ class WindowInfo(Gtk.Window):
         self.attributes_label.set_text(get_window_attributes(w))
         self.bool_icon(self.focus_image, w._focused)
         self.button_state_label.set_text(csv(b for b,s in w.button_state.items() if s) or "none")
+        fps = "n/a"
+        if b:
+            update_fps = getattr(b, "update_fps", None)
+            if callable(update_fps):
+                update_fps()
+                fps = str(getattr(b, "fps_value", "n/a"))
+        self.fps_label.set_text(fps)
         #self.group_leader_label.set_text(str(w.group_leader))
         self.gravity_label.set_text(GRAVITY_STR.get(w.window_gravity, "invalid"))
         self.content_type_label.set_text(w.content_type or "unknown")
@@ -234,7 +244,6 @@ class WindowInfo(Gtk.Window):
         self.max_size_label.set_text(csv(w.max_window_size))
         self.size_constraints_label.set_text(hsc(w.size_constraints))
         #backing:
-        b = w._backing
         if b:
             self.backing_properties.show()
             def pv(value):
