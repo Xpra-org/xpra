@@ -7,13 +7,10 @@ export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 ifneq (,$(filter i386,$(DEB_HOST_ARCH)))
 EXTRA_BUILDOPTS := --without-csc_swscale --without-enc_ffmpeg --without-dec_avcodec2
 endif
-# Disable CUDA on Ubuntu Impish and Debian Sid
+# Disable CUDA on Ubuntu Impish
 # (nvcc fails to compile with the new glibc headers: #3293)
 OS_CODENAME := $(shell lsb_release -s -c)
 ifeq ($(OS_CODENAME),impish)
-EXTRA_BUILDOPTS := --without-nvenc
-endif
-ifeq ($(OS_CODENAME),sid)
 EXTRA_BUILDOPTS := --without-nvenc
 endif
 
