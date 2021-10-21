@@ -2129,9 +2129,9 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 
 def run_server(script_file, error_cb, options, args, mode, defaults):
     display = None
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     if mode in ("start", "start-desktop") and parse_bool("attach", options.attach) is True:
-        if args:
+        if args and not display_is_remote:
             #maybe the server is already running for the display specified
             #then we don't even need to bother trying to start it:
             try:
