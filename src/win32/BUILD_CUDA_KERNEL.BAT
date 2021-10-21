@@ -5,7 +5,7 @@ SET KERNEL=%1
 SET CUDA_SRC=xpra\codecs\cuda_common\%KERNEL%.cu
 SET CUDA_BIN=xpra\codecs\cuda_common\%KERNEL%.fatbin
 
-SET NVCC_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4\bin\
+SET NVCC_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.5\bin\
 SET NVCC=%NVCC_DIR%\nvcc.exe
 SET MSVC2019VCBAT=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvarsall.bat
 IF EXIST "%MSVC2019VCBAT%" (
