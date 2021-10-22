@@ -95,12 +95,13 @@ class GlobalPerformanceStatistics:
 
     def record_latency(self, wid : int, decode_time, start_send_at, end_send_at, pixels, bytecount, latency):
         now = monotonic()
+        send_time = end_send_at-start_send_at
         send_diff = now-start_send_at
         echo_diff = now-end_send_at
         send_latency = max(0, send_diff-decode_time/1000.0/1000.0)
         echo_latency = max(0, echo_diff-decode_time/1000.0/1000.0)
-        log("record_latency: took %6.1f ms round trip, %6.1f for echo, %6.1f for decoding of %8i pixels, %8i bytes sent over the network in %6.1f ms, %6.1f ms for echo",
-                send_diff*1000, echo_diff*1000, decode_time/1000, pixels, bytecount, send_latency*1000, echo_latency*1000)
+        log("record_latency: took %6.1f ms round trip, %6.1f to send, %6.1f for echo, %6.1f for decoding of %8i pixels, %8i bytes sent over the network in %6.1f ms, %6.1f ms for echo",
+                send_diff*1000, send_time*1000, echo_diff*1000, decode_time/1000, pixels, bytecount, send_latency*1000, echo_latency*1000)
         if self.min_client_latency is None or self.min_client_latency>send_latency:
             self.min_client_latency = send_latency
         self.client_latency.append((wid, now, pixels, send_latency))
