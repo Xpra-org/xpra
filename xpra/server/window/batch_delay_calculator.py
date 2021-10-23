@@ -63,8 +63,12 @@ def calculate_batch_delay(wid, window_dimensions,
     if batch.always:
         min_delay = batch.min_delay
     #if another window is fullscreen or maximized,
-    #make sure we don't use a very low delay (cap at 25fps)
+    #make sure we don't use a very low delay (cap at 10fps)
     if other_is_fullscreen or other_is_maximized:
+        min_delay = max(100, min_delay)
+    elif not has_focus:
+        #wayland clients never tell us about minimized windows,
+        #so we have to be more aggressive with unfocused windows instead:
         min_delay = max(40, min_delay)
     update_batch_delay(batch, factors, min_delay)
 
