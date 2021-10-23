@@ -930,7 +930,7 @@ def _do_run_server(script_file, cmdline,
         write_runner_shell_scripts(run_xpra_script)
     if env_script:
         save_session_file("server.env", env_script)
-    save_session_file("cmdline", "\n".join(cmdline))
+    save_session_file("cmdline", "\n".join(cmdline)+"\n")
     if mode in ("upgrade", "upgrade-desktop"):
         #if we had saved the start / start-desktop config, reload it:
         apply_config(opts)
