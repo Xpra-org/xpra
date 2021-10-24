@@ -483,6 +483,9 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
     elif mode == "clean-sockets":
         no_gtk()
         return run_clean_sockets(options, args)
+    elif mode == "clean":
+        no_gtk()
+        return run_clean(options, args)
     elif mode=="recover":
         return run_recover(script_file, cmdline, error_cb, options, args, defaults)
     elif mode == "wminfo":
@@ -1956,6 +1959,8 @@ def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
                 "uid"   : sstat.st_uid,
                 "gid"   : sstat.st_gid,
                 }
+    except FileNotFoundError:
+        pass
     except Exception as e:
         warn("failure on %s: %s" % (socket_path, e))
     return {}
@@ -2746,6 +2751,97 @@ def run_list_mdns(error_cb, extra_args):
     else:
         from xpra.util import engs
         print("%i service%s found" % (len(found), engs(found)))
+
+
+def run_clean(opts, args):
+    no_gtk()
+    if args:
+        clean = args
+    else:
+        #TODO: find the sessions to clean:
+        clean = []
+    from xpra.scripts.server import get_session_dir
+    try:
+        uid = int(opts.uid)
+    except (ValueError, TypeError):
+        uid = getuid()
+    #also clean client sockets?
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    for display in clean:
+        session_dir = get_session_dir(opts.sessions_dir, display, uid)
+        if not os.path.exists(session_dir):
+            print("session %s not found" % (display,))
+            continue
+        sockpath = os.path.join(session_dir, "socket")
+        state = dotxpra.is_socket_match(sockpath, check_uid=uid, matching_state=None)
+        if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
+            #this session is still active
+            #do not try to clean it!
+            print("session %s is %s" % (display, state))
+            continue
+        try:
+            dno = int(display.lstrip(":"))
+        except (ValueError, TypeError):
+            dno = 0
+        else:
+            r = stat_X11_display(dno, timeout=VERIFY_X11_SOCKET_TIMEOUT)
+            if r:
+                #so the X11 server may still be running
+                #x11_sockpath = X11_SOCKET_DIR+"/X%i" % dno
+                print("X11 server :%i is still running " % (dno,))
+                print(" run clean-displays to terminate it")
+                continue
+        print("session_dir: %s : %s" % (session_dir, state))
+        for pid_filename in ("dbus.pid", ):
+            pid_file = os.path.join(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
+            if os.path.exists(pid_file):
+                try:
+                    with open(pid_file, "rb") as f:
+                        pid = int(f.read().rstrip(b"\n\r"))
+                except (ValueError, OSError) as e:
+                    error("failed to read %r: %s" % (pid_file, e))
+                else:
+                    try:
+                        if pid and pid!=os.getpid():
+                            os.kill(pid, signal.SIGTERM)
+                    except OSError as e:
+                        error("Error sending SIGTERM signal to %r %i %s" % (pid_filename, pid, e))
+        try:
+            session_files = os.listdir(session_dir)
+        except OSError as e:
+            error("Error listing session files in %r: %s" % (session_dir, e))
+            continue
+        #files we can remove safely:
+        KNOWN_SERVER_FILES = (
+            "cmdline", "config",
+            "dbus.env", "dbus.pid",
+            "server.env", "server.pid", "server.log",
+            "socket", "xauthority", "Xorg.log", "xvfb.pid",
+            )
+        unknown_files = [x for x in session_files if x not in KNOWN_SERVER_FILES]
+        if unknown_files:
+            error("Error: found some unexpected session files:")
+            error(" %s" % csv(unknown_files))
+            error(" the session directory %r has not been removed" % session_dir)
+            continue
+        for x in session_files:
+            try:
+                filename = os.path.join(session_dir, x)
+                os.unlink(filename)
+            except OSError as e:
+                error("Error removing %r: %s" % (filename, e))
+        try:
+            os.rmdir(session_dir)
+        except OSError:
+            error("Error session directory %r: %s" % (session_dir, e))
+            continue
+        #remove the other sockets:
+        socket_paths = dotxpra.socket_paths(check_uid=uid, matching_display=display)
+        for filename in socket_paths:
+            try:
+                os.unlink(filename)
+            except OSError as e:
+                error("Error removing socket %r: %s" % (filename, e))
 
 
 def run_clean_sockets(opts, args):

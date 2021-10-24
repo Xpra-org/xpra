@@ -733,6 +733,7 @@ def get_usage():
                         "version [DISPLAY]",
                         "stop [DISPLAY]",
                         "exit [DISPLAY]",
+                        "clean [DISPLAY1] [DISPLAY2]..",
                         "clean-sockets [DISPLAY]",
                         "clean-displays [DISPLAY]",
                         "screenshot filename [DISPLAY]",
