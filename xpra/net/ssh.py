@@ -295,16 +295,16 @@ def ssh_paramiko_connect_to(display_desc):
             host_config = ssh_config.lookup(host)
             if host_config:
                 log("got host config for '%s': %s", host, host_config)
-                chost = host_config.get("hostname", host)
-                cusername = host_config.get("user", username)
-                cport = host_config.get("port", port)
+                host = host_config.get("hostname", host)
+                username = host_config.get("user", username)
+                port = host_config.get("port", port)
                 try:
-                    port = int(cport)
+                    port = int(port)
                 except (TypeError, ValueError):
-                    raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % cport) from None
+                    raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % port) from None
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
-                    log("found proxycommand='%s' for host '%s'", proxycommand, chost)
+                    log("found proxycommand='%s' for host '%s'", proxycommand, host)
                     sock = ProxyCommand(proxycommand)
                     log("ProxyCommand(%s)=%s", proxycommand, sock)
                     from xpra.child_reaper import getChildReaper
@@ -318,18 +318,18 @@ def ssh_paramiko_connect_to(display_desc):
                     from paramiko.client import SSHClient
                     ssh_client = SSHClient()
                     ssh_client.load_system_host_keys()
-                    log("ssh proxy command connect to %s", (chost, cport, sock))
-                    ssh_client.connect(chost, cport, sock=sock)
+                    log("ssh proxy command connect to %s", (host, port, sock))
+                    ssh_client.connect(host, port, sock=sock)
                     transport = ssh_client.get_transport()
-                    do_ssh_paramiko_connect_to(transport, chost,
-                                               cusername, password,
+                    do_ssh_paramiko_connect_to(transport, host,
+                                               username, password,
                                                host_config or ssh_config.lookup("*"),
                                                proxy_keys,
                                                paramiko_config)
                     chan = paramiko_run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
-                    peername = (chost, cport)
+                    peername = (host, port)
                     conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
-                    conn.target = host_target_string("ssh", cusername, chost, port, display)
+                    conn.target = host_target_string("ssh", username, host, port, display)
                     conn.timeout = SOCKET_TIMEOUT
                     conn.start_stderr_reader()
                     conn.process = (sock.process, "ssh", cmd)
