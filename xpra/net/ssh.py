@@ -296,12 +296,14 @@ def ssh_paramiko_connect_to(display_desc):
             if host_config:
                 log("got host config for '%s': %s", host, host_config)
                 host = host_config.get("hostname", host)
-                username = host_config.get("user", username)
-                port = host_config.get("port", port)
-                try:
-                    port = int(port)
-                except (TypeError, ValueError):
-                    raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % port) from None
+                if "username" not in display_desc:
+                    username = host_config.get("user", username)
+                if "ssh-port" not in display_desc:
+                    port = host_config.get("port", port)
+                    try:
+                        port = int(port)    
+                    except (TypeError, ValueError):
+                        raise InitExit(EXIT_SSH_FAILURE, "invalid ssh port specified: '%s'" % port) from None
                 proxycommand = host_config.get("proxycommand")
                 if proxycommand:
                     log("found proxycommand='%s' for host '%s'", proxycommand, host)
