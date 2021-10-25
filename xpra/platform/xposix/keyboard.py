@@ -110,7 +110,7 @@ class Keyboard(KeyboardBase):
             return None, None, query_struct
         query_struct = self.keyboard_bindings.getXkbProperties()
         _query = xkbmap_query_tostring(query_struct)
-        log("get_keymap_spec() Xkb query tostring(%s)=%s", query_struct, _query)
+        log("get_keymap_spec() Xkb query tostring(%s)=%r", query_struct, _query)
         #we no longer support servers via xkbmap_print:
         xkbmap_print = ""
         log("get_keymap_spec()=(%r, %r, %r)", xkbmap_print, _query, query_struct)
