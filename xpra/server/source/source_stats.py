@@ -17,7 +17,7 @@ from xpra.server.cystats import (                                           #@Un
 from xpra.simple_stats import get_list_stats
 from xpra.log import Logger
 
-log = Logger("network")
+log = Logger("network", "stats")
 
 NRECS = 500
 
