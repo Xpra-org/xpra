@@ -19,7 +19,8 @@ MAX_DECOMPRESSED_SIZE = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
 ALL_COMPRESSORS = ("zlib", "lz4", "brotli", "none")
 #order for performance:
 PERFORMANCE_ORDER = ("none", "lz4", "zlib", "brotli")
-
+#require compression (disallow 'none'):
+PERFORMANCE_COMPRESSION = ("lz4", "zlib", "brotli")
 
 Compression = namedtuple("Compression", ["name", "version", "python_version", "compress", "decompress"])
 
@@ -193,7 +194,7 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs):
         sizemb = size//1024//1024
         maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
         raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
-    algos = [x for x in ALL_COMPRESSORS if kwargs.get(x)]
+    algos = [x for x in PERFORMANCE_COMPRESSION if kwargs.get(x)]
     if not algos:
         return no()
         #raise InvalidCompressionException("no compressors available")
