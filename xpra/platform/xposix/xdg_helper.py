@@ -81,7 +81,7 @@ if LOAD_FROM_THEME:
         log("python xdg is missing", exc_info=True)
     else:
         class KeepCacheLoadingContext():
-            __slots__ = ("cache_time")
+            __slots__ = ("cache_time", )
             def __enter__(self):
                 self.cache_time = Config.cache_time
                 Config.cache_time = 9999
