@@ -95,6 +95,7 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
             safe_setxkbmap(rules, model, layout, variant, options)
         else:
             safe_setxkbmap(rules, model, "", "", "")
+        return
     #fallback for non X11 clients:
     layout = xkbmap_layout or "us"
     log.info("setting keyboard layout to '%s'", std(layout))
