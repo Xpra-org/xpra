@@ -7,6 +7,7 @@
 #cython: auto_pickle=False, language_level=3
 
 import os
+import sys
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
@@ -366,7 +367,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             })
         #try to load rules files from all include paths until
         #we find one that works:
-        XKB_CONFIG_ROOT = os.environ.get("XPRA_XKB_CONFIG_ROOT", "/usr/share/X11/xkb").encode()
+        XKB_CONFIG_ROOT = os.environ.get("XPRA_XKB_CONFIG_ROOT", "%s/share/X11/xkb" % sys.prefix).encode()
         for include_path in (b".", XKB_CONFIG_ROOT):
             rules_path = os.path.join(include_path, b"rules", strtobytes(rules_name))
             if len(rules_path)>=PATH_MAX:
