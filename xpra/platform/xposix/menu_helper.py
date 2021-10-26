@@ -15,11 +15,11 @@ import glob
 from time import monotonic
 from typing import Generator as generator       #@UnresolvedImport, @UnusedImport
 
-from xpra.util import envbool, print_nested_dict, first_time, engs
+from xpra.util import envbool, first_time, engs
 from xpra.os_util import DummyContextManager, OSEnvContext, get_saved_env
 from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename
-from xpra.log import Logger, add_debug_category
+from xpra.log import Logger
 
 log = Logger("exec", "menu")
 
@@ -92,14 +92,15 @@ if LOAD_FROM_THEME:
                 return "KeepCacheLoadingContext"
         IconLoadingContext = KeepCacheLoadingContext
         def init_themes():
-            if not hasattr(IconTheme, "__get_themes"):
+            get_themes = getattr(IconTheme, "__get_themes", None)
+            if not callable(get_themes):
                 return
             global themes
             themes = {}
             def addtheme(name):
                 if not name or name in themes or len(themes)>=MAX_THEMES:
                     return
-                for theme in IconTheme.__get_themes(name):
+                for theme in get_themes(name):  #pylint: disable=not-callable
                     if theme and theme.name not in themes:
                         themes[theme.name] = theme
             addtheme(Config.icon_theme)
@@ -116,6 +117,16 @@ if LOAD_FROM_THEME:
         init_themes()
 
 EXTENSIONS = ("png", "svg", "xpm")
+
+
+def clear_cache():
+    log("clear_cache() IconTheme=%s", IconTheme)
+    if not IconTheme:
+        return
+    IconTheme.themes = []
+    IconTheme.theme_cache = {}
+    IconTheme.dir_cache = {}
+    IconTheme.icon_cache = {}
 
 
 def load_entry_icon(props):
@@ -216,7 +227,7 @@ def find_glob_icon(*names, category="categories"):
             for f in filenames:
                 v = icon_util.load_icon_from_file(f)
                 if v:
-                    log("found icon for '%s' with glob '%s': %s", name, pathname, f)
+                    log("found icon for %s with glob '%s': %s", names, pathname, f)
                     return v
     return None
 
@@ -309,12 +320,11 @@ def remove_icons(menu_data):
         filt[category] = fcdef
     return filt
 
-
-def load_xdg_menu_data():
+def load_menu():
     icon_util.large_icons.clear()
     start = monotonic()
     with IconLoadingContext():
-        xdg_menu_data = do_load_xdg_menu_data()
+        xdg_menu_data = load_xdg_menu_data()
     end = monotonic()
     if xdg_menu_data:
         l = sum(len(x) for x in xdg_menu_data.values())
@@ -327,11 +337,11 @@ def load_xdg_menu_data():
         log.warn(" more bandwidth will be used by the start menu data")
     return xdg_menu_data
 
-def do_load_xdg_menu_data():
+def load_xdg_menu_data():
     try:
         from xdg.Menu import parse, Menu  #pylint: disable=import-outside-toplevel
     except ImportError:
-        log("do_load_xdg_menu_data()", exc_info=True)
+        log("load_xdg_menu_data()", exc_info=True)
         if first_time("no-python-xdg"):
             log.warn("Warning: cannot use application menu data:")
             log.warn(" no python-xdg module")
@@ -359,7 +369,7 @@ def do_load_xdg_menu_data():
                     menu = parse()
                     break
                 except Exception as e:
-                    log("do_load_xdg_menu_data()", exc_info=True)
+                    log("load_xdg_menu_data()", exc_info=True)
                     error = e
                     menu = None
         if menu:
@@ -476,41 +486,3 @@ def get_icon_names_for_session(name):
                 "%s-desktop" % short_name,
                 ] + ALIASES.get(short_name, [])   # -> "gnome"
     return names
-
-
-def main():
-    from xpra.platform import program_context  #pylint: disable=import-outside-toplevel
-    with program_context("XDG-Menu-Helper", "XDG Menu Helper"):
-        for x in list(sys.argv):
-            if x in ("-v", "--verbose"):
-                sys.argv.remove(x)
-                add_debug_category("menu")
-                log.enable_debug()
-        def icon_fmt(icondata):
-            return "%i bytes" % len(icondata)
-        if len(sys.argv)>1:
-            for x in sys.argv[1:]:
-                if os.path.isabs(x):
-                    v = icon_util.load_icon_from_file(x)
-                    print("load_icon_from_file(%s)=%s" % (x, v))
-        else:
-            menu = load_xdg_menu_data()
-            if menu:
-                print()
-                print("application menu:")
-                print_nested_dict(menu, vformat={"IconData" : icon_fmt})
-            else:
-                print("no application menu data found")
-            #try desktop sessions:
-            sessions = load_desktop_sessions()
-            if sessions:
-                print()
-                print("session menu:")
-                print_nested_dict(sessions, vformat={"IconData" : icon_fmt})
-            else:
-                print("no session menu data found")
-    return 0
-
-if __name__ == "__main__":
-    r = main()
-    sys.exit(r)

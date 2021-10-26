@@ -11,7 +11,7 @@ from gi.repository import GLib
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
 from xpra.os_util import (
-    OSX, WIN32, POSIX,
+    OSX, POSIX,
     osexpand,
     )
 from xpra.util import envint, envbool
@@ -61,7 +61,7 @@ class MenuProvider:
         self.load_lock = Lock()
 
     def setup(self):
-        if not POSIX or OSX or not EXPORT_XDG_MENU_DATA:
+        if OSX or not EXPORT_XDG_MENU_DATA:
             return
         self.setup_menu_watcher()
         self.load_menu_data()
@@ -140,6 +140,7 @@ class MenuProvider:
         def load():
             self.get_menu_data(force_reload)
             self.get_desktop_sessions()
+            self.clear_cache()
         start_thread(load, "load-menu-data", True)
 
     def get_menu_data(self, force_reload=False, remove_icons=False, wait=True):
@@ -153,16 +154,8 @@ class MenuProvider:
             menu_data = self.menu_data
             try:
                 if not self.menu_data or force_reload:
-                    if POSIX:
-                        from xpra.platform.xposix.xdg_helper import load_xdg_menu_data
-                        menu_data = load_xdg_menu_data()
-                    elif WIN32:
-                        from xpra.platform.win32.menu_helper import load_menu
-                        menu_data = load_menu()
-                    else:
-                        log.error("Error: unsupported platform!")
-                        return None
-                    self.menu_data = menu_data
+                    from xpra.platform.menu_helper import load_menu  #pylint: disable=import-outside-toplevel
+                    self.menu_data = load_menu()
                     add_work_item(self.got_menu_data)
             finally:
                 self.load_lock.release()
@@ -176,6 +169,10 @@ class MenuProvider:
             cb(self.menu_data)
         return False
 
+    def clear_cache(self):
+        from xpra.platform.menu_helper import clear_cache  #pylint: disable=import-outside-toplevel
+        log("%s()", clear_cache)
+        clear_cache()
 
     def cancel_xdg_menu_reload(self):
         xmrt = self.xdg_menu_reload_timer
@@ -220,7 +217,7 @@ class MenuProvider:
         if not POSIX or OSX:
             return None
         if force_reload or self.desktop_sessions is None:
-            from xpra.platform.xposix.xdg_helper import load_desktop_sessions
+            from xpra.platform.xposix.menu_helper import load_desktop_sessions  #pylint: disable=import-outside-toplevel
             self.desktop_sessions = load_desktop_sessions()
         desktop_sessions = self.desktop_sessions
         if remove_icons:
