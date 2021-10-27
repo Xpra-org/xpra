@@ -152,7 +152,7 @@ class AudioServer(StubServerMixin):
                 xpra_rd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
                 assert xpra_rd, "bug: no xpra runtime dir"
                 display = os.environ.get("DISPLAY", "").lstrip(":")
-                if xpra_rd.find(display):
+                if xpra_rd.find("/%s/" % display):
                     #this is already a per-display directory,
                     #no need to include the display name again:
                     pulse_dirname = "pulse"
