@@ -35,8 +35,6 @@ del CLIPBOARDS_ENV
 TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
 
-LOOP_DISABLE = envbool("XPRA_CLIPBOARD_LOOP_DISABLE", True)
-LOOP_PREFIX = os.environ.get("XPRA_CLIPBOARD_LOOP_PREFIX", "Xpra-Clipboard-Loop-Detection:")
 
 def get_discard_targets(envname="DISCARD", default_value=()):
     _discard_target_strs_ = os.environ.get("XPRA_%s_TARGETS" % envname)
@@ -106,7 +104,6 @@ class ClipboardProtocolHelperCore:
         self.max_clipboard_packet_size = d.intget("max-packet-size", MAX_CLIPBOARD_PACKET_SIZE)
         self.max_clipboard_receive_size = d.intget("max-receive-size", MAX_CLIPBOARD_RECEIVE_SIZE)
         self.max_clipboard_send_size = d.intget("max-send-size", MAX_CLIPBOARD_SEND_SIZE)
-        self.disabled_by_loop = []
         self.filter_res = []
         filter_res = d.strtupleget("filters")
         if filter_res:
@@ -185,14 +182,7 @@ class ClipboardProtocolHelperCore:
         self._clipboard_proxies = {}
 
     def client_reset(self):
-        #if the client disconnects,
-        #we can re-enable the clipboards it had problems with:
-        l = self.disabled_by_loop
-        self.disabled_by_loop = []
-        for x in l:
-            proxy = self._clipboard_proxies.get(x)
-            proxy.set_enabled(True)
-
+        pass
 
     def set_direction(self, can_send, can_receive, max_send_size=None, max_receive_size=None):
         self.can_send = can_send
@@ -280,10 +270,7 @@ class ClipboardProtocolHelperCore:
             l("ignoring token for clipboard '%s' (no proxy)", name)
             return
         if not proxy.is_enabled():
-            l = log
-            if name not in self.disabled_by_loop:
-                l = log.warn
-            l("ignoring token for disabled clipboard '%s'", name)
+            log.warn("ignoring token for disabled clipboard '%s'", name)
             return
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         targets = None
@@ -407,10 +394,7 @@ class ClipboardProtocolHelperCore:
             no_contents()
             return
         if not proxy.is_enabled():
-            l = log
-            if selection not in self.disabled_by_loop:
-                l = log.warn
-            l("Warning: ignoring clipboard request for '%s' (disabled)", name)
+            log.warn("Warning: ignoring clipboard request for '%s' (disabled)", name)
             no_contents()
             return
         if not proxy._can_send:
@@ -505,9 +489,6 @@ class ClipboardProtocolHelperCore:
     def _process_clipboard_enable_selections(self, packet):
         selections = tuple(bytestostr(x) for x in packet[1])
         self.enable_selections(selections)
-
-    def _process_clipboard_loop_uuids(self, packet):
-        """ deprecated """
 
 
     def process_clipboard_packet(self, packet):
