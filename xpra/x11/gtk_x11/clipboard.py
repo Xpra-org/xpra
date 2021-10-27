@@ -201,12 +201,12 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         if dformat==32 and dtype in ("ATOM", "ATOM_PAIR"):
-            return "atoms", _filter_targets(xatoms_to_strings(data))
+            return "atoms", self.remote_targets(xatoms_to_strings(data))
         return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)
 
     def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
         if encoding=="atoms":
-            return strings_to_xatoms(_filter_targets(data))
+            return strings_to_xatoms(self.local_targets(data))
         return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
 GObject.type_register(X11Clipboard)

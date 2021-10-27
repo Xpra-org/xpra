@@ -277,17 +277,18 @@ class ClipboardProtocolHelperCore:
         target_data = None
         if proxy._can_receive:
             if len(packet)>=3:
-                targets = packet[2]
+                targets = self.local_targets(packet[2])
             if len(packet)>=8:
                 target, dtype, dformat, wire_encoding, wire_data = packet[3:8]
                 if target:
                     assert dformat in (8, 16, 32), "invalid format '%s' for datatype=%s and wire encoding=%s" % (
                         dformat, dtype, wire_encoding)
                     target = bytestostr(target)
-                    wire_encoding = bytestostr(wire_encoding)
-                    dtype = bytestostr(dtype)
-                    raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
-                    target_data = {target : (dtype, dformat, raw_data)}
+                    if not must_discard(target):
+                        wire_encoding = bytestostr(wire_encoding)
+                        dtype = bytestostr(dtype)
+                        raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
+                        target_data = {target : (dtype, dformat, raw_data)}
         #older versions always claimed the selection when the token is received:
         claim = True
         if len(packet)>=10:
@@ -298,6 +299,12 @@ class ClipboardProtocolHelperCore:
             proxy._greedy_client = bool(packet[9])
         synchronous_client = len(packet)>=11 and bool(packet[10])
         proxy.got_token(targets, target_data, claim, synchronous_client)
+
+    def local_targets(self, remote_targets):
+        return _filter_targets(remote_targets)
+
+    def remote_targets(self, local_targets):
+        return _filter_targets(local_targets)
 
     def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
         log("_munge_raw_selection_to_wire%s", (target, dtype, dformat, repr_ellipsized(bytestostr(data))))
@@ -310,7 +317,7 @@ class ClipboardProtocolHelperCore:
             #targets is special cased here
             #because we can get the values in wire format already (not atoms)
             #thanks to the request_targets() function (required on win32)
-            return "atoms", _filter_targets(data)
+            return "atoms", self.remote_targets(data)
         try:
             return self._do_munge_raw_selection_to_wire(target, dtype, dformat, data)
         except Exception:
