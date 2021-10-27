@@ -2757,14 +2757,23 @@ def run_clean(opts, args):
     no_gtk()
     if args:
         clean = args
+        kill_displays = True
     else:
         #TODO: find the sessions to clean:
         clean = []
+        kill_displays = False
     from xpra.scripts.server import get_session_dir
     try:
         uid = int(opts.uid)
     except (ValueError, TypeError):
         uid = getuid()
+    def kill_pid(pid):
+        if pid:
+            try:
+                if pid and pid!=os.getpid():
+                    os.kill(pid, signal.SIGTERM)
+            except OSError as e:
+                error("Error sending SIGTERM signal to %r %i %s" % (pid_filename, pid, e))
     #also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     for display in clean:
@@ -2772,6 +2781,16 @@ def run_clean(opts, args):
         if not os.path.exists(session_dir):
             print("session %s not found" % (display,))
             continue
+        def load_pid(pid_filename):
+            pid_file = os.path.join(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
+            if not os.path.exists(pid_file):
+                return 0
+            try:
+                with open(pid_file, "rb") as f:
+                    return int(f.read().rstrip(b"\n\r"))
+            except (ValueError, OSError) as e:
+                error("failed to read %r: %s" % (pid_file, e))
+                return 0
         sockpath = os.path.join(session_dir, "socket")
         state = dotxpra.is_socket_match(sockpath, check_uid=uid, matching_state=None)
         if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
@@ -2788,37 +2807,38 @@ def run_clean(opts, args):
             if r:
                 #so the X11 server may still be running
                 #x11_sockpath = X11_SOCKET_DIR+"/X%i" % dno
-                print("X11 server :%i is still running " % (dno,))
-                print(" run clean-displays to terminate it")
-                continue
-        print("session_dir: %s : %s" % (session_dir, state))
-        for pid_filename in ("dbus.pid", ):
-            pid_file = os.path.join(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
-            if os.path.exists(pid_file):
-                try:
-                    with open(pid_file, "rb") as f:
-                        pid = int(f.read().rstrip(b"\n\r"))
-                except (ValueError, OSError) as e:
-                    error("failed to read %r: %s" % (pid_file, e))
+                xvfb_pid = load_pid("xvfb.pid")
+                if xvfb_pid and kill_displays:
+                    kill_pid(xvfb_pid)
                 else:
-                    try:
-                        if pid and pid!=os.getpid():
-                            os.kill(pid, signal.SIGTERM)
-                    except OSError as e:
-                        error("Error sending SIGTERM signal to %r %i %s" % (pid_filename, pid, e))
+                    print("X11 server :%i is still running " % (dno,))
+                    if xvfb_pid:
+                        print(" run clean-displays to terminate it")
+                    else:
+                        print(" cowardly refusing to clean the session")
+                continue
+        #print("session_dir: %s : %s" % (session_dir, state))
+        for pid_filename in ("dbus.pid", "pulseaudio.pid", ):
+            pid = load_pid(pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
+            kill_pid(pid)
         try:
             session_files = os.listdir(session_dir)
         except OSError as e:
             error("Error listing session files in %r: %s" % (session_dir, e))
             continue
         #files we can remove safely:
-        KNOWN_SERVER_FILES = (
+        KNOWN_SERVER_FILES = [
             "cmdline", "config",
             "dbus.env", "dbus.pid",
             "server.env", "server.pid", "server.log",
             "socket", "xauthority", "Xorg.log", "xvfb.pid",
-            )
-        unknown_files = [x for x in session_files if x not in KNOWN_SERVER_FILES]
+            "pulseaudio.pid",
+            ]
+        KNOWN_SERVER_DIRS = [
+            "pulse",
+            ]
+        ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
+        unknown_files = [x for x in session_files if x not in ALL_KNOWN]
         if unknown_files:
             error("Error: found some unexpected session files:")
             error(" %s" % csv(unknown_files))
@@ -2826,10 +2846,13 @@ def run_clean(opts, args):
             continue
         for x in session_files:
             try:
-                filename = os.path.join(session_dir, x)
-                os.unlink(filename)
+                pathname = os.path.join(session_dir, x)
+                if x in KNOWN_SERVER_FILES:
+                    os.unlink(pathname)
+                else:
+                    os.rmdir(pathname)
             except OSError as e:
-                error("Error removing %r: %s" % (filename, e))
+                error("Error removing %r: %s" % (pathname, e))
         try:
             os.rmdir(session_dir)
         except OSError:
