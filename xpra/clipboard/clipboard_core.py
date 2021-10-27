@@ -592,14 +592,14 @@ class ClipboardProxyCore:
         if self._have_token or ((self._greedy_client or self._want_targets) and self._can_send):
             self.schedule_emit_token()
 
-    def schedule_emit_token(self, min_delay=0):
-        if min_delay==0 and (self._have_token or (not self._want_targets and not self._greedy_client) or DELAY_SEND_TOKEN<0):
+    def schedule_emit_token(self):
+        if self._have_token or (not self._want_targets and not self._greedy_client) or DELAY_SEND_TOKEN<0:
             #token ownership will change or told not to wait
             GLib.idle_add(self.emit_token)
         elif not self._emit_token_timer:
             #we already had sent the token,
             #or sending it is expensive, so wait a bit:
-            self.do_schedule_emit_token(min_delay)
+            self.do_schedule_emit_token()
 
     def do_schedule_emit_token(self, min_delay=0):
         now = monotonic()
