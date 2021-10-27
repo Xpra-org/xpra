@@ -508,6 +508,7 @@ cdef class Encoder:
     cdef object __weakref__
 
     def init_context(self, device_context, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):
+        log("enc_x264.init_context%s", (device_context, width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
@@ -815,6 +816,8 @@ cdef class Encoder:
         profile = os.environ.get("XPRA_X264_%s_PROFILE" % csc_mode, PROFILE)
         #now see if the client has requested a different value:
         profile = options.strget("h264.%s.profile" % csc_mode, profile)
+        if profile is None:
+            profile = options.strget("h264.profile", profile)
         if profile is None:
             return None
         return strtobytes(profile)
