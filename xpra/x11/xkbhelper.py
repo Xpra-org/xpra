@@ -91,9 +91,11 @@ def do_set_keymap(xkbmap_layout, xkbmap_variant, xkbmap_options,
             log.info("setting keymap: %s",
                      csv("%s=%s" % (std(k), std(v)) for k,v in xkbmap_query_struct.items()
                          if bytestostr(k) in ("rules", "model", "layout", "variant", "options") and v))
-            safe_setxkbmap(rules, model, layout, variant, options)
+            if safe_setxkbmap(rules, model, layout, variant, options):
+                return
         else:
-            safe_setxkbmap(rules, model, "", "", "")
+            if safe_setxkbmap(rules, model, "", "", ""):
+                return
         return
     #fallback for non X11 clients:
     layout = xkbmap_layout or "us"
@@ -104,7 +106,7 @@ def safe_setxkbmap(rules, model, layout, variant, options):
     #(we execute the options separately in case that fails..)
     try:
         X11Keyboard.setxkbmap(rules, model, layout, variant, options)
-        return
+        return True
     except Exception:
         log("safe_setxkbmap%s", (rules, model, layout, variant, options), exc_info=True)
         log.warn("Warning: failed to set exact keymap,")
@@ -114,10 +116,12 @@ def safe_setxkbmap(rules, model, layout, variant, options):
         #try again with no options:
         try:
             X11Keyboard.setxkbmap(rules, model, layout, variant, "")
+            return True
         except Exception:
             log("setxkbmap", exc_info=True)
             log.error("Error: failed to set exact keymap")
             log.error(" even without applying any options..")
+    return False
 
 
 ################################################################################
