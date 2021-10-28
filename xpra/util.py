@@ -347,7 +347,7 @@ def decode_str(x, try_encoding="utf8"):
 _RaiseKeyError = object()
 
 class typedict(dict):
-    __slots__ = ("warn") # no __dict__ - that would be redundant
+    __slots__ = ("warn", ) # no __dict__ - that would be redundant
     @staticmethod # because this doesn't make sense as a global function.
     def _process_args(mapping=(), **kwargs):
         if hasattr(mapping, "items"):
