@@ -470,15 +470,21 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         if password:
             opts.password = password
 
+    def _set_username():
+        username = desc.get("username")
+        if username:
+            opts.username = username
+
     def _parse_username_and_password(s):
         d = parse_username_and_password(s)
         desc.update(d)
-        opts.username = d.get("username", opts.username)
+        _set_username()
         _set_password()
 
     def _parse_host_string(host, default_port=DEFAULT_PORT):
         d = parse_host_string(host, default_port)
         desc.update(d)
+        _set_username()
         _set_password()
 
     def _parse_remote_display(s):
