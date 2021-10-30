@@ -9,6 +9,7 @@ from gi.repository import Gtk   #pylint: disable=no-name-in-module
 
 from xpra.util import envbool, prettify_plug_name, csv, parse_simple_dict, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
+from xpra.scripts.config import parse_bool
 from xpra.server import server_features
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server_base import GTKServerBase
@@ -166,12 +167,14 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         display_name = prettify_plug_name(self.root.get_screen().get_display().get_name())
         monitors = self.get_shadow_monitors()
         match_str = None
+        multi_window = MULTI_WINDOW
         geometries = []
         if "=" in self.display_options:
             #parse the display options as a dictionary:
             opt_dict = parse_simple_dict(self.display_options)
             match_str = opt_dict.get("plug")
             geometries_str = opt_dict.get("geometry")
+            multi_window = parse_bool("multi-window", opt_dict.get("multi-window", multi_window))
             if geometries_str:
                 for geometry_str in geometries_str.split("/"):
                     try:
@@ -194,7 +197,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         else:
             #only a single value, assume it is the string to match:
             match_str = self.display_options
-        if not MULTI_WINDOW or geometries:
+        if not multi_window or geometries:
             for geometry in (geometries or (None,)):
                 model = model_class(self.root, self.capture)
                 model.title = display_name
