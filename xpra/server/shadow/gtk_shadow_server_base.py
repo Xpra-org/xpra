@@ -7,7 +7,7 @@
 import os
 from gi.repository import Gtk   #pylint: disable=no-name-in-module
 
-from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID
+from xpra.util import envbool, prettify_plug_name, csv, parse_simple_dict, XPRA_APP_ID
 from xpra.os_util import POSIX, OSX
 from xpra.server import server_features
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -162,13 +162,48 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         screenlog("makeRootWindowModels() root=%s, display_options=%s", self.root, self.display_options)
         self.capture = self.setup_capture()
         model_class = self.get_root_window_model_class()
-        if not MULTI_WINDOW:
-            return (model_class(self.root, self.capture),)
         models = []
-        monitors = self.get_shadow_monitors()
-        match_str = self.display_options
         display_name = prettify_plug_name(self.root.get_screen().get_display().get_name())
+        monitors = self.get_shadow_monitors()
+        match_str = None
+        geometries = []
+        if "=" in self.display_options:
+            #parse the display options as a dictionary:
+            opt_dict = parse_simple_dict(self.display_options)
+            match_str = opt_dict.get("plug")
+            geometries_str = opt_dict.get("geometry")
+            if geometries_str:
+                for geometry_str in geometries_str.split("/"):
+                    try:
+                        parts = geometry_str.split("@")
+                        if len(parts)==1:
+                            x = y = 0
+                        else:
+                            x, y = [int(v.strip(" ")) for v in parts[1].split("x")]
+                        w, h = [int(v.strip(" ")) for v in parts[0].split("x")]
+                        geometry = [x, y, w, h]
+                        if len(geometry)!=4:
+                            raise ValueError("not enough values for capture geometry: %s" % (geometry,))
+                        screenlog("capture geometry: %s", geometry)
+                        geometries.append(geometry)
+                    except ValueError:
+                        screenlog("failed to parse geometry %r", geometry_str, exc_info=True)
+                        screenlog.error("Error: invalid display geometry specified: %r", geometry_str)
+                        screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
+                        raise
+        else:
+            #only a single value, assume it is the string to match:
+            match_str = self.display_options
+        if not MULTI_WINDOW or geometries:
+            for geometry in (geometries or (None,)):
+                model = model_class(self.root, self.capture)
+                model.title = display_name
+                if geometry:
+                    model.geometry = geometry
+                models.append(model)
+            return models
         found = []
+        screenlog("capture inputs matching %r", match_str or "all")
         for i, monitor in enumerate(monitors):
             plug_name, x, y, width, height, scale_factor = monitor
             title = display_name
