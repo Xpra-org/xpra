@@ -129,43 +129,63 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def setup_capture(self):
         raise NotImplementedError()
 
-    def makeRootWindowModels(self):
-        log("makeRootWindowModels() root=%s", self.root)
-        self.capture = self.setup_capture()
-        if not MULTI_WINDOW:
-            return (RootWindowModel(self.root, self.capture),)
-        models = []
+    def get_root_window_model_class(self):
+        return RootWindowModel
+
+    def get_shadow_monitors(self):
+        display = self.root.get_display()
         screen = self.root.get_screen()
-        n = screen.get_n_monitors()
-        match = self.display_options.split(",")
-        found = []
+        n = display.get_n_monitors()
+        monitors = []
         for i in range(n):
-            geom = screen.get_monitor_geometry(i)
-            x, y, width, height = geom.x, geom.y, geom.width, geom.height
+            m = display.get_monitor(i)
+            geom = m.get_geometry()
             try:
-                scale_factor = screen.get_monitor_scale_factor(i)
+                scale_factor = m.get_scale_factor()
             except Exception as e:
                 screenlog("no scale factor: %s", e)
+                scale_factor = 1
             else:
                 screenlog("scale factor for monitor %i: %i", i, scale_factor)
-            title = prettify_plug_name(self.root.get_screen().get_display().get_name())
             plug_name = None
-            if hasattr(screen, "get_monitor_plug_name"):
+            try:
                 plug_name = screen.get_monitor_plug_name(i)
-            if title or n>1:
+            except Exception:
+                pass
+            if not plug_name:
+                plug_name = m.get_model()
+            monitors.append((plug_name, geom.x, geom.y, geom.width, geom.height, scale_factor))
+        screenlog("get_shadow_monitors()=%s", monitors)
+        return monitors
+
+    def makeRootWindowModels(self):
+        screenlog("makeRootWindowModels() root=%s, display_options=%s", self.root, self.display_options)
+        self.capture = self.setup_capture()
+        model_class = self.get_root_window_model_class()
+        if not MULTI_WINDOW:
+            return (model_class(self.root, self.capture),)
+        models = []
+        monitors = self.get_shadow_monitors()
+        match_str = self.display_options
+        display_name = prettify_plug_name(self.root.get_screen().get_display().get_name())
+        found = []
+        for i, monitor in enumerate(monitors):
+            plug_name, x, y, width, height, scale_factor = monitor
+            title = display_name
+            if plug_name or i>1:
                 title = plug_name or str(i)
             found.append(plug_name or title)
-            if match and not(title in match or plug_name in match):
+            if match_str and not(title in match_str or plug_name in match_str):
                 screenlog.info(" skipped monitor %s", plug_name or title)
                 continue
-            model = RootWindowModel(self.root, self.capture)
+            model = model_class(self.root, self.capture)
             model.title = title
             model.geometry = (x, y, width, height)
             models.append(model)
-            screenlog("monitor %i: %10s geometry=%s", i, title, model.geometry)
+            screenlog("monitor %i: %10s geometry=%s, scale factor=%s", i, title, model.geometry, scale_factor)
         screenlog("makeRootWindowModels()=%s", models)
-        if not models and match:
-            screenlog.warn("Warning: no monitors found matching %s", self.display_options)
+        if not models and match_str:
+            screenlog.warn("Warning: no monitors found matching %r", match_str)
             screenlog.warn(" only found: %s", csv(found))
         return models
 

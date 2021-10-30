@@ -2123,12 +2123,15 @@ def run_glcheck(opts):
 
 
 def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
+    if len(args)==1 and args[0]:
+        if OSX or WIN32:
+            return args[0]
+        if args[0][0]==":":
+            #display_name was provided:
+            return args[0]
     if OSX or WIN32:
         #no need for a specific display
         return "Main"
-    if len(args)==1 and args[0] and args[0][0]==":":
-        #display_name was provided:
-        return args[0]
     return guess_X11_display(dotxpra, None, uid, gid)
 
 
@@ -3108,7 +3111,7 @@ def get_displays(dotxpra=None, display_names=None):
             continue
         uid, gid = v[:2]
         displays[display] = {"uid" : uid, "gid" : gid}
-    log("get_displays displays=%s", displays)
+    log("get_displays%s=%s", (dotxpra, display_names), displays)
     return displays
 
 def run_list_sessions(args, options):

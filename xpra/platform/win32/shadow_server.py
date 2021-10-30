@@ -17,7 +17,7 @@ from xpra.os_util import strtobytes
 from xpra.util import envbool, prettify_plug_name, csv, XPRA_APP_ID, XPRA_IDLE_NOTIFICATION_ID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server_base import GTKServerBase
-from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase, MULTI_WINDOW
+from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_fixed_cursor_size
@@ -407,29 +407,24 @@ class ShadowServer(GTKShadowServerBase):
         w, h = get_root_window_size()
         return init_capture(w, h, self.pixel_depth)
 
-    def makeRootWindowModels(self):
-        log("makeRootWindowModels() root=%s", self.root)
-        self.capture = self.setup_capture()
+
+    def get_root_window_model_class(self):
         if SEAMLESS:
-            model_class = SeamlessRootWindowModel
-        else:
-            model_class = RootWindowModel
-        if not MULTI_WINDOW:
-            return (model_class(self.root, self.capture),)
-        models = []
-        monitors = get_monitors()
-        for i, monitor in enumerate(monitors):
+            return SeamlessRootWindowModel
+        return RootWindowModel
+
+    def get_shadow_monitors(self):
+        #convert to the format expected by GTKShadowServerBase:
+        monitors = []
+        for i, monitor in enumerate(get_monitors()):
             geom = monitor["Monitor"]
             x1, y1, x2, y2 = geom
             assert x1<x2 and y1<y2
-            model = model_class(self.root, self.capture)
-            model.title = monitor["Device"].lstrip("\\\\.\\")
-            model.geometry = x1, y1, x2-x1, y2-y1
-            screenlog("monitor %i: %10s geometry=%s (from %s)", i, model.title, model.geometry, geom)
-            models.append(model)
-            screenlog("makeRootWindowModels: model(%s)=%s", monitor, model)
-        log("makeRootWindowModels()=%s", models)
-        return models
+            plug_name = monitor["Device"].lstrip("\\\\.\\")
+            monitors.append((plug_name, x1, y1, x2-x1, y2-y1, 1))
+            screenlog("monitor %i: %10s coordinates: %s", i, plug_name, geom)
+        log("get_shadow_monitors()=%s", monitors)
+        return monitors
 
 
     def refresh(self):
