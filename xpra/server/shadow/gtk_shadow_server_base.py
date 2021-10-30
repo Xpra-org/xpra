@@ -168,35 +168,41 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         monitors = self.get_shadow_monitors()
         match_str = None
         multi_window = MULTI_WINDOW
-        geometries = []
+        geometries = None
+        def parse_geometry(s):
+            try:
+                parts = s.split("@")
+                if len(parts)==1:
+                    x = y = 0
+                else:
+                    x, y = [int(v.strip(" ")) for v in parts[1].split("x")]
+                w, h = [int(v.strip(" ")) for v in parts[0].split("x")]
+                geometry = [x, y, w, h]
+                screenlog("capture geometry: %s", geometry)
+                return geometry
+            except ValueError:
+                screenlog("failed to parse geometry %r", s, exc_info=True)
+                screenlog.error("Error: invalid display geometry specified: %r", s)
+                screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
+                raise
+        def parse_geometries(s):
+            g = []
+            for geometry_str in s.split("/"):
+                g.append(parse_geometry(geometry_str))
+            return g
         if "=" in self.display_options:
             #parse the display options as a dictionary:
             opt_dict = parse_simple_dict(self.display_options)
             match_str = opt_dict.get("plug")
-            geometries_str = opt_dict.get("geometry")
             multi_window = parse_bool("multi-window", opt_dict.get("multi-window", multi_window))
+            geometries_str = opt_dict.get("geometry")
             if geometries_str:
-                for geometry_str in geometries_str.split("/"):
-                    try:
-                        parts = geometry_str.split("@")
-                        if len(parts)==1:
-                            x = y = 0
-                        else:
-                            x, y = [int(v.strip(" ")) for v in parts[1].split("x")]
-                        w, h = [int(v.strip(" ")) for v in parts[0].split("x")]
-                        geometry = [x, y, w, h]
-                        if len(geometry)!=4:
-                            raise ValueError("not enough values for capture geometry: %s" % (geometry,))
-                        screenlog("capture geometry: %s", geometry)
-                        geometries.append(geometry)
-                    except ValueError:
-                        screenlog("failed to parse geometry %r", geometry_str, exc_info=True)
-                        screenlog.error("Error: invalid display geometry specified: %r", geometry_str)
-                        screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
-                        raise
+                geometries = parse_geometries(geometries_str)
         else:
-            #only a single value, assume it is the string to match:
-            match_str = self.display_options
+            try:
+                geometries = parse_geometries(self.display_options)
+            except:
+                match_str = self.display_options
         if not multi_window or geometries:
             for geometry in (geometries or (None,)):
                 model = model_class(self.root, self.capture)
