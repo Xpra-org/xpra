@@ -516,7 +516,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.do_owner_changed()
         self.schedule_emit_token()
 
-    def schedule_emit_token(self):
+    def schedule_emit_token(self, min_delay=0):
         if not (self._want_targets or self._greedy_client):
             self._have_token = False
             self.emit("send-clipboard-token", ())

@@ -82,7 +82,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     ############################################################################
     # forward local requests to the remote clipboard:
     ############################################################################
-    def schedule_emit_token(self):
+    def schedule_emit_token(self, min_delay=0):
         def send_token(*token_data):
             self._have_token = False
             self.emit("send-clipboard-token", token_data)
