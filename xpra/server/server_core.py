@@ -267,7 +267,7 @@ class ServerCore:
         self.init_auth(opts)
         self.init_ssl(opts)
         if self.pidfile:
-            self.pidinode = write_pidfile(self.pidfile)
+            self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)
 
 
