@@ -286,7 +286,8 @@ def get_screen_sizes(xscale=1, yscale=1):
             plug_name = "%i" % j
         wmm, hmm = monitor.get_width_mm(), monitor.get_height_mm()
         monitor_info = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
-        screenlog(" monitor %s: %s", j, monitor)
+        screenlog(" monitor %s: %s, model=%s, manufacturer=%s",
+                  j, type(monitor).__name__, monitor.get_model(), monitor.get_manufacturer())
         if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
             rect = monitor.get_workarea()
             monitor_info += list(swork(rect.x, rect.y, rect.width, rect.height))
@@ -310,8 +311,15 @@ def get_screen_sizes(xscale=1, yscale=1):
         if os.environ.get("WAYLAND_DISPLAY"):
             log(" (wayland display?)")
         if n_monitors>0:
-            wmm = sum(display.get_monitor(i).get_width_mm() for i in range(n_monitors))
-            hmm = sum(display.get_monitor(i).get_height_mm() for i in range(n_monitors))
+            wmm = 0
+            for mi in range(n_monitors):
+                monitor = display.get_monitor(mi)
+                log(" monitor %i: %s, model=%s, manufacturer=%s",
+                    mi, monitor, monitor.get_model(), monitor.get_manufacturer())
+                wmm += monitor.get_width_mm()
+                hmm += monitor.get_height_mm()
+            wmm /= n_monitors
+            hmm /= n_monitors
             xdpi = dpi(sw, wmm)
             ydpi = dpi(sh, hmm)
         if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:

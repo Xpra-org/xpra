@@ -599,8 +599,9 @@ class ClientWindowBase(ClientWidgetBase):
             #not honouring "base" + "inc", but honouring just "min" instead:
             maxw = max(minw, maxw)
             maxh = max(minh, maxh)
-            geomlog("modified hints for max window size %s: %s (rw=%s, rh=%s) -> max=%sx%s",
-                    max_window_size, hints, rw, rh, maxw, maxh)
+            scaling_info = getattr(self, "xscale", 1), getattr(self, "yscale", 1)
+            geomlog("modified hints for max window size %s and scaling %s: %s (rw=%s, rh=%s) -> max=%sx%s",
+                    max_window_size, scaling_info, hints, rw, rh, maxw, maxh)
             #ensure we don't have duplicates with bytes / strings,
             #and that keys are always "bytes":
             #(in practice this code should never fire, just here as a reminder)
