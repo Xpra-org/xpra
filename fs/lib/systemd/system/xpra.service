@@ -12,11 +12,11 @@ ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
     --tcp-auth=${TCP_AUTH} \
     --ssl-cert=/etc/xpra/ssl-cert.pem --ssl=on \
     --bind=none --auth=${AUTH} --socket-permissions=666 \
-    --log-dir=/var/log --pidfile=/run/xpra/proxy.pid --debug=${DEBUG}
+    --log-dir=/var/log --pidfile=/run/xpra/proxy/server.pid --debug=${DEBUG}
 #rely on SIGKILL which returns 128+15=143
 SuccessExitStatus=0 143
 Restart=on-abnormal
-PIDFile=/run/xpra/proxy.pid
+PIDFile=/run/xpra/proxy/server.pid
 ProtectSystem=strict
 ReadWritePaths=/run/xpra /tmp
 #PrivateDevices=true

@@ -348,7 +348,7 @@ def write_displayfd(display_name, fd):
         log.error(" %s", str(e) or type(e))
 
 
-def get_session_dir(sessions_dir, display_name, uid):
+def get_session_dir(mode, sessions_dir, display_name, uid):
     session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid()==0
@@ -358,12 +358,15 @@ def get_session_dir(sessions_dir, display_name, uid):
             #so try to find a more suitable directory we can use:
             for d in ("/run/xpra", "/var/run/xpra", "/tmp"):
                 if os.path.exists(d):
-                    session_dir = d
-                    break
+                    if mode=="proxy" and (display_name or "").lstrip(":").split(",")[0]=="14500":
+                        #stash the system wide proxy session files in a 'proxy' subdirectory:
+                        return os.path.join(d, "proxy")
+                    #otherwise just use the display as subdirectory name:
+                    return os.path.join(d, (display_name or "").lstrip(":"))
     return session_dir
 
-def make_session_dir(sessions_dir, display_name, uid=0, gid=0):
-    session_dir = get_session_dir(sessions_dir, display_name, uid)
+def make_session_dir(mode, sessions_dir, display_name, uid=0, gid=0):
+    session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
     if not os.path.exists(session_dir):
         try:
             os.makedirs(session_dir, 0o750)
@@ -945,7 +948,7 @@ def _do_run_server(script_file, cmdline,
         os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
 
-    session_dir = make_session_dir(opts.sessions_dir, display_name, uid, gid)
+    session_dir = make_session_dir(mode, opts.sessions_dir, display_name, uid, gid)
     os.environ["XPRA_SESSION_DIR"] = session_dir
     #populate it:
     if run_xpra_script:
@@ -1149,7 +1152,7 @@ def _do_run_server(script_file, cmdline,
                 if pam:
                     pam.set_items({"XDISPLAY" : display_name})
                 if session_dir:
-                    new_session_dir = get_session_dir(opts.sessions_dir, display_name, uid)
+                    new_session_dir = get_session_dir(mode, opts.sessions_dir, display_name, uid)
                     if new_session_dir!=session_dir:
                         try:
                             if os.path.exists(new_session_dir):

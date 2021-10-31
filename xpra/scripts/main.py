@@ -2780,7 +2780,7 @@ def run_clean(opts, args):
     #also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     for display in clean:
-        session_dir = get_session_dir(opts.sessions_dir, display, uid)
+        session_dir = get_session_dir(None, opts.sessions_dir, display, uid)
         if not os.path.exists(session_dir):
             print("session %s not found" % (display,))
             continue
