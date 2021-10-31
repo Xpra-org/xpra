@@ -13,3 +13,9 @@ def save_uuid(uuid):
 
 def get_uuid():
     return prop_get(get_default_root_window(), "XPRA_SERVER_UUID", "latin1", ignore_errors=True)
+
+def save_mode(mode):
+    prop_set(get_default_root_window(), "XPRA_SERVER_MODE", "latin1", mode)
+
+def get_mode():
+    return prop_get(get_default_root_window(), "XPRA_SERVER_UUID", "latin1", ignore_errors=True)

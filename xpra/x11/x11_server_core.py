@@ -17,7 +17,7 @@ from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@Unresolved
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
 from xpra.gtk_common.gtk_util import get_default_root_window
-from xpra.server.server_uuid import save_uuid, get_uuid
+from xpra.server.server_uuid import save_uuid, get_uuid, save_mode
 from xpra.x11.vfb_util import parse_resolution
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
@@ -145,7 +145,7 @@ class X11ServerCore(GTKServerBase):
             self.save_mode()
 
     def save_mode(self):
-        prop_set(get_default_root_window(), "XPRA_SERVER_MODE", "latin1", self.get_server_mode())
+        save_mode(self.get_server_mode())
 
     def init_fake_xinerama(self):
         if self.fake_xinerama in FALSE_OPTIONS:

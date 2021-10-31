@@ -380,8 +380,9 @@ class UIXpraClient(ClientBaseClass):
         if POSIX and not is_Wayland():
             #we may be running inside another server!
             try:
-                from xpra.server.server_uuid import get_uuid
-                caps["server_uuid"] = get_uuid() or ""
+                from xpra.server.server_uuid import get_uuid, get_mode  #pylint: disable=import-outside-toplevel
+                if get_mode()!="shadow":
+                    caps["server_uuid"] = get_uuid() or ""
             except ImportError:
                 pass
         for x in (#generic feature flags:
