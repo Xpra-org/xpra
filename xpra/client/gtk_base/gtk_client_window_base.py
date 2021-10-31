@@ -293,6 +293,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         def scroll(_w, event):
             self._do_scroll_event(event)
             return True
+        def configure_event(_w, event):
+            geomlog("widget configure_event: new size=%ix%i", event.width, event.height)
+        widget.connect("configure-event", configure_event)
         widget.connect("scroll-event", scroll)
         widget.connect("draw", self.draw_widget)
 
@@ -1074,7 +1077,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def set_window_type(self, window_types):
-        pass
         hints = 0
         for window_type in window_types:
             #win32 workaround:
@@ -1798,6 +1800,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # whereas set_geometry_hints is not..)
         minw, minh = self.size_constraints.intpair("minimum-size", (0, 0))
         w, h = self._client.sp(minw, minh)
+        geomlog("do_map_event %s.set_size_request%s", self.drawing_area, (minw, minh))
         self.drawing_area.set_size_request(w, h)
 
     def process_map_event(self):
