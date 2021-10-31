@@ -347,7 +347,7 @@ def write_displayfd(display_name, fd):
 
 
 def get_session_dir(sessions_dir, display_name, uid):
-    session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")))
+    session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
     if not os.path.exists(session_dir):
         ROOT = POSIX and getuid()==0
         if ROOT and uid==0:
@@ -369,7 +369,8 @@ def make_session_dir(sessions_dir, display_name, uid=0, gid=0):
             import tempfile
             session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
             os.makedirs(session_dir, 0o750)
-        if POSIX and (session_dir.startswith("/run/user") or session_dir.startswith("/run/xpra")):
+        ROOT = POSIX and getuid()==0
+        if ROOT and (session_dir.startswith("/run/user") or session_dir.startswith("/run/xpra")):
             os.lchown(session_dir, uid, gid)
     return session_dir
 
@@ -380,7 +381,7 @@ def session_file_path(filename):
 def load_session_file(filename):
     return load_binary_file(session_file_path(filename))
 
-def save_session_file(filename, contents):
+def save_session_file(filename, contents, uid=None, gid=None):
     if not os.environ.get("XPRA_SESSION_DIR"):
         return None
     if not isinstance(contents, bytes):
@@ -392,6 +393,8 @@ def save_session_file(filename, contents):
             if POSIX:
                 from xpra.server.server_util import set_session_file_permissions
                 set_session_file_permissions(f.fileno())
+                if getuid()==0 and uid is not None and gid is not None:
+                    os.fchown(f.fileno(), uid, gid)
             f.write(contents)
     except OSError as e:
         from xpra.log import Logger
@@ -460,7 +463,7 @@ SERVER_LOAD_SKIP_OPTIONS = (
     "start-child-on-last-client-exit",
     )
 
-def save_options(opts):
+def get_options_file_contents(opts):
     from xpra.scripts.parsing import fixup_defaults
     defaults = make_defaults_struct()
     fixup_defaults(defaults)
@@ -484,7 +487,7 @@ def save_options(opts):
             else:
                 diff_contents.append("%s=%s" % (attr, cval))
     diff_contents.append("")
-    save_session_file("config", "\n".join(diff_contents))
+    return "\n".join(diff_contents)
 
 def load_options():
     config_file = session_file_path("config")
@@ -812,6 +815,8 @@ def _do_run_server(script_file, cmdline,
     username = get_username_for_uid(uid)
     home = get_home_for_uid(uid)
     ROOT = POSIX and getuid()==0
+    def write_session_file(filename, contents):
+        return save_session_file(filename, contents, uid, gid)
 
     protected_fds = []
     protected_env = {}
@@ -929,12 +934,12 @@ def _do_run_server(script_file, cmdline,
         # environment:
         write_runner_shell_scripts(run_xpra_script)
     if env_script:
-        save_session_file("server.env", env_script)
-    save_session_file("cmdline", "\n".join(cmdline)+"\n")
+        write_session_file("server.env", env_script)
+    write_session_file("cmdline", "\n".join(cmdline)+"\n")
     if mode in ("upgrade", "upgrade-desktop"):
         #if we had saved the start / start-desktop config, reload it:
         apply_config(opts)
-    save_options(opts)
+    write_session_file("config", get_options_file_contents(opts))
 
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "")=="1"
@@ -1048,7 +1053,7 @@ def _do_run_server(script_file, cmdline,
                     log.error(" %s", e)
             else:
                 log("found existing XAUTHORITY file '%s'", xauthority)
-        save_session_file("xauthority", xauthority)
+        write_session_file("xauthority", xauthority)
         #resolve use-display='auto':
         if use_display is None or upgrading or upgrading_desktop:
             #figure out if we have to start the vfb or not:
@@ -1096,7 +1101,7 @@ def _do_run_server(script_file, cmdline,
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
-                save_session_file("uinput-uuid", uinput_uuid)
+                write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom = ""
             try:
                 vfb_geom = parse_resolution(opts.resize_display)
@@ -1107,7 +1112,7 @@ def _do_run_server(script_file, cmdline,
                                                       uid, gid, username, uinput_uuid)
             xauth_add(xauthority, display_name, xauth_data, uid, gid)
             xvfb_pid = xvfb.pid
-            xvfb_pidfile = save_session_file("xvfb.pid", "%s" % xvfb.pid)
+            xvfb_pidfile = write_session_file("xvfb.pid", "%s" % xvfb.pid)
             def xvfb_terminated():
                 log("xvfb_terminated() removing %s", xvfb_pidfile)
                 if xvfb_pidfile:
@@ -1228,9 +1233,9 @@ def _do_run_server(script_file, cmdline,
                 dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
                 if dbus_env:
                     dbuslog("started new dbus instance: %s", dbus_env)
-                    save_session_file("dbus.pid", "%s" % dbus_pid)
+                    write_session_file("dbus.pid", "%s" % dbus_pid)
                     dbus_env_data = b"\n".join(b"%s=%s" % (k, v) for k,v in dbus_env.items())
-                    save_session_file("dbus.env", dbus_env_data)
+                    write_session_file("dbus.env", dbus_env_data)
         if dbus_env:
             os.environb.update(dbus_env)
 
