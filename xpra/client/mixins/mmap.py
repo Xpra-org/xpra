@@ -6,6 +6,7 @@
 import os
 
 from xpra.util import envbool, typedict
+from xpra.os_util import get_int_uuid
 from xpra.exit_codes import EXIT_MMAP_TOKEN_FAILURE
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.simple_stats import std_unit
@@ -117,8 +118,10 @@ class MmapClient(StubClientMixin):
 
     def init_mmap(self, mmap_filename, mmap_group, socket_filename):
         log("init_mmap(%s, %s, %s)", mmap_filename, mmap_group, socket_filename)
-        from xpra.os_util import get_int_uuid
-        from xpra.net.mmap_pipe import init_client_mmap, write_mmap_token, DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES
+        from xpra.net.mmap_pipe import (  #pylint: disable=import-outside-toplevel
+            init_client_mmap, write_mmap_token,
+            DEFAULT_TOKEN_INDEX, DEFAULT_TOKEN_BYTES,
+            )
         #calculate size:
         root_w, root_h = self.get_root_size()
         #at least 256MB, or 8 fullscreen RGBX frames:
