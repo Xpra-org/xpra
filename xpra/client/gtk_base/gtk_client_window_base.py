@@ -1890,7 +1890,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._set_backing_size(w, h)
         self.send_configure_event(skip_geometry)
         if self._backing and not self._iconified:
-            geomlog("configure event: size unchanged, queueing redraw")
+            geomlog("configure event: queueing redraw")
             self.repaint(0, 0, w, h)
 
     def send_configure_event(self, skip_geometry=False):
