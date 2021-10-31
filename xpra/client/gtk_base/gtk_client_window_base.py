@@ -1797,7 +1797,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #(as this also honoured correctly with CSD,
         # whereas set_geometry_hints is not..)
         minw, minh = self.size_constraints.intpair("minimum-size", (0, 0))
-        self.drawing_area.set_size_request(minw, minh)
+        w, h = self._client.sp(minw, minh)
+        self.drawing_area.set_size_request(w, h)
 
     def process_map_event(self):
         x, y, w, h = self.get_drawing_area_geometry()
