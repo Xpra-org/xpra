@@ -122,8 +122,8 @@ class MmapClient(StubClientMixin):
         #calculate size:
         root_w, root_h = self.get_root_size()
         #at least 256MB, or 8 fullscreen RGBX frames:
-        mmap_size = max(256*1024*1024, root_w*root_h*4*8)
-        mmap_size = min(1024*1024*1024, mmap_size)
+        mmap_size = max(512*1024*1024, root_w*root_h*4*8)
+        mmap_size = min(2048*1024*1024, mmap_size)
         self.mmap_enabled, self.mmap_delete, self.mmap, self.mmap_size, self.mmap_tempfile, self.mmap_filename = \
             init_client_mmap(mmap_group, socket_filename, mmap_size, self.mmap_filename)
         if self.mmap_enabled:
