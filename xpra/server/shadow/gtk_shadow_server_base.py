@@ -188,7 +188,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         def parse_geometries(s):
             g = []
             for geometry_str in s.split("/"):
-                g.append(parse_geometry(geometry_str))
+                if geometry_str:
+                    g.append(parse_geometry(geometry_str))
             return g
         if "=" in self.display_options:
             #parse the display options as a dictionary:
