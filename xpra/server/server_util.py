@@ -15,9 +15,7 @@ from xpra.os_util import (
     get_util_logger,
     osexpand, umask_context,
     close_all_fds,
-    getuid, getgid, get_username_for_uid, get_groups, get_group_id,
     )
-from xpra.common import GROUP
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
@@ -303,22 +301,6 @@ def daemonize():
         os._exit(0)     #pylint: disable=protected-access
 
 
-def set_session_file_permissions(fd):
-    os.fchmod(fd, 0o640)
-    try:
-        uid = getuid()
-        username = get_username_for_uid(uid)
-        groups = get_groups(username)
-        if GROUP in groups:
-            group_id = get_group_id(GROUP)
-            if group_id and group_id!=getgid():
-                os.fchown(fd, getuid(), group_id)
-    except Exception:
-        from xpra.log import Logger
-        log = Logger("server")
-        log.error("Error setting file permissions on %s", fd, exc_info=True)
-
-
 def write_pidfile(pidfile):
     log = get_util_logger()
     pidstr = str(os.getpid())
@@ -326,7 +308,7 @@ def write_pidfile(pidfile):
     try:
         with open(pidfile, "w") as f:
             if POSIX:
-                set_session_file_permissions(f.fileno())
+                os.fchmod(f.fileno(), 0o640)
             f.write("%s\n" % pidstr)
             try:
                 inode = os.fstat(f.fileno()).st_ino

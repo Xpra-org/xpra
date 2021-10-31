@@ -41,11 +41,13 @@ from xpra.os_util import (
     which,
     get_saved_env, get_saved_env_var,
     get_rand_chars,
-    get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, setuidgid,
+    get_username_for_uid, get_home_for_uid, get_shell_for_uid, setuidgid,
+    getuid, get_groups, get_group_id,
     get_hex_uuid, get_util_logger, osexpand,
     load_binary_file,
     )
 from xpra.util import envbool, unsetenv, noerr, SERVER_UPGRADE
+from xpra.common import GROUP
 from xpra.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
@@ -391,8 +393,7 @@ def save_session_file(filename, contents, uid=None, gid=None):
         path = session_file_path(filename)
         with open(path, "wb+") as f:
             if POSIX:
-                from xpra.server.server_util import set_session_file_permissions
-                set_session_file_permissions(f.fileno())
+                os.fchmod(f.fileno(), 0o640)
                 if getuid()==0 and uid is not None and gid is not None:
                     os.fchown(f.fileno(), uid, gid)
             f.write(contents)
@@ -815,6 +816,24 @@ def _do_run_server(script_file, cmdline,
     username = get_username_for_uid(uid)
     home = get_home_for_uid(uid)
     ROOT = POSIX and getuid()==0
+    if POSIX and uid and not gid:
+        #try harder to use a valid group,
+        #since we're going to chown files:
+        username = get_username_for_uid(uid)
+        groups = get_groups(username)
+        if GROUP in groups:
+            gid = get_group_id(GROUP)
+        else:
+            try:
+                import pwd
+                pw = pwd.getpwuid(uid)
+                gid = pw.pw_gid
+            except KeyError:
+                if groups:
+                    gid = get_group_id(groups[0])
+                else:
+                    gid = os.getgid()
+
     def write_session_file(filename, contents):
         return save_session_file(filename, contents, uid, gid)
 
@@ -962,12 +981,14 @@ def _do_run_server(script_file, cmdline,
             #as we may still fail to start
             log_filename0 += ".new"
         logfd = open_log_file(log_filename0)
-        if POSIX and ROOT and (uid>0 or gid>0):
-            try:
-                os.fchown(logfd, uid, gid)
-            except OSError as e:
-                noerr(stderr.write, "failed to chown the log file '%s'\n" % log_filename0)
-                noerr(stderr.flush)
+        if POSIX:
+            os.fchmod(logfd, 0o640)
+            if ROOT and (uid>0 or gid>0):
+                try:
+                    os.fchown(logfd, uid, gid)
+                except OSError as e:
+                    noerr(stderr.write, "failed to chown the log file '%s'\n" % log_filename0)
+                    noerr(stderr.flush)
         stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
         noerr(stderr.write, "Entering daemon mode; "
                      + "any further errors will be reported to:\n"
@@ -1045,7 +1066,8 @@ def _do_run_server(script_file, cmdline,
                 log("creating XAUTHORITY file '%s'", xauthority)
                 try:
                     with open(xauthority, "a") as f:
-                        if getuid()==0 and (uid!=0 or gid!=0):
+                        os.fchmod(f.fileno(), 0o640)
+                        if ROOT and (uid!=0 or gid!=0):
                             os.fchown(f.fileno(), uid, gid)
                 except Exception as e:
                     #trying to continue anyway!
@@ -1234,7 +1256,7 @@ def _do_run_server(script_file, cmdline,
                 if dbus_env:
                     dbuslog("started new dbus instance: %s", dbus_env)
                     write_session_file("dbus.pid", "%s" % dbus_pid)
-                    dbus_env_data = b"\n".join(b"%s=%s" % (k, v) for k,v in dbus_env.items())
+                    dbus_env_data = b"\n".join(b"%s=%s" % (k, v) for k,v in dbus_env.items())+b"\n"
                     write_session_file("dbus.env", dbus_env_data)
         if dbus_env:
             os.environb.update(dbus_env)
