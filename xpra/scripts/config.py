@@ -1068,7 +1068,7 @@ def get_defaults():
                     "client-socket-dirs" : get_client_socket_dirs(),
                     "remote-xpra"       : get_remote_run_xpra_scripts(),
                     "encodings"         : ["all"],
-                    "proxy-video-encoders" : [],
+                    "proxy-video-encoders" : ["none"],
                     "video-encoders"    : ["all"],
                     "csc-modules"       : ["all"],
                     "video-decoders"    : ["all"],
