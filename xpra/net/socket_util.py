@@ -1077,7 +1077,7 @@ def ssl_retry(e, ssl_ca_certs):
     ssl_sock = e.ssl_sock
     msg = str(e)
     del e
-    addr = ssl_sock.getpeername()
+    addr = ssl_sock.getpeername()[:2]
     port = addr[-1]
     server_hostname = ssl_sock.server_hostname
     ssllog("ssl_retry: peername=%s, server_hostname=%s", addr, server_hostname)
