@@ -2636,6 +2636,10 @@ class WindowSource(WindowIconSource):
             if ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD:
                 #keep the same proportions:
                 resize = w*crsw//ww, h*crsh//wh
+        else:
+            lossless_q = int(self._lossless_threshold_base + self._lossless_threshold_pixel_boost * w*h // (ww*wh))
+            if q>=lossless_q:
+                q = 100
         return self.enc_pillow.encode(coding, image, q, s, transparency, grayscale, resize)
 
     def mmap_encode(self, coding, image, _options):
