@@ -24,7 +24,6 @@ from gi.repository import Pango, GLib, Gtk, GdkPixbuf
 
 from xpra.gtk_common.gobject_compat import register_os_signals
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
-from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.gtk_common.gtk_util import (
     add_close_accel, scaled_image, color_parse,
     choose_file, imagebutton, get_icon_pixbuf,
@@ -32,7 +31,6 @@ from xpra.gtk_common.gtk_util import (
 from xpra.util import DEFAULT_PORT, csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.make_thread import start_thread
-from xpra.client.gtk_base.menu_helper import make_encodingsmenu
 from xpra.gtk_common.about import about
 from xpra.scripts.main import (
     connect_to, make_client,
@@ -396,38 +394,6 @@ class ApplicationWindow:
         self.info.modify_fg(Gtk.StateType.NORMAL, red)
         vbox.pack_start(self.info)
 
-        hbox = Gtk.HBox(False, 0)
-        hbox.set_spacing(20)
-        self.advanced_options_check = Gtk.CheckButton("Advanced Options")
-        self.advanced_options_check.connect("toggled", self.advanced_options_toggled)
-        self.advanced_options_check.set_active(False)
-        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(self.advanced_options_check)
-        hbox.pack_start(al)
-        vbox.pack_start(hbox)
-        self.advanced_box = Gtk.VBox()
-        vbox.pack_start(self.advanced_box)
-
-        # Encoding:
-        hbox = Gtk.HBox(False, 20)
-        hbox.set_spacing(20)
-        hbox.pack_start(Gtk.Label("Encoding: "))
-        self.encoding_combo = Gtk.MenuButton()
-        encodings = ["auto"]+[x for x in PREFERRED_ENCODING_ORDER]
-        server_encodings = encodings
-        es = make_encodingsmenu(self.get_current_encoding, self.set_new_encoding, encodings, server_encodings)
-        self.encoding_combo.set_popup(es)
-        hbox.pack_start(self.encoding_combo)
-        self.advanced_box.pack_start(hbox)
-        self.set_new_encoding(self.config.encoding)
-        # Sharing:
-        self.sharing = Gtk.CheckButton("Sharing")
-        self.sharing.set_active(bool(self.config.sharing))
-        self.sharing.set_tooltip_text("allow multiple concurrent users to connect")
-        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
-        al.add(self.sharing)
-        self.advanced_box.pack_start(al)
-
         # Buttons:
         hbox = Gtk.HBox(False, 20)
         vbox.pack_start(hbox)
@@ -450,7 +416,6 @@ class ApplicationWindow:
         hbox.pack_start(self.connect_btn)
 
         vbox.show_all()
-        self.advanced_options_toggled()
         self.window.vbox = vbox
         self.window.add(vbox)
 
@@ -643,39 +608,6 @@ class ApplicationWindow:
         else:
             self.nostrict_host_check.hide()
 
-    def get_current_encoding(self):
-        return self.config.encoding
-
-    def set_new_encoding(self, e):
-        self.encoding_combo.set_label(e)
-        self.config.encoding = e
-
-    def get_selected_encoding(self, *_args):
-        if not self.encoding_combo:
-            return ""
-        index = get_active_item_index(self.encoding_combo)
-        return self.encoding_combo.get_popup().index_to_encoding.get(index)
-
-    def encoding_changed(self, *args):
-        encoding = self.get_selected_encoding()
-        uses_quality_option = encoding in ["jpeg", "webp", "h264", "auto"]
-        log("encoding_changed(%s) uses_quality_option(%s)=%s", args, encoding, uses_quality_option)
-        if uses_quality_option:
-            self.quality_combo.show()
-            self.quality_label.show()
-        else:
-            self.quality_combo.hide()
-            self.quality_label.hide()
-
-    def advanced_options_toggled(self, *_args):
-        if not self.advanced_box:
-            return
-        show_opts = self.advanced_options_check.get_active()
-        if show_opts:
-            self.advanced_box.show()
-        else:
-            self.advanced_box.hide()
-
     def reset_errors(self):
         self.set_sensitive(True)
         self.set_info_text("")
@@ -761,7 +693,6 @@ class ApplicationWindow:
             "type"      : self.config.mode,
             "username"  : username,
             }
-        self.config.sharing = self.sharing.get_active()
         if self.config.mode==MODE_SSH or self.config.mode==MODE_NESTED_SSH:
             if self.config.socket_dir:
                 params["socket_dir"] = self.config.socket_dir
@@ -1017,7 +948,6 @@ class ApplicationWindow:
         if self.is_putty:
             self.config.proxy_key = self.proxy_key_entry.get_text()
 
-        self.config.encoding = self.get_selected_encoding() or self.config.encoding
         mode_enc = self.mode_combo.get_active_text().lower()
         if mode_enc.startswith(MODE_TCP):
             self.config.mode = MODE_TCP
@@ -1027,7 +957,7 @@ class ApplicationWindow:
             self.config.mode = mode_enc
             self.config.encryption = ""
         log("update_options_from_gui() %s",
-            (self.config.username, self.config.password, self.config.mode, self.config.encryption, self.config.host, self.config.port, self.config.ssh_port, self.config.encoding))
+            (self.config.username, self.config.password, self.config.mode, self.config.encryption, self.config.host, self.config.port, self.config.ssh_port))
 
     def update_gui_from_config(self):
         #mode:
@@ -1038,8 +968,6 @@ class ApplicationWindow:
                 active = i
                 break
         self.mode_combo.set_active(active)
-        if self.config.encoding and self.encoding_combo:
-            self.set_new_encoding(self.config.encoding)
         def get_port(vstr, default_port=""):
             try:
                 iport = int(vstr)
@@ -1067,7 +995,6 @@ class ApplicationWindow:
         self.proxy_password_entry.set_text(proxy_password)
         if self.is_putty:
             self.proxy_key_entry.set_text(self.config.proxy_key)
-        self.sharing.set_active(bool(self.config.sharing))
         self.username_entry.set_text(username)
         self.password_entry.set_text(password)
         self.host_entry.set_text(self.config.host)
