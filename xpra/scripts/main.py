@@ -701,7 +701,7 @@ def display_desc_to_uri(display_desc):
         uri += host
         port = display_desc.get("port")
         if port and port!=DEFAULT_PORTS.get(dtype):
-            uri += ":"+port
+            uri += ":%i" % port
     elif dtype=="vsock":
         cid, iport = display_desc["vsock"]
         uri += "%s:%s" % (cid, iport)
