@@ -862,12 +862,14 @@ SSL_VERIFY_WRONG_HOST = 20
 SSL_VERIFY_SELF_SIGNED = 18
 SSL_VERIFY_UNTRUSTED_ROOT = 19
 SSL_VERIFY_IP_MISMATCH = 64
+SSL_VERIFY_HOSTNAME_MISMATCH = 62
 SSL_VERIFY_CODES = {
     SSL_VERIFY_EXPIRED          : "expired",    #also revoked!
     SSL_VERIFY_WRONG_HOST       : "wrong host",
     SSL_VERIFY_SELF_SIGNED      : "self-signed",
     SSL_VERIFY_UNTRUSTED_ROOT   : "untrusted-root",
     SSL_VERIFY_IP_MISMATCH      : "ip-mismatch",
+    SSL_VERIFY_HOSTNAME_MISMATCH: "hostname-mismatch",
     }
 
 class SSLVerifyFailure(InitExit):
@@ -1078,7 +1080,11 @@ def ssl_retry(e, ssl_ca_certs):
     addr = ssl_sock.getpeername()
     port = addr[-1]
     server_hostname = ssl_sock.server_hostname
-    if verify_code not in (SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH):
+    ssllog("ssl_retry: peername=%s, server_hostname=%s", addr, server_hostname)
+    if verify_code not in (
+        SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_WRONG_HOST,
+        SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH,
+        ):
         ssllog("ssl_retry: %s not handled here", SSL_VERIFY_CODES.get(verify_code, verify_code))
         return None
     if not server_hostname:
@@ -1156,7 +1162,7 @@ def ssl_retry(e, ssl_ca_certs):
                 ssllog("failed to save cert data to %r", d, exc_info=True)
         ssllog.warn("Warning: failed to save certificate data")
         return None
-    if verify_code in (SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH):
+    if verify_code in (SSL_VERIFY_WRONG_HOST, SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH):
         #ask the user if he wants to skip verifying the host
         title = "SSL Certificate Verification Failure"
         prompt = "Do you want to connect anyway?"
