@@ -94,26 +94,26 @@ number) via mDNS to the local network. Use \fBmdns=no\fP to disable it.
 .SH CONNECTION STRINGS
 Xpra supports many types of connection strings (some may require extra
 packages to be installed):
-.SS :DISPLAY
+.SS :DISPLAY[,OPTIONS]
 Local displays: this is the simplest form and is only valid for the
 current local displays of the current user.
-.SS tcp://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY]
+.SS tcp://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY][?OPTIONS]
 TCP mode uses port numbers and not display numbers. If multiple displays
 are available through a single TCP port (ie: using a proxy server),
-then one can also specify the display number at the end of the string:
-.SS ssl://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY]
+then one can also specify the display number after the port number.
+.SS ssl://[[USERNAME]:[PASSWORD]@]HOST:PORT[/DISPLAY][?OPTIONS]
 SSL adds a secure socket layer on top of the TCP mode.
-.SS vsock://[[USERNAME]:[PASSWORD]@]HOST:PORT
+.SS vsock://[[USERNAME]:[PASSWORD]@]HOST:PORT[/?OPTIONS]
 Almost identical to the TCP mode, but using AF_VSOCK for transport.
-.SS ws://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY]
+.SS ws://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY][?OPTIONS]
 Connect using websocket protocol.
-.SS wss://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY]
+.SS wss://[[USERNAME]:[PASSWORD]@]HOST:PORT/[DISPLAY][?OPTIONS]
 Connect using secure websocket protocol. (websocket with SSL)
-.SS ssh://[[USERNAME]:[PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?QUERYSTRING]
+.SS ssh://[[USERNAME]:[PASSWORD]@]HOST[:SSH_PORT]/[DISPLAY][?OPTIONS]
 Connect using secure shell. (SSH)
 
-Further options can be specified using the \fB--ssh\fP command line option.
-The \fBQUERYSTRING\fP can be used to specify an ssh proxy:
+Further SSH options can be specified using the \fB--ssh\fP command line option.
+The \fBOPTIONS\fP can be used to specify an ssh proxy:
 ?proxy=ssh://[USERNAME[:PASSWORD]@]HOST[:SSH_PORT]
 xpra will then establish an SSH connection to the specified "proxy" host,
 and from that host xpra will set up an SSH connection to the xpra server.
@@ -127,8 +127,7 @@ are encouraged to move to a more standard URI format using \fB://\fP as
 separator.
 .P
 The password need only be specified when the server authentication module
-requires it. (ie: often when authenticating against MS Windows servers,
-or with \fBmultifile\fP and \fBsqlite\fP authentication modules)
+requires it.
 .P
 .SS vnc://[[USERNAME]:[PASSWORD]@]HOST[:VNC_PORT]/
 Connect using ther RFB protocol. (aka VNC)
@@ -358,12 +357,52 @@ server. Unlike the \fIupgrade\fP subcommands, \fIrecover\fP can also
 detect which displays need recovering. That is, displays which were
 previously used by an xpra server but this server has gone missing.
 .SS xpra shadow
-This command shadows an existing X11 display. If there is only one
-X11 display active and its number is below 10, it can be auto-detected.
+This command shadows an existing display and is supported on X11, MacOS
+and MS Windows platforms. (this is not supported on Wayland yet)
 
-Note that this mode of operation uses screenscraping which is far less
-efficient. Using a video encoder (h264 or vp8) is highly recommended for
-this mode of operation.
+If there is only one X11 display active and its number is below 10,
+it can be auto-detected and the display may be omitted.
+
+Note that this mode of operation uses screenscraping which is not very
+efficient. Video encoders partially mitigate this drawback.
+
+By default, shadow mode will expose all the monitors connected as
+individual windows.
+But it is also possible to only shadow a specific region or monitor,
+or to group all monitors as a single window by specifying display
+options.
+Here are some examples:
+.TP
+To expose all monitors connected to display :1 as a single window,
+use the \fBmulti-window\fP option:
+.br
+\fBxpra shadow :1,multi-window=no\fP
+.TP
+To shadow a specific output using its name (ie: \fBDP-1\fP):
+.br
+\fBxpra shadow :1,DP-1\fP
+.br
+or more explicitly:
+.br
+\fBxpra shadow :1,plug=DP-1\fP
+.TP
+To expose a rectangular area of size \fB1920x1080\fP as a single window, use:
+.br
+\fBxpra shadow :1,1920x1080\fP
+.br
+You may also want to specify the position of this rectangle (ie: \fB1280x0\fP):
+.br
+\fBxpra shadow :1,1920x1080@1280x0\fP
+.br
+or using the more explicit syntax:
+.br
+\fBxpra shadow :1,geometry=1920x1080@1280x0\fP
+.br
+Multiple areas can be specified using \fB/\fP as separator,
+each one will be exposed as a separate window:
+.br
+\fBxpra shadow :1,1920x1080@1280x0/1280x600@0x400\fP
+
 .SS xpra proxy
 This command allows a single server to proxy connections for multiple
 others, potentially serving as a load balancing or authentication
