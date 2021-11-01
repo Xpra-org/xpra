@@ -7,7 +7,6 @@
 import os
 import time
 import operator
-import threading
 import traceback
 from math import sqrt
 from functools import reduce
