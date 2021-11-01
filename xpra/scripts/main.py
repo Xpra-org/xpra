@@ -1202,6 +1202,7 @@ def connect_to_server(app, display_desc, opts):
         except InitExit as e:
             from xpra.net.socket_util import ssl_retry
             mods = ssl_retry(e, opts.ssl_ca_certs)
+            log("do_setup_connection() ssl_retry(%s, %s)=%s", e, opts.ssl_ca_certs, mods)
             if mods:
                 for k,v in mods.items():
                     setattr(opts, k, v)
@@ -1869,9 +1870,21 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
                 app.show_progress(100, "connection established")
             app.after_handshake(handshake_complete)
         app.show_progress(60, "starting server")
-        conn = connect_or_fail(params, opts)
-        app.setup_connection(conn)
-        app.show_progress(80, "connecting to server")
+
+        while True:
+            try:
+                conn = connect_or_fail(params, opts)
+                app.setup_connection(conn)
+                app.show_progress(80, "connecting to server")
+                break
+            except InitExit as e:
+                from xpra.net.socket_util import ssl_retry
+                mods = ssl_retry(e, opts.ssl_ca_certs)
+                if mods:
+                    for k,v in mods.items():
+                        setattr(opts, k, v)
+                    continue
+                raise
     except Exception as e:
         if app:
             app.show_progress(100, "failure: %s" % e)
