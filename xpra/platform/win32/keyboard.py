@@ -160,28 +160,6 @@ class Keyboard(KeyboardBase):
             log.error("Error: failed to detect keyboard layouts:")
             log.error(" %s", e)
 
-        try:
-            pid = DWORD(0)
-            GetWindowThreadProcessId(0, byref(pid))
-            tid = GetWindowThreadProcessId(0, pid)
-            hkl = GetKeyboardLayout(tid)
-            log("GetKeyboardLayout(%i)=%#x", tid, hkl)
-            for mask in KMASKS:
-                kbid = hkl & mask
-                if kbid not in WIN32_LAYOUTS:
-                    continue
-                code, _, _, _, layout0, variants = WIN32_LAYOUTS.get(kbid)
-                log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
-                    layout0, kbid, variants, code, kbid, hkl)
-                if layout0 not in layouts:
-                    layouts.append(layout0)
-                #only override "layout" if unset:
-                if not layout and layout0:
-                    layout = layout0
-                    layout_code = kbid
-        except Exception:
-            log.error("Error: failed to detect keyboard layout", exc_info=True)
-
         descr = "unknown"
         KL_NAMELENGTH = 9
         name_buf = create_string_buffer(KL_NAMELENGTH)
@@ -211,12 +189,35 @@ class Keyboard(KeyboardBase):
                         if not layout:
                             layout = _layout
                             descr = _descr
-                            layout_code = val
+                            layout_code = ival
                             break
                 if not layout:
                     log.warn("Warning: unknown keyboard layout %#x", ival)
                     log.warn(" please file a bug report")
                     self.last_layout_message = layout
+
+        try:
+            pid = DWORD(0)
+            GetWindowThreadProcessId(0, byref(pid))
+            tid = GetWindowThreadProcessId(0, pid)
+            hkl = GetKeyboardLayout(tid)
+            log("GetKeyboardLayout(%i)=%#x", tid, hkl)
+            for mask in KMASKS:
+                kbid = hkl & mask
+                if kbid not in WIN32_LAYOUTS:
+                    continue
+                code, _, _, _, layout0, variants = WIN32_LAYOUTS.get(kbid)
+                log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
+                    layout0, kbid, variants, code, kbid, hkl)
+                if layout0 not in layouts:
+                    layouts.append(layout0)
+                #only override "layout" if unset:
+                if not layout and layout0:
+                    layout = layout0
+                    layout_code = hkl
+                    descr = layout
+        except Exception:
+            log.error("Error: failed to detect keyboard layout using GetKeyboardLayout", exc_info=True)
 
         if layouts and not layout:
             layout = layouts[0]
