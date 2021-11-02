@@ -182,6 +182,7 @@ class Keyboard(KeyboardBase):
         except Exception:
             log.error("Error: failed to detect keyboard layout", exc_info=True)
 
+        descr = "unknown"
         KL_NAMELENGTH = 9
         name_buf = create_string_buffer(KL_NAMELENGTH)
         if GetKeyboardLayoutName(name_buf):
@@ -199,14 +200,15 @@ class Keyboard(KeyboardBase):
                     kbdef = WIN32_KEYBOARDS.get(val)
                     log("get_layout_spec() WIN32_KEYBOARDS[%#x]=%s", val, kbdef)
                     if kbdef:
-                        _layout, descr = kbdef
+                        _layout, _descr = kbdef
                         if _layout=="??":
                             log.warn("Warning: the X11 codename for %#x is not known", val)
-                            log.warn(" only identified as '%s'", descr)
+                            log.warn(" only identified as '%s'", _descr)
                             log.warn(" please file a bug report")
                             continue
-                        elif not layout:
+                        if not layout:
                             layout = _layout
+                            descr = _descr
                             layout_code = val
                             break
                 if not layout:
