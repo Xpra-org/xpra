@@ -134,9 +134,13 @@ class Keyboard(KeyboardBase):
 
 
     def get_layout_spec(self):
-        KMASKS = (0xffffffff, 0xffff, 0x3ff)
+        KMASKS = {
+            0xffffffff : (0, 16),
+            0xffff  : (0, ),
+            0x3ff   : (0, ),
+            }
         layout = None
-        layouts = []
+        layouts_defs = {}
         variant = None
         variants = None
         options = ""
@@ -145,22 +149,25 @@ class Keyboard(KeyboardBase):
             l = _GetKeyboardLayoutList()
             log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
             for hkl in l:
-                for mask in KMASKS:
-                    kbid = hkl & mask
+                for mask, bitshifts in KMASKS.items():
+                    kbid = 0
+                    for bitshift in bitshifts:
+                        kbid = (hkl & mask)>>bitshift
+                        if kbid in WIN32_LAYOUTS:
+                            break
                     if kbid in WIN32_LAYOUTS:
                         code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
-                        log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
-                            _layout, kbid, _variants, code, kbid, hkl)
-                        if _layout not in layouts:
-                            layouts.append(_layout)
-                            if not layout_code:
-                                layout_code = kbid
+                        log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
+                            _layout, kbid, _variants, code, hkl)
+                        if _layout not in layouts_defs:
+                            layouts_defs[_layout] = hkl
                             break
         except Exception as e:
-            log.error("Error: failed to detect keyboard layouts:")
+            log("get_layout_spec()", exc_info=True)
+            log.error("Error: failed to detect keyboard layouts using GetKeyboardLayoutList:")
             log.error(" %s", e)
 
-        descr = "unknown"
+        descr = None
         KL_NAMELENGTH = 9
         name_buf = create_string_buffer(KL_NAMELENGTH)
         if GetKeyboardLayoutName(name_buf):
@@ -184,8 +191,8 @@ class Keyboard(KeyboardBase):
                             log.warn(" only identified as '%s'", _descr)
                             log.warn(" please file a bug report")
                             continue
-                        if _layout not in layouts:
-                            layouts.append(_layout)
+                        if _layout not in layouts_defs:
+                            layouts_defs[_layout] = ival
                         if not layout:
                             layout = _layout
                             descr = _descr
@@ -209,24 +216,28 @@ class Keyboard(KeyboardBase):
                 code, _, _, _, layout0, variants = WIN32_LAYOUTS.get(kbid)
                 log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
                     layout0, kbid, variants, code, kbid, hkl)
-                if layout0 not in layouts:
-                    layouts.append(layout0)
+                if layout0 not in layouts_defs:
+                    layouts_defs[layout0] = hkl
                 #only override "layout" if unset:
                 if not layout and layout0:
                     layout = layout0
                     layout_code = hkl
-                    descr = layout
         except Exception:
             log.error("Error: failed to detect keyboard layout using GetKeyboardLayout", exc_info=True)
 
+        layouts = list(layouts_defs.keys())
         if layouts and not layout:
             layout = layouts[0]
+            layout_code = layouts_defs.get(layout, 0)
 
         if layout and self.last_layout_message!=layout:
             log.info("keyboard layout code %#x", layout_code)
-            log.info("identified as '%s' : %s", descr, layout)
+            if descr:
+                log.info("identified as '%s' : %s", descr, layout)
+            else:
+                log.info("identified as %s", layout)
             self.last_layout_message = layout
-        return layout,layouts,variant,variants, options
+        return layout, layouts, variant, variants, options
 
     def get_keyboard_repeat(self):
         try:
