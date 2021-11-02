@@ -206,6 +206,8 @@ class Keyboard(KeyboardBase):
                             log.warn(" only identified as '%s'", _descr)
                             log.warn(" please file a bug report")
                             continue
+                        if _layout not in layouts:
+                            layouts.append(_layout)
                         if not layout:
                             layout = _layout
                             descr = _descr
