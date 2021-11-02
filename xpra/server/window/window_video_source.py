@@ -556,7 +556,7 @@ class WindowVideoSource(WindowSource):
         if "webp" in options and pixel_count>=16384 and ww>=2 and wh>=2 and depth in (24, 32):
             return "webp"
         #lossless options:
-        if speed==100 or (speed>=95 and pixel_count<MAX_RGB) or depth>24:
+        if speed==100 or (speed>=95 and pixel_count<MAX_RGB) or depth not in (24, 32):
             if depth>24 and "rgb32" in options:
                 return "rgb32"
             if "rgb24" in options:
