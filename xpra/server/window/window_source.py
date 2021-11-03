@@ -2373,7 +2373,7 @@ class WindowSource(WindowIconSource):
             now = monotonic()
             if decode_time>0:
                 latency = int(1000*(now-damage_time))
-                self.global_statistics.record_latency(self.wid, decode_time,
+                self.global_statistics.record_latency(self.wid, damage_packet_sequence, decode_time,
                                                       start_send_at, end_send_at, pixels, bytecount, latency)
             #we can ignore some packets:
             # * the first frame (frame=0) of video encoders can take longer to decode
