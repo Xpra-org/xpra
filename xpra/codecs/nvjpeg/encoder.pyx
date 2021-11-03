@@ -301,9 +301,9 @@ def compress_file(filename, save_to="./out.jpeg"):
         f.write(jpeg_data)
 
 cdef nvjpegChromaSubsampling_t get_subsampling(int quality):
-    if quality>=60:
+    if quality>=80:
         return NVJPEG_CSS_444
-    if quality>=30:
+    if quality>=50:
         return NVJPEG_CSS_422
     return NVJPEG_CSS_420
 
