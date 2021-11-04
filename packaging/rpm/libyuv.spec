@@ -24,7 +24,7 @@ Patch7:		libyuv-0007-nojpeg.patch
 BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
-%if !0%{?el7}
+%if !0%{?el7}%{?el9}
 BuildRequires:	gtest-devel
 %endif
 
