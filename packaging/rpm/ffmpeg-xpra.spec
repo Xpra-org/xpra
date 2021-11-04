@@ -2,6 +2,13 @@
 %define _disable_source_fetch 0
 %global __requires_exclude ^libx264.so.*$
 
+%define libva 1
+%if 0%{?el9}
+%ifarch aarch64
+%define libva 0
+%endif
+%endif
+
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.4.1
@@ -15,11 +22,15 @@ Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
 AutoProv:    0
 AutoReq:     0
+%if 0%{?libva}
 Requires:    libva
+%endif
 Requires:    x264-xpra
 
 BuildRequires:	x264-xpra-devel
+%if 0%{?libva}
 BuildRequires:	libva-devel
+%endif
 BuildRequires:	nasm
 BuildRequires:	make
 BuildRequires:	gcc
@@ -34,7 +45,9 @@ Group:     Development/libraries
 Requires:  %{name} = %{version}-%{release}
 Requires:  pkgconfig
 Requires:  ffmpeg-xpra = %{version}
+%if 0%{?libva}
 Requires:  libva
+%endif
 AutoReq:   0
 
 %description devel
