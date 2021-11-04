@@ -11,7 +11,8 @@ from xpra.util import csv, sorted_nicely, remove_dupes
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
-    is_Debian, is_Ubuntu, is_arm,
+    is_Debian, is_Ubuntu, is_CentOS, is_RedHat, is_arm,
+    get_distribution_version_id,
     which,
     )
 
@@ -142,6 +143,10 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
         #These distros do weird things and this can cause the real X11 server to crash
         #see ticket #2834
         return get_Xvfb_command()
+    if is_CentOS() or is_RedHat():
+        #it's too difficult to build our custom Xdummy on CentOS 9
+        if get_distribution_version_id()=="9":
+            return get_Xvfb_command()
 
     xorg_bin = get_xorg_bin()
     def Xorg_suid_check():
