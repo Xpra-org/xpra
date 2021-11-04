@@ -20,7 +20,7 @@ Requires:    x264-xpra
 
 BuildRequires:	x264-xpra-devel
 BuildRequires:	libva-devel
-BuildRequires:	yasm
+BuildRequires:	nasm
 BuildRequires:	make
 BuildRequires:	gcc
 
