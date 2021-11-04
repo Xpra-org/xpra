@@ -84,7 +84,9 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--disable-libxcb \
 	--enable-libx264 \
 	--enable-libvpx \
+%if 0%{?libva}
 	--enable-vaapi \
+%endif
 	--enable-gpl \
 	--enable-protocol=file \
 	--enable-decoder=h264 \
@@ -101,11 +103,13 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--enable-encoder=mpeg2video \
 	--enable-encoder=libx264 \
 	--enable-encoder=aac \
+%if 0%{?libva}
 	--enable-encoder=h264_vaapi \
 	--enable-encoder=hevc_vaapi \
 	--enable-encoder=mpeg2_vaapi \
 	--enable-encoder=vp8_vaapi \
 	--enable-encoder=vp9_vaapi \
+%endif
 	--enable-muxer=mp4 \
 	--enable-muxer=webm \
 	--enable-muxer=matroska \
@@ -115,11 +119,13 @@ PKG_CONFIG_PATH=%{_libdir}/xpra/pkgconfig ./configure \
 	--enable-demuxer=m4v \
 	--enable-demuxer=matroska \
 	--enable-demuxer=ogg \
+%if 0%{?libva}
 	--enable-hwaccel=h264_vaapi \
 	--enable-hwaccel=hevc_vaapi \
 	--enable-hwaccel=mpeg2_vaapi \
 	--enable-hwaccel=vp8_vaapi \
 	--enable-hwaccel=vp9_vaapi \
+%endif
 	--enable-pthreads \
 	--enable-shared \
 	--enable-debug \
