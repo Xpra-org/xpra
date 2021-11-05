@@ -788,7 +788,7 @@ def flagscsv(flag_dict, value=0):
 
 def get_muxer_formats():
     cdef AVOutputFormat *fmt
-    cdef void* opaque
+    cdef void *opaque = NULL
     formats = {}
     while True:
         fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
@@ -803,7 +803,7 @@ print_nested_dict(get_muxer_formats(), print_fn=log.debug)
 
 cdef AVOutputFormat* get_av_output_format(name):
     cdef AVOutputFormat *fmt
-    cdef void* opaque
+    cdef void *opaque = NULL
     while True:
         fmt = <AVOutputFormat*> av_muxer_iterate(&opaque)
         if fmt==NULL:
