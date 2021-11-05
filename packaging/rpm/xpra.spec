@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.2.3
+%define version 4.2.4
 
 %{!?__python3: %define __python3 python3}
 %{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
@@ -607,6 +607,8 @@ fi
 
 
 %changelog
+* Fri Nov 05 2021 Antoine Martin <antoine@xpra.org> 4.2.4-10
+- TODO
 * Wed Oct 06 2021 Antoine Martin <antoine@xpra.org> 4.2.3-11
 - rebuild with vp8 fix
 - packet compression flags not exposed

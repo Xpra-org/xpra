@@ -1,5 +1,8 @@
 # Changelog
 
+## [4.2.4] 2021-11-05
+* TODO
+
 ## [4.2.3] 2021-10-01
 * network layer:
 	* ensure the http headers cache is never modified unintentionally
