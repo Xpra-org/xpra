@@ -2151,7 +2151,7 @@ def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid()):
 def start_macos_shadow(cmd, env, cwd):
     #launch the shadow server via launchctl so it will have GUI access:
     LAUNCH_AGENT = "org.xpra.Agent"
-    LAUNCH_AGENT_FILE = "/System/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
+    LAUNCH_AGENT_FILE = "/Library/LaunchAgents/%s.plist" % LAUNCH_AGENT
     try:
         os.stat(LAUNCH_AGENT_FILE)
     except Exception as e:
