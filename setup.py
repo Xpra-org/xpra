@@ -568,7 +568,7 @@ compiler_directives = {
     "always_allow_keywords" : False,
     "unraisable_tracebacks" : True,
     }
-if strict_ENABLED:
+if strict_ENABLED and verbose_ENABLED:
     compiler_directives.update({
         #"warn.undeclared"       : True,
         #"warn.maybe_uninitialized" : True,
