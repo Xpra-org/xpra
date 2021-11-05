@@ -1,5 +1,6 @@
 #!/bin/sh
 
+PYTHON="python3"
 CLIENT_ONLY="${CLIENT_ONLY:=0}"
 APP_DIR="./image/Xpra.app"
 if [ "${CLIENT_ONLY}" == "1" ]; then
@@ -16,7 +17,6 @@ if [ ! -d "${APP_DIR}" ]; then
 fi
 
 #get the version and build info from the python build records:
-PYTHON="${PYTHON:=python}"
 export PYTHONPATH="${APP_DIR}/Contents/Resources/lib/python/"
 VERSION=`${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)"`
 REVISION=`${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))"`
