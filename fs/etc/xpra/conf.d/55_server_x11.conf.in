@@ -46,7 +46,7 @@ fake-xinerama = %(fake_xinerama)s
 # xvfb = /usr/bin/Xorg -noreset -nolisten tcp \
 #        +extension GLX +extension RANDR +extension RENDER \
 #        -auth $XAUTHORITY \
-#        -logfile %(log_dir)s/Xorg.${DISPLAY}.log \
+#        -logfile "${XDG_RUNTIME_DIR}/Xorg.${DISPLAY}.log" \
 #        -configdir "${XDG_RUNTIME_DIR}/.xpra/xorg.conf.d/$PID" \
 #        -config %(conf_dir)s/xorg.conf
 #
