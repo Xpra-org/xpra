@@ -38,8 +38,8 @@ mkdir -p ./image/root/Applications
 rsync -rplogt ${APP_DIR} ./image/root/Applications/
 
 #add launchd agent:
-#mkdir -p ./image/root/System/Library/LaunchAgents/
-#cp ./org.xpra.Agent.plist ./image/root/System/Library/LaunchAgents/
+mkdir -p ./image/root/Library/LaunchAgents/
+cp ./org.xpra.Agent.plist ./image/root/Library/LaunchAgents/
 
 pushd ./image/root >& /dev/null
 find . | cpio -o --format odc --owner 0:80 | gzip -c > ../flat/base.pkg/Payload

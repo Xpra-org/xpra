@@ -12,7 +12,7 @@ if [ -d "$APP_ROOT" ]; then
 	if [ -e "$APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist" ]; then
 		csrutil status 2> /dev/null | grep "enabled"
 		if [ $? != "0" ]; then
-			cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /System/Library/LaunchAgents/
+			cp $APP_ROOT/Contents/Resources/LaunchAgents/org.xpra.Agent.plist /Library/LaunchAgents/
 		fi
 	fi
 
