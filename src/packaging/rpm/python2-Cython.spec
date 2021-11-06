@@ -14,7 +14,9 @@ Source0:    https://files.pythonhosted.org/packages/59/e3/78c921adf4423fff68da32
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python2
 
-BuildRequires:	python2-devel python2-setuptools
+BuildRequires:	python2-devel
+BuildRequires:	python2-setuptools
+BuildRequires:	gcc
 
 %description
 This is a development version of Pyrex, a language
