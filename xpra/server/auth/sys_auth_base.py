@@ -72,7 +72,7 @@ class SysAuthenticatorBase(object):
         self.passed = False
         self.password_used = None
         #warn about unused options:
-        unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd"))
+        unused = dict((k,v) for k,v in kwargs.items() if k not in ("connection", "exec_cwd", "socket-dirs"))
         if unused:
             log.warn("Warning: unused keyword arguments for %s authentication:", self)
             log.warn(" %s", unused)
