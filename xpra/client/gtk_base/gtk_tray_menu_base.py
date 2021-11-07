@@ -900,7 +900,7 @@ class GTKTrayMenuBase(MenuHelper):
             c.set_active(current_value==delta)
             def activate_cb(item, *_args):
                 avsynclog("activate_cb(%s, %s) delta=%s", item, menu, delta)
-                if delta==0:
+                if delta is None:
                     self.client.av_sync = False
                     self.client.send_sound_sync(0)
                 else:
