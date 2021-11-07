@@ -59,6 +59,7 @@ Conflicts:      python-pillow < %{version}-%{release}
 %endif
 
 BuildRequires:  python2-devel
+BuildRequires:  gcc
 
 BuildRequires:  python2-setuptools
 %if %{with_tk}
