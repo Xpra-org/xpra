@@ -141,10 +141,10 @@ def memoryview_to_bytes(v) -> bytes:
 
 def set_proc_title(title):
     try:
-        import setproctitle
-        setproctitle.setproctitle(title)  #@UndefinedVariable
+        import setproctitle  #pylint: disable=import-outside-toplevel
+        setproctitle.setproctitle(title)  #@UndefinedVariable pylint: disable=c-extension-no-member
     except ImportError as e:
-        get_util_logger().error("setproctitle not installed: %s", e)
+        get_util_logger().debug("setproctitle is not installed: %s", e)
 
 
 def getuid() -> int:
