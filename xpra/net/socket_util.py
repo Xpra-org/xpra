@@ -731,6 +731,13 @@ def handle_socket_error(sockpath, sperms, e):
         raise InitExit(EXIT_SOCKET_CREATION_ERROR,
                        "failed to create socket %s" % sockpath)
 
+def import_zeroconf():
+    from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
+    return ZeroconfPublishers, get_interface_index
+
+def import_avahi():
+    from xpra.net.mdns.avahi_publisher import AvahiPublishers, get_interface_index
+    return AvahiPublishers, get_interface_index
 
 #warn just once:
 MDNS_WARNING = False
@@ -745,21 +752,31 @@ def mdns_publish(display_name, listen_on, text_dict=None):
         from xpra.net import mdns
         assert mdns
         from xpra.net.mdns import XPRA_MDNS_TYPE, RFB_MDNS_TYPE
-        PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", True)
-        if PREFER_ZEROCONF:
-            from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers as MDNSPublishers, get_interface_index
-        else:
-            from xpra.net.mdns.avahi_publisher import AvahiPublishers as MDNSPublishers, get_interface_index
     except ImportError as e:
-        MDNS_WARNING = True
-        log("mdns import failure", exc_info=True)
-        log.warn("Warning: failed to load the mdns publisher")
+        log("mdns support is not installed: %s", e)
+        return ()
+    PREFER_ZEROCONF = envbool("XPRA_PREFER_ZEROCONF", True)
+    imports = [import_zeroconf, import_avahi]
+    if not PREFER_ZEROCONF:
+        imports = reversed(imports)
+    MDNSPublishers = get_interface_index = None
+    exceptions = []
+    for i in imports:
         try:
-            einfo = str(e)
-        except Exception:
-            einfo = str(type(e))
-        log.warn(" %s", einfo)
-        log.warn(" either install the 'python-avahi' module")
+            MDNSPublishers, get_interface_index = i()
+        except ImportError as e:
+            log("mdns import failure", exc_info=True)
+            exceptions.append(e)
+    if not MDNSPublishers or not get_interface_index:
+        MDNS_WARNING = True
+        log.warn("Warning: failed to load the mdns publishers")
+        for e in exceptions:
+            try:
+                einfo = str(e)
+            except Exception:
+                einfo = str(type(e))
+            log.warn(" %s", einfo)
+        log.warn(" install 'python-avahi', 'python-zeroconf'")
         log.warn(" or use the 'mdns=no' option")
         return ()
     d = dict(text_dict or {})
