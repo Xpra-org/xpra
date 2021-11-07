@@ -422,8 +422,6 @@ def create_uinput_device(uuid, uid, events, name):
             log.error(" make sure that the kernel module is loaded")
             log.error(" and that the /dev/uinput device exists:")
             log.error(" %s", e)
-        else:
-            log.info("cannot access uinput: %s", e)
         return None
     dev_path = get_uinput_device_path(device)
     if not dev_path:
