@@ -194,7 +194,7 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs):
         sizemb = size//1024//1024
         maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
         raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
-    algos = [x for x in PERFORMANCE_COMPRESSION if kwargs.get(x)]
+    algos = [x for x in PERFORMANCE_COMPRESSION if kwargs.get(x) and x in COMPRESSION]
     if not algos:
         return no()
         #raise InvalidCompressionException("no compressors available")
