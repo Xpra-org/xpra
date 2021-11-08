@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.1.2
+%define version 3.1.3
 
 %{!?__python2: %global __python2 python2}
 %{!?__python3: %define __python3 python3}
@@ -900,6 +900,20 @@ fi
 
 
 %changelog
+* Mon Nov 08 2021 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
+- handling of packet parsing errors
+- packaging fixes:
+    dependency updates
+    package updates: pynvml, cython
+    MacOS new package signing key
+- silence spurious authentication modules warnings
+- 'xpra showsetting' subcommand errors
+- keyboard mapping not honouring the more specific keymap definition
+- honour system prefix when loading xkb keymaps
+- clipboard error messages when there is no client handling it
+- build using CUDA 11.5 by default
+- logging tweaks and fixes
+
 * Tue Oct 19 2021 Antoine Martin <antoine@xpra.org> 3.1.2-10.1xpra1
 - encoding errors with vpx
 - fix pkg-info build command

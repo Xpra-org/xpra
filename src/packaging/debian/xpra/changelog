@@ -1,3 +1,19 @@
+xpra (3.1.3-1) UNRELEASED; urgency=low
+  * handling of packet parsing errors
+  * packaging fixes:
+    - dependency updates
+    - package updates: pynvml, cython
+    - MacOS new package signing key
+    - silence spurious authentication modules warnings
+  * 'xpra showsetting' subcommand errors
+  * keyboard mapping not honouring the more specific keymap definition
+  * honour system prefix when loading xkb keymaps
+  * clipboard error messages when there is no client handling it
+  * build using CUDA 11.5 by default
+  * logging tweaks and fixes
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 04 Oct 2021 15:12:43 +0700
+
 xpra (3.1.2-1) UNRELEASED; urgency=low
   * encoding errors with vpx
   * fix pkg-info build command
