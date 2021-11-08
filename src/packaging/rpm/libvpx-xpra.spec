@@ -11,7 +11,7 @@ URL:	     http://www.webmproject.org/code/
 Source0:     https://github.com/webmproject/libvpx/archive/v%{version}/libvpx-%{version}.tar.gz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
-BuildRequires:	yasm
+BuildRequires:	nasm
 BuildRequires:	gcc
 BuildRequires:	gcc-c++
 BuildRequires:	make
@@ -51,7 +51,7 @@ exit 1
 ./configure \
     --prefix="%{_prefix}" \
     --libdir="%{_libdir}/xpra" \
-    --as=yasm \
+    --as=nasm \
     --enable-pic \
 %if 0%{?el6}
     --disable-libyuv \
