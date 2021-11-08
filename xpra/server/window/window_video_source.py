@@ -1048,9 +1048,6 @@ class WindowVideoSource(WindowSource):
                   first_due, still_due, self.av_sync_delay, av_delay, self.wid)
         self.idle_add(self.schedule_encode_from_queue, first_due)
 
-    def _more_lossless(self):
-        return self.subregion_is_video()
-
     def update_encoding_options(self, force_reload=False):
         """
             This is called when we want to force a full re-init (force_reload=True)

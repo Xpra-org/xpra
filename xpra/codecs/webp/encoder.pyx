@@ -19,10 +19,7 @@ log = Logger("encoder", "webp")
 cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
-cdef int LOSSLESS_THRESHOLD = envint("XPRA_WEBP_LOSSLESS_THRESHOLD", 75)
 cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 40)
-assert SUBSAMPLING_THRESHOLD<=LOSSLESS_THRESHOLD, "lossless threshold must be higher than subsampling threshold"
-assert LOSSLESS_THRESHOLD>=0 and LOSSLESS_THRESHOLD<=100, "invalid lossless threshold: %i" % LOSSLESS_THRESHOLD
 
 cdef inline int MIN(int a, int b):
     if a<=b:
@@ -420,7 +417,7 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
         raise Exception("failed to set webp preset")
 
     #tune it:
-    config.lossless = quality>=(LOSSLESS_THRESHOLD+threshold_delta)
+    config.lossless = quality==100
     if config.lossless:
         #not much to gain from setting a high quality here,
         #the latency will be higher for a negligible compression gain:

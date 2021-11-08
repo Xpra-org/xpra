@@ -835,9 +835,6 @@ class WindowSource(WindowIconSource):
         self.update_encoding_options()
         self.update_refresh_attributes()
 
-    def _more_lossless(self):
-        return False
-
     def update_encoding_options(self, force_reload=False):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         ww, wh = self.window_dimensions
@@ -847,8 +844,7 @@ class WindowSource(WindowIconSource):
             if r.contains(0, 0, ww, wh):
                 #window is fully opaque
                 self._want_alpha = False
-        ml = self._more_lossless()
-        self._lossless_threshold_base = min(90-10*ml, 60-ml*20+self._current_speed//5)
+        self._lossless_threshold_base = min(90, 60+self._current_speed//5)
         if self.content_type=="text" or self.is_shadow:
             self._lossless_threshold_base -= 20
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
@@ -866,7 +862,8 @@ class WindowSource(WindowIconSource):
         bwl = self.bandwidth_limit
         if bwl:
             max_rgb_threshold = min(max_rgb_threshold, max(bwl//1000, 1024))
-        v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * (1 + int(self.is_OR or self.is_tray or self.is_shadow)*2))
+        weight = 1 + int(self.is_OR or self.is_tray or self.is_shadow)*2
+        v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * weight)
         crs = self.client_render_size
         if crs and DOWNSCALE:
             if crs[0]<ww or crs[1]<wh:
@@ -875,8 +872,12 @@ class WindowSource(WindowIconSource):
                 max_rgb_threshold = 1024
         self._rgb_auto_threshold = min(max_rgb_threshold, max(min_rgb_threshold, v))
         self.assign_encoding_getter()
-        log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i, bandwidth-limit=%i, lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i), get_best_encoding=%s",
-                        force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality, bwl, self._lossless_threshold_base, self._lossless_threshold_pixel_boost, self._rgb_auto_threshold, min_rgb_threshold, max_rgb_threshold, self.get_best_encoding)
+        log("update_encoding_options(%s) wid=%i, want_alpha=%s, speed=%i, quality=%i",
+                        force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality)
+        log("lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i)",
+                        self._lossless_threshold_base, self._lossless_threshold_pixel_boost,
+                        self._rgb_auto_threshold, min_rgb_threshold, max_rgb_threshold, self.get_best_encoding)
+        log("bandwidth-limit=%i, get_best_encoding=%s", bwl, self.get_best_encoding)
 
     def assign_encoding_getter(self):
         self.get_best_encoding = self.get_best_encoding_impl()
@@ -1803,17 +1804,22 @@ class WindowSource(WindowIconSource):
                 packets_backlog = self.get_packets_backlog()
             quality = max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta)
         eoptions = dict(options)
-        options["quality"] = quality
+        eoptions["quality"] = quality
         eoptions["speed"] = speed
         return eoptions
 
-    def do_send_delayed_regions(self, damage_time, regions, coding, options, exclude_region=None, get_best_encoding=None):
+    def do_send_delayed_regions(self, damage_time, regions, coding, options,
+                                exclude_region=None, get_best_encoding=None):
         ww,wh = self.window_dimensions
         options = self.assign_sq_options(options)
-        speed = options.get("speed", 0)
-        quality = options.get("quality", 0)
         get_best_encoding = get_best_encoding or self.get_best_encoding
         def get_encoding(w, h):
+            speed = options.get("speed", 0)
+            quality = options.get("quality", 0)
+            if quality<100:
+                lossless_q = self._lossless_threshold_base + self._lossless_threshold_pixel_boost * w*h // (ww*wh)
+                if quality>=lossless_q:
+                    quality = 100
             return get_best_encoding(w, h, speed, quality, coding)
 
         def send_full_window_update(cause):
@@ -2565,6 +2571,7 @@ class WindowSource(WindowIconSource):
 
 
     def webp_encode(self, coding, image, options):
+        assert coding=="webp"
         q = options.get("quality", self._current_quality)
         s = options.get("speed", self._current_speed)
         pixel_format = image.get_pixel_format()
@@ -2589,6 +2596,7 @@ class WindowSource(WindowIconSource):
             argb_swap(image, rgb_formats, self.supports_transparency)
 
     def jpeg_encode(self, coding, image, options):
+        assert coding=="jpeg"
         self.no_r210(image, ["RGB"])
         q = options.get("quality", self._current_quality)
         s = options.get("speed", self._current_speed)
@@ -2629,9 +2637,7 @@ class WindowSource(WindowIconSource):
                 self.enc_nvjpeg = None
                 return fallback("nvjpeg is now disabled")
             data, w, h, stride = r
-        cpixels = Compressed(coding, data, False)
-        #cpixels = Compressed(coding, data.tobytes(), True)
-        return "jpeg", cpixels, {}, w, h, stride, 24
+        return "jpeg", Compressed(coding, data, False), {}, w, h, stride, 24
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:
@@ -2651,10 +2657,6 @@ class WindowSource(WindowIconSource):
             if ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD:
                 #keep the same proportions:
                 resize = w*crsw//ww, h*crsh//wh
-        else:
-            lossless_q = int(self._lossless_threshold_base + self._lossless_threshold_pixel_boost * w*h // (ww*wh))
-            if q>=lossless_q:
-                q = 100
         return self.enc_pillow.encode(coding, image, q, s, transparency, grayscale, resize)
 
     def mmap_encode(self, coding, image, _options):
