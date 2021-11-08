@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -708,7 +708,7 @@ class WindowSource(WindowIconSource):
         rgb_formats = properties.strtupleget("encodings.rgb_formats", self.rgb_formats)
         if not self.supports_transparency:
             #remove rgb formats with alpha
-            rgb_formats = [x for x in rgb_formats if x.find("A")<0]
+            rgb_formats = tuple(x for x in rgb_formats if x.find("A")<0)
         self.rgb_formats = rgb_formats
         self.send_window_size = properties.boolget("encoding.send-window-size", self.send_window_size)
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default=None))
@@ -1207,9 +1207,6 @@ class WindowSource(WindowIconSource):
             self._fixed_speed = speed
             self.reconfigure(True)
 
-    def get_speed(self, _encoding):
-        return self._current_speed
-
 
     def update_quality(self):
         if self.is_cancelled():
@@ -1279,10 +1276,6 @@ class WindowSource(WindowIconSource):
             self._fixed_quality = quality
             self._current_quality = quality
             self.reconfigure(True)
-
-    def get_quality(self, _encoding):
-        #overriden in window video source
-        return self._current_quality
 
 
     def update_refresh_attributes(self):
@@ -1795,10 +1788,30 @@ class WindowSource(WindowIconSource):
             dr = delayed_regions
             self.do_send_delayed_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
 
+    def assign_sq_options(self, options, speed_delta=0, quality_delta=0):
+        packets_backlog = None
+        speed = options.get("speed", 0)
+        if speed==0:
+            speed = self._current_speed
+            if packets_backlog is None:
+                packets_backlog = self.get_packets_backlog()
+            speed = max(1, self._fixed_min_speed, speed-packets_backlog*20+speed_delta)
+        quality = options.get("quality", 0)
+        if quality==0:
+            quality = self._current_quality
+            if packets_backlog is None:
+                packets_backlog = self.get_packets_backlog()
+            quality = max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta)
+        eoptions = dict(options)
+        options["quality"] = quality
+        eoptions["speed"] = speed
+        return eoptions
+
     def do_send_delayed_regions(self, damage_time, regions, coding, options, exclude_region=None, get_best_encoding=None):
         ww,wh = self.window_dimensions
-        speed = options.get("speed") or self._current_speed
-        quality = options.get("quality") or self._current_quality
+        options = self.assign_sq_options(options)
+        speed = options.get("speed", 0)
+        quality = options.get("quality", 0)
         get_best_encoding = get_best_encoding or self.get_best_encoding
         def get_encoding(w, h):
             return get_best_encoding(w, h, speed, quality, coding)
@@ -1883,7 +1896,8 @@ class WindowSource(WindowIconSource):
         log("send_delayed_regions: queuing %i regions", len(i_reg_enc))
         encodings = []
         for i, region, actual_encoding in reversed(i_reg_enc):
-            if not self.process_damage_region(damage_time, region.x, region.y, region.width, region.height, actual_encoding, options, flush=i):
+            if not self.process_damage_region(damage_time, region.x, region.y, region.width, region.height,
+                                              actual_encoding, options, flush=i):
                 log("failed on %i: %s", i, region)
             encodings.append(actual_encoding)
         log("send_delayed_regions: queued %i regions for encoding using %s", len(i_reg_enc), encodings)
@@ -2176,7 +2190,8 @@ class WindowSource(WindowIconSource):
             refresh_exclude = self.get_refresh_exclude()    #pylint: disable=assignment-from-none
             refreshlog("timer_full_refresh() after %ims, auto_refresh_encodings=%s, options=%s, regions=%s, refresh_exclude=%s",
                        1000.0*(monotonic()-ret), self.auto_refresh_encodings, options, regions, refresh_exclude)
-            WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options, exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
+            WindowSource.do_send_delayed_regions(self, now, regions, self.auto_refresh_encodings[0], options,
+                                                 exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
         return False
 
     def get_refresh_encoding(self, w, h, speed, quality, coding):
@@ -2550,8 +2565,8 @@ class WindowSource(WindowIconSource):
 
 
     def webp_encode(self, coding, image, options):
-        q = options.get("quality") or self.get_quality(coding)
-        s = options.get("speed") or self.get_speed(coding)
+        q = options.get("quality", self._current_quality)
+        s = options.get("speed", self._current_speed)
         pixel_format = image.get_pixel_format()
         #the native webp encoder only takes BGRX / BGRA as input,
         #but the client may be able to swap channels,
@@ -2575,8 +2590,8 @@ class WindowSource(WindowIconSource):
 
     def jpeg_encode(self, coding, image, options):
         self.no_r210(image, ["RGB"])
-        q = options.get("quality") or self.get_quality(coding)
-        s = options.get("speed") or self.get_speed(coding)
+        q = options.get("quality", self._current_quality)
+        s = options.get("speed", self._current_speed)
         return self.enc_jpeg.encode(image, q, s)
 
     def nvjpeg_encode(self, coding, image, options):
@@ -2598,8 +2613,8 @@ class WindowSource(WindowIconSource):
         pixel_format = image.get_pixel_format()
         if pixel_format!="RGB" and not argb_swap(image, ("RGB", )):
             return fallback("cannot handle %s" % pixel_format)
-        q = options.get("quality") or self.get_quality(coding)
-        s = options.get("speed") or self.get_speed(coding)
+        q = options.get("quality", self._current_quality)
+        s = options.get("speed", self._current_speed)
         log("nvjpeg_encode%s", (coding, image, options))
         with cdd:
             r = self.enc_nvjpeg.device_encode(cdd, image, q, s)
@@ -2622,8 +2637,8 @@ class WindowSource(WindowIconSource):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.server_core_encodings
-        q = options.get("quality") or self.get_quality(coding)
-        s = options.get("speed") or self.get_speed(coding)
+        q = options.get("quality", self._current_quality)
+        s = options.get("speed", self._current_speed)
         transparency = self.supports_transparency and options.get("transparency", True)
         grayscale = self.encoding=="grayscale"
         resize = None

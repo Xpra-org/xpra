@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2013-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -636,21 +636,6 @@ class WindowVideoSource(WindowSource):
         return self.video_subregion.rectangle is not None or super().must_batch(delay)
 
 
-    def get_speed(self, encoding):
-        s = super().get_speed(encoding)
-        #give a boost if we have a video region and this is not video:
-        if self.video_subregion.rectangle and encoding not in self.video_encodings:
-            s += 25
-        return min(100, s)
-
-    def get_quality(self, encoding):
-        q = super().get_quality(encoding)
-        #give a boost if we have a video region and this is not video:
-        if self.video_subregion.rectangle and encoding not in self.video_encodings:
-            q += 40
-        return min(100, q)
-
-
     def client_decode_error(self, error, message):
         #maybe the stream is now corrupted..
         self.cleanup_codecs()
@@ -672,7 +657,8 @@ class WindowVideoSource(WindowSource):
         self.flush_video_encoder_now()
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
-        super().do_send_delayed_regions(now, regions, encoding, options, get_best_encoding=self.get_refresh_subregion_encoding)
+        super().do_send_delayed_regions(now, regions, encoding, options,
+                                        get_best_encoding=self.get_refresh_subregion_encoding)
         return True
 
     def get_refresh_subregion_encoding(self, *_args):
@@ -682,7 +668,8 @@ class WindowVideoSource(WindowSource):
         #could have been cleared by another thread:
         if vr:
             w, h = vr.width, vr.height
-        return self.get_best_nonvideo_encoding(w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, self.auto_refresh_encodings[0], self.auto_refresh_encodings)
+        return self.get_best_nonvideo_encoding(w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY,
+                                               self.auto_refresh_encodings[0], self.auto_refresh_encodings)
 
     def remove_refresh_region(self, region):
         #override so we can update the subregion timers / regions tracking:
@@ -750,11 +737,19 @@ class WindowVideoSource(WindowSource):
         vr = self.video_subregion.rectangle
         #overrides the default method for finding the encoding of a region
         #so we can ensure we don't use the video encoder when we don't want to:
-        def send_nonvideo(regions=regions, encoding=coding, exclude_region=None, get_best_encoding=self.get_best_nonvideo_encoding):
+        def send_nonvideo(regions=regions, encoding=coding, exclude_region=None,
+                          get_best_encoding=self.get_best_nonvideo_encoding):
             if self.b_frame_flush_timer and exclude_region is None:
                 #a b-frame is already due, don't clobber it!
                 exclude_region = vr
-            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options, exclude_region=exclude_region, get_best_encoding=get_best_encoding)
+            speed_delta = quality_delta = 0
+            if vr:
+                #give a boost if we have a video region and this is not video:
+                quality_delta = 40
+                speed_delta = 0
+            options = self.assign_sq_options(options, speed_delta, quality_delta)
+            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options,
+                                                 exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
             sublog("BUG? video for tray - don't use video region!")
@@ -820,9 +815,10 @@ class WindowVideoSource(WindowSource):
                 send_nonvideo(encoding=None)
                 return
             #send this using the video encoder:
-            video_options = options.copy()
+            video_options = self.assign_sq_options(options, 0, -30)
             video_options["av-sync"] = True
-            self.process_damage_region(damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height, coding, video_options, 0)
+            self.process_damage_region(damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height,
+                                       coding, video_options, 0)
 
             #now substract this region from the rest:
             trimmed = []
@@ -2175,6 +2171,8 @@ class WindowVideoSource(WindowSource):
                     break
             #prefer nvjpeg over video that must be decoded slowly:
             if 0<=speed<20:
+                q = self.get_quality("jpeg")
+                options["quality"] = max(self._fixed_min_quality, q - 30)
                 return self.nvjpeg_encode("jpeg", image, options)
 
         if not self.common_video_encodings:
