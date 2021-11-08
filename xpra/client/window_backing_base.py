@@ -149,10 +149,10 @@ class WindowBackingBase:
             }
         vd = self._video_decoder
         if vd:
-            info["video-decoder"] = self._video_decoder.get_info()
+            info["video-decoder"] = vd.get_info()
         csc = self._csc_decoder
         if csc:
-            info["csc"] = self._csc_decoder
+            info["csc"] = csc.get_info()
         return info
 
 
