@@ -151,12 +151,12 @@ class ClientWindowBase(ClientWidgetBase):
             "geometry-hints"        : dict(self.geometry_hints),
             "content-type"          : self.content_type,
             "attributes"            : attributes,
-            "gravity"               : GRAVITY_STR.get(self.window_gravity),
+            "gravity"               : GRAVITY_STR.get(self.window_gravity, self.window_gravity),
             #"border"                : self.border or "",
             #cursor_data
             "max-size"              : self.max_window_size,
             "button-state"          : self.button_state,
-            "offset"                : self.window_offset,
+            "offset"                : self.window_offset or (0, 0),
             })
         return info
 
