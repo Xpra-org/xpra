@@ -836,6 +836,7 @@ class WindowSource(WindowIconSource):
         self.update_refresh_attributes()
 
     def update_encoding_options(self, force_reload=False):
+        cv = self.global_statistics.congestion_value
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         ww, wh = self.window_dimensions
         opr = self._opaque_region
@@ -844,7 +845,7 @@ class WindowSource(WindowIconSource):
             if r.contains(0, 0, ww, wh):
                 #window is fully opaque
                 self._want_alpha = False
-        self._lossless_threshold_base = min(90, 60+self._current_speed//5)
+        self._lossless_threshold_base = min(90, 60+self._current_speed//5 + int(cv*100))
         if self.content_type=="text" or self.is_shadow:
             self._lossless_threshold_base -= 20
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
@@ -855,7 +856,6 @@ class WindowSource(WindowIconSource):
         pcmult = min(20, 0.5+self.statistics.packet_count)/20.0
         max_rgb_threshold = 32*1024
         min_rgb_threshold = 2048
-        cv = self.global_statistics.congestion_value
         if cv>0.1:
             max_rgb_threshold = int(32*1024/(1+cv))
             min_rgb_threshold = 1024
