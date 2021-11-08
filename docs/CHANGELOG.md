@@ -1,7 +1,41 @@
 # Changelog
 
-## [4.2.4] 2021-11-05
-* TODO
+## [4.2.4] 2021-11-08
+* display:
+	* screen corruption with scaling of fixed size windows
+* build, packaging and platforms:
+	* MacOS LaunchAgent path for ssh shadow start
+	* MacOS new package signing key
+	* MS Windows error if GetKeyboardLayoutName fails
+	* MS Windows overflow error enumerating audio devices
+	* listen on the default port when starting a shadow server (MS Windows and MacOS)
+	* switch to CUDA 11.5
+	* pkg-info subcommand errors
+	* DEB dependency updates: require 'xz'
+	* DEB builds not honouring build options
+	* silence some clang warnings
+* keyboard:
+	* keyboard mapping not honouring the more specific keymap definition
+	* honour system prefix when loading xkb keymaps
+* misc:
+	* client info request errors
+	* audio errors when disabling AV-sync from the system tray menu
+	* correct logfile path for 'Xorg' vfb example in config example
+	* don't try to locate a local display for remote connections
+	* clipboard error messages when there is no client handling it
+	* logging tweaks and fixes
+	* window 'protocols' could wrongly override 'state'
+	* screenshot subcommand errors with some packet encoders
+	* handler start menu permissions errors more gracefully
+* network:
+	* handle packet parsing errors
+	* ssh configs can override 'username', 'hostname' and 'port'
+	* preserve socket options when upgrading to ssl
+	* proxy rgb pass-through packet size warnings
+* encoding:
+	* don't use rgb32 if png is more suitable
+	* vpx errors with odd image sizes
+
 
 ## [4.2.3] 2021-10-01
 * network layer:
