@@ -281,8 +281,8 @@ class WindowClient(StubClientMixin):
             "draw-counter"  : self._draw_counter,
             "read-only"     : self.readonly,
             "wheel" : {
-                "delta-x"   : self.wheel_deltax,
-                "delta-y"   : self.wheel_deltay,
+                "delta-x"   : int(self.wheel_deltax*1000),
+                "delta-y"   : int(self.wheel_deltay*1000),
             },
             "focused"       : self._focused or 0,
             "grabbed"       : self._window_with_grab or 0,
