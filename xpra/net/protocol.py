@@ -1005,7 +1005,7 @@ class Protocol:
                 except InvalidPacketEncodingException as e:
                     self.invalid("invalid packet encoding: %s" % e, data)
                     return
-                except (ValueError, TypeError) as e:
+                except (ValueError, TypeError, IndexError) as e:
                     etype = packet_encoding.get_packet_encoding_type(protocol_flags)
                     log.error("Error parsing %s packet:", etype)
                     log.error(" %s", e)
