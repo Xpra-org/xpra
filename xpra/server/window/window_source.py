@@ -891,17 +891,17 @@ class WindowSource(WindowIconSource):
         #first the easy ones (when there is no choice):
         if self._mmap_size>0 and self.encoding!="grayscale":
             return self.encoding_is_mmap
-        elif self.encoding=="png/L":
+        if self.encoding=="png/L":
             #(png/L would look awful if we mixed it with something else)
             return self.encoding_is_pngL
-        elif self.image_depth==8:
+        if self.image_depth==8:
             #limited options:
             if self.encoding=="grayscale":
                 assert "png/L" in self.common_encodings
                 return self.encoding_is_pngL
             assert "png/P" in self.common_encodings
             return self.encoding_is_pngP
-        elif self.strict and self.encoding!="auto":
+        if self.strict and self.encoding!="auto":
             #honour strict flag
             if self.encoding=="rgb":
                 #choose between rgb32 and rgb24 already
@@ -911,7 +911,7 @@ class WindowSource(WindowIconSource):
                 assert "rgb24" in self.common_encodings
                 return self.encoding_is_rgb24
             return self.get_strict_encoding
-        elif self._want_alpha or self.is_tray:
+        if self._want_alpha or self.is_tray:
             if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
                 return self.encoding_is_rgb32
             if self.encoding in ("png", "png/P"):
@@ -923,7 +923,7 @@ class WindowSource(WindowIconSource):
                 return self.encoding_is_grayscale
             #choose an alpha encoding and keep it?
             return self.get_transparent_encoding
-        elif self.encoding=="rgb":
+        if self.encoding=="rgb":
             #if we're here we don't need alpha, so try rgb24 first:
             if "rgb24" in self.common_encodings:
                 return self.encoding_is_rgb24
@@ -2557,7 +2557,8 @@ class WindowSource(WindowIconSource):
             ws = options.get("window-size")
             if ws:
                 client_options["window-size"] = ws
-        packet = ("draw", self.wid, x, y, outw, outh, coding, data, self._damage_packet_sequence, outstride, client_options)
+        packet = ("draw", self.wid, x, y, outw, outh, coding, data,
+                  self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1
