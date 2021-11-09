@@ -492,9 +492,6 @@ class WindowVideoSource(WindowSource):
         if now-self.statistics.last_resized<0.350:
             return nonvideo(quality-30, "resized recently")
 
-        if self._current_quality!=quality or self._current_speed!=speed:
-            return nonvideo(info="quality or speed overriden")
-
         if sr and ((sr.width&self.width_mask)!=cww or (sr.height&self.height_mask)!=cwh):
             #we have a video region, and this is not it, so don't use video
             #raise the quality as the areas around video tend to not be graphics
