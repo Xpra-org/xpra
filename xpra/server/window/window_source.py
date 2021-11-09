@@ -1827,6 +1827,8 @@ class WindowSource(WindowIconSource):
                 lossless_q = self._lossless_threshold_base + self._lossless_threshold_pixel_boost * w*h // (ww*wh)
                 if quality>=lossless_q:
                     quality = 100
+                    #lossless uses more bandwidth, try harder to compress it:
+                    speed = max(self._fixed_min_speed, speed-30)
             return get_best_encoding(w, h, speed, quality, coding)
 
         def send_full_window_update(cause):
