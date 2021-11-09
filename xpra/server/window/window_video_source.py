@@ -2086,22 +2086,17 @@ class WindowVideoSource(WindowSource):
     def get_video_fallback_encoding(self, order=FAST_ORDER):
         return self.get_fallback_encoding(self.non_video_encodings, order)
 
-    def video_fallback(self, image, options, order=None, warn=False):
+    def video_fallback(self, image, options, warn=False):
         if warn:
-            videolog.warn("using non-video fallback encoding")
-        if self.image_depth==8:
-            if self.encoding=="grayscale":
-                encoding = "png/L"
-            else:
-                encoding = "png/P"
-        else:
-            encoding = self.get_video_fallback_encoding(order)
-            if not encoding:
-                return None
+            videolog.warn("using non-video fallback encoding for %s" % image)
+        w = image.get_width()
+        h = image.get_height()
+        speed = options.get("speed", self._current_speed)
+        quality = options.get("quality", self._current_quality)
+        encoding = self.get_auto_encoding(w, h, speed, quality)
+        if not encoding:
+            return None
         encode_fn = self._encoders[encoding]
-        #switching to non-video encoding can use a lot more bandwidth,
-        #try to avoid this by lowering the quality:
-        options["quality"] = max(5, self._current_quality-50)
         return encode_fn(encoding, image, options)
 
     def video_encode(self, encoding, image, options : dict):
@@ -2214,7 +2209,7 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options, warn=True)
         if not ve.is_ready():
             log("video encoder %s is not ready yet, using temporary fallback", ve)
-            return self.video_fallback(image, options, order=FAST_ORDER, warn=False)
+            return self.video_fallback(image, options, warn=False)
 
         #we're going to use the video encoder,
         #so make sure we don't time it out:
@@ -2297,7 +2292,7 @@ class WindowVideoSource(WindowSource):
                     #so send something as non-video
                     #and skip painting this video frame when it does come out:
                     self.start_video_frame = delayed
-                    return self.video_fallback(image, options, order=FAST_ORDER)
+                    return self.video_fallback(image, options)
                 return None
         else:
             #there are no delayed frames,
