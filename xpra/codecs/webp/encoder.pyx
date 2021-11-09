@@ -429,8 +429,8 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
         #normalize quality: webp quality is much higher than jpeg's
         #so we can go lower,
         #[0,10,...,90,100] maps to:
-        #[0, 3, 7, 13, 20, 29, 40, 52, 66, 82, 100]
-        config.quality = fclamp(((quality+10)**2//121))
+        #[0, 1, 3, 5, 9, 14, 23, 34, 50, 71, 99]
+        config.quality = fclamp((quality//4+((quality+15)**4//(100**3)))//2)
     #"method" takes values from 0 to 6,
     #but anything higher than 1 is dreadfully slow,
     #so only use method=1 when speed is already very low
