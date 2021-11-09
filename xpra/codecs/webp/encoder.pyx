@@ -19,7 +19,7 @@ log = Logger("encoder", "webp")
 cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
-cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 40)
+cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 80)
 
 cdef inline int MIN(int a, int b):
     if a<=b:
