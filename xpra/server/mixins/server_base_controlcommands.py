@@ -7,7 +7,7 @@
 
 import os.path
 
-from xpra.util import parse_scaling_value, csv, from0to100, net_utf8
+from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict
 from xpra.os_util import load_binary_file
 from xpra.simple_stats import std_unit
 from xpra.scripts.config import parse_bool, FALSE_OPTIONS, TRUE_OPTIONS
@@ -498,12 +498,40 @@ class ServerBaseControlCommands(StubServerMixin):
         return "scaling set to %s on windows %s" % (str(scaling), wids)
 
     def control_command_encoding(self, encoding, *args):
+        if encoding in ("add", "remove"):
+            cmd = encoding
+            assert len(args)>0
+            encoding = args[0]
+            wids = args[1:]
+            for ws in tuple(self._ws_from_args(*wids)):
+                encodings = list(ws.encodings)
+                core_encodings = list(ws.core_encodings)
+                for l in (encodings, core_encodings):
+                    if cmd=="add" and encoding not in l:
+                        log("adding %s to %s for %s", encoding, l, ws)
+                        l.append(encoding)
+                    elif cmd=="remove" and encoding in l:
+                        log("removing %s from %s for %s", encoding, l, ws)
+                        l.remove(encoding)
+                    else:
+                        continue
+                ws.encodings = tuple(encodings)
+                ws.core_encodings = tuple(core_encodings)
+                ws.do_set_client_properties(typedict())
+                ws.refresh()
+            return "%s %s" % (["removed", "added"][cmd=="add"], encoding)
+
         strict = None       #means no change
-        if len(args)>0 and args[0] in ("strict", "nostrict"):
+        if encoding in ("strict", "nostrict"):
+            strict = encoding=="strict"
+            encoding = args[0]
+            wids = args[1:]
+        elif len(args)>0 and args[0] in ("strict", "nostrict"):
             #remove "strict" marker
             strict = args[0]=="strict"
-            args = args[1:]
-        wids = args
+            wids = args[1:]
+        else:
+            wids = args
         for ws in tuple(self._ws_from_args(*wids)):
             ws.set_new_encoding(encoding, strict)
             ws.refresh()
