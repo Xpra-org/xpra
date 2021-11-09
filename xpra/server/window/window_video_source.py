@@ -1967,6 +1967,8 @@ class WindowVideoSource(WindowSource):
         #(zero change scrolls have been removed - so maybe there are none)
         if scrolls:
             client_options = options.copy()
+            client_options.pop("speed", None)
+            client_options.pop("quality", None)
             client_options.pop("scroll", None)
             if flush>0:
                 client_options["flush"] = flush
