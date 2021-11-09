@@ -52,6 +52,7 @@ LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 
 MAX_PIXELS_PREFER_RGB = envint("XPRA_MAX_PIXELS_PREFER_RGB", 4096)
 MAX_RGB = envint("XPRA_MAX_RGB", 512*1024)
+WEBP_EFFICIENCY_CUTOFF = envint("XPRA_WEBP_EFFICIENCY_CUTOFF", 512*1024)
 
 MIN_WINDOW_REGION_SIZE = envint("XPRA_MIN_WINDOW_REGION_SIZE", 1024)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
@@ -1002,12 +1003,16 @@ class WindowSource(WindowIconSource):
             if "rgb24" in co:
                 return "rgb24"
         if depth in (24, 32):
-            if self.enc_nvjpeg and "jpeg" in co and w>=16 and h>=16 and quality<100:
+            jpeg = "jpeg" in co and w>=16 and h>=16 and quality<100
+            if jpeg and self.enc_nvjpeg:
                 return "jpeg"
-            if "webp" in co and 16383>=w>=2 and 16383>=h>=2:
+            webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2
+            if webp and (w*h<=WEBP_EFFICIENCY_CUTOFF or quality==100):
                 return "webp"
-            if "jpeg" in co and w>=16 and h>=16 and quality<100:
+            if jpeg:
                 return "jpeg"
+            if webp:
+                return "webp"
         elif depth>24 and "rgb32" in co and self.client_bit_depth>24 and self.client_bit_depth!=32:
             #the only encoding that can do higher bit depth at present
             #(typically r210 which is actually rgb30+2)
