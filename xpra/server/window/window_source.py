@@ -1257,7 +1257,7 @@ class WindowSource(WindowIconSource):
                                           self.global_statistics, self.statistics,
                                           self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
         if self.content_type=="text":
-            target = min(100, target+20)
+            target = min(100, target+50)
         elif self.content_type=="video":
             target = max(0, target-20)
         #make a copy to work on:
