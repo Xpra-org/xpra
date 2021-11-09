@@ -333,23 +333,24 @@ class WindowSource(WindowIconSource):
         if self._mmap_size>0:
             self.add_encoder("mmap", self.mmap_encode)
             return
+        def add(encoding, encoder):
+            if encoding in self.server_core_encodings:
+                self.add_encoder(encoding, encoder)
         if self.enc_pillow:
             for x in self.enc_pillow.get_encodings():
-                if x in self.server_core_encodings:
-                    self.add_encoder(x, self.pillow_encode)
+                add(x, self.pillow_encode)
         #prefer these native encoders over the Pillow version:
-        if "webp" in self.server_core_encodings:
-            self.add_encoder("webp", self.webp_encode)
+        add("webp", self.webp_encode)
         self.enc_jpeg = get_codec("enc_jpeg")
-        if "jpeg" in self.server_core_encodings and self.enc_jpeg:
-            self.add_encoder("jpeg", self.jpeg_encode)
+        if self.enc_jpeg:
+            add("jpeg", self.jpeg_encode)
         #prefer nvjpeg over all the other jpeg encoders:
         self.enc_nvjpeg = None
         log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
         if self.cuda_device_context:
             self.enc_nvjpeg = get_codec("enc_nvjpeg")
             if self.enc_nvjpeg:
-                self.add_encoder("jpeg", self.nvjpeg_encode)
+                add("jpeg", self.nvjpeg_encode)
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
 
 
