@@ -360,7 +360,7 @@ class ServerBaseControlCommands(StubServerMixin):
         return "removed %i window-filters" % l
 
     def control_command_add_window_filter(self, object_name, property_name, operator, value, client_uuids=""):
-        from xpra.server.window import filters
+        from xpra.server.window import filters  #pylint: disable=import-outside-toplevel
         window_filter = filters.get_window_filter(object_name, property_name, operator, value)
         #log("%s%s=%s", filters.get_window_filter, (object_name, property_name, operator, value), window_filter)
         if client_uuids=="*":
@@ -374,7 +374,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_compression(self, compression):
         c = compression.lower()
-        from xpra.net import compression
+        from xpra.net import compression    #pylint: disable=import-outside-toplevel
         opts = compression.get_enabled_compressors()    #ie: [lz4, zlib]
         if c not in opts:
             raise ControlError("compressor argument must be one of: %s" % csv(opts))
@@ -385,7 +385,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_encoder(self, encoder):
         e = encoder.lower()
-        from xpra.net import packet_encoding
+        from xpra.net import packet_encoding  #pylint: disable=import-outside-toplevel
         opts = packet_encoding.get_enabled_encoders()   #ie: [rencode, rencodeplus, bencode, yaml]
         if e not in opts:
             raise ControlError("encoder argument must be one of: %s" % csv(opts))
@@ -429,7 +429,7 @@ class ServerBaseControlCommands(StubServerMixin):
         self.mdns_update()
         return "session name set to %s" % name
 
-    def _control_windowsources_from_args(self, *args):
+    def _ws_from_args(self, *args):
         #converts the args to valid window ids,
         #then returns all the window sources for those wids
         if len(args)==0 or len(args)==1 and args[0]=="*":
@@ -446,17 +446,18 @@ class ServerBaseControlCommands(StubServerMixin):
                     wids.append(wid)
                 else:
                     log("window id %s does not exist", wid)
-        wss = {}
+        wss = []
         for csource in tuple(self._server_sources.values()):
             for wid in wids:
                 ws = csource.window_sources.get(wid)
                 window = self._id_to_window.get(wid)
                 if window and ws:
-                    wss[ws] = window
+                    wss.append(ws)
         return wss
 
+
     def _set_encoding_property(self, name, value, *wids):
-        for ws in self._control_windowsources_from_args(*wids).keys():
+        for ws in self._ws_from_args(*wids):
             fn = getattr(ws, "set_%s" % name.replace("-", "_"))   #ie: "set_quality"
             fn(value)
         #now also update the defaults:
@@ -475,23 +476,23 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_auto_refresh(self, auto_refresh, *wids):
         delay = int(float(auto_refresh)*1000.0)      # ie: 0.5 -> 500 (milliseconds)
-        for ws in self._control_windowsources_from_args(*wids).keys():
+        for ws in self._ws_from_args(*wids):
             ws.set_auto_refresh_delay(auto_refresh)
         return "auto-refresh delay set to %sms for windows %s" % (delay, wids)
 
     def control_command_refresh(self, *wids):
-        for ws in self._control_windowsources_from_args(*wids).keys():
+        for ws in self._ws_from_args(*wids):
             ws.full_quality_refresh({})
         return "refreshed windows %s" % str(wids)
 
     def control_command_scaling_control(self, scaling_control, *wids):
-        for ws in tuple(self._control_windowsources_from_args(*wids).keys()):
+        for ws in tuple(self._ws_from_args(*wids)):
             ws.set_scaling_control(scaling_control)
             ws.refresh()
         return "scaling-control set to %s on windows %s" % (scaling_control, wids)
 
     def control_command_scaling(self, scaling, *wids):
-        for ws in tuple(self._control_windowsources_from_args(*wids).keys()):
+        for ws in tuple(self._ws_from_args(*wids)):
             ws.set_scaling(scaling)
             ws.refresh()
         return "scaling set to %s on windows %s" % (str(scaling), wids)
@@ -503,7 +504,7 @@ class ServerBaseControlCommands(StubServerMixin):
             strict = args[0]=="strict"
             args = args[1:]
         wids = args
-        for ws in tuple(self._control_windowsources_from_args(*wids).keys()):
+        for ws in tuple(self._ws_from_args(*wids)):
             ws.set_new_encoding(encoding, strict)
             ws.refresh()
         return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
@@ -536,7 +537,7 @@ class ServerBaseControlCommands(StubServerMixin):
         if wid not in self._id_to_window:
             raise ControlError("invalid window %i" % wid)
         video_subregions = []
-        for ws in self._control_windowsources_from_args(wid).keys():
+        for ws in self._ws_from_args(wid):
             vs = getattr(ws, "video_subregion", None)
             if not vs:
                 log.warn("Warning: cannot set video region enabled flag on window %i:", wid)
@@ -573,11 +574,11 @@ class ServerBaseControlCommands(StubServerMixin):
 
 
     def control_command_lock_batch_delay(self, wid, delay):
-        for ws in self._control_windowsources_from_args(wid).keys():
+        for ws in self._ws_from_args(wid):
             ws.lock_batch_delay(delay)
 
     def control_command_unlock_batch_delay(self, wid):
-        for ws in self._control_windowsources_from_args(wid).keys():
+        for ws in self._ws_from_args(wid):
             ws.unlock_batch_delay()
 
     def control_command_set_lock(self, lock):
