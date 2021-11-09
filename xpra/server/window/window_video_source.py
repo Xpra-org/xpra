@@ -744,8 +744,8 @@ class WindowVideoSource(WindowSource):
                 #give a boost if we have a video region and this is not video:
                 quality_delta = 40
                 speed_delta = 0
-            options = self.assign_sq_options(options, speed_delta, quality_delta)
-            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, options,
+            novideo_options = self.assign_sq_options(options, speed_delta, quality_delta)
+            WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, novideo_options,
                                                  exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
         if self.is_tray:
