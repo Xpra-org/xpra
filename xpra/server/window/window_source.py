@@ -474,7 +474,7 @@ class WindowSource(WindowIconSource):
                   }
         larm = self.last_auto_refresh_message
         if larm:
-            esinfo = {"auto-refresh"    : {
+            esinfo.update({"auto-refresh"    : {
                 "quality"       : self.refresh_quality,
                 "speed"         : self.refresh_speed,
                 "min-delay"     : self.min_auto_refresh_delay,
@@ -485,7 +485,7 @@ class WindowSource(WindowIconSource):
                     "message"    : larm[1],
                     }
                 }
-            }
+            })
 
         now = monotonic_time()
         buckets_info = {}
