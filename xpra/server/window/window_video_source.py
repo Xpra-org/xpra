@@ -1975,8 +1975,8 @@ class WindowVideoSource(WindowSource):
             packet = self.make_draw_packet(x, y, w, h,
                                            coding, LargeStructure(coding, scrolls), 0, client_options, options)
             self.queue_damage_packet(packet, 0, 0, options)
-            compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s as %3i rectangles  (%5iKB to     0KB), sequence %5i, client_options=%s",
-                 (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options)
+            compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s as %3i rectangles  (%5iKB to     0KB), sequence %5i, client_options=%s, options=%s",
+                 (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options, options)
         del scrolls
         #send the rest as rectangles:
         if non_scroll:
