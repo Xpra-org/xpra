@@ -385,6 +385,7 @@ cdef get_config_info(WebPConfig *config):
         }
 
 def encode(image, int quality=50, int speed=50, supports_alpha=False, content_type=""):
+    log("webp.encode(%s, %i, %i, %s, %s)", image, quality, speed, supports_alpha, content_type)
     pixel_format = image.get_pixel_format()
     if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA"):
         raise Exception("unsupported pixel format %s" % pixel_format)
@@ -438,6 +439,7 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     config.alpha_compression = alpha_int
     config.alpha_filtering = MAX(0, MIN(2, speed/50)) * alpha_int
     config.alpha_quality = quality * alpha_int
+    config.emulate_jpeg_size = 1
     if config.lossless:
         config.autofilter = 1
     else:
@@ -447,8 +449,8 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
         config.filter_sharpness = 7-quality//15
         config.filter_type = 0
         config.autofilter = 0
-    config._pass = MAX(1, MIN(10, (100-speed)//10))
-    config.preprocessing = int(speed<50)
+    config._pass = MAX(1, MIN(10, (40-speed)//10))
+    config.preprocessing = int(speed<30)
     config.image_hint = image_hint
     config.thread_level = WEBP_THREADING
     config.partitions = 3
