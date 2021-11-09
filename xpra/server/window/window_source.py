@@ -1012,7 +1012,7 @@ class WindowSource(WindowIconSource):
             #the only encoding that can do higher bit depth at present
             #(typically r210 which is actually rgb30+2)
             return "rgb32"
-        if "png" in co and (quality>=90 and speed<60) or depth<=16):
+        if "png" in co and ((quality>=90 and speed<60) or depth<=16):
             return "png"
         if "jpeg" in co and w>=2 and h>=2:
             return "jpeg"
