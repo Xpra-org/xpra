@@ -1809,13 +1809,13 @@ class WindowSource(WindowIconSource):
             speed = self._current_speed
             if packets_backlog is None:
                 packets_backlog = self.get_packets_backlog()
-            speed = max(1, self._fixed_min_speed, speed-packets_backlog*20+speed_delta)
+            speed = min(100, max(1, self._fixed_min_speed, speed-packets_backlog*20+speed_delta))
         quality = options.get("quality", 0)
         if quality==0:
             quality = self._current_quality
             if packets_backlog is None:
                 packets_backlog = self.get_packets_backlog()
-            quality = max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta)
+            quality = min(100, max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta))
         eoptions = dict(options)
         eoptions["quality"] = quality
         eoptions["speed"] = speed
