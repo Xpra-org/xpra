@@ -1854,15 +1854,15 @@ class WindowVideoSource(WindowSource):
             scrolllog("no scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
             self.do_free_scroll_data()
             return False
-        return self.do_scroll_encode("scroll", image, options, self.scroll_min_percent)
+        return self.do_scroll_encode(image, options, self.scroll_min_percent)
 
     def scroll_encode(self, coding, image, options):
-        self.do_scroll_encode(coding, image, options, 0)
+        self.do_scroll_encode(image, options, 0)
         #do_scroll_encode() sends the packets
         #so there is nothing to return:
         return None
 
-    def do_scroll_encode(self, coding, image, options, min_percent=0):
+    def do_scroll_encode(self, image, options, min_percent=0):
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
