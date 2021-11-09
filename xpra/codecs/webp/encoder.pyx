@@ -401,7 +401,7 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     pixels = image.get_pixels()
     cdef int alpha_int = int(supports_alpha and pixel_format.find("A")>=0)
     cdef int threshold_delta = -int(content_type=="text")*20
-    cdef int use_argb = int(quality>=(SUBSAMPLING_THRESHOLD+threshold_delta))
+    cdef int use_argb = int(quality>=(SUBSAMPLING_THRESHOLD+threshold_delta)) or pixel_format.find("A")<0
 
     cdef const uint8_t *pic_buf
     cdef Py_ssize_t pic_buf_len = 0
