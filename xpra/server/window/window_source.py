@@ -878,7 +878,7 @@ class WindowSource(WindowIconSource):
                         force_reload, self.wid, self._want_alpha, self._current_speed, self._current_quality)
         log("lossless threshold: %s / %s, rgb auto threshold=%i (min=%i, max=%i)",
                         self._lossless_threshold_base, self._lossless_threshold_pixel_boost,
-                        self._rgb_auto_threshold, min_rgb_threshold, max_rgb_threshold, self.get_best_encoding)
+                        self._rgb_auto_threshold, min_rgb_threshold, max_rgb_threshold)
         log("bandwidth-limit=%i, get_best_encoding=%s", bwl, self.get_best_encoding)
 
     def assign_encoding_getter(self):
