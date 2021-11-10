@@ -53,7 +53,7 @@ quality = auto
 
 # For auto quality only:
 #min-quality = 50
-min-quality = 30
+min-quality = 1
 
 # Use fixed speed
 # (value is a percentage or "auto"):
@@ -61,8 +61,8 @@ min-quality = 30
 speed = auto
 
 # For auto speed only:
-#min-speed = 0
-min-speed = 30
+#min-speed = 30
+min-speed = 1
 
 # Idle delay in seconds before doing an automatic lossless refresh:
 auto-refresh-delay = 0.15
