@@ -2162,7 +2162,7 @@ class WindowVideoSource(WindowSource):
                     break
             #prefer nvjpeg over video that must be decoded slowly:
             if 0<=speed<20:
-                q = self.get_quality("jpeg")
+                q = options.get("quality", self._current_quality)
                 options["quality"] = max(self._fixed_min_quality, q - 30)
                 return self.nvjpeg_encode("jpeg", image, options)
 
