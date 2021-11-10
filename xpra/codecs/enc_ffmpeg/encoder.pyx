@@ -15,7 +15,7 @@ log = Logger("encoder", "ffmpeg")
 
 from xpra.codecs.codec_constants import video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
-from xpra.codecs.libav_common.av_log import SilenceAVWarningsContext
+from xpra.codecs.libav_common.av_log import SilenceAVWarningsContext  # @UnresolvedImport
 from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
 from xpra.os_util import bytestostr, strtobytes, LINUX
 from xpra.buffers.membuf cimport memalign
@@ -1150,6 +1150,7 @@ cdef class Encoder:
     cdef uint8_t nplanes
     cdef object encoding
     cdef object profile
+    cdef uint8_t fast_decode
     #audio:
     cdef const AVCodec *audio_codec
     cdef AVStream *audio_stream
@@ -1164,6 +1165,7 @@ cdef class Encoder:
         global CODECS, generation
         assert encoding in CODECS
         self.vaapi = encoding in VAAPI_CODECS and src_format=="NV12"
+        self.fast_decode = options.boolget("%s.fast-decode" % encoding, False)
         assert src_format in get_input_colorspaces(encoding), "invalid colorspace: %s" % src_format
         if src_format=="YUV420P":
             self.nplanes = 3
@@ -1390,11 +1392,14 @@ cdef class Encoder:
                 log("init_encoder() thread-type=%i, thread-count=%i", THREAD_TYPE, THREAD_COUNT)
                 log("init_encoder() codec flags: %s", flagscsv(CODEC_FLAGS, self.video_ctx.flags))
                 log("init_encoder() codec flags2: %s", flagscsv(CODEC_FLAGS2, self.video_ctx.flags2))
-            if self.encoding.startswith("h264"):
+            if self.encoding.startswith("h264") or self.encoding.find("mpeg4")>=0:
                 #x264 options:
-                r = av_dict_set(&opts, "tune", "zerolatency", 0)
-                log("av_dict_set tune=zerolatency returned %i", r)
-                r = av_dict_set(&opts, "preset","ultrafast", 0)
+                tunes = [b"zerolatency"]
+                if self.fast_decode:
+                    tunes.append(b"fastdecode")
+                r = av_dict_set(&opts, b"tune", b"+".join(tunes), 0)
+                log("av_dict_set tune=%s returned %i", tunes, r)
+                r = av_dict_set(&opts, b"preset", b"ultrafast", 0)
                 log("av_dict_set preset=ultrafast returned %i", r)
             if self.encoding.startswith("vp"):
                 for k,v in {
