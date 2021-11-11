@@ -11,6 +11,10 @@ from time import monotonic
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
+from pycuda.driver import LogicError
+import random
+import weakref
+import contextlib
 
 from xpra.os_util import WIN32, LINUX, strtobytes
 from xpra.make_thread import start_thread
@@ -53,10 +57,10 @@ NATIVE_RGB = envbool("XPRA_NVENC_NATIVE_RGB", NATIVE_RGB)
 cdef int LOSSLESS_ENABLED = envbool("XPRA_NVENC_LOSSLESS", True)
 cdef int YUV420_ENABLED = envbool("XPRA_NVENC_YUV420P", True)
 cdef int YUV444_ENABLED = envbool("XPRA_NVENC_YUV444P", True)
-cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", False)
+cdef int DEBUG_API = envbool("XPRA_NVENC_DEBUG_API", True)
 cdef int GPU_MEMCOPY = envbool("XPRA_NVENC_GPU_MEMCOPY", True)
 cdef int CONTEXT_LIMIT = envint("XPRA_NVENC_CONTEXT_LIMIT", 32)
-cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", True)
+cdef int THREADED_INIT = envbool("XPRA_NVENC_THREADED_INIT", False)
 cdef int SLOW_DOWN_INIT = envint("XPRA_NVENC_SLOW_DOWN_INIT", 0)
 cdef int USE_SINGLETON_ENCODER = envbool("XPRA_NVENC_USE_SINGLETON_ENCODER", True)
 
@@ -1494,23 +1498,42 @@ cdef inline raiseNVENC(NVENCSTATUS ret, msg):
         raise NVENCException(ret, msg)
 
 
+class NVResourceWatch:
+    # cdef int resource_count
+
+    __slots__ = ("resource_count")
+
+
+    def __init__(self):
+        # log("NVResourceWatch init()")
+        self.resource_count = 0
+
+    def __enter__(self):
+        # log("NVResourceWatch enter()")
+        with open("/proc/self/maps", 'r') as f:
+            self.resource_count = len([ a for a in f.read().split("\n") if 'nvid' in a])
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # log("NVResourceWatch exit()")
+        # return
+        after_resource_count = 0
+        with open("/proc/self/maps", 'r') as f:
+            after_resource_count = len([ a for a in f.read().split("\n") if 'nvid' in a])
+        if self.resource_count <= after_resource_count:
+            log.warn("NVIDIA Resources should have decreased, but didnt, before: %i, after: %i", self.resource_count, after_resource_count)
+
 cdef class UniqueEncoder:
-    cdef unsigned long unique_id
     cdef object base_encoder
 
     cdef object __weakref__
     
     def __init__(self, *args, **kwargs):
         log("init uniqueencoder start")
-        self.unique_id = random.randint(0,999999999)
-        self.base_encoder = Encoder.instance(self)
+        # maintain weakref to base_encoder to allow deallocation
+        self.base_encoder = weakref.ref(Encoder.instance(self))
 
     def __getattribute__(self,name):
         # log("getattribute unique: lookup %s", name)
-
-        # Override specifc names for cdef vars to return correctly
-        if name == 'unique_id':
-            return self.unique_id
 
         # try to get attr for this object (UniqueEncoder)
         try:
@@ -1521,7 +1544,7 @@ cdef class UniqueEncoder:
 
         # try to get attr from Encoder singleton
         try:
-            attr = Encoder.__getattribute__(self.base_encoder, name)
+            attr = Encoder.__getattribute__(self.base_encoder(), name)
             #log("getattribute unique: found attr in base_encoder, using base: %s", name)
             return attr
         except AttributeError:
@@ -1529,56 +1552,87 @@ cdef class UniqueEncoder:
         except TypeError:
             pass
 
+        if not self.base_encoder or not self.base_encoder():
+            # re-up base encoder ref
+            self.base_encoder = weakref.ref(Encoder.instance(self))
+            try:
+                attr = Encoder.__getattribute__(self.base_encoder(), name)
+                #log("getattribute unique: found attr in base_encoder, using base: %s", name)
+                return attr
+            except AttributeError:
+                pass
+            except TypeError:
+                pass
+
         # try to get attr from local object again, likely failing with an intentionally uncaught AttributeError
         #log("getattribute unique: fallback getattr lookup")
         attr = object.__getattribute__(self, name)
         return attr
 
     def is_ready(self):
+        if not Encoder.does_instance_exist():
+            return False
         return Encoder.instance().is_ready()
 
 
     def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None, int retry=0):
-        log("called compress_image with unique_encoder: %s, frames: %i, unique_id: %i", self, self.frames, self.unique_id)
-        return self.base_encoder.compress_image(device_context, image, quality=quality, speed=speed, options=options, retry=retry, unique_id=self.unique_id)
+        log("called compress_image with unique_encoder: %s, frames: %i, self id: %i", self, self.frames, id(self))
+        return self.base_encoder().compress_image(device_context, image, quality=quality, speed=speed, options=options, retry=retry, unique_id=id(self))
     
     def clean(self, actualClean=False, derefOnly=False):
         Encoder.remove_child(self)
+        self.base_encoder = None
 
     def __dealloc__(self):
         Encoder.remove_child(self)
+        self.base_encoder = None
 
 cdef class Encoder:
     _instances = {}
+    _encoder_lock = Lock()
     cdef int _instance_initialized
     _child_unique_ids = {}
 
     # classmethod defs for singleton Encoder
     @classmethod
     def instance(cls, child_encoder=None, *args, **kwargs):
-        log("call encoder instance()")
-        if cls not in cls._instances:
-            log("instantiate new %s instance", cls)
-            cls._instances[cls] = Encoder(*args, **kwargs)
-        
-        if child_encoder:
-            cls._child_unique_ids[child_encoder.unique_id] = 1
+        log("call encoder instance() waiting for lock")
+        with cls._encoder_lock:
+            log("call encoder instance() got lock")
 
-        return cls._instances[cls]
+            if cls in cls._instances and cls._instances[cls].closed == 1:
+                del cls._instances[cls]
+
+            log("call encoder instance()")
+            if cls not in cls._instances or cls._instances[cls].closed == 1:
+                log("instantiate new %s instance", cls)
+                cls._instances[cls] = Encoder(*args, **kwargs)
+            
+            if child_encoder:
+                cls._child_unique_ids[id(child_encoder)] = 1
+
+            return cls._instances[cls]
         
     @classmethod
-    def clean_instance(cls, *args, **kwargs):
+    def clean_instance(cls, no_lock=False, *args, **kwargs):
         # global encode_contexts_len
-        log("call encoder clean_instance()")
-        if cls in cls._instances:
-            cls._instances[cls].clean(actualClean=True)
-            cls._instances[cls] = None
-            del cls._instances[cls]
+        log("call encoder clean_instance() waiting for lock")
+        # if cls in cls._instances:
+        if no_lock:
+            ctx = contextlib.nullcontext()
+        else: 
+            ctx = cls._encoder_lock
+        with ctx:
+            log("call encoder clean_instance()")
+            if cls in cls._instances:
+                cls._instances[cls].clean(actualClean=True)
+                cls._instances[cls] = None
+                del cls._instances[cls]
 
-        for i in list(cls._child_unique_ids):
-            del cls._child_unique_ids[i]
+            for i in list(cls._child_unique_ids):
+                del cls._child_unique_ids[i]
 
-        # encode_contexts_len = 0
+
 
     @classmethod
     def does_instance_exist(cls):
@@ -1604,9 +1658,9 @@ cdef class Encoder:
 
     @classmethod
     def remove_child(cls, child_encoder):
-        log("removing child from encoders: %s", child_encoder.unique_id)
-        if child_encoder.unique_id in cls._child_unique_ids:
-            del cls._child_unique_ids[child_encoder.unique_id]
+        log("removing child from encoders: %s", id(child_encoder))
+        if id(child_encoder) in cls._child_unique_ids:
+            del cls._child_unique_ids[id(child_encoder)]
 
         log("child encoders left: %s", cls._child_unique_ids)
         #FIXME: cleanup singleton instance when all child encoders are gone?
@@ -1616,6 +1670,8 @@ cdef class Encoder:
         # log("getattribute base encoder: enter %s", name)
         if name == 'frames':
             return self.frames
+        elif name == 'closed':
+            return self.closed
         attr = object.__getattribute__(self, name)
 
         return attr
@@ -1669,7 +1725,6 @@ cdef class Encoder:
     cdef object profile_name
     cdef object pixel_format
     cdef uint8_t lossless
-    cdef NV_ENC_INITIALIZE_PARAMS *params
     #statistics, etc:
     cdef double time
     cdef uint64_t first_frame_timestamp
@@ -1852,7 +1907,7 @@ cdef class Encoder:
         cdef double start, end
 
         with encode_lock:
-        
+            log("init_device() - check instance initialized: %s", self.instance_initialized())
             if USE_SINGLETON_ENCODER and self.instance_initialized():
                 log("encode context already exists, using global singleton")
                 self.get_encode_context()
@@ -1884,8 +1939,9 @@ cdef class Encoder:
                 else:
                     record_device_failure(device_id)
                 log("exception, doing clean if encode context already exists")
-                if USE_SINGLETON_ENCODER and self.instance_initialized():
-                    self.clean(actualClean=True)
+                if USE_SINGLETON_ENCODER:
+                    # self.clean(actualClean=True)
+                    Encoder.clean_instance()
 
                 raise
             end = monotonic()
@@ -2011,11 +2067,13 @@ cdef class Encoder:
         #this is the buffer we feed into the encoder
         #the data may come from the CUDA kernel,
         #or it may be uploaded directly there (ie: BGRX)
+        assert self.cudaOutputBuffer is None, "cudaOutputBuffer expected to be empty (missed clean?)"
         self.cudaOutputBuffer, self.outputPitch = driver.mem_alloc_pitch(self.encoder_width*wmult, self.encoder_height*hmult//plane_size_div, 16)
         log("CUDA Output Buffer=%#x, pitch=%s", int(self.cudaOutputBuffer), self.outputPitch)
 
         if kernel_name:
             #load the kernel:
+            assert not self.kernel, "kernel is not empty (missed clean?)"
             self.kernel = get_CUDA_function(kernel_name)
             self.kernel_name = kernel_name
             assert self.kernel, "failed to load %s for cuda context %s" % (self.kernel_name, cuda_context)
@@ -2023,10 +2081,12 @@ cdef class Encoder:
             #(and make it bigger just in case - subregions from XShm can have a huge rowstride)
             #(this is the buffer we feed into the kernel)
             max_input_stride = MAX(2560, self.input_width)*4
+            assert self.cudaInputBuffer is None, "cudaInputBuffer expected to be empty (missed clean?)"
             self.cudaInputBuffer, self.inputPitch = driver.mem_alloc_pitch(max_input_stride, self.input_height, 16)
             log("CUDA Input Buffer=%#x, pitch=%s", int(self.cudaInputBuffer), self.inputPitch)
             #CUDA
             d = self.cuda_device_context.device
+
             self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
             self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
             log("max_block_sizes=%s, max_grid_sizes=%s", self.max_block_sizes, self.max_grid_sizes)
@@ -2044,6 +2104,7 @@ cdef class Encoder:
 
         #allocate input buffer on host:
         #this is the buffer we upload to the device
+        assert self.inputBuffer is None, "inputBuffer expected to be empty (missed clean?)"
         self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.input_height, dtype=numpy.byte)
         log("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.input_height)
 
@@ -2058,6 +2119,8 @@ cdef class Encoder:
         log("init_encoder()")
         cdef GUID codec = self.init_codec()
         cdef NVENCSTATUS r
+        if self.params:
+            free(self.params)
         self.params = <NV_ENC_INITIALIZE_PARAMS*> cmalloc(sizeof(NV_ENC_INITIALIZE_PARAMS), "initialization params")
         assert memset(self.params, 0, sizeof(NV_ENC_INITIALIZE_PARAMS))!=NULL
         
@@ -2084,6 +2147,7 @@ cdef class Encoder:
 
         # since dimensions have changed, reinitialize buffers as they have changed size
         self.buffer_clean()
+        self.cuda_kernel_clean()
         with self.cuda_device_context as cuda_context:
             self.init_cuda_kernel(cuda_context)
         self.init_buffers()
@@ -2247,6 +2311,7 @@ cdef class Encoder:
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
         assert self.context, "context is not initialized"
         #register CUDA input buffer:
+        assert self.inputHandle==NULL, "inputHandle expected to be NULL, missed clean?"
         memset(&registerResource, 0, sizeof(NV_ENC_REGISTER_RESOURCE))
         registerResource.version = NV_ENC_REGISTER_RESOURCE_VER
         registerResource.resourceType = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
@@ -2258,7 +2323,7 @@ cdef class Encoder:
         registerResource.bufferFormat = self.bufferFmt
         if DEBUG_API:
             log("nvEncRegisterResource(%#x)", <uintptr_t> &registerResource)
-        cdef NVENCSTATUS r                  #
+        cdef NVENCSTATUS r
         with nogil:
             r = self.functionList.nvEncRegisterResource(self.context, &registerResource)
         raiseNVENC(r, "registering CUDA input buffer")
@@ -2357,15 +2422,16 @@ cdef class Encoder:
         return "nvenc(%s/%s/%s - %s - %4ix%-4i) %#x" % (self.src_format, self.pixel_format, self.codec_name, self.preset_name, self.width, self.height, id(self))
 
     def is_closed(self) -> bool:
-        if USE_SINGLETON_ENCODER:
-            return not Encoder.does_instance_exist()
-        else:
-            return bool(self.closed)
+        return bool(self.closed)
 
     def __dealloc__(self):
         log("dealloc() on encoder base")
         if not self.closed:
+            log("not closed, running clean")
             self.clean(actualClean=True)
+            log("done clean")
+        Encoder.clean_instance(no_lock=True)
+        log("done dealloc()")
 
 
     def clean(self, actualClean=False):
@@ -2391,7 +2457,8 @@ cdef class Encoder:
         if cdc:
             with cdc:
                 self.cuda_clean(actualClean)
-                self.cuda_device_context = None
+                self.cuda_device_context.remove_cleanup_instance(self)
+            self.cuda_device_context = None
         self.width = 0
         self.height = 0
         self.input_width = 0
@@ -2439,61 +2506,81 @@ cdef class Encoder:
             return
         
         cdef NVENCSTATUS r
-        if self.params:
+        if self.params!=NULL:
             if self.params.encodeConfig!=NULL:
                 free(self.params.encodeConfig)
+                self.params.encodeConfig = NULL
             free(self.params)
+            self.params = NULL
 
         if self.context!=NULL and self.frames>0:
             try:
                 self.flushEncoder()
             except Exception as e:
                 log.warn("got exception on flushEncoder, continuing anyway", exc_info=True)
+
         self.buffer_clean()
+        self.encoder_clean()
+        self.cuda_kernel_clean()
+
+        self.cuda_context_ptr = <void *> 0
+
+    def encoder_clean(self):
+        cdef NVENCSTATUS r
         if self.context!=NULL:
-            if self.bitstreamBuffer!=NULL:
-                log("cuda_clean() destroying output bitstream buffer %#x", <uintptr_t> self.bitstreamBuffer)
-                if DEBUG_API:
-                    log("nvEncDestroyBitstreamBuffer(%#x)", <uintptr_t> self.bitstreamBuffer)
-                with nogil:
-                    r = self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
-                raiseNVENC(r, "destroying output buffer")
-                self.bitstreamBuffer = NULL
             log("cuda_clean() destroying encoder %#x", <uintptr_t> self.context)
             if DEBUG_API:
                 log("nvEncDestroyEncoder(%#x)", <uintptr_t> self.context)
-            with nogil:
-                r = self.functionList.nvEncDestroyEncoder(self.context)
-            raiseNVENC(r, "destroying context")
+            with NVResourceWatch():
+                with nogil:
+                    r = self.functionList.nvEncDestroyEncoder(self.context)
+                raiseNVENC(r, "destroying context")
+            
+            free(self.functionList)
             self.functionList = NULL
             self.context = NULL
             global context_counter
             context_counter.decrease()
             log("cuda_clean() (still %s context%s in use)", context_counter, engs(context_counter))
-        else:
-            log("skipping encoder context cleanup")
-        self.cuda_context_ptr = <void *> 0
 
     def buffer_clean(self):
+        log("buffer_clean()")
+        if self.context!=NULL and self.bitstreamBuffer!=NULL:
+            log("buffer_clean() destroying output bitstream buffer %#x", <uintptr_t> self.bitstreamBuffer)
+            if DEBUG_API:
+                log("nvEncDestroyBitstreamBuffer(%#x)", <uintptr_t> self.bitstreamBuffer)
+            with nogil:
+                r = self.functionList.nvEncDestroyBitstreamBuffer(self.context, self.bitstreamBuffer)
+            raiseNVENC(r, "destroying output buffer")
+            self.bitstreamBuffer = NULL
+
         if self.inputHandle!=NULL and self.context!=NULL:
-            log("buffer_clean() unregistering CUDA output buffer input handle %#x", <uintptr_t> self.inputHandle)
+            log("buffer_clean() unregistering CUDA input handle %#x", <uintptr_t> self.inputHandle)
             if DEBUG_API:
                 log("nvEncUnregisterResource(%#x)", <uintptr_t> self.inputHandle)
             with nogil:
                 r = self.functionList.nvEncUnregisterResource(self.context, self.inputHandle)
             raiseNVENC(r, "unregistering CUDA input buffer")
+            # del self.inputHandle
             self.inputHandle = NULL
+
+    def cuda_kernel_clean(self):
         if self.inputBuffer is not None:
-            log("buffer_clean() freeing CUDA host buffer %s", self.inputBuffer)
+            log("cuda_kernel_clean() freeing CUDA host buffer %s", self.inputBuffer)
+            self.inputBuffer.base.free()
+            if hasattr(self.inputBuffer, "free"):
+                log("cuda_kernel_clean() calling inputbuffer free()")
+                self.inputBuffer.free()
             self.inputBuffer = None
         if self.cudaInputBuffer is not None:
-            log("buffer_clean() freeing CUDA input buffer %#x", int(self.cudaInputBuffer))
+            log("cuda_kernel_clean() freeing CUDA input buffer %#x", int(self.cudaInputBuffer))
             self.cudaInputBuffer.free()
             self.cudaInputBuffer = None
         if self.cudaOutputBuffer is not None:
-            log("buffer_clean() freeing CUDA output buffer %#x", int(self.cudaOutputBuffer))
+            log("cuda_kernel_clean() freeing CUDA output buffer %#x", int(self.cudaOutputBuffer))
             self.cudaOutputBuffer.free()
             self.cudaOutputBuffer = None
+        self.kernel = None
 
     def get_width(self) -> int:
         return self.width
@@ -2573,13 +2660,17 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, options=None, int retry=0, unsigned int unique_id):
+    def compress_image(self, image, options=None, int retry=0, unsigned long unique_id=0):
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
+
+        if USE_SINGLETON_ENCODER:
+            #override passed in cuda_device_context with self.cuda_device_context (from base Encoder)
+            cuda_device_context = self.cuda_device_context
         assert cuda_device_context, "no cuda device context"
         #cuda_device_context.__enter__ does self.context.push()
         log("called compress_image with common encoder: %s, context: %#x, frames: %i", self, <uintptr_t> self.context, self.frames)
-        log("compress_image%s", (quality, speed, options, retry))
+        log("compress_image%s", (device_context, quality, speed, options, retry))
 
         #FIXME: do not lock encode_lock on USE_SINGLETON_ENCODER disabled
         global encode_lock
@@ -2603,8 +2694,9 @@ cdef class Encoder:
 
                     if USE_SINGLETON_ENCODER and self.instance_initialized():
                         Encoder.clean_instance()
-
                     raise
+                # finally:
+                #     del image
 
     cdef do_compress_image(self, cuda_context, image):
         assert self.context, "nvenc context is not initialized"
@@ -2624,14 +2716,14 @@ cdef class Encoder:
         dims_changed = False
         if USE_SINGLETON_ENCODER and self.instance_initialized():
             if w > self.params.encodeWidth:
-                self.encoder_width = roundup(w, 32)
                 dims_changed = True
             if h > self.params.encodeHeight:
-                self.encoder_height = roundup(h, 32)
                 dims_changed = True
 
             #FIXME: determine when its safe to drop the encoder dimensions back down (no longer need to render a large image)
             if dims_changed:
+                self.encoder_width = max(self.params.encodeWidth, roundup(w, 32))
+                self.encoder_height = max(self.params.encodeHeight, roundup(h, 32))
                 self.reinit_encoder()
 
 
@@ -2678,12 +2770,15 @@ cdef class Encoder:
             input_size = stride * self.encoder_height
         self.bytes_in += input_size
 
+        # del gpu_buffer
+
         cdef NV_ENC_INPUT_PTR mappedResource = self.map_input_resource()
         assert mappedResource!=NULL
         try:
             return self.nvenc_compress(input_size, mappedResource, image.get_timestamp())
         finally:
             self.unmap_input_resource(mappedResource)
+            mappedResource=NULL
 
     cdef unsigned int copy_image(self, image, int strict_stride) except -1:
         if DEBUG_API:
@@ -2931,7 +3026,6 @@ cdef class Encoder:
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
             client_options["scaling-quality"] = "low"   #our dumb scaling kernels produce low quality output
         cdef double end = monotonic()
-        last_frame = self.frames
         self.frames += 1
         self.last_frame_times.append((start, end))
         cdef double elapsed = end-start
@@ -2942,6 +3036,7 @@ cdef class Encoder:
             get_type(), get_version(),
             size, 100.0*size/input_size, self.encoding, PIC_TYPES.get(picParams.pictureType, picParams.pictureType), self.frames, 1000.0*elapsed)
         log("compress_image(..): client_options: %s, size: %i, len(data): %i", client_options, size, len(data))
+        picParams.inputBuffer = NULL
         return data, client_options
 
 
@@ -3335,9 +3430,12 @@ def init_module():
                     devices.remove(device_id)
                     continue
                 finally:
-                    test_encoder.clean()
+                    test_encoder.clean(actualClean=True)
                     test_encoder = None
-
+            cdc.free()
+            #obtain a new cdc, since the previous one could be invalid
+            cdc = cuda_device_context(device_id, device)
+            with cdc as device_context:
                 test_encodings = []
                 for e in TEST_ENCODINGS:
                     if e in FAILED_ENCODINGS:
@@ -3422,6 +3520,7 @@ def init_module():
                     finally:
                         if test_encoder:
                             test_encoder.clean(actualClean=True)
+            cdc.free()
     if device_warnings:
         for device_id, encoding_warnings in device_warnings.items():
             log.info("NVENC on device %s:", get_device_name(device_id) or device_id)
