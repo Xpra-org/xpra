@@ -742,6 +742,10 @@ def paramiko_run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=Non
                     xpra_cmd = out.splitlines()[-1].rstrip("\n\r ").lstrip("\t ")
                 except Exception as e:
                     log("cannot get command from %r: %s", xpra_cmd, e)
+                else:
+                    if xpra_cmd.startswith("alias %s=" % xpra_cmd):
+                        #ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
+                        xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
         log("adding xpra_cmd='%s'", xpra_cmd)
         if xpra_cmd in tried:
             continue
