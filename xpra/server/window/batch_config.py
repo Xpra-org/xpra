@@ -48,7 +48,7 @@ ALWAYS = ival("ALWAYS", 0, 0, 1)==1
 MAX_EVENTS = ival("MAX_EVENTS", min(50, NRECS), 10)         #maximum number of damage events
 MAX_PIXELS = ival("MAX_PIXELS", 1024*1024*MAX_EVENTS)       #small screen at MAX_EVENTS frames
 TIME_UNIT = ival("TIME_UNIT", 1, 1, 1000)                   #per second
-MIN_DELAY = ival("MIN_DELAY", 5, 0, 1000)                   #if lower than 5 milliseconds: just don't batch
+MIN_DELAY = ival("MIN_DELAY", 16, 0, 1000)                  #assume 60fps 1000/60=16.66
 START_DELAY = ival("START_DELAY", 50, 1, 1000)
 MAX_DELAY = ival("MAX_DELAY", 500, 1, 15000)
 EXPIRE_DELAY = ival("EXPIRE_DELAY", 50, 10, 1000)
