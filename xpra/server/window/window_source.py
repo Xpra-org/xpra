@@ -993,10 +993,13 @@ class WindowSource(WindowIconSource):
             if x in self.common_encodings:
                 return x
         #so we don't have an encoding that does transparency...
-        return self.get_auto_encoding(w, h, speed, quality)
+        return self.get_auto_encoding(w, h, speed, quality, current_encoding)
 
-    def get_auto_encoding(self, w, h, speed, quality, *_args):
-        co = self.common_encodings
+    def get_auto_encoding(self, w, h, speed, quality, current_encoding=None):
+        return self.do_get_auto_encoding(w, h, speed, quality, current_encoding, self.common_encodings)
+
+    def do_get_auto_encoding(self, w, h, speed, quality, current_encoding, encoding_options):
+        co = encoding_options
         depth = self.image_depth
         if w*h<self._rgb_auto_threshold:
             if depth>24 and self.client_bit_depth>24 and "rgb32" in co:
@@ -1022,11 +1025,15 @@ class WindowSource(WindowIconSource):
             return "png"
         if "jpeg" in co and w>=2 and h>=2:
             return "jpeg"
+        if current_encoding in co:
+            return current_encoding
         return next(x for x in co if x!="rgb")
 
     def get_current_or_rgb(self, pixel_count, *_args):
         if pixel_count<self._rgb_auto_threshold:
-            return "rgb24"
+            if self.image_depth<=24:
+                return "rgb24"
+            return "rgb32"
         return self.encoding
 
 

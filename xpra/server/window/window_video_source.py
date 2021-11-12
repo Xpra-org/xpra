@@ -440,7 +440,7 @@ class WindowVideoSource(WindowSource):
             s = max(0, min(100, speed))
             q = max(0, min(100, q))
             log("nonvideo(%i, %s)", q, info)
-            return self.get_best_nonvideo_encoding(ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
+            return WindowSource.get_auto_encoding(self, ww, wh, s, q)
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
         #    (pixel_count, ww, wh, speed, quality, current_encoding), self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
@@ -515,52 +515,18 @@ class WindowVideoSource(WindowSource):
                 return nonvideo(quality+30, "not enough pixels")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, options=()):
+    def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, encoding_options=()):
         if self.encoding=="grayscale":
-            return self.encoding_is_grayscale(ww, wh, speed, quality, current_encoding)
+            return self.encoding_is_grayscale(ww, wh, speed, quality, current_encoding or self.encoding)
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
-        options = options or self.non_video_encodings
+        encoding_options = encoding_options or self.non_video_encodings
         depth = self.image_depth
-        if depth==8 and "png/P" in options:
+        if depth==8 and "png/P" in encoding_options:
             return "png/P"
         if self._mmap_size>0:
             return "mmap"
-        pixel_count = ww*wh
-        if pixel_count<self._rgb_auto_threshold or self.is_tray or ww<=2 or wh<=2:
-            #high speed and high quality, rgb is still good
-            if self.is_tray and "rgb32" in options:
-                return "rgb32"
-            if "rgb24" in options:
-                return "rgb24"
-            if "rgb32" in options:
-                return "rgb32"
-        #use sliding scale for lossless threshold
-        #(high speed favours switching to lossy sooner)
-        #take into account how many pixels need to be encoded:
-        #more pixels means we switch to lossless more easily
-        if self.content_type.find("text")<0:
-            lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count // (ww*wh))
-            if quality<lossless_q and depth>16 and "jpeg" in options and ww>=8 and wh>=8:
-                #assume that we have "turbojpeg",
-                #which beats everything in terms of efficiency for lossy compression:
-                return "jpeg"
-        if "webp" in options and pixel_count>=512 and 16383>=ww>=2 and 16383>=wh>=2 and depth in (24, 32):
-            return "webp"
-        #lossless options:
-        if speed==100 or (speed>=95 and pixel_count<MAX_RGB) or depth not in (24, 32):
-            if depth>24 and "rgb32" in options:
-                return "rgb32"
-            if "rgb24" in options:
-                return "rgb24"
-            if "rgb32" in options:
-                return "rgb32"
-        if "png" in options:
-            return "png"
-        #we failed to find a good match, default to the first of the options..
-        if options:
-            return options[0]
-        return None #can happen during cleanup!
+        return super().do_get_auto_encoding(ww, wh, speed, quality, current_encoding or self.encoding, encoding_options)
 
 
     def do_damage(self, ww, wh, x, y, w, h, options):
@@ -1974,7 +1940,8 @@ class WindowVideoSource(WindowSource):
         del scrolls
         #send the rest as rectangles:
         if non_scroll:
-            speed, quality = self._current_speed, self._current_quality
+            speed = options.get("speed", self._current_speed)
+            quality = options.get("quality", self._current_quality)
             #boost quality a bit, because lossless saves refreshing,
             #more so if we have a high match percentage (less to send):
             quality = min(100, quality + 10 + max(0, match_pct-50)//2)
