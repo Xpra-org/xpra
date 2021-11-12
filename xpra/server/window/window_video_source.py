@@ -2085,8 +2085,8 @@ class WindowVideoSource(WindowSource):
             speed = -1
             #try the current encoding (which is often 'auto')
             #then more generic options:
-            for x in (encoding, "video", "default"):
-                speed = self.decoder_speed.intget(x, -1)
+            for k in (encoding, "video", "default"):
+                speed = self.decoder_speed.intget(k, -1)
                 if speed>=0:
                     break
             #prefer nvjpeg over video that must be decoded slowly:
