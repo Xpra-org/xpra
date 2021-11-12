@@ -1592,7 +1592,7 @@ cdef class Encoder:
         for k,v in self.get_info().items():
             log.error("  %s = %s", k, v)
 
-    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, device_context=None, image=None, int quality=-1, int speed=-1, options=None):
         cdef int ret, i
         cdef AVFrame *frame
         cdef AVFrame *hw_frame = NULL
@@ -1764,7 +1764,7 @@ cdef class Encoder:
         return data, client_options
 
     def flush(self, delayed):
-        v = self.compress_image(None, options={"flush" : True})
+        v = self.compress_image(options={"flush" : True})
         #ffmpeg context cannot be re-used after a flush..
         self.clean()
         return v
