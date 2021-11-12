@@ -1413,6 +1413,8 @@ class WindowClient(StubClientMixin):
                 window.eos()
             return
         x, y, width, height, coding, data, packet_sequence, rowstride = packet[2:10]
+        for v in (x, y, width, height):
+            assert isinstance(v, int), "coordinates must be ints, found %s (%s)" % (v, type(v))
         coding = bytestostr(coding)
         if not window:
             #window is gone
