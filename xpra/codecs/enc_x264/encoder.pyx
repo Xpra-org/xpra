@@ -563,9 +563,9 @@ cdef class Encoder:
         if TUNE:
             return TUNE
         tunes = []
-        if self.content_type=="video":
+        if self.content_type.find("video")>=0:
             tunes.append(b"film")
-        elif self.content_type=="text":
+        elif self.content_type.find("text")>=0:
             tunes.append(b"grain")
             tunes.append(b"zerolatency")
         else:
@@ -624,7 +624,7 @@ cdef class Encoder:
             #don't use TRELLIS, which uses too many delayed frames:
             if param.i_bframe_adaptive==X264_B_ADAPT_TRELLIS:
                 param.i_bframe_adaptive = X264_B_ADAPT_FAST
-        if self.content_type!="video":
+        if self.content_type!="unknown" and self.content_type.find("video")<0:
             #specifically told this is not video,
             #so use a simple motion search:
             param.analyse.i_me_method = X264_ME_DIA

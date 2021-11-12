@@ -457,14 +457,14 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="no common video encodings")
         if self.is_tray:
             return nonvideo(100, "system tray")
-        text_hint = self.content_type=="text"
+        text_hint = self.content_type.find("text")>=0
         if text_hint and not TEXT_USE_VIDEO:
             return nonvideo(info="text content-type")
 
         #ensure the dimensions we use for decision making are the ones actually used:
         cww = ww & self.width_mask
         cwh = wh & self.height_mask
-        video_hint = self.content_type=="video"
+        video_hint = self.content_type.find("video")>=0
 
         rgbmax = self._rgb_auto_threshold
         videomin = cww*cwh // (1+video_hint*2)
@@ -546,7 +546,7 @@ class WindowVideoSource(WindowSource):
         #(high speed favours switching to lossy sooner)
         #take into account how many pixels need to be encoded:
         #more pixels means we switch to lossless more easily
-        if self.content_type!="text":
+        if self.content_type.find("text")<0:
             lossless_q = min(100, self._lossless_threshold_base + self._lossless_threshold_pixel_boost * pixel_count // (ww*wh))
             if quality<lossless_q and depth>16 and "jpeg" in options and ww>=8 and wh>=8:
                 #assume that we have "turbojpeg",
@@ -717,7 +717,7 @@ class WindowVideoSource(WindowSource):
         events_count = self.statistics.damage_events_count - vs.set_at
         min_video_events = MIN_VIDEO_EVENTS
         min_video_fps = MIN_VIDEO_FPS
-        if self.content_type=="video":
+        if self.content_type.find("video")>=0:
             min_video_events //= 2
             min_video_fps //= 2
         if events_count<min_video_events:
@@ -881,9 +881,8 @@ class WindowVideoSource(WindowSource):
         if self.send_window_size:
             options["window-size"] = self.window_dimensions
 
-        if self.content_type in ("text", "desktop", "picture"):
-            av_delay = 0
-        else:
+        av_delay = 0
+        if self.content_type.find("audio")>=0:
             av_delay = self.get_frame_encode_delay(options)
             #TODO: encode delay can be derived rather than hard-coded
             encode_delay = 50
@@ -939,7 +938,7 @@ class WindowVideoSource(WindowSource):
             return FORCE_AV_DELAY
         if options.get("av-sync", False):
             return 0
-        if self.content_type in ("text", "picture"):
+        if any(self.content_type.find(x) for x in ("text", "picture")):
             return 0
         l = len(self.encode_queue)
         if l>=self.encode_queue_max_size:
@@ -1062,7 +1061,7 @@ class WindowVideoSource(WindowSource):
         if vs:
             if (self.encoding not in ("auto", "grayscale") and self.encoding not in self.common_video_encodings) or \
                 self.full_frames_only or STRICT_MODE or not self.non_video_encodings or not self.common_video_encodings or \
-                self.content_type=="text" or \
+                self.content_type.find("text")>=0 or \
                 self._mmap_size>0:
                 #cannot use video subregions
                 #FIXME: small race if a refresh timer is due when we change encoding - meh
@@ -1126,8 +1125,8 @@ class WindowVideoSource(WindowSource):
         if self._mmap_size>0:
             scorelog("cannot score: mmap enabled")
             return
-        if self.content_type=="text" and self.non_video_encodings:
-            scorelog("no pipelines for 'text' content-type")
+        if self.content_type.find("text")>=0 and self.non_video_encodings:
+            scorelog("no pipelines for content-type %r", self.content_type)
             return
         elapsed = monotonic()-self._last_pipeline_check
         max_elapsed = 0.75
@@ -1440,7 +1439,7 @@ class WindowVideoSource(WindowSource):
         else:
             #use heuristics to choose the best scaling ratio:
             mvsub = self.matches_video_subregion(width, height)
-            video = self.content_type=="video" or (bool(mvsub) and self.subregion_is_video())
+            video = self.content_type.find("video")>=0 or (bool(mvsub) and self.subregion_is_video())
             ffps = self.get_video_fps(width, height)
 
             if self.scaling_control is None:
@@ -1460,7 +1459,7 @@ class WindowVideoSource(WindowSource):
                     if self.is_shadow:
                         #shadow servers look ugly when scaled:
                         target *= 16
-                    elif self.content_type=="text":
+                    elif self.content_type.find("text")>=0:
                         #try to avoid scaling:
                         target *= 4
                     elif not video:
@@ -1840,7 +1839,7 @@ class WindowVideoSource(WindowSource):
         #since that means we're likely to be able to compress on the GPU too with NVENC:
         if not image.has_pixels():
             return False
-        if self.content_type=="video" or not self.non_video_encodings:
+        if self.content_type.find("video")>=0 or not self.non_video_encodings:
             scrolllog("no scrolling: content is video")
             return False
         w = image.get_width()

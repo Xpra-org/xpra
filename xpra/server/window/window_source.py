@@ -649,7 +649,7 @@ class WindowSource(WindowIconSource):
             self.no_idle()
 
     def content_type_changed(self, window, *args):
-        self.content_type = window.get("content-type")
+        self.content_type = window.get("content-type", "")
         log("content_type_changed(%s, %s) content-type=%s", window, args, self.content_type)
         return True
 
@@ -848,7 +848,7 @@ class WindowSource(WindowIconSource):
                 #window is fully opaque
                 self._want_alpha = False
         self._lossless_threshold_base = min(90, 60+self._current_speed//5 + int(cv*100))
-        if self.content_type=="text" or self.is_shadow:
+        if self.content_type.find("text")>=0 or self.is_shadow:
             self._lossless_threshold_base -= 20
         self._lossless_threshold_pixel_boost = max(5, 20-self._current_speed//5)
         #calculate the threshold for using rgb
@@ -1262,9 +1262,9 @@ class WindowSource(WindowIconSource):
         info, target = get_target_quality(self.window_dimensions, self.batch_config,
                                           self.global_statistics, self.statistics,
                                           self.bandwidth_limit, self._fixed_min_quality, self._fixed_min_speed)
-        if self.content_type=="text":
+        if self.content_type.find("text")>=0:
             target = min(100, target+50)
-        elif self.content_type=="video":
+        elif self.content_type.find("video")>=0:
             target = max(0, target-20)
         #make a copy to work on:
         ves_copy = list(self._encoding_quality)
@@ -1318,7 +1318,7 @@ class WindowSource(WindowIconSource):
             min_delay = max(min_delay, 1000*1000*1000//bwl)
         max_delay = int(1000*cf)
         raw_delay = int(sizef * qf * sf * cf)
-        if self.content_type=="text":
+        if self.content_type.find("text")>=0:
             raw_delay = raw_delay*2//3
         elif self.content_type=="video":
             raw_delay = raw_delay*3//2
