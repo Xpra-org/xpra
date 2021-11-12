@@ -1166,6 +1166,9 @@ def _do_run_server(script_file, cmdline,
                             log.error(" from '%s' to '%s'", session_dir, new_session_dir)
                             log.error(" %s", e)
                         session_dir = new_session_dir
+                        #update session dir if needed:
+                        if not opts.log_dir or opts.log_dir.lower()=="auto":
+                            log_dir = session_dir
                         os.environ["XPRA_SESSION_DIR"] = new_session_dir
         elif POSIX and not OSX and not shadowing and not proxying:
             try:
