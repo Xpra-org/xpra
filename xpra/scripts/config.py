@@ -1333,7 +1333,7 @@ def _csvstr(value):
 def _nodupes(s):
     return remove_dupes(x.strip().lower() for x in s.split(","))
 
-def fixup_video_all_or_none(options):
+def fixup_video_all_or_none(options, defaults=None):
     #we import below, but only if we really need to access
     #one of the lists, because those are expensive to probe
     #(we have to load the codec, which may load other libraries)
@@ -1345,21 +1345,30 @@ def fixup_video_all_or_none(options):
     # HARDWARE_ENCODER_OPTIONS,
     #)
     def getlist(strarg, help_txt, all_list_name):
-        if strarg=="help":
-            from xpra.codecs import video_helper
+        if strarg=="none":
+            v = []
+        elif strarg=="all":
+            from xpra.codecs import video_helper    #pylint: disable=import-outside-toplevel
+            v = getattr(video_helper, all_list_name)
+        else:
+            v = [x for x in _nodupes(strarg) if x]
+        if "help" in v:
+            from xpra.codecs import video_helper    #@Reimport pylint: disable=import-outside-toplevel
             raise InitInfo("the following %s may be available: %s" %
                            (help_txt, csv(getattr(video_helper, all_list_name))))
-        elif strarg=="none":
-            return []
-        elif strarg=="all":
-            from xpra.codecs import video_helper    #@Reimport
-            return getattr(video_helper, all_list_name)
-        else:
-            return [x for x in _nodupes(strarg) if x]
-    vestr   = _csvstr(options.video_encoders)
-    cscstr  = _csvstr(options.csc_modules)
-    vdstr   = _csvstr(options.video_decoders)
-    pvestr  = _csvstr(options.proxy_video_encoders)
+        return v
+    vestr = _csvstr(options.video_encoders)
+    if not vestr and defaults:
+        vestr = _csvstr(defaults.video_encoders)
+    cscstr = _csvstr(options.csc_modules)
+    if not cscstr and defaults:
+        cscstr = _csvstr(defaults.csc_modules)
+    vdstr = _csvstr(options.video_decoders)
+    if not vdstr and defaults:
+        vdstr = _csvstr(defaults.video_decoders)
+    pvestr = _csvstr(options.proxy_video_encoders)
+    if not pvestr and defaults:
+        pvestr  = _csvstr(defaults.proxy_video_encoders)
     options.video_encoders  = getlist(vestr,    "video encoders",   "ALL_VIDEO_ENCODER_OPTIONS")
     options.csc_modules     = getlist(cscstr,   "csc modules",      "ALL_CSC_MODULE_OPTIONS")
     options.video_decoders  = getlist(vdstr,    "video decoders",   "ALL_VIDEO_DECODER_OPTIONS")
@@ -1516,10 +1525,10 @@ def abs_paths(options):
             setattr(options, f, os.path.abspath(v))
 
 
-def fixup_options(options, skip_encodings=False):
+def fixup_options(options, defaults=None, skip_encodings=False):
     if not skip_encodings:
         fixup_encodings(options)
-        fixup_video_all_or_none(options)
+        fixup_video_all_or_none(options, defaults)
     fixup_pings(options)
     fixup_compression(options)
     fixup_packetencoding(options)

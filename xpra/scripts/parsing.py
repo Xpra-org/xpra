@@ -6,6 +6,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+#pylint: disable=import-outside-toplevel
+
 import sys
 import shlex
 import os.path
@@ -1305,22 +1307,22 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Which image compression algorithm to use, specify 'help' to get a list of options."
                             " Default: %default."
                       )
-    group.add_option("--video-encoders", action="store",
-                      dest="video_encoders", default=defaults.video_encoders,
+    group.add_option("--video-encoders", action="append",
+                      dest="video_encoders", default=[],
                       help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
-    group.add_option("--proxy-video-encoders", action="store",
-                      dest="proxy_video_encoders", default=defaults.proxy_video_encoders,
+    group.add_option("--proxy-video-encoders", action="append",
+                      dest="proxy_video_encoders", default=[],
                       help="Specify which video encoders to enable when running a proxy server,"
                       +" to get a list of all the options specify 'help'")
-    group.add_option("--csc-modules", action="store",
-                      dest="csc_modules", default=defaults.csc_modules,
+    group.add_option("--csc-modules", action="append",
+                      dest="csc_modules", default=[],
                       help="Specify which colourspace conversion modules to enable,"
                       +" to get a list of all the options specify 'help'. Default: %s." % dcsv(defaults.csc_modules))
-    group.add_option("--video-decoders", action="store",
-                      dest="video_decoders", default=defaults.video_decoders,
+    group.add_option("--video-decoders", action="append",
+                      dest="video_decoders", default=[],
                       help="Specify which video decoders to enable,"
                       +" to get a list of all the options specify 'help'")
-    group.add_option("--video-scaling", action="store",
+    group.add_option("--video-scaling", action="append",
                       metavar="SCALING",
                       dest="video_scaling", type="str", default=defaults.video_scaling,
                       help="How much automatic video downscaling should be used,"
@@ -1834,7 +1836,7 @@ def do_parse_cmdline(cmdline, defaults):
                            "upgrade", "upgrade-desktop", "recover",
                            "listen", "launcher",
                            "bug-report", "encoding", "gui-info")
-    fixup_options(options, skip_encodings=len(args)==0 or args[0] not in NEED_ENCODING_MODES)
+    fixup_options(options, defaults, skip_encodings=len(args)==0 or args[0] not in NEED_ENCODING_MODES)
 
     for x in ("dpi", "sync_xvfb"):
         try:
@@ -1869,7 +1871,7 @@ def do_parse_cmdline(cmdline, defaults):
         from xpra.net.crypto import DEFAULT_MODE
         options.encryption = "AES-%s" % DEFAULT_MODE
     if options.tcp_encryption_keyfile and not options.tcp_encryption:
-        from xpra.net.crypto import DEFAULT_MODE
+        from xpra.net.crypto import DEFAULT_MODE  # @Reimport
         options.tcp_encryption = "AES-%s" % DEFAULT_MODE
     return options, args
 

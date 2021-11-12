@@ -3401,7 +3401,7 @@ def run_auth(_options, args):
 def run_showconfig(options, args):
     log = get_util_logger()
     d = dict_to_validated_config({})
-    fixup_options(d, True)
+    fixup_options(d, skip_encodings=True)
     #this one is normally only probed at build time:
     #(so probe it here again)
     if POSIX:
