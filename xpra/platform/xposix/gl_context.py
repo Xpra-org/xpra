@@ -78,7 +78,8 @@ class GLXWindowContext:
             context_type = type(self.context)
             null_context = cast(0, context_type)
             log("glXMakeCurrent: NULL for xid=%#x", self.xid)
-            GLX.glXMakeCurrent(self.xdisplay, 0, null_context)
+            if not GLX.glXMakeCurrent(self.xdisplay, 0, null_context):
+                log.error("Error: glXMakeCurrent NULL failed")
 
     def update_geometry(self):
         """ not needed on X11 """
