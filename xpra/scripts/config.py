@@ -1423,6 +1423,10 @@ def fixup_encodings(options):
         if "rgb32" not in encodings:
             encodings.append("rgb32")
     encodings = remove_dupes(encodings)
+    invalid = tuple(e.lstrip("-") for e in encodings if (e.lstrip("-") not in PREFERRED_ENCODING_ORDER))
+    if invalid:
+        from xpra.exit_codes import EXIT_UNSUPPORTED  #pylint: disable=import-outside-toplevel
+        raise InitExit(EXIT_UNSUPPORTED, "invalid encodings specified: %s" % csv(invalid))
     #now we have a list of encodings, but some of them may be prefixed with "-"
     for rm in tuple(e for e in encodings if e.startswith("-")):
         while True:
