@@ -2575,6 +2575,8 @@ class WindowSource(WindowIconSource):
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options, options):
+        for v in (x, y, outw, outh, outstride):
+            assert isinstance(v, int), "expected int, found %r (%s)" % (v, type(v))
         if self.send_window_size:
             ws = options.get("window-size")
             if ws:
