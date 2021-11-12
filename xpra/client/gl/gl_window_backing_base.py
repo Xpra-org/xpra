@@ -1147,7 +1147,10 @@ class GLWindowBackingBase(WindowBackingBase):
         fire_paint_callbacks(callbacks, False, message)
 
 
-    def do_video_paint(self, img, x : int, y : int, enc_width : int, enc_height : int, width : int, height : int, options, callbacks):
+    def do_video_paint(self, img,
+                       x : int, y : int, enc_width : int, enc_height : int, width : int, height : int,
+                       options, callbacks):
+        log("do_video_paint%s", (x, y, enc_width, enc_height, width, height, options, callbacks))
         if not zerocopy_upload or FORCE_CLONE:
             #copy so the data will be usable (usually a str)
             img.clone_pixel_data()
@@ -1155,7 +1158,8 @@ class GLWindowBackingBase(WindowBackingBase):
         if pixel_format in ("GBRP10", "YUV444P10"):
             #call superclass to handle csc
             #which will end up calling paint rgb with r210 data
-            return super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
+            super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
+            return
         if pixel_format.startswith("GBRP"):
             shader = RGBP2RGB_SHADER
         else:
