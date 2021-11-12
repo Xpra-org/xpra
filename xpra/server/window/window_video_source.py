@@ -442,13 +442,6 @@ class WindowVideoSource(WindowSource):
             log("nonvideo(%i, %s)", q, info)
             return self.get_best_nonvideo_encoding(ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
 
-        def lossless(reason):
-            log("get_best_encoding_video(..) temporarily switching to lossless mode for %8i pixels: %s",
-                pixel_count, reason)
-            s = max(0, min(100, speed))
-            q = 100
-            return self.get_best_nonvideo_encoding(ww, wh, s, q, self.non_video_encodings[0], self.non_video_encodings)
-
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
         #    (pixel_count, ww, wh, speed, quality, current_encoding), self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
         if not self.non_video_encodings:
@@ -475,26 +468,26 @@ class WindowVideoSource(WindowSource):
         elif not text_hint:
             videomin = min(640*480, cww*cwh)
         if pixel_count<=rgbmax or cww<8 or cwh<8:
-            return lossless("low pixel count")
+            return nonvideo(info="low pixel count")
 
         if current_encoding not in ("auto", "grayscale") and current_encoding not in self.common_video_encodings:
             return nonvideo(info="%s not a supported video encoding" % current_encoding)
 
         if cww*cwh<=MAX_NONVIDEO_PIXELS or cww<16 or cwh<16:
-            return nonvideo(quality+30, "window is too small")
+            return nonvideo(info="window is too small")
 
         if cww<self.min_w or cww>self.max_w or cwh<self.min_h or cwh>self.max_h:
             return nonvideo(info="size out of range for video encoder")
 
         now = monotonic()
         if now-self.statistics.last_packet_time>1:
-            return nonvideo(quality+30, "no recent updates")
+            return nonvideo(info="no recent updates")
         if now-self.statistics.last_resized<0.350:
-            return nonvideo(quality-30, "resized recently")
+            return nonvideo(info="resized recently")
 
         if sr and ((sr.width&self.width_mask)!=cww or (sr.height&self.height_mask)!=cwh):
             #we have a video region, and this is not it, so don't use video
-            #raise the quality as the areas around video tend to not be graphics
+            #raise the quality as the areas around video tend to not be updating as quickly
             return nonvideo(quality+30, "not the video region")
 
         if not video_hint and not self.is_shadow:

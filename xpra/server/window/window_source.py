@@ -1815,6 +1815,13 @@ class WindowSource(WindowIconSource):
             quality = self._current_quality
             if packets_backlog is None:
                 packets_backlog = self.get_packets_backlog()
+            now = monotonic()
+            if not packets_backlog:
+                #if we haven't sent any packets for a while,
+                #chances are that we can raise the quality,
+                #at least for the first packet:
+                elapsed = now-self.statistics.last_packet_time
+                quality += int(elapsed*25)
             quality = min(100, max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta))
         eoptions = dict(options)
         eoptions["quality"] = quality
