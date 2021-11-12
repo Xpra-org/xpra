@@ -2302,7 +2302,7 @@ class WindowSource(WindowIconSource):
                     late_pct = (elapsed_ms*100/max_send_delay)-100
                     send_speed = int(ldata*8*1000/elapsed_ms)
                     self.networksend_congestion_event("slow send", late_pct, send_speed)
-            self.schedule_auto_refresh(packet, options)
+            self.schedule_auto_refresh(packet, options or {})
         if process_damage_time>0:
             now = monotonic()
             damage_in_latency = now-process_damage_time
