@@ -84,10 +84,10 @@ TJSAMP_STR = {
 
 
 def get_version():
-    return 1
+    return 2
 
 def get_encodings():
-    return ["jpeg"]
+    return ("jpeg",)
 
 
 def get_error_str():
@@ -95,6 +95,27 @@ def get_error_str():
     return str(err)
 
 def encode(image, int quality=50, int speed=50):
+    #100 would mean lossless, so cap it at 99:
+    client_options = {
+        "quality"   : min(99, quality),
+        }
+    cdef tjhandle compressor = tjInitCompress()
+    if compressor==NULL:
+        log.error("Error: failed to instantiate a JPEG compressor")
+        return None
+    cdef int r
+    try:
+        cdata = do_encode(compressor, image, quality, speed)
+        if not cdata:
+            return None
+        return "jpeg", cdata, client_options, image.get_width(), image.get_height(), 0, 24
+    finally:
+        r = tjDestroy(compressor)
+        if r:
+            log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
+            log.error(" %s", get_error_str())
+
+cdef do_encode(tjhandle compressor, image, int quality, int speed):
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
@@ -104,10 +125,6 @@ def encode(image, int quality=50, int speed=50):
     if pf is None:
         raise Exception("invalid pixel format %s" % pfstr)
     cdef TJPF tjpf = pf
-    cdef tjhandle compressor = tjInitCompress()
-    if compressor==NULL:
-        log.error("Error: failed to instantiate a JPEG compressor")
-        return None
     cdef TJSAMP subsamp = TJSAMP_444
     if quality<50:
         subsamp = TJSAMP_420
@@ -119,37 +136,27 @@ def encode(image, int quality=50, int speed=50):
     cdef int r = -1
     cdef const unsigned char * src
     log("jpeg: encode with subsampling=%s for pixel format=%s with quality=%s", TJSAMP_STR.get(subsamp, subsamp), pfstr, quality)
-    try:
-        with buffer_context(pixels) as bc:
-            assert len(bc)>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, len(bc), stride, height, stride*height)
-            src = <const unsigned char *> (<uintptr_t> int(bc))
-            with nogil:
-                r = tjCompress2(compressor, src,
-                                width, stride, height, tjpf, &out,
-                                &out_size, subsamp, quality, flags)
-        if r!=0:
-            log.error("Error: failed to compress jpeg image, code %i:", r)
-            log.error(" %s", get_error_str())
-            log.error(" width=%i, stride=%i, height=%i", width, stride, height)
-            log.error(" pixel format=%s, quality=%i", pfstr, quality)
-            return None
-        assert out_size>0 and out!=NULL, "jpeg compression produced no data"
-    finally:
-        r = tjDestroy(compressor)
-        if r:
-            log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
-            log.error(" %s", get_error_str())
+    with buffer_context(pixels) as bc:
+        assert len(bc)>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (pfstr, len(bc), stride, height, stride*height)
+        src = <const unsigned char *> (<uintptr_t> int(bc))
+        with nogil:
+            r = tjCompress2(compressor, src,
+                            width, stride, height, tjpf, &out,
+                            &out_size, subsamp, quality, flags)
+    if r!=0:
+        log.error("Error: failed to compress jpeg image, code %i:", r)
+        log.error(" %s", get_error_str())
+        log.error(" width=%i, stride=%i, height=%i", width, stride, height)
+        log.error(" pixel format=%s, quality=%i", pfstr, quality)
+        return None
+    assert out_size>0 and out!=NULL, "jpeg compression produced no data"
     cdef MemBuf cdata = makebuf(out, out_size)
-    #100 would mean lossless, so cap it at 99:
-    client_options = {
-        "quality"   : min(99, quality),
-        }
     if SAVE_TO_FILE:    # pragma: no cover
         filename = "./%s.jpeg" % time.time()
         with open(filename, "wb") as f:
             f.write(cdata)
         log.info("saved %i bytes to %s", len(cdata), filename)
-    return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24
+    return Compressed("jpeg", memoryview(cdata), False)
 
 
 def selftest(full=False):
