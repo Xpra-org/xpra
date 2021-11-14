@@ -11,6 +11,7 @@ import os
 import errno
 import signal
 import datetime
+import math
 from collections import deque
 from time import sleep, time, monotonic
 from queue import Queue
@@ -75,6 +76,8 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
 
 FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
+MOUSE_SCROLL_SQRT_SCALE = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
+MOUSE_SCROLL_MULTIPLIER = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
@@ -404,12 +407,22 @@ class WindowClient(StubClientMixin):
             #server cannot handle precise wheel,
             #so we have to use discrete events,
             #and send a click for each step:
-            steps = abs(int(distance))
+            scaled_distance = abs(distance*MOUSE_SCROLL_MULTIPLIER/100)
+            if MOUSE_SCROLL_SQRT_SCALE:
+                scaled_distance = math.sqrt(scaled_distance)
+            steps = int(scaled_distance)
             for _ in range(steps):
                 self.send_button(wid, button, True, pointer, modifiers, buttons)
                 self.send_button(wid, button, False, pointer, modifiers, buttons)
             #return remainder:
-            return float(distance) - int(distance)
+            scaled_remainder = steps
+            if MOUSE_SCROLL_SQRT_SCALE:
+                scaled_remainder = steps**2
+            scaled_remainder = scaled_remainder*(100/float(MOUSE_SCROLL_MULTIPLIER))
+
+            remain_distance = float(scaled_remainder)
+            signed_remain_distance = remain_distance * (-1 if distance < 0 else 1)
+            return float(distance) - signed_remain_distance
 
     def wheel_event(self, wid, deltax=0, deltay=0, deviceid=0):
         #this is a different entry point for mouse wheel events,
