@@ -16,7 +16,7 @@ from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.codec_constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
-    STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, MAX_RGB, LOSSLESS_WINDOW_TYPES,
+    STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
