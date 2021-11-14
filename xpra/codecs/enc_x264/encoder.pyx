@@ -52,11 +52,6 @@ cdef extern from "stdarg.h":
     void va_end(va_list)
     fake_type int_type "int"
 
-#ugly hack to generate an ifdef:
-cdef extern from *:
-    cdef void emit_ifdef_bitdepth "#if X264_BUILD>152 //" ()
-    cdef void emit_endif_bitdepth "#endif //" ()
-
 cdef extern from "x264.h":
     int X264_KEYINT_MAX_INFINITE
 
@@ -181,9 +176,7 @@ cdef extern from "x264.h":
         int i_width
         int i_height
         int i_csp               #CSP of encoded bitstream
-        emit_ifdef_bitdepth()
         int i_bitdepth
-        emit_endif_bitdepth()
         int i_level_idc
         int i_frame_total       #number of frames to encode if known, else 0
 
@@ -374,11 +367,9 @@ COLORSPACES = {
     "BGRA"      : "BGRA",
     "BGRX"      : "BGRX",
     }
-emit_ifdef_bitdepth()
 if SUPPORT_30BPP:
     COLORSPACE_FORMATS["BGR48"] = (X264_CSP_BGR | X264_CSP_HIGH_DEPTH,    PROFILE_HIGH444_PREDICTIVE,    RGB_PROFILES)
     COLORSPACES["BGR48"] = "GBRP10"
-emit_endif_bitdepth()
 if SUPPORT_24BPP:
     COLORSPACES.update({
         "BGR"       : "BGR",
@@ -420,13 +411,10 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
 
-if X264_BUILD<146:
-    #untested, but should be OK for 4k:
-    MAX_WIDTH, MAX_HEIGHT = 4096, 4096
-else:
-    #actual limits (which we cannot reach because we hit OOM):
-    #MAX_WIDTH, MAX_HEIGHT = 16384, 16384
-    MAX_WIDTH, MAX_HEIGHT = 8192, 4096
+assert X264_BUILD>146, "invalid version of libx264: %s" % X264_BUILD
+#actual limits (which we cannot reach because we hit OOM):
+#MAX_WIDTH, MAX_HEIGHT = 16384, 16384
+MAX_WIDTH, MAX_HEIGHT = 8192, 4096
 
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
@@ -641,12 +629,10 @@ cdef class Encoder:
         param.i_width = self.width
         param.i_height = self.height
         param.i_csp = self.colorspace
-        emit_ifdef_bitdepth()
         if (self.colorspace & X264_CSP_HIGH_DEPTH)>0:
             param.i_bitdepth = 10
         else:
             param.i_bitdepth = 8
-        emit_endif_bitdepth()
         #logging hook:
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
