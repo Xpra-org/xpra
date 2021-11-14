@@ -454,6 +454,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             # If minimum clock > maximum clock, the mode is impossible...
             if modeMinClock > modeMaxClock:
                 log.warn("Warning: cannot add mode %s", name)
+                log.warn(" clock %iHz is above maximum value %iHz", modeMinClock, modeMaxClock)
                 log.warn(" no suitable clocks could be found")
                 return None
 
