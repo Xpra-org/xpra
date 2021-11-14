@@ -125,7 +125,7 @@ class EncodingsMixin(StubSourceMixin):
         now = monotonic()
         self.calculate_last_time = now
         p = self.protocol
-        if not p:
+        if not p or p.is_closed():
             return
         conn = p._conn
         if not conn:
@@ -390,7 +390,7 @@ class EncodingsMixin(StubSourceMixin):
 
     def parse_proxy_video(self):
         self.wait_for_threaded_init()
-        from xpra.codecs.enc_proxy.encoder import Encoder
+        from xpra.codecs.enc_proxy.encoder import Encoder  #pylint: disable=import-outside-toplevel
         proxy_video_encodings = self.encoding_options.get("proxy.video.encodings")
         proxylog("parse_proxy_video() proxy.video.encodings=%s", proxy_video_encodings)
         for encoding, colorspace_specs in proxy_video_encodings.items():
@@ -525,8 +525,8 @@ class EncodingsMixin(StubSourceMixin):
             log("batch config updated for window %s: %s", wid, ws.batch_config)
 
     def make_batch_config(self, wid : int, window):
-        batch_config = self.default_batch_config.clone()
-        batch_config.wid = wid
+        config = self.default_batch_config.clone()
+        config.wid = wid
         #scale initial delay based on window size
         #(the global value is normalized to 1MPixel)
         #but use sqrt to smooth things and prevent excesses
@@ -536,7 +536,7 @@ class EncodingsMixin(StubSourceMixin):
         w, h = window.get_dimensions()
         if dpm>=0:
             ratio = sqrt(1000000.0 / (w*h))
-            batch_config.delay = max(batch_config.min_delay, min(batch_config.max_delay, int(dpm * sqrt(ratio))))
+            config.delay = max(config.min_delay, min(config.max_delay, int(dpm * sqrt(ratio))))
         log("make_batch_config(%i, %s) global delay per megapixel=%i, new window delay for %ix%i=%s",
-                 wid, window, dpm, w, h, batch_config.delay)
-        return batch_config
+                 wid, window, dpm, w, h, config.delay)
+        return config
