@@ -23,7 +23,7 @@ def get_info():
     return {"version"   : get_version()}
 
 def get_encodings():
-    return ["proxy"]
+    return ("proxy", )
 
 def init_module():
     log("enc_proxy.init_module()")
