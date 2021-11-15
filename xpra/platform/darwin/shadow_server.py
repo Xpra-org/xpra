@@ -166,7 +166,8 @@ class ShadowServer(GTKShadowServerBase):
 
 
     def do_process_mouse_common(self, proto, wid, pointer, *args):
-        assert proto in self._server_sources
+        if proto not in self._server_sources:
+            return pointer
         assert wid in self._id_to_window
         CG.CGWarpMouseCursorPosition(pointer[:2])
         return pointer
