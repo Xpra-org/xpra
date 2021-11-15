@@ -1035,7 +1035,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.error(" this is a '%s' packet,", packet_type)
             netlog.error(" not from an xpra server?")
         else:
-            netlog.error(" received uninterpretable nonsense: %r", message)
+            parts = message.split(" read buffer=", 1)
+            netlog.error(" received uninterpretable nonsense: %r", parts[0])
+            if len(parts)==2:
+                netlog.error(" %s", parts[1])
         data = bytestostr(data).strip("\n\r")
         show_as_text = pcount<=1 and len(data)<128 and all((c in string.printable) or c in ("\n\r") for c in data)
         if show_as_text:
@@ -1046,7 +1049,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             else:
                 netlog.error(" data: %r", data)
         else:
-            netlog.error(" packet no %i data: %s", pcount, nonl(repr_ellipsized(data)))
+            netlog.error(" packet no %i data: %s", pcount, repr_ellipsized(data))
         self.quit(exit_code)
 
     def _process_invalid(self, packet):
