@@ -734,7 +734,7 @@ def repr_ellipsized(obj, limit=100):
         except Exception:
             s = binascii.hexlify(obj).decode()
         if len(s)>limit>6:
-            return s[:limit//2-2]+" .. "+s[2-limit//2:]
+            return nonl(s[:limit//2-2]+" .. "+s[2-limit//2:])
         return s
     return repr_ellipsized(repr(obj), limit)
 
