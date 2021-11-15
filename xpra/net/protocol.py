@@ -562,7 +562,7 @@ class Protocol:
             if issubclass(ti, LargeStructure):
                 packet[i] = item.data
                 continue
-            if issubclass(ti, (Compressed, LevelCompressed)):
+            if issubclass(ti, Compressed):
                 #already compressed data (usually pixels, cursors, etc)
                 if not item.can_inline or l>INLINE_SIZE:
                     il = 0
