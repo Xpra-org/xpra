@@ -89,7 +89,7 @@ scalinglog("scaling options: SCALING=%s, HARDCODED=%s, PPS_TARGET=%i, MIN_PPS=%i
 
 DEBUG_VIDEO_CLEAN = envbool("XPRA_DEBUG_VIDEO_CLEAN", False)
 
-FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", 0)
+FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", -1)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 50)))
@@ -893,7 +893,7 @@ class WindowVideoSource(WindowSource):
         return True
 
     def get_frame_encode_delay(self, options):
-        if FORCE_AV_DELAY>0:
+        if FORCE_AV_DELAY>=0:
             return FORCE_AV_DELAY
         if options.get("av-sync", False):
             return 0
