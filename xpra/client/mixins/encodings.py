@@ -231,6 +231,8 @@ class Encodings(StubClientMixin):
                 full_csc_modes["webp"] = ("BGRX", "BGRA", "RGBX", "RGBA")
             else:
                 full_csc_modes["webp"] = ("BGRX", "BGRA", )
+        if has_codec("dec_jpeg") or has_codec("dec_pillow"):
+            full_csc_modes["jpeg"] = ("BGRX", "BGRA", "YUV420P")
         log("supported full csc_modes=%s", full_csc_modes)
         caps["full_csc_modes"] = full_csc_modes
 
