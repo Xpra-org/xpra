@@ -2650,7 +2650,7 @@ class WindowSource(WindowIconSource):
         if w<16 or h<16:
             return fallback("image size %ix%i is too small" % (w, h))
         pixel_format = image.get_pixel_format()
-        if pixel_format!="RGB" and not argb_swap(image, ("RGB", )):
+        if pixel_format not in ("RGB", "BGR") and not argb_swap(image, ("RGB", "BGR" )):
             return fallback("cannot handle %s" % pixel_format)
         q = options.get("quality", self._current_quality)
         s = options.get("speed", self._current_speed)
