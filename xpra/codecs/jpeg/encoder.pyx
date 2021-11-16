@@ -157,7 +157,6 @@ cdef class Encoder:
         self.height = height
         self.src_format = src_format
         self.scaling = scaling
-        self.frames = 0
 
     def is_ready(self):
         return self.compressor!=NULL
@@ -183,7 +182,7 @@ cdef class Encoder:
         return self.height
 
     def get_type(self):
-        return  "jpeg"
+        return "jpeg"
 
     def get_src_format(self):
         return self.src_format
