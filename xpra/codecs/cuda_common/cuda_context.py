@@ -338,6 +338,7 @@ def get_device_context(options):
 
 class cuda_device_context:
     def __init__(self, device_id, device):
+        assert device, "no cuda device"
         self.device_id = device_id
         self.device = device
         self.context = None
