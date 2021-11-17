@@ -2112,20 +2112,6 @@ class WindowVideoSource(WindowSource):
             #scroll encoding has dealt with this image
             return None
 
-        if self.enc_nvjpeg:
-            speed = -1
-            #try the current encoding (which is often 'auto')
-            #then more generic options:
-            for k in (encoding, "video", "default"):
-                speed = self.decoder_speed.intget(k, -1)
-                if speed>=0:
-                    break
-            #prefer nvjpeg over video that must be decoded slowly:
-            if 0<=speed<20:
-                q = options.get("quality", self._current_quality)
-                options["quality"] = max(self._fixed_min_quality, q - 30)
-                return self.nvjpeg_encode("jpeg", image, options)
-
         if not self.common_video_encodings:
             #we have to send using a non-video encoding as that's all we have!
             return self.video_fallback(image, options)
