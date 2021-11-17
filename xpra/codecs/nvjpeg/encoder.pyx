@@ -423,6 +423,8 @@ cdef do_device_encode(device, image, int quality, int speed):
     errcheck(r, "nvjpegEncoderParamsDestroy %#x", <uintptr_t> nv_enc_params)
     r = nvjpegEncoderStateDestroy(nv_enc_state)
     errcheck(r, "nvjpegEncoderStateDestroy")
+    r = nvjpegDestroy(nv_handle)
+    errcheck(r, "nvjpegDestroy")
     end = monotonic_time()
     log("got %i bytes in %.1fms", length, 1000*(end-start))
     return memoryview(output_buf), width, height, stride
