@@ -134,7 +134,7 @@ class EncodingsMixin(StubSourceMixin):
         now = monotonic_time()
         self.calculate_last_time = now
         p = self.protocol
-        if not p:
+        if not p or p.is_closed():
             return
         conn = p._conn
         if not conn:
