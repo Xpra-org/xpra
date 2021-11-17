@@ -1403,7 +1403,8 @@ class WindowVideoSource(WindowSource):
 
             if self.scaling_control is None:
                 #None==auto mode, derive from quality and speed only:
-                q_noscaling = 80 + int(video)*10
+                #increase threshold when handling video
+                q_noscaling = 65 + int(video)*30
                 if q>=q_noscaling or ffps==0:
                     scaling = get_min_required_scaling()
                 else:
@@ -1428,7 +1429,7 @@ class WindowVideoSource(WindowSource):
                         #high bit depth is normally used for high quality
                         target *= 10
                     #high quality means less scaling:
-                    target = target * (10+q)**2 // 50**2
+                    target = target * (10+max(0, q-video*30))**2 // 50**2
                     #high speed means more scaling:
                     target = target * 60**2 // (s+20)**2
                     sscaling = {}
