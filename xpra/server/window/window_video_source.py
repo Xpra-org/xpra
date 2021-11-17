@@ -834,6 +834,7 @@ class WindowVideoSource(WindowSource):
         image = self.get_damage_image(x, y, w, h)
         if image is None:
             return False
+        sequence = self._sequence
 
         w = image.get_width()
         h = image.get_height()
@@ -857,8 +858,6 @@ class WindowVideoSource(WindowSource):
         if must_freeze:
             image.freeze()
         def call_encode(ew, eh, eimage, encoding):
-            self._sequence += 1
-            sequence = self._sequence
             if self.is_cancelled(sequence):
                 image.free()
                 log("call_encode: sequence %s is cancelled", sequence)
