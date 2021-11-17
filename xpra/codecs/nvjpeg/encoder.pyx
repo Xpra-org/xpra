@@ -578,7 +578,7 @@ def device_encode(device_context, image, int quality=50, speed=50):
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
         stride = encoder.get_cuda_stride()
-        return cdata, width, height, stride
+        return cdata, width, height, stride, options
     except NVJPEG_Exception as e:
         errors.append(str(e))
         return None

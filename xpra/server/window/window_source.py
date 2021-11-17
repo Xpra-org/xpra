@@ -2667,8 +2667,8 @@ class WindowSource(WindowIconSource):
                     log(" %s", e)
                 self.enc_nvjpeg = None
                 return fallback("nvjpeg is now disabled")
-            data, w, h, stride = r
-        return "jpeg", Compressed(coding, data, False), {}, w, h, stride, 24
+            data, w, h, stride, options = r
+        return "jpeg", Compressed(coding, data, False), options, w, h, stride, 24
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:
