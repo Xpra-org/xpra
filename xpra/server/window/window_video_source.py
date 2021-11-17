@@ -1430,7 +1430,7 @@ class WindowVideoSource(WindowSource):
                     #high quality means less scaling:
                     target = target * (10+q)**2 // 50**2
                     #high speed means more scaling:
-                    target = target * 60**2 // (q+20)**2
+                    target = target * 60**2 // (s+20)**2
                     sscaling = {}
                     mrs = get_min_required_scaling()
                     min_ratio = mrs[0]/mrs[1]
