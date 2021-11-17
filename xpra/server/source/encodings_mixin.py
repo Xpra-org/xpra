@@ -86,12 +86,16 @@ class EncodingsMixin(StubSourceMixin):
 
     def cleanup(self):
         self.cancel_recalculate_timer()
+        if self.cuda_device_context:
+            self.queue_encode((False, self.free_cuda_device_context))
         #Warning: this mixin must come AFTER the window mixin!
         #to make sure that it is safe to add the end of queue marker:
         #(all window sources will have stopped queuing data)
         self.queue_encode(None)
         #this should be a noop since we inherit an initialized helper:
         self.video_helper.cleanup()
+
+    def free_cuda_device_context(self):
         cdd = self.cuda_device_context
         if cdd:
             self.cuda_device_context = None
