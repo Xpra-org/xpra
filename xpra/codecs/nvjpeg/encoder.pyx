@@ -10,7 +10,7 @@ from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from pycuda import driver
 
-from xpra.util import envbool, typedict
+from xpra.util import envbool, typedict, roundup
 from xpra.os_util import bytestostr
 
 from xpra.log import Logger
@@ -331,7 +331,7 @@ cdef class Encoder:
     cdef nvjpegEncoderParams_t nv_enc_params
     cdef nvjpegImage_t nv_image
     cdef object cuda_buffer
-    cdef int cuda_stride
+    cdef int cuda_buffer_size
     cdef cudaStream_t stream
     cdef object __weakref__
 
@@ -350,7 +350,8 @@ cdef class Encoder:
         self.speed = speed
         self.scaling = scaling
         self.init_nvjpeg()
-        self.init_cuda(device_context)
+        self.cuda_buffer = None
+        self.cuda_buffer_size = 0
 
     def init_nvjpeg(self):
         # initialize nvjpeg structures
@@ -380,10 +381,6 @@ cdef class Encoder:
         log("init_nvjpeg() quality=%s, huffman=%s, subsampling=%s, encoding type=%s",
             self.quality, huffman, CSS_STR.get(subsampling, "invalid"), ENCODING_STR.get(encoding_type, "invalid"))
 
-    def init_cuda(self, device_context):
-        stride = self.width*4
-        with device_context:
-            self.cuda_buffer, self.cuda_stride = driver.mem_alloc_pitch(stride, self.height, 4)
 
     def is_ready(self):
         return self.nv_handle!=NULL
@@ -409,7 +406,6 @@ cdef class Encoder:
 
     def clean_cuda(self):
         self.cuda_buffer = None
-        self.cuda_stride = 0
 
     def get_encoding(self):
         return "jpeg"
@@ -419,9 +415,6 @@ cdef class Encoder:
 
     def get_height(self):
         return self.height
-
-    def get_cuda_stride(self):
-        return self.cuda_stride
 
     def get_type(self):
         return "nvjpeg"
@@ -487,24 +480,21 @@ cdef class Encoder:
         #from xpra.codecs.argb.argb import argb_swap
         #argb_swap(image, ("RGB", ))
         cdef double start = monotonic()
+        cdef int width = image.get_width()
         cdef int height = image.get_height()
         cdef int stride = image.get_rowstride()
-        log("upload_image(%s) wanted stride %i got %i", image, stride, self.cuda_stride)
-        if self.cuda_stride>stride:
-            assert image.restride(self.cuda_stride), "failed to restride %s for compression" % image
-            stride = self.cuda_stride
+        if self.cuda_buffer_size<stride*height:
+            #buffer is not allocated yet, or too small
+            #round it up so we can handle padded data safely
+            self.cuda_buffer_size = roundup(width*len(self.src_format), 16)*(height+1)
+            self.cuda_buffer = driver.mem_alloc(self.cuda_buffer_size)
         pixels = image.get_pixels()
         cdef Py_ssize_t buf_len = len(pixels)
-        if buf_len<stride*height:
-            pfstr = bytestostr(image.get_pixel_format())
-            raise ValueError("%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (
-                pfstr, buf_len, stride, height, stride*height))
-        #log("uploading %i bytes to %#x", buf_len, <uintptr_t> int(self.cuda_buffer))
+        assert buf_len<=self.cuda_buffer_size, "pixel buffer is %i (limit is %i)" % (buf_len, self.cuda_buffer_size)
         driver.memcpy_htod(self.cuda_buffer, pixels)
         cdef double end = monotonic()
         log("uploaded %i bytes to %#x in %.1fms", buf_len, <uintptr_t> int(self.cuda_buffer), 1000*(end-start))
         cdef uintptr_t cuda_ptr = int(self.cuda_buffer)
-        #log("cuda_ptr=%#x", cuda_ptr)
         self.nv_image.channel[0] = <unsigned char *> cuda_ptr
         self.nv_image.pitch[0] = stride
 
@@ -567,7 +557,7 @@ def device_encode(device_context, image, int quality=50, speed=50):
     options = typedict()
     cdef int width = image.get_width()
     cdef int height = image.get_height()
-    cdef int stride = 0
+    cdef int stride = image.get_rowstride()
     cdef Encoder encoder
     try:
         encoder = Encoder()
@@ -583,7 +573,6 @@ def device_encode(device_context, image, int quality=50, speed=50):
             with open(filename, "wb") as f:
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
-        stride = encoder.get_cuda_stride()
         return cdata, width, height, stride, options
     except NVJPEG_Exception as e:
         errors.append(str(e))
