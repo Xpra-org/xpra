@@ -90,6 +90,7 @@ scalinglog("scaling options: SCALING=%s, HARDCODED=%s, PPS_TARGET=%i, MIN_PPS=%i
 DEBUG_VIDEO_CLEAN = envbool("XPRA_DEBUG_VIDEO_CLEAN", False)
 
 FORCE_AV_DELAY = envint("XPRA_FORCE_AV_DELAY", -1)
+AV_SYNC_DEFAULT = envbool("XPRA_AV_SYNC_DEFAULT", False)
 B_FRAMES = envbool("XPRA_B_FRAMES", True)
 VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 50)))
@@ -772,7 +773,9 @@ class WindowVideoSource(WindowSource):
                 return
             #send this using the video encoder:
             video_options = self.assign_sq_options(options, 0, -30)
-            video_options["av-sync"] = True
+            #TODO: encode delay can be derived rather than hard-coded
+            encode_delay = 50
+            video_options["av-delay"] = max(0, self.get_frame_encode_delay(options) - encode_delay)
             self.process_damage_region(damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height,
                                        coding, video_options, 0)
 
@@ -841,16 +844,11 @@ class WindowVideoSource(WindowSource):
         if self.send_window_size:
             options["window-size"] = self.window_dimensions
 
-        av_delay = 0
-        if self.content_type.find("audio")>=0:
-            av_delay = self.get_frame_encode_delay(options)
-            #TODO: encode delay can be derived rather than hard-coded
-            encode_delay = 50
-            av_delay = max(0, av_delay - encode_delay)
         #freeze if:
         # * we want av-sync
         # * the video encoder needs a thread safe image
         #   (the xshm backing may change from underneath us if we don't freeze it)
+        av_delay = options.get("av-delay", 0)
         video_mode = coding in self.common_video_encodings or (coding=="auto" and self.common_video_encodings)
         must_freeze = av_delay>0 or (video_mode and not image.is_thread_safe())
         log("process_damage_region: av_delay=%s, must_freeze=%s, size=%s, encoding=%s",
@@ -894,10 +892,15 @@ class WindowVideoSource(WindowSource):
     def get_frame_encode_delay(self, options):
         if FORCE_AV_DELAY>=0:
             return FORCE_AV_DELAY
-        if options.get("av-sync", False):
-            return 0
-        if any(self.content_type.find(x) for x in ("text", "picture")):
-            return 0
+        content_type = options.get("content-type", self.content_type)
+        if AV_SYNC_DEFAULT:
+            #default to on, unless we're quite sure it should not be used:
+            if any(content_type.find(x)>=0 for x in ("text", "picture")):
+                return 0
+        else:
+            #default to off unless content-type says otherwise:
+            if content_type.find("audio")<0:
+                return 0
         l = len(self.encode_queue)
         if l>=self.encode_queue_max_size:
             #we must free some space!
