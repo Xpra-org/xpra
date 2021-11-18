@@ -393,7 +393,9 @@ cdef class Encoder:
         self.clean_nvjpeg()
 
     def clean_nvjpeg(self):
-        log("nvjpeg.clean()")
+        log("nvjpeg.clean() nv_handle=%#x", <uintptr_t> self.nv_handle)
+        if self.nv_handle==NULL:
+            return
         self.width = self.height = self.quality = self.speed = 0
         cdef int r
         r = nvjpegEncoderParamsDestroy(self.nv_enc_params)
