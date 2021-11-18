@@ -305,7 +305,7 @@ class WindowBackingBase:
             sy, dy = south_y()
         elif g==StaticGravity:
             if first_time("StaticGravity-%i" % self.wid):
-                log.warn("Warning: window %i requested static gravity")
+                log.warn("Warning: window %i requested static gravity", self.wid)
                 log.warn(" this is not implemented yet")
         w = min(bw, oldw)
         h = min(bh, oldh)
