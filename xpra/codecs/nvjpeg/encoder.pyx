@@ -405,6 +405,7 @@ cdef class Encoder:
         self.nv_handle = NULL
 
     def clean_cuda(self):
+        self.cuda_buffer_size = 0
         self.cuda_buffer = None
 
     def get_encoding(self):
