@@ -2051,8 +2051,9 @@ class WindowVideoSource(WindowSource):
         return self.get_fallback_encoding(self.non_video_encodings, order)
 
     def video_fallback(self, image, options, warn=False):
-        if warn:
-            videolog.warn("using non-video fallback encoding for %s" % image)
+        if warn and first_time("non-video-%i" % self.wid):
+            videolog.warn("Warning: using non-video fallback encoding")
+            videolog.warn(" for %s of window %s" % (image, self.wid))
         w = image.get_width()
         h = image.get_height()
         speed = options.get("speed", self._current_speed)
