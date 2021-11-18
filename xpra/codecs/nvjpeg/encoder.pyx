@@ -442,12 +442,26 @@ cdef class Encoder:
         if abs(self.quality-quality)>10:
             self.quality = quality
             self.configure_nvjpeg()
-        cdef int width, height
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
+        cdef int stride = image.get_rowstride()
+        pixels = image.get_pixels()
+        cdef Py_ssize_t buf_len = len(pixels)
         cdef double start, end
+        cdef uintptr_t cuda_ptr
+        cdef size_t length
+        cdef MemBuf output_buf
+        cdef unsigned char* buf_ptr
         with device_context:
-            self.upload_image(image)
-            width = image.get_width()
-            height = image.get_height()
+            start = monotonic()
+            cuda_buffer = driver.mem_alloc(buf_len)
+            driver.memcpy_htod(cuda_buffer, pixels)
+            cuda_ptr = int(cuda_buffer)
+            self.nv_image.channel[0] = <unsigned char *> cuda_ptr
+            self.nv_image.pitch[0] = stride
+            end = monotonic()
+            log("uploaded %i bytes to %#x in %.1fms",
+                buf_len, <uintptr_t> int(cuda_buffer), 1000*(end-start))
             start = monotonic()
             r = nvjpegEncodeImage(self.nv_handle, self.nv_enc_state, self.nv_enc_params,
                                   &self.nv_image, input_format, width, height, self.stream)
@@ -456,48 +470,21 @@ cdef class Encoder:
             log("nvjpegEncodeImage took %.1fms using input format %s",
                 1000*(end-start), NVJPEG_INPUT_STR.get(input_format, input_format))
             self.frames += 1
-            return memoryview(self.download_bitstream()), {}
-
-    def download_bitstream(self):
-        #r = cudaStreamSynchronize(stream)
-        #if not r:
-        #    raise Exception("nvjpeg failed to synchronize cuda stream: %i" % r)
-        # get compressed stream size
-        start = monotonic()
-        cdef size_t length
-        r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, NULL, &length, self.stream)
-        errcheck(r, "nvjpegEncodeRetrieveBitstream")
-        # get stream itself
-        #log("allocating %i bytes for bitstream", length)
-        cdef MemBuf output_buf = getbuf(length)
-        cdef unsigned char* ptr = <unsigned char*> output_buf.get_mem()
-        r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, ptr, &length, NULL)
-        errcheck(r, "nvjpegEncodeRetrieveBitstream")
-        end = monotonic()
-        log("downloaded %i bytes in %.1fms", length, 1000*(end-start))
-        return output_buf
-
-    cdef upload_image(self, image):
-        #from xpra.codecs.argb.argb import argb_swap
-        #argb_swap(image, ("RGB", ))
-        cdef double start = monotonic()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
-        cdef int stride = image.get_rowstride()
-        if self.cuda_buffer_size<stride*height:
-            #buffer is not allocated yet, or too small
-            #round it up so we can handle padded data safely
-            self.cuda_buffer_size = roundup(width*len(self.src_format), 16)*(height+1)
-            self.cuda_buffer = driver.mem_alloc(self.cuda_buffer_size)
-        pixels = image.get_pixels()
-        cdef Py_ssize_t buf_len = len(pixels)
-        assert buf_len<=self.cuda_buffer_size, "pixel buffer is %i (limit is %i)" % (buf_len, self.cuda_buffer_size)
-        driver.memcpy_htod(self.cuda_buffer, pixels)
-        cdef double end = monotonic()
-        log("uploaded %i bytes to %#x in %.1fms", buf_len, <uintptr_t> int(self.cuda_buffer), 1000*(end-start))
-        cdef uintptr_t cuda_ptr = int(self.cuda_buffer)
-        self.nv_image.channel[0] = <unsigned char *> cuda_ptr
-        self.nv_image.pitch[0] = stride
+            cuda_buffer.free()
+            #r = cudaStreamSynchronize(stream)
+            #if not r:
+            #    raise Exception("nvjpeg failed to synchronize cuda stream: %i" % r)
+            # get compressed stream size
+            start = monotonic()
+            r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, NULL, &length, self.stream)
+            errcheck(r, "nvjpegEncodeRetrieveBitstream")
+            output_buf = getbuf(length)
+            buf_ptr = <unsigned char*> output_buf.get_mem()
+            r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)
+            errcheck(r, "nvjpegEncodeRetrieveBitstream")
+            end = monotonic()
+            log("downloaded %i bytes in %.1fms", length, 1000*(end-start))
+            return memoryview(output_buf), {}
 
 
 class NVJPEG_Exception(Exception):
