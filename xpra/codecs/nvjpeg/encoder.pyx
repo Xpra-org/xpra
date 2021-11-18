@@ -357,6 +357,9 @@ cdef class Encoder:
         errcheck(nvjpegCreateSimple(&self.nv_handle), "nvjpegCreateSimple")
         errcheck(nvjpegEncoderStateCreate(self.nv_handle, &self.nv_enc_state, self.stream), "nvjpegEncoderStateCreate")
         errcheck(nvjpegEncoderParamsCreate(self.nv_handle, &self.nv_enc_params, self.stream), "nvjpegEncoderParamsCreate")
+        self.configure_nvjpeg()
+
+    def configure_nvjpeg(self):
         cdef nvjpegChromaSubsampling_t subsampling = get_subsampling(self.quality)
         cdef int r
         r = nvjpegEncoderParamsSetSamplingFactors(self.nv_enc_params, subsampling, self.stream)
@@ -442,6 +445,9 @@ cdef class Encoder:
         cdef nvjpegInputFormat_t input_format = FORMAT_VAL.get(pfstr, 0)
         if input_format==0:
             raise ValueError("unsupported input format %s" % pfstr)
+        if abs(self.quality-quality)>10:
+            self.quality = quality
+            self.configure_nvjpeg()
         cdef int width, height
         cdef double start, end
         with device_context:
