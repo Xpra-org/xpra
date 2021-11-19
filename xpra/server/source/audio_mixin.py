@@ -53,7 +53,6 @@ class AudioMixin(StubSourceMixin):
         self.sound_encoders = ()
         self.sound_receive = False
         self.sound_send = False
-        self.sound_bundle_metadata = False
         self.sound_fade_timer = None
         self.new_stream_timers = {}
 
@@ -96,7 +95,6 @@ class AudioMixin(StubSourceMixin):
         self.sound_encoders = c.strtupleget("sound.encoders", [])
         self.sound_receive = c.boolget("sound.receive")
         self.sound_send = c.boolget("sound.send")
-        self.sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         log("pulseaudio id=%s, cookie-hash=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server,
                  self.sound_decoders, self.sound_encoders, self.sound_receive, self.sound_send)
@@ -316,23 +314,14 @@ class AudioMixin(StubSourceMixin):
                 sound_source.sequence, self.sound_source_sequence)
             return
         if packet_metadata:
-            if not self.sound_bundle_metadata:
-                #client does not support bundling, send packet metadata as individual packets before the main packet:
-                for x in packet_metadata:
-                    self.send_sound_data(sound_source, x, {})
-                packet_metadata = ()
-            else:
-                #the packet metadata is compressed already:
-                packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
+            #the packet metadata is compressed already:
+            packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         #don't drop the first 10 buffers
         can_drop_packet = (sound_source.info or {}).get("buffer_count", 0)>10
         self.send_sound_data(sound_source, data, metadata, packet_metadata, can_drop_packet)
 
     def send_sound_data(self, sound_source, data, metadata, packet_metadata=None, can_drop_packet=False):
-        packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata]
-        if packet_metadata:
-            assert self.sound_bundle_metadata
-            packet_data.append(packet_metadata)
+        packet_data = [sound_source.codec, Compressed(sound_source.codec, data), metadata, packet_metadata or ()]
         sequence = sound_source.sequence
         if sequence>=0:
             metadata["sequence"] = sequence
@@ -487,11 +476,6 @@ class AudioMixin(StubSourceMixin):
             except Exception:
                 log.error("failed to setup sound", exc_info=True)
                 return
-        if packet_metadata:
-            if not self.sound_properties.boolget("bundle-metadata"):
-                for x in packet_metadata:
-                    self.sound_sink.add_data(x)
-                packet_metadata = ()
         self.sound_sink.add_data(data, metadata, packet_metadata)
 
 

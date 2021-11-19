@@ -56,7 +56,6 @@ class AudioClient(StubClientMixin):
         self.server_sound_encoders = []
         self.server_sound_receive = False
         self.server_sound_send = False
-        self.server_sound_bundle_metadata = False
         self.queue_used_sent = None
         #duplicated from ServerInfo mixin:
         self._remote_machine_id = None
@@ -198,7 +197,6 @@ class AudioClient(StubClientMixin):
         self.server_sound_encoders = c.strtupleget("sound.encoders")
         self.server_sound_receive = c.boolget("sound.receive")
         self.server_sound_send = c.boolget("sound.send")
-        self.server_sound_bundle_metadata = c.boolget("sound.bundle-metadata")
         log("pulseaudio id=%s, server=%s, sound decoders=%s, sound encoders=%s, receive=%s, send=%s",
                  self.server_pulseaudio_id, self.server_pulseaudio_server,
                  csv(self.server_sound_decoders), csv(self.server_sound_encoders),
@@ -510,22 +508,13 @@ class AudioClient(StubClientMixin):
             self.sound_out_bytecount += len(x)
         metadata["sequence"] = sound_source.sequence
         if packet_metadata:
-            if not self.server_sound_bundle_metadata:
-                #server does not support bundling, send packet metadata as individual packets before the main packet:
-                for x in packet_metadata:
-                    self.send_sound_data(sound_source, x, metadata)
-                packet_metadata = ()
-            else:
-                #the packet metadata is compressed already:
-                packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
+            #the packet metadata is already compressed:
+            packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_sound_data(sound_source, data, metadata, packet_metadata)
 
     def send_sound_data(self, sound_source, data, metadata, packet_metadata=None):
         codec = sound_source.codec
-        packet_data = [codec, Compressed(codec, data), metadata]
-        if packet_metadata:
-            assert self.server_sound_bundle_metadata
-            packet_data.append(packet_metadata)
+        packet_data = [codec, Compressed(codec, data), metadata, packet_metadata or ()]
         self.send("sound-data", *packet_data)
 
     def send_sound_sync(self, v):
@@ -585,11 +574,6 @@ class AudioClient(StubClientMixin):
         packet_metadata = ()
         if len(packet)>4:
             packet_metadata = packet[4]
-            if not self.sound_properties.get("bundle-metadata"):
-                #we don't handle bundling, so push individually:
-                for x in packet_metadata:
-                    ss.add_data(x)
-                packet_metadata = ()
         #(some packets (ie: sos, eos) only contain metadata)
         if data or packet_metadata:
             ss.add_data(data, metadata, packet_metadata)
