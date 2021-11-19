@@ -587,12 +587,6 @@ class WindowVideoSource(WindowSource):
         return True
 
 
-    def must_batch(self, delay):
-        #force batching when using video region
-        #because the video region code is in the send_delayed path
-        return self.video_subregion.rectangle is not None or super().must_batch(delay)
-
-
     def client_decode_error(self, error, message):
         #maybe the stream is now corrupted..
         self.cleanup_codecs()

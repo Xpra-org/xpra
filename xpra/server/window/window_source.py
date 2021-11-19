@@ -1450,6 +1450,8 @@ class WindowSource(WindowIconSource):
                 self.expire_timer = self.timeout_add(0, self.expire_delayed_region, now)
             return
 
+        #create a new delayed region:
+        regions = [rectangle(x, y, w, h)]
         delay = options.get("delay", self.batch_config.delay)
         resize_elapsed = int(1000*(now-self.statistics.last_resized))
         #batch more when recently resized:
@@ -1468,35 +1470,6 @@ class WindowSource(WindowIconSource):
         elapsed = int(1000*(now-self.batch_config.last_event))
         #discount the elapsed time since the last event:
         delay = max(0, delay-elapsed)
-        if not self.must_batch(delay):
-            #send without batching:
-            damagelog("do_damage%-24s wid=%s, sending now with sequence %s",
-                      (x, y, w, h, options), self.wid, self._sequence)
-            actual_encoding = options.get("encoding")
-            if actual_encoding is None:
-                q = options.get("quality") or self._current_quality
-                s = options.get("speed") or self._current_speed
-                actual_encoding = self.get_best_encoding(w, h, s, q, self.encoding)
-            if self.must_encode_full_frame(actual_encoding):
-                x, y = 0, 0
-                w, h = ww, wh
-            delay = max(delay, min_delay)
-            lad = (now, delay)
-            self.batch_config.last_delays.append(lad)
-            self.batch_config.last_delay = lad
-            self.batch_config.last_actual_delays.append(lad)
-            self.batch_config.last_actual_delay = lad
-            def damage_now():
-                if self.is_cancelled():
-                    return
-                self.window.acknowledge_changes()
-                self.batch_config.last_event = monotonic()
-                self.process_damage_region(now, x, y, w, h, actual_encoding, options)
-            self.idle_add(damage_now)
-            return
-
-        #create a new delayed region:
-        regions = [rectangle(x, y, w, h)]
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = DelayedRegions(now, regions, actual_encoding, options)
         lad = (now, delay)
@@ -1526,52 +1499,6 @@ class WindowSource(WindowIconSource):
         due = now+expire_delay/1000.0
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
-    def must_batch(self, delay):
-        if FORCE_BATCH:
-            return True
-        if self.batch_config.always or delay>self.batch_config.min_delay or self.bandwidth_limit>0:
-            return True
-        now = monotonic()
-        gs = self.global_statistics
-        if gs and now-gs.last_congestion_time<60:
-            return True
-        ldet = self.statistics.last_damage_event_time
-        if ldet and now-ldet<self.batch_config.min_delay:
-            #last damage event was recent,
-            #avoid swamping the encode queue / connection / client paint handler
-            return True
-        #only send without batching when things are going well:
-        # - no packets backlog from the client
-        # - the amount of pixels waiting to be encoded is less than one full frame refresh
-        # - no more than 10 regions waiting to be encoded
-        packets_backlog = self.get_packets_backlog()
-        if packets_backlog>0:
-            return True
-        pixels_encoding_backlog, enc_backlog_count = self.statistics.get_pixels_encoding_backlog()
-        if enc_backlog_count>10:
-            return True
-        ww, wh = self.window.get_dimensions()
-        if pixels_encoding_backlog>ww*wh:
-            return True
-        #work out if we have too many damage requests
-        #or too many pixels in those requests
-        #for the last time_unit, and if so we force batching on
-        event_min_time = now-self.batch_config.time_unit
-        all_pixels = tuple(pixels for _,event_time,pixels in self.global_statistics.damage_last_events
-                           if event_time>event_min_time)
-        eratio = len(all_pixels) / self.batch_config.max_events
-        if eratio>1.0:
-            return True
-        pratio = sum(all_pixels) / self.batch_config.max_pixels
-        if pratio>1.0:
-            return True
-        try:
-            t, _ = self.batch_config.last_delays[-5]
-            #do batch if we got more than 5 damage events in the last 10 milliseconds:
-            return monotonic()-t<0.010
-        except IndexError:
-            #probably not enough events to grab -5
-            return False
 
     def get_packets_backlog(self):
         s = self.statistics
