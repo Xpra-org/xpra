@@ -1005,14 +1005,15 @@ class WindowSource(WindowIconSource):
                 return "rgb32"
             if "rgb24" in co:
                 return "rgb24"
-        if depth in (24, 32):
-            jpeg = "jpeg" in co and w>=16 and h>=16 and quality<100
-            if jpeg and self.enc_nvjpeg:
+        jpeg = "jpeg" and w>=2 and h>=2
+        webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2
+        lossy = quality<100
+        if depth in (24, 32) and (jpeg or webp):
+            if jpeg and w>=8 and h>=8 and lossy and self.enc_nvjpeg:
                 return "jpeg"
-            webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2
-            if webp and (w*h<=WEBP_EFFICIENCY_CUTOFF or quality==100):
+            if webp and (not lossy or w*h<=WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
-            if jpeg:
+            if jpeg and lossy:
                 return "jpeg"
             if webp:
                 return "webp"
@@ -1020,9 +1021,9 @@ class WindowSource(WindowIconSource):
             #the only encoding that can do higher bit depth at present
             #(typically r210 which is actually rgb30+2)
             return "rgb32"
-        if "png" in co and ((quality>=90 and speed<60) or depth<=16):
+        if "png" in co and (not lossy or depth<=16 or (quality>=90 and speed<60)):
             return "png"
-        if "jpeg" in co and w>=2 and h>=2:
+        if jpeg:
             return "jpeg"
         if current_encoding in co:
             return current_encoding
