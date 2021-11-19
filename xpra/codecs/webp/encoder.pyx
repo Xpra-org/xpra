@@ -59,14 +59,7 @@ cdef extern from "webp/encode.h":
     ctypedef int WebPEncCSP
     #chroma sampling
     WebPEncCSP WEBP_YUV420              #4:2:0
-    WebPEncCSP WEBP_YUV422              #4:2:2
-    WebPEncCSP WEBP_YUV444              #4:4:4
-    WebPEncCSP WEBP_YUV400              #grayscale
     WebPEncCSP WEBP_CSP_UV_MASK         #bit-mask to get the UV sampling factors
-    WebPEncCSP WEBP_YUV420A
-    WebPEncCSP WEBP_YUV422A
-    WebPEncCSP WEBP_YUV444A
-    WebPEncCSP WEBP_YUV400A             #grayscale + alpha
     WebPEncCSP WEBP_CSP_ALPHA_BIT       #bit that is set if alpha is present
 
     ctypedef int WebPEncodingError
@@ -499,7 +492,7 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
                 ret = WebPPictureImportBGRA(&pic, src, stride)
         else:
             pic.argb = <uint32_t*> src
-            if WebPPictureARGBToYUVA(&pic, WEBP_YUV420A):
+            if WebPPictureARGBToYUVA(&pic, WEBP_YUV420):
                 client_options["subsampling"] = "YUV420P"
     if not ret:
         WebPPictureFree(&pic)
