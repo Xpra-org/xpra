@@ -183,7 +183,7 @@ def encode(coding, image, quality, speed, supports_transparency):
         #76-100   -> 1
         #51-76    -> 2
         #etc
-        level = max(1, min(5, (125-speed)//25))
+        level = max(0, min(5, (100-speed)//25))
         kwargs["compress_level"] = level
         #no need to expose to the client:
         #client_options["compress_level"] = level
