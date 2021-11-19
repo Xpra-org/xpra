@@ -112,5 +112,4 @@ See [audio forwarding](../Features/Audio.md)
 |[faad](http://faac.sourceforge.net/)|http://faac.sourceforge.net/|aac decoder|
 |[lame](http://lame.sourceforge.net/)|http://sourceforge.net/projects/lame/files/lame/|MP3 encoder|
 |[TwoLame](http://www.twolame.org/)|http://sourceforge.net/projects/twolame/files/twolame/|MP3 encoder|
-|[Mad](http://sourceforge.net/projects/mad/)|http://sourceforge.net/projects/mad/files/libmad/|MP3 decoder|
 </details>
