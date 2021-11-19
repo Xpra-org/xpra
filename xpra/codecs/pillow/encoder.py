@@ -129,8 +129,10 @@ def encode(coding, image, quality, speed, supports_transparency):
         if pixel_format.find("A")>=0 and coding=="jpeg":
             im = im.convert("RGB")
         q = int(min(100, max(1, quality)))
-        kwargs = im.info
+        kwargs = dict(im.info)
         kwargs["quality"] = q
+        if coding=="webp":
+            kwargs["method"] = int(speed<10)
         client_options["quality"] = q
         if coding=="jpeg" and speed<50:
             #(optimizing jpeg is pretty cheap and worth doing)
