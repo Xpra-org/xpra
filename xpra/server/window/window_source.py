@@ -717,17 +717,6 @@ class WindowSource(WindowIconSource):
         #(in case pillow was selected previously and the client side scaling changed)
         for encoding, encoders in self._all_encoders.items():
             self._encoders[encoding] = encoders[0]
-        #we may now want to downscale server-side,
-        #or convert to grayscale,
-        #and for that we need to use the pillow encoder:
-        grayscale = self.encoding=="grayscale"
-        if self.enc_pillow and ((DOWNSCALE and self.client_render_size) or grayscale):
-            crsw, crsh = self.client_render_size
-            ww, wh = self.window_dimensions
-            if grayscale or (ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD):
-                for x in self.enc_pillow.get_encodings():
-                    if x in self.server_core_encodings:
-                        self.add_encoder(x, self.pillow_encode)
         self.update_encoding_selection(self.encoding)
 
 
@@ -2531,8 +2520,9 @@ class WindowSource(WindowIconSource):
 
     def webp_encode(self, coding, image, options):
         assert coding=="webp"
-        q = options.get("quality", self._current_quality)
-        s = options.get("speed", self._current_speed)
+        r, image = self.may_scale(coding, image, options)
+        if r:
+            return r
         pixel_format = image.get_pixel_format()
         #the native webp encoder only takes BGRX / BGRA as input,
         #but the client may be able to swap channels,
@@ -2542,6 +2532,8 @@ class WindowSource(WindowIconSource):
             if not rgb_reformat(image, client_rgb_formats, self.supports_transparency):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (
                     pixel_format, self.rgb_formats))
+        q = options.get("quality", self._current_quality)
+        s = options.get("speed", self._current_speed)
         return webp_encode(image, self.supports_transparency, q, s, self.content_type)
 
     def rgb_encode(self, coding, image, options):
@@ -2556,13 +2548,45 @@ class WindowSource(WindowIconSource):
 
     def jpeg_encode(self, coding, image, options):
         assert coding=="jpeg"
+        r, image = self.may_scale(coding, image, options)
+        if r:
+            return r
         self.no_r210(image, ["RGB"])
         q = options.get("quality", self._current_quality)
         s = options.get("speed", self._current_speed)
         return self.enc_jpeg.encode(image, q, s)
 
+    def may_scale(self, coding, image, options):
+        if self.encoding=="grayscale":
+            #only pillow can do grayscale at the moment:
+            return self.pillow_encode(coding, image, options), image
+        #now check for downscaling:
+        if not DOWNSCALE or not self.client_render_size:
+            return None, image
+        crsw, crsh = self.client_render_size
+        ww, wh = self.window_dimensions
+        if ww-crsw<DOWNSCALE_THRESHOLD and wh-crsh<DOWNSCALE_THRESHOLD:
+            return None, image
+        q = options.get("quality", self._current_quality)
+        try:
+            from xpra.codecs.csc_libyuv.colorspace_converter import argb_scale  #pylint: disable=import-outside-toplevel
+        except ImportError as e:
+            log("cannot downscale: %s", e)
+            return self.pillow_encode(coding, image, options), image
+        #no point in using high quality or lossless when downscaling:
+        if q>80:
+            options["quality"] = 80
+        crsw, crsh = self.client_render_size
+        ww, wh = self.window_dimensions
+        width = image.get_width()*crsw//ww
+        height = image.get_height()*crsh//wh
+        return None, argb_scale(image, width, height)
+
     def nvjpeg_encode(self, coding, image, options):
         assert coding=="jpeg"
+        r, image = self.may_scale(coding, image, options)
+        if r:
+            return r
         def fallback(reason):
             log("nvjpeg_encode: %s", reason)
             if self.enc_jpeg:
@@ -2577,8 +2601,10 @@ class WindowSource(WindowIconSource):
         h = image.get_height()
         if w<16 or h<16:
             return fallback("image size %ix%i is too small" % (w, h))
+        NVJPEG_INPUT_FORMATS = ("RGB", "BGR" )
+        self.no_r210(image, NVJPEG_INPUT_FORMATS)
         pixel_format = image.get_pixel_format()
-        if pixel_format not in ("RGB", "BGR") and not argb_swap(image, ("RGB", "BGR" )):
+        if pixel_format not in NVJPEG_INPUT_FORMATS and not argb_swap(image, NVJPEG_INPUT_FORMATS):
             return fallback("cannot handle %s" % pixel_format)
         q = options.get("quality", self._current_quality)
         s = options.get("speed", self._current_speed)
@@ -2602,8 +2628,6 @@ class WindowSource(WindowIconSource):
         #for more information on pixel formats supported by PIL / Pillow, see:
         #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
         assert coding in self.server_core_encodings
-        q = options.get("quality", self._current_quality)
-        s = options.get("speed", self._current_speed)
         transparency = self.supports_transparency and options.get("transparency", True)
         grayscale = self.encoding=="grayscale"
         resize = None
@@ -2616,6 +2640,8 @@ class WindowSource(WindowIconSource):
             if ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD:
                 #keep the same proportions:
                 resize = w*crsw//ww, h*crsh//wh
+        q = options.get("quality", self._current_quality)
+        s = options.get("speed", self._current_speed)
         return self.enc_pillow.encode(coding, image, q, s, transparency, grayscale, resize)
 
     def mmap_encode(self, coding, image, _options):
