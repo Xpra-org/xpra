@@ -47,6 +47,12 @@ class ClientTray(ClientWidgetBase):
         #things may have settled by now
         self.timeout_add(1000, self.send_configure)
 
+    def reset_size_constraints(self):
+        pass
+
+    def resize(self, nw, nh):
+        pass
+
     def set_alpha(self):
         #nothing to do,
         #trays aren't really windows and transparency is always supported
