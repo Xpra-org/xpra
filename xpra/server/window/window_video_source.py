@@ -1941,7 +1941,8 @@ class WindowVideoSource(WindowSource):
             quality = options.get("quality", self._current_quality)
             #boost quality a bit, because lossless saves refreshing,
             #more so if we have a high match percentage (less to send):
-            quality = min(100, quality + 10 + max(0, match_pct-50)//2)
+            if self._fixed_quality<=0:
+                quality = min(100, quality + 10 + max(0, match_pct-50)//2)
             nsstart = monotonic()
             client_options = options.copy()
             for sy, sh in non_scroll.items():

@@ -291,13 +291,13 @@ class WindowSource(WindowIconSource):
         nobwl = (self.bandwidth_limit or 0)<=0
         if self._quality_hint>=0:
             self._current_quality = capr(self._quality_hint)
-        elif self._fixed_quality>=0:
+        elif self._fixed_quality>0:
             self._current_quality = capr(self._fixed_quality)
         else:
             self._current_quality = capr(encoding_options.intget("initial_quality", INITIAL_QUALITY*(1+int(nobwl))))
         if self._speed_hint>=0:
             self._current_speed = capr(self._speed_hint)
-        elif self._fixed_speed>=0:
+        elif self._fixed_speed>0:
             self._current_speed = capr(self._fixed_speed)
         else:
             self._current_speed = capr(encoding_options.intget("initial_speed", INITIAL_SPEED*(1+int(nobwl))))
@@ -974,12 +974,12 @@ class WindowSource(WindowIconSource):
         co = self.common_encodings
         def canuse(e):
             return e in co and e in TRANSPARENCY_ENCODINGS
-        if canuse("rgb32") and (
+        lossless = quality>=100
+        if canuse("rgb32") and lossless and (
             pixel_count<self._rgb_auto_threshold or
-            (quality>=90 and speed>=90) or
+            #the only encoding that can do higher bit depth at present:
             (depth>24 and self.client_bit_depth>24)
             ):
-            #the only encoding that can do higher bit depth at present
             return "rgb32"
         if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2:
             return "webp"
@@ -1016,7 +1016,7 @@ class WindowSource(WindowIconSource):
             #the only encoding that can do higher bit depth at present
             #(typically r210 which is actually rgb30+2)
             return "rgb32"
-        if "png" in co and (not lossy or depth<=16 or (quality>=90 and speed<60)):
+        if "png" in co and (not lossy or depth<=16):
             return "png"
         if jpeg:
             return "jpeg"
@@ -1214,13 +1214,16 @@ class WindowSource(WindowIconSource):
         self.global_statistics.speed.append((now, ww*wh, speed))
 
     def set_min_speed(self, min_speed):
+        min_speed = capr(min_speed)
         if self._fixed_min_speed!=min_speed:
             self._fixed_min_speed = min_speed
             self.reconfigure(True)
 
     def set_speed(self, speed):
-        if self._fixed_speed != speed:
+        speed = capr(speed)
+        if self._fixed_speed!=speed:
             self._fixed_speed = speed
+            self._current_speed = speed
             self.reconfigure(True)
 
 
@@ -1283,14 +1286,15 @@ class WindowSource(WindowIconSource):
 
     def set_min_quality(self, min_quality):
         if self._fixed_min_quality!=min_quality:
-            self._fixed_min_quality = min_quality
+            self._fixed_min_quality = capr(min_quality)
             self.update_quality()
             self.reconfigure(True)
 
     def set_quality(self, quality):
+        quality = capr(quality)
         if self._fixed_quality!=quality:
             self._fixed_quality = quality
-            self._current_quality = quality
+            self._current_quality = self._fixed_quality
             self.reconfigure(True)
 
 
@@ -1735,23 +1739,29 @@ class WindowSource(WindowIconSource):
         packets_backlog = None
         speed = options.get("speed", 0)
         if speed==0:
-            speed = self._current_speed
-            if packets_backlog is None:
-                packets_backlog = self.get_packets_backlog()
-            speed = min(100, max(1, self._fixed_min_speed, speed-packets_backlog*20+speed_delta))
+            if self._fixed_speed>0:
+                speed = self._fixed_speed
+            else:
+                speed = self._current_speed
+                if packets_backlog is None:
+                    packets_backlog = self.get_packets_backlog()
+                speed = min(100, max(1, self._fixed_min_speed, speed-packets_backlog*20+speed_delta))
         quality = options.get("quality", 0)
         if quality==0:
-            quality = self._current_quality
-            if packets_backlog is None:
-                packets_backlog = self.get_packets_backlog()
-            now = monotonic()
-            if not packets_backlog:
-                #if we haven't sent any packets for a while,
-                #chances are that we can raise the quality,
-                #at least for the first packet:
-                elapsed = now-self.statistics.last_packet_time
-                quality += int(elapsed*25)
-            quality = min(100, max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta))
+            if self._fixed_quality>0:
+                quality = self._fixed_quality
+            else:
+                quality = self._current_quality
+                if packets_backlog is None:
+                    packets_backlog = self.get_packets_backlog()
+                now = monotonic()
+                if not packets_backlog:
+                    #if we haven't sent any packets for a while,
+                    #chances are that we can raise the quality,
+                    #at least for the first packet:
+                    elapsed = now-self.statistics.last_packet_time
+                    quality += int(elapsed*25)
+                quality = min(100, max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta))
         eoptions = dict(options)
         eoptions["quality"] = quality
         eoptions["speed"] = speed
@@ -1765,7 +1775,7 @@ class WindowSource(WindowIconSource):
         def get_encoding(w, h):
             speed = options.get("speed", 0)
             quality = options.get("quality", 0)
-            if quality<100:
+            if quality<100 and self._fixed_quality<=0:
                 lossless_q = self._lossless_threshold_base + self._lossless_threshold_pixel_boost * w*h // (ww*wh)
                 if quality>=lossless_q:
                     quality = 100
@@ -2579,7 +2589,7 @@ class WindowSource(WindowIconSource):
             log("cannot downscale: %s", e)
             return self.pillow_encode(coding, image, options), image
         #no point in using high quality or lossless when downscaling:
-        if q>80:
+        if q>80 and self._fixed_quality<=0:
             options["quality"] = 80
         crsw, crsh = self.client_render_size
         ww, wh = self.window_dimensions
