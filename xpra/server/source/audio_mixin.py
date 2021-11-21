@@ -240,6 +240,7 @@ class AudioMixin(StubSourceMixin):
             self.send_eos(ss.codec, ss.sequence)
             self.sound_source_sequence += 1
             ss.cleanup()
+        self.call_update_av_sync_delay()
 
     def send_eos(self, codec, sequence=0):
         log("send_eos(%s, %s)", codec, sequence)
@@ -295,13 +296,19 @@ class AudioMixin(StubSourceMixin):
                    "codec"              : codec,
                    "sequence"           : sound_source.sequence,
                    })
+        self.call_update_av_sync_delay()
+        #run it again after 10 seconds,
+        #by that point the source info will actually be populated:
+        from gi.repository import GLib
+        GLib.timeout_add(10*1000, self.call_update_av_sync_delay)
+
+    def call_update_av_sync_delay(self):
+        #loose coupling with avsync mixin:
         update_av_sync = getattr(self, "update_av_sync_delay_total", None)
-        if update_av_sync:
+        log.warn("call_update_av_sync_delay update_av_sync=%s", update_av_sync)
+        if callable(update_av_sync):
             update_av_sync()  #pylint: disable=not-callable
-            #run it again after 10 seconds,
-            #by that point the source info will actually be populated:
-            from gi.repository import GLib
-            GLib.timeout_add(10*1000, update_av_sync)
+
 
     def new_sound_buffer(self, sound_source, data, metadata, packet_metadata=None):
         log("new_sound_buffer(%s, %s, %s, %s) info=%s",

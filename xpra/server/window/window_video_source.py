@@ -884,6 +884,8 @@ class WindowVideoSource(WindowSource):
         return True
 
     def get_frame_encode_delay(self, options):
+        if not self.av_sync:
+            return 0
         if FORCE_AV_DELAY>=0:
             return FORCE_AV_DELAY
         content_type = options.get("content-type", self.content_type)

@@ -69,7 +69,8 @@ class AVSyncMixin(StubSourceMixin):
         self.update_av_sync_delay_total()
 
     def update_av_sync_delay_total(self):
-        if self.av_sync:
+        enabled = self.av_sync and bool(self.sound_source)
+        if enabled:
             encoder_latency = self.get_sound_source_latency()
             self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + self.av_sync_delta + encoder_latency))
             log("av-sync set to %ims (from client queue latency=%s, encoder latency=%s, delta=%s)",
@@ -78,7 +79,9 @@ class AVSyncMixin(StubSourceMixin):
             log("av-sync support is disabled, setting it to 0")
             self.av_sync_delay_total = 0
         for ws in self.window_sources.values():
+            ws.set_av_sync(enabled)
             ws.set_av_sync_delay(self.av_sync_delay_total)
+            ws.may_update_av_sync_delay()
 
 
     ##########################################################################

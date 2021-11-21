@@ -737,9 +737,11 @@ class WindowSource(WindowIconSource):
         self.auto_refresh_delay = d
         self.update_refresh_attributes()
 
+    def set_av_sync(self, av_sync):
+        self.av_sync = av_sync
+
     def set_av_sync_delay(self, new_delay):
         self.av_sync_delay_base = new_delay
-        self.may_update_av_sync_delay()
 
     def may_update_av_sync_delay(self):
         #set the target then schedule a timer to gradually
@@ -752,6 +754,8 @@ class WindowSource(WindowIconSource):
     def schedule_av_sync_update(self, delay=0):
         avsynclog("schedule_av_sync_update(%i) wid=%i, delay=%i, target=%i, timer=%s",
                   delay, self.wid, self.av_sync_delay, self.av_sync_delay_target, self.av_sync_timer)
+        if self.av_sync_timer:
+            return
         if not self.av_sync:
             self.av_sync_delay = 0
             return
