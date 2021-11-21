@@ -363,7 +363,8 @@ class AudioMixin(StubSourceMixin):
                 log.warn(msg)
                 return msg
             if sequence!=self.sound_source_sequence:
-                log.warn("sound sequence mismatch: %i vs %i", sequence, self.sound_source_sequence)
+                log.warn("Warning: sound sequence mismatch: %i vs %i",
+                         sequence, self.sound_source_sequence)
                 return "not stopped"
             log("stop: sequence number matches")
         self.stop_sending_sound()
@@ -462,7 +463,7 @@ class AudioMixin(StubSourceMixin):
             try:
                 def sound_sink_error(*args):
                     log("sound_sink_error%s", args)
-                    log.warn("stopping sound input because of error")
+                    log.warn("Warning: stopping sound input because of an error")
                     self.stop_receiving_sound()
                 from xpra.sound.wrapper import start_receiving_sound
                 ss = start_receiving_sound(codec)
@@ -474,7 +475,7 @@ class AudioMixin(StubSourceMixin):
                 ss.start()
                 log("sound_data(..) sound sink started")
             except Exception:
-                log.error("failed to setup sound", exc_info=True)
+                log.error("Error: failed to start receiving %r", codec, exc_info=True)
                 return
         self.sound_sink.add_data(data, metadata, packet_metadata)
 
