@@ -940,8 +940,9 @@ cdef class Encoder:
                 #"quality"   : max(0, min(100, quality)),
                 #"speed"     : max(0, min(100, speed)),
                 "csc"       : self.csc_format,
-                "type"      : slice_type,
                 }
+        if slice_type!="P":
+            client_options["type"] = slice_type
         if self.delayed_frames>0:
             client_options["delayed"] = self.delayed_frames
         if self.export_nals:
