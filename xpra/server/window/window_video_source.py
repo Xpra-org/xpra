@@ -2019,32 +2019,6 @@ class WindowVideoSource(WindowSource):
         super().do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
 
-    def get_fallback_encoding(self, encodings, order):
-        if order is None:
-            if self._current_speed>=50:
-                order = FAST_ORDER
-            else:
-                order = PREFERRED_ENCODING_ORDER
-        #don't choose mmap!
-        fallback_encodings = tuple(x for x in order if
-                                   (x in encodings and x in self._encoders and x!="mmap"))
-        depth = self.image_depth
-        if depth==8 and "png/P" in fallback_encodings:
-            return "png/P"
-        if depth==30 and "rgb32" in fallback_encodings:
-            return "rgb32"
-        if depth not in (24, 32):
-            #jpeg cannot handle other bit depths
-            fallback_encodings = tuple(x for x in fallback_encodings if x!="jpeg")
-        if not fallback_encodings:
-            if not self.is_cancelled():
-                log.warn("Warning: no non-video fallback encodings are available!")
-            return None
-        return fallback_encodings[0]
-
-    def get_video_fallback_encoding(self, order=FAST_ORDER):
-        return self.get_fallback_encoding(self.non_video_encodings, order)
-
     def video_fallback(self, image, options, warn=False):
         if warn and first_time("non-video-%i" % self.wid):
             videolog.warn("Warning: using non-video fallback encoding")
