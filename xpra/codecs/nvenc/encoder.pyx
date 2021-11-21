@@ -2630,11 +2630,9 @@ cdef class Encoder:
                     "csc"       : self.src_format,
                     "frame"     : int(self.frames),
                     "pts"       : int(timestamp-self.first_frame_timestamp),
-                    "speed"     : self.speed,
                     }
         if self.lossless:
             client_options["quality"] = 100
-            client_options["lossless"] = True
         else:
             client_options["quality"] = min(99, self.quality)   #ensure we cap it at 99 because this is lossy
         if self.scaling!=(1,1):
