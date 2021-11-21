@@ -163,7 +163,6 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
         if coding=="jpeg" and speed<50:
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
-            client_options["optimize"] = True
         elif coding=="webp" and q>=100:
             kwargs["lossless"] = 1
         pil_fmt = coding.upper()
@@ -206,7 +205,6 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
         if speed==0:
             #optimizing png is very rarely worth doing
             kwargs["optimize"] = True
-            client_options["optimize"] = True
         #level can range from 0 to 9, but anything above 5 is way too slow for small gains:
         #76-100   -> 1
         #51-76    -> 2
