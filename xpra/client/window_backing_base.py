@@ -639,12 +639,7 @@ class WindowBackingBase:
                 fire_paint_callbacks(callbacks, -1, message)
                 return
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
-            input_colorspace = options.strget("csc")
-            if not input_colorspace:
-                message = "csc mode is missing from the video options!"
-                log.error(message)
-                fire_paint_callbacks(callbacks, False, message)
-                return
+            input_colorspace = options.strget("csc", "YUV420P")
             #do we need a prep step for decoders that cannot handle the input_colorspace directly?
             decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
             assert input_colorspace in decoder_colorspaces, "decoder %s does not support %s for %s" % (
