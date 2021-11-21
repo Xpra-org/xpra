@@ -143,7 +143,7 @@ class WindowVideoSource(WindowSource):
         self.video_encodings = tuple(x for x in self.video_helper.get_encodings() if x in self.server_core_encodings)
         video_enabled = []
         for x in self.video_encodings:
-            self.add_encoder(x, self.video_encode)
+            self.append_encoder(x, self.video_encode)
             video_enabled.append(x)
         #video_encode() is used for more than just video encoders:
         #(always enable it and let it fall through)

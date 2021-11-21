@@ -321,6 +321,12 @@ class WindowSource(WindowIconSource):
         self._all_encoders.setdefault(encoding, []).insert(0, encoder)
         self._encoders[encoding] = encoder
 
+    def append_encoder(self, encoding, encoder):
+        log("append_encoder(%s, %s)", encoding, encoder)
+        self._all_encoders.setdefault(encoding, []).append(encoder)
+        if encoding not in self._encoders:
+            self._encoders[encoding] = encoder
+
     def init_encoders(self):
         self._all_encoders = {}
         self._encoders = {}
