@@ -150,7 +150,7 @@ def encode(coding : str, image, quality : int, speed : int, supports_transparenc
         client_options["resample"] = resample
     if coding in ("jpeg", "webp"):
         #newer versions of pillow require explicit conversion to non-alpha:
-        if pixel_format.find("A")>=0:
+        if pixel_format.find("A")>=0 and coding=="jpeg":
             im = im.convert("RGB")
         q = int(min(100, max(1, quality)))
         kwargs = im.info
