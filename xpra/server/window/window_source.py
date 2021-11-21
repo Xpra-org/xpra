@@ -1949,8 +1949,7 @@ class WindowSource(WindowIconSource):
             log("make_data_packet%s", (damage_time, process_damage_time, image, coding, sequence, options, flush),
                 exc_info=True)
             if not self.is_cancelled(sequence):
-                log.error("Error: failed to create data packet")
-                log.error(" %s", e)
+                log.error("Error: failed to create data packet", exc_info=True)
             packet = None
         finally:
             self.free_image_wrapper(image)
