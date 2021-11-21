@@ -2052,7 +2052,7 @@ class WindowVideoSource(WindowSource):
         h = image.get_height()
         speed = options.get("speed", self._current_speed)
         quality = options.get("quality", self._current_quality)
-        encoding = self.get_auto_encoding(w, h, speed, quality)
+        encoding = self.do_get_auto_encoding(w, h, speed, quality, None, self.non_video_encodings)
         if not encoding:
             return None
         encode_fn = self._encoders[encoding]
