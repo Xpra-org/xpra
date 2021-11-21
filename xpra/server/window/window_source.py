@@ -73,7 +73,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
 SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
-
+FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
 INFINITY = float("inf")
@@ -2557,7 +2557,7 @@ class WindowSource(WindowIconSource):
         return self.enc_jpeg.encode(image, q, s)
 
     def may_scale(self, coding, image, options):
-        if self.encoding=="grayscale":
+        if self.encoding=="grayscale" or FORCE_PILLOW:
             #only pillow can do grayscale at the moment:
             return self.pillow_encode(coding, image, options), image
         #now check for downscaling:
@@ -2601,7 +2601,7 @@ class WindowSource(WindowIconSource):
         h = image.get_height()
         if w<16 or h<16:
             return fallback("image size %ix%i is too small" % (w, h))
-        NVJPEG_INPUT_FORMATS = ("RGB", "BGR" )
+        NVJPEG_INPUT_FORMATS = ("RGB", "BGR")
         self.no_r210(image, NVJPEG_INPUT_FORMATS)
         pixel_format = image.get_pixel_format()
         if pixel_format not in NVJPEG_INPUT_FORMATS and not argb_swap(image, NVJPEG_INPUT_FORMATS):
