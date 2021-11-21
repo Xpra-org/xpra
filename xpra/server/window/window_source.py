@@ -2162,16 +2162,11 @@ class WindowSource(WindowIconSource):
 
     def get_refresh_encoding(self, w, h, speed, quality, coding):
         refresh_encodings = self.auto_refresh_encodings
-        encoding = refresh_encodings[0]
-        if self.refresh_quality<100 and self.image_depth in (24, 32):
-            for x in ("jpeg", "webp"):
-                if x in self.auto_refresh_encodings:
-                    return x
-        best_encoding = self.get_best_encoding(w, h, self.refresh_speed, self.refresh_quality, encoding)
-        if best_encoding not in refresh_encodings:
-            best_encoding = refresh_encodings[0]
-        refreshlog("get_refresh_encoding(%i, %i, %i, %i, %s)=%s", w, h, speed, quality, coding, best_encoding)
-        return best_encoding
+        encoding = self.do_get_auto_encoding(w, h,
+                                             self.refresh_speed, self.refresh_quality,
+                                             refresh_encodings[0], refresh_encodings)
+        refreshlog("get_refresh_encoding(%i, %i, %i, %i, %s)=%s", w, h, speed, quality, coding, encoding)
+        return encoding
 
     def get_refresh_exclude(self):
         #overriden in window video source to exclude the video subregion
