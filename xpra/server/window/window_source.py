@@ -929,7 +929,7 @@ class WindowSource(WindowIconSource):
         if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2:
             return "webp"
         for x in TRANSPARENCY_ENCODINGS:
-            if x in self.common_encodings:
+            if x in co and x!="webp":
                 return x
         #so we don't have an encoding that does transparency...
         return self.get_auto_encoding(w, h, speed, quality)
