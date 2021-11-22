@@ -419,7 +419,7 @@ def encode(coding, image, int quality=50, int speed=50,
         raise Exception("failed to set webp preset")
 
     #tune it:
-    config.lossless = quality==100
+    config.lossless = quality>=100
     if config.lossless:
         #not much to gain from setting a high quality here,
         #the latency will be higher for a negligible compression gain:
