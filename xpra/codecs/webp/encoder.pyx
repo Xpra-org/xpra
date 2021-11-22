@@ -396,11 +396,7 @@ def encode(coding, image, int quality=50, int speed=50,
         raise Exception("this image is too big for webp: %ix%i" % (width, height))
     pixels = image.get_pixels()
     cdef int alpha_int = supports_alpha and pixel_format.find("A")>=0
-    #we can only use YUV420P subsampling if we are 100% certain
-    #that the RGB pixel data contains a valid alpha component
-    #because WebPPictureARGBToYUVA will set the alpha channel if it finds ANY value
-    #and we can't specify the rowstride, so it has to be a multiple already:
-    cdef int use_argb = True    #quality>=SUBSAMPLING_THRESHOLD or pixel_format!="BGRA" or stride!=Bpp*width
+    cdef int yuv420p = quality<SUBSAMPLING_THRESHOLD
 
     cdef WebPConfig config
     cdef WebPPreset preset = DEFAULT_PRESET
@@ -485,27 +481,26 @@ def encode(coding, image, int quality=50, int speed=50,
         src = <const uint8_t*> (<uintptr_t> int(bc))
 
         #import the pixel data into WebPPicture
-        if use_argb:
-            if pixel_format=="RGB":
-                ret = WebPPictureImportRGB(&pic, src, stride)
-            elif pixel_format=="BGR":
-                ret = WebPPictureImportBGR(&pic, src, stride)
-            elif pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
-                ret = WebPPictureImportRGBX(&pic, src, stride)
-            elif pixel_format=="RGBA":
-                ret = WebPPictureImportRGBA(&pic, src, stride)
-            elif pixel_format=="BGRX" or (pixel_format=="BGRA" and not supports_alpha):
-                ret = WebPPictureImportBGRX(&pic, src, stride)
-            else:
-                assert pixel_format=="BGRA"
-                ret = WebPPictureImportBGRA(&pic, src, stride)
+        if pixel_format=="RGB":
+            ret = WebPPictureImportRGB(&pic, src, stride)
+        elif pixel_format=="BGR":
+            ret = WebPPictureImportBGR(&pic, src, stride)
+        elif pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
+            ret = WebPPictureImportRGBX(&pic, src, stride)
+        elif pixel_format=="RGBA":
+            ret = WebPPictureImportRGBA(&pic, src, stride)
+        elif pixel_format=="BGRX" or (pixel_format=="BGRA" and not supports_alpha):
+            ret = WebPPictureImportBGRX(&pic, src, stride)
         else:
-            pic.argb = <uint32_t*> src
-            if WebPPictureARGBToYUVA(&pic, WEBP_YUV420):
-                client_options["subsampling"] = "YUV420P"
+            assert pixel_format=="BGRA"
+            ret = WebPPictureImportBGRA(&pic, src, stride)
     if not ret:
         WebPPictureFree(&pic)
         raise Exception("WebP importing image failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
+
+    if yuv420p:
+        if WebPPictureARGBToYUVA(&pic, WEBP_YUV420):
+            client_options["subsampling"] = "YUV420P"
 
     cdef WebPMemoryWriter memory_writer
     memset(&memory_writer, 0, sizeof(WebPMemoryWriter))
