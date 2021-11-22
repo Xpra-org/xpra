@@ -519,7 +519,7 @@ cdef class ColorspaceConverter:
         cdef unsigned unsigned int r210
         cdef unsigned char R, G, B
         cdef unsigned short Rsum, Gsum, Bsum
-        cdef unsigned char sum, dx, dy
+        cdef unsigned char count, dx, dy
 
         self.validate_rgb_image(image)
         pixels = image.get_pixels()
@@ -558,7 +558,7 @@ cdef class ColorspaceConverter:
                 for y in range(workh):
                     for x in range(workw):
                         Rsum = Gsum = Bsum = 0
-                        sum = 0
+                        count = 0
                         for dy in range(2):
                             oy = y*2 + dy
                             if oy>=dst_height:
@@ -576,20 +576,20 @@ cdef class ColorspaceConverter:
                                 R = (r210&0x000003ff) >> 2
                                 o = oy*Ystride + ox
                                 Y[o] = clamp(YR * R + YG * G + YB * B + YC)
-                                sum += 1
+                                count += 1
                                 Rsum += R
                                 Gsum += G
                                 Bsum += B
                         #write 1U and 1V:
-                        if sum>0:
-                            U[y*Ustride + x] = clamp(UR * Rsum//sum + UG * Gsum//sum + UB * Bsum//sum + UC)
-                            V[y*Vstride + x] = clamp(VR * Rsum//sum + VG * Gsum//sum + VB * Bsum//sum + VC)
+                        if count>0:
+                            U[y*Ustride + x] = clamp(UR * Rsum//count + UG * Gsum//count + UB * Bsum//count + UC)
+                            V[y*Vstride + x] = clamp(VR * Rsum//count + VG * Gsum//count + VB * Bsum//count + VC)
         else:
             with nogil:
                 for y in range(workh):
                     for x in range(workw):
                         Rsum = Gsum = Bsum = 0
-                        sum = 0
+                        count = 0
                         for dy in range(2):
                             oy = y*2 + dy
                             if oy>=dst_height:
@@ -606,15 +606,15 @@ cdef class ColorspaceConverter:
                                 B = input_image[o + Bindex]
                                 o = oy*Ystride + ox
                                 Y[o] = clamp(YR * R + YG * G + YB * B + YC)
-                                sum += 1
+                                count += 1
                                 Rsum += R
                                 Gsum += G
                                 Bsum += B
                         #write 1U and 1V:
-                        if sum>0:
-                            Rsum /= sum
-                            Gsum /= sum
-                            Bsum /= sum
+                        if count>0:
+                            Rsum /= count
+                            Gsum /= count
+                            Bsum /= count
                             U[y*Ustride + x] = clamp(UR * Rsum + UG * Gsum + UB * Bsum + UC)
                             V[y*Vstride + x] = clamp(VR * Rsum + VG * Gsum + VB * Bsum + VC)
         PyBuffer_Release(&py_buf)
