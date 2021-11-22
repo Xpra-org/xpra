@@ -435,7 +435,7 @@ def getVideoHelper():
 
 
 def main():
-    from xpra.codecs.loader import log as loader_log, load_codecs
+    from xpra.codecs.loader import log as loader_log, load_codecs, show_codecs
     from xpra.util import print_nested_dict
     from xpra.log import enable_color
     from xpra.platform import program_context
@@ -445,6 +445,7 @@ def main():
             loader_log.enable_debug()
             log.enable_debug()
         load_codecs()
+        show_codecs()
         vh = getVideoHelper()
         vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
         vh.init()

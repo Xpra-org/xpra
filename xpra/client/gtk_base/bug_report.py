@@ -93,8 +93,9 @@ class BugReport:
         ibox.pack_start(al)
         #generic toggles:
         from xpra.gtk_common.keymap import get_gtk_keymap
-        from xpra.codecs.loader import codec_versions, load_codecs
+        from xpra.codecs.loader import codec_versions, load_codecs, show_codecs
         load_codecs()
+        show_codecs()
         try:
             from xpra.sound.wrapper import query_sound
             def get_sound_info():

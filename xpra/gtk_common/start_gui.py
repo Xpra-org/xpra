@@ -286,8 +286,9 @@ class StartSession(Gtk.Window):
         vh.set_modules(video_decoders=self.session_options.video_decoders,
                        csc_modules=self.session_options.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()
-        from xpra.codecs.loader import load_codecs  #pylint: disable=import-outside-toplevel
+        from xpra.codecs.loader import load_codecs, show_codecs  #pylint: disable=import-outside-toplevel
         load_codecs()
+        show_codecs()
         log("load_codecs() done")
 
 

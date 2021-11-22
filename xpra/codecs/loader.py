@@ -185,7 +185,6 @@ def load_codec(name):
 
 
 def load_codecs(encoders=True, decoders=True, csc=True, video=True):
-    show = []
     log("loading codecs")
 
     def load(*names):
@@ -193,29 +192,24 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True):
             load_codec(name)
 
     if encoders:
-        show += list(ENCODER_CODECS)
         load(*ENCODER_CODECS)
         if video:
-            show += list(ENCODER_VIDEO_CODECS)
             load(*ENCODER_VIDEO_CODECS)
     if csc and video:
-        show += list(CSC_CODECS)
         load(*CSC_CODECS)
     if decoders:
-        show += list(DECODER_CODECS)
         load(*DECODER_CODECS)
         if video:
-            show += list(DECODER_VIDEO_CODECS)
             load(*DECODER_VIDEO_CODECS)
     log("done loading codecs")
-    show_codecs()
 
-def show_codecs():
+def show_codecs(show=None):
     #print("codec_status=%s" % codecs)
-    for name in sorted(ALL_CODECS):
+    for name in sorted(show or ALL_CODECS):
         log("* %s : %s %s" % (name.ljust(20), str(name in codecs).ljust(10), codecs.get(name, "")))
     log("codecs versions:")
-    for name, version in codec_versions.items():
+    for name in (show or codec_versions.keys()):
+        version = codec_versions.get(name, "")
         log("* %s : %s" % (name.ljust(20), version))
 
 
