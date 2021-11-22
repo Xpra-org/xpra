@@ -52,8 +52,8 @@ def main(argv):
                         sizes.append(len(cdata))
                     end = monotonic()
                     if not warmup:
-                        cratio = w*h*len(pixel_format) * N / sum(sizes)
-                        mps = w*h*len(pixel_format) / (end-start)
+                        cratio = 100*sum(sizes) / (w*h*len(pixel_format) * N)
+                        mps = (w*h*N) / (end-start)
                         print("%-16s : %3i%%    -    %i MPixels/s" % (e, cratio, mps//1024//1024))
 
 if __name__ == '__main__':
