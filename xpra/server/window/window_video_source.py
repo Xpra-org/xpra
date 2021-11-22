@@ -2155,7 +2155,8 @@ class WindowVideoSource(WindowSource):
             videolog("%s.compress_image%s", ve, (csc_image, quality, speed, options), exc_info=True)
             if self.is_cancelled():
                 return None
-            videolog.error("Error: failed to encode %s video frame using %s:", ve.get_encoding(), ve.get_type())
+            videolog.error("Error: failed to encode %s frame", ve.get_encoding())
+            videolog.error(" using %s video encoder:", ve.get_type())
             videolog.error(" %s", e)
             videolog.error(" source: %s", csc_image)
             videolog.error(" options:")
