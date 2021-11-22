@@ -121,7 +121,7 @@ cdef extern from "webp/decode.h":
 
     int WebPInitDecoderConfig(WebPDecoderConfig* config)
     VP8StatusCode WebPDecode(const uint8_t* data, size_t data_size,
-                                      WebPDecoderConfig* config)
+                                      WebPDecoderConfig* config) nogil
     void WebPFreeDecBuffer(WebPDecBuffer* buffer)
 
 
@@ -235,7 +235,8 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     with buffer_context(data) as bc:
         data_len = len(bc)
         data_buf = <const uint8_t*> (<uintptr_t> int(bc))
-        ret = WebPDecode(data_buf, data_len, &config)
+        with nogil:
+            ret = WebPDecode(data_buf, data_len, &config)
     webp_check(ret)
     #we use external memory, so this is not needed:
     #WebPFreeDecBuffer(&config.output)
@@ -299,7 +300,8 @@ def decompress_yuv(data, has_alpha=False):
     with buffer_context(data) as bc:
         data_len = len(bc)
         data_buf = <const uint8_t*> (<uintptr_t> int(bc))
-        ret = WebPDecode(data_buf, data_len, &config)
+        with nogil:
+            ret = WebPDecode(data_buf, data_len, &config)
     webp_check(ret)
     if alpha:
         planes = (
