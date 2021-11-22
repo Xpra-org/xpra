@@ -187,9 +187,14 @@ def load_codec(name):
 def load_codecs(encoders=True, decoders=True, csc=True, video=True):
     log("loading codecs")
 
+    loaded = []
     def load(*names):
         for name in names:
+            if has_codec(name):
+                continue
             load_codec(name)
+            if has_codec(name) and name not in loaded:
+                loaded.append(name)
 
     if encoders:
         load(*ENCODER_CODECS)
@@ -201,7 +206,8 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True):
         load(*DECODER_CODECS)
         if video:
             load(*DECODER_VIDEO_CODECS)
-    log("done loading codecs")
+    log("done loading codecs: %s", loaded)
+    return loaded
 
 def show_codecs(show=None):
     #print("codec_status=%s" % codecs)
