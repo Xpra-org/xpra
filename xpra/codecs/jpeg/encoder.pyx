@@ -324,7 +324,6 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int speed):
             src[i] = <const unsigned char *> (<uintptr_t> int(bc))
             if src[i]==NULL:
                 raise ValueError("missing plane %s from context %s" % ("YUV"[i], bc))
-            strides[i] = stride[i]
         log("jpeg.encode_yuv with subsampling=%s for pixel format=%s with quality=%s",
             TJSAMP_STR.get(subsamp, subsamp), pfstr, quality)
         with nogil:
