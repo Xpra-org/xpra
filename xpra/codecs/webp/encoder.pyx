@@ -266,6 +266,12 @@ cdef extern from "webp/encode.h":
     # another is provided but they both incur some loss.
     int WebPEncode(const WebPConfig* config, WebPPicture* picture) nogil
 
+    #  Rescale a picture to new dimension width x height.
+    # If either 'width' or 'height' (but not both) is 0 the corresponding
+    # dimension will be calculated preserving the aspect ratio.
+    # No gamma correction is applied.
+    # Returns false in case of error (invalid parameter or insufficient memory).
+    int WebPPictureRescale(WebPPicture* pic, int width, int height) nogil
 
 
 ERROR_TO_NAME = {
@@ -381,7 +387,8 @@ cdef get_config_info(WebPConfig *config):
 
 def encode(coding, image, int quality=50, int speed=50,
            supports_alpha=False,
-           content_type=""):
+           content_type="",
+           resize=None):
     assert coding=="webp"
     log("webp.encode(%s, %i, %i, %s, %s)", image, quality, speed, supports_alpha, content_type)
     pixel_format = image.get_pixel_format()
@@ -502,6 +509,18 @@ def encode(coding, image, int quality=50, int speed=50,
         raise Exception("WebP importing image failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
     end = monotonic()
     log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
+
+    cdef int scaled_width, scaled_height
+    if resize:
+        scaled_width, scaled_height = resize
+        start = monotonic()
+        with nogil:
+            ret = WebPPictureRescale(&pic, scaled_width, scaled_height)
+        if not ret:
+            WebPPictureFree(&pic)
+            raise Exception("WebP failed to resize %s to %s" % (image, resize))
+        end = monotonic()
+        log("webp %s resizing took %.1fms", 1000*(end-start))
 
     if yuv420p:
         start = monotonic()
