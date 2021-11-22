@@ -5,12 +5,14 @@
 # later version. See the file COPYING for details.
 
 import sys
+from math import ceil
 from time import monotonic
 
 from xpra.util import csv
 from xpra.codecs.image_wrapper import ImageWrapper
 
 N = 10
+Q = (1, 10, 50, 99, 100)
 
 def main(argv):
     assert len(argv)>1, "specify images to benchmark"
@@ -36,25 +38,29 @@ def main(argv):
         print()
         print("%s : %s : %s" % (f, img, image))
         for warmup in (True, False):
-            for codec in loaded:
-                mod = get_codec(codec)
-                encodings = mod.get_encodings()
+            speed = 50
+            for quality in Q:
                 if not warmup:
-                    print("%s : %s" % (codec, csv(encodings)))
-                #print("%s" % (dir(mod), ))
-                for e in encodings:
-                    start = monotonic()
-                    sizes = []
-                    n = 1 if warmup else N
-                    for _ in range(n):
-                        r = mod.encode(e, image)
-                        cdata = r[1]
-                        sizes.append(len(cdata))
-                    end = monotonic()
+                    print("quality = %i" % quality)
+                for codec in loaded:
+                    mod = get_codec(codec)
+                    encodings = mod.get_encodings()
                     if not warmup:
-                        cratio = 100*sum(sizes) / (w*h*len(pixel_format) * N)
-                        mps = (w*h*N) / (end-start)
-                        print("%-16s : %3i%%    -    %i MPixels/s" % (e, cratio, mps//1024//1024))
+                        print("  %s" % codec)
+                    #print("%s" % (dir(mod), ))
+                    for e in encodings:
+                        start = monotonic()
+                        sizes = []
+                        n = 1 if warmup else N
+                        for _ in range(n):
+                            r = mod.encode(e, image, quality, speed)
+                            cdata = r[1]
+                            sizes.append(len(cdata))
+                        end = monotonic()
+                        if not warmup:
+                            cratio = ceil(100*sum(sizes) / (w*h*len(pixel_format) * N))
+                            mps = (w*h*N) / (end-start)
+                            print("    %-16s : %3i%%    -    %i MPixels/s" % (e, cratio, mps//1024//1024))
 
 if __name__ == '__main__':
     main(sys.argv)
