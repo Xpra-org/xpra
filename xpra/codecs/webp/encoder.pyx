@@ -234,7 +234,7 @@ cdef extern from "webp/encode.h":
     # non-opaque transparent values is detected, and 'colorspace' will be
     # adjusted accordingly. Note that this method is lossy.
     # Returns false in case of error.
-    int WebPPictureARGBToYUVA(WebPPicture* picture, WebPEncCSP colorspace)
+    int WebPPictureARGBToYUVA(WebPPicture* picture, WebPEncCSP colorspace) nogil
 
     # Converts picture->yuv to picture->argb and sets picture->use_argb to true.
     # The input format must be YUV_420 or YUV_420A.
@@ -264,7 +264,7 @@ cdef extern from "webp/encode.h":
     # the former for lossy encoding, and the latter for lossless encoding
     # (when config.lossless is true). Automatic conversion from one format to
     # another is provided but they both incur some loss.
-    int WebPEncode(const WebPConfig* config, WebPPicture* picture)
+    int WebPEncode(const WebPConfig* config, WebPPicture* picture) nogil
 
 
 ERROR_TO_NAME = {
@@ -499,8 +499,11 @@ def encode(coding, image, int quality=50, int speed=50,
         raise Exception("WebP importing image failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
 
     if yuv420p:
-        if WebPPictureARGBToYUVA(&pic, WEBP_YUV420):
-            client_options["subsampling"] = "YUV420P"
+        with nogil:
+            ret = WebPPictureARGBToYUVA(&pic, WEBP_YUV420)
+        if not ret:
+            raise Exception("WebPPictureARGBToYUVA failed for %s" % image)
+        client_options["subsampling"] = "YUV420P"
 
     cdef WebPMemoryWriter memory_writer
     memset(&memory_writer, 0, sizeof(WebPMemoryWriter))
@@ -509,7 +512,8 @@ def encode(coding, image, int quality=50, int speed=50,
         WebPMemoryWriterInit(&memory_writer)
         pic.writer = <WebPWriterFunction> WebPMemoryWrite
         pic.custom_ptr = <void*> &memory_writer
-        ret = WebPEncode(&config, &pic)
+        with nogil:
+            ret = WebPEncode(&config, &pic)
         if not ret:
             raise Exception("WebPEncode failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
 
@@ -529,7 +533,7 @@ def encode(coding, image, int quality=50, int speed=50,
     if LOG_CONFIG>0:
         log("webp.compress used config: %s", get_config_info(&config))
     if SAVE_TO_FILE:    # pragma: no cover
-        filename = "./%s.webp" % time.time()
+        filename = "./%s.webp" % time()
         with open(filename, "wb") as f:
             f.write(cdata)
         log.info("saved %i bytes to %s", len(cdata), filename)
