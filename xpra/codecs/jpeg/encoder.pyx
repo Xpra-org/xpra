@@ -157,6 +157,8 @@ cdef class Encoder:
         self.height = height
         self.src_format = src_format
         self.scaling = scaling
+        self.quality = quality
+        self.speed = speed
 
     def is_ready(self):
         return self.compressor!=NULL
@@ -199,6 +201,14 @@ cdef class Encoder:
         return info
 
     def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
+        if quality>0:
+            self.quality = quality
+        else:
+            quality = self.quality
+        if speed>0:
+            self.speed = speed
+        else:
+            speed = self.speed
         pfstr = bytestostr(image.get_pixel_format())
         if pfstr in ("YUV420P", "YUV422P", "YUV444P"):
             cdata = encode_yuv(self.compressor, image, quality, speed)
