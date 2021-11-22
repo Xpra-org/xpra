@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-import time
+from time import monotonic, time
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t   #pylint: disable=syntax-error
 from libc.stdlib cimport free   #pylint: disable=syntax-error
@@ -267,6 +267,7 @@ cdef extern from "webp/encode.h":
     int WebPEncode(const WebPConfig* config, WebPPicture* picture) nogil
 
 
+
 ERROR_TO_NAME = {
 #VP8_ENC_OK
     VP8_ENC_ERROR_OUT_OF_MEMORY             : "memory error allocating objects",
@@ -474,6 +475,8 @@ def encode(coding, image, int quality=50, int speed=50,
     pic.use_argb = 1
     pic.argb_stride = stride//Bpp
 
+    cdef double start = monotonic()
+    cdef double end
     cdef const uint8_t* src
     with buffer_context(pixels) as bc:
         log("webp.compress(%s, %i, %i, %s, %s) buf=%#x", image, width, height, supports_alpha, content_type, <uintptr_t> int(bc))
@@ -497,12 +500,17 @@ def encode(coding, image, int quality=50, int speed=50,
     if not ret:
         WebPPictureFree(&pic)
         raise Exception("WebP importing image failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
+    end = monotonic()
+    log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
 
     if yuv420p:
+        start = monotonic()
         with nogil:
             ret = WebPPictureARGBToYUVA(&pic, WEBP_YUV420)
         if not ret:
             raise Exception("WebPPictureARGBToYUVA failed for %s" % image)
+        end = monotonic()
+        log("webp YUVA subsampling took %.1fms", 1000*(end-start))
         client_options["subsampling"] = "YUV420P"
 
     cdef WebPMemoryWriter memory_writer
@@ -512,10 +520,13 @@ def encode(coding, image, int quality=50, int speed=50,
         WebPMemoryWriterInit(&memory_writer)
         pic.writer = <WebPWriterFunction> WebPMemoryWrite
         pic.custom_ptr = <void*> &memory_writer
+        start = monotonic()
         with nogil:
             ret = WebPEncode(&config, &pic)
         if not ret:
             raise Exception("WebPEncode failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
+        end = monotonic()
+        log("webp encode took %.1fms", 1000*(end-start))
 
         cdata = memory_writer.mem[:memory_writer.size]
     finally:
