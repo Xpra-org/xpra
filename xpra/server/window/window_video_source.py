@@ -18,6 +18,7 @@ from xpra.server.window.window_source import (
     WindowSource, DelayedRegions,
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE,
+    COMPRESS_COMMON_FMT, COMPRESS_FMT,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
@@ -105,6 +106,8 @@ if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
     SAVE_VIDEO_FRAMES = None
 
 FAST_ORDER = tuple(["jpeg", "rgb32", "rgb24", "webp", "png"] + list(PREFERRED_ENCODING_ORDER))
+
+COMPRESS_SCROLL_FMT = COMPRESS_COMMON_FMT+" as %3i rectangles  (%5iKB to     0KB), sequence %5i, client_options=%-50s, options=%s"
 
 
 class WindowVideoSource(WindowSource):
@@ -1931,7 +1934,7 @@ class WindowVideoSource(WindowSource):
             packet = self.make_draw_packet(x, y, w, h,
                                            coding, LargeStructure(coding, scrolls), 0, client_options, options)
             self.queue_damage_packet(packet, 0, 0, options)
-            compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s as %3i rectangles  (%5iKB to     0KB), sequence %5i, client_options=%-50s, options=%s",
+            compresslog(COMPRESS_SCROLL_FMT,
                  (end-start)*1000.0, w, h, x, y, self.wid, coding, len(scrolls), w*h*4/1024, self._damage_packet_sequence, client_options, options)
         del scrolls
         #send the rest as rectangles:
@@ -1974,7 +1977,7 @@ class WindowVideoSource(WindowSource):
                 self.queue_damage_packet(packet, 0, 0, options)
                 psize = w*sh*4
                 csize = len(data)
-                compresslog("compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%-50s, options=%s",
+                compresslog(COMPRESS_FMT,
                      (monotonic()-substart)*1000.0, w, sh, x+0, y+sy, self.wid, coding, 100.0*csize/psize, psize/1024, csize/1024, self._damage_packet_sequence, client_options, options)
             scrolllog("non-scroll encoding using %s (quality=%i, speed=%i) took %ims for %i rectangles",
                       encoding, self._current_quality, self._current_speed, (monotonic()-nsstart)*1000, len(non_scroll))
