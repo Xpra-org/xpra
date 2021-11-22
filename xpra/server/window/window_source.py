@@ -93,8 +93,9 @@ LOSSLESS_WINDOW_TYPES = set(os.environ.get("XPRA_LOSSLESS_WINDOW_TYPES",
                                        "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(","))
 
 
-COMPRESS_COMMON_FMT = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
-COMPRESS_FMT        = COMPRESS_COMMON_FMT+" with ratio %5.1f%%  (%5iKB to %5iKB), sequence %5i, client_options=%-50s, options=%s"
+COMPRESS_FMT_PREFIX = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
+COMPRESS_FMT_SUFFIX = ", sequence %5i, client_options=%-50s, options=%s"
+COMPRESS_FMT        = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to %5iKB)"+COMPRESS_FMT_SUFFIX
 
 
 class DelayedRegions:
@@ -2511,7 +2512,9 @@ class WindowSource(WindowIconSource):
             client_options['process_damage_time'] = int(process_damage_time * 1000)
             client_options['damage_packet_time'] = int(end * 1000)
         compresslog(COMPRESS_FMT,
-                 (end-start)*1000.0, outw, outh, x, y, self.wid, coding, 100.0*csize/psize, psize//1024, csize//1024, self._damage_packet_sequence, client_options, options)
+                 (end-start)*1000.0, outw, outh, x, y, self.wid, coding,
+                 100.0*csize/psize, psize//1024, csize//1024,
+                 self._damage_packet_sequence, client_options, options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
