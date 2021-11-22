@@ -318,8 +318,9 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int speed):
             bc = buffer_context(planes[i])
             bc.__enter__()
             contexts.append(bc)
-            assert len(bc)>=strides[i]*height//ydiv, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (
-                pfstr, len(bc), strides[i], height, strides[i]*height//ydiv)
+            if len(bc)<strides[i]*height//ydiv:
+                raise ValueError("%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (
+                "YUV"[i], len(bc), strides[i], height, strides[i]*height//ydiv))
             src[i] = <const unsigned char *> (<uintptr_t> int(bc))
             if src[i]==NULL:
                 raise ValueError("missing plane %s from context %s" % ("YUV"[i], bc))
