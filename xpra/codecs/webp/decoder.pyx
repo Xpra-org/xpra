@@ -7,7 +7,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign   #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, buffer_context
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stdlib cimport free
@@ -229,7 +229,14 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     config.output.u.RGBA.size   = size
     config.output.is_external_memory = 1
 
-    webp_check(WebPDecode(data, len(data), &config))
+    cdef int ret = 0
+    cdef size_t data_len
+    cdef const uint8_t* data_buf
+    with buffer_context(data) as bc:
+        data_len = len(bc)
+        data_buf = <const uint8_t*> (<uintptr_t> int(bc))
+        ret = WebPDecode(data_buf, data_len, &config)
+    webp_check(ret)
     #we use external memory, so this is not needed:
     #WebPFreeDecBuffer(&config.output)
 
@@ -286,7 +293,14 @@ def decompress_yuv(data, has_alpha=False):
     config.output.is_external_memory = 1
     log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s",
         w, h, <uintptr_t> buf, strides)
-    webp_check(WebPDecode(data, len(data), &config))
+    cdef int ret = 0
+    cdef size_t data_len
+    cdef const uint8_t* data_buf
+    with buffer_context(data) as bc:
+        data_len = len(bc)
+        data_buf = <const uint8_t*> (<uintptr_t> int(bc))
+        ret = WebPDecode(data_buf, data_len, &config)
+    webp_check(ret)
     if alpha:
         planes = (
             PyMemoryView_FromMemory(<char *> YUVA.y, y_size, True),
