@@ -123,12 +123,19 @@ def get_spec(encoding, colorspace):
     assert encoding=="jpeg"
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.codec_constants import video_spec
+    width_mask=0xFFFF
+    height_mask=0xFFFF
+    if colorspace in ("YUV420P", "YUV422P"):
+        width_mask=0xFFFE
+    if colorspace in ("YUV420P", ):
+        height_mask=0xFFFE
     return video_spec("jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
                       codec_class=Encoder, codec_type="jpeg",
                       setup_cost=0, cpu_cost=100, gpu_cost=0,
                       min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
                       can_scale=False,
-                      score_boost=-50)
+                      score_boost=-50,
+                      width_mask=width_mask, height_mask=height_mask)
 
 
 cdef class Encoder:
@@ -329,7 +336,7 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int speed):
             bc.__enter__()
             contexts.append(bc)
             if len(bc)<strides[i]*height//ydiv:
-                raise ValueError("%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (
+                raise ValueError("plane %r is only %i bytes, %ix%i=%i bytes required" % (
                 "YUV"[i], len(bc), strides[i], height, strides[i]*height//ydiv))
             src[i] = <const unsigned char *> (<uintptr_t> int(bc))
             if src[i]==NULL:
