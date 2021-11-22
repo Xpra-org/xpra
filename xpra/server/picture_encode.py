@@ -24,15 +24,16 @@ log = Logger("window", "encoding")
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 
 
-def webp_encode(image, supports_transparency, quality, speed, content_type):
+def webp_encode(coding, image, quality : int=50, speed : int=50,
+                supports_transparency : bool=True,
+                content_type=""):
     stride = image.get_rowstride()
     pixel_format = image.get_pixel_format()
     enc_webp = get_codec("enc_webp")
-    #log("WEBP_PILLOW=%s, enc_webp=%s, stride=%s, pixel_format=%s", WEBP_PILLOW, enc_webp, stride, pixel_format)
-    if not WEBP_PILLOW and enc_webp and stride>0 and stride%4==0 and pixel_format in ("BGRA", "BGRX", "RGBA", "RGBX"):
+    log("WEBP_PILLOW=%s, enc_webp=%s, stride=%s, pixel_format=%s", WEBP_PILLOW, enc_webp, stride, pixel_format)
+    if not WEBP_PILLOW and enc_webp and pixel_format in ("BGRA", "BGRX", "RGBA", "RGBX", "RGB", "BGR"):
         #prefer Cython module:
-        cdata, client_options = enc_webp.encode(image, quality, speed, supports_transparency, content_type)
-        return "webp", compression.Compressed("webp", cdata), client_options, image.get_width(), image.get_height(), 0, 24
+        return enc_webp.encode(coding, image, quality, speed, supports_transparency, content_type)
     #fallback using Pillow:
     enc_pillow = get_codec("enc_pillow")
     if enc_pillow:
@@ -113,7 +114,7 @@ def rgb_encode(coding, image, rgb_formats, supports_transparency, speed, rgb_zli
     else:
         bpp = 24
     log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s",
-        level, l, speed, algo, image.get_width(), image.get_height(), coding, pixel_format, len(pixels), len(cwrapper.data))
+        level, l, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, options, width, height, stride, bpp

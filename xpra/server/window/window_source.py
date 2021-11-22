@@ -2540,7 +2540,6 @@ class WindowSource(WindowIconSource):
 
 
     def webp_encode(self, coding, image, options):
-        assert coding=="webp"
         r, image = self.may_scale(coding, image, options)
         if r:
             return r
@@ -2555,7 +2554,7 @@ class WindowSource(WindowIconSource):
                     pixel_format, self.rgb_formats))
         q = options.get("quality", self._current_quality)
         s = options.get("speed", self._current_speed)
-        return webp_encode(image, self.supports_transparency, q, s, self.content_type)
+        return webp_encode(coding, image, q, s, self.supports_transparency, self.content_type)
 
     def rgb_encode(self, coding, image, options):
         s = options.get("speed") or self._current_speed
@@ -2568,14 +2567,13 @@ class WindowSource(WindowIconSource):
             argb_swap(image, rgb_formats, self.supports_transparency)
 
     def jpeg_encode(self, coding, image, options):
-        assert coding=="jpeg"
         r, image = self.may_scale(coding, image, options)
         if r:
             return r
         self.no_r210(image, ["RGB"])
         q = options.get("quality", self._current_quality)
         s = options.get("speed", self._current_speed)
-        return self.enc_jpeg.encode(image, q, s)
+        return self.enc_jpeg.encode(coding, image, q, s)
 
     def may_scale(self, coding, image, options):
         if self.encoding=="grayscale" or FORCE_PILLOW:
@@ -2642,8 +2640,7 @@ class WindowSource(WindowIconSource):
                     log(" %s", e)
                 self.enc_nvjpeg = None
                 return fallback("nvjpeg is now disabled")
-            data, w, h, stride, options = r
-        return "jpeg", Compressed(coding, data, False), options, w, h, stride, 24
+            return r
 
     def pillow_encode(self, coding, image, options):
         #for more information on pixel formats supported by PIL / Pillow, see:

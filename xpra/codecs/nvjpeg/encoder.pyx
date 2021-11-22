@@ -10,7 +10,8 @@ from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from pycuda import driver
 
-from xpra.util import envbool, typedict, roundup
+from xpra.net.compression import Compressed
+from xpra.util import envbool, typedict
 from xpra.os_util import bytestostr
 
 from xpra.log import Logger
@@ -511,7 +512,7 @@ def compress_file(filename, save_to="./out.jpeg"):
     from xpra.codecs.image_wrapper import ImageWrapper
     image = ImageWrapper(0, 0, w, h, data, rgb_format,
                        len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
-    jpeg_data = encode(image)[0]
+    jpeg_data = encode("jpeg", image)[0]
     with open(save_to, "wb") as f:
         f.write(jpeg_data)
 
@@ -523,7 +524,8 @@ cdef nvjpegChromaSubsampling_t get_subsampling(int quality):
     return NVJPEG_CSS_420
 
 
-def encode(image, int quality=50, speed=50):
+def encode(coding, image, int quality=50, speed=50):
+    assert coding=="jpeg"
     from xpra.codecs.cuda_common.cuda_context import select_device, cuda_device_context
     cdef double start = monotonic()
     cuda_device_id, cuda_device = select_device()
@@ -563,7 +565,7 @@ def device_encode(device_context, image, int quality=50, speed=50):
             with open(filename, "wb") as f:
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
-        return cdata, width, height, stride, options
+        return "jpeg", Compressed("jpeg", cdata, False), options, width, height, 0, 24
     except NVJPEG_Exception as e:
         errors.append(str(e))
         return None
@@ -577,5 +579,5 @@ def selftest(full=False):
     for size in (32, 256):
         img = make_test_image("BGR", size, size)
         log("testing with %s", img)
-        v = encode(img)
+        v = encode("jpeg", img)
         assert v, "failed to compress test image"

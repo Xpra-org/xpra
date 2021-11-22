@@ -35,7 +35,7 @@ def do_get_encodings():
         if stripped in Image.SAVE:
             encodings.append(encoding)
     log("do_get_encodings()=%s", encodings)
-    return encodings
+    return tuple(encodings)
 
 def get_encodings():
     return ENCODINGS
@@ -49,7 +49,10 @@ def get_info() -> dict:
             }
 
 
-def encode(coding : str, image, quality : int, speed : int, supports_transparency : bool, grayscale : bool=False, resize=None):
+def encode(coding : str, image, quality : int=50, speed : int=50,
+           supports_transparency : bool=True,
+           grayscale : bool=False,
+           resize=None):
     log("pillow.encode%s", (coding, image, quality, speed, supports_transparency, grayscale, resize))
     assert coding in ("jpeg", "webp", "png", "png/P", "png/L"), "unsupported encoding: %s" % coding
     assert image, "no image to encode"

@@ -11,6 +11,7 @@ from libc.stdlib cimport free   #pylint: disable=syntax-error
 from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
+from xpra.net.compression import Compressed
 from xpra.util import envbool, envint
 from xpra.log import Logger
 log = Logger("encoder", "webp")
@@ -318,7 +319,7 @@ cdef WebPPreset PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_
 
 
 def get_encodings():
-    return ["webp"]
+    return ("webp", )
 
 def get_version():
     cdef int version = WebPGetEncoderVersion()
@@ -377,15 +378,19 @@ cdef get_config_info(WebPConfig *config):
         "low_memory"        : config.low_memory,
         }
 
-def encode(image, int quality=50, int speed=50, supports_alpha=False, content_type=""):
+def encode(coding, image, int quality=50, int speed=50,
+           supports_alpha=False,
+           content_type=""):
+    assert coding=="webp"
     log("webp.encode(%s, %i, %i, %s, %s)", image, quality, speed, supports_alpha, content_type)
     pixel_format = image.get_pixel_format()
-    if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA"):
+    if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR"):
         raise Exception("unsupported pixel format %s" % pixel_format)
     cdef unsigned int width = image.get_width()
     cdef unsigned int height = image.get_height()
+    assert width<16384 and height<16384, "invalid image dimensions: %ix%i" % (width, height)
     cdef unsigned int stride = image.get_rowstride()
-    cdef unsigned int Bpp = len(pixel_format)
+    cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
     cdef int size = stride * height
     if width>WEBP_MAX_DIMENSION or height>WEBP_MAX_DIMENSION:
         raise Exception("this image is too big for webp: %ix%i" % (width, height))
@@ -394,7 +399,8 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     #we can only use YUV420P subsampling if we are 100% certain
     #that the RGB pixel data contains a valid alpha component
     #because WebPPictureARGBToYUVA will set the alpha channel if it finds ANY value
-    cdef int use_argb = quality>=SUBSAMPLING_THRESHOLD or pixel_format.find("A")<0
+    #and we can't specify the rowstride, so it has to be a multiple already:
+    cdef int use_argb = True    #quality>=SUBSAMPLING_THRESHOLD or pixel_format!="BGRA" or stride!=Bpp*width
 
     cdef WebPConfig config
     cdef WebPPreset preset = DEFAULT_PRESET
@@ -480,7 +486,11 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
 
         #import the pixel data into WebPPicture
         if use_argb:
-            if pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
+            if pixel_format=="RGB":
+                ret = WebPPictureImportRGB(&pic, src, stride)
+            elif pixel_format=="BGR":
+                ret = WebPPictureImportBGR(&pic, src, stride)
+            elif pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
                 ret = WebPPictureImportRGBX(&pic, src, stride)
             elif pixel_format=="RGBA":
                 ret = WebPPictureImportRGBA(&pic, src, stride)
@@ -528,7 +538,7 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
         with open(filename, "wb") as f:
             f.write(cdata)
         log.info("saved %i bytes to %s", len(cdata), filename)
-    return cdata, client_options
+    return "webp", Compressed("webp", cdata), client_options, width, height, 0, len(pixel_format.replace("A", ""))*8
 
 
 def selftest(full=False):
@@ -538,7 +548,7 @@ def selftest(full=False):
     for has_alpha in (True, False):
         img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)
         for q in (10, 50, 90):
-            r = encode(img, quality=q, speed=50, supports_alpha=has_alpha)
+            r = encode("webp", img, quality=q, speed=50, supports_alpha=has_alpha)
             assert len(r)>0
         #import binascii
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

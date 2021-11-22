@@ -231,7 +231,8 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return bytestostr(err)
 
-def encode(image, int quality=50, int speed=50):
+def encode(coding, image, int quality=50, int speed=50):
+    assert coding=="jpeg"
     #100 would mean lossless, so cap it at 99:
     client_options = {
         "quality"   : min(99, quality),
@@ -369,5 +370,5 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import make_test_image
     img = make_test_image("BGRA", 32, 32)
     for q in (0, 50, 100):
-        v = encode(img, q, 100)
+        v = encode("jpeg", img, q, 100)
         assert v, "encode output was empty!"
