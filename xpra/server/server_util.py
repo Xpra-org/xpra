@@ -389,8 +389,7 @@ def has_uinput():
     except ImportError as e:
         log = get_util_logger()
         log("has_uinput()", exc_info=True)
-        log.info("cannot access python uinput module:")
-        log.info(" %s", e)
+        log.info("no uinput module")
         return False
     try:
         uinput.fdopen()         #@UndefinedVariable
