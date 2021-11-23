@@ -42,8 +42,8 @@ def patch_picture_encode():
             return memoryview_to_bytes(v)
         l = CFDataGetLength(v)
         return CFDataGetBytes(v, (0, l), None)
-    from xpra.server import picture_encode
-    picture_encode.pixels_to_bytes = pixels_to_bytes
+    from xpra.codecs import rgb_transform
+    rgb_transform.pixels_to_bytes = pixels_to_bytes
 
 
 class OSXRootCapture:

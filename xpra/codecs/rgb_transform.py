@@ -7,13 +7,16 @@
 from time import monotonic
 from PIL import Image
 
-from xpra.os_util import bytestostr
+from xpra.os_util import memoryview_to_bytes, bytestostr
 from xpra.util import first_time
 from xpra.log import Logger
 try:
     from xpra.codecs.argb.argb import argb_swap #@UnresolvedImport
 except ImportError:     # pragma: no cover
     argb_swap = None
+
+#"pixels_to_bytes" gets patched up by the OSX shadow server
+pixels_to_bytes = memoryview_to_bytes
 
 log = Logger("encoding")
 

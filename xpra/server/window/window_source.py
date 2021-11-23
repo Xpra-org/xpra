@@ -21,13 +21,12 @@ from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
-from xpra.server.picture_encode import rgb_encode, webp_encode, mmap_send
+from xpra.server.picture_encode import webp_encode
 from xpra.simple_stats import get_list_stats
-from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
-from xpra.net.compression import use, Compressed
+from xpra.net.compression import use
 from xpra.log import Logger
 
 log = Logger("window", "encoding")
@@ -73,6 +72,7 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
 SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
+#FIXME: honour it
 FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
@@ -336,8 +336,10 @@ class WindowSource(WindowIconSource):
         self._all_encoders = {}
         self._encoders = {}
         self.full_csc_modes = typedict()
-        self.add_encoder("rgb24", self.rgb_encode)
-        self.add_encoder("rgb32", self.rgb_encode)
+        rgb_encoder = get_codec("enc_rgb")
+        assert rgb_encoder, "rgb encoder is missing"
+        self.add_encoder("rgb24", rgb_encoder.encode)
+        self.add_encoder("rgb32", rgb_encoder.encode)
         #we need pillow for scaling and grayscale:
         self.enc_pillow = get_codec("enc_pillow")
         if self._mmap_size>0:
@@ -348,12 +350,12 @@ class WindowSource(WindowIconSource):
                 self.add_encoder(encoding, encoder)
         if self.enc_pillow:
             for x in self.enc_pillow.get_encodings():
-                add(x, self.pillow_encode)
+                add(x, self.enc_pillow.encode)
         #prefer these native encoders over the Pillow version:
         add("webp", self.webp_encode)
         self.enc_jpeg = get_codec("enc_jpeg")
         if self.enc_jpeg:
-            add("jpeg", self.jpeg_encode)
+            add("jpeg", self.enc_jpeg.encode)
         #prefer nvjpeg over all the other jpeg encoders:
         self.enc_nvjpeg = None
         log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
@@ -1004,13 +1006,14 @@ class WindowSource(WindowIconSource):
     def do_get_auto_encoding(self, w, h, speed, quality, current_encoding, encoding_options):
         co = encoding_options
         depth = self.image_depth
-        if w*h<self._rgb_auto_threshold:
+        grayscale = self.encoding=="grayscale"
+        if w*h<self._rgb_auto_threshold and not grayscale:
             if depth>24 and self.client_bit_depth>24 and "rgb32" in co:
                 return "rgb32"
             if "rgb24" in co:
                 return "rgb24"
         jpeg = "jpeg" and w>=2 and h>=2
-        webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2
+        webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2 and not grayscale
         lossy = quality<100
         if depth in (24, 32) and (jpeg or webp):
             if jpeg and w>=8 and h>=8 and lossy and self.enc_nvjpeg:
@@ -1772,8 +1775,19 @@ class WindowSource(WindowIconSource):
                     quality += int(elapsed*25)
                 quality = min(100, max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta))
         eoptions = dict(options)
-        eoptions["quality"] = quality
-        eoptions["speed"] = speed
+        eoptions.update({
+            "quality"   : quality,
+            "speed"     : speed,
+            "rgb_formats"   : self.rgb_formats,
+            "zlib"      : self.rgb_zlib,
+            "lz4"       : self.rgb_lz4,
+            })
+        if self.encoding=="grayscale":
+            eoptions["grayscale"] = True
+        if not self.supports_transparency:
+            eoptions["alpha"] = False
+        if self.content_type:
+            eoptions["content-type"] = self.content_type
         return eoptions
 
     def do_send_delayed_regions(self, damage_time, regions, coding, options,
@@ -1954,6 +1968,9 @@ class WindowSource(WindowIconSource):
 
         if self.send_window_size:
             options["window-size"] = self.window_dimensions
+        resize = self.scaled_size(image)
+        if resize:
+            options["resize"] = resize
 
         now = monotonic()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)
@@ -1961,6 +1978,19 @@ class WindowSource(WindowIconSource):
         log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
                 self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
         return True
+
+    def scaled_size(self, image):
+        crs = self.client_render_size
+        if not crs or not DOWNSCALE:
+            return None
+        w, h = image.get_width(), image.get_height()
+        ww, wh = self.window_dimensions
+        crsw, crsh = crs
+        #resize if the render size is smaller
+        if ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD:
+            #keep the same proportions:
+            return w*crsw//ww, h*crsh//wh
+        return None
 
 
     def make_data_packet_cb(self, w, h, damage_time, process_damage_time, image, coding, sequence, options, flush):
@@ -2540,78 +2570,25 @@ class WindowSource(WindowIconSource):
 
 
     def webp_encode(self, coding, image, options):
-        r, image = self.may_scale(coding, image, options)
-        if r:
-            return r
         pixel_format = image.get_pixel_format()
         #the native webp encoder only takes BGRX / BGRA as input,
         #but the client may be able to swap channels,
         #so it may be able to process RGBX / RGBA:
-        client_rgb_formats = self.full_csc_modes.strtupleget("webp", ("BGRA", "BGRX", ))
+        client_rgb_formats = self.full_csc_modes.strtupleget("webp", ("BGRA", "BGRX", "BGR", ))
         if pixel_format not in client_rgb_formats:
             if not rgb_reformat(image, client_rgb_formats, self.supports_transparency):
                 raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (
                     pixel_format, self.rgb_formats))
-        q = options.get("quality", self._current_quality)
-        s = options.get("speed", self._current_speed)
-        return webp_encode(coding, image, q, s, self.supports_transparency, self.content_type)
-
-    def rgb_encode(self, coding, image, options):
-        s = options.get("speed") or self._current_speed
-        return rgb_encode(coding, image, self.rgb_formats, self.supports_transparency, s,
-                          self.rgb_zlib, self.rgb_lz4)
-
-    def no_r210(self, image, rgb_formats):
-        rgb_format = image.get_pixel_format()
-        if rgb_format=="r210":
-            argb_swap(image, rgb_formats, self.supports_transparency)
-
-    def jpeg_encode(self, coding, image, options):
-        r, image = self.may_scale(coding, image, options)
-        if r:
-            return r
-        self.no_r210(image, ["RGB"])
-        q = options.get("quality", self._current_quality)
-        s = options.get("speed", self._current_speed)
-        return self.enc_jpeg.encode(coding, image, q, s)
-
-    def may_scale(self, coding, image, options):
-        if self.encoding=="grayscale" or FORCE_PILLOW:
-            #only pillow can do grayscale at the moment:
-            return self.pillow_encode(coding, image, options), image
-        #now check for downscaling:
-        if not DOWNSCALE or not self.client_render_size:
-            return None, image
-        crsw, crsh = self.client_render_size
-        ww, wh = self.window_dimensions
-        if ww-crsw<DOWNSCALE_THRESHOLD and wh-crsh<DOWNSCALE_THRESHOLD:
-            return None, image
-        q = options.get("quality", self._current_quality)
-        try:
-            from xpra.codecs.csc_libyuv.colorspace_converter import argb_scale  #pylint: disable=import-outside-toplevel
-        except ImportError as e:
-            log("cannot downscale: %s", e)
-            return self.pillow_encode(coding, image, options), image
-        #no point in using high quality or lossless when downscaling:
-        if q>80 and self._fixed_quality<=0:
-            options["quality"] = 80
-        crsw, crsh = self.client_render_size
-        ww, wh = self.window_dimensions
-        width = image.get_width()*crsw//ww
-        height = image.get_height()*crsh//wh
-        return None, argb_scale(image, width, height)
+        return webp_encode(coding, image, options)
 
     def nvjpeg_encode(self, coding, image, options):
         assert coding=="jpeg"
-        r, image = self.may_scale(coding, image, options)
-        if r:
-            return r
         def fallback(reason):
             log("nvjpeg_encode: %s", reason)
             if self.enc_jpeg:
-                return self.jpeg_encode(coding, image, options)
+                return self.enc_jpeg.encode(coding, image, options)
             if self.enc_pillow:
-                return self.pillow_encode(coding, image, options)
+                return self.enc_pillow.encode(coding, image, options)
             return None
         cdd = self.cuda_device_context
         if not cdd:
@@ -2620,57 +2597,59 @@ class WindowSource(WindowIconSource):
         h = image.get_height()
         if w<16 or h<16:
             return fallback("image size %ix%i is too small" % (w, h))
-        NVJPEG_INPUT_FORMATS = ("RGB", "BGR")
-        self.no_r210(image, NVJPEG_INPUT_FORMATS)
-        pixel_format = image.get_pixel_format()
-        if pixel_format not in NVJPEG_INPUT_FORMATS and not argb_swap(image, NVJPEG_INPUT_FORMATS):
-            return fallback("cannot handle %s" % pixel_format)
-        q = options.get("quality", self._current_quality)
-        s = options.get("speed", self._current_speed)
         log("nvjpeg_encode%s", (coding, image, options))
         with cdd:
-            r = self.enc_nvjpeg.device_encode(cdd, image, q, s)
+            r = self.enc_nvjpeg.device_encode(cdd, image, options)
             if r is None:
                 errors = self.enc_nvjpeg.get_errors()
                 MAX_FAILURES = 3
                 if len(errors)<=MAX_FAILURES:
                     return fallback(errors[-1])
-                log.warn("Warning: nvjpeg has failed too many times and is now disabled")
+                log.warn("Warning: nvjpeg has failed %s times and is now disabled", len(errors))
                 for e in errors:
                     log(" %s", e)
                 self.enc_nvjpeg = None
                 return fallback("nvjpeg is now disabled")
             return r
 
-    def pillow_encode(self, coding, image, options):
-        #for more information on pixel formats supported by PIL / Pillow, see:
-        #https://github.com/python-imaging/Pillow/blob/master/libImaging/Unpack.c
-        assert coding in self.server_core_encodings
-        transparency = self.supports_transparency and options.get("transparency", True)
-        grayscale = self.encoding=="grayscale"
-        resize = None
-        w, h = image.get_width(), image.get_height()
-        ww, wh = self.window_dimensions
-        crs = self.client_render_size
-        if crs and DOWNSCALE:
-            crsw, crsh = crs
-            #resize if the render size is smaller
-            if ww-crsw>DOWNSCALE_THRESHOLD and wh-crsh>DOWNSCALE_THRESHOLD:
-                #keep the same proportions:
-                resize = w*crsw//ww, h*crsh//wh
-        q = options.get("quality", self._current_quality)
-        s = options.get("speed", self._current_speed)
-        return self.enc_pillow.encode(coding, image, q, s, transparency, grayscale, resize)
-
     def mmap_encode(self, coding, image, _options):
         assert coding=="mmap"
         assert self._mmap and self._mmap_size>0
-        v = mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
+        v = self.mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
         if v is None:
             return None
         mmap_info, mmap_free_size, written = v
         self.global_statistics.mmap_bytes_sent += written
         self.global_statistics.mmap_free_size = mmap_free_size
         #the data we send is the index within the mmap area:
-        client_options = {"rgb_format" : image.get_pixel_format()}
-        return "mmap", mmap_info, client_options, image.get_width(), image.get_height(), image.get_rowstride(), 32
+        pf = image.get_pixel_format()
+        return (
+            "mmap", mmap_info, {"rgb_format" : pf},
+            image.get_width(), image.get_height(), image.get_rowstride(), len(pf)*8,
+            )
+
+    def mmap_send(self, mmap, mmap_size, image, rgb_formats, supports_transparency):
+        try:
+            from xpra.net.mmap_pipe import mmap_write
+        except ImportError:
+            mmap_write = None               #no mmap
+        if mmap_write is None:
+            if first_time("mmap_write missing"):
+                log.warn("Warning: cannot use mmap, no write method support")
+            return None
+        if image.get_pixel_format() not in rgb_formats:
+            if not rgb_reformat(image, rgb_formats, supports_transparency):
+                warning_key = "mmap_send(%s)" % image.get_pixel_format()
+                if first_time(warning_key):
+                    log.warn("Waening: cannot use mmap to send %s" % image.get_pixel_format())
+                return None
+        start = monotonic()
+        data = image.get_pixels()
+        assert data, "failed to get pixels from %s" % image
+        mmap_data, mmap_free_size = mmap_write(mmap, mmap_size, data)
+        elapsed = monotonic()-start+0.000000001 #make sure never zero!
+        log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
+        if mmap_data is None:
+            return None
+        #replace pixels with mmap info:
+        return mmap_data, mmap_free_size, len(data)

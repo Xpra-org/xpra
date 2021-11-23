@@ -840,6 +840,9 @@ class WindowVideoSource(WindowSource):
         h = image.get_height()
         if self.send_window_size:
             options["window-size"] = self.window_dimensions
+        resize = self.scaled_size(image)
+        if resize:
+            options["resize"] = resize
 
         #freeze if:
         # * we want av-sync
@@ -1713,6 +1716,8 @@ class WindowVideoSource(WindowSource):
         ve = encoder_spec.make_instance()
         options = typedict(self.encoding_options)
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
+        if self.encoding=="grayscale":
+            options["grayscale"] = True
         ve.init_context(self.cuda_device_context,
                         enc_width, enc_height, enc_in_format,
                         dst_formats, encoder_spec.encoding,

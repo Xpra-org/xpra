@@ -10,7 +10,6 @@ import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
 
 from xpra.util import envbool
-from xpra.os_util import bytestostr
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -49,14 +48,15 @@ def get_info() -> dict:
             }
 
 
-def encode(coding : str, image, quality : int=50, speed : int=50,
-           supports_transparency : bool=True,
-           grayscale : bool=False,
-           resize=None):
-    log("pillow.encode%s", (coding, image, quality, speed, supports_transparency, grayscale, resize))
+def encode(coding : str, image, options):
     assert coding in ("jpeg", "webp", "png", "png/P", "png/L"), "unsupported encoding: %s" % coding
-    assert image, "no image to encode"
-    pixel_format = bytestostr(image.get_pixel_format())
+    log("pillow.encode%s", (coding, image, options))
+    quality = options.get("quality", 50)
+    speed = options.get("speed", 50)
+    supports_transparency = options.get("alpha", True)
+    grayscale = options.get("grayscale", False)
+    resize = options.get("resize")
+    pixel_format = image.get_pixel_format()
     palette = None
     w = image.get_width()
     h = image.get_height()
@@ -245,7 +245,10 @@ def selftest(full=False):
             for q in vrange:
                 for s in vrange:
                     for alpha in (True, False):
-                        v = encode(encoding, img, q, s, False, alpha)
+                        v = encode(encoding, img, {
+                            "quality" : q,
+                            "speed" : s, 
+                            "alpha" : alpha})
                         assert v, "encode output was empty!"
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))
@@ -253,4 +256,6 @@ def selftest(full=False):
             l = log.warn
             l("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
             l(" %s", e, exc_info=True)
-            ENCODINGS.remove(encoding)
+            encs = list(ENCODINGS)
+            encs.remove(encoding)
+            ENCODINGS = tuple(encs)

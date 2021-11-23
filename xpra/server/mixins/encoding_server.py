@@ -54,6 +54,7 @@ class EncodingServer(StubServerMixin):
         #load video codecs:
         getVideoHelper().init()
         #and load the picture codecs:
+        load_codec("enc_rgb")
         load_codec("enc_pillow")
         ae = self.allowed_encodings
         if "jpeg" in ae:

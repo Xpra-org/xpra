@@ -146,6 +146,7 @@ cdef class Encoder:
     cdef object src_format
     cdef int quality
     cdef int speed
+    cdef int grayscale
     cdef long frames
     cdef object __weakref__
 
@@ -163,6 +164,7 @@ cdef class Encoder:
         self.width = width
         self.height = height
         self.src_format = src_format
+        self.grayscale = options.boolget("grayscale")
         self.scaling = scaling
         self.quality = quality
         self.speed = speed
@@ -204,6 +206,7 @@ cdef class Encoder:
             "height"        : self.height,
             "speed"         : self.speed,
             "quality"       : self.quality,
+            "grayscale"     : bool(self.grayscale),
             })
         return info
 
@@ -218,9 +221,9 @@ cdef class Encoder:
             speed = self.speed
         pfstr = bytestostr(image.get_pixel_format())
         if pfstr in ("YUV420P", "YUV422P", "YUV444P"):
-            cdata = encode_yuv(self.compressor, image, quality, speed)
+            cdata = encode_yuv(self.compressor, image, quality, self.grayscale)
         else:
-            cdata = encode_rgb(self.compressor, image, quality, speed)
+            cdata = encode_rgb(self.compressor, image, quality, self.grayscale)
         if not cdata:
             return None
         self.frames += 1
@@ -231,8 +234,30 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return bytestostr(err)
 
-def encode(coding, image, int quality=50, int speed=50):
+JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", "RGBA", "BGRA", "ABGR", "ARGB")
+
+def encode(coding, image, options):
     assert coding=="jpeg"
+    cdef int quality = options.get("quality", 50)
+    cdef int grayscale = options.get("grayscale", 0)
+    resize = options.get("resize")
+    log("encode%s", (coding, image, options))
+    rgb_format = image.get_pixel_format()
+    if rgb_format not in JPEG_INPUT_FORMATS:
+        from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
+        if not argb_swap(image, JPEG_INPUT_FORMATS):
+            log("jpeg: argb_swap failed to convert %s to a suitable format: %s" % (
+                rgb_format, JPEG_INPUT_FORMATS))
+        log("jpeg converted image: %s", image)
+
+    width = image.get_width()
+    height = image.get_height()
+    if resize:
+        from xpra.codecs.argb.scale import scale_image
+        scaled_width, scaled_height = resize
+        image = scale_image(image, scaled_width, scaled_height)
+        log("jpeg scaled image: %s", image)
+
     #100 would mean lossless, so cap it at 99:
     client_options = {
         "quality"   : min(99, quality),
@@ -243,7 +268,7 @@ def encode(coding, image, int quality=50, int speed=50):
         return None
     cdef int r
     try:
-        cdata = encode_rgb(compressor, image, quality, speed)
+        cdata = encode_rgb(compressor, image, quality, grayscale)
         if not cdata:
             return None
         if SAVE_TO_FILE:    # pragma: no cover
@@ -251,14 +276,14 @@ def encode(coding, image, int quality=50, int speed=50):
             with open(filename, "wb") as f:
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
-        return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, image.get_width(), image.get_height(), 0, 24
+        return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24
     finally:
         r = tjDestroy(compressor)
         if r:
             log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
             log.error(" %s", get_error_str())
 
-cdef encode_rgb(tjhandle compressor, image, int quality, int speed):
+cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
@@ -269,7 +294,9 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int speed):
         raise Exception("invalid pixel format %s" % pfstr)
     cdef TJPF tjpf = pf
     cdef TJSAMP subsamp = TJSAMP_444
-    if quality<50:
+    if grayscale:
+        subsamp = TJSAMP_GRAY
+    elif quality<50:
         subsamp = TJSAMP_420
     elif quality<80:
         subsamp = TJSAMP_422
@@ -300,11 +327,13 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int speed):
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
     return makebuf(out, out_size)
 
-cdef encode_yuv(tjhandle compressor, image, int quality, int speed):
+cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = bytestostr(image.get_pixel_format())
     assert pfstr in ("YUV420P", "YUV422P"), "invalid yuv pixel format %s" % pfstr
     cdef TJSAMP subsamp
-    if pfstr=="YUV420P":
+    if grayscale:
+        subsamp = TJSAMP_GRAY
+    elif pfstr=="YUV420P":
         subsamp = TJSAMP_420
     elif pfstr=="YUV422P":
         subsamp = TJSAMP_422
@@ -370,5 +399,5 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import make_test_image
     img = make_test_image("BGRA", 32, 32)
     for q in (0, 50, 100):
-        v = encode("jpeg", img, q, 100)
+        v = encode("jpeg", img, {"quality" : q})
         assert v, "encode output was empty!"

@@ -298,9 +298,11 @@ def init_module():
 def cleanup_module():
     log("nvjpeg.cleanup_module()")
 
+NVJPEG_INPUT_FORMATS = ("RGB", "BGR")
+
 def get_input_colorspaces(encoding):
     assert encoding=="jpeg"
-    return ("BGR", "RGB")
+    return NVJPEG_INPUT_FORMATS
 
 def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings()
@@ -326,6 +328,7 @@ cdef class Encoder:
     cdef object src_format
     cdef int quality
     cdef int speed
+    cdef int grayscale
     cdef long frames
     cdef nvjpegHandle_t nv_handle
     cdef nvjpegEncoderState_t nv_enc_state
@@ -349,6 +352,7 @@ cdef class Encoder:
         self.src_format = src_format
         self.quality = quality
         self.speed = speed
+        self.grayscale = options.boolget("grayscale", False)
         self.scaling = scaling
         self.init_nvjpeg()
         self.cuda_buffer = None
@@ -362,7 +366,11 @@ cdef class Encoder:
         self.configure_nvjpeg()
 
     def configure_nvjpeg(self):
-        cdef nvjpegChromaSubsampling_t subsampling = get_subsampling(self.quality)
+        cdef nvjpegChromaSubsampling_t subsampling
+        if self.grayscale:
+            subsampling = NVJPEG_CSS_GRAY
+        else:
+            subsampling = get_subsampling(self.quality)
         cdef int r
         r = nvjpegEncoderParamsSetSamplingFactors(self.nv_enc_params, subsampling, self.stream)
         errcheck(r, "nvjpegEncoderParamsSetSamplingFactors %i (%s)",
@@ -524,7 +532,7 @@ cdef nvjpegChromaSubsampling_t get_subsampling(int quality):
     return NVJPEG_CSS_420
 
 
-def encode(coding, image, int quality=50, speed=50):
+def encode(coding, image, options):
     assert coding=="jpeg"
     from xpra.codecs.cuda_common.cuda_context import select_device, cuda_device_context
     cdef double start = monotonic()
@@ -535,25 +543,53 @@ def encode(coding, image, int quality=50, speed=50):
     cuda_context = cuda_device_context(cuda_device_id, cuda_device)
     cdef double end = monotonic()
     log("device init took %.1fms", 1000*(end-start))
-    return device_encode(cuda_context, image, quality, speed)
+    return device_encode(cuda_context, image, options)
 
 errors = []
 def get_errors():
     global errors
     return errors
 
-def device_encode(device_context, image, int quality=50, speed=50):
+def device_encode(device_context, image, options):
     global errors
-    pfstr = bytestostr(image.get_pixel_format())
-    assert pfstr in ("RGB", "BGR"), "invalid pixel format %s" % pfstr
-    options = typedict()
+    pfstr = image.get_pixel_format()
+
     cdef int width = image.get_width()
     cdef int height = image.get_height()
-    cdef int stride = image.get_rowstride()
+    resize = options.get("resize")
+    if resize:
+        #we may need to convert to an RGB format scaling can handle:
+        from xpra.codecs.argb.scale import scale_image, RGB_SCALE_FORMATS
+        if pfstr not in RGB_SCALE_FORMATS:
+            from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
+            if not argb_swap(image, RGB_SCALE_FORMATS):
+                log("nvjpeg: argb_swap failed to convert %s to a suitable format for scaling: %s" % (
+                    pfstr, RGB_SCALE_FORMATS))
+            else:
+                pfstr = image.get_pixel_format()
+        if pfstr in RGB_SCALE_FORMATS:
+            w, h = resize
+            image = scale_image(image, w, h)
+            log("nvjpeg scaled image: %s", image)
+
+    if pfstr not in NVJPEG_INPUT_FORMATS:
+        from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport @Reimport
+        if not argb_swap(image, NVJPEG_INPUT_FORMATS):
+            log("nvjpeg: argb_swap failed to convert %s to a suitable format: %s" % (
+                pfstr, NVJPEG_INPUT_FORMATS))
+            return None
+        log("jpeg converted image: %s", image)
+        pfstr = image.get_pixel_format()
+
+    options = typedict(options)
+    cdef int encode_width = image.get_width()
+    cdef int encode_height = image.get_height()
+    cdef int quality = options.get("quality", 50)
+    cdef int speed = options.get("speed", 50)
     cdef Encoder encoder
     try:
         encoder = Encoder()
-        encoder.init_context(device_context, width, height,
+        encoder.init_context(device_context, encode_width, encode_height,
                        pfstr, (pfstr, ),
                        "jpeg", quality, speed, scaling=(1, 1), options=options)
         r = encoder.compress_image(device_context, image, quality, speed, options)
@@ -579,5 +615,5 @@ def selftest(full=False):
     for size in (32, 256):
         img = make_test_image("BGR", size, size)
         log("testing with %s", img)
-        v = encode("jpeg", img)
+        v = encode("jpeg", img, {})
         assert v, "failed to compress test image"

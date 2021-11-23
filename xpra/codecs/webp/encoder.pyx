@@ -385,25 +385,23 @@ cdef get_config_info(WebPConfig *config):
         "low_memory"        : config.low_memory,
         }
 
-def encode(coding, image, int quality=50, int speed=50,
-           supports_alpha=False,
-           content_type="",
-           resize=None):
+def encode(coding, image, options):
+    log("webp.encode(%s, %s, %s)", coding, image, options)
     assert coding=="webp"
-    log("webp.encode(%s, %i, %i, %s, %s)", image, quality, speed, supports_alpha, content_type)
     pixel_format = image.get_pixel_format()
     if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR"):
         raise Exception("unsupported pixel format %s" % pixel_format)
     cdef unsigned int width = image.get_width()
     cdef unsigned int height = image.get_height()
     assert width<16384 and height<16384, "invalid image dimensions: %ix%i" % (width, height)
+    resize = options.get("resize", None)
     cdef unsigned int stride = image.get_rowstride()
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
     cdef int size = stride * height
-    if width>WEBP_MAX_DIMENSION or height>WEBP_MAX_DIMENSION:
-        raise Exception("this image is too big for webp: %ix%i" % (width, height))
     pixels = image.get_pixels()
+    cdef int supports_alpha = options.get("alpha", False)
     cdef int alpha_int = supports_alpha and pixel_format.find("A")>=0
+    cdef int quality = options.get("quality", 50)
     cdef int yuv420p = quality<SUBSAMPLING_THRESHOLD
 
     cdef WebPConfig config
@@ -411,6 +409,7 @@ def encode(coding, image, int quality=50, int speed=50,
     #only use icon for small squarish rectangles
     if width*height<=2304 and abs(width-height)<=16:
         preset = PRESET_SMALL
+    content_type = options.get("content-type", None)
     preset = CONTENT_TYPE_PRESET.get(content_type, preset)
     cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
 
@@ -422,8 +421,9 @@ def encode(coding, image, int quality=50, int speed=50,
     if not ret:
         raise Exception("failed to set webp preset")
 
+    cdef int speed = options.get("speed", 50)
     #tune it:
-    config.lossless = quality>=100
+    config.lossless = quality>=100 and not resize
     if config.lossless:
         #not much to gain from setting a high quality here,
         #the latency will be higher for a negligible compression gain:
@@ -516,17 +516,19 @@ def encode(coding, image, int quality=50, int speed=50,
     end = monotonic()
     log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
 
-    cdef int scaled_width, scaled_height
+    cdef int encode_width, encode_height
     if resize:
-        scaled_width, scaled_height = resize
+        encode_width, encode_height = resize
         start = monotonic()
         with nogil:
-            ret = WebPPictureRescale(&pic, scaled_width, scaled_height)
+            ret = WebPPictureRescale(&pic, encode_width, encode_height)
         if not ret:
             WebPPictureFree(&pic)
             raise Exception("WebP failed to resize %s to %s" % (image, resize))
         end = monotonic()
         log("webp %s resizing took %.1fms", 1000*(end-start))
+        #we could use scaling to fit?
+        assert encode_width<16384 and encode_height<16384, "invalid image dimensions: %ix%i" % (width, height)
 
     if yuv420p:
         start = monotonic()
@@ -583,7 +585,7 @@ def selftest(full=False):
     for has_alpha in (True, False):
         img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)
         for q in (10, 50, 90):
-            r = encode("webp", img, quality=q, speed=50, supports_alpha=has_alpha)
+            r = encode("webp", img, {"quality" : q, "speed" : 50, "alpha" : has_alpha})
             assert len(r)>0
         #import binascii
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))
