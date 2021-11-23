@@ -16,6 +16,8 @@ Q = (1, 10, 50, 99, 100)
 
 def main(argv):
     assert len(argv)>1, "specify images to benchmark"
+    from xpra.net import compression
+    compression.init_all()
     from xpra.codecs.loader import load_codecs, get_codec
     loaded = load_codecs(encoders=True, decoders=False, csc=False, video=False)
     print("loaded: %s" % csv(loaded))
@@ -56,6 +58,8 @@ def main(argv):
                             "quality"       : quality,
                             "speed"         : speed,
                             "rgb_formats"   : ("BGRX", "BGRA", "RGB", "BGR"),
+                            "zlib"          : True,
+                            "lz4"           : True,
                             }
                         client_options = {}
                         for _ in range(n):

@@ -51,7 +51,7 @@ def encode(coding : str, image, options : dict):
     #we may still want to re-stride:
     image.may_restride()
     #always tell client which pixel format we are sending:
-    options = {"rgb_format" : pixel_format}
+    client_options = {"rgb_format" : pixel_format}
 
     #compress here and return a wrapper so network code knows it is already zlib compressed:
     pixels = image.get_pixels()
@@ -78,14 +78,14 @@ def encode(coding : str, image, options : dict):
         lz4 = options.get("lz4", False)
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       zlib=zlib, lz4=lz4,
-                                      brotli=False, none=True)
+                                      brotli=False, none=False)
         if isinstance(cwrapper, LevelCompressed):
             #add compressed marker:
-            options[algo] = level
+            client_options[cwrapper.algorithm] = cwrapper.level & 0xF
             #remove network layer compression marker
             #so that this data will be decompressed by the decode thread client side:
             cwrapper.level = 0
-    if level==0:
+    else:
         #can't pass a raw buffer to bencode / rencode,
         #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
         algo = "not"
@@ -98,4 +98,4 @@ def encode(coding : str, image, options : dict):
         level, l, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
     #wrap it using "Compressed" so the network layer receiving it
     #won't decompress it (leave it to the client's draw thread)
-    return coding, cwrapper, options, width, height, stride, bpp
+    return coding, cwrapper, client_options, width, height, stride, bpp
