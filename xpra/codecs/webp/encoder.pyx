@@ -229,25 +229,25 @@ cdef extern from "webp/encode.h":
     # Previous buffer will be free'd, if any.
     # *rgb buffer should have a size of at least height * rgb_stride.
     # Returns false in case of memory error.
-    int WebPPictureImportRGB(WebPPicture* picture, const uint8_t* rgb, int rgb_stride)
+    int WebPPictureImportRGB(WebPPicture* picture, const uint8_t* rgb, int rgb_stride) nogil
     # Same, but for RGBA buffer.
-    int WebPPictureImportRGBA(WebPPicture* picture, const uint8_t* rgba, int rgba_stride)
+    int WebPPictureImportRGBA(WebPPicture* picture, const uint8_t* rgba, int rgba_stride) nogil
     # Same, but for RGBA buffer. Imports the RGB direct from the 32-bit format
     # input buffer ignoring the alpha channel. Avoids needing to copy the data
     # to a temporary 24-bit RGB buffer to import the RGB only.
-    int WebPPictureImportRGBX(WebPPicture* picture, const uint8_t* rgbx, int rgbx_stride)
+    int WebPPictureImportRGBX(WebPPicture* picture, const uint8_t* rgbx, int rgbx_stride) nogil
 
     # Variants of the above, but taking BGR(A|X) input.
-    int WebPPictureImportBGR(WebPPicture* picture, const uint8_t* bgr, int bgr_stride)
-    int WebPPictureImportBGRA(WebPPicture* picture, const uint8_t* bgra, int bgra_stride)
-    int WebPPictureImportBGRX(WebPPicture* picture, const uint8_t* bgrx, int bgrx_stride)
+    int WebPPictureImportBGR(WebPPicture* picture, const uint8_t* bgr, int bgr_stride) nogil
+    int WebPPictureImportBGRA(WebPPicture* picture, const uint8_t* bgra, int bgra_stride) nogil
+    int WebPPictureImportBGRX(WebPPicture* picture, const uint8_t* bgrx, int bgrx_stride) nogil
 
     # Converts picture->argb data to the YUVA format specified by 'colorspace'.
     # Upon return, picture->use_argb is set to false. The presence of real
     # non-opaque transparent values is detected, and 'colorspace' will be
     # adjusted accordingly. Note that this method is lossy.
     # Returns false in case of error.
-    int WebPPictureARGBToYUVA(WebPPicture* picture, WebPEncCSP colorspace)
+    int WebPPictureARGBToYUVA(WebPPicture* picture, WebPEncCSP colorspace) nogil
 
     # Converts picture->yuv to picture->argb and sets picture->use_argb to true.
     # The input format must be YUV_420 or YUV_420A.
@@ -255,17 +255,17 @@ cdef extern from "webp/encode.h":
     # raw ARGB samples, since using YUV420 is comparatively lossy. Also, the
     # conversion from YUV420 to ARGB incurs a small loss too.
     # Returns false in case of error.
-    int WebPPictureYUVAToARGB(WebPPicture* picture)
+    int WebPPictureYUVAToARGB(WebPPicture* picture) nogil
 
     # Helper function: given a width x height plane of YUV(A) samples
     # (with stride 'stride'), clean-up the YUV samples under fully transparent
     # area, to help compressibility (no guarantee, though).
-    void WebPCleanupTransparentArea(WebPPicture* picture)
+    void WebPCleanupTransparentArea(WebPPicture* picture) nogil
 
     # Scan the picture 'picture' for the presence of non fully opaque alpha values.
     # Returns true in such case. Otherwise returns false (indicating that the
     # alpha plane can be ignored altogether e.g.).
-    int WebPPictureHasTransparency(const WebPPicture* picture)
+    int WebPPictureHasTransparency(const WebPPicture* picture) nogil
 
     # Main encoding call, after config and picture have been initialized.
     # 'picture' must be less than 16384x16384 in dimension (cf WEBP_MAX_DIMENSION),
@@ -277,7 +277,7 @@ cdef extern from "webp/encode.h":
     # the former for lossy encoding, and the latter for lossless encoding
     # (when config.lossless is true). Automatic conversion from one format to
     # another is provided but they both incur some loss.
-    int WebPEncode(const WebPConfig* config, WebPPicture* picture)
+    int WebPEncode(const WebPConfig* config, WebPPicture* picture) nogil
 
 
 ERROR_TO_NAME = {
@@ -493,18 +493,25 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     #import the pixel data into WebPPicture
     if use_argb:
         if pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
-            ret = WebPPictureImportRGBX(&pic, pic_buf, stride)
+            with nogil:
+                ret = WebPPictureImportRGBX(&pic, pic_buf, stride)
         elif pixel_format=="RGBA":
-            ret = WebPPictureImportRGBA(&pic, pic_buf, stride)
+            with nogil:
+                ret = WebPPictureImportRGBA(&pic, pic_buf, stride)
         elif pixel_format=="BGRX" or (pixel_format=="BGRA" and not supports_alpha):
-            ret = WebPPictureImportBGRX(&pic, pic_buf, stride)
+            with nogil:
+                ret = WebPPictureImportBGRX(&pic, pic_buf, stride)
         else:
             assert pixel_format=="BGRA"
-            ret = WebPPictureImportBGRA(&pic, pic_buf, stride)
+            with nogil:
+                ret = WebPPictureImportBGRA(&pic, pic_buf, stride)
     else:
         pic.argb = <uint32_t*> pic_buf
-        if WebPPictureARGBToYUVA(&pic, WEBP_YUV420A):
-            client_options["subsampling"] = "YUV420P"
+        with nogil:
+            ret = WebPPictureARGBToYUVA(&pic, WEBP_YUV420A)
+        if not ret:
+            raise Exception("WebPPictureARGBToYUVA failed for %s" % image)
+        client_options["subsampling"] = "YUV420P"
     if not ret:
         WebPPictureFree(&pic)
         raise Exception("WebP importing image failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
@@ -514,7 +521,8 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     WebPMemoryWriterInit(&memory_writer)
     pic.writer = <WebPWriterFunction> WebPMemoryWrite
     pic.custom_ptr = <void*> &memory_writer
-    ret = WebPEncode(&config, &pic)
+    with nogil:
+        ret = WebPEncode(&config, &pic)
     if not ret:
         raise Exception("WebPEncode failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
 
