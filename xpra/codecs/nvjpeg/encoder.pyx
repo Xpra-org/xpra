@@ -380,14 +380,14 @@ cdef class Encoder:
         cdef int huffman = int(self.speed<80)
         r = nvjpegEncoderParamsSetOptimizedHuffman(self.nv_enc_params, huffman, self.stream)
         errcheck(r, "nvjpegEncoderParamsSetOptimizedHuffman %i", huffman)
-        log("init_nvjpeg() nv_handle=%#x, nv_enc_state=%#x, nv_enc_params=%#x",
+        log("configure_nvjpeg() nv_handle=%#x, nv_enc_state=%#x, nv_enc_params=%#x",
             <uintptr_t> self.nv_handle, <uintptr_t> self.nv_enc_state, <uintptr_t> self.nv_enc_params)
         cdef nvjpegJpegEncoding_t encoding_type = NVJPEG_ENCODING_BASELINE_DCT
         #NVJPEG_ENCODING_EXTENDED_SEQUENTIAL_DCT_HUFFMAN
         #NVJPEG_ENCODING_PROGRESSIVE_DCT_HUFFMAN
         r = nvjpegEncoderParamsSetEncoding(self.nv_enc_params, encoding_type, self.stream)
         errcheck(r, "nvjpegEncoderParamsSetEncoding %i (%s)", encoding_type, ENCODING_STR.get(encoding_type, "invalid"))
-        log("init_nvjpeg() quality=%s, huffman=%s, subsampling=%s, encoding type=%s",
+        log("configure_nvjpeg() quality=%s, huffman=%s, subsampling=%s, encoding type=%s",
             self.quality, huffman, CSS_STR.get(subsampling, "invalid"), ENCODING_STR.get(encoding_type, "invalid"))
 
 
