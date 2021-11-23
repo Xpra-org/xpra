@@ -162,7 +162,9 @@ def encode(coding : str, image, options):
         kwargs["quality"] = q
         if coding=="webp":
             kwargs["method"] = int(speed<10)
-        client_options["quality"] = q
+            client_options["quality"] = q
+        else:
+            client_options["quality"] = min(99, q)
         if coding=="jpeg" and speed<50:
             #(optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
