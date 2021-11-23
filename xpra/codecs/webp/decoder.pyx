@@ -229,7 +229,7 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     config.output.u.RGBA.size   = size
     config.output.is_external_memory = 1
 
-    cdef int ret = 0
+    cdef VP8StatusCode ret = 0
     cdef size_t data_len
     cdef const uint8_t* data_buf
     with buffer_context(data) as bc:
@@ -294,7 +294,7 @@ def decompress_yuv(data, has_alpha=False):
     config.output.is_external_memory = 1
     log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s",
         w, h, <uintptr_t> buf, strides)
-    cdef int ret = 0
+    cdef VP8StatusCode ret = 0
     cdef size_t data_len
     cdef const uint8_t* data_buf
     with buffer_context(data) as bc:
