@@ -9,7 +9,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.buffers.membuf cimport memalign, memory_as_pybuffer  #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport memalign, object_as_buffer, memory_as_pybuffer  #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stdlib cimport free
@@ -121,7 +121,7 @@ cdef extern from "webp/decode.h":
 
     int WebPInitDecoderConfig(WebPDecoderConfig* config)
     VP8StatusCode WebPDecode(const uint8_t* data, size_t data_size,
-                                      WebPDecoderConfig* config)
+                                      WebPDecoderConfig* config) nogil
     void WebPFreeDecBuffer(WebPDecBuffer* buffer)
 
 
@@ -229,7 +229,12 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     config.output.u.RGBA.size   = size
     config.output.is_external_memory = 1
 
-    webp_check(WebPDecode(data, len(data), &config))
+    cdef VP8StatusCode ret = 0
+    cdef Py_ssize_t data_len
+    cdef const uint8_t* data_buf
+    assert object_as_buffer(data, <const void**> &data_buf, &data_len)==0, "unable to convert %s to a buffer" % type(data)
+    with nogil:
+        ret = WebPDecode(data_buf, data_len, &config)
     #we use external memory, so this is not needed:
     #WebPFreeDecBuffer(&config.output)
 
@@ -286,7 +291,13 @@ def decompress_yuv(data, has_alpha=False):
     config.output.is_external_memory = 1
     log("WebPDecode: image size %ix%i : buffer=%#x, strides=%s",
         w, h, <uintptr_t> buf, strides)
-    webp_check(WebPDecode(data, len(data), &config))
+    cdef VP8StatusCode ret = 0
+    cdef Py_ssize_t data_len
+    cdef const uint8_t* data_buf
+    assert object_as_buffer(data, <const void**> &data_buf, &data_len)==0, "unable to convert %s to a buffer" % type(data)
+    with nogil:
+        ret = WebPDecode(data_buf, data_len, &config)
+    webp_check(ret)
     if alpha:
         planes = (
             memory_as_pybuffer(<void *> YUVA.y, y_size, True),
