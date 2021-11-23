@@ -12,6 +12,7 @@ log = Logger("decoder", "jpeg")
 from xpra.util import envbool, reverse_dict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
+from libc.string cimport memset #pylint: disable=syntax-error
 
 from libc.stdint cimport uint8_t
 
@@ -154,16 +155,18 @@ def decompress_to_yuv(data):
         close()
         raise Exception("failed to decompress JPEG header: %s" % err)
 
-    subsamp_str = "YUV%sP" % TJSAMP_STR.get(subsamp, subsamp)
-    assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420), "unsupported JPEG colour subsampling: %s" % subsamp_str
+    subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
+    assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420, TJSAMP_GRAY), "unsupported JPEG colour subsampling: %s" % subsamp_str
+    pixel_format = "YUV%sP" % subsamp_str
     log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
     #allocate YUV buffers:
-    cdef unsigned long plane_sizes[3]
+    cdef unsigned long plane_size
     cdef unsigned char *planes[3]
     cdef int strides[3]
     cdef int i, stride
     cdef MemBuf membuf
+    cdef MemBuf empty
     cdef int flags = 0
     pystrides = []
     pyplanes = []
@@ -172,15 +175,28 @@ def decompress_to_yuv(data):
     try:
         for i in range(3):
             stride = tjPlaneWidth(i, w, subsamp)
-            assert stride>0, "cannot get stride - out of bounds?"
-            strides[i] = roundup(stride, 4)
-            plane_sizes[i] = tjPlaneSizeYUV(i, w, strides[i], h, subsamp)
-            assert plane_sizes[i]>0, "cannot get plane size - out of bounds?"
-            total_size += plane_sizes[i]
-            membuf = getbuf(plane_sizes[i])     #add padding?
-            planes[i] = <unsigned char*> membuf.get_mem()
+            if stride<=0:
+                strides[i] = 0
+                planes[i] = NULL
+                if subsamp!=TJSAMP_GRAY or i==0:
+                    raise ValueError("cannot get size for plane %r for mode %r" % ("YUV"[i], subsamp_str))
+                stride = roundup(w//2, 4)
+                plane_size = stride * roundup(h//2, 2)
+                if i==1:
+                    #allocate empty U and V planes:
+                    empty = getbuf(plane_size)
+                    memset(<void *> empty.get_mem(), 128, plane_size)
+                    pixel_format = "YUV420P"
+                membuf = empty
+            else:
+                stride = roundup(stride, 4)
+                strides[i] = stride
+                plane_size = tjPlaneSizeYUV(i, w, stride, h, subsamp)
+                membuf = getbuf(plane_size)     #add padding?
+                planes[i] = <unsigned char*> membuf.get_mem()
+            total_size += plane_size
             #python objects for each plane:
-            pystrides.append(strides[i])
+            pystrides.append(stride)
             pyplanes.append(memoryview(membuf))
         #log("jpeg strides: %s, plane sizes=%s", pystrides, [int(plane_sizes[i]) for i in range(3)])
         start = monotonic()
@@ -195,8 +211,8 @@ def decompress_to_yuv(data):
     if LOG_PERF:
         elapsed = monotonic()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",
-            subsamp_str, total_size/elapsed//1024//1024, total_size, 1000*elapsed)
-    return ImageWrapper(0, 0, w, h, pyplanes, subsamp_str, 24, pystrides, ImageWrapper.PLANAR_3)
+            pixel_format, total_size/elapsed//1024//1024, total_size, 1000*elapsed)
+    return ImageWrapper(0, 0, w, h, pyplanes, pixel_format, 24, pystrides, ImageWrapper.PLANAR_3)
 
 
 def decompress_to_rgb(rgb_format, data):
