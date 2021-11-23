@@ -208,7 +208,8 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
                            filtermode)
     assert result==0, "libyuv ARGBScale failed and returned %i" % result
     out = memoryview(output_buffer)
-    scaled_image = ImageWrapper(0, 0, dst_width, dst_height, out, image.get_pixel_format(), 24, dst_stride, bpp, ImageWrapper.PACKED)
+    scaled_image = ImageWrapper(0, 0, dst_width, dst_height, out,
+                                image.get_pixel_format(), image.get_depth(), dst_stride, bpp, ImageWrapper.PACKED)
     log("argb_scale(%s, %i, %i, %i)=%s", image, dst_width, dst_height, filtermode, scaled_image)
     return scaled_image
 
