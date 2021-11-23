@@ -18,7 +18,7 @@ def main(argv):
     assert len(argv)>1, "specify images to benchmark"
     from xpra.codecs.loader import load_codecs, get_codec
     loaded = load_codecs(encoders=True, decoders=False, csc=False, video=False)
-    print("loaded: %s" % (loaded,))
+    print("loaded: %s" % csv(loaded))
     for codec in loaded:
         print("%s : %s" % (codec, get_codec(codec)))
 
@@ -46,14 +46,23 @@ def main(argv):
                     mod = get_codec(codec)
                     encodings = mod.get_encodings()
                     if not warmup:
-                        print("  %s" % codec)
+                        print("  %s : %s" % (codec, encodings))
                     #print("%s" % (dir(mod), ))
                     for e in encodings:
                         start = monotonic()
                         sizes = []
                         n = 1 if warmup else N
+                        options = {
+                            "quality"       : quality,
+                            "speed"         : speed,
+                            "rgb_formats"   : ("BGRX", "BGRA", "RGB", "BGR"),
+                            }
                         for _ in range(n):
-                            r = mod.encode(e, image, quality, speed)
+                            try:
+                                r = mod.encode(e, image, options)
+                            except Exception:
+                                print("error on %s.%s" % (mod, mod.encode))
+                                raise
                             cdata = r[1]
                             sizes.append(len(cdata))
                         end = monotonic()
