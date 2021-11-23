@@ -305,7 +305,7 @@ class AudioMixin(StubSourceMixin):
     def call_update_av_sync_delay(self):
         #loose coupling with avsync mixin:
         update_av_sync = getattr(self, "update_av_sync_delay_total", None)
-        log.warn("call_update_av_sync_delay update_av_sync=%s", update_av_sync)
+        log("call_update_av_sync_delay update_av_sync=%s", update_av_sync)
         if callable(update_av_sync):
             update_av_sync()  #pylint: disable=not-callable
 
