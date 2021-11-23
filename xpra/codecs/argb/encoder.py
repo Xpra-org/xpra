@@ -5,7 +5,7 @@
 
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs import rgb_transform
-from xpra.net.compression import Compressed, compressed_wrapper
+from xpra.net.compression import Compressed, LevelCompressed, compressed_wrapper
 from xpra.log import Logger
 
 log = Logger("encoder")
@@ -79,12 +79,7 @@ def encode(coding : str, image, options : dict):
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       zlib=zlib, lz4=lz4,
                                       brotli=False, none=True)
-        algo = cwrapper.algorithm
-        if algo=="none" or len(cwrapper)>=(len(pixels)-32):
-            #no compression is enabled, or compressed is actually bigger!
-            #(fall through to uncompressed)
-            level = 0
-        else:
+        if isinstance(cwrapper, LevelCompressed):
             #add compressed marker:
             options[algo] = level
             #remove network layer compression marker
