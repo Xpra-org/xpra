@@ -57,6 +57,7 @@ def main(argv):
                             "speed"         : speed,
                             "rgb_formats"   : ("BGRX", "BGRA", "RGB", "BGR"),
                             }
+                        client_options = {}
                         for _ in range(n):
                             try:
                                 r = mod.encode(e, image, options)
@@ -64,12 +65,14 @@ def main(argv):
                                 print("error on %s.%s" % (mod, mod.encode))
                                 raise
                             cdata = r[1]
+                            client_options = r[2]
                             sizes.append(len(cdata))
                         end = monotonic()
                         if not warmup:
                             cratio = ceil(100*sum(sizes) / (w*h*len(pixel_format) * N))
                             mps = (w*h*N) / (end-start)
-                            print("    %-16s : %3i%%    -    %i MPixels/s" % (e, cratio, mps//1024//1024))
+                            print("    %-16s : %3i%%    -    %7i MPixels/s,    %s" % (
+                                e, cratio, mps//1024//1024, client_options))
 
 if __name__ == '__main__':
     main(sys.argv)
