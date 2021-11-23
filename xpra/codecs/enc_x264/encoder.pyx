@@ -384,7 +384,7 @@ def cleanup_module():
     log("enc_x264.cleanup_module()")
 
 def get_version():
-    return X264_BUILD
+    return (X264_BUILD, )
 
 def get_type():
     return "x264"

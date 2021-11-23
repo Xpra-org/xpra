@@ -109,7 +109,7 @@ def get_type() -> str:
     return "libyuv"
 
 def get_version() -> int:
-    return 0
+    return (1, 0)
 
 #hardcoded for now:
 MAX_WIDTH = 32768

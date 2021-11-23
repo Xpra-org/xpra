@@ -272,7 +272,11 @@ def cleanup_module():
     log("enc_x265.cleanup_module()")
 
 def get_version():
-    return x265_version_str
+    s = x265_version_str.decode().split("+")[0]
+    try:
+        return tuple(int(v) for v in s.split("."))
+    except Exception:
+        return x265_version_str
 
 def get_type():
     return "x265"

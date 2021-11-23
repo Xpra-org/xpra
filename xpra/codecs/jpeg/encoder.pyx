@@ -93,7 +93,7 @@ TJSAMP_STR = {
 
 
 def get_version():
-    return 2
+    return (2, 0)
 
 def get_type():
     return "jpeg"

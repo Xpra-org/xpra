@@ -276,7 +276,7 @@ def query_video_device(device="/dev/video0"):
 
 
 def get_version():
-    return 0
+    return (1, 0)
 
 def get_type():
     return "v4l2"

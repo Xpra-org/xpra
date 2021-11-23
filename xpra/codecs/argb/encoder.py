@@ -12,7 +12,7 @@ log = Logger("encoder")
 
 
 def get_version():
-    return 4, 3
+    return (4, 3)
 
 def get_type() -> str:
     return "rgb"

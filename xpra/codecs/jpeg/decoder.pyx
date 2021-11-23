@@ -115,7 +115,7 @@ TJPF_VAL = reverse_dict(TJPF_STR)
 
 
 def get_version():
-    return 1
+    return (1, 0)
 
 def get_encodings():
     return ["jpeg"]

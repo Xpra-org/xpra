@@ -1425,8 +1425,8 @@ def get_spec(encoding, colorspace):
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
 PRETTY_VERSION = (int(NVENCAPI_MAJOR_VERSION), int(NVENCAPI_MINOR_VERSION))
 
-def get_version() -> str:
-    return ".".join((str(x) for x in PRETTY_VERSION))
+def get_version():
+    return PRETTY_VERSION
 
 def get_type() -> str:
     return "nvenc"

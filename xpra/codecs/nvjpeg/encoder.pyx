@@ -281,7 +281,7 @@ def get_version():
     errcheck(r, "nvjpegGetProperty MINOR_VERSION")
     r = nvjpegGetProperty(PATCH_LEVEL, &patch_level)
     errcheck(r, "nvjpegGetProperty PATCH_LEVEL")
-    return "%s.%s.%s" % (major_version, minor_version, patch_level)
+    return (major_version, minor_version, patch_level)
 
 def get_type() -> str:
     return "nvjpeg"

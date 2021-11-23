@@ -111,9 +111,12 @@ def get_abi_version():
 
 def get_version():
     b = vpx_codec_version_str()
-    vstr = b.decode("latin1")
+    vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
-    return vstr.lstrip("v")
+    try:
+        return tuple(int(v) for v in vstr.split("."))
+    except Exception:
+        return vstr
 
 def get_type():
     return "vpx"
