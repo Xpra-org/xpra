@@ -9,9 +9,11 @@ from math import ceil
 from time import monotonic
 
 from xpra.util import csv
+from xpra.codecs.argb.argb import argb_swap
 from xpra.codecs.image_wrapper import ImageWrapper
 
 N = 10
+#Q = (20, 99)
 Q = (1, 10, 50, 99, 100)
 
 def main(argv):
@@ -27,22 +29,19 @@ def main(argv):
     from PIL import Image
     for f in argv[1:]:
         img = Image.open(f)
-        pixel_format = "RGBA"
-        if img.mode!=pixel_format:
-            pixel_format = "RGB"
-            img = img.convert(pixel_format)
+        if img.mode not in ("RGBA", "RGB"):
+            img = img.convert("RGB")
+        pixel_format = img.mode
         w, h = img.size
         rgb_data = img.tobytes("raw")
         stride = w * len(pixel_format)
-        image = ImageWrapper(0, 0, w, h,
-                             rgb_data, pixel_format, 32, stride,
-                             planes=ImageWrapper.PACKED, thread_safe=True)
         print()
-        print("%s : %s : %s" % (f, img, image))
+        print("%s : %s" % (f, img))
         for warmup in (True, False):
             speed = 50
             for quality in Q:
                 if not warmup:
+                    print()
                     print("quality = %i" % quality)
                 for codec in loaded:
                     mod = get_codec(codec)
@@ -51,23 +50,30 @@ def main(argv):
                         print("  %s : %s" % (codec, encodings))
                     #print("%s" % (dir(mod), ))
                     for e in encodings:
-                        start = monotonic()
+                        image = ImageWrapper(0, 0, w, h,
+                                             rgb_data, pixel_format, len(pixel_format)*8, stride,
+                                             planes=ImageWrapper.PACKED, thread_safe=True)
                         sizes = []
                         n = 1 if warmup else N
                         options = {
                             "quality"       : quality,
                             "speed"         : speed,
-                            "rgb_formats"   : ("BGRX", "BGRA", "RGB", "BGR"),
+                            "rgb_formats"   : ("BGRX", "BGRA", "RGBA", "RGBX", "RGB", "BGR"),
                             "zlib"          : True,
                             "lz4"           : True,
+                            "alpha"         : True,
                             }
                         client_options = {}
+                        start = monotonic()
                         for _ in range(n):
                             try:
                                 r = mod.encode(e, image, options)
                             except Exception:
                                 print("error on %s.%s" % (mod, mod.encode))
                                 raise
+                            if not r:
+                                print("error: no data for %s encoding %s as %r" % (codec, image, e))
+                                continue
                             cdata = r[1]
                             client_options = r[2]
                             sizes.append(len(cdata))
