@@ -425,9 +425,9 @@ def encode(coding, image, options):
     #tune it:
     config.lossless = quality>=100 and not resize
     if config.lossless:
-        #not much to gain from setting a high quality here,
-        #the latency will be higher for a negligible compression gain:
-        config.quality = fclamp(50-speed//2)
+        #'quality' actually controls the speed
+        #and anything above zero is just too slow:
+        config.quality = 0
         config.autofilter = 1
     else:
         #normalize quality: webp quality is much higher than jpeg's
