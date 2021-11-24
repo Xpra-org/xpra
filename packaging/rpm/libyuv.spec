@@ -24,6 +24,10 @@ Patch7:		libyuv-0007-nojpeg.patch
 BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
+%if 0%{?el8}
+#CentOS 8 ships cmake with broken dependencies, fix it:
+BuildRequires:	libarchive
+%endif
 %if !0%{?el9}
 BuildRequires:	gtest-devel
 %endif
