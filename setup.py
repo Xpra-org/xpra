@@ -138,6 +138,8 @@ skip_build = "--skip-build" in sys.argv
 ARCH = get_status_output(["uname", "-m"])[1]
 print("ARCH=%s" % (ARCH,))
 
+INCLUDE_DIR = os.environ.get("INCLUDE_DIR", os.path.join(sys.prefix, "include"))
+
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
 server_ENABLED = (LOCAL_SERVERS_SUPPORTED or shadow_ENABLED) and DEFAULT
@@ -159,11 +161,11 @@ dbus_ENABLED = DEFAULT and x11_ENABLED and not (OSX or WIN32)
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (os.path.exists("/usr/include/pam/pam_misc.h") or os.path.exists("/usr/include/security/pam_misc.h"))
+pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and POSIX and not OSX and (os.path.exists(INCLUDE_DIR+"/pam/pam_misc.h") or os.path.exists(INCLUDE_DIR+"/security/pam_misc.h"))
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
-vsock_ENABLED           = LINUX and os.path.exists("/usr/include/linux/vm_sockets.h")
+vsock_ENABLED           = LINUX and os.path.exists(INCLUDE_DIR+"/linux/vm_sockets.h")
 bencode_ENABLED         = DEFAULT
 cython_bencode_ENABLED  = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
@@ -2337,7 +2339,7 @@ if v4l2_ENABLED:
     v4l2_pkgconfig = pkgconfig()
     #fugly warning: cython makes this difficult,
     #we have to figure out if "device_caps" exists in the headers:
-    videodev2_h = "/usr/include/linux/videodev2.h"
+    videodev2_h = INCLUDE_DIR+"/linux/videodev2.h"
     constants_pxi = "xpra/codecs/v4l2/constants.pxi"
     if not os.path.exists(videodev2_h) or should_rebuild(videodev2_h, constants_pxi):
         ENABLE_DEVICE_CAPS = 0
@@ -2388,7 +2390,7 @@ if vsock_ENABLED:
 
 if pam_ENABLED:
     pam_pkgconfig = pkgconfig()
-    add_to_keywords(pam_pkgconfig, 'extra_compile_args', "-I/usr/include/pam", "-I/usr/include/security")
+    add_to_keywords(pam_pkgconfig, 'extra_compile_args', "-I%s/pam" % INCLUDE_DIR, "-I%s/security" % INCLUDE_DIR)
     add_to_keywords(pam_pkgconfig, 'extra_link_args', "-lpam", "-lpam_misc")
     add_cython_ext("xpra.server.pam",
                 ["xpra/server/pam.pyx"],
