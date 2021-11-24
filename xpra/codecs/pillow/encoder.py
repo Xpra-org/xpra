@@ -258,7 +258,7 @@ def selftest(full=False):
                     for alpha in (True, False):
                         v = encode(encoding, img, {
                             "quality" : q,
-                            "speed" : s, 
+                            "speed" : s,
                             "alpha" : alpha})
                         assert v, "encode output was empty!"
                         cdata = v[1].data
