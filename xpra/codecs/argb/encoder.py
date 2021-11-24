@@ -65,17 +65,16 @@ def encode(coding : str, image, options : dict):
     level = 0
     algo = "not"
     l = len(pixels)
-    if l>=512 and speed<100:
+    lz4 = options.get("lz4", False)
+    if l>=512 and (lz4 or speed<100):
         if l>=4096:
-            #speed=99 -> level=1, speed=0 -> level=9
-            level = 1+max(0, min(8, int(100-speed)//12))
+            level = 1+max(0, min(7, int(100-speed)//14))
         else:
             #fewer pixels, make it more likely we won't bother compressing
-            #and use a lower level (max=5)
-            level = max(0, min(5, int(115-speed)//20))
+            #and use a lower level (max=3)
+            level = max(0, min(3, int(125-speed)//35))
     if level>0:
         zlib = options.get("zlib", False)
-        lz4 = options.get("lz4", False)
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       zlib=zlib, lz4=lz4,
                                       brotli=False, none=False)

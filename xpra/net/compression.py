@@ -40,7 +40,7 @@ def init_lz4():
         from lz4.version import version
     def lz4_compress(packet, level):
         flag = min(15, level) | LZ4_FLAG
-        if level>=7:
+        if level>=9:
             return flag, block_compress(packet, mode="high_compression", compression=level)
         if level<=3:
             return flag, block_compress(packet, mode="fast", acceleration=8-level*2)
