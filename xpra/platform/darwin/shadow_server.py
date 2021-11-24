@@ -35,7 +35,7 @@ ALPHA = {
 BTYPES = tuple((str, bytes, memoryview, bytearray))
 
 #ensure that picture_encode can deal with pixels as NSCFData:
-def patch_picture_encode():
+def patch_pixels_to_bytes():
     from CoreFoundation import CFDataGetBytes, CFDataGetLength  #@UnresolvedImport
     def pixels_to_bytes(v):
         if isinstance(v, BTYPES):
@@ -81,7 +81,7 @@ class ShadowServer(GTKShadowServerBase):
         if image is None:
             log("cannot grab test screenshot - maybe you need to run this command whilst logged in via the UI")
             raise InitExit(EXIT_FAILURE, "cannot grab pixels from the screen, make sure this command is launched from a GUI session")
-        patch_picture_encode()
+        patch_pixels_to_bytes()
         self.refresh_count = 0
         self.refresh_rectangle_count = 0
         self.refresh_registered = False
