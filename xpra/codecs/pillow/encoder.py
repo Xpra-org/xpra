@@ -121,6 +121,14 @@ def encode(coding : str, image, options):
         #calls below will not convert and modify the data in place
         #and we save the compressed data then discard the image
         im = Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
+    except Exception as e:
+        log("Image.frombuffer%s", (rgb, (w, h), len(pixels), "raw", pixel_format, image.get_rowstride(), 1), exc_info=True)
+        log.error("Error: pillow failed to import image:")
+        log.error(" %s", e)
+        log.error(" for %s", image)
+        log.error(" pixel data: %i %s", len(pixels), type(pixels))
+        raise
+    try:
         if palette:
             im.putpalette(palette)
             im.palette = ImagePalette.ImagePalette("RGB", palette = palette, size = len(palette))
@@ -136,9 +144,9 @@ def encode(coding : str, image, options):
             rgb = "RGB"
             bpp = 24
     except Exception:
-        log.error("pillow.encode%s converting %s pixels from %s to %s failed",
-                  (coding, image, speed, supports_transparency, grayscale, resize),
-                  type(pixels), pixel_format, rgb, exc_info=True)
+        log.error("Error: pillow failed to convert image")
+        log.error(" %s", e)
+        log.error(" for %s", im)
         raise
     client_options = {}
     if resize:
