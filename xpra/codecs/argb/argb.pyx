@@ -169,6 +169,31 @@ cdef r210data_to_rgb(unsigned int* r210,
         r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
     return memoryview(output_buf)
 
+def bgrx_to_rgb(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    cdef const unsigned char* bgrx
+    with buffer_context(buf) as bc:
+        bgrx = <const unsigned char*> (<uintptr_t> int(bc))
+        return bgrxdata_to_rgb(bgrx, len(bc))
+
+cdef bgrxdata_to_rgb(const unsigned char *bgrx, const int bgrx_len):
+    if bgrx_len <= 0:
+        return None
+    assert bgrx_len>0 and bgrx_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgrx_len
+    #number of pixels:
+    cdef unsigned int mi = bgrx_len//4
+    #3 bytes per pixel:
+    cdef MemBuf output_buf = padbuf(mi*3, 3)
+    cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
+    cdef int i = 0, di = 0                          #@DuplicateSignature
+    while i < bgrx_len:
+        rgb[di]   = bgrx[i+2]               #R
+        rgb[di+1] = bgrx[i+1]               #G
+        rgb[di+2] = bgrx[i]                 #B
+        di += 3
+        i += 4
+    return memoryview(output_buf)
+
 
 def argb_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
@@ -476,6 +501,14 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
         if "RGB" in rgb_formats:
             log("argb_swap: argb_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgb(pixels))
+            image.set_pixel_format("RGB")
+            image.set_rowstride(rs*3//4)
+            return True
+    elif pixel_format in ("RGBA", "RGBX"):
+        assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
+        if "RGB" in rgb_formats:
+            log("argb_swap: bgrx_to_rgb for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgrx_to_rgb(pixels))
             image.set_pixel_format("RGB")
             image.set_rowstride(rs*3//4)
             return True
