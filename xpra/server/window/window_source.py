@@ -21,7 +21,6 @@ from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average, logp #@UnresolvedImport
 from xpra.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all   #@UnresolvedImport
-from xpra.server.picture_encode import webp_encode
 from xpra.simple_stats import get_list_stats
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
@@ -72,7 +71,6 @@ SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
 DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
 SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
-#FIXME: honour it
 FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
 HARDCODED_ENCODING = os.environ.get("XPRA_HARDCODED_ENCODING")
 
@@ -336,33 +334,34 @@ class WindowSource(WindowIconSource):
         self._all_encoders = {}
         self._encoders = {}
         self.full_csc_modes = typedict()
-        rgb_encoder = get_codec("enc_rgb")
-        assert rgb_encoder, "rgb encoder is missing"
-        self.add_encoder("rgb24", rgb_encoder.encode)
-        self.add_encoder("rgb32", rgb_encoder.encode)
+        def add(encoder_name):
+            encoder = get_codec(encoder_name)
+            if encoder:
+                for encoding in encoder.get_encodings():
+                    if encoding in self.server_core_encodings:
+                        self.add_encoder(encoding, encoder.encode)
+            return encoder
+        rgb = add("enc_rgb")
+        assert rgb, "rgb encoder is missing"
         #we need pillow for scaling and grayscale:
-        self.enc_pillow = get_codec("enc_pillow")
+        pillow = add("enc_pillow")
         if self._mmap_size>0:
-            self.add_encoder("mmap", self.mmap_encode)
-            return
-        def add(encoding, encoder):
-            if encoding in self.server_core_encodings:
-                self.add_encoder(encoding, encoder)
-        if self.enc_pillow:
-            for x in self.enc_pillow.get_encodings():
-                add(x, self.enc_pillow.encode)
-        #prefer these native encoders over the Pillow version:
-        add("webp", self.webp_encode)
-        self.enc_jpeg = get_codec("enc_jpeg")
-        if self.enc_jpeg:
-            add("jpeg", self.enc_jpeg.encode)
-        #prefer nvjpeg over all the other jpeg encoders:
-        self.enc_nvjpeg = None
-        log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
-        if self.cuda_device_context:
-            self.enc_nvjpeg = get_codec("enc_nvjpeg")
-            if self.enc_nvjpeg:
-                add("jpeg", self.nvjpeg_encode)
+            try:
+                from xpra.net.mmap_pipe import mmap_write
+            except ImportError:
+                if first_time("mmap_write missing"):
+                    log.warn("Warning: cannot use mmap, no write method support")
+            else:
+                self.mmap_write = mmap_write
+                self.add_encoder("mmap", self.mmap_encode)
+        if not FORCE_PILLOW or not pillow:
+            #prefer these native encoders over the Pillow version:
+            add("enc_webp")
+            add("enc_jpeg")
+            #prefer nvjpeg over all the other jpeg encoders:
+            log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
+            if self.cuda_device_context:
+                self.enc_nvjpeg = add("enc_nvjpeg")
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
 
 
@@ -385,6 +384,8 @@ class WindowSource(WindowIconSource):
         self.suspended = False
         self.strict = STRICT_MODE
         self.decoder_speed = typedict()
+        self.enc_nvjpeg = None
+        self.mmap_write = None
         #
         self.decode_error_refresh_timer = None
         self.may_send_timer = None
@@ -2569,26 +2570,14 @@ class WindowSource(WindowIconSource):
         return packet
 
 
-    def webp_encode(self, coding, image, options):
-        pixel_format = image.get_pixel_format()
-        #the native webp encoder only takes BGRX / BGRA as input,
-        #but the client may be able to swap channels,
-        #so it may be able to process RGBX / RGBA:
-        client_rgb_formats = self.full_csc_modes.strtupleget("webp", ("BGRA", "BGRX", "BGR", ))
-        if pixel_format not in client_rgb_formats:
-            if not rgb_reformat(image, client_rgb_formats, self.supports_transparency):
-                raise Exception("cannot find compatible rgb format to use for %s! (supported: %s)" % (
-                    pixel_format, self.rgb_formats))
-        return webp_encode(coding, image, options)
-
     def nvjpeg_encode(self, coding, image, options):
         assert coding=="jpeg"
         def fallback(reason):
             log("nvjpeg_encode: %s", reason)
-            if self.enc_jpeg:
-                return self.enc_jpeg.encode(coding, image, options)
-            if self.enc_pillow:
-                return self.enc_pillow.encode(coding, image, options)
+            for alt in ("jpeg", "pillow"):
+                codec = get_codec(alt)
+                if codec:
+                    return codec.encode(coding, image, options)
             return None
         cdd = self.cuda_device_context
         if not cdd:
@@ -2615,41 +2604,28 @@ class WindowSource(WindowIconSource):
     def mmap_encode(self, coding, image, _options):
         assert coding=="mmap"
         assert self._mmap and self._mmap_size>0
-        v = self.mmap_send(self._mmap, self._mmap_size, image, self.rgb_formats, self.supports_transparency)
-        if v is None:
-            return None
-        mmap_info, mmap_free_size, written = v
-        self.global_statistics.mmap_bytes_sent += written
-        self.global_statistics.mmap_free_size = mmap_free_size
-        #the data we send is the index within the mmap area:
+        #prepare the pixels in a format accepted by the client:
         pf = image.get_pixel_format()
-        return (
-            "mmap", mmap_info, {"rgb_format" : pf},
-            image.get_width(), image.get_height(), image.get_rowstride(), len(pf)*8,
-            )
-
-    def mmap_send(self, mmap, mmap_size, image, rgb_formats, supports_transparency):
-        try:
-            from xpra.net.mmap_pipe import mmap_write
-        except ImportError:
-            mmap_write = None               #no mmap
-        if mmap_write is None:
-            if first_time("mmap_write missing"):
-                log.warn("Warning: cannot use mmap, no write method support")
-            return None
-        if image.get_pixel_format() not in rgb_formats:
-            if not rgb_reformat(image, rgb_formats, supports_transparency):
-                warning_key = "mmap_send(%s)" % image.get_pixel_format()
+        if pf not in self.rgb_formats:
+            if not rgb_reformat(image, self.rgb_formats, self.supports_transparency):
+                warning_key = "mmap_send(%s)" % pf
                 if first_time(warning_key):
-                    log.warn("Waening: cannot use mmap to send %s" % image.get_pixel_format())
+                    log.warn("Warning: cannot use mmap to send %s" % pf)
                 return None
-        start = monotonic()
+            pf = image.get_pixel_format()
+        #write to mmap area:
         data = image.get_pixels()
         assert data, "failed to get pixels from %s" % image
-        mmap_data, mmap_free_size = mmap_write(mmap, mmap_size, data)
-        elapsed = monotonic()-start+0.000000001 #make sure never zero!
-        log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024), len(data), 1000*elapsed)
+        mmap_data, mmap_free_size = self.mmap_write(self._mmap, self._mmap_size, data)
+        #elapsed = monotonic()-start+0.000000001 #make sure never zero!
+        #log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
+        #    len(data), 1000*elapsed)
         if mmap_data is None:
             return None
-        #replace pixels with mmap info:
-        return mmap_data, mmap_free_size, len(data)
+        self.global_statistics.mmap_bytes_sent += len(data)
+        self.global_statistics.mmap_free_size = mmap_free_size
+        #the data we send is the index within the mmap area:
+        return (
+            "mmap", mmap_data, {"rgb_format" : pf},
+            image.get_width(), image.get_height(), image.get_rowstride(), len(pf)*8,
+            )
