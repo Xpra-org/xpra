@@ -1746,22 +1746,6 @@ else:
         setup_options["options"] = {"py2app": py2app_options}
         setup_options["app"]     = ["xpra/scripts/main.py"]
 
-    if OSX:
-        #simply adding the X11 path to PKG_CONFIG_PATH breaks things in mysterious ways,
-        #so instead we have to query each package separately and merge the results:
-        def osx_pkgconfig(*pkgs_options, **ekw):
-            kw = dict(ekw)
-            for pkg in pkgs_options:
-                saved_pcp = os.environ.get("PKG_CONFIG_PATH")
-                if pkg.lower().startswith("x"):
-                    os.environ["PKG_CONFIG_PATH"] = "/usr/X11/lib/pkgconfig"
-                #print("exec_pkgconfig(%s, %s)", pkg, kw)
-                kw = exec_pkgconfig(pkg, **kw)
-                os.environ["PKG_CONFIG_PATH"] = saved_pcp
-            return kw
-
-        pkgconfig = osx_pkgconfig
-
 
 if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
