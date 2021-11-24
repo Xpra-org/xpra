@@ -428,12 +428,19 @@ def encode(coding, image, options):
         #not much to gain from setting a high quality here,
         #the latency will be higher for a negligible compression gain:
         config.quality = fclamp(50-speed//2)
+        config.autofilter = 1
     else:
         #normalize quality: webp quality is much higher than jpeg's
         #so we can go lower,
         #[0,10,...,90,100] maps to:
         #[0, 1, 3, 5, 9, 14, 23, 34, 50, 71, 99]
         config.quality = fclamp((quality//4+((quality+15)**4//(100**3)))//2)
+        config.segments = 1
+        config.sns_strength = 0
+        config.filter_strength = 0
+        config.filter_sharpness = 7-quality//15
+        config.filter_type = 0
+        config.autofilter = 0
     #"method" takes values from 0 to 6,
     #but anything higher than 1 is dreadfully slow,
     #so only use method=1 when speed is already very low
@@ -442,15 +449,6 @@ def encode(coding, image, options):
     config.alpha_filtering = MAX(0, MIN(2, speed/50)) * alpha_int
     config.alpha_quality = quality * alpha_int
     config.emulate_jpeg_size = 1
-    if config.lossless:
-        config.autofilter = 1
-    else:
-        config.segments = 1
-        config.sns_strength = 0
-        config.filter_strength = 0
-        config.filter_sharpness = 7-quality//15
-        config.filter_type = 0
-        config.autofilter = 0
     config._pass = MAX(1, MIN(10, (40-speed)//10))
     config.preprocessing = int(speed<30)
     config.image_hint = image_hint
