@@ -43,6 +43,7 @@ if not XRes.check_xres():
 FORCE_QUIT = envbool("XPRA_FORCE_QUIT", True)
 XSHAPE = envbool("XPRA_XSHAPE", True)
 FRAME_EXTENTS = envbool("XPRA_FRAME_EXTENTS", True)
+OPAQUE_REGION = envbool("XPRA_OPAQUE_REGION", True)
 
 # Re-stacking:
 Above = 0
@@ -614,8 +615,10 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("class-instance", class_instance)
 
     def _handle_opaque_region_change(self):
-        region = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
-        metalog("_NET_WM_OPAQUE_REGION=%s", region)
+        region = ()
+        if OPAQUE_REGION:
+            region = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
+            metalog("_NET_WM_OPAQUE_REGION=%s", region)
         self._updateprop("opaque-region", region)
 
     #these handlers must not generate X11 errors (must use XSync)
