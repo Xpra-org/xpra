@@ -25,6 +25,9 @@ cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 ctypedef int TJSAMP
 ctypedef int TJPF
 
+cdef extern from "math.h":
+    double sqrt(double arg) nogil
+
 cdef extern from "turbojpeg.h":
     TJSAMP  TJSAMP_444
     TJSAMP  TJSAMP_422
@@ -137,6 +140,13 @@ def get_spec(encoding, colorspace):
                       score_boost=-50,
                       width_mask=width_mask, height_mask=height_mask)
 
+
+cdef inline int norm_quality(int quality) nogil:
+    if quality<=0:
+        return 0
+    if quality>=100:
+        return 100
+    return <int> sqrt(<double> quality)*10
 
 cdef class Encoder:
     cdef tjhandle compressor
@@ -316,13 +326,13 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
         with nogil:
             r = tjCompress2(compressor, src,
                             width, stride, height, tjpf,
-                            &out, &out_size, subsamp, quality, flags)
+                            &out, &out_size, subsamp, norm_quality(quality), flags)
     if r!=0:
         log.error("Error: failed to compress jpeg image, code %i:", r)
         log.error(" %s", get_error_str())
         log.error(" width=%i, stride=%i, height=%i", width, stride, height)
-        log.error(" quality=%i, flags=%x", quality, flags)
-        log.error(" pixel format=%s, quality=%i", pfstr, quality)
+        log.error(" quality=%i (from %i), flags=%x", norm_quality(quality), quality, flags)
+        log.error(" pixel format=%s", pfstr)
         return None
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
     return makebuf(out, out_size)
@@ -378,13 +388,13 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
                                         src,
                                         width, <const int*> strides,
                                         height, subsamp,
-                                        &out, &out_size, quality, flags)
+                                        &out, &out_size, norm_quality(quality), flags)
         if r!=0:
             log.error("Error: failed to compress jpeg image, code %i:", r)
             log.error(" %s", get_error_str())
             log.error(" width=%i, strides=%s, height=%i", width, stride, height)
-            log.error(" quality=%i, subsampling=%s, flags=%x", quality, TJSAMP_STR.get(subsamp, subsamp), flags)
-            log.error(" pixel format=%s, quality=%i", pfstr, quality)
+            log.error(" quality=%i (from %i), flags=%x", norm_quality(quality), quality, flags)
+            log.error(" pixel format=%s, subsampling=%s", pfstr, TJSAMP_STR.get(subsamp, subsamp))
             log.error(" planes: %s", csv(<uintptr_t> src[i] for i in range(3)))
             return None
     finally:
