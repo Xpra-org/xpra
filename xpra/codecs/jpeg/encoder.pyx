@@ -14,6 +14,7 @@ log = Logger("encoder", "jpeg")
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: disable=syntax-error
 
+from xpra.codecs.argb.scale import scale_image
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.net.compression import Compressed
 from xpra.util import csv
@@ -264,7 +265,6 @@ def encode(coding, image, options):
     width = image.get_width()
     height = image.get_height()
     if resize:
-        from xpra.codecs.argb.scale import scale_image
         scaled_width, scaled_height = resize
         image = scale_image(image, scaled_width, scaled_height)
         log("jpeg scaled image: %s", image)
