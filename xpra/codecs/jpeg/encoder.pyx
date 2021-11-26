@@ -27,6 +27,7 @@ ctypedef int TJPF
 
 cdef extern from "math.h":
     double sqrt(double arg) nogil
+    double round(double arg) nogil
 
 cdef extern from "turbojpeg.h":
     TJSAMP  TJSAMP_444
@@ -146,7 +147,7 @@ cdef inline int norm_quality(int quality) nogil:
         return 0
     if quality>=100:
         return 100
-    return <int> sqrt(<double> quality)*10
+    return <int> round(sqrt(<double> quality)*10)
 
 cdef class Encoder:
     cdef tjhandle compressor
@@ -268,9 +269,8 @@ def encode(coding, image, options):
         image = scale_image(image, scaled_width, scaled_height)
         log("jpeg scaled image: %s", image)
 
-    #100 would mean lossless, so cap it at 99:
     client_options = {
-        "quality"   : min(99, quality),
+        "quality"   : quality
         }
     cdef tjhandle compressor = tjInitCompress()
     if compressor==NULL:

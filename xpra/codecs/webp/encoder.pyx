@@ -561,8 +561,8 @@ def encode(coding, image, options):
 
     if config.lossless:
         client_options["quality"] = 100
-    elif quality>=0 and quality<=100:
-        client_options["quality"] = quality
+    else:
+        client_options["quality"] = max(0, min(99, quality))
     if alpha_int:
         client_options["has_alpha"] = True
     log("webp.compress ratio=%i%%, client-options=%s", 100*memory_writer.size//size, client_options)

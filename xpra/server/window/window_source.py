@@ -38,6 +38,7 @@ avsynclog = Logger("av-sync")
 statslog = Logger("stats")
 bandwidthlog = Logger("bandwidth")
 
+TRUE_LOSSLESS = envbool("XPRA_TRUE_LOSSLESS", False)
 
 AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
@@ -84,8 +85,11 @@ def get_env_encodings(etype, valid_options=()):
     log("%s encodings: %s", etype, encodings)
     return encodings
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32"))
-LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/L"))
-REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32"))
+LOSSLESS_ENCODINGS = ["rgb", "png", "png/P", "png/L", "webp"]
+if not TRUE_LOSSLESS:
+    LOSSLESS_ENCODINGS.append("jpeg")
+LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
+REFRESH_ENCODINGS = get_env_encodings("REFRESH", LOSSLESS_ENCODINGS)
 
 LOSSLESS_WINDOW_TYPES = set(os.environ.get("XPRA_LOSSLESS_WINDOW_TYPES",
                                        "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(","))
@@ -865,7 +869,7 @@ class WindowSource(WindowIconSource):
         smult = max(0.25, (self._current_speed-50)/5.0)
         qmult = max(0, self._current_quality/20.0)
         pcmult = min(20, 0.5+self.statistics.packet_count)/20.0
-        max_rgb_threshold = 32*1024
+        max_rgb_threshold = 16*1024
         min_rgb_threshold = 2048
         if cv>0.1:
             max_rgb_threshold = int(32*1024/(1+cv))
@@ -1020,11 +1024,11 @@ class WindowSource(WindowIconSource):
         webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2 and not grayscale
         lossy = quality<100
         if depth in (24, 32) and (jpeg or webp):
-            if jpeg and w>=8 and h>=8 and lossy and self.enc_nvjpeg:
+            if jpeg and self.enc_nvjpeg and w>=8 and h>=8 and (lossy or not TRUE_LOSSLESS):
                 return "jpeg"
             if webp and (not lossy or w*h<=WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
-            if jpeg and lossy:
+            if jpeg and (lossy or not TRUE_LOSSLESS):
                 return "jpeg"
             if webp:
                 return "webp"
@@ -2051,6 +2055,8 @@ class WindowSource(WindowIconSource):
                 client_options.get("csc") in LOSSY_PIXEL_FORMATS or
                 client_options.get("scaled_size") is not None
                 )
+            if encoding=="jpeg" and TRUE_LOSSLESS:
+                lossy = True
         refresh_exclude = self.get_refresh_exclude()  #pylint: disable=assignment-from-none
         now = monotonic()
         def rec(msg):
