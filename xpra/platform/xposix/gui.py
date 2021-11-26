@@ -8,9 +8,11 @@ import os
 import sys
 import struct
 
-from xpra.os_util import bytestostr, hexstr
+from xpra.os_util import (
+    bytestostr, hexstr, get_saved_env,
+    is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, get_saved_env_var,
+    )
 from xpra.util import u, iround, envbool, envint, csv, ellipsizer
-from xpra.os_util import is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, get_saved_env_var
 from xpra.log import Logger
 
 log = Logger("posix")
@@ -79,28 +81,39 @@ def gl_check():
 def get_native_system_tray_classes():
     return []
 
+
 def get_wm_name():
-    wm_name = os.environ.get("XDG_CURRENT_DESKTOP", "") or os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("DESKTOP_SESSION")
-    if os.environ.get("XDG_SESSION_TYPE")=="wayland" or os.environ.get("GDK_BACKEND")=="wayland":
+    return do_get_wm_name(get_saved_env())
+
+def do_get_wm_name(env):
+    wm_name = env.get("XDG_CURRENT_DESKTOP", "") or env.get("XDG_SESSION_DESKTOP") or env.get("DESKTOP_SESSION")
+    if env.get("XDG_SESSION_TYPE")=="wayland" or env.get("GDK_BACKEND")=="wayland":
         if wm_name:
             wm_name += " on wayland"
         else:
             wm_name = "wayland"
     elif is_X11():
-        try:
-            wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
-            if wm_check:
-                xid = struct.unpack(b"@L", wm_check)[0]
-                traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
-                wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
-                traylog("_NET_WM_NAME=%s", wm_name)
-                if wm_name:
-                    return u(wm_name)
-        except Exception as e:
-            traylog("get_wm_name()", exc_info=True)
-            traylog.error("Error accessing window manager information:")
-            traylog.error(" %s", e)
+        wm_name = get_x11_wm_name()
     return wm_name
+
+def get_x11_wm_name():
+    if not is_X11():
+        return None
+    try:
+        wm_check = _get_X11_root_property("_NET_SUPPORTING_WM_CHECK", "WINDOW")
+        if wm_check:
+            xid = struct.unpack(b"@L", wm_check)[0]
+            traylog("_NET_SUPPORTING_WM_CHECK window=%#x", xid)
+            wm_name = _get_X11_window_property(xid, "_NET_WM_NAME", "UTF8_STRING")
+            traylog("_NET_WM_NAME=%s", wm_name)
+            if wm_name:
+                return u(wm_name)
+    except Exception as e:
+        screenlog("get_x11_wm_name()", exc_info=True)
+        screenlog.error("Error accessing window manager information:")
+        screenlog.error(" %s", e)
+    return None
+
 
 def get_clipboard_native_class():
     if is_Wayland():

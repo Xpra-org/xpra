@@ -274,7 +274,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 #make sure we don't kill the vfb since we don't own it:
                 self._upgrading = EXITING_CODE
                 from xpra.scripts.config import InitException  #pylint: disable=import-outside-toplevel
-                raise InitException("another window manager is active on display '%s'" % display) from None
+                from xpra.platform.xposix.gui import get_x11_wm_name
+                wm_name = get_x11_wm_name() or "another window manager"
+                err = "%s is already active on display %r" % (wm_name, display)
+                raise InitException(err) from None
         if server_features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
