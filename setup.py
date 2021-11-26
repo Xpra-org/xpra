@@ -202,7 +202,7 @@ csc_swscale_ENABLED     = DEFAULT and BITS==64 and not ARM and pkg_config_ok("--
 csc_cython_ENABLED      = DEFAULT
 nvjpeg_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_version("10", "nvenc")
-nvfbc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvfbc")
+nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT and not OSX
 cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
