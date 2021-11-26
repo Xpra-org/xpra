@@ -144,7 +144,7 @@ class ManagerSelection(GObject.GObject):
                     self.exit_timer = None
                 log("...they did.")
         window = get_pywindow(self._xwindow)
-        window.set_title("Xpra-ManagerSelection-%s" % self.atom)
+        window.set_title("Xpra_ManagerSelection%s" % self.atom)
         self.clipboard.connect("owner-change", self._owner_change)
 
     def exit_timeout(self):
