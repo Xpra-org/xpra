@@ -994,10 +994,10 @@ class WindowSource(WindowIconSource):
         def canuse(e):
             return e in co and e in TRANSPARENCY_ENCODINGS
         lossless = quality>=100
-        if canuse("rgb32") and lossless and (
-            pixel_count<self._rgb_auto_threshold or
-            #the only encoding that can do higher bit depth at present:
-            (depth>24 and self.client_bit_depth>24)
+        if canuse("rgb32") and (
+                (pixel_count<self._rgb_auto_threshold) or
+                #the only encoding that can preserve higher bit depth at present:
+                (lossless and depth>24 and self.client_bit_depth>24)
             ):
             return "rgb32"
         if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2:
