@@ -136,7 +136,7 @@ if "--minimal" in sys.argv:
     DEFAULT = False
 skip_build = "--skip-build" in sys.argv
 ARCH = get_status_output(["uname", "-m"])[1]
-ARM = ARCH.startswith("arm")
+ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 print("ARCH=%s" % (ARCH,))
 
 INCLUDE_DIR = os.environ.get("INCLUDE_DIR", os.path.join(sys.prefix, "include"))
@@ -190,8 +190,7 @@ webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
-enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec") and not (
-    ARM or ARCH.startswith("aarch"))
+enc_ffmpeg_ENABLED      = DEFAULT and not ARM and BITS==64 and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
@@ -203,8 +202,8 @@ csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "li
 csc_cython_ENABLED      = DEFAULT
 nvjpeg_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_version("10", "nvenc")
-nvfbc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvfbc")
-cuda_kernels_ENABLED    = DEFAULT and not OSX and not ARM
+nvfbc_ENABLED = DEFAULT and not OSX and BITS==64 and pkg_config_ok("--exists", "nvfbc")
+cuda_kernels_ENABLED    = DEFAULT and not OSX
 cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
 example_ENABLED         = DEFAULT
