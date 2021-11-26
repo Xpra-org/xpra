@@ -832,7 +832,7 @@ class WindowSource(WindowIconSource):
         else:
             #sane defaults:
             ropts = set(REFRESH_ENCODINGS)  #default encodings for auto-refresh
-        if self.refresh_quality<100 and self.image_depth>16:
+        if (self.refresh_quality<100 or not TRUE_LOSSLESS) and self.image_depth>16:
             ropts.add("jpeg")
         are = ()
         if self.supports_transparency:
