@@ -925,7 +925,7 @@ class WindowSource(WindowIconSource):
         if self._want_alpha or self.is_tray:
             if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
                 return self.encoding_is_rgb32
-            if self.encoding in ("png", "png/P"):
+            if self.encoding in ("png", "png/P", "png/L"):
                 #chosen encoding does alpha, stick to it:
                 #(prevents alpha bleeding artifacts,
                 # as different encoders may encode alpha differently)
