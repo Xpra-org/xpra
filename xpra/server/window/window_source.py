@@ -1020,7 +1020,7 @@ class WindowSource(WindowIconSource):
                 return "rgb32"
             if "rgb24" in co:
                 return "rgb24"
-        jpeg = "jpeg" and w>=2 and h>=2
+        jpeg = "jpeg" in co and w>=2 and h>=2
         webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2 and not grayscale
         lossy = quality<100
         if depth in (24, 32) and (jpeg or webp):
