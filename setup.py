@@ -182,7 +182,7 @@ mdns_ENABLED            = DEFAULT
 websockets_ENABLED      = DEFAULT
 
 enc_proxy_ENABLED       = DEFAULT
-enc_x264_ENABLED        = DEFAULT and pkg_config_ok("--exists", "x264")
+enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 #crashes on 32-bit windows:
 enc_x265_ENABLED        = (not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
