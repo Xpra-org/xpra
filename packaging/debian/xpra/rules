@@ -3,10 +3,6 @@
 export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
 export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
-# Disable ffmpeg-based codecs on i386, see https://github.com/Xpra-org/xpra/issues/3198
-ifneq (,$(filter i386,$(DEB_HOST_ARCH)))
-EXTRA_BUILDOPTS := --without-csc_swscale --without-enc_ffmpeg --without-dec_avcodec2
-endif
 # Disable CUDA on Ubuntu Impish
 # (nvcc fails to compile with the new glibc headers: #3293)
 OS_CODENAME := $(shell lsb_release -s -c)
