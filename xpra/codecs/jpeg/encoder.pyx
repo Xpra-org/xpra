@@ -230,7 +230,7 @@ cdef class Encoder:
             self.speed = speed
         else:
             speed = self.speed
-        pfstr = bytestostr(image.get_pixel_format())
+        pfstr = image.get_pixel_format()
         if pfstr in ("YUV420P", "YUV422P", "YUV444P"):
             cdata = encode_yuv(self.compressor, image, quality, self.grayscale)
         else:
@@ -298,7 +298,7 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
     pixels = image.get_pixels()
-    pfstr = bytestostr(image.get_pixel_format())
+    pfstr = image.get_pixel_format()
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
         raise Exception("invalid pixel format %s" % pfstr)
@@ -338,7 +338,7 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     return makebuf(out, out_size)
 
 cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
-    pfstr = bytestostr(image.get_pixel_format())
+    pfstr = image.get_pixel_format()
     assert pfstr in ("YUV420P", "YUV422P"), "invalid yuv pixel format %s" % pfstr
     cdef TJSAMP subsamp
     if grayscale:

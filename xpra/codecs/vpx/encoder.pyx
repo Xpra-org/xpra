@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.codec_constants import video_spec, get_subsampling_divs
-from xpra.os_util import bytestostr, WIN32, OSX, POSIX, BITS
+from xpra.os_util import WIN32, OSX, POSIX, BITS
 from xpra.util import AtomicInteger, envint, envbool, typedict
 
 from libc.stdint cimport uint8_t
@@ -378,7 +378,7 @@ cdef class Encoder:
                 #(the unit tests would otherwise crash)
                 raise Exception("invalid dimensions %ix%i - maximum is %ix%i" % (width, height, dmaxw, dmaxh))
 
-        self.src_format = bytestostr(src_format)
+        self.src_format = src_format
 
         cdef const vpx_codec_iface_t *codec_iface = make_codec_cx(encoding)
         cdef vpx_codec_flags_t flags = 0

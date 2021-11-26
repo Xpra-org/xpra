@@ -12,7 +12,6 @@ from pycuda import driver
 
 from xpra.net.compression import Compressed
 from xpra.util import envbool, typedict
-from xpra.os_util import bytestostr
 
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
@@ -446,7 +445,7 @@ cdef class Encoder:
         return info
 
     def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
-        pfstr = bytestostr(image.get_pixel_format())
+        pfstr = image.get_pixel_format()
         cdef nvjpegInputFormat_t input_format = FORMAT_VAL.get(pfstr, 0)
         if input_format==0:
             raise ValueError("unsupported input format %s" % pfstr)
