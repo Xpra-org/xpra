@@ -197,8 +197,8 @@ notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
 #ffmpeg 3.1 or later is required
-dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
-csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale")
+dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and not ARM and pkg_config_version("57", "libavcodec")
+csc_swscale_ENABLED     = DEFAULT and BITS==64 and not ARM and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
 nvjpeg_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED = DEFAULT and not OSX and not ARM and BITS==64 and pkg_config_version("10", "nvenc")
@@ -2386,7 +2386,7 @@ if ext_modules:
     #this causes Cython to fall over itself:
     #gdb_debug=debug_ENABLED
     setup_options["ext_modules"] = cythonize(ext_modules,
-                                             nthreads=0 if (debug_ENABLED or WIN32 or OSX) else os.cpu_count(),
+                                             nthreads=0 if (debug_ENABLED or WIN32 or OSX or ARM) else os.cpu_count(),
                                              gdb_debug=debug_ENABLED,
                                              compiler_directives=compiler_directives,
                                              )
