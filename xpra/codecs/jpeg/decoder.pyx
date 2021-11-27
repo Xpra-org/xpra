@@ -11,6 +11,7 @@ log = Logger("decoder", "jpeg")
 
 from xpra.util import envbool, reverse_dict
 from xpra.codecs.image_wrapper import ImageWrapper
+from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from libc.string cimport memset #pylint: disable=syntax-error
 
@@ -118,7 +119,7 @@ def get_version():
     return (1, 0)
 
 def get_encodings():
-    return ["jpeg"]
+    return ("jpeg", "jpega")
 
 
 cdef inline int roundup(int n, int m):
@@ -129,13 +130,14 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return str(err)
 
-def decompress_to_yuv(data):
+def decompress_to_yuv(data, unsigned char nplanes=3):
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
         raise Exception("failed to instantiate a JPEG decompressor")
 
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
+        tjDestroy(decompressor)
         raise Exception("failed to read compressed data from %s" % type(data))
 
     cdef int r
@@ -157,9 +159,15 @@ def decompress_to_yuv(data):
 
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420, TJSAMP_GRAY), "unsupported JPEG colour subsampling: %s" % subsamp_str
-    pixel_format = "YUV%sP" % subsamp_str
     log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
+    if nplanes==3:
+        pixel_format = "YUV%sP" % subsamp_str
+    elif nplanes==1:
+        pixel_format = "YUV400P"
+    else:
+        close()
+        raise ValueError("invalid number of planes: %i" % nplanes)
     #allocate YUV buffers:
     cdef unsigned long plane_size
     cdef unsigned char *planes[3]
@@ -172,12 +180,13 @@ def decompress_to_yuv(data):
     pyplanes = []
     cdef unsigned long total_size = 0
     cdef double start, elapsed
+    for i in range(3):
+        strides[i] = 0
+        planes[i] = NULL
     try:
-        for i in range(3):
+        for i in range(nplanes):
             stride = tjPlaneWidth(i, w, subsamp)
             if stride<=0:
-                strides[i] = 0
-                planes[i] = NULL
                 if subsamp!=TJSAMP_GRAY or i==0:
                     raise ValueError("cannot get size for plane %r for mode %r" % ("YUV"[i], subsamp_str))
                 stride = roundup(w//2, 4)
@@ -215,7 +224,7 @@ def decompress_to_yuv(data):
     return ImageWrapper(0, 0, w, h, pyplanes, pixel_format, 24, pystrides, ImageWrapper.PLANAR_3)
 
 
-def decompress_to_rgb(rgb_format, data):
+def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
 
@@ -225,6 +234,7 @@ def decompress_to_rgb(rgb_format, data):
 
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(data, &py_buf, PyBUF_ANY_CONTIGUOUS):
+        tjDestroy(decompressor)
         raise Exception("failed to read compressed data from %s" % type(data))
 
     cdef int r
@@ -236,8 +246,13 @@ def decompress_to_rgb(rgb_format, data):
             log.error(" %s", get_error_str())
 
     cdef int w, h, subsamp, cs
+    cdef uintptr_t buf = <uintptr_t> py_buf.buf
+    cdef unsigned long buf_size = py_buf.len
+    if alpha_offset>0:
+        buf_size = alpha_offset
+    log("decompressing buffer at %#x of size %i", buf, buf_size)
     r = tjDecompressHeader3(decompressor,
-                            <const unsigned char *> py_buf.buf, py_buf.len,
+                            <const unsigned char *> buf, buf_size,
                             &w, &h, &subsamp, &cs)
     if r:
         err = get_error_str()
@@ -246,26 +261,66 @@ def decompress_to_rgb(rgb_format, data):
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
-    cdef MemBuf membuf
-    cdef unsigned char *dst_buf
-    cdef int stride, flags = 0      #TJFLAG_BOTTOMUP
-    cdef unsigned long size
-    cdef double start, elapsed
-    try:
-        #TODO: add padding and rounding?
-        start = monotonic()
-        stride = w*4
-        size = stride*h
-        membuf = getbuf(size)
-        dst_buf = <unsigned char*> membuf.get_mem()
-        with nogil:
-            r = tjDecompress2(decompressor,
-                              <const unsigned char *> py_buf.buf, py_buf.len, dst_buf,
-                              w, stride, h, pixel_format, flags)
-        if r:
-            raise Exception("failed to decompress %s JPEG data to %s: %s" % (subsamp_str, rgb_format, get_error_str()))
-    finally:
+    cdef int flags = 0      #TJFLAG_BOTTOMUP
+    cdef double elapsed
+    #TODO: add padding and rounding?
+    cdef double start = monotonic()
+    cdef int stride = w*4
+    cdef unsigned long size = stride*h
+    cdef MemBuf membuf = getbuf(size)
+    cdef unsigned char *dst_buf = <unsigned char*> membuf.get_mem()
+    with nogil:
+        r = tjDecompress2(decompressor,
+                          <const unsigned char *> buf, buf_size, dst_buf,
+                          w, stride, h, pixel_format, flags)
+    if r:
         close()
+        raise Exception("failed to decompress %s JPEG data to %s: %s" % (subsamp_str, rgb_format, get_error_str()))
+    #deal with alpha channel if there is one:
+    cdef int aw, ah
+    cdef unsigned char *planes[3]
+    cdef int strides[3]
+    cdef MemBuf alpha
+    cdef unsigned long alpha_size
+    cdef int x, y, alpha_stride
+    cdef unsigned char* alpha_plane
+    cdef char alpha_index
+    if alpha_offset:
+        alpha_index = rgb_format.find("A")
+        assert alpha_index>=0, "no 'A' in %s" % rgb_format
+        assert len(rgb_format)==4, "unsupported rgb format for alpha: %s" % rgb_format
+        assert <unsigned long> py_buf.len>alpha_offset, "alpha offset is beyond the end of the compressed buffer"
+        buf = (<uintptr_t> py_buf.buf) + alpha_offset
+        buf_len = py_buf.len - alpha_offset
+        r = tjDecompressHeader3(decompressor,
+                                <const unsigned char *> buf, buf_len,
+                                &aw, &ah, &subsamp, &cs)
+        assert aw==w and ah==h, "alpha plane dimensions %ix%i don't match main image %ix%i" % (
+            aw, ah, w, h)
+        subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
+        log("found alpha plane %r at %#x size %i", subsamp_str, buf, buf_len)
+        assert subsamp==TJSAMP_GRAY, "unsupported JPEG alpha subsampling: %s" % subsamp_str
+        for i in range(3):
+            strides[i] = 0
+            planes[i] = NULL
+        alpha_stride = tjPlaneWidth(0, w, subsamp)
+        strides[0] = alpha_stride
+        alpha_size = tjPlaneSizeYUV(0, w, alpha_stride, h, subsamp)
+        alpha = getbuf(alpha_size)
+        alpha_plane = <unsigned char*> alpha.get_mem()
+        planes[0] = alpha_plane
+        with nogil:
+            r = tjDecompressToYUVPlanes(decompressor,
+                                        <const unsigned char*> buf, buf_len,
+                                        planes, w, strides, h, flags)
+        if r:
+            close()
+            raise Exception("failed to decompress %s JPEG alpha data: %s" % (subsamp_str, get_error_str()))
+        #merge alpha into rgb buffer:
+        for y in range(h):
+            for x in range(w):
+                dst_buf[y*stride+x*4+alpha_index] = alpha_plane[y*alpha_stride+x]
+    close()
     if LOG_PERF:
         elapsed = monotonic()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",

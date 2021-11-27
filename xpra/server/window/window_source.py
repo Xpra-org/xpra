@@ -88,6 +88,7 @@ TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb3
 LOSSLESS_ENCODINGS = ["rgb", "png", "png/P", "png/L", "webp"]
 if not TRUE_LOSSLESS:
     LOSSLESS_ENCODINGS.append("jpeg")
+    LOSSLESS_ENCODINGS.append("jpega")
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", LOSSLESS_ENCODINGS)
 
@@ -839,6 +840,7 @@ class WindowSource(WindowIconSource):
             ropts = set(REFRESH_ENCODINGS)  #default encodings for auto-refresh
         if (self.refresh_quality<100 or not TRUE_LOSSLESS) and self.image_depth>16:
             ropts.add("jpeg")
+            ropts.add("jpega")
         are = ()
         if self.supports_transparency:
             are = tuple(x for x in self.common_encodings if x in ropts and x in TRANSPARENCY_ENCODINGS)
@@ -1005,10 +1007,12 @@ class WindowSource(WindowIconSource):
                 (not lossy and depth>24 and self.client_bit_depth>24)
             ):
             return "rgb32"
-        if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2:
+        if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2 and w*h<=WEBP_EFFICIENCY_CUTOFF:
             return "webp"
+        if canuse("jpega") and (lossy or not TRUE_LOSSLESS):
+            return "jpega"
         for x in TRANSPARENCY_ENCODINGS:
-            if x in co and x!="webp":
+            if x in co:
                 return x
         #so we don't have an encoding that does transparency...
         return self.get_auto_encoding(w, h, speed, quality, current_encoding)
@@ -1027,13 +1031,17 @@ class WindowSource(WindowIconSource):
             if "rgb24" in co:
                 return "rgb24"
         jpeg = "jpeg" in co and w>=2 and h>=2
+        jpega = "jpega" in co and w>=2 and h>=2
         webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2 and not grayscale
         lossy = quality<100
-        if depth in (24, 32) and (jpeg or webp):
+        if depth in (24, 32) and (jpeg or jpega or webp):
             if webp and (not lossy or w*h<=WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
-            if (lossy or not TRUE_LOSSLESS) and jpeg and not alpha:
-                return "jpeg"
+            if lossy or not TRUE_LOSSLESS:
+                if jpeg and not alpha:
+                    return "jpeg"
+                if jpega and alpha:
+                    return "jpega"
             if webp:
                 return "webp"
         elif depth>24 and "rgb32" in co and self.client_bit_depth>24 and self.client_bit_depth!=32:

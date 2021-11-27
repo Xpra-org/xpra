@@ -264,6 +264,7 @@ def get_encoding_name(encoding):
           "png/P"   : "PNG (8bpp colour)",
           "png/L"   : "PNG (8bpp grayscale)",
           "jpeg"    : "JPEG",
+          "jpega"   : "JPEG with alpha",
           "rgb"     : " + ".join(get_rgb_compression_options()) + " (24/32bpp)",
         }
     return ENCODINGS_TO_NAME.get(encoding, encoding)

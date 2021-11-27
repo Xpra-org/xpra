@@ -439,6 +439,34 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     return memoryview(output_buf)
 
 
+def alpha(image):
+    pixel_format = image.get_pixel_format()
+    cdef char i = pixel_format.find("A")
+    if i<0:
+        return None
+    pixels = image.get_pixels()
+    assert pixels, "failed to get pixels from %s" % image
+    assert len(pixels) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(pixels)
+    cdef const unsigned char* rgba
+    with buffer_context(pixels) as bc:
+        rgba = <const unsigned char*> (<uintptr_t> int(bc))
+        return alpha_data(rgba, len(bc), i)
+
+cdef alpha_data(const unsigned char* rgba, const int rgba_len, const char index):
+    if rgba_len <= 0:
+        return None
+    assert rgba_len>0 and rgba_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % rgba_len
+    cdef MemBuf output_buf = getbuf(rgba_len//4)
+    cdef unsigned char* alpha = <unsigned char*> output_buf.get_mem()
+    cdef int di = 0, si = index
+    cdef unsigned int p
+    while si < rgba_len:
+        alpha[di] = rgba[si]
+        si += 4
+        di += 1
+    return memoryview(output_buf)
+
+
 def argb_swap(image, rgb_formats, supports_transparency=False):
     """ use the argb codec to do the RGB byte swapping """
     pixel_format = image.get_pixel_format()

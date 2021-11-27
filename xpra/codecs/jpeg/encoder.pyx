@@ -14,7 +14,6 @@ log = Logger("encoder", "jpeg")
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: disable=syntax-error
 
-from xpra.codecs.argb.scale import scale_image
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.net.compression import Compressed
 from xpra.util import csv
@@ -107,7 +106,7 @@ def get_info():
     return {"version"   : get_version()}
 
 def get_encodings():
-    return ("jpeg",)
+    return ("jpeg", "jpega")
 
 def init_module():
     log("jpeg.init_module()")
@@ -116,8 +115,10 @@ def cleanup_module():
     log("jpeg.cleanup_module()")
 
 def get_input_colorspaces(encoding):
-    assert encoding=="jpeg"
-    return ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR", "YUV420P", "YUV422P", "YUV444P")
+    if encoding=="jpeg":
+        return ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR", "YUV420P", "YUV422P", "YUV444P")
+    assert encoding=="jpega"
+    return ("BGRA", "RGBA", )
 
 def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings()
@@ -125,7 +126,7 @@ def get_output_colorspaces(encoding, input_colorspace):
     return (input_colorspace, )
 
 def get_spec(encoding, colorspace):
-    assert encoding=="jpeg"
+    assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.codec_constants import video_spec
     width_mask=0xFFFF
@@ -134,7 +135,7 @@ def get_spec(encoding, colorspace):
         width_mask=0xFFFE
     if colorspace in ("YUV420P", ):
         height_mask=0xFFFE
-    return video_spec("jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
+    return video_spec(encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
                       codec_class=Encoder, codec_type="jpeg",
                       setup_cost=0, cpu_cost=100, gpu_cost=0,
                       min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
@@ -246,25 +247,33 @@ def get_error_str():
     cdef char *err = tjGetErrorStr()
     return bytestostr(err)
 
-JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", "RGBA", "BGRA", "ABGR", "ARGB")
+JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", )
+JPEGA_INPUT_FORMATS = ("RGBA", "BGRA", "ABGR", "ARGB")
 
 def encode(coding, image, options):
-    assert coding=="jpeg"
+    assert coding in ("jpeg", "jpega")
+    rgb_format = image.get_pixel_format()
+    if coding=="jpega" and rgb_format.find("A")<0:
+        #why did we select 'jpega' then!?
+        coding = "jpeg"
     cdef int quality = options.get("quality", 50)
     cdef int grayscale = options.get("grayscale", 0)
     resize = options.get("resize")
     log("encode%s", (coding, image, options))
-    rgb_format = image.get_pixel_format()
-    if rgb_format not in JPEG_INPUT_FORMATS:
+    input_formats = JPEG_INPUT_FORMATS if coding=="jpeg" else JPEGA_INPUT_FORMATS
+    if rgb_format not in input_formats or resize and len(rgb_format)!=4:
         from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
-        if not argb_swap(image, JPEG_INPUT_FORMATS):
+        if not argb_swap(image, input_formats):
             log("jpeg: argb_swap failed to convert %s to a suitable format: %s" % (
-                rgb_format, JPEG_INPUT_FORMATS))
+                rgb_format, input_formats))
         log("jpeg converted image: %s", image)
 
-    width = image.get_width()
-    height = image.get_height()
+    cdef int width = image.get_width()
+    cdef int height = image.get_height()
+    cdef int scaled_width = width
+    cdef int scaled_height = height
     if resize:
+        from xpra.codecs.argb.scale import scale_image
         scaled_width, scaled_height = resize
         image = scale_image(image, scaled_width, scaled_height)
         log("jpeg scaled image: %s", image)
@@ -282,34 +291,58 @@ def encode(coding, image, options):
         if not cdata:
             return None
         if SAVE_TO_FILE:    # pragma: no cover
-            filename = "./%s.jpeg" % time.time()
+            filename = "./%s.%s" % (time.time(), coding)
             with open(filename, "wb") as f:
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
-        return "jpeg", Compressed("jpeg", memoryview(cdata), False), client_options, width, height, 0, 24
+        bpp = 24
+        if coding=="jpega":
+            from xpra.codecs.argb.argb import alpha
+            a = alpha(image)
+            planes = (a, )
+            rowstrides = (image.get_rowstride()//4, )
+            adata = do_encode_yuv(compressor, "YUV400P", planes,
+                                  width, height, rowstrides,
+                                  quality, TJSAMP_GRAY)
+            client_options["alpha-offset"] = len(cdata)
+            cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
+            bpp = 32
+        return coding, Compressed(coding, memoryview(cdata), False), client_options, width, height, 0, bpp
     finally:
         r = tjDestroy(compressor)
         if r:
             log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
             log.error(" %s", get_error_str())
 
+cdef TJSAMP get_subsamp(int quality):
+    if quality<60:
+        return TJSAMP_420
+    elif quality<80:
+        return TJSAMP_422
+    return TJSAMP_444
+
 cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
-    cdef int width = image.get_width()
-    cdef int height = image.get_height()
-    cdef int stride = image.get_rowstride()
-    pixels = image.get_pixels()
     pfstr = image.get_pixel_format()
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
         raise Exception("invalid pixel format %s" % pfstr)
     cdef TJPF tjpf = pf
-    cdef TJSAMP subsamp = TJSAMP_444
+    cdef TJSAMP subsamp
     if grayscale:
         subsamp = TJSAMP_GRAY
-    elif quality<50:
-        subsamp = TJSAMP_420
-    elif quality<80:
-        subsamp = TJSAMP_422
+    else:
+        subsamp = get_subsamp(quality)
+    cdef int width = image.get_width()
+    cdef int height = image.get_height()
+    cdef int stride = image.get_rowstride()
+    pixels = image.get_pixels()
+    return do_encode_rgb(compressor, pfstr, pixels,
+                         width, height, stride,
+                         quality, tjpf, subsamp)
+
+cdef do_encode_rgb(tjhandle compressor, pfstr, pixels,
+                   int width, int height, int stride,
+                   int quality, TJPF tjpf, TJSAMP subsamp):
     cdef int flags = 0
     cdef unsigned char *out = NULL
     cdef unsigned long out_size = 0
@@ -353,8 +386,15 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
         raise ValueError("invalid yuv pixel format %s" % pfstr)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
-    stride = image.get_rowstride()
+    rowstrides = image.get_rowstride()
     planes = image.get_pixels()
+    return do_encode_yuv(compressor, pfstr, planes,
+                         width, height, rowstrides,
+                         quality, subsamp)
+
+cdef do_encode_yuv(tjhandle compressor, pfstr, planes,
+                   int width, int height, rowstrides,
+                   int quality, TJSAMP subsamp):
     cdef int flags = 0
     cdef unsigned char *out = NULL
     cdef unsigned long out_size = 0
@@ -364,14 +404,14 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
     divs = get_subsampling_divs(pfstr)
     for i in range(3):
         src[i] = NULL
-        xdiv = divs[i][0]
-        assert stride[i]>=width//xdiv, "stride %i is too small for width %i of plane %s" % (
-            stride[i], width//xdiv, "YUV"[i])
-        strides[i] = stride[i]
+        strides[i] = 0
+    for i, (xdiv, ydiv) in enumerate(divs):
+        assert rowstrides[i]>=width//xdiv, "stride %i is too small for width %i of plane %s" % (
+            rowstrides[i], width//xdiv, "YUV"[i])
+        strides[i] = rowstrides[i]
     contexts = []
     try:
-        for i in range(3):
-            xdiv, ydiv = divs[i]
+        for i, (xdiv, ydiv) in enumerate(divs):
             bc = buffer_context(planes[i])
             bc.__enter__()
             contexts.append(bc)
@@ -392,7 +432,7 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
         if r!=0:
             log.error("Error: failed to compress jpeg image, code %i:", r)
             log.error(" %s", get_error_str())
-            log.error(" width=%i, strides=%s, height=%i", width, stride, height)
+            log.error(" width=%i, strides=%s, height=%i", width, rowstrides, height)
             log.error(" quality=%i (from %i), flags=%x", norm_quality(quality), quality, flags)
             log.error(" pixel format=%s, subsampling=%s", pfstr, TJSAMP_STR.get(subsamp, subsamp))
             log.error(" planes: %s", csv(<uintptr_t> src[i] for i in range(3)))

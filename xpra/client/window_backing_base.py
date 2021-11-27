@@ -421,6 +421,7 @@ class WindowBackingBase:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
         full_csc_modes["webp"] = tuple(x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA"))
         full_csc_modes["jpeg"] = tuple(x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P"))
+        full_csc_modes["jpega"] = tuple(x for x in rgb_modes if x in ("BGRA", "RGBA"))
         videolog("_get_full_csc_modes(%s) with target_rgb_modes=%s", rgb_modes, target_rgb_modes)
         for e in sorted(full_csc_modes.keys()):
             modes = full_csc_modes.get(e)
@@ -433,7 +434,14 @@ class WindowBackingBase:
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        img = self.jpeg_decoder.decompress_to_rgb("RGBX", img_data)
+        self.do_paint_jpeg("RGBX", img_data, x, y, width, height, options, callbacks)
+
+    def paint_jpega(self, img_data, x, y, width, height, options, callbacks):
+        self.do_paint_jpeg("RGBA", img_data, x, y, width, height, options, callbacks)
+
+    def do_paint_jpeg(self, rgb_format, img_data, x, y, width, height, options, callbacks):
+        alpha_offset = options.intget("alpha-offset", 0)
+        img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
         rowstride = img.get_rowstride()
@@ -787,6 +795,8 @@ class WindowBackingBase:
                                               img_data, x, y, width, height, options, callbacks)
             elif self.jpeg_decoder and coding=="jpeg":
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
+            elif self.jpeg_decoder and coding=="jpega":
+                self.paint_jpega(img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:

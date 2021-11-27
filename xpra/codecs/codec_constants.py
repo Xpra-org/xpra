@@ -13,7 +13,7 @@ PREFERRED_ENCODING_ORDER = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp",
-    "rgb", "rgb24", "rgb32", "jpeg",
+    "rgb", "rgb24", "rgb32", "jpeg", "jpega",
     "h265", "mpeg1", "mpeg2",
     "scroll",
     "grayscale",
@@ -22,7 +22,7 @@ PREFERRED_ENCODING_ORDER = (
 EDGE_ENCODING_ORDER = (
     "rgb24", "rgb32",
     "png", "webp",
-    "png/P", "png/L", "rgb", "jpeg",
+    "png/P", "png/L", "rgb", "jpeg", "jpega",
     )
 
 HELP_ORDER = (
@@ -30,7 +30,7 @@ HELP_ORDER = (
     "grayscale",
     "h264", "h265", "vp8", "vp9", "mpeg4",
     "png", "png/P", "png/L", "webp",
-    "rgb", "jpeg",
+    "rgb", "jpeg", "jpega",
     "scroll",
     )
 
@@ -47,6 +47,7 @@ PIXEL_SUBSAMPLING = {
     "YUV420P"   : ((1, 1), (2, 2), (2, 2)),
     "YUV422P"   : ((1, 1), (2, 1), (2, 1)),
     "YUV444P"   : ((1, 1), (1, 1), (1, 1)),
+    "YUV400P"   : ((1, 1), ),
     "GBRP"      : ((1, 1), (1, 1), (1, 1)),
     "GBRP9LE"   : ((1, 1), (1, 1), (1, 1)),
     "GBRP10"    : ((1, 1), (1, 1), (1, 1)),
