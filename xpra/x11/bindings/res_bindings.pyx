@@ -71,6 +71,28 @@ cdef extern from "X11/extensions/XRes.h":
     Status XResQueryVersion(Display *dpy, int *major_version_return, int *minor_version_return)
 
 
+cdef get_pid(Display *display, Window xid):
+    cdef XResClientIdSpec client_spec
+    client_spec.client = xid
+    client_spec.mask = XRES_CLIENT_ID_PID_MASK
+
+    cdef long num_ids
+    cdef XResClientIdValue *client_ids
+    if XResQueryClientIds(display, 1, &client_spec, &num_ids, &client_ids):
+        log.error("Error: failed to query pid for window %i", xid)
+        return 0
+
+    cdef int pid = 0
+    for i in range(num_ids):
+        if client_ids[i].spec.mask == XRES_CLIENT_ID_PID_MASK:
+            pid = XResGetClientPid(&client_ids[i])
+            if pid>=0:
+                break
+    if num_ids:
+        XResClientIdsDestroy(num_ids, client_ids)
+    return pid
+
+
 
 cdef ResBindingsInstance singleton = None
 def ResBindings():
@@ -100,22 +122,4 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
         return (cmajor, cminor) >= min_version
 
     def get_pid(self, Window xid):
-        cdef XResClientIdSpec client_spec
-        client_spec.client = xid
-        client_spec.mask = XRES_CLIENT_ID_PID_MASK
-
-        cdef long num_ids
-        cdef XResClientIdValue *client_ids
-        if XResQueryClientIds(self.display, 1, &client_spec, &num_ids, &client_ids):
-            log.error("Error: failed to query pid for window %i", xid)
-            return 0
-
-        cdef int pid = 0
-        for i in range(num_ids):
-            if client_ids[i].spec.mask == XRES_CLIENT_ID_PID_MASK:
-                pid = XResGetClientPid(&client_ids[i])
-                if pid>=0:
-                    break
-        if num_ids:
-            XResClientIdsDestroy(num_ids, client_ids)
-        return pid
+        return get_pid(self.display, xid)
