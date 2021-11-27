@@ -997,24 +997,28 @@ class WindowSource(WindowIconSource):
             return current_encoding
         pixel_count = w*h
         depth = self.image_depth
-        co = self.common_encodings
-        def canuse(e):
-            return e in co and e in TRANSPARENCY_ENCODINGS
+        co = tuple(e for e in self.common_encodings if e in TRANSPARENCY_ENCODINGS)
+        if not co and current_encoding:
+            return current_encoding
         lossy = quality<100
-        if canuse("rgb32") and (
+        if "rgb32" in co and (
                 (pixel_count<self._rgb_auto_threshold) or
                 #the only encoding that can preserve higher bit depth at present:
                 (not lossy and depth>24 and self.client_bit_depth>24)
             ):
             return "rgb32"
-        if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2 and w*h<=WEBP_EFFICIENCY_CUTOFF:
+        grayscale = self.encoding=="grayscale"
+        webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2 and not grayscale
+        if webp and depth in (24, 32) and w*h<=WEBP_EFFICIENCY_CUTOFF:
             return "webp"
-        if canuse("jpega") and (lossy or not TRUE_LOSSLESS):
+        if "jpega" in co and w>=2 and h>=2 and (lossy or not TRUE_LOSSLESS):
             return "jpega"
-        for x in TRANSPARENCY_ENCODINGS:
-            if x in co:
-                return x
-        #so we don't have an encoding that does transparency...
+        if webp:
+            return "webp"
+        for e in ("png", "rgb32"):
+            if e in co:
+                return e
+        #so we don't have an encoding that does transparency... any will do:
         return self.get_auto_encoding(w, h, speed, quality, current_encoding)
 
     def get_auto_encoding(self, w, h, speed, quality, current_encoding=None):
