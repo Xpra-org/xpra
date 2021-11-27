@@ -28,8 +28,7 @@ def parse_image_data(data):
             img = img.convert("RGB")
         return image_data(img)
     except Exception as e:
-        log("parse_image_data(%s)", data, exc_info=True)
-        log.error("Error parsing icon data for notification:")
+        log.error("Error parsing icon data for notification:", exc_info=True)
         log.error(" %s", e)
     return None
 
