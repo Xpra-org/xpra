@@ -13,10 +13,14 @@ def main(args):
     from xpra.x11.bindings.res_bindings import ResBindings
     res = ResBindings()
     for x in args[1:]:
-        if x.startswith("0x"):
-            w = int(x[2:], 16)
-        else:
-            w = int(x)
+        try:
+            if x.startswith("0x"):
+                w = int(x[2:], 16)
+            else:
+                w = int(x)
+        except Exception:
+            print("cannot parse window number: %r" % x)
+            continue
         pid = res.get_pid(w)
         cmdline = ""
         if pid:
