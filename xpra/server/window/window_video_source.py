@@ -414,12 +414,13 @@ class WindowVideoSource(WindowSource):
             self.scaling_control = max(0, min(100, properties.intget("scaling.control", 0)))
         super().do_set_client_properties(properties)
         #encodings may have changed, so redo this:
-        nv_common = (set(self.server_core_encodings) & set(self.core_encodings)) - set(self.video_encodings)
-        self.non_video_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in nv_common]
+        nv_common = set(self.picture_encodings) & set(self.core_encodings)
+        log("nv_common(%s & %s)=%s", self.picture_encodings, self.core_encodings, nv_common)
+        self.non_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in nv_common)
         if not VIDEO_SKIP_EDGE:
             try:
-                self.edge_encoding = [x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings][0]
-            except IndexError:
+                self.edge_encoding = next(x for x in EDGE_ENCODING_ORDER if x in self.non_video_encodings)
+            except StopIteration:
                 self.edge_encoding = None
         log("do_set_client_properties(%s) full_csc_modes=%s, video_subregion=%s, non_video_encodings=%s, edge_encoding=%s, scaling_control=%s",
             properties, self.full_csc_modes, self.video_subregion.supported, self.non_video_encodings, self.edge_encoding, self.scaling_control)
@@ -813,7 +814,11 @@ class WindowVideoSource(WindowSource):
             self.expire_timer = self.timeout_add(delay, self.expire_delayed_region)
 
     def must_encode_full_frame(self, encoding):
-        return self.full_frames_only or (encoding in self.video_encodings) or not self.non_video_encodings
+        non_video = self.non_video_encodings
+        r = self.full_frames_only or not non_video or (encoding in self.video_encodings and encoding not in non_video)
+        log("must_encode_full_frame(%s)=%s full_frames_only=%s, non_video=%s, video=%s",
+                 encoding, r, self.full_frames_only, non_video, self.video_encodings)
+        return r
 
 
     def process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=0):

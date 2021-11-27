@@ -14,7 +14,7 @@ from collections import deque
 from time import monotonic
 
 from xpra.os_util import strtobytes, bytestostr
-from xpra.util import envint, envbool, csv, typedict, first_time, decode_str
+from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.server.window.window_stats import WindowPerformanceStatistics
@@ -109,8 +109,8 @@ class DelayedRegions:
         self.options = options or {}
 
     def __repr__(self):
-        return "DelayedRegion(time=%i, expired=%s, encoding=%s, %i regions, options=%s)" % (
-            self.damage_time, self.expired, self.encoding, len(self.regions), self.options
+        return "DelayedRegion(time=%i, expired=%s, encoding=%s, regions=%s, options=%s)" % (
+            self.damage_time, self.expired, self.encoding, repr_ellipsized(self.regions), self.options
             )
 
 
@@ -180,6 +180,7 @@ class WindowSource(WindowIconSource):
         self.encoding = encoding                        #the current encoding
         self.encodings = encodings                      #all the encodings supported by the client
         self.core_encodings = core_encodings            #the core encodings supported by the client
+        self.picture_encodings = ()                     #non-video only
         self.rgb_formats = rgb_formats                  #supported RGB formats (RGB, RGBA, ...) - used by mmap
         self.encoding_options = encoding_options        #extra options which may be specific to the encoder (ie: x264)
         self.rgb_zlib = use("zlib") and encoding_options.boolget("rgb_zlib", True)     #server and client support zlib pixel compression
@@ -338,12 +339,15 @@ class WindowSource(WindowIconSource):
         self._all_encoders = {}
         self._encoders = {}
         self.full_csc_modes = typedict()
+        picture_encodings = []
         def add(encoder_name):
             encoder = get_codec(encoder_name)
             if encoder:
                 for encoding in encoder.get_encodings():
                     if encoding in self.server_core_encodings:
                         self.add_encoder(encoding, encoder.encode)
+                        if encoding not in picture_encodings:
+                            picture_encodings.append(encoding)
             return encoder
         rgb = add("enc_rgb")
         assert rgb, "rgb encoder is missing"
@@ -367,6 +371,7 @@ class WindowSource(WindowIconSource):
             if self.cuda_device_context:
                 self.enc_nvjpeg = add("enc_nvjpeg")
         self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
+        self.picture_encodings = tuple(picture_encodings)
 
 
     def init_vars(self):
@@ -993,11 +998,11 @@ class WindowSource(WindowIconSource):
         co = self.common_encodings
         def canuse(e):
             return e in co and e in TRANSPARENCY_ENCODINGS
-        lossless = quality>=100
+        lossy = quality<100
         if canuse("rgb32") and (
                 (pixel_count<self._rgb_auto_threshold) or
                 #the only encoding that can preserve higher bit depth at present:
-                (lossless and depth>24 and self.client_bit_depth>24)
+                (not lossy and depth>24 and self.client_bit_depth>24)
             ):
             return "rgb32"
         if canuse("webp") and depth in (24, 32) and 16383>=w>=2 and 16383>=h>=2:
@@ -1015,6 +1020,7 @@ class WindowSource(WindowIconSource):
         co = encoding_options
         depth = self.image_depth
         grayscale = self.encoding=="grayscale"
+        alpha = self._want_alpha or self.is_tray
         if w*h<self._rgb_auto_threshold and not grayscale:
             if depth>24 and self.client_bit_depth>24 and "rgb32" in co:
                 return "rgb32"
@@ -1024,11 +1030,9 @@ class WindowSource(WindowIconSource):
         webp = "webp" in co and 16383>=w>=2 and 16383>=h>=2 and not grayscale
         lossy = quality<100
         if depth in (24, 32) and (jpeg or webp):
-            if jpeg and self.enc_nvjpeg and w>=8 and h>=8 and (lossy or not TRUE_LOSSLESS):
-                return "jpeg"
             if webp and (not lossy or w*h<=WEBP_EFFICIENCY_CUTOFF):
                 return "webp"
-            if jpeg and (lossy or not TRUE_LOSSLESS):
+            if (lossy or not TRUE_LOSSLESS) and jpeg and not alpha:
                 return "jpeg"
             if webp:
                 return "webp"
