@@ -84,7 +84,7 @@ def get_env_encodings(etype, valid_options=()):
         encodings = tuple(x for x in options if x in valid_options)
     log("%s encodings: %s", etype, encodings)
     return encodings
-TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32"))
+TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
 LOSSLESS_ENCODINGS = ["rgb", "png", "png/P", "png/L", "webp"]
 if not TRUE_LOSSLESS:
     LOSSLESS_ENCODINGS.append("jpeg")
