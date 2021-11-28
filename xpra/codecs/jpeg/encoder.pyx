@@ -290,20 +290,26 @@ def encode(coding, image, options):
         cdata = encode_rgb(compressor, image, quality, grayscale)
         if not cdata:
             return None
+        now = time.time()
         if SAVE_TO_FILE:    # pragma: no cover
-            filename = "./%s.%s" % (time.time(), coding)
+            filename = "./%s.jpeg" % (now, )
             with open(filename, "wb") as f:
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
         bpp = 24
         if coding=="jpega":
-            from xpra.codecs.argb.argb import alpha
+            from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
             a = alpha(image)
             planes = (a, )
             rowstrides = (image.get_rowstride()//4, )
             adata = do_encode_yuv(compressor, "YUV400P", planes,
                                   width, height, rowstrides,
                                   quality, TJSAMP_GRAY)
+            if SAVE_TO_FILE:    # pragma: no cover
+                filename = "./%s.jpega" % (now, )
+                with open(filename, "wb") as f:
+                    f.write(adata)
+                log.info("saved %i bytes to %s", len(adata), filename)
             client_options["alpha-offset"] = len(cdata)
             cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
             bpp = 32
