@@ -13,7 +13,6 @@ from math import sqrt
 from collections import deque
 from time import monotonic
 
-from xpra.os_util import strtobytes, bytestostr
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
@@ -712,11 +711,8 @@ class WindowSource(WindowIconSource):
         #filter out stuff we don't care about
         #to see if there is anything to set at all,
         #and if not, don't bother doing the potentially expensive update_encoding_selection()
-        for k in ("workspace", "screen"):
-            if k in properties:
-                del properties[k]
-            elif strtobytes(k) in properties:
-                del properties[strtobytes(k)]
+        for k in ("workspace", b"workspace", "screen", b"screen"):
+            properties.pop(k, None)
         if properties:
             self.do_set_client_properties(properties)
 
@@ -2050,7 +2046,7 @@ class WindowSource(WindowIconSource):
         if not self.can_refresh():
             self.cancel_refresh_timer()
             return
-        encoding = bytestostr(packet[6])
+        encoding = packet[6]
         data = packet[7]
         region = rectangle(*packet[2:6])    #x,y,w,h
         client_options = packet[10]     #info about this packet from the encoder
@@ -2540,7 +2536,6 @@ class WindowSource(WindowIconSource):
             return nodata("encoder %s returned None for %s", encoder, (coding, image, options))
 
         coding, data, client_options, outw, outh, outstride, bpp = ret
-        coding = bytestostr(coding)
         #check for cancellation again since the code above may take some time to encode:
         #but never cancel mmap after encoding because we need to reclaim the space
         #by getting the client to move the mmap received pointer
@@ -2578,6 +2573,7 @@ class WindowSource(WindowIconSource):
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x, y, outw, outh, coding, data, outstride, client_options, options):
+        assert isinstance(coding, str), "invalid type for encoding: %r (%s)" % (coding, type(coding))
         for v in (x, y, outw, outh, outstride):
             assert isinstance(v, int), "expected int, found %r (%s)" % (v, type(v))
         if self.send_window_size:

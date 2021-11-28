@@ -27,7 +27,6 @@ from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER
 from xpra.codecs.loader import has_codec
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
-from xpra.os_util import bytestostr
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -1717,7 +1716,7 @@ class WindowVideoSource(WindowSource):
         self._csc_encoder = csce
         enc_start = monotonic()
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
-        dst_formats = tuple(bytestostr(x) for x in self.full_csc_modes.strtupleget(encoder_spec.encoding))
+        dst_formats = self.full_csc_modes.strtupleget(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
         options = typedict(self.encoding_options)
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
