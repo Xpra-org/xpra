@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,6 +14,8 @@ from xpra.os_util import hexstr, strtobytes
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
+
+Image.init()
 
 DECODE_FORMATS = os.environ.get("XPRA_PILLOW_DECODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
 
@@ -206,17 +208,12 @@ def selftest(_full=False):
                 log("correctly raised exception for invalid input: %s", e)
         except Exception as e:
             log("selftest:", exc_info=True)
-            try:
-                #py2k:
-                datainfo = cdata.encode("string_escape")
-            except Exception:
-                try:
-                    datainfo = cdata.encode("unicode_escape").decode()
-                except Exception:
-                    datainfo = str(hexdata)
-            log.error("Pillow error decoding %s with data=%s..", encoding, datainfo[:16])
-            from xpra.os_util import is_CentOS
-            #don't log a backtrace for webp on CentOS:
-            exc_info = not (is_CentOS() and encoding=="webp")
-            log.error(" %s", e, exc_info=exc_info)
+            log.error("Pillow error decoding %s with data:", encoding)
+            log.error(" %r", hexdata)
+            log.error(" %s", e, exc_info=True)
             ENCODINGS.remove(encoding)
+
+
+if __name__ == "__main__":
+    selftest(True)
+    print(csv(get_encodings()))

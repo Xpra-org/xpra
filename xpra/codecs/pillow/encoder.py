@@ -9,7 +9,7 @@ from io import BytesIO
 import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
 
-from xpra.util import envbool
+from xpra.util import envbool, csv
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
@@ -17,6 +17,8 @@ log = Logger("encoder", "pillow")
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
+
+Image.init()
 
 
 def get_version():
@@ -122,7 +124,9 @@ def encode(coding : str, image, options):
         #and we save the compressed data then discard the image
         im = Image.frombuffer(rgb, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
     except Exception as e:
-        log("Image.frombuffer%s", (rgb, (w, h), len(pixels), "raw", pixel_format, image.get_rowstride(), 1), exc_info=True)
+        log("Image.frombuffer%s", (rgb, (w, h), len(pixels),
+                                   "raw", pixel_format, image.get_rowstride(), 1),
+                                   exc_info=True)
         log.error("Error: pillow failed to import image:")
         log.error(" %s", e)
         log.error(" for %s", image)
@@ -270,3 +274,8 @@ def selftest(full=False):
             encs = list(ENCODINGS)
             encs.remove(encoding)
             ENCODINGS = tuple(encs)
+
+
+if __name__ == "__main__":
+    selftest(True)
+    print(csv(get_encodings()))
