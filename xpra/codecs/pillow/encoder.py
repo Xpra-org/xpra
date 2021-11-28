@@ -238,7 +238,7 @@ def encode(coding : str, image, options):
     buf = BytesIO()
     im.save(buf, pil_fmt, **kwargs)
     if SAVE_TO_FILE:    # pragma: no cover
-        filename = "./%s.%s" % (time.time(), pil_fmt)
+        filename = "./%s.%s" % (time.time(), pil_fmt.lower())
         im.save(filename, pil_fmt)
         log.info("saved %s to %s", coding, filename)
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
