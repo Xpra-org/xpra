@@ -2534,6 +2534,7 @@ class WindowSource(WindowIconSource):
         log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
         start = monotonic()
 
+        options["device-context"] = self.cuda_device_context
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
         if encoder is None:

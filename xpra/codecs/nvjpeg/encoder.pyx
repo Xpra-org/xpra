@@ -470,14 +470,14 @@ cdef class Encoder:
             self.nv_image.channel[0] = <unsigned char *> cuda_ptr
             self.nv_image.pitch[0] = stride
             end = monotonic()
-            log("uploaded %i bytes to %#x in %.1fms",
+            log("nvjpeg: uploaded %i bytes to %#x in %.1fms",
                 buf_len, <uintptr_t> int(cuda_buffer), 1000*(end-start))
             start = monotonic()
             r = nvjpegEncodeImage(self.nv_handle, self.nv_enc_state, self.nv_enc_params,
                                   &self.nv_image, input_format, width, height, self.stream)
             errcheck(r, "nvjpegEncodeImage")
             end = monotonic()
-            log("nvjpegEncodeImage took %.1fms using input format %s",
+            log("nvjpeg: nvjpegEncodeImage took %.1fms using input format %s",
                 1000*(end-start), NVJPEG_INPUT_STR.get(input_format, input_format))
             self.frames += 1
             cuda_buffer.free()
@@ -493,7 +493,7 @@ cdef class Encoder:
             r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)
             errcheck(r, "nvjpegEncodeRetrieveBitstream")
             end = monotonic()
-            log("downloaded %i bytes in %.1fms", length, 1000*(end-start))
+            log("nvjpeg: downloaded %i bytes in %.1fms", length, 1000*(end-start))
             return memoryview(output_buf), {}
 
 
@@ -531,8 +531,7 @@ cdef nvjpegChromaSubsampling_t get_subsampling(int quality):
     return NVJPEG_CSS_420
 
 
-def encode(coding, image, options):
-    assert coding=="jpeg"
+def get_device_context():
     from xpra.codecs.cuda_common.cuda_context import select_device, cuda_device_context
     cdef double start = monotonic()
     cuda_device_id, cuda_device = select_device()
@@ -542,6 +541,11 @@ def encode(coding, image, options):
     cuda_context = cuda_device_context(cuda_device_id, cuda_device)
     cdef double end = monotonic()
     log("device init took %.1fms", 1000*(end-start))
+    return cuda_context
+
+def encode(coding, image, options):
+    assert coding=="jpeg"
+    cuda_context = options.get("device-context") or get_device_context()
     return device_encode(cuda_context, image, options)
 
 errors = []
@@ -553,32 +557,41 @@ def device_encode(device_context, image, options):
     global errors
     pfstr = image.get_pixel_format()
 
-    cdef int width = image.get_width()
-    cdef int height = image.get_height()
+    width = image.get_width()
+    height = image.get_height()
+    cdef double start, end
     resize = options.get("resize")
     if resize:
         #we may need to convert to an RGB format scaling can handle:
         from xpra.codecs.argb.scale import scale_image, RGB_SCALE_FORMATS
         if pfstr not in RGB_SCALE_FORMATS:
+            start = monotonic()
             from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
             if not argb_swap(image, RGB_SCALE_FORMATS):
                 log("nvjpeg: argb_swap failed to convert %s to a suitable format for scaling: %s" % (
                     pfstr, RGB_SCALE_FORMATS))
             else:
                 pfstr = image.get_pixel_format()
+                end = monotonic()
+                log("nvjpeg: argb_swap converted to %s in %.1fms", pfstr, 1000*(end-start))
         if pfstr in RGB_SCALE_FORMATS:
             w, h = resize
+            start = monotonic()
             image = scale_image(image, w, h)
-            log("nvjpeg scaled image: %s", image)
+            end = monotonic()
+            log("nvjpeg: scaled image from %s to %s in %.1fms", (width, height), resize, 1000*(end-start))
 
     if pfstr not in NVJPEG_INPUT_FORMATS:
         from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport @Reimport
+        start = monotonic()
+        oldpfstr = pfstr
         if not argb_swap(image, NVJPEG_INPUT_FORMATS):
             log("nvjpeg: argb_swap failed to convert %s to a suitable format: %s" % (
                 pfstr, NVJPEG_INPUT_FORMATS))
             return None
-        log("jpeg converted image: %s", image)
         pfstr = image.get_pixel_format()
+        end = monotonic()
+        log("nvjpeg: argb_swap converted %s to %s in %.1fms", oldpfstr, pfstr, 1000*(end-start))
 
     options = typedict(options)
     cdef int encode_width = image.get_width()
