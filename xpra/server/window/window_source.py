@@ -38,6 +38,7 @@ statslog = Logger("stats")
 bandwidthlog = Logger("bandwidth")
 
 TRUE_LOSSLESS = envbool("XPRA_TRUE_LOSSLESS", False)
+LOG_ENCODERS = envbool("XPRA_LOG_ENCODERS", True)
 
 AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
@@ -342,12 +343,13 @@ class WindowSource(WindowIconSource):
         picture_encodings = []
         def add(encoder_name):
             encoder = get_codec(encoder_name)
-            if encoder:
-                for encoding in encoder.get_encodings():
-                    if encoding in self.server_core_encodings:
-                        self.add_encoder(encoding, encoder.encode)
-                        if encoding not in picture_encodings:
-                            picture_encodings.append(encoding)
+            if not encoder:
+                return None
+            for encoding in encoder.get_encodings():
+                if encoding in self.server_core_encodings:
+                    self.add_encoder(encoding, encoder.encode)
+                    if encoding not in picture_encodings:
+                        picture_encodings.append(encoding)
             return encoder
         rgb = add("enc_rgb")
         assert rgb, "rgb encoder is missing"
@@ -2555,6 +2557,14 @@ class WindowSource(WindowIconSource):
             client_options["z.sha256"] = chksum
             client_options["z.len"] = len(data)
             log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), chksum)
+        if LOG_ENCODERS:
+            mod = getattr(encoder, "__module__")    #ie: 'xpra.codecs.pillow.encoder'
+            if mod:
+                if mod.endswith(".encoder"):
+                    mod = mod[:-len(".encoder")]    #ie: 'xpra.codecs.pillow'
+                    mod = mod.split(".")[-1]        #ie: 'pillow'
+                    if mod:
+                        client_options["encoder"] = mod
         #actual network packet:
         if flush not in (None, 0):
             client_options["flush"] = flush
