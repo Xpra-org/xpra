@@ -190,7 +190,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3):
                 if subsamp!=TJSAMP_GRAY or i==0:
                     raise ValueError("cannot get size for plane %r for mode %r" % ("YUV"[i], subsamp_str))
                 stride = roundup(w//2, 4)
-                plane_size = stride * roundup(h//2, 2)
+                plane_size = stride * roundup(h, 2)//2
                 if i==1:
                     #allocate empty U and V planes:
                     empty = getbuf(plane_size)
