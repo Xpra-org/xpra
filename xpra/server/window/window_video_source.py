@@ -104,8 +104,6 @@ if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
     log.warn(" only 'png' or 'jpeg' are allowed")
     SAVE_VIDEO_FRAMES = None
 
-FAST_ORDER = tuple(["jpeg", "rgb32", "rgb24", "webp", "png"] + list(PREFERRED_ENCODING_ORDER))
-
 COMPRESS_SCROLL_FMT = COMPRESS_FMT_PREFIX+" as %3i rectangles  (%5iKB to     0KB)"+COMPRESS_FMT_SUFFIX
 
 
