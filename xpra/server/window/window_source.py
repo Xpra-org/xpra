@@ -1428,6 +1428,7 @@ class WindowSource(WindowIconSource):
             self.statistics.damage_events_count += 1
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
+            self.statistics.resize_events.append(now)
             self.window_dimensions = ww, wh
             log("window dimensions changed: %ix%i", ww, wh)
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
@@ -1487,8 +1488,14 @@ class WindowSource(WindowIconSource):
         regions = [rectangle(x, y, w, h)]
         delay = options.get("delay", self.batch_config.delay)
         resize_elapsed = int(1000*(now-self.statistics.last_resized))
-        #batch more when recently resized:
-        delay += max(0, 500-resize_elapsed)//2
+        if resize_elapsed<500:
+            try:
+                #batch more when recently resized,
+                #but only if this is is not the first recent resize event:
+                if now-self.statistics.resize_events[-2]<1:
+                    delay += (500-resize_elapsed)//2
+            except IndexError:
+                pass
         gs = self.global_statistics
         congestion_elapsed = -1
         if gs:

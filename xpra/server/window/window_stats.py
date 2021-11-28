@@ -64,6 +64,7 @@ class WindowPerformanceStatistics:
         self.damage_events_count = 0
         self.packet_count = 0
 
+        self.resize_events = deque(maxlen=4)                #(time)
         self.last_resized = 0
         self.last_packet_time = 0
 
