@@ -300,7 +300,7 @@ def init_module():
 def cleanup_module():
     log("nvjpeg.cleanup_module()")
 
-NVJPEG_INPUT_FORMATS = ("BGRX",)
+NVJPEG_INPUT_FORMATS = ("BGRX", "RGBX", )
 
 def get_input_colorspaces(encoding):
     assert encoding=="jpeg"
@@ -358,10 +358,11 @@ cdef class Encoder:
         self.grayscale = options.boolget("grayscale", False)
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
+        kernel_name = "%s_to_RGB" % src_format
         with cuda_device_context:
-            self.cuda_kernel = get_CUDA_function("BGRX_to_RGB")
+            self.cuda_kernel = get_CUDA_function(kernel_name)
         if not self.cuda_kernel:
-            raise Exception("missing BGRX_to_RGB kernel")
+            raise Exception("missing %s kernel" % kernel_name)
         self.init_nvjpeg()
 
     def init_nvjpeg(self):
@@ -455,7 +456,7 @@ cdef class Encoder:
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
         pfstr = image.get_pixel_format()
-        assert pfstr=="BGRX", "invalid pixel format %r" % pfstr
+        assert pfstr==self.src_format, "invalid pixel format %s, expected %s" % (pfstr, self.src_format)
         cdef nvjpegInputFormat_t input_format = FORMAT_VAL.get("RGB", 0)
         if input_format==0:
             raise ValueError("unsupported input format %s" % pfstr)
@@ -634,7 +635,8 @@ def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
     from xpra.codecs.codec_checks import make_test_image
     for size in (32, 256, 1920):
-        img = make_test_image("BGRX", size, size)
-        log("testing with %s", img)
-        v = encode("jpeg", img, {})
-        assert v, "failed to compress test image"
+        for fmt in NVJPEG_INPUT_FORMATS:
+            img = make_test_image(fmt, size, size)
+            log("testing with %s", img)
+            v = encode("jpeg", img, {})
+            assert v, "failed to compress test image"

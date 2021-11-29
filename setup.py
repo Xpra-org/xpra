@@ -999,6 +999,7 @@ def clean():
             "fs/share/xpra/cuda/BGRX_to_NV12.fatbin",
             "fs/share/xpra/cuda/BGRX_to_YUV444.fatbin",
             "fs/share/xpra/cuda/BGRX_to_RGB.fatbin",
+            "fs/share/xpra/cuda/RGBX_to_RGB.fatbin",
             ]
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
@@ -2104,7 +2105,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         if nvenc_ENABLED:
             kernels += ["XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444"]
         if nvjpeg_ENABLED:
-            kernels += ["BGRX_to_RGB"]
+            kernels += ["BGRX_to_RGB", "RGBX_to_RGB"]
         nvcc_commands = []
         for kernel in kernels:
             cuda_src = "fs/share/xpra/cuda/%s.cu" % kernel
