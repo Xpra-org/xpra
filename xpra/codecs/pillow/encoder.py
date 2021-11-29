@@ -142,7 +142,7 @@ def encode(coding, image, quality, speed, supports_transparency):
             client_options["optimize"] = True
         elif coding=="webp" and q>=100:
             kwargs["lossless"] = 1
-            kwargs["quality"] = max(0, 50-speed//2)
+            kwargs["quality"] = 0
         pil_fmt = coding.upper()
     else:
         assert coding in ("png", "png/P", "png/L"), "unsupported encoding: %s" % coding
