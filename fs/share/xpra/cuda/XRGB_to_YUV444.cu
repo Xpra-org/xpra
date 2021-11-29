@@ -11,12 +11,10 @@ extern "C" __global__ void XRGB_to_YUV444(uint8_t *srcImage, int src_w, int src_
                              uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
                              int w, int h)
 {
-    uint32_t gx, gy;
-    gx = blockIdx.x * blockDim.x + threadIdx.x;
-    gy = blockIdx.y * blockDim.y + threadIdx.y;
-
-    uint32_t src_y = gy * src_h / dst_h;
-    uint32_t src_x = gx * src_w / dst_w;
+    const uint32_t gx = blockIdx.x * blockDim.x + threadIdx.x;
+    const uint32_t gy = blockIdx.y * blockDim.y + threadIdx.y;
+    const uint32_t src_y = gy * src_h / dst_h;
+    const uint32_t src_x = gx * src_w / dst_w;
 
     if ((src_x < w) & (src_y < h)) {
         uint8_t R;
