@@ -321,8 +321,8 @@ def get_spec(encoding, colorspace):
 
 
 cdef class Encoder:
-    cdef int width
-    cdef int height
+    cdef unsigned int width
+    cdef unsigned int height
     cdef object scaling
     cdef object src_format
     cdef int quality
@@ -341,18 +341,16 @@ cdef class Encoder:
     def __init__(self):
         self.width = self.height = self.quality = self.speed = self.frames = 0
 
-    def init_context(self, device_context, width : int, height : int,
-                     src_format, dst_formats, encoding, quality : int, speed : int, scaling, options : typedict):
+    def init_context(self, encoding, width : int, height : int, src_format, options : typedict):
         assert encoding=="jpeg"
         assert src_format in get_input_colorspaces(encoding)
-        assert scaling==(1, 1)
+        options = options or typedict()
         self.width = width
         self.height = height
         self.src_format = src_format
-        self.quality = quality
-        self.speed = speed
+        self.quality = options.intget("quality", 50)
+        self.speed = options.intget("speed", 50)
         self.grayscale = options.boolget("grayscale", False)
-        self.scaling = scaling
         self.init_nvjpeg()
         self.cuda_buffer = None
         self.cuda_buffer_size = 0
@@ -444,12 +442,16 @@ cdef class Encoder:
             })
         return info
 
-    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, image, options=None):
+        options = options or {}
+        cuda_device_context = options.get("cuda-device-context")
+        assert cuda_device_context, "no cuda device context"
         pfstr = image.get_pixel_format()
         cdef nvjpegInputFormat_t input_format = FORMAT_VAL.get(pfstr, 0)
         if input_format==0:
             raise ValueError("unsupported input format %s" % pfstr)
-        if abs(self.quality-quality)>10:
+        quality = options.get("quality", -1)
+        if quality>=0 and abs(self.quality-quality)>10:
             self.quality = quality
             self.configure_nvjpeg()
         cdef int width = image.get_width()
@@ -462,7 +464,7 @@ cdef class Encoder:
         cdef size_t length
         cdef MemBuf output_buf
         cdef unsigned char* buf_ptr
-        with device_context:
+        with cuda_device_context:
             start = monotonic()
             cuda_buffer = driver.mem_alloc(buf_len)
             driver.memcpy_htod(cuda_buffer, pixels)
@@ -543,20 +545,15 @@ def get_device_context():
     log("device init took %.1fms", 1000*(end-start))
     return cuda_context
 
-def encode(coding, image, options):
-    assert coding=="jpeg"
-    cuda_context = options.get("device-context") or get_device_context()
-    return device_encode(cuda_context, image, options)
-
 errors = []
 def get_errors():
     global errors
     return errors
 
-def device_encode(device_context, image, options):
+def encode(coding, image, options=None):
+    assert coding=="jpeg", "invalid encoding: %s" % coding
     global errors
     pfstr = image.get_pixel_format()
-
     width = image.get_width()
     height = image.get_height()
     cdef double start, end
@@ -593,18 +590,16 @@ def device_encode(device_context, image, options):
         end = monotonic()
         log("nvjpeg: argb_swap converted %s to %s in %.1fms", oldpfstr, pfstr, 1000*(end-start))
 
-    options = typedict(options)
+    options = typedict(options or {})
+    if "cuda-device-context" not in options:
+        options["cuda-device-context"] = get_device_context()
     cdef int encode_width = image.get_width()
     cdef int encode_height = image.get_height()
-    cdef int quality = options.get("quality", 50)
-    cdef int speed = options.get("speed", 50)
     cdef Encoder encoder
     try:
         encoder = Encoder()
-        encoder.init_context(device_context, encode_width, encode_height,
-                       pfstr, (pfstr, ),
-                       "jpeg", quality, speed, scaling=(1, 1), options=options)
-        r = encoder.compress_image(device_context, image, quality, speed, options)
+        encoder.init_context(coding, width, height, pfstr, options=options)
+        r = encoder.compress_image(image, options)
         if not r:
             return None
         cdata, options = r

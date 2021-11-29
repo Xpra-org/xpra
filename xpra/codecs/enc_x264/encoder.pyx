@@ -495,24 +495,25 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, device_context, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):
-        log("enc_x264.init_context%s", (device_context, width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
+    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options:typedict=None):
+        log("enc_x264.init_context%s", (width, height, src_format, encoding, options))
+        options = options or typedict()
         global COLORSPACE_FORMATS, generation
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
         assert encoding=="h264", "invalid encoding: %s" % encoding
-        assert scaling==(1,1), "x264 encoder does not handle scaling"
+        assert options.get("scaled-width", width)==width, "x264 encoder does not handle scaling"
+        assert options.get("scaled-height", height)==height, "x264 encoder does not handle scaling"
         self.width = width
         self.height = height
-        self.quality = quality
-        self.speed = speed
+        self.quality = options.intget("quality", 50)
+        self.speed = options.intget("speed", 50)
         #self.opencl = USE_OPENCL and width>=32 and height>=32
-        options = options or typedict()
         self.content_type = options.strget("content-type", "unknown")      #ie: "video"
         self.b_frames = options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
         self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)
-        self.preset = self.get_preset_for_speed(speed)
+        self.preset = self.get_preset_for_speed(self.speed)
         self.src_format = src_format
         self.csc_format = COLORSPACES[src_format]
         self.colorspace = cs_info[0]
@@ -809,7 +810,7 @@ cdef class Encoder:
         return strtobytes(profile)
 
 
-    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, image, options=None):
         cdef x264_picture_t pic_in
         cdef int i
 
@@ -820,15 +821,26 @@ cdef class Encoder:
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
 
-        toptions = typedict(options or {})
-        content_type = toptions.strget("content-type", self.content_type)
-        b_frames = toptions.intget("b-frames", 0)
+        options = typedict(options or {})
+        content_type = options.strget("content-type", self.content_type)
+        b_frames = options.intget("b-frames", 0)
         if content_type!=self.content_type or self.b_frames!=b_frames:
             #some options have changed:
             log("compress_image: reconfig b-frames=%s, content_type=%s (from %s, %s)", b_frames, content_type, self.b_frames, self.content_type)
             self.content_type = content_type
             self.b_frames = b_frames
             self.reconfig_tune()
+
+        cdef int speed = options.get("speed", 50)
+        if speed>=0:
+            self.set_encoding_speed(speed)
+        else:
+            speed = self.speed
+        cdef int quality = options.get("quality", -1)
+        if quality>=0:
+            self.set_encoding_quality(quality)
+        else:
+            quality = self.quality
 
         if BLANK_VIDEO:
             if image.get_planes()==3:
@@ -881,15 +893,6 @@ cdef class Encoder:
         cdef x264_picture_t pic_out
         assert self.context!=NULL
         cdef double start = monotonic()
-
-        if speed>=0:
-            self.set_encoding_speed(speed)
-        else:
-            speed = self.speed
-        if quality>=0:
-            self.set_encoding_quality(quality)
-        else:
-            quality = self.quality
 
         cdef int frame_size = 0
         with nogil:

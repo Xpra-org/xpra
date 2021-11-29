@@ -19,6 +19,7 @@ from xpra.server.window.window_source import (
     STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE,
     COMPRESS_FMT_PREFIX, COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
+    LOG_ENCODERS,
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.motion import ScrollData                    #@UnresolvedImport
@@ -1674,8 +1675,6 @@ class WindowVideoSource(WindowSource):
     def setup_pipeline_option(self, width, height, src_format,
                       _score, scaling, _csc_scaling, csc_width, csc_height, csc_spec,
                       enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec):
-        speed = self._current_speed
-        quality = self._current_quality
         min_w = 1
         min_h = 1
         max_w = 16384
@@ -1720,10 +1719,16 @@ class WindowVideoSource(WindowSource):
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
         if self.encoding=="grayscale":
             options["grayscale"] = True
-        ve.init_context(self.cuda_device_context,
-                        enc_width, enc_height, enc_in_format,
-                        dst_formats, encoder_spec.encoding,
-                        quality, speed, encoder_scaling, options)
+        if encoder_scaling!=(1, 1):
+            n, d = encoder_scaling
+            options["scaling"] = encoder_scaling
+            options["scaled-width"] = enc_width*n//d
+            options["scaled-height"] = enc_height*n//d
+        options["dst-formats"] = dst_formats
+        if self.cuda_device_context:
+            options["cuda-device-context"] = self.cuda_device_context
+
+        ve.init_context(encoder_spec.encoding, enc_width, enc_height, enc_in_format, options)
         #record new actual limits:
         self.actual_scaling = scaling
         self.width_mask = width_mask
@@ -2157,13 +2162,12 @@ class WindowVideoSource(WindowSource):
         csce, csc_image, csc, enc_width, enc_height = self.csc_image(image, width, height)
 
         start = monotonic()
-        quality = max(0, min(100, self._current_quality))
-        speed = max(0, min(100, self._current_speed))
         options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
+        options["cuda-device-context"] = self.cuda_device_context
         try:
-            ret = ve.compress_image(self.cuda_device_context, csc_image, quality, speed, options)
+            ret = ve.compress_image(csc_image, options)
         except Exception as e:
-            videolog("%s.compress_image%s", ve, (csc_image, quality, speed, options), exc_info=True)
+            videolog("%s.compress_image%s", ve, (csc_image, options), exc_info=True)
             if self.is_cancelled():
                 return None
             videolog.error("Error: failed to encode %s frame", ve.get_encoding())
@@ -2214,6 +2218,9 @@ class WindowVideoSource(WindowSource):
         if csce and ("scaled_size" not in client_options) and (enc_width!=width or enc_height!=height):
             scaled_size = enc_width, enc_height
             client_options["scaled_size"] = scaled_size
+
+        if LOG_ENCODERS:
+            client_options["encoder"] = ve.get_type()
 
         #deal with delayed b-frames:
         delayed = client_options.get("delayed", 0)

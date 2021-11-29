@@ -16,7 +16,7 @@ log = Logger("encoder", "ffmpeg")
 from xpra.codecs.codec_constants import video_spec
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger, av_error_str #@UnresolvedImport pylint: disable=syntax-error
 from xpra.codecs.libav_common.av_log import SilenceAVWarningsContext  # @UnresolvedImport
-from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool
+from xpra.util import AtomicInteger, csv, print_nested_dict, reverse_dict, envint, envbool, typedict
 from xpra.os_util import bytestostr, strtobytes, LINUX
 from xpra.buffers.membuf cimport memalign
 
@@ -1161,10 +1161,12 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, device_context, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
+    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options):
         global CODECS, generation
         assert encoding in CODECS
-        assert scaling==(1,1), "ffmpeg encoder does not handle scaling"
+        options = options or typedict()
+        assert options.get("scaled-width", width)==width, "ffmpeg encoder does not handle scaling"
+        assert options.get("scaled-height", height)==height, "ffmpeg encoder does not handle scaling"
         self.vaapi = encoding in VAAPI_CODECS and src_format=="NV12"
         self.fast_decode = options.boolget("%s.fast-decode" % encoding, False)
         assert src_format in get_input_colorspaces(encoding), "invalid colorspace: %s" % src_format
@@ -1217,6 +1219,8 @@ cdef class Encoder:
             bytestostr(self.video_codec.name), bytestostr(self.video_codec.long_name),
             flagscsv(CAPS, self.video_codec.capabilities))
 
+        cdef int quality = options.intget("quality", 50)
+        cdef int speed = options.intget("speed", 50)
         cdef uintptr_t gen = generation.increase()
         GEN_TO_ENCODER[gen] = self
         try:
@@ -1593,7 +1597,7 @@ cdef class Encoder:
         for k,v in self.get_info().items():
             log.error("  %s = %s", k, v)
 
-    def compress_image(self, device_context=None, image=None, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, image=None, options=None):
         cdef int ret, i
         cdef AVFrame *frame
         cdef AVFrame *hw_frame = NULL
@@ -1671,7 +1675,7 @@ cdef class Encoder:
                 log.error(" %s", av_error_str(ret))
                 return None
             frame = hw_frame
-        log("compress_image%s avcodec_send_frame frame=%#x", (image, quality, speed, options), <uintptr_t> frame)
+        log("compress_image%s avcodec_send_frame frame=%#x", (image, options), <uintptr_t> frame)
         with nogil:
             ret = avcodec_send_frame(self.video_ctx, frame)
         release_buffers()
@@ -1686,7 +1690,7 @@ cdef class Encoder:
         assert ret==0
         try:
             while ret==0:
-                log("compress_image%s avcodec_receive_packet avpacket=%#x", (image, quality, speed, options), <uintptr_t> &avpkt)
+                log("compress_image%s avcodec_receive_packet avpacket=%#x", (image, options), <uintptr_t> &avpkt)
                 with nogil:
                     ret = avcodec_receive_packet(self.video_ctx, avpkt)
                 log("avcodec_receive_packet(..)=%i", ret)

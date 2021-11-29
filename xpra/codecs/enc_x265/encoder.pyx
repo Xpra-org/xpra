@@ -10,7 +10,7 @@ from time import monotonic
 from xpra.log import Logger
 log = Logger("encoder", "x265")
 
-from xpra.util import envbool
+from xpra.util import envbool, typedict
 from xpra.codecs.codec_constants import video_spec
 
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uint32_t, uintptr_t
@@ -307,9 +307,6 @@ def get_output_colorspaces(encoding, input_colorspace):
 def get_spec(encoding, colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
-    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h, max_pixels
-    #we can handle high quality and any speed
-    #setup cost is moderate (about 10ms)
     return video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace], has_lossless_mode=False,
                       codec_class=Encoder, codec_type=get_type(),
                       min_w=64, min_h=64,
@@ -325,13 +322,11 @@ else:
 cdef class Encoder:
     cdef x265_param *param
     cdef x265_encoder *context
-    cdef int width
-    cdef int height
+    cdef unsigned int width
+    cdef unsigned int height
     cdef object src_format
     cdef object preset
     cdef char *profile
-    cdef int quality
-    cdef int speed
     cdef double time
     cdef unsigned long frames
     cdef int64_t first_frame_timestamp
@@ -339,15 +334,15 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, device_context, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
+    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options=None):
         global COLORSPACES
         assert src_format in COLORSPACES, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES)
         assert encoding=="h265", "invalid encoding: %s" % encoding
-        assert scaling==(1,1), "x264 encoder does not handle scaling"
+        options = options or typedict()
+        assert options.intget("scaled-width", width)==width, "x265 encoder does not handle scaling"
+        assert options.intget("scaled-height", height)==height, "x265 encoder does not handle scaling"
         self.width = width
         self.height = height
-        self.quality = quality
-        self.speed = speed
         self.src_format = src_format
         self.frames = 0
         self.time = 0
@@ -443,8 +438,6 @@ cdef class Encoder:
         self.src_format = ""
         self.preset = None
         self.profile = ""
-        self.quality = 0
-        self.speed = 0
         self.time = 0
         self.frames = 0
         self.first_frame_timestamp = 0
@@ -460,8 +453,6 @@ cdef class Encoder:
             "frames"    : int(self.frames),
             "width"     : self.width,
             "height"    : self.height,
-            "speed"     : self.speed,
-            "quality"   : self.quality,
             "src_format": self.src_format,
             }
         if self.frames>0 and self.time>0:
@@ -497,7 +488,7 @@ cdef class Encoder:
         return self.src_format
 
 
-    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, image, options=None):
         cdef x265_nal *nal
         cdef uint32_t nnal = 0
         cdef unsigned int i

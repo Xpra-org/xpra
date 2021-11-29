@@ -2534,7 +2534,7 @@ class WindowSource(WindowIconSource):
         log("make_data_packet: image=%s, damage data: %s", image, (self.wid, x, y, w, h, coding))
         start = monotonic()
 
-        options["device-context"] = self.cuda_device_context
+        options["cuda-device-context"] = self.cuda_device_context
         #by default, don't set rowstride (the container format will take care of providing it):
         encoder = self._encoders.get(coding)
         if encoder is None:
@@ -2611,37 +2611,6 @@ class WindowSource(WindowIconSource):
         #log("make_data_packet: returning packet=%s", packet[:7]+[".."]+packet[8:])
         return packet
 
-
-    def nvjpeg_encode(self, coding, image, options):
-        assert coding=="jpeg"
-        def fallback(reason):
-            log("nvjpeg_encode: %s", reason)
-            for alt in ("jpeg", "pillow"):
-                codec = get_codec(alt)
-                if codec:
-                    return codec.encode(coding, image, options)
-            return None
-        cdd = self.cuda_device_context
-        if not cdd:
-            return fallback("no cuda device context")
-        w = image.get_width()
-        h = image.get_height()
-        if w<16 or h<16:
-            return fallback("image size %ix%i is too small" % (w, h))
-        log("nvjpeg_encode%s", (coding, image, options))
-        with cdd:
-            r = self.enc_nvjpeg.device_encode(cdd, image, options)
-            if r is None:
-                errors = self.enc_nvjpeg.get_errors()
-                MAX_FAILURES = 3
-                if len(errors)<=MAX_FAILURES:
-                    return fallback(errors[-1])
-                log.warn("Warning: nvjpeg has failed %s times and is now disabled", len(errors))
-                for e in errors:
-                    log(" %s", e)
-                self.enc_nvjpeg = None
-                return fallback("nvjpeg is now disabled")
-            return r
 
     def mmap_encode(self, coding, image, _options):
         assert coding=="mmap"

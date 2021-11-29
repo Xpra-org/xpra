@@ -348,9 +348,9 @@ cdef class Encoder:
     cdef vpx_codec_ctx_t *context
     cdef vpx_codec_enc_cfg_t cfg
     cdef vpx_img_fmt_t pixfmt
-    cdef int width
-    cdef int height
-    cdef int max_threads
+    cdef unsigned int width
+    cdef unsigned int height
+    cdef unsigned int max_threads
     cdef unsigned int generation
     cdef unsigned long bandwidth_limit
     cdef double initial_bitrate_per_pixel
@@ -364,11 +364,12 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-#init_context(w, h, src_format, encoding, quality, speed, scaling, options)
-    def init_context(self, device_context, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
-        log("vpx init_context%s", (device_context, width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
+    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options):
+        log("vpx init_context%s", (encoding, width, height, src_format, options))
         assert encoding in CODECS, "invalid encoding: %s" % encoding
-        assert scaling==(1,1), "vpx does not handle scaling"
+        options = options or typedict()
+        assert options.get("scaled-width", width)==width, "vpx encoder does not handle scaling"
+        assert options.get("scaled-height", height)==height, "vpx encoder does not handle scaling"
         assert encoding in get_encodings()
         assert src_format in get_input_colorspaces(encoding)
         if BITS==32 and WIN32:
@@ -385,8 +386,8 @@ cdef class Encoder:
         self.encoding = encoding
         self.width = width
         self.height = height
-        self.speed = speed
-        self.quality = quality
+        self.quality = options.intget("quality", 50)
+        self.speed = options.intget("speed", 50)
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         self.lossless = 0
         self.frames = 0
@@ -459,8 +460,8 @@ cdef class Encoder:
         if encoding=="vp9":
             #disable periodic Q boost which causes latency spikes:
             self.codec_control("periodic Q boost", VP9E_SET_FRAME_PERIODIC_BOOST, 0)
-        self.do_set_encoding_speed(speed)
-        self.do_set_encoding_quality(quality)
+        self.do_set_encoding_speed(self.speed)
+        self.do_set_encoding_quality(self.quality)
         self.generation = generation.increase()
         if SAVE_TO_FILE is not None:
             filename = SAVE_TO_FILE+"vpx-"+str(self.generation)+".%s" % encoding
@@ -584,7 +585,7 @@ cdef class Encoder:
             f.close()
 
 
-    def compress_image(self, device_context, image, quality=-1, speed=-1, options=None):
+    def compress_image(self, image, options=None):
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         assert self.context!=NULL
@@ -603,8 +604,10 @@ cdef class Encoder:
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()
+        cdef int speed = options.get("speed", 50)
         if speed>=0:
             self.set_encoding_speed(speed)
+        cdef int quality = options.get("quality", 50)
         if quality>=0:
             self.set_encoding_quality(quality)
 

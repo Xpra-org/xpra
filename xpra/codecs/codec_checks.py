@@ -214,11 +214,16 @@ def do_testencoding(encoder_module, encoding, W, H, full=False, limit_w=TEST_LIM
         for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
             e = encoder_module.Encoder()
             try:
-                options = typedict({"b-frames" : True})
-                e.init_context(None, W, H, cs_in, [cs_out], encoding, 0, 100, (1, 1), options)
+                options = typedict({
+                    "b-frames" : True,
+                    "dst-formats" : [cs_out],
+                    "quality" : 50,
+                    "speed" : 50,
+                    })
+                e.init_context(encoding, W, H, cs_in, options)
                 for i in range(2):
                     image = make_test_image(cs_in, W, H)
-                    v = e.compress_image(None, image)
+                    v = e.compress_image(image)
                     if v is None:
                         raise Exception("%s compression failed" % encoding)
                     data, meta = v

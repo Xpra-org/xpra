@@ -1491,6 +1491,8 @@ cdef inline raiseNVENC(NVENCSTATUS ret, msg):
 cdef class Encoder:
     cdef unsigned int width
     cdef unsigned int height
+    cdef unsigned int scaled_width
+    cdef unsigned int scaled_height
     cdef unsigned int input_width
     cdef unsigned int input_height
     cdef unsigned int encoder_width
@@ -1498,7 +1500,7 @@ cdef class Encoder:
     cdef object encoding
     cdef object src_format
     cdef object dst_formats
-    cdef object scaling
+    cdef int scaling
     cdef int speed
     cdef int quality
     cdef uint32_t target_bitrate
@@ -1616,23 +1618,27 @@ cdef class Encoder:
                     return c_parseguid(preset_guid)
         raise Exception("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
-    def init_context(self, device_context, int width, int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options:typedict=None):
+    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options:typedict=None):
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
-        log("init_context%s", (device_context, width, height, src_format, dst_formats, encoding, quality, speed, scaling, options))
-        assert device_context, "no cuda device context"
-        self.cuda_device_context = device_context
+        log("init_context%s", (encoding, width, height, src_format, options))
+        options = options or typedict()
+        cuda_device_context = options.get("cuda-device-context")
+        assert cuda_device_context, "no cuda device context"
+        self.cuda_device_context = cuda_device_context
         assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX", "r210"), "invalid source format %s" % src_format
+        dst_formats = options.strtupleget("dst-formats")
         assert "YUV420P" in dst_formats or "YUV444P" in dst_formats
         self.width = width
         self.height = height
-        self.speed = speed
-        self.quality = quality
-        self.scaling = scaling or (1, 1)
-        v, u = self.scaling
+        self.quality = options.intget("quality", 50)
+        self.speed = options.intget("speed", 50)
+        self.scaled_width = options.intget("scaled-width", width)
+        self.scaled_height = options.get("scaled-height", height)
+        self.scaling = bool(self.scaled_width!=self.width or self.scaled_height!=self.height)
         self.input_width = roundup(width, 32)
         self.input_height = roundup(height, 32)
-        self.encoder_width = roundup(width*v//u, 32)
-        self.encoder_height = roundup(height*v//u, 32)
+        self.encoder_width = roundup(self.scaled_width, 32)
+        self.encoder_height = roundup(self.scaled_height, 32)
         self.src_format = src_format
         self.dst_formats = dst_formats
         self.encoding = encoding
@@ -1738,19 +1744,19 @@ cdef class Encoder:
         elif self.src_format=="r210":
             v = "r210"
         else:
-            x,y = self.scaling
             hasyuv420 = YUV420_ENABLED and "YUV420P" in self.dst_formats
             if hasyuv444:
                 #NVENC and the client can handle it,
                 #now check quality and scaling:
                 #(don't use YUV444 is we're going to downscale or use low quality anyway)
-                if (quality>=YUV444_THRESHOLD and x==1 and y==1) or not hasyuv420:
+                if (quality>=YUV444_THRESHOLD and not self.scaling) or not hasyuv420:
                     v = "YUV444P"
             if not v:
                 if hasyuv420:
                     v = "NV12"
                 else:
-                    raise Exception("no compatible formats found for quality=%i, scaling=%s, YUV420 support=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (quality, self.scaling, hasyuv420, hasyuv444, self.codec_name, self.dst_formats))
+                    raise Exception("no compatible formats found for quality=%i, scaling=%s, YUV420 support=%s, YUV444 support=%s, codec=%s, dst-formats=%s" % (
+                        quality, self.scaling, hasyuv420, hasyuv444, self.codec_name, self.dst_formats))
         log("get_target_pixel_format(%i)=%s for encoding=%s, scaling=%s, NATIVE_RGB=%s, YUV444_CODEC_SUPPORT=%s, YUV420_ENABLED=%s, YUV444_ENABLED=%s, YUV444_THRESHOLD=%s, LOSSLESS_ENABLED=%s, src_format=%s, dst_formats=%s",
             quality, v, self.encoding, self.scaling, bool(NATIVE_RGB), YUV444_CODEC_SUPPORT, bool(YUV420_ENABLED), bool(YUV444_ENABLED), YUV444_THRESHOLD, bool(LOSSLESS_ENABLED), self.src_format, csv(self.dst_formats))
         return v
@@ -2090,11 +2096,11 @@ cdef class Encoder:
                 "cuda"          : self.cuda_info,
                 "pycuda"        : self.pycuda_info,
                 })
-        if self.scaling!=(1,1):
+        if self.scaling:
             info.update({
                 "input_width"       : self.input_width,
                 "input_height"      : self.input_height,
-                "scaling"           : self.scaling})
+                })
         if self.src_format:
             info["src_format"] = self.src_format
         if self.pixel_format:
@@ -2174,7 +2180,7 @@ cdef class Encoder:
         self.encoder_height = 0
         self.src_format = ""
         self.dst_formats = []
-        self.scaling = None
+        self.scaling = 0
         self.speed = 0
         self.quality = 0
         #PyCUDA:
@@ -2339,12 +2345,16 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &picParams)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None, int retry=0):
-        assert device_context, "no cuda device context"
+    def compress_image(self, image, options=None, int retry=0):
+        options = options or {}
+        cuda_device_context = options.get("cuda-device-context")
+        assert cuda_device_context, "no cuda device context"
         #cuda_device_context.__enter__ does self.context.push()
-        with device_context as cuda_context:
+        with cuda_device_context as cuda_context:
+            quality = options.get("quality", -1)
             if quality>=0:
                 self.set_encoding_quality(quality)
+            speed = options.get("speed", -1)
             if speed>=0:
                 self.set_encoding_speed(speed)
             return self.do_compress_image(cuda_context, image)
@@ -2497,7 +2507,7 @@ cdef class Encoder:
             gridh += 1
         cdef unsigned int in_w = self.input_width
         cdef unsigned int in_h = self.input_height
-        if self.scaling!=(1,1):
+        if self.scaling:
             #scaling so scale exact dimensions, not padded input dimensions:
             in_w, in_h = w, h
 
@@ -2635,7 +2645,7 @@ cdef class Encoder:
             client_options["quality"] = 100
         else:
             client_options["quality"] = min(99, self.quality)   #ensure we cap it at 99 because this is lossy
-        if self.scaling!=(1,1):
+        if self.scaling:
             client_options["scaled_size"] = self.encoder_width, self.encoder_height
         cdef double end = monotonic()
         self.frames += 1
@@ -2988,6 +2998,7 @@ def init_module():
             with cdc as device_context:
                 options = typedict({
                     "cuda_device"   : device_id,
+                    "cuda-device-context" : cdc,
                     "threaded-init" : False,
                     })
                 try:
@@ -3040,11 +3051,11 @@ def init_module():
                     colorspaces = get_input_colorspaces(encoding)
                     assert colorspaces, "cannot use NVENC: no colorspaces available"
                     src_format = colorspaces[0]
-                    dst_formats = get_output_colorspaces(encoding, src_format)
+                    options["dst-formats"] = get_output_colorspaces(encoding, src_format)
                     test_encoder = None
                     try:
                         test_encoder = Encoder()
-                        test_encoder.init_context(cdc, 1920, 1080, src_format, dst_formats, encoding, 50, 100, (1,1), options)
+                        test_encoder.init_context(encoding, 1920, 1080, src_format, options)
                         success = True
                         if client_key:
                             log("the license key '%s' is valid", client_key)
