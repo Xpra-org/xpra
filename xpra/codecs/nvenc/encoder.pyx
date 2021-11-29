@@ -1633,7 +1633,7 @@ cdef class Encoder:
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.scaled_width = options.intget("scaled-width", width)
-        self.scaled_height = options.get("scaled-height", height)
+        self.scaled_height = options.intget("scaled-height", height)
         self.scaling = bool(self.scaled_width!=self.width or self.scaled_height!=self.height)
         self.input_width = roundup(width, 32)
         self.input_height = roundup(height, 32)
@@ -1860,8 +1860,7 @@ cdef class Encoder:
             d = self.cuda_device_context.device
             self.max_block_sizes = d.get_attribute(da.MAX_BLOCK_DIM_X), d.get_attribute(da.MAX_BLOCK_DIM_Y), d.get_attribute(da.MAX_BLOCK_DIM_Z)
             self.max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y), d.get_attribute(da.MAX_GRID_DIM_Z)
-            log("max_block_sizes=%s", self.max_block_sizes)
-            log("max_grid_sizes=%s", self.max_grid_sizes)
+            log("max_block_sizes=%s, max_grid_sizes=%s", self.max_block_sizes, self.max_grid_sizes)
             self.max_threads_per_block = self.kernel.get_attribute(driver.function_attribute.MAX_THREADS_PER_BLOCK)
             log("max_threads_per_block=%s", self.max_threads_per_block)
         else:
