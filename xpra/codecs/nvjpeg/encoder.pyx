@@ -204,7 +204,7 @@ cdef extern from "nvjpeg.h":
             nvjpegChromaSubsampling_t chroma_subsampling,
             int image_width,
             int image_height,
-            cudaStream_t stream);
+            cudaStream_t stream) nogil
     nvjpegStatus_t nvjpegEncodeImage(
             nvjpegHandle_t handle,
             nvjpegEncoderState_t encoder_state,
@@ -213,19 +213,19 @@ cdef extern from "nvjpeg.h":
             nvjpegInputFormat_t input_format,
             int image_width,
             int image_height,
-            cudaStream_t stream);
+            cudaStream_t stream) nogil
     nvjpegStatus_t nvjpegEncodeRetrieveBitstreamDevice(
             nvjpegHandle_t handle,
             nvjpegEncoderState_t encoder_state,
             unsigned char *data,
             size_t *length,
-            cudaStream_t stream)
+            cudaStream_t stream) nogil
     nvjpegStatus_t nvjpegEncodeRetrieveBitstream(
             nvjpegHandle_t handle,
             nvjpegEncoderState_t encoder_state,
             unsigned char *data,
             size_t *length,
-            cudaStream_t stream)
+            cudaStream_t stream) nogil
 
 ERR_STRS = {
     NVJPEG_STATUS_SUCCESS                       : "SUCCESS",
@@ -265,15 +265,6 @@ NVJPEG_INPUT_STR = {
     NVJPEG_INPUT_BGRI   : "BGRI",
     }
 
-FORMAT_VAL = {
-    #not clear what these non-interleaved formats are,
-    #so let's not try to use them:
-    #"RGB"   : NVJPEG_INPUT_RGB,
-    #"BGR"   : NVJPEG_INPUT_BGR,
-    "BGR"  : NVJPEG_INPUT_BGRI,
-    "RGB"  : NVJPEG_INPUT_RGBI,
-    }
-
 
 def get_version():
     cdef int major_version, minor_version, patch_level
@@ -289,7 +280,7 @@ def get_type() -> str:
     return "nvjpeg"
 
 def get_encodings():
-    return ("jpeg", )
+    return ("jpeg", "jpega")
 
 def get_info():
     return {"version"   : get_version()}
@@ -300,22 +291,26 @@ def init_module():
 def cleanup_module():
     log("nvjpeg.cleanup_module()")
 
-NVJPEG_INPUT_FORMATS = ("BGRX", "RGBX", )
+NVJPEG_INPUT_FORMATS = {
+    "jpeg"  : ("BGRX", "RGBX", ),
+    "jpega"  : ("BGRA", "RGBA", ),
+    }
 
 def get_input_colorspaces(encoding):
-    assert encoding=="jpeg"
-    return NVJPEG_INPUT_FORMATS
+    assert encoding in ("jpeg", "jpega")
+    return NVJPEG_INPUT_FORMATS[encoding]
 
 def get_output_colorspaces(encoding, input_colorspace):
-    assert encoding in get_encodings()
+    assert encoding in ("jpeg", "jpega")
     assert input_colorspace in get_input_colorspaces(encoding)
-    return NVJPEG_INPUT_FORMATS
+    return NVJPEG_INPUT_FORMATS[encoding]
 
 def get_spec(encoding, colorspace):
-    assert encoding=="jpeg"
+    assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.codec_constants import video_spec
-    return video_spec("jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, colorspace+"X"), has_lossless_mode=False,
+    return video_spec("jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
+                      has_lossless_mode=False,
                       codec_class=Encoder, codec_type="jpeg",
                       setup_cost=20, cpu_cost=0, gpu_cost=100,
                       min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
@@ -328,6 +323,7 @@ cdef class Encoder:
     cdef unsigned int height
     cdef unsigned int encoder_width
     cdef unsigned int encoder_height
+    cdef object encoding
     cdef object src_format
     cdef int quality
     cdef int speed
@@ -345,9 +341,10 @@ cdef class Encoder:
         self.width = self.height = self.quality = self.speed = self.frames = 0
 
     def init_context(self, encoding, width : int, height : int, src_format, options : typedict):
-        assert encoding=="jpeg"
+        assert encoding in ("jpeg", "jpega")
         assert src_format in get_input_colorspaces(encoding)
         options = options or typedict()
+        self.encoding = encoding
         self.width = width
         self.height = height
         self.encoder_width = options.intget("scaled-width", width)
@@ -358,7 +355,10 @@ cdef class Encoder:
         self.grayscale = options.boolget("grayscale", False)
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
-        kernel_name = "%s_to_RGB" % src_format
+        if encoding=="jpeg":
+            kernel_name = "%s_to_RGB" % src_format
+        else:
+            kernel_name = "%s_to_RGBAP" % src_format
         with cuda_device_context:
             self.cuda_kernel = get_CUDA_function(kernel_name)
         if not self.cuda_kernel:
@@ -373,17 +373,8 @@ cdef class Encoder:
         self.configure_nvjpeg()
 
     def configure_nvjpeg(self):
-        cdef nvjpegChromaSubsampling_t subsampling
-        if self.grayscale:
-            subsampling = NVJPEG_CSS_GRAY
-        else:
-            subsampling = get_subsampling(self.quality)
-        cdef int r
-        r = nvjpegEncoderParamsSetSamplingFactors(self.nv_enc_params, subsampling, self.stream)
-        errcheck(r, "nvjpegEncoderParamsSetSamplingFactors %i (%s)",
-                 <const nvjpegChromaSubsampling_t> subsampling, CSS_STR.get(subsampling, "invalid"))
-        r = nvjpegEncoderParamsSetQuality(self.nv_enc_params, self.quality, self.stream)
-        errcheck(r, "nvjpegEncoderParamsSetQuality %i", self.quality)
+        self.configure_subsampling(self.grayscale)
+        self.configure_quality(self.quality)
         cdef int huffman = int(self.speed<80)
         r = nvjpegEncoderParamsSetOptimizedHuffman(self.nv_enc_params, huffman, self.stream)
         errcheck(r, "nvjpegEncoderParamsSetOptimizedHuffman %i", huffman)
@@ -394,9 +385,25 @@ cdef class Encoder:
         #NVJPEG_ENCODING_PROGRESSIVE_DCT_HUFFMAN
         r = nvjpegEncoderParamsSetEncoding(self.nv_enc_params, encoding_type, self.stream)
         errcheck(r, "nvjpegEncoderParamsSetEncoding %i (%s)", encoding_type, ENCODING_STR.get(encoding_type, "invalid"))
-        log("configure_nvjpeg() quality=%s, huffman=%s, subsampling=%s, encoding type=%s",
-            self.quality, huffman, CSS_STR.get(subsampling, "invalid"), ENCODING_STR.get(encoding_type, "invalid"))
+        log("configure_nvjpeg() quality=%s, huffman=%s, encoding type=%s",
+            self.quality, huffman, ENCODING_STR.get(encoding_type, "invalid"))
 
+    def configure_subsampling(self, grayscale=False):
+        cdef nvjpegChromaSubsampling_t subsampling
+        if grayscale:
+            subsampling = NVJPEG_CSS_GRAY
+        else:
+            subsampling = get_subsampling(self.quality)
+        cdef int r
+        r = nvjpegEncoderParamsSetSamplingFactors(self.nv_enc_params, subsampling, self.stream)
+        errcheck(r, "nvjpegEncoderParamsSetSamplingFactors %i (%s)",
+                 <const nvjpegChromaSubsampling_t> subsampling, CSS_STR.get(subsampling, "invalid"))
+        log("configure_subsampling(%s) using %s", grayscale, CSS_STR.get(subsampling, "invalid"))
+
+    def configure_quality(self, int quality):
+        cdef int r
+        r = nvjpegEncoderParamsSetQuality(self.nv_enc_params, self.quality, self.stream)
+        errcheck(r, "nvjpegEncoderParamsSetQuality %i", self.quality)
 
     def is_ready(self):
         return self.nv_handle!=NULL
@@ -457,44 +464,76 @@ cdef class Encoder:
         assert cuda_device_context, "no cuda device context"
         pfstr = image.get_pixel_format()
         assert pfstr==self.src_format, "invalid pixel format %s, expected %s" % (pfstr, self.src_format)
-        cdef nvjpegInputFormat_t input_format = FORMAT_VAL.get("RGB", 0)
-        if input_format==0:
-            raise ValueError("unsupported input format %s" % pfstr)
+        cdef nvjpegInputFormat_t input_format
         quality = options.get("quality", -1)
         if quality>=0 and abs(self.quality-quality)>10:
             self.quality = quality
             self.configure_nvjpeg()
         cdef int width = image.get_width()
         cdef int height = image.get_height()
-        cdef int stride = image.get_rowstride()
+        cdef int src_stride = image.get_rowstride()
+        cdef int dst_stride
         pixels = image.get_pixels()
         cdef Py_ssize_t buf_len = len(pixels)
         cdef double start, end
         cdef size_t length
         cdef MemBuf output_buf
-        cdef uintptr_t rgb_ptr
+        cdef uintptr_t channel_ptr
         cdef unsigned char* buf_ptr
+        for i in range(NVJPEG_MAX_COMPONENT):
+            self.nv_image.channel[i] = NULL
+            self.nv_image.pitch[i] = 0
         with cuda_device_context as cuda_context:
             start = monotonic()
-            #upload raw BGRX:
+            #upload raw BGRX / BGRA (or RGBX / RGBA):
             upload_buffer = driver.mem_alloc(buf_len)
             driver.memcpy_htod(upload_buffer, pixels)
             end = monotonic()
-            log("nvjpeg: uploaded %i bytes to %#x in %.1fms",
-                buf_len, int(upload_buffer), 1000*(end-start))
-            #convert to RGB + scale:
+            log("nvjpeg: uploaded %i bytes of %s to CUDA buffer %#x in %.1fms",
+                buf_len, self.src_format, int(upload_buffer), 1000*(end-start))
+            #convert to RGB(A) + scale:
             start = monotonic()
-            rgb_buffer, rgb_stride = driver.mem_alloc_pitch(self.encoder_width*3, self.encoder_height, 16)
-            rgb_ptr = <uintptr_t> int(rgb_buffer)
             d = cuda_device_context.device
             da = driver.device_attribute
-            #max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y)
             blockw = min(32, d.get_attribute(da.MAX_BLOCK_DIM_X))
             blockh = min(32, d.get_attribute(da.MAX_BLOCK_DIM_Y))
             gridw = max(1, ceil(width/blockw))
             gridh = max(1, ceil(height/blockh))
-            args = (upload_buffer, numpy.int32(width), numpy.int32(height), numpy.int32(stride),
-                    rgb_buffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(rgb_stride))
+            buffers = []
+            if self.encoding=="jpeg":
+                #use a single RGB buffer as input to the encoder:
+                nchannels = 1
+                input_format = NVJPEG_INPUT_RGBI
+                rgb_buffer, dst_stride = driver.mem_alloc_pitch(self.encoder_width*3, self.encoder_height, 16)
+                buffers.append(rgb_buffer)
+            else:
+                #use planar RGBA:
+                nchannels = 4
+                input_format = NVJPEG_INPUT_RGB
+                dst_stride = 0
+                for i in range(nchannels):
+                    planar_buffer, planar_stride = driver.mem_alloc_pitch(self.encoder_width, self.encoder_height, 16)
+                    buffers.append(planar_buffer)
+                    if dst_stride==0:
+                        dst_stride = planar_stride
+                    else:
+                        #all planes are the same size, should get the same stride:
+                        assert dst_stride==planar_stride
+            def free_buffers():
+                for buf in buffers:
+                    buf.free()
+            args = [
+                numpy.int32(width), numpy.int32(height),
+                numpy.int32(src_stride), upload_buffer,
+                numpy.int32(self.encoder_width), numpy.int32(self.encoder_height),
+                numpy.int32(dst_stride),
+                ]
+            for i in range(nchannels):
+                args.append(buffers[i])
+                channel_ptr = <uintptr_t> int(buffers[i])
+                self.nv_image.channel[i] = <unsigned char *> channel_ptr
+                self.nv_image.pitch[i] = dst_stride
+            log("nvjpeg calling kernel with %s", args)
             self.cuda_kernel(*args, block=(blockw, blockh, 1), grid=(gridw, gridh))
             cuda_context.synchronize()
             upload_buffer.free()
@@ -503,13 +542,9 @@ cdef class Encoder:
             log("nvjpeg: csc / scaling took %.1fms", 1000*(end-start))
             #now we actuall compress the rgb buffer:
             start = monotonic()
-            self.nv_image.channel[0] = <unsigned char *> rgb_ptr
-            self.nv_image.pitch[0] = rgb_stride
-            r = nvjpegEncodeImage(self.nv_handle, self.nv_enc_state, self.nv_enc_params,
-                                  &self.nv_image, input_format, self.encoder_width, self.encoder_height, self.stream)
-            rgb_ptr = 0
-            rgb_buffer.free()
-            del rgb_buffer
+            with nogil:
+                r = nvjpegEncodeImage(self.nv_handle, self.nv_enc_state, self.nv_enc_params,
+                                      &self.nv_image, input_format, self.encoder_width, self.encoder_height, self.stream)
             errcheck(r, "nvjpegEncodeImage")
             end = monotonic()
             log("nvjpeg: nvjpegEncodeImage took %.1fms using input format %s",
@@ -524,12 +559,50 @@ cdef class Encoder:
             errcheck(r, "nvjpegEncodeRetrieveBitstream")
             output_buf = getbuf(length)
             buf_ptr = <unsigned char*> output_buf.get_mem()
-            r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)
+            with nogil:
+                r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)
             errcheck(r, "nvjpegEncodeRetrieveBitstream")
             end = monotonic()
-            log("nvjpeg: downloaded %i bytes in %.1fms", length, 1000*(end-start))
-            return memoryview(output_buf), {}
-
+            log("nvjpeg: downloaded %i jpeg bytes in %.1fms", length, 1000*(end-start))
+            if self.encoding=="jpeg":
+                free_buffers()
+                return memoryview(output_buf), {}
+            #now compress alpha:
+            jpeg = memoryview(output_buf).tobytes()
+            start = monotonic()
+            #set RGB to the alpha channel:
+            for i in range(3):
+                self.nv_image.channel[i] = self.nv_image.channel[3]
+                self.nv_image.pitch[i] = self.nv_image.pitch[3]
+            self.nv_image.channel[3] = NULL
+            self.nv_image.pitch[3] = 0
+            try:
+                #tweak settings temporarily:
+                if not self.grayscale:
+                    self.configure_subsampling(True)
+                if self.quality<100:
+                    self.configure_quality(100)
+                with nogil:
+                    r = nvjpegEncodeImage(self.nv_handle, self.nv_enc_state, self.nv_enc_params,
+                                          &self.nv_image, input_format, self.encoder_width, self.encoder_height, self.stream)
+                errcheck(r, "nvjpegEncodeImage")
+                r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, NULL, &length, self.stream)
+                errcheck(r, "nvjpegEncodeRetrieveBitstream")
+                output_buf = getbuf(length)
+                buf_ptr = <unsigned char*> output_buf.get_mem()
+                r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)
+                errcheck(r, "nvjpegEncodeRetrieveBitstream")
+                end = monotonic()
+                log("nvjpeg: downloaded %i alpha bytes in %.1fms", length, 1000*(end-start))
+                jpega = memoryview(output_buf).tobytes()
+                return jpeg+jpega, {"alpha-offset" : len(jpeg)}
+            finally:
+                free_buffers()
+                #restore settings:
+                if not self.grayscale:
+                    self.configure_subsampling(False)
+                if self.quality<100:
+                    self.configure_quality(self.quality)
 
 class NVJPEG_Exception(Exception):
     pass
@@ -583,19 +656,20 @@ def get_errors():
     return errors
 
 def encode(coding, image, options=None):
-    assert coding=="jpeg", "invalid encoding: %s" % coding
+    assert coding in ("jpeg", "jpega"), "invalid encoding: %s" % coding
     global errors
     pfstr = image.get_pixel_format()
     width = image.get_width()
     height = image.get_height()
     cdef double start, end
-    if pfstr not in NVJPEG_INPUT_FORMATS:
+    input_formats = NVJPEG_INPUT_FORMATS[coding]
+    if pfstr not in input_formats:
         from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport @Reimport
         start = monotonic()
         oldpfstr = pfstr
-        if not argb_swap(image, NVJPEG_INPUT_FORMATS):
+        if not argb_swap(image, input_formats):
             log("nvjpeg: argb_swap failed to convert %s to a suitable format: %s" % (
-                pfstr, NVJPEG_INPUT_FORMATS))
+                pfstr, input_formats))
             return None
         pfstr = image.get_pixel_format()
         end = monotonic()
@@ -623,7 +697,7 @@ def encode(coding, image, options=None):
             with open(filename, "wb") as f:
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
-        return "jpeg", Compressed("jpeg", cdata, False), options, width, height, 0, 24
+        return coding, Compressed(coding, cdata, False), options, width, height, 0, 24
     except NVJPEG_Exception as e:
         errors.append(str(e))
         return None
@@ -637,9 +711,10 @@ def selftest(full=False):
     options = {
         "cuda-device-context"   : get_device_context(),
         }
-    for size in (32, 256, 1920):
-        for fmt in NVJPEG_INPUT_FORMATS:
-            img = make_test_image(fmt, size, size)
-            log("testing with %s", img)
-            v = encode("jpeg", img, options)
-            assert v, "failed to compress test image"
+    for width, height in ((32, 32), (256, 80), (1920, 1080)):
+        for encoding, input_formats in NVJPEG_INPUT_FORMATS.items():
+            for fmt in input_formats:
+                img = make_test_image(fmt, width, height)
+                log("testing with %s", img)
+                v = encode(encoding, img, options)
+                assert v, "failed to compress test image"
