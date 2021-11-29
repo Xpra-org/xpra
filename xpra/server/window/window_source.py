@@ -118,6 +118,19 @@ class DelayedRegions:
 def capr(v):
     return min(100, max(0, int(v)))
 
+
+def get_encoder_type(encoder):
+    if not encoder:
+        return "none"
+    mod = getattr(encoder, "__module__")    #ie: 'xpra.codecs.pillow.encoder'
+    if not mod:
+        return None
+    if mod.endswith(".encoder"):
+        mod = mod[:-len(".encoder")]    #ie: 'xpra.codecs.pillow'
+        mod = mod.split(".")[-1]        #ie: 'pillow'
+    return mod
+
+
 class WindowSource(WindowIconSource):
     """
     We create a Window Source for each window we send pixels for.
@@ -2540,10 +2553,11 @@ class WindowSource(WindowIconSource):
         if encoder is None:
             if self.is_cancelled(sequence):
                 return nodata("cancelled")
-            raise Exception("BUG: no encoder found for %s" % coding)
+            raise Exception("BUG: no encoder found for %r with options=%s" % (coding, options))
         ret = encoder(coding, image, options)
         if ret is None:
-            return nodata("encoder %s returned None for %s", encoder, (coding, image, options))
+            return nodata("encoder %s returned None for %s",
+                          get_encoder_type(encoder), (coding, image, options))
 
         coding, data, client_options, outw, outh, outstride, bpp = ret
         #check for cancellation again since the code above may take some time to encode:
@@ -2566,13 +2580,9 @@ class WindowSource(WindowIconSource):
             client_options["z.len"] = len(data)
             log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), chksum)
         if LOG_ENCODERS:
-            mod = getattr(encoder, "__module__")    #ie: 'xpra.codecs.pillow.encoder'
+            mod = get_encoder_type(encoder)
             if mod:
-                if mod.endswith(".encoder"):
-                    mod = mod[:-len(".encoder")]    #ie: 'xpra.codecs.pillow'
-                    mod = mod.split(".")[-1]        #ie: 'pillow'
-                    if mod:
-                        client_options["encoder"] = mod
+                client_options["encoder"] = mod
         #actual network packet:
         if flush not in (None, 0):
             client_options["flush"] = flush
