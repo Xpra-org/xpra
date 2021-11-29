@@ -51,6 +51,9 @@ def wm_check(wm_name, upgrading=False):
                 log.warn("Warning: found an existing window manager")
                 log.warn(" on screen %s using window %#x: %s", i, get_xwindow(ewmh_wm), name or "unknown")
             if (wm_so is None or wm_so==0) and (cwm_so is None or cwm_so==0):
+                if name and name.lower().startswith("xpra"):
+                    log.info("found remnants of a previous Xpra instance")
+                    return True
                 if FORCE_REPLACE_WM:
                     log.warn("XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
                 else:
