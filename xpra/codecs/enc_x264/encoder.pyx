@@ -501,7 +501,7 @@ cdef class Encoder:
         cs_info = COLORSPACE_FORMATS.get(src_format)
         assert cs_info is not None, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACE_FORMATS.keys())
         assert encoding=="h264", "invalid encoding: %s" % encoding
-        assert scaling==(1,1), "x264 does not handle scaling"
+        assert scaling==(1,1), "x264 encoder does not handle scaling"
         self.width = width
         self.height = height
         self.quality = quality

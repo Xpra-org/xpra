@@ -343,6 +343,7 @@ cdef class Encoder:
         global COLORSPACES
         assert src_format in COLORSPACES, "invalid source format: %s, must be one of: %s" % (src_format, COLORSPACES)
         assert encoding=="h265", "invalid encoding: %s" % encoding
+        assert scaling==(1,1), "x264 encoder does not handle scaling"
         self.width = width
         self.height = height
         self.quality = quality

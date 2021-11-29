@@ -1164,6 +1164,7 @@ cdef class Encoder:
     def init_context(self, device_context, unsigned int width, unsigned int height, src_format, dst_formats, encoding, int quality, int speed, scaling, options):
         global CODECS, generation
         assert encoding in CODECS
+        assert scaling==(1,1), "ffmpeg encoder does not handle scaling"
         self.vaapi = encoding in VAAPI_CODECS and src_format=="NV12"
         self.fast_decode = options.boolget("%s.fast-decode" % encoding, False)
         assert src_format in get_input_colorspaces(encoding), "invalid colorspace: %s" % src_format
