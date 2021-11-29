@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-extern "C" __global__ void BGRA_to_NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
+extern "C" __global__ void BGRX_to_NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
                           uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
                           int w, int h)
 {

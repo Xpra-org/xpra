@@ -1,13 +1,13 @@
 /*
  * This file is part of Xpra.
- * Copyright (C) 2013-2017 Antoine Martin <antoine@xpra.org>
+ * Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  */
 
 #include <stdint.h>
 
-extern "C" __global__ void ARGB_to_YUV444(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
+extern "C" __global__ void BGRX_to_YUV444(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
                              uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
                              int w, int h)
 {
@@ -24,9 +24,9 @@ extern "C" __global__ void ARGB_to_YUV444(uint8_t *srcImage, int src_w, int src_
         uint8_t B;
         //one 32-bit RGB pixel at a time:
         uint32_t si = (src_y * srcPitch) + src_x * 4;
-        R = srcImage[si+1];
-        G = srcImage[si+2];
-        B = srcImage[si+3];
+        R = srcImage[si+2];
+        G = srcImage[si+1];
+        B = srcImage[si];
 
         uint32_t di;
         di = (gy * dstPitch) + gx;

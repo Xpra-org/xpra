@@ -1815,7 +1815,7 @@ cdef class Encoder:
         #if supported (separate plane flag), use YUV444P:
         elif self.pixel_format=="YUV444P":
             assert YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED), "YUV444 is not enabled for %s" % self.encoding
-            kernel_name = "%s_to_YUV444" % (self.src_format.replace("X", "A"))  #ie: ARGB_to_YUV444
+            kernel_name = "%s_to_YUV444" % (self.src_format.replace("A", "X"))  #ie: XRGB_to_YUV444
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_YUV444
             #3 full planes:
             plane_size_div = 1
@@ -1823,7 +1823,7 @@ cdef class Encoder:
             hmult = 3
         elif self.pixel_format=="NV12":
             assert YUV420_ENABLED
-            kernel_name = "%s_to_NV12" % (self.src_format.replace("X", "A"))  #ie: BGRA_to_NV12
+            kernel_name = "%s_to_NV12" % (self.src_format.replace("A", "X"))  #ie: BGRX_to_NV12
             self.bufferFmt = NV_ENC_BUFFER_FORMAT_NV12
             #1 full Y plane and 2 U+V planes subsampled by 4:
             plane_size_div = 2

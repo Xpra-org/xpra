@@ -994,10 +994,10 @@ def clean():
                    "build/etc/xpra/xpra.conf"] + glob.glob("build/etc/xpra/conf.d/*.conf")
     if cuda_rebuild_ENABLED:
         CLEAN_FILES += [
-            "fs/share/xpra/cuda/ARGB_to_NV12.fatbin",
-            "fs/share/xpra/cuda/ARGB_to_YUV444.fatbin",
-            "fs/share/xpra/cuda/BGRA_to_NV12.fatbin",
-            "fs/share/xpra/cuda/BGRA_to_YUV444.fatbin",
+            "fs/share/xpra/cuda/XRGB_to_NV12.fatbin",
+            "fs/share/xpra/cuda/XRGB_to_YUV444.fatbin",
+            "fs/share/xpra/cuda/BGRX_to_NV12.fatbin",
+            "fs/share/xpra/cuda/BGRX_to_YUV444.fatbin",
             ]
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
@@ -2099,7 +2099,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         #TODO:
         # * compile directly to output directory instead of using data files?
         # * detect which arches we want to build for? (does it really matter much?)
-        kernels = ("ARGB_to_NV12", "ARGB_to_YUV444", "BGRA_to_NV12", "BGRA_to_YUV444")
+        kernels = ("XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444")
         nvcc_commands = []
         for kernel in kernels:
             cuda_src = "fs/share/xpra/cuda/%s.cu" % kernel
