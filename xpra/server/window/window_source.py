@@ -828,9 +828,6 @@ class WindowSource(WindowIconSource):
             self.get_best_encoding = self.encoding_is_mmap
             return
         common_encodings = [x for x in self._encoders if x in self.core_encodings and x not in exclude]
-        #"rgb" is a pseudo encoding and needs special code:
-        if "rgb24" in  common_encodings or "rgb32" in common_encodings:
-            common_encodings.append("rgb")
         self.common_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in common_encodings)
         if not self.common_encodings:
             raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
