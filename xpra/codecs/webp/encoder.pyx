@@ -433,9 +433,9 @@ def encode(image, int quality=50, int speed=50, supports_alpha=False, content_ty
     #tune it:
     config.lossless = quality>=(LOSSLESS_THRESHOLD+threshold_delta)
     if config.lossless:
-        #not much to gain from setting a high quality here,
-        #the latency will be higher for a negligible compression gain:
-        config.quality = fclamp(50-speed//2)
+        #'quality' actually controls the speed
+        #and anything above zero is just too slow:
+        config.quality = 0
     else:
         #normalize quality: webp quality is much higher than jpeg's
         #so we can go lower,
