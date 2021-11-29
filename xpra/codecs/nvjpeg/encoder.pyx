@@ -634,9 +634,12 @@ def encode(coding, image, options=None):
 def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
     from xpra.codecs.codec_checks import make_test_image
+    options = {
+        "cuda-device-context"   : get_device_context(),
+        }
     for size in (32, 256, 1920):
         for fmt in NVJPEG_INPUT_FORMATS:
             img = make_test_image(fmt, size, size)
             log("testing with %s", img)
-            v = encode("jpeg", img, {})
+            v = encode("jpeg", img, options)
             assert v, "failed to compress test image"
