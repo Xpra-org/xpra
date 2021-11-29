@@ -998,6 +998,7 @@ def clean():
             "fs/share/xpra/cuda/XRGB_to_YUV444.fatbin",
             "fs/share/xpra/cuda/BGRX_to_NV12.fatbin",
             "fs/share/xpra/cuda/BGRX_to_YUV444.fatbin",
+            "fs/share/xpra/cuda/BGRX_to_RGB.fatbin",
             ]
     for x in CLEAN_FILES:
         p, ext = os.path.splitext(x)
@@ -2092,14 +2093,18 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             print(" using version %s from %s" % (version, nvcc))
     else:
         version = nvcc = None
-    if (nvenc_ENABLED and cuda_kernels_ENABLED):
+    if ((nvenc_ENABLED or nvjpeg_ENABLED) and cuda_kernels_ENABLED):
         assert nvcc_versions, "cannot find nvcc compiler!"
         #first compile the cuda kernels
         #(using the same cuda SDK for both nvenc modules for now..)
         #TODO:
         # * compile directly to output directory instead of using data files?
         # * detect which arches we want to build for? (does it really matter much?)
-        kernels = ("XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444")
+        kernels = []
+        if nvenc_ENABLED:
+            kernels += ["XRGB_to_NV12", "XRGB_to_YUV444", "BGRX_to_NV12", "BGRX_to_YUV444"]
+        if nvjpeg_ENABLED:
+            kernels += ["BGRX_to_RGB"]
         nvcc_commands = []
         for kernel in kernels:
             cuda_src = "fs/share/xpra/cuda/%s.cu" % kernel

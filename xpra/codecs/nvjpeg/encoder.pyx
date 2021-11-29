@@ -4,12 +4,15 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic, time
+from math import ceil
+import numpy
 
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from pycuda import driver
 
+from xpra.codecs.cuda_common.cuda_context import get_CUDA_function
 from xpra.net.compression import Compressed
 from xpra.util import envbool, typedict
 
@@ -297,7 +300,7 @@ def init_module():
 def cleanup_module():
     log("nvjpeg.cleanup_module()")
 
-NVJPEG_INPUT_FORMATS = ("RGB", "BGR")
+NVJPEG_INPUT_FORMATS = ("BGRX",)
 
 def get_input_colorspaces(encoding):
     assert encoding=="jpeg"
@@ -306,7 +309,7 @@ def get_input_colorspaces(encoding):
 def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings()
     assert input_colorspace in get_input_colorspaces(encoding)
-    return (input_colorspace, input_colorspace+"X")
+    return NVJPEG_INPUT_FORMATS
 
 def get_spec(encoding, colorspace):
     assert encoding=="jpeg"
@@ -323,7 +326,8 @@ def get_spec(encoding, colorspace):
 cdef class Encoder:
     cdef unsigned int width
     cdef unsigned int height
-    cdef object scaling
+    cdef unsigned int encoder_width
+    cdef unsigned int encoder_height
     cdef object src_format
     cdef int quality
     cdef int speed
@@ -333,9 +337,8 @@ cdef class Encoder:
     cdef nvjpegEncoderState_t nv_enc_state
     cdef nvjpegEncoderParams_t nv_enc_params
     cdef nvjpegImage_t nv_image
-    cdef object cuda_buffer
-    cdef int cuda_buffer_size
     cdef cudaStream_t stream
+    cdef cuda_kernel
     cdef object __weakref__
 
     def __init__(self):
@@ -347,13 +350,19 @@ cdef class Encoder:
         options = options or typedict()
         self.width = width
         self.height = height
+        self.encoder_width = options.intget("scaled-width", width)
+        self.encoder_height = options.intget("scaled-height", height)
         self.src_format = src_format
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
         self.grayscale = options.boolget("grayscale", False)
+        cuda_device_context = options.get("cuda-device-context")
+        assert cuda_device_context, "no cuda device context"
+        with cuda_device_context:
+            self.cuda_kernel = get_CUDA_function("BGRX_to_RGB")
+        if not self.cuda_kernel:
+            raise Exception("missing BGRX_to_RGB kernel")
         self.init_nvjpeg()
-        self.cuda_buffer = None
-        self.cuda_buffer_size = 0
 
     def init_nvjpeg(self):
         # initialize nvjpeg structures
@@ -398,11 +407,14 @@ cdef class Encoder:
         self.clean_cuda()
         self.clean_nvjpeg()
 
+    def clean_cuda(self):
+        self.cuda_kernel = None
+
     def clean_nvjpeg(self):
         log("nvjpeg.clean() nv_handle=%#x", <uintptr_t> self.nv_handle)
         if self.nv_handle==NULL:
             return
-        self.width = self.height = self.quality = self.speed = 0
+        self.width = self.height = self.encoder_width = self.encoder_height = self.quality = self.speed = 0
         cdef int r
         r = nvjpegEncoderParamsDestroy(self.nv_enc_params)
         errcheck(r, "nvjpegEncoderParamsDestroy %#x", <uintptr_t> self.nv_enc_params)
@@ -411,10 +423,6 @@ cdef class Encoder:
         r = nvjpegDestroy(self.nv_handle)
         errcheck(r, "nvjpegDestroy")
         self.nv_handle = NULL
-
-    def clean_cuda(self):
-        self.cuda_buffer_size = 0
-        self.cuda_buffer = None
 
     def get_encoding(self):
         return "jpeg"
@@ -447,7 +455,8 @@ cdef class Encoder:
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
         pfstr = image.get_pixel_format()
-        cdef nvjpegInputFormat_t input_format = FORMAT_VAL.get(pfstr, 0)
+        assert pfstr=="BGRX", "invalid pixel format %r" % pfstr
+        cdef nvjpegInputFormat_t input_format = FORMAT_VAL.get("RGB", 0)
         if input_format==0:
             raise ValueError("unsupported input format %s" % pfstr)
         quality = options.get("quality", -1)
@@ -460,29 +469,51 @@ cdef class Encoder:
         pixels = image.get_pixels()
         cdef Py_ssize_t buf_len = len(pixels)
         cdef double start, end
-        cdef uintptr_t cuda_ptr
         cdef size_t length
         cdef MemBuf output_buf
+        cdef uintptr_t rgb_ptr
         cdef unsigned char* buf_ptr
-        with cuda_device_context:
+        with cuda_device_context as cuda_context:
             start = monotonic()
-            cuda_buffer = driver.mem_alloc(buf_len)
-            driver.memcpy_htod(cuda_buffer, pixels)
-            cuda_ptr = int(cuda_buffer)
-            self.nv_image.channel[0] = <unsigned char *> cuda_ptr
-            self.nv_image.pitch[0] = stride
+            #upload raw BGRX:
+            upload_buffer = driver.mem_alloc(buf_len)
+            driver.memcpy_htod(upload_buffer, pixels)
             end = monotonic()
             log("nvjpeg: uploaded %i bytes to %#x in %.1fms",
-                buf_len, <uintptr_t> int(cuda_buffer), 1000*(end-start))
+                buf_len, int(upload_buffer), 1000*(end-start))
+            #convert to RGB + scale:
             start = monotonic()
+            rgb_buffer, rgb_stride = driver.mem_alloc_pitch(self.encoder_width*3, self.encoder_height, 16)
+            rgb_ptr = <uintptr_t> int(rgb_buffer)
+            d = cuda_device_context.device
+            da = driver.device_attribute
+            #max_grid_sizes = d.get_attribute(da.MAX_GRID_DIM_X), d.get_attribute(da.MAX_GRID_DIM_Y)
+            blockw = min(32, d.get_attribute(da.MAX_BLOCK_DIM_X))
+            blockh = min(32, d.get_attribute(da.MAX_BLOCK_DIM_Y))
+            gridw = max(1, ceil(width/blockw))
+            gridh = max(1, ceil(height/blockh))
+            args = (upload_buffer, numpy.int32(width), numpy.int32(height), numpy.int32(stride),
+                    rgb_buffer, numpy.int32(self.encoder_width), numpy.int32(self.encoder_height), numpy.int32(rgb_stride))
+            self.cuda_kernel(*args, block=(blockw, blockh, 1), grid=(gridw, gridh))
+            cuda_context.synchronize()
+            upload_buffer.free()
+            del upload_buffer
+            end = monotonic()
+            log("nvjpeg: csc / scaling took %.1fms", 1000*(end-start))
+            #now we actuall compress the rgb buffer:
+            start = monotonic()
+            self.nv_image.channel[0] = <unsigned char *> rgb_ptr
+            self.nv_image.pitch[0] = rgb_stride
             r = nvjpegEncodeImage(self.nv_handle, self.nv_enc_state, self.nv_enc_params,
-                                  &self.nv_image, input_format, width, height, self.stream)
+                                  &self.nv_image, input_format, self.encoder_width, self.encoder_height, self.stream)
+            rgb_ptr = 0
+            rgb_buffer.free()
+            del rgb_buffer
             errcheck(r, "nvjpegEncodeImage")
             end = monotonic()
             log("nvjpeg: nvjpegEncodeImage took %.1fms using input format %s",
                 1000*(end-start), NVJPEG_INPUT_STR.get(input_format, input_format))
             self.frames += 1
-            cuda_buffer.free()
             #r = cudaStreamSynchronize(stream)
             #if not r:
             #    raise Exception("nvjpeg failed to synchronize cuda stream: %i" % r)
@@ -557,27 +588,6 @@ def encode(coding, image, options=None):
     width = image.get_width()
     height = image.get_height()
     cdef double start, end
-    resize = options.get("resize")
-    if resize:
-        #we may need to convert to an RGB format scaling can handle:
-        from xpra.codecs.argb.scale import scale_image, RGB_SCALE_FORMATS
-        if pfstr not in RGB_SCALE_FORMATS:
-            start = monotonic()
-            from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
-            if not argb_swap(image, RGB_SCALE_FORMATS):
-                log("nvjpeg: argb_swap failed to convert %s to a suitable format for scaling: %s" % (
-                    pfstr, RGB_SCALE_FORMATS))
-            else:
-                pfstr = image.get_pixel_format()
-                end = monotonic()
-                log("nvjpeg: argb_swap converted to %s in %.1fms", pfstr, 1000*(end-start))
-        if pfstr in RGB_SCALE_FORMATS:
-            w, h = resize
-            start = monotonic()
-            image = scale_image(image, w, h)
-            end = monotonic()
-            log("nvjpeg: scaled image from %s to %s in %.1fms", (width, height), resize, 1000*(end-start))
-
     if pfstr not in NVJPEG_INPUT_FORMATS:
         from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport @Reimport
         start = monotonic()
@@ -593,8 +603,12 @@ def encode(coding, image, options=None):
     options = typedict(options or {})
     if "cuda-device-context" not in options:
         options["cuda-device-context"] = get_device_context()
-    cdef int encode_width = image.get_width()
-    cdef int encode_height = image.get_height()
+    resize = options.inttupleget("resize")
+    if resize:
+        options.pop("resize", None)
+        scaled_w, scaled_h = resize
+        options["scaled-width"] = scaled_w
+        options["scaled-height"] = scaled_h
     cdef Encoder encoder
     try:
         encoder = Encoder()
@@ -619,8 +633,8 @@ def encode(coding, image, options=None):
 def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
     from xpra.codecs.codec_checks import make_test_image
-    for size in (32, 256):
-        img = make_test_image("BGR", size, size)
+    for size in (32, 256, 1920):
+        img = make_test_image("BGRX", size, size)
         log("testing with %s", img)
         v = encode("jpeg", img, {})
         assert v, "failed to compress test image"

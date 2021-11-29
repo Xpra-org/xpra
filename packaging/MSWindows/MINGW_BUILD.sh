@@ -269,6 +269,7 @@ if [ "${DO_CUDA}" == "1" ]; then
 	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" BGRX_to_YUV444 || exit 1
 	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" XRGB_to_NV12 || exit 1
 	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" XRGB_to_YUV444 || exit 1
+	cmd.exe //c "packaging\\MSWindows\\BUILD_CUDA_KERNEL" BGRX_to_RGB || exit 1
 else
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc"
 fi
