@@ -25,7 +25,6 @@ def cmp(inbytes, outbytes, fn, *args):
     datain = bytes(bytearray(inbytes))
     dataout = bytes(bytearray(outbytes))
     r = bytes(bytearray(fn(datain, *args)))
-    print("%s(%s)=%s" % (fn, hexstr(datain), hexstr(r)))
     assert dataout==r, "expected %s but got %s" % (
         hexstr(dataout), hexstr(r))
 
