@@ -61,7 +61,7 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     assert rgb565_len>0 and rgb565_len % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % rgb565_len
     cdef MemBuf output_buf = padbuf(rgb565_len*3//2, 3)
     cdef uint8_t *rgb = <uint8_t*> output_buf.get_mem()
-    cdef uint32_t v
+    cdef uint32_t v, i
     cdef unsigned int l = rgb565_len//2
     with nogil:
         for i in range(l):
@@ -88,19 +88,15 @@ cdef r210data_to_rgba(unsigned int* r210,
                       const unsigned int w, const unsigned int h,
                       const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
-    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int i, v, y = 0
+    cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
+    cdef unsigned int v, x, y = 0
     with nogil:
         while y<h:
-            i = y*dst_stride
             for x in range(w):
                 v = r210[x]
-                rgba[i+2] = (v&0x000003ff) >> 2
-                rgba[i+1] = (v&0x000ffc00) >> 12
-                rgba[i]   = (v&0x3ff00000) >> 22
-                rgba[i+3] = (v>>30)*85
-                i += 4
+                rgba[x] = (v&0x3fc00000) >> 22 | (v&0x000ff000) >> 4 | (v&0x000003fc) << 14 | ((v>>30)*85)<<24
             r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+            rgba = <unsigned int*> ((<uintptr_t> rgba) + dst_stride)
             y += 1
     return memoryview(output_buf)
 
@@ -121,19 +117,15 @@ cdef r210data_to_rgbx(unsigned int* r210,
                       const unsigned int w, const unsigned int h,
                       const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
-    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int i, v, y = 0
+    cdef unsigned int* rgbx = <unsigned int*> output_buf.get_mem()
+    cdef unsigned int v, x, y = 0
     with nogil:
         while y<h:
-            i = y*dst_stride
             for x in range(w):
                 v = r210[x]
-                rgba[i+2] = (v&0x000003ff) >> 2
-                rgba[i+1] = (v&0x000ffc00) >> 12
-                rgba[i]   = (v&0x3ff00000) >> 22
-                rgba[i+3] = 0xff
-                i += 4
+                rgbx[x] = (v&0x3fc00000) >> 22 | (v&0x000ff000) >> 4 | (v&0x000003fc) << 14 | <unsigned int> 0xff000000
             r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+            rgbx = <unsigned int*> ((<uintptr_t> rgbx) + dst_stride)
             y += 1
     return memoryview(output_buf)
 
@@ -216,18 +208,14 @@ cdef argbdata_to_rgba(const unsigned int* argb, const int argb_len):
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     cdef int mi = argb_len//4
     cdef MemBuf output_buf = getbuf(argb_len)
-    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef int si = 0, di = 0
+    cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
+    cdef int i = 0
     cdef unsigned int p
     with nogil:
-        while si < mi:
-            p = argb[si]
-            rgba[di]    = (p>>8)&0xFF            #R
-            rgba[di+1]  = (p>>16)&0xFF           #G
-            rgba[di+2]  = (p>>24)&0xFF           #B
-            rgba[di+3]  = p&0xFF                 #A
-            si += 1
-            di += 4
+        while i < mi:
+            p = argb[i]
+            rgba[i] = p>>8 | (p&0xff)<<24
+            i += 1
     return memoryview(output_buf)
 
 def argb_to_rgb(buf):
@@ -325,18 +313,14 @@ cdef bgradata_to_rgba(const unsigned int* bgra, const int bgra_len):
     assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     cdef int mi = bgra_len//4
     cdef MemBuf output_buf = getbuf(bgra_len)
-    cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef int di = 0, si = 0
+    cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
+    cdef int i = 0
     cdef unsigned int p
     with nogil:
-        while si < mi:
-            p = bgra[si]
-            rgba[di]   = (p>>16) & 0xFF
-            rgba[di+1] = (p>>8) & 0xFF
-            rgba[di+2] = p & 0xFF
-            rgba[di+3] = (p>>24) & 0xFF
-            si += 1
-            di += 4
+        while i < mi:
+            p = bgra[i]
+            rgba[i] = (p>>16) & 0xff | p & 0xff00 | (p & 0xff)<<16 | p&(<unsigned int>0xff000000)
+            i += 1
     return memoryview(output_buf)
 
 def rgba_to_bgra(buf):
