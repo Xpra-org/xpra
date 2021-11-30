@@ -647,6 +647,8 @@ def get_gcc_version():
 def exec_pkgconfig(*pkgs_options, **ekw):
     kw = dict(ekw)
     optimize = kw.pop("optimize", None)
+    if "INCLUDE_DIR" in os.environ:
+        add_to_keywords(kw, 'extra_compile_args', "-I", INCLUDE_DIR)
     if optimize and not debug_ENABLED and not cython_tracing_ENABLED:
         if isinstance(optimize, bool):
             optimize = int(optimize)*3
@@ -2334,9 +2336,15 @@ if v4l2_ENABLED:
     if not os.path.exists(videodev2_h) or should_rebuild(videodev2_h, constants_pxi):
         ENABLE_DEVICE_CAPS = 0
         if os.path.exists(videodev2_h):
-            with open(videodev2_h) as f:
-                hdata = f.read()
-            ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
+            try:
+                with subprocess.Popen("cpp -fpreprocessed %s | grep -q device_caps" % videodev2_h,
+                                     shell=True) as proc:
+                    ENABLE_DEVICE_CAPS = proc.wait()==0
+            except OSError:
+                with open(videodev2_h) as f:
+                    hdata = f.read()
+                ENABLE_DEVICE_CAPS = int(hdata.find("device_caps")>=0)
+                print("failed to detect device caps, assuming off")
         with open(constants_pxi, "wb") as f:
             f.write(b"DEF ENABLE_DEVICE_CAPS=%i" % ENABLE_DEVICE_CAPS)
     add_cython_ext("xpra.codecs.v4l2.pusher",
