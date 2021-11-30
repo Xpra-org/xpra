@@ -2012,7 +2012,9 @@ class WindowSource(WindowIconSource):
             options["window-size"] = self.window_dimensions
         resize = self.scaled_size(image)
         if resize:
-            options["resize"] = resize
+            sw, sh = resize
+            options["scaled-width"] = sw
+            options["scaled-height"] = sh
 
         now = monotonic()
         item = (w, h, damage_time, now, image, coding, sequence, options, flush)

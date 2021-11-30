@@ -57,7 +57,6 @@ def encode(coding : str, image, options):
     speed = options.get("speed", 50)
     supports_transparency = options.get("alpha", True)
     grayscale = options.get("grayscale", False)
-    resize = options.get("resize")
     pixel_format = image.get_pixel_format()
     palette = None
     w = image.get_width()
@@ -152,8 +151,10 @@ def encode(coding : str, image, options):
         log.error(" %s", e)
         log.error(" for %s", im)
         raise
+    scaled_width = options.get("scaled-width", w)
+    scaled_height = options.get("scaled-height", h)
     client_options = {}
-    if resize:
+    if scaled_width!=w or scaled_height!=h:
         if speed>=95:
             resample = "NEAREST"
         elif speed>80:
@@ -163,7 +164,7 @@ def encode(coding : str, image, options):
         else:
             resample = "LANCZOS"
         resample_value = getattr(Image, resample, 0)
-        im = im.resize(resize, resample=resample_value)
+        im = im.resize((scaled_width, scaled_height), resample=resample_value)
         client_options["resample"] = resample
     if coding in ("jpeg", "webp"):
         #newer versions of pillow require explicit conversion to non-alpha:

@@ -678,12 +678,6 @@ def encode(coding, image, options=None):
     options = typedict(options or {})
     if "cuda-device-context" not in options:
         options["cuda-device-context"] = get_device_context()
-    resize = options.inttupleget("resize")
-    if resize:
-        options.pop("resize", None)
-        scaled_w, scaled_h = resize
-        options["scaled-width"] = scaled_w
-        options["scaled-height"] = scaled_h
     cdef Encoder encoder
     try:
         encoder = Encoder()

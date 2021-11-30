@@ -258,7 +258,11 @@ def encode(coding, image, options):
         coding = "jpeg"
     cdef int quality = options.get("quality", 50)
     cdef int grayscale = options.get("grayscale", 0)
-    resize = options.get("resize")
+    cdef int width = image.get_width()
+    cdef int height = image.get_height()
+    cdef int scaled_width = options.get("scaled-width", width)
+    cdef int scaled_height = options.get("scaled-height", height)
+    cdef char resize = scaled_width!=width or scaled_height!=height
     log("encode%s", (coding, image, options))
     input_formats = JPEG_INPUT_FORMATS if coding=="jpeg" else JPEGA_INPUT_FORMATS
     if rgb_format not in input_formats or resize and len(rgb_format)!=4:
@@ -268,13 +272,8 @@ def encode(coding, image, options):
                 rgb_format, input_formats))
         log("jpeg converted image: %s", image)
 
-    cdef int width = image.get_width()
-    cdef int height = image.get_height()
-    cdef int scaled_width = width
-    cdef int scaled_height = height
     if resize:
         from xpra.codecs.argb.scale import scale_image
-        scaled_width, scaled_height = resize
         image = scale_image(image, scaled_width, scaled_height)
         log("jpeg scaled image: %s", image)
 

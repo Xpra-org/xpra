@@ -394,7 +394,12 @@ def encode(coding, image, options):
     cdef unsigned int width = image.get_width()
     cdef unsigned int height = image.get_height()
     assert width<16384 and height<16384, "invalid image dimensions: %ix%i" % (width, height)
-    resize = options.get("resize", None)
+    cdef unsigned int scaled_width = options.get("scaled-width", width)
+    cdef unsigned int scaled_height = options.get("scaled-height", height)
+    assert scaled_width<16384 and scaled_height<16384, "invalid image dimensions: %ix%i" % (width, height)
+    resize = None
+    if scaled_width!=width or scaled_height!=height:
+        resize = (scaled_width, scaled_height)
     cdef unsigned int stride = image.get_rowstride()
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
     cdef int size = stride * height
@@ -514,19 +519,15 @@ def encode(coding, image, options):
     end = monotonic()
     log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
 
-    cdef int encode_width, encode_height
     if resize:
-        encode_width, encode_height = resize
         start = monotonic()
         with nogil:
-            ret = WebPPictureRescale(&pic, encode_width, encode_height)
+            ret = WebPPictureRescale(&pic, scaled_width, scaled_height)
         if not ret:
             WebPPictureFree(&pic)
             raise Exception("WebP failed to resize %s to %s" % (image, resize))
         end = monotonic()
         log("webp %s resizing took %.1fms", 1000*(end-start))
-        #we could use scaling to fit?
-        assert encode_width<16384 and encode_height<16384, "invalid image dimensions: %ix%i" % (width, height)
 
     if yuv420p:
         start = monotonic()

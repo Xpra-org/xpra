@@ -845,7 +845,9 @@ class WindowVideoSource(WindowSource):
             options["window-size"] = self.window_dimensions
         resize = self.scaled_size(image)
         if resize:
-            options["resize"] = resize
+            sw, sh = resize
+            options["scaled-width"] = sw
+            options["scaled-height"] = sh
 
         #freeze if:
         # * we want av-sync
