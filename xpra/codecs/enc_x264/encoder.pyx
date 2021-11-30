@@ -831,12 +831,12 @@ cdef class Encoder:
             self.b_frames = b_frames
             self.reconfig_tune()
 
-        cdef int speed = options.get("speed", 50)
+        cdef int speed = options.intget("speed", 50)
         if speed>=0:
             self.set_encoding_speed(speed)
         else:
             speed = self.speed
-        cdef int quality = options.get("quality", -1)
+        cdef int quality = options.intget("quality", -1)
         if quality>=0:
             self.set_encoding_quality(quality)
         else:
