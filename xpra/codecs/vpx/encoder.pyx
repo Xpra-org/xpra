@@ -604,6 +604,8 @@ cdef class Encoder:
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()
+
+        options = options or {}
         cdef int speed = options.get("speed", 50)
         if speed>=0:
             self.set_encoding_speed(speed)
