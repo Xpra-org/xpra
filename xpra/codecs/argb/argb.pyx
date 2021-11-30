@@ -18,10 +18,10 @@ log = Logger("encoding")
 assert sizeof(int) == 4
 
 
-cdef inline unsigned int round8up(unsigned int n):
+cdef inline unsigned int round8up(unsigned int n) nogil:
     return (n + 7) & ~7
 
-cdef inline unsigned char clamp(int v):
+cdef inline unsigned char clamp(int v) nogil:
     if v>255:
         return 255
     return <unsigned char> v
@@ -62,12 +62,13 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     cdef uint8_t *rgb = <uint8_t*> output_buf.get_mem()
     cdef uint32_t v
     cdef unsigned int l = rgb565_len//2
-    for i in range(l):
-        v = rgb565[i]
-        rgb[0] = (v & 0xF800) >> 8
-        rgb[1] = (v & 0x07E0) >> 3
-        rgb[2] = (v & 0x001F) << 3
-        rgb += 3
+    with nogil:
+        for i in range(l):
+            v = rgb565[i]
+            rgb[0] = (v & 0xF800) >> 8
+            rgb[1] = (v & 0x07E0) >> 3
+            rgb[2] = (v & 0x001F) << 3
+            rgb += 3
     return memoryview(output_buf)
 
 
@@ -87,18 +88,19 @@ cdef r210data_to_rgba(unsigned int* r210,
                       const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int i
-    cdef unsigned int v
-    for y in range(h):
-        i = y*dst_stride
-        for x in range(w):
-            v = r210[x]
-            rgba[i+2] = (v&0x000003ff) >> 2
-            rgba[i+1] = (v&0x000ffc00) >> 12
-            rgba[i]   = (v&0x3ff00000) >> 22
-            rgba[i+3] = (v>>30)*85
-            i += 4
-        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+    cdef unsigned int i, v, y = 0
+    with nogil:
+        while y<h:
+            i = y*dst_stride
+            for x in range(w):
+                v = r210[x]
+                rgba[i+2] = (v&0x000003ff) >> 2
+                rgba[i+1] = (v&0x000ffc00) >> 12
+                rgba[i]   = (v&0x3ff00000) >> 22
+                rgba[i+3] = (v>>30)*85
+                i += 4
+            r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+            y += 1
     return memoryview(output_buf)
 
 
@@ -119,18 +121,19 @@ cdef r210data_to_rgbx(unsigned int* r210,
                       const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int i
-    cdef unsigned int v
-    for y in range(h):
-        i = y*dst_stride
-        for x in range(w):
-            v = r210[x]
-            rgba[i+2] = (v&0x000003ff) >> 2
-            rgba[i+1] = (v&0x000ffc00) >> 12
-            rgba[i]   = (v&0x3ff00000) >> 22
-            rgba[i+3] = 0xff
-            i += 4
-        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+    cdef unsigned int i, v, y = 0
+    with nogil:
+        while y<h:
+            i = y*dst_stride
+            for x in range(w):
+                v = r210[x]
+                rgba[i+2] = (v&0x000003ff) >> 2
+                rgba[i+1] = (v&0x000ffc00) >> 12
+                rgba[i]   = (v&0x3ff00000) >> 22
+                rgba[i+3] = 0xff
+                i += 4
+            r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+            y += 1
     return memoryview(output_buf)
 
 
@@ -156,17 +159,18 @@ cdef r210data_to_rgb(unsigned int* r210,
                      const unsigned int src_stride, const unsigned int dst_stride):
     cdef MemBuf output_buf = getbuf(h*dst_stride)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
-    cdef unsigned int i
-    cdef unsigned int v
-    for y in range(h):
-        i = y*dst_stride
-        for x in range(w):
-            v = r210[x]
-            rgba[i+2] = (v&0x000003ff) >> 2
-            rgba[i+1] = (v&0x000ffc00) >> 12
-            rgba[i]   = (v&0x3ff00000) >> 22
-            i += 3
-        r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+    cdef unsigned int i, v, y = 0
+    with nogil:
+        while y<h:
+            i = y*dst_stride
+            for x in range(w):
+                v = r210[x]
+                rgba[i+2] = (v&0x000003ff) >> 2
+                rgba[i+1] = (v&0x000ffc00) >> 12
+                rgba[i]   = (v&0x3ff00000) >> 22
+                i += 3
+            r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
+            y += 1
     return memoryview(output_buf)
 
 def bgrx_to_rgb(buf):
@@ -187,13 +191,14 @@ cdef bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
-    while si < mi:
-        p = bgrx[si]
-        rgb[di]   = p & 0xFF                #R
-        rgb[di+1] = (p>>8) & 0xFF           #G
-        rgb[di+2] = (p>>16) & 0xFF          #B
-        di += 3
-        si += 1
+    with nogil:
+        while si < mi:
+            p = bgrx[si]
+            rgb[di]   = p & 0xFF                #R
+            rgb[di+1] = (p>>8) & 0xFF           #G
+            rgb[di+2] = (p>>16) & 0xFF          #B
+            di += 3
+            si += 1
     return memoryview(output_buf)
 
 
@@ -213,14 +218,15 @@ cdef argbdata_to_rgba(const unsigned int* argb, const int argb_len):
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
-    while si < mi:
-        p = argb[si]
-        rgba[di]    = (p>>8)&0xFF            #R
-        rgba[di+1]  = (p>>16)&0xFF           #G
-        rgba[di+2]  = (p>>24)&0xFF           #B
-        rgba[di+3]  = p&0xFF                 #A
-        si += 1
-        di += 4
+    with nogil:
+        while si < mi:
+            p = argb[si]
+            rgba[di]    = (p>>8)&0xFF            #R
+            rgba[di+1]  = (p>>16)&0xFF           #G
+            rgba[di+2]  = (p>>24)&0xFF           #B
+            rgba[di+3]  = p&0xFF                 #A
+            si += 1
+            di += 4
     return memoryview(output_buf)
 
 def argb_to_rgb(buf):
@@ -241,13 +247,14 @@ cdef argbdata_to_rgb(const unsigned int* argb, const int argb_len):
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
-    while si < mi:
-        p = argb[si]
-        rgb[di]   = (p>>8)&0xFF             #R
-        rgb[di+1] = (p>>16)&0xFF            #G
-        rgb[di+2] = (p>>24)&0xFF            #B
-        di += 3
-        si += 1
+    with nogil:
+        while si < mi:
+            p = argb[si]
+            rgb[di]   = (p>>8)&0xFF             #R
+            rgb[di+1] = (p>>16)&0xFF            #G
+            rgb[di+2] = (p>>24)&0xFF            #B
+            di += 3
+            si += 1
     return memoryview(output_buf)
 
 
@@ -268,10 +275,11 @@ cdef bgradata_to_rgb222(const unsigned char* bgra, const int bgra_len):
     cdef MemBuf output_buf = padbuf(mi, 0)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0                  #@DuplicateSignature
-    while si < bgra_len:
-        rgb[di] = ((bgra[si+2]>>2) & 0x30) | ((bgra[si+1]>>4) & 0xC) | ((bgra[si]>>6) & 0x3)
-        di += 1
-        si += 4
+    with nogil:
+        while si < bgra_len:
+            rgb[di] = ((bgra[si+2]>>2) & 0x30) | ((bgra[si+1]>>4) & 0xC) | ((bgra[si]>>6) & 0x3)
+            di += 1
+            si += 4
     return memoryview(output_buf)
 
 
@@ -293,13 +301,14 @@ cdef bgradata_to_rgb(const unsigned int* bgra, const int bgra_len):
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0
     cdef unsigned int p
-    while si < mi:
-        p = bgra[si]
-        rgb[di]   = (p>>16) & 0xFF          #R
-        rgb[di+1] = (p>>8) & 0xFF           #G
-        rgb[di+2] = p & 0xFF                #B
-        di += 3
-        si += 1
+    with nogil:
+        while si < mi:
+            p = bgra[si]
+            rgb[di]   = (p>>16) & 0xFF          #R
+            rgb[di+1] = (p>>8) & 0xFF           #G
+            rgb[di+2] = p & 0xFF                #B
+            di += 3
+            si += 1
     return memoryview(output_buf)
 
 def bgra_to_rgba(buf):
@@ -318,14 +327,15 @@ cdef bgradata_to_rgba(const unsigned int* bgra, const int bgra_len):
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0
     cdef unsigned int p
-    while si < mi:
-        p = bgra[si]
-        rgba[di]   = (p>>16) & 0xFF
-        rgba[di+1] = (p>>8) & 0xFF
-        rgba[di+2] = p & 0xFF
-        rgba[di+3] = (p>>24) & 0xFF
-        si += 1
-        di += 4
+    with nogil:
+        while si < mi:
+            p = bgra[si]
+            rgba[di]   = (p>>16) & 0xFF
+            rgba[di+1] = (p>>8) & 0xFF
+            rgba[di+2] = p & 0xFF
+            rgba[di+3] = (p>>24) & 0xFF
+            si += 1
+            di += 4
     return memoryview(output_buf)
 
 def rgba_to_bgra(buf):
@@ -348,12 +358,13 @@ cdef bgradata_to_rgbx(const unsigned char* bgra, const int bgra_len):
     cdef MemBuf output_buf = getbuf(bgra_len)
     cdef unsigned char* rgbx = <unsigned char*> output_buf.get_mem()
     cdef int i = 0                      #@DuplicateSignature
-    while i < bgra_len:
-        rgbx[i]   = bgra[i+2]           #R
-        rgbx[i+1] = bgra[i+1]           #G
-        rgbx[i+2] = bgra[i]             #B
-        rgbx[i+3] = 0xff                #X
-        i += 4
+    with nogil:
+        while i < bgra_len:
+            rgbx[i]   = bgra[i+2]           #R
+            rgbx[i+1] = bgra[i+1]           #G
+            rgbx[i+2] = bgra[i]             #B
+            rgbx[i+3] = 0xff                #X
+            i += 4
     return memoryview(output_buf)
 
 
@@ -376,16 +387,17 @@ cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
     cdef MemBuf output_buf = getbuf(argb_len)
     cdef unsigned int* argb_out = <unsigned int*> output_buf.get_mem()
     cdef int i                                  #@DuplicateSignature
-    for 0 <= i < argb_len / 4:
-        argb = buf[i]
-        a = (argb >> 24) & 0xff
-        r = (argb >> 16) & 0xff
-        r = r * a // 255
-        g = (argb >> 8) & 0xff
-        g = g * a // 255
-        b = (argb >> 0) & 0xff
-        b = b * a // 255
-        argb_out[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
+    with nogil:
+        for 0 <= i < argb_len / 4:
+            argb = buf[i]
+            a = (argb >> 24) & 0xff
+            r = (argb >> 16) & 0xff
+            r = r * a // 255
+            g = (argb >> 8) & 0xff
+            g = g * a // 255
+            b = (argb >> 0) & 0xff
+            b = b * a // 255
+            argb_out[i] = (a << 24) | (r << 16) | (g << 8) | (b << 0)
     return memoryview(output_buf)
 
 
@@ -415,27 +427,28 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     cdef MemBuf output_buf = getbuf(argb_len)
     cdef unsigned char* argb_out = <unsigned char*> output_buf.get_mem()
     cdef int i                                  #@DuplicateSignature
-    for 0 <= i < argb_len // 4:
-        argb = argb_in[i]
-        a = (argb >> 24) & 0xff
-        r = (argb >> 16) & 0xff
-        g = (argb >> 8) & 0xff
-        b = (argb >> 0) & 0xff
-        if a!=0:
-            r = clamp(r * 255 // a)
-            g = clamp(g * 255 // a)
-            b = clamp(b * 255 // a)
-        else:
-            r = 0
-            g = 0
-            b = 0
-        #we could use struct pack to avoid endianness issues
-        #but this is python 2.5 onwards only and is probably slower:
-        #struct.pack_into(b"=BBBB", argb_out, i*4, b, g, r, a)
-        argb_out[i*4+B] = b
-        argb_out[i*4+G] = g
-        argb_out[i*4+R] = r
-        argb_out[i*4+A] = a
+    with nogil:
+        for 0 <= i < argb_len // 4:
+            argb = argb_in[i]
+            a = (argb >> 24) & 0xff
+            r = (argb >> 16) & 0xff
+            g = (argb >> 8) & 0xff
+            b = (argb >> 0) & 0xff
+            if a!=0:
+                r = clamp(r * 255 // a)
+                g = clamp(g * 255 // a)
+                b = clamp(b * 255 // a)
+            else:
+                r = 0
+                g = 0
+                b = 0
+            #we could use struct pack to avoid endianness issues
+            #but this is python 2.5 onwards only and is probably slower:
+            #struct.pack_into(b"=BBBB", argb_out, i*4, b, g, r, a)
+            argb_out[i*4+B] = b
+            argb_out[i*4+G] = g
+            argb_out[i*4+R] = r
+            argb_out[i*4+A] = a
     return memoryview(output_buf)
 
 
@@ -460,10 +473,11 @@ cdef alpha_data(const unsigned char* rgba, const int rgba_len, const char index)
     cdef unsigned char* alpha = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = index
     cdef unsigned int p
-    while si < rgba_len:
-        alpha[di] = rgba[si]
-        si += 4
-        di += 1
+    with nogil:
+        while si < rgba_len:
+            alpha[di] = rgba[si]
+            si += 4
+            di += 1
     return memoryview(output_buf)
 
 
