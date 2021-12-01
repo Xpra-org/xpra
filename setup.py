@@ -186,6 +186,7 @@ enc_x264_ENABLED        = DEFAULT and pkg_config_version("0.155", "x264")
 #crashes on 32-bit windows:
 enc_x265_ENABLED        = (not WIN32) and pkg_config_ok("--exists", "x265")
 pillow_ENABLED          = DEFAULT
+spng_ENABLED            = DEFAULT and pkg_config_version("0.6", "spng")
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
@@ -315,7 +316,7 @@ if "clean" not in sys.argv:
         enc_ffmpeg_ENABLED = enc_x264_ENABLED = enc_x265_ENABLED = nvenc_ENABLED = False
         csc_swscale_ENABLED = csc_libyuv_ENABLED = csc_cython_ENABLED = False
         vpx_ENABLED = nvfbc_ENABLED = dec_avcodec2_ENABLED = False
-        webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
+        spng_ENABLED = webp_ENABLED = jpeg_encoder_ENABLED = jpeg_decoder_ENABLED = False
         server_ENABLED = client_ENABLED = shadow_ENABLED = False
         cython_bencode_ENABLED = rencodeplus_ENABLED = False
         gtk3_ENABLED = False
@@ -971,6 +972,7 @@ def clean():
                    "xpra/codecs/nvfbc/fbc_capture_win.cpp",
                    "xpra/codecs/enc_x264/encoder.c",
                    "xpra/codecs/enc_x265/encoder.c",
+                   "xpra/codecs/spng/decoder.c",
                    "xpra/codecs/jpeg/encoder.c",
                    "xpra/codecs/jpeg/decoder.c",
                    "xpra/codecs/enc_ffmpeg/encoder.c",
@@ -2232,6 +2234,17 @@ if webp_ENABLED:
     add_cython_ext("xpra.codecs.webp.decoder",
                 ["xpra/codecs/webp/decoder.pyx"],
                 **webp_pkgconfig)
+
+toggle_packages(spng_ENABLED, "xpra.codecs.spng")
+if spng_ENABLED:
+    spng_pkgconfig = pkgconfig("spng")
+    #add_cython_ext("xpra.codecs.spng.encoder",
+    #                ["xpra/codecs/spng/encoder.pyx"],
+    #                **spng_pkgconfig)
+    add_cython_ext("xpra.codecs.spng.decoder",
+                ["xpra/codecs/spng/decoder.pyx"],
+                **spng_pkgconfig)
+
 
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:

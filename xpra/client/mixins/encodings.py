@@ -98,11 +98,14 @@ class Encodings(StubClientMixin):
         self.min_speed = opts.min_speed
         load_codec("dec_pillow")
         ae = self.allowed_encodings
+        if "png" in ae:
+            #try to load the fast png decoder:
+            load_codec("dec_spng")
         if "jpeg" in ae:
-            #try to load the fast jpeg encoder:
+            #try to load the fast jpeg decoder:
             load_codec("dec_jpeg")
         if "webp" in ae:
-            #try to load the fast webp encoder:
+            #try to load the fast webp decoder:
             load_codec("dec_webp")
         vh = getVideoHelper()
         vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)

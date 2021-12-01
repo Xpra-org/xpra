@@ -247,6 +247,7 @@ STRUCT_KNOWN_FILTERS = {
                 "libav"         : "libav common code (used by swscale, avcodec and ffmpeg)",
                 "ffmpeg"        : "ffmpeg encoder",
                 "pillow"        : "Pillow encoder and decoder",
+                "spng"          : "spng codec",
                 "jpeg"          : "JPEG codec",
                 "vpx"           : "libvpx encoder and decoder",
                 "nvjpeg"        : "nvidia nvjpeg hardware encoder",

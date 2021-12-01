@@ -151,6 +151,7 @@ class WindowBackingBase:
             self._PIL_encodings = self.pil_decoder.get_encodings()
         self.jpeg_decoder = get_codec("dec_jpeg")
         self.webp_decoder = get_codec("dec_webp")
+        self.spng_decoder = get_codec("dec_spng")
         self.draw_needs_refresh = True
         self.repaint_all = REPAINT_ALL
         self.mmap = None
@@ -456,6 +457,13 @@ class WindowBackingBase:
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
+
+    def paint_spng(self, img_data, x, y, width, height, options, callbacks):
+        rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
+        rowstride = iwidth*len(rgb_format)
+        self.idle_add(self.do_paint_rgb, rgb_format, rgba,
+                      x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
+
 
     def paint_webp(self, img_data, x, y, width, height, options, callbacks):
         if not self.webp_decoder or WEBP_PILLOW:
@@ -799,6 +807,8 @@ class WindowBackingBase:
                 self.paint_jpega(img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
+            elif self.spng_decoder and coding=="png":
+                self.paint_spng(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
                 self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
             elif coding == "scroll":

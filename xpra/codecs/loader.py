@@ -164,6 +164,7 @@ CODEC_OPTIONS = {
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "colorspace_converter", "ColorspaceConverter"),
     #decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
+    "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
     #video decoders:
@@ -236,7 +237,7 @@ def has_codec(name) -> bool:
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_libyuv"
 ENCODER_CODECS = "enc_rgb", "enc_pillow", "enc_webp", "enc_jpeg", "enc_nvjpeg"
 ENCODER_VIDEO_CODECS = "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg"
-DECODER_CODECS = "dec_pillow", "dec_webp", "dec_jpeg"
+DECODER_CODECS = "dec_pillow", "dec_spng", "dec_webp", "dec_jpeg"
 DECODER_VIDEO_CODECS = "dec_vpx", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))

@@ -252,6 +252,8 @@ Suggests:			sshpass
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
+Requires:			libspng
+BuildRequires:		libspng-devel
 %endif
 %endif
 %description -n python3-xpra-client
