@@ -194,13 +194,13 @@ def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs):
         sizemb = size//1024//1024
         maxmb = MAX_DECOMPRESSED_SIZE//1024//1024
         raise Exception("uncompressed data is too large: %iMB, limit is %iMB" % (sizemb, maxmb))
-    algos = [x for x in PERFORMANCE_COMPRESSION if kwargs.get(x) and x in COMPRESSION]
-    if not algos:
+    try:
+        algo = next(x for x in PERFORMANCE_COMPRESSION if kwargs.get(x) and x in COMPRESSION)
+    except StopIteration:
         return no()
         #raise InvalidCompressionException("no compressors available")
     #TODO: smarter selection of algo based on datatype
     #ie: 'text' -> brotli
-    algo = algos[0]
     c = COMPRESSION[algo]
     cl, cdata = c.compress(data, level)
     min_saving = kwargs.get("min_saving", 0)
