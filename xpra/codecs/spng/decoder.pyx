@@ -25,6 +25,8 @@ cdef extern from "spng.h":
     int SPNG_VERSION_MINOR
     int SPNG_VERSION_PATCH
 
+    int SPNG_DECODE_TRNS
+
     enum spng_format:
         SPNG_FMT_RGBA8
         SPNG_FMT_RGBA16
@@ -117,6 +119,7 @@ def decompress(data):
         ihdr.width, ihdr.height, ihdr.bit_depth, COLOR_TYPE_STR.get(ihdr.color_type, ihdr.color_type),
         ihdr.compression_method, ihdr.filter_method, ihdr.interlace_method)
 
+    cdef int flags = 0
     cdef size_t out_size
     cdef int fmt
     if ihdr.color_type==SPNG_COLOR_TYPE_TRUECOLOR:
@@ -125,6 +128,7 @@ def decompress(data):
     elif ihdr.color_type==SPNG_COLOR_TYPE_TRUECOLOR_ALPHA:
         fmt = SPNG_FMT_RGBA8
         rgb_format = "RGBA"
+        flags = SPNG_DECODE_TRNS
     else:
         raise ValueError("cannot handle color type %s" % COLOR_TYPE_STR.get(ihdr.color_type, ihdr.color_type))
 
@@ -141,7 +145,7 @@ def decompress(data):
     cdef MemBuf membuf = getbuf(out_size)
     cdef uintptr_t ptr = <uintptr_t> membuf.get_mem()
     with nogil:
-        r = spng_decode_image(ctx, <void *> ptr, out_size, fmt, 0)
+        r = spng_decode_image(ctx, <void *> ptr, out_size, fmt, flags)
     if check_error(r, "failed to decode image"):
         close()
         return None
