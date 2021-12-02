@@ -75,15 +75,24 @@ def encode(coding : str, image, options : dict):
             level = max(0, min(3, int(125-speed)//35))
     if level>0:
         zlib = options.get("zlib", False)
+        can_inline = l<=32768
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       zlib=zlib, lz4=lz4,
-                                      brotli=False, none=False)
+                                      brotli=False, none=False,
+                                      can_inline=can_inline)
         if isinstance(cwrapper, LevelCompressed):
             #add compressed marker:
             client_options[cwrapper.algorithm] = cwrapper.level & 0xF
             #remove network layer compression marker
             #so that this data will be decompressed by the decode thread client side:
             cwrapper.level = 0
+        elif can_inline and isinstance(pixels, memoryview):
+            assert isinstance(cwrapper, Compressed)
+            assert cwrapper.data==pixels
+            #compression either did not work or was not enabled
+            #and memoryview pixel data cannot be handled by the packet encoders
+            #so we convert it to bytes so it can still be inlined with the packet data:
+            cwrapper.data = rgb_transform.pixels_to_bytes(pixels)
     else:
         #can't pass a raw buffer to bencode / rencode,
         #and even if we could, the image containing those pixels may be freed by the time we get to the encoder
