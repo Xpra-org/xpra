@@ -8,7 +8,7 @@
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
-from libc.stdint cimport uint32_t, uint8_t
+from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 
@@ -18,7 +18,11 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
 
 cdef extern from "spng.h":
-    enum SPNG_FMT:
+    int SPNG_VERSION_MAJOR
+    int SPNG_VERSION_MINOR
+    int SPNG_VERSION_PATCH
+
+    enum spng_format:
         SPNG_FMT_RGBA8
         SPNG_FMT_RGBA16
         SPNG_FMT_RGB8
@@ -62,7 +66,7 @@ COLOR_TYPE_STR = {
 
 
 def get_version():
-    return spng_version_string()
+    return (SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH)
 
 def get_encodings():
     return ("png", )
@@ -106,8 +110,8 @@ def decompress(data):
         close()
         return None
 
-    log("ihdr: %ix%i-%i, color-type=%#x, compression-method=%#x, filter-method=%#x, interlace-method=%#x",
-        ihdr.width, ihdr.height, ihdr.bit_depth, ihdr.color_type,
+    log("ihdr: %ix%i-%i, color-type=%s, compression-method=%#x, filter-method=%#x, interlace-method=%#x",
+        ihdr.width, ihdr.height, ihdr.bit_depth, COLOR_TYPE_STR.get(ihdr.color_type, ihdr.color_type),
         ihdr.compression_method, ihdr.filter_method, ihdr.interlace_method)
 
     cdef size_t out_size
@@ -127,8 +131,10 @@ def decompress(data):
         return None
 
     cdef MemBuf membuf = getbuf(out_size)
-    if check_error(spng_decode_image(ctx, <void *> membuf.get_mem(), out_size, fmt, 0),
-                   "failed to decode image"):
+    cdef uintptr_t ptr = <uintptr_t> membuf.get_mem()
+    with nogil:
+        r = spng_decode_image(ctx, <void *> ptr, out_size, fmt, 0)
+    if check_error(r, "failed to decode image"):
         close()
         return None
 
@@ -137,7 +143,7 @@ def decompress(data):
 
 
 def selftest(full=False):
-    log("spng selftest")
+    log("spng version %s selftest" % (get_version(),))
     import binascii
     from xpra.codecs.codec_checks import TEST_PICTURES  #pylint: disable=import-outside-toplevel
     for hexdata in TEST_PICTURES["png"]:
