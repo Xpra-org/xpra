@@ -10,6 +10,9 @@ log = Logger("decoder", "spng")
 
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
+from xpra.util import envint
+
+MAX_SIZE = envint("XPRA_SPNG_MAX_SIZE", 8192*8192)
 
 
 cdef extern from "Python.h":
@@ -127,6 +130,11 @@ def decompress(data):
 
     if check_error(spng_decoded_image_size(ctx, fmt, &out_size),
                    "failed to get decoded image size"):
+        close()
+        return None
+    if out_size>MAX_SIZE:
+        log.error("Error: spng image size %i is too big", out_size)
+        log.error(" maximum size supported is %i", MAX_SIZE)
         close()
         return None
 
