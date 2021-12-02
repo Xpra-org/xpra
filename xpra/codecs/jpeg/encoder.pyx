@@ -250,8 +250,9 @@ def get_error_str():
 JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", )
 JPEGA_INPUT_FORMATS = ("RGBA", "BGRA", "ABGR", "ARGB")
 
-def encode(coding, image, options):
+def encode(coding, image, options=None):
     assert coding in ("jpeg", "jpega")
+    options = options or {}
     rgb_format = image.get_pixel_format()
     if coding=="jpega" and rgb_format.find("A")<0:
         #why did we select 'jpega' then!?
@@ -270,7 +271,7 @@ def encode(coding, image, options):
         if not argb_swap(image, input_formats):
             log("jpeg: argb_swap failed to convert %s to a suitable format: %s" % (
                 rgb_format, input_formats))
-        log("jpeg converted image: %s", image)
+        log("jpeg converted %s to %s", rgb_format, image)
 
     if resize:
         from xpra.codecs.argb.scale import scale_image
