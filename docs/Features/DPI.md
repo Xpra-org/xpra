@@ -3,7 +3,7 @@
 Xpra synchronizes the DPI from the client to the server, so that applications will render with the correct settings and "look right" on the client.
 This may affect fonts, window sizes, cursors sizes, etc.
 
-See also: [image depth](./Image-Depth)
+See also: [image depth](./Image-Depth.md)
 
 ## Important caveats:
 * support varies greatly depending on the operating system and version, desktop environment, number of monitors attached and their resolution, etc
