@@ -379,6 +379,7 @@ class WindowSource(WindowIconSource):
                 self.add_encoder("mmap", self.mmap_encode)
         if not FORCE_PILLOW or not pillow:
             #prefer these native encoders over the Pillow version:
+            add("enc_spng")
             add("enc_webp")
             add("enc_jpeg")
             #prefer nvjpeg over all the other jpeg encoders:

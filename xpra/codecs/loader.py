@@ -149,6 +149,7 @@ CODEC_OPTIONS = {
     #encoders:
     "enc_rgb"       : ("RGB encoder",       "argb",         "encoder", "encode"),
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encoder", "encode"),
+    "enc_spng"      : ("png encoder",       "spng",         "encoder", "encode"),
     "enc_webp"      : ("webp encoder",      "webp",         "encoder", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
     "enc_nvjpeg"    : ("nvjpeg encoder",    "nvjpeg",       "encoder", "encode"),
@@ -235,7 +236,7 @@ def has_codec(name) -> bool:
 
 
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_libyuv"
-ENCODER_CODECS = "enc_rgb", "enc_pillow", "enc_webp", "enc_jpeg", "enc_nvjpeg"
+ENCODER_CODECS = "enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg"
 ENCODER_VIDEO_CODECS = "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg"
 DECODER_CODECS = "dec_pillow", "dec_spng", "dec_webp", "dec_jpeg"
 DECODER_VIDEO_CODECS = "dec_vpx", "dec_avcodec2"
