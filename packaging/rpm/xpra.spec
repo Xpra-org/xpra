@@ -21,10 +21,6 @@
 %else
 %define with_cuda 0
 %endif
-%if 0%{?fedora}>=35
-#currently having problems building the CUDA kernels with Fedora 35
-%define with_cuda 0
-%endif
 %if 0%{?with_cuda}
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
