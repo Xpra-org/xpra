@@ -1923,7 +1923,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self.is_OR():
             pwid = -1
         packet.append(pwid)
-        packet.append(self._client.get_mouse_position())
+        packet.append(self.get_mouse_position())
         packet.append(self._client.get_current_modifiers())
         geomlog("%s", packet)
         self.send(*packet)
