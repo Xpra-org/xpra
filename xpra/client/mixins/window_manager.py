@@ -387,9 +387,8 @@ class WindowClient(StubClientMixin):
                     value = None
                 show_pointer_overlay(value)
 
-    def send_wheel_delta(self, wid, button, distance, *args):
+    def send_wheel_delta(self, wid, button, distance, pointer=None, *args):
         modifiers = self.get_current_modifiers()
-        pointer = self.get_mouse_position()
         buttons = []
         mouselog("send_wheel_delta(%i, %i, %.4f, %s) precise wheel=%s, modifiers=%s, pointer=%s",
                  wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
@@ -424,7 +423,8 @@ class WindowClient(StubClientMixin):
             signed_remain_distance = remain_distance * (-1 if distance < 0 else 1)
             return float(distance) - signed_remain_distance
 
-    def wheel_event(self, wid, deltax=0, deltay=0, deviceid=0):
+
+    def wheel_event(self, wid, deltax=0, deltay=0, pointer=(), deviceid=0):
         #this is a different entry point for mouse wheel events,
         #which provides finer grained deltas (if supported by the server)
         #accumulate deltas:
@@ -432,10 +432,10 @@ class WindowClient(StubClientMixin):
         self.wheel_deltay += deltay
         button = self.wheel_map.get(6+int(self.wheel_deltax>0))            #RIGHT=7, LEFT=6
         if button>0:
-            self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, deviceid)
+            self.wheel_deltax = self.send_wheel_delta(wid, button, self.wheel_deltax, pointer, deviceid)
         button = self.wheel_map.get(5-int(self.wheel_deltay>0))            #UP=4, DOWN=5
         if button>0:
-            self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, deviceid)
+            self.wheel_deltay = self.send_wheel_delta(wid, button, self.wheel_deltay, pointer, deviceid)
         mouselog("wheel_event%s new deltas=%s,%s",
                  (wid, deltax, deltay, deviceid), self.wheel_deltax, self.wheel_deltay)
 

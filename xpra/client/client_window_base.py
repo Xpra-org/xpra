@@ -855,20 +855,18 @@ class ClientWindowBase(ClientWidgetBase):
         self._client.rpc_call("dbus", rpc_args, **kwargs)
 
 
-    def get_mouse_event_wid(self, _x, _y):
-        #overriden in GTKClientWindowBase
+    def get_mouse_event_wid(self, *_args):
+        #used to be overriden in GTKClientWindowBase
         return self._id
 
     def _do_motion_notify_event(self, event):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
-        pointer, relative_pointer, modifiers, buttons = self._pointer_modifiers(event)
-        wid = self.get_mouse_event_wid(*pointer)
-        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, relative pointer=%s, modifiers=%s, buttons=%s", event, wid, self._client._focused, self._id, self._device_info(event), pointer, relative_pointer, modifiers, buttons)
-        pdata = pointer
-        if self._client.server_pointer_relative:
-            pdata = list(pointer)+list(relative_pointer)
-        packet = ["pointer-position", wid, pdata, modifiers, buttons]
+        pointer_data, modifiers, buttons = self._pointer_modifiers(event)
+        wid = self.get_mouse_event_wid(*pointer_data)
+        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
+                 event, wid, self._client._focused, self._id, self._device_info(event), pointer_data, modifiers, buttons)
+        packet = ("pointer-position", wid, pointer_data, modifiers, buttons)
         self._client.send_mouse_position(packet)
 
     def _device_info(self, event):
@@ -880,10 +878,10 @@ class ClientWindowBase(ClientWidgetBase):
     def _button_action(self, button, event, depressed, *args):
         if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
             return
-        pointer, relative_pointer, modifiers, buttons = self._pointer_modifiers(event)
-        wid = self.get_mouse_event_wid(*pointer)
+        pointer_data, modifiers, buttons = self._pointer_modifiers(event)
+        wid = self.get_mouse_event_wid(*pointer_data)
         mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                 button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer, modifiers, buttons)
+                 button, event, depressed, wid, self._client._focused, self._id, self._device_info(event), pointer_data, modifiers, buttons)
         #map wheel buttons via translation table to support inverted axes:
         server_button = button
         if button>3:
@@ -898,14 +896,11 @@ class ClientWindowBase(ClientWidgetBase):
                     continue
                 b = sb
             server_buttons.append(b)
-        pdata = pointer
-        if self._client.server_pointer_relative:
-            pdata = list(pointer)+list(relative_pointer)
         def send_button(pressed):
-            self._client.send_button(wid, server_button, pressed, pdata, modifiers, server_buttons, *args)
+            self._client.send_button(wid, server_button, pressed, pointer_data, modifiers, server_buttons, *args)
         pressed_state = self.button_state.get(button, False)
         if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
-            mouselog("button action: simulating a missing mouse-down event for window %s before sending the mouse-up event", wid)
+            mouselog("button action: simulating missing mouse-down event for window %s before mouse-up", wid)
             #(needed for some dialogs on win32):
             send_button(True)
         self.button_state[button] = depressed

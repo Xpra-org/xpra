@@ -2096,6 +2096,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return True
 
 
+    def get_mouse_position(self):
+        #this method is used on some platforms
+        #to get the pointer position for events that don't include it
+        #(ie: wheel events)
+        x, y = self._client.get_raw_mouse_position()
+        return self._offset_pointer(x, y)
+
+
     def _offset_pointer(self, x, y):
         if self.window_offset:
             x -= self.window_offset[0]
@@ -2108,16 +2116,25 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def _get_relative_pointer(self, event):
         return event.x, event.y
 
-    def _pointer_modifiers(self, event):
+    def get_pointer_data(self, event):
         x, y = self._get_pointer(event)
-        rx, ry = self._get_relative_pointer(event)
-        #adjust for window offset:
-        pointer = self._offset_pointer(x, y)
-        relative_pointer = self._client.cp(rx, ry)
+        rx, ry = self._get_relative_pointer(event)#
+        return self.adjusted_pointer_data(x, y, rx, ry)
+
+    def adjusted_pointer_data(self, x, y, rx=0, ry=0):
+        #regular pointer coordinates are translated and scaled,
+        #relative coordinates are scaled only:
+        data = self._offset_pointer(x, y)
+        if self._client.server_pointer_relative:
+            data = list(data) + list(self._client.cp(rx, ry))
+        return data
+
+    def _pointer_modifiers(self, event):
+        pointer_data = self.get_pointer_data(event)
         #FIXME: state is used for both mods and buttons??
         modifiers = self._client.mask_to_names(event.state)
         buttons = self._event_buttons(event)
-        v = pointer, relative_pointer, modifiers, buttons
+        v = pointer_data, modifiers, buttons
         mouselog("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, window_offset=%s)",
                  event, v, event.x_root, event.y_root, self.window_offset)
         return v
@@ -2167,7 +2184,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         if event.direction==Gdk.ScrollDirection.SMOOTH:
             mouselog("smooth scroll event: %s", event)
-            self._client.wheel_event(self._id, event.delta_x, -event.delta_y)
+            pointer = self.get_pointer_data(event)
+            self._client.wheel_event(self._id, event.delta_x, -event.delta_y, pointer)
             return
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",

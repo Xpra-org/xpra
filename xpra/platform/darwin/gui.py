@@ -577,7 +577,8 @@ class Delegate(NSObject):
         if dx!=0 or dy!=0:
             client = window._client
             wid = window._id
-            client.wheel_event(wid, dx, dy)
+            pointer = window.get_mouse_position()
+            client.wheel_event(wid, dx, dy, pointer)
         return True
 
     @objc.python_method

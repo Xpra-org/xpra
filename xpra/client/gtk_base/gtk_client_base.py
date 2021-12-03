@@ -784,8 +784,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return get_root_size()
 
 
+    def get_raw_mouse_position(self):
+        return self.get_root_window().get_pointer()[-3:-1]
+
     def get_mouse_position(self):
-        p = self.get_root_window().get_pointer()[-3:-1]
+        p = self.get_raw_mouse_position()
         return self.cp(p[0], p[1])
 
     def get_current_modifiers(self):

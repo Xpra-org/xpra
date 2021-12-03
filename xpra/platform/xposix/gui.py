@@ -664,8 +664,8 @@ class XI2_Window:
         client = window._client
         if client.readonly:
             return
-        pointer, relative_pointer, modifiers, buttons = window._pointer_modifiers(event)
-        wid = self.window.get_mouse_event_wid(*pointer)
+        pointer_data, modifiers, buttons = window._pointer_modifiers(event)
+        wid = self.window.get_mouse_event_wid(*pointer_data)
         #log("server_input_devices=%s, server_precise_wheel=%s",
         #    client.server_input_devices, client.server_precise_wheel)
         valuators = event.valuators
@@ -711,17 +711,14 @@ class XI2_Window:
         #send plain motion first, if any:
         if unused_valuators:
             xinputlog("do_xi_motion(%s, %s) wid=%s / focus=%s / window wid=%i, device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                      event, device, wid, window._client._focused, window._id, event.device, pointer, modifiers, buttons)
-            pdata = pointer
-            if client.server_pointer_relative:
-                pdata = list(pointer)+list(relative_pointer)
-            packet = ["pointer-position", wid, pdata, modifiers, buttons] + self.get_pointer_extra_args(event)
+                      event, device, wid, window._client._focused, window._id, event.device, pointer_data, modifiers, buttons)
+            packet = ["pointer-position", wid, pointer_data, modifiers, buttons] + self.get_pointer_extra_args(event)
             client.send_mouse_position(packet)
         #now see if we have anything to send as a wheel event:
         if dx!=0 or dy!=0:
             xinputlog("do_xi_motion(%s, %s) wheel deltas: dx=%i, dy=%i", event, device, dx, dy)
             #normalize (xinput is always using 15 degrees?)
-            client.wheel_event(wid, dx/XINPUT_WHEEL_DIV, dy/XINPUT_WHEEL_DIV, event.device)
+            client.wheel_event(wid, dx/XINPUT_WHEEL_DIV, dy/XINPUT_WHEEL_DIV, pointer_data, event.device)
 
     def get_pointer_extra_args(self, event):
         def intscaled(f):
