@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -30,7 +30,7 @@ from xpra.os_util import (
     OSX, POSIX, is_Ubuntu,
     )
 from xpra.util import (
-    iround, envint, envbool, typedict,
+    envint, envbool, typedict,
     make_instance, updict, repr_ellipsized, u,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -1495,10 +1495,10 @@ class WindowClient(StubClientMixin):
         return v
     def sx(self, v) -> int:
         """ convert X coordinate from server to client """
-        return iround(v)
+        return round(v)
     def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
-        return iround(v)
+        return round(v)
     def srect(self, x, y, w, h):
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
@@ -1508,10 +1508,10 @@ class WindowClient(StubClientMixin):
 
     def cx(self, v) -> int:
         """ convert X coordinate from client to server """
-        return iround(v)
+        return round(v)
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
-        return iround(v)
+        return round(v)
     def crect(self, x, y, w, h):
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)

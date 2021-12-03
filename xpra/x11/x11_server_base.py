@@ -9,7 +9,7 @@
 import os
 
 from xpra.os_util import bytestostr, strtobytes, hexstr
-from xpra.util import typedict, envbool, iround
+from xpra.util import typedict, envbool
 from xpra.gtk_common.error import xswallow, xsync, xlog
 from xpra.scripts.config import parse_bool
 from xpra.server import EXITING_CODE
@@ -418,7 +418,7 @@ class X11ServerBase(X11ServerCore):
                     try:
                         x,y = double_click_distance
                         if x>0 and y>0:
-                            d = iround((x+y)/2.0)
+                            d = round((x+y)/2)
                             d = max(1, min(128, d))     #sanitize it a bit
                             v = set_xsettings_int("Net/DoubleClickDistance", d)
                     except Exception as e:

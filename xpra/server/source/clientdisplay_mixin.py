@@ -4,8 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import strtobytes
-from xpra.util import get_screen_info, envint, first_time, iround, typedict, net_utf8
+from xpra.util import get_screen_info, envint, first_time, typedict, net_utf8
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -102,8 +101,8 @@ class ClientDisplayMixin(StubSourceMixin):
                     ydpi = dpi(sh, hmm)
                 if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
                     #still invalid, generate one from DPI=96
-                    wmm = iround(sw*25.4/96)
-                    hmm = iround(sh*25.4/96)
+                    wmm = round(sw*25.4/96)
+                    hmm = round(sh*25.4/96)
                 if warn:
                     log.warn(" using %ix%i mm", wmm, hmm)
                 screen = list(screen)

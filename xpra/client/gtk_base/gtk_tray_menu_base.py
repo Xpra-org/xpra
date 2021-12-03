@@ -9,7 +9,7 @@ from gi.repository import GLib, Gtk
 
 from xpra.util import (
     CLIENT_EXIT,
-    iround, envbool, u,
+    envbool, u,
     ellipsizer, repr_ellipsized, reverse_dict, typedict,
     )
 from xpra.os_util import bytestostr, OSX, WIN32
@@ -669,7 +669,7 @@ class GTKTrayMenuBase(MenuHelper):
     def make_scalingvaluemenuitem(self, scaling_submenu, scalingvalue=1.0):
         def scalecmp(v):
             return abs(self.client.xscale-v)<0.1
-        pct = iround(100.0*scalingvalue)
+        pct = round(100.0*scalingvalue)
         label = {100 : "None"}.get(pct, "%i%%" % pct)
         c = Gtk.CheckMenuItem(label=label)
         c.scalingvalue = scalingvalue

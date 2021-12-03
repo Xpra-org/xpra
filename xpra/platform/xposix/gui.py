@@ -12,7 +12,7 @@ from xpra.os_util import (
     bytestostr, hexstr, get_saved_env,
     is_unity, is_gnome, is_kde, is_Ubuntu, is_Fedora, is_X11, is_Wayland, get_saved_env_var,
     )
-from xpra.util import u, iround, envbool, envint, csv, ellipsizer
+from xpra.util import u, envbool, envint, csv, ellipsizer
 from xpra.log import Logger
 
 log = Logger("posix")
@@ -243,8 +243,8 @@ def _get_randr_dpi():
                 wmm, hmm = randr_bindings.get_screen_size_mm()
                 if wmm>0 and hmm>0:
                     w, h =  randr_bindings.get_screen_size()
-                    dpix = iround(w * 25.4 / wmm)
-                    dpiy = iround(h * 25.4 / hmm)
+                    dpix = round(w * 25.4 / wmm)
+                    dpiy = round(h * 25.4 / hmm)
                     screenlog("xdpi=%s, ydpi=%s - size-mm=%ix%i, size=%ix%i", dpix, dpiy, wmm, hmm, w, h)
                     return dpix, dpiy
     return -1, -1

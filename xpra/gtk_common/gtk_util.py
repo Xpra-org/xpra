@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
-from xpra.util import iround, first_time, envint, envbool
+from xpra.util import first_time, envint, envbool
 from xpra.os_util import strtobytes, WIN32, OSX
 from xpra.log import Logger
 
@@ -245,9 +245,9 @@ def get_screens_info() -> dict:
 def get_screen_sizes(xscale=1, yscale=1):
     from xpra.platform.gui import get_workarea, get_workareas
     def xs(v):
-        return iround(v/xscale)
+        return round(v/xscale)
     def ys(v):
-        return iround(v/yscale)
+        return round(v/yscale)
     def swork(*workarea):
         return xs(workarea[0]), ys(workarea[1]), xs(workarea[2]), ys(workarea[3])
     display = Gdk.Display.get_default()
@@ -258,7 +258,7 @@ def get_screen_sizes(xscale=1, yscale=1):
     def dpi(size_pixels, size_mm):
         if size_mm==0:
             return 0
-        return iround(size_pixels * 254 / size_mm / 10)
+        return round(size_pixels * 254 / size_mm / 10)
     #GTK 3.22 onwards always returns just a single screen,
     #potentially with multiple monitors
     n_monitors = display.get_n_monitors()
@@ -324,8 +324,8 @@ def get_screen_sizes(xscale=1, yscale=1):
             ydpi = dpi(sh, hmm)
         if xdpi<MIN_DPI or xdpi>MAX_DPI or ydpi<MIN_DPI or ydpi>MAX_DPI:
             #still invalid, generate one from DPI=96
-            wmm = iround(sw*25.4/96)
-            hmm = iround(sh*25.4/96)
+            wmm = round(sw*25.4/96)
+            hmm = round(sh*25.4/96)
         log(" using %ix%i mm", wmm, hmm)
     screen0 = (screen.make_display_name(), xs(sw), ys(sh),
                 wmm, hmm,

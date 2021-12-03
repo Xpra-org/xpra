@@ -539,7 +539,7 @@ def do_log_screen_sizes(root_w, root_h, sizes):
     def dpi(size_pixels, size_mm):
         if size_mm==0:
             return 0
-        return iround(size_pixels * 254 / size_mm / 10)
+        return round(size_pixels * 254 / size_mm / 10)
     def add_workarea(info, wx, wy, ww, wh):
         info.append("workarea: %4ix%-4i" % (ww, wh))
         if wx!=0 or wy!=0:
@@ -741,9 +741,6 @@ def repr_ellipsized(obj, limit=100):
 
 def rindex(alist, avalue):
     return len(alist) - alist[::-1].index(avalue) - 1
-
-def iround(v):
-    return int(v+0.5)
 
 
 def notypedict(d):

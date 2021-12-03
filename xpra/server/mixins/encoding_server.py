@@ -65,9 +65,9 @@ class EncodingServer(StubServerMixin):
             #try to load the fast webp encoder:
             load_codec("enc_webp")
         #spng is still producing random 'failed to encode image' errors:
-        #if "png" in ae:
-        #try to load the fast png encoder:
-        #load_codec("enc_spng")
+        if "png" in ae:
+            #try to load the fast png encoder:
+            load_codec("enc_spng")
         self.init_encodings()
 
     def cleanup(self):

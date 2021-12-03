@@ -6,7 +6,7 @@
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
-from xpra.util import envint, csv, iround, first_time, decode_str
+from xpra.util import envint, csv, first_time, decode_str
 from xpra.os_util import strtobytes
 
 
@@ -382,7 +382,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     mode_info = &rsc.modes[i]
                     if mode_info.id==crtc_info.mode:
                         if mode_info.hTotal and mode_info.vTotal:
-                            rate = iround(mode_info.dotClock / (mode_info.hTotal * mode_info.vTotal))
+                            rate = round(mode_info.dotClock / (mode_info.hTotal * mode_info.vTotal))
                             #outputs affected:
                             output_names = []
                             for o in range(crtc_info.noutput):
@@ -536,7 +536,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         self.context_check()
         #and now use it:
         cdef Window window = XDefaultRootWindow(self.display)
-        wmm = iround(w*25.4/xdpi)
-        hmm = iround(h*25.4/ydpi)
+        wmm = round(w*25.4/xdpi)
+        hmm = round(h*25.4/ydpi)
         log("XRRSetScreenSize(%#x, %#x, %i, %i, %i, %i)", <uintptr_t> self.display, window, w, h, wmm, hmm)
         XRRSetScreenSize(self.display, window, w, h, wmm, hmm)

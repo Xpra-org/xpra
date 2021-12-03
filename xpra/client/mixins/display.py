@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,7 +17,7 @@ from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
 from xpra.util import (
-    iround, envint, envfloat, envbool, log_screen_sizes, flatten_dict, typedict,
+    envint, envfloat, envbool, log_screen_sizes, flatten_dict, typedict,
     XPRA_SCALING_NOTIFICATION_ID,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -38,7 +38,7 @@ SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
 
 def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
-    return iround(v*rounding)
+    return round(v*rounding)
 def fequ(v1, v2):
     return r4cmp(v1)==r4cmp(v2)
 
@@ -139,9 +139,9 @@ class DisplayClient(StubClientMixin):
             caps["desktop_size.unscaled"] = u_root_w, u_root_h
             root_w, root_h = self.cp(u_root_w, u_root_h)
             if fequ(self.xscale, self.yscale):
-                sinfo = "%i%%" % iround(self.xscale*100)
+                sinfo = "%i%%" % round(self.xscale*100)
             else:
-                sinfo = "%i%% x %i%%" % (iround(self.xscale*100), iround(self.yscale*100))
+                sinfo = "%i%% x %i%%" % (round(self.xscale*100), round(self.yscale*100))
             scaled_up = u_root_w>root_w or u_root_h>root_h
             log.info(" %sscaled to %s, virtual screen size: %ix%i",
                      "up" if scaled_up else "down", sinfo, root_w, root_h)
@@ -164,7 +164,7 @@ class DisplayClient(StubClientMixin):
         dpi = 0
         if self.dpi>0:
             #scale it:
-            dpi = iround((self.cx(self.dpi) + self.cy(self.dpi))/2.0)
+            dpi = round((self.cx(self.dpi) + self.cy(self.dpi))/2.0)
         else:
             #not supplied, use platform detection code:
             #platforms may also provide per-axis dpi (later win32 versions do)
@@ -174,7 +174,7 @@ class DisplayClient(StubClientMixin):
             if xdpi>0 and ydpi>0:
                 xdpi = self.cx(xdpi)
                 ydpi = self.cy(ydpi)
-                dpi = iround((xdpi+ydpi)/2.0)
+                dpi = round((xdpi+ydpi)/2.0)
                 caps = {
                     "x"    : xdpi,
                     "y"    : ydpi,
@@ -364,7 +364,7 @@ class DisplayClient(StubClientMixin):
         def mint(v):
             #prefer int over float,
             #and even tolerate a 0.1% difference to get it:
-            if iround(v)*1000==iround(v*1000):
+            if round(v)*1000==round(v*1000):
                 return int(v)
             return v
         self.xscale = mint(x)
@@ -397,10 +397,10 @@ class DisplayClient(StubClientMixin):
         return v*self.yscale
     def sx(self, v) -> int:
         """ convert X coordinate from server to client """
-        return iround(self.fsx(v))
+        return round(self.fsx(v))
     def sy(self, v) -> int:
         """ convert Y coordinate from server to client """
-        return iround(self.fsy(v))
+        return round(self.fsy(v))
     def srect(self, x, y, w, h):
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
@@ -410,10 +410,10 @@ class DisplayClient(StubClientMixin):
 
     def cx(self, v) -> int:
         """ convert X coordinate from client to server """
-        return iround(v/self.xscale)
+        return round(v/self.xscale)
     def cy(self, v) -> int:
         """ convert Y coordinate from client to server """
-        return iround(v/self.yscale)
+        return round(v/self.yscale)
     def crect(self, x, y, w, h):
         """ convert rectangle coordinates from client to server """
         return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
@@ -595,16 +595,16 @@ class DisplayClient(StubClientMixin):
         #wait at least one second before changing again:
         self.scale_change_embargo = monotonic()+SCALING_EMBARGO_TIME
         if fequ(self.xscale, self.yscale):
-            scalinglog.info("setting scaling to %i%%:", iround(100*self.xscale))
+            scalinglog.info("setting scaling to %i%%:", round(100*self.xscale))
         else:
-            scalinglog.info("setting scaling to %i%% x %i%%:", iround(100*self.xscale), iround(100*self.yscale))
+            scalinglog.info("setting scaling to %i%% x %i%%:", round(100*self.xscale), round(100*self.yscale))
         self.update_screen_size()
         #re-initialize all the windows with their new size
         def new_size_fn(w, h):
             minx, miny = 16384, 16384
             if self.max_window_size!=(0, 0):
                 minx, miny = self.max_window_size
-            return max(1, min(minx, iround(w*xchange))), max(1, min(miny, iround(h*ychange)))
+            return max(1, min(minx, round(w*xchange))), max(1, min(miny, round(h*ychange)))
         self.resize_windows(new_size_fn)
         self.reinit_window_icons()
         self.emit("scaling-changed")

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -13,7 +13,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf
 
 from xpra.client.gtk_base.gtk_client_window_base import HAS_X11_BINDINGS, XSHAPE
 from xpra.util import (
-    updict, pver, iround, flatten_dict, noerr,
+    updict, pver, flatten_dict, noerr,
     envbool, envint, repr_ellipsized, ellipsizer, csv, first_time, typedict,
     DEFAULT_METADATA_SUPPORTED, XPRA_OPENGL_NOTIFICATION_ID,
     )
@@ -240,7 +240,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             rates[m] = monitor.get_refresh_rate()
         rate = -1
         if rates:
-            rate = iround(min(rates.values())/1000)
+            rate = round(min(rates.values())/1000)
         if rate<30 or rate>250:
             rate = super().get_vrefresh()
         return rate
@@ -983,7 +983,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 cursorlog("scaling cursor from %ix%i to fixed OS size %ix%i", w, h, fw, fh)
                 cursor_pixbuf = pixbuf.scale_simple(fw, fh, GdkPixbuf.InterpType.BILINEAR)
                 xratio, yratio = w/fw, h/fh
-                x, y = iround(x/xratio), iround(y/yratio)
+                x, y = round(x/xratio), round(y/yratio)
         else:
             sx, sy, sw, sh = x, y, w, h
             #scale the cursors:
@@ -999,8 +999,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 if cmaxh>0:
                     ratio = max(ratio, h/cmaxh)
                 cursorlog("clamping cursor size to %ix%i using ratio=%s", cmaxw, cmaxh, ratio)
-                sx, sy = iround(x/ratio), iround(y/ratio)
-                sw, sh = min(cmaxw, iround(w/ratio)), min(cmaxh, iround(h/ratio))
+                sx, sy = round(x/ratio), round(y/ratio)
+                sw, sh = min(cmaxw, round(w/ratio)), min(cmaxh, round(h/ratio))
             if sw!=w or sh!=h:
                 cursorlog("scaling cursor from %ix%i hotspot at %ix%i to %ix%i hotspot at %ix%i",
                           w, h, x, y, sw, sh, sx, sy)

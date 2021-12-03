@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
 # Copyright (C) 2010 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -94,8 +94,7 @@ def get_icon_size():
     xdpi = get_xdpi()
     ydpi = get_ydpi()
     if xdpi>0 and ydpi>0:
-        from xpra.util import iround
-        dpi = iround((xdpi + ydpi)/2.0)
+        dpi = round((xdpi + ydpi)/2)
     else:
         dpi = 96
     if dpi > 144:

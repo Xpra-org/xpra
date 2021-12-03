@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import strtobytes
-from xpra.util import engs, iround, log_screen_sizes
+from xpra.util import engs, log_screen_sizes
 from xpra.os_util import bytestostr
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -290,7 +289,7 @@ class DisplayManager(StubServerMixin):
             if xdpi!=self.xdpi or ydpi!=self.ydpi:
                 self.xdpi, self.ydpi = xdpi, ydpi
                 log("new dpi: %ix%i", self.xdpi, self.ydpi)
-                self.dpi = iround((self.xdpi + self.ydpi)/2.0)
+                self.dpi = round((self.xdpi + self.ydpi)/2)
                 self.dpi_changed()
         if len(packet)>=8:
             #added in 0.16 for scaled client displays:

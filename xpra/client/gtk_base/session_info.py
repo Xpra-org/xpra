@@ -14,7 +14,7 @@ from gi.repository import GLib, Gtk, Gdk
 
 from xpra.version_util import XPRA_VERSION
 from xpra.os_util import bytestostr, strtobytes, get_linux_distribution
-from xpra.util import prettify_plug_name, typedict, envint, csv, iround
+from xpra.util import prettify_plug_name, typedict, envint, csv
 from xpra.gtk_common.graph import make_graph_imagesurface
 from xpra.simple_stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
 from xpra.client import mixin_features
@@ -691,7 +691,7 @@ class SessionInfo(Gtk.Window):
             spl = tuple(1000.0*x[1] for x in tuple(self.client.server_ping_latency))
             cpl = tuple(1000.0*x[1] for x in tuple(self.client.client_ping_latency))
             if spl and cpl:
-                self.avg_ping_latency.append(iround(sum(spl+cpl)/len(spl+cpl)))
+                self.avg_ping_latency.append(round(sum(spl+cpl)/len(spl+cpl)))
             if mixin_features.windows and self.show_client:
                 pc = tuple(self.client.pixel_counter)
                 if pc:
@@ -700,7 +700,7 @@ class SessionInfo(Gtk.Window):
                     for start_time, end_time, size in pc:
                         ttime += 1000.0 * (end_time-start_time) * size
                         tsize += size
-                    self.avg_decoding_latency.append(iround(ttime/tsize))
+                    self.avg_decoding_latency.append(round(ttime/tsize))
         #totals: ping latency is halved since we only care about sending, not sending+receiving
         els  = (
             (tuple(self.avg_batch_delay), 1),
@@ -711,7 +711,7 @@ class SessionInfo(Gtk.Window):
         if all(x[0] for x in els):
             totals = tuple(x[-1]/r for x, r in els)
             log("frame totals=%s", totals)
-            self.avg_total.append(iround(sum(totals)))
+            self.avg_total.append(round(sum(totals)))
         return not self.is_closed
 
     def populate_software(self):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -25,7 +25,7 @@ from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
 from xpra.x11.gtk_x11.gdk_bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.os_util import strtobytes
-from xpra.util import typedict, iround, envbool, first_time, XPRA_DPI_NOTIFICATION_ID
+from xpra.util import typedict, envbool, first_time, XPRA_DPI_NOTIFICATION_ID
 from xpra.net.compression import Compressed
 from xpra.server.gtk_server_base import GTKServerBase
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -657,8 +657,8 @@ class X11ServerCore(GTKServerBase):
                         hmm = max(hmm, s[4])
             if wmm>0 and hmm>0 and client_w>0 and client_h>0:
                 #calculate "real" dpi:
-                xdpi = iround(client_w * 25.4 / wmm)
-                ydpi = iround(client_h * 25.4 / hmm)
+                xdpi = round(client_w * 25.4 / wmm)
+                ydpi = round(client_h * 25.4 / hmm)
                 screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)",
                           xdpi, ydpi, client_w, wmm, client_h, hmm)
         self.set_dpi(xdpi, ydpi)
@@ -732,8 +732,8 @@ class X11ServerCore(GTKServerBase):
             def show_dpi():
                 wmm, hmm = RandR.get_screen_size_mm()      #ie: (1280, 1024)
                 screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
-                actual_xdpi = iround(root_w * 25.4 / wmm)
-                actual_ydpi = iround(root_h * 25.4 / hmm)
+                actual_xdpi = round(root_w * 25.4 / wmm)
+                actual_ydpi = round(root_h * 25.4 / hmm)
                 if abs(actual_xdpi-xdpi)<=1 and abs(actual_ydpi-ydpi)<=1:
                     screenlog.info("DPI set to %s x %s", actual_xdpi, actual_ydpi)
                     screenlog("wanted: %s x %s", xdpi, ydpi)

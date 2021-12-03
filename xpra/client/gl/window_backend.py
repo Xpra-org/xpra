@@ -9,7 +9,7 @@ import os.path
 from io import BytesIO
 from math import cos, sin
 
-from xpra.util import typedict, envint, AdHocStruct, AtomicInteger, iround
+from xpra.util import typedict, envint, AdHocStruct, AtomicInteger
 from xpra.os_util import WIN32, load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
@@ -164,8 +164,8 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
             options["flush"] = 0
             mx = w//2-icon_w//2
             my = h//2-icon_h//2
-            x = iround(mx*(1+sin(v/100)))
-            y = iround(my*(1+cos(v/100)))
+            x = round(mx*(1+sin(v/100)))
+            y = round(my*(1+cos(v/100)))
             window.draw_region(x, y, icon_w, icon_h, icon_format, icon_data, icon_stride, v, options, [paint_callback])
             return REPAINT_DELAY>0
         #the paint code is actually synchronous here,
