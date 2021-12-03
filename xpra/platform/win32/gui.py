@@ -628,9 +628,7 @@ def add_window_hooks(window):
             def mousehwheel(_hwnd, _event, wParam, lParam):
                 handle_wheel(HORIZONTAL, wParam, lParam)
                 return 0
-            WM_MOUSEHWHEEL = 0x020E
             win32hooks.add_window_event_handler(win32con.WM_MOUSEWHEEL, mousewheel)
-            win32hooks.add_window_event_handler(WM_MOUSEHWHEEL, mousehwheel)
 
 
 def remove_window_hooks(window):
