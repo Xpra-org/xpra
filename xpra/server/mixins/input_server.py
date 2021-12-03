@@ -41,6 +41,8 @@ class InputServer(StubServerMixin):
         #timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = None
 
+        self.last_mouse_user = None
+
     def setup(self):
         self.watch_keymap_changes()
 
@@ -351,7 +353,7 @@ class InputServer(StubServerMixin):
         return None
 
     def do_process_mouse_common(self, proto, wid, pointer, *args):
-        return pointer
+        return True
 
     def _process_button_action(self, proto, packet):
         mouselog("process_button_action(%s, %s)", proto, packet)
@@ -361,6 +363,7 @@ class InputServer(StubServerMixin):
         if ss is None:
             return
         ss.user_event()
+        self.last_mouse_user = ss.uuid
         self.set_ui_driver(ss)
         self.do_process_button_action(proto, *packet[1:])
 
@@ -387,6 +390,7 @@ class InputServer(StubServerMixin):
         if self.ui_driver and self.ui_driver!=ss.uuid:
             return
         ss.user_event()
+        self.last_mouse_user = ss.uuid
         if self._process_mouse_common(proto, wid, pdata, *packet[5:]):
             self._update_modifiers(proto, wid, modifiers)
 

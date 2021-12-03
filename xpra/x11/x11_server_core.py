@@ -85,7 +85,6 @@ class X11ServerCore(GTKServerBase):
         self.touchpad_device = None
         self.pointer_device_map = {}
         self.keys_pressed = {}
-        self.last_mouse_user = None
         self.libfakeXinerama_so = None
         self.initial_resolution = None
         self.x11_filter = False
@@ -339,7 +338,8 @@ class X11ServerCore(GTKServerBase):
                     "force_ungrab"              : True,
                     "keyboard.fast-switching"   : True,
                     "wheel.precise"             : self.pointer_device.has_precise_wheel(),
-                    "touchpad-device"              : bool(self.touchpad_device),
+                    "pointer.optional"          : True,
+                    "touchpad-device"           : bool(self.touchpad_device),
                     })
             if self.randr:
                 sizes = self.get_all_screen_sizes()
@@ -906,9 +906,13 @@ class X11ServerCore(GTKServerBase):
 
     def _process_wheel_motion(self, proto, packet):
         assert self.pointer_device.has_precise_wheel()
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
         wid, button, distance, pointer, modifiers, _buttons = packet[1:7]
         with xsync:
             if self.do_process_mouse_common(proto, wid, pointer):
+                self.last_mouse_user = ss.uuid
                 self._update_modifiers(proto, wid, modifiers)
                 self.pointer_device.wheel_motion(button, distance/1000.0)   #pylint: disable=no-member
 
@@ -953,18 +957,12 @@ class X11ServerCore(GTKServerBase):
     def do_process_mouse_common(self, proto, wid, pointer, deviceid=-1, *args):
         mouselog("do_process_mouse_common%s", tuple([proto, wid, pointer, deviceid]+list(args)))
         if self.readonly:
-            return None
+            return False
         pos = self.root_window.get_pointer()[-3:-1]
-        uuid = None
-        if proto:
-            ss = self.get_server_source(proto)
-            if ss:
-                uuid = ss.uuid
-        if pos!=pointer[:2] or self.input_devices=="xi":
-            self.last_mouse_user = uuid
+        if (pointer and pos!=pointer[:2]) or self.input_devices=="xi":
             with xswallow:
                 self._move_pointer(wid, pointer, deviceid, *args)
-        return pointer
+        return True
 
     def _update_modifiers(self, proto, wid, modifiers):
         if self.readonly:

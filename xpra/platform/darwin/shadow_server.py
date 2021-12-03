@@ -167,10 +167,10 @@ class ShadowServer(GTKShadowServerBase):
 
     def do_process_mouse_common(self, proto, wid, pointer, *args):
         if proto not in self._server_sources:
-            return pointer
+            return False
         assert wid in self._id_to_window
         CG.CGWarpMouseCursorPosition(pointer[:2])
-        return pointer
+        return True
 
     def fake_key(self, keycode, press):
         e = CG.CGEventCreateKeyboardEvent(None, keycode, press)

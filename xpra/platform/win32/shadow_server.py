@@ -466,26 +466,29 @@ class ShadowServer(GTKShadowServerBase):
         return pos.x, pos.y
 
     def do_process_mouse_common(self, proto, wid, pointer, *_args):
+        ss = self._server_sources.get(proto)
+        if not ss:
+            return False
         #adjust pointer position for offset in client:
         try:
             x, y = pointer[:2]
-            if not SetPhysicalCursorPos(x, y):
-                #rate limit the warnings:
-                start, count = self.cursor_errors
-                now = monotonic()
-                elapsed = now-start
-                if count==0 or (count>1 and elapsed>10):
-                    log.warn("Warning: cannot move cursor")
-                    log.warn(" (%i events)", count+1)
-                    self.cursor_errors = [now, 1]
-                else:
-                    self.cursor_errors[1] = count+1
-
+            if SetPhysicalCursorPos(x, y):
+                return True
+            #rate limit the warnings:
+            start, count = self.cursor_errors
+            now = monotonic()
+            elapsed = now-start
+            if count==0 or (count>1 and elapsed>10):
+                log.warn("Warning: cannot move cursor")
+                log.warn(" (%i events)", count+1)
+                self.cursor_errors = [now, 1]
+            else:
+                self.cursor_errors[1] = count+1
         except Exception as e:
             log("SetPhysicalCursorPos%s failed", pointer, exc_info=True)
             log.error("Error: failed to move the cursor:")
             log.error(" %s", e)
-        return pointer
+        return False
 
     def clear_keys_pressed(self):
         keystate = (BYTE*256)()
