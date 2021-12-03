@@ -395,7 +395,7 @@ class WindowClient(StubClientMixin):
                  wid, button, distance, args, self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             #send the exact value multiplied by 1000 (as an int)
-            idist = int(distance*1000)
+            idist = round(distance*1000)
             if abs(idist)>0:
                 packet =  ["wheel-motion", wid,
                            button, idist,
@@ -410,7 +410,7 @@ class WindowClient(StubClientMixin):
             scaled_distance = abs(distance*MOUSE_SCROLL_MULTIPLIER/100)
             if MOUSE_SCROLL_SQRT_SCALE:
                 scaled_distance = math.sqrt(scaled_distance)
-            steps = int(scaled_distance)
+            steps = round(scaled_distance)
             for _ in range(steps):
                 self.send_button(wid, button, True, pointer, modifiers, buttons)
                 self.send_button(wid, button, False, pointer, modifiers, buttons)
@@ -454,7 +454,7 @@ class WindowClient(StubClientMixin):
     def scale_pointer(self, pointer):
         #subclass may scale this:
         #return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
-        return int(pointer[0]), int(pointer[1])
+        return round(pointer[0]), round(pointer[1])
 
     def send_input_devices(self, fmt, input_devices):
         assert self.server_input_devices
@@ -1449,7 +1449,7 @@ class WindowClient(StubClientMixin):
         def record_decode_time(success, message=""):
             if success>0:
                 end = monotonic()
-                decode_time = int(end*1000*1000-start*1000*1000)
+                decode_time = round(end*1000*1000-start*1000*1000)
                 self.pixel_counter.append((start, end, width*height))
                 dms = "%sms" % (int(decode_time/100)/10.0)
                 paintlog("record_decode_time(%s, %s) wid=%s, %s: %sx%s, %s",
