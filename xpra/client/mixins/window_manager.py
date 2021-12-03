@@ -1477,8 +1477,6 @@ class WindowClient(StubClientMixin):
         try:
             window.draw_region(x, y, width, height, coding, data, rowstride,
                                packet_sequence, options, [record_decode_time])
-        except KeyboardInterrupt:
-            raise
         except Exception as e:
             drawlog.error("Error drawing on window %i", wid, exc_info=True)
             self.idle_add(record_decode_time, False, str(e))

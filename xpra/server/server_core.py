@@ -2457,8 +2457,6 @@ class ServerCore:
                 netlog("invalid packet: %s", packet)
                 netlog.error("unknown or invalid packet type: '%s' from %s", packet_type, proto)
             proto.close()
-        except KeyboardInterrupt:
-            raise
         except Exception:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
                          packet_type, handler, exc_info=True)
