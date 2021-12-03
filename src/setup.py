@@ -138,6 +138,8 @@ if "--minimal" in sys.argv:
     sys.argv.remove("--minimal")
     DEFAULT = False
 skip_build = "--skip-build" in sys.argv
+ARCH = get_status_output(["uname", "-m"])[1]
+ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
@@ -200,9 +202,9 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale") and not (BITS==32 and WIN32)
-nvjpeg_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvjpeg")
-nvenc_ENABLED = DEFAULT and BITS==64 and pkg_config_version("7", "nvenc")
-nvfbc_ENABLED = DEFAULT and BITS==64 and pkg_config_ok("--exists", "nvfbc")
+nvjpeg_ENABLED = DEFAULT and BITS==64 and not ARM and pkg_config_ok("--exists", "nvjpeg")
+nvenc_ENABLED = DEFAULT and BITS==64 and not ARM and pkg_config_version("7", "nvenc")
+nvfbc_ENABLED = DEFAULT and BITS==64 and not ARM and pkg_config_ok("--exists", "nvfbc")
 cuda_kernels_ENABLED    = DEFAULT
 cuda_rebuild_ENABLED    = DEFAULT
 csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
