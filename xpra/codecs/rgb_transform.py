@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 from PIL import Image
 
-from xpra.os_util import memoryview_to_bytes, bytestostr
+from xpra.os_util import memoryview_to_bytes
 from xpra.util import first_time
 from xpra.log import Logger
 try:
