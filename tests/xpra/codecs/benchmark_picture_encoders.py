@@ -39,6 +39,7 @@ def main(fmt="png", files=()):
                              rgb_data, pixel_format, len(pixel_format)*8, stride,
                              planes=ImageWrapper.PACKED, thread_safe=True)
         for enc in encoders:
+            size = 0
             start = monotonic()
             for _ in range(N):
                 try:
@@ -49,10 +50,12 @@ def main(fmt="png", files=()):
                 if not r:
                     print("Error: no data for %s %s" % (enc.get_type(), enc.encode))
                     break
+                size += len(r[1])
             if not r:
                 continue
             end = monotonic()
-            print("%-10s   :    %.1f MPixels/s" % (enc.get_type(), w*h*N/(end-start)/1024/1024))
+            print("%-10s   :    %.1f MPixels/s    size=%iKB" % (
+                enc.get_type(), w*h*N/(end-start)/1024/1024, size*N/1024))
             cdata = r[1]
             #verify that the png data is valid using pillow:
             from io import BytesIO 
