@@ -13,7 +13,7 @@
 %{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
 #we only enable CUDA / NVENC with 64-bit builds:
-%ifarch x86_64
+%ifarch x86_64 aarch64
 %{!?with_cuda: %define with_cuda 1}
 %else
 %define with_cuda 0
