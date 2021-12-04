@@ -38,7 +38,7 @@ statslog = Logger("stats")
 bandwidthlog = Logger("bandwidth")
 
 TRUE_LOSSLESS = envbool("XPRA_TRUE_LOSSLESS", False)
-LOG_ENCODERS = envbool("XPRA_LOG_ENCODERS", True)
+LOG_ENCODERS = envbool("XPRA_LOG_ENCODERS", False)
 
 AUTO_REFRESH = envbool("XPRA_AUTO_REFRESH", True)
 AUTO_REFRESH_QUALITY = envint("XPRA_AUTO_REFRESH_QUALITY", 100)
@@ -2579,7 +2579,7 @@ class WindowSource(WindowIconSource):
             client_options["z.sha256"] = chksum
             client_options["z.len"] = len(data)
             log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), chksum)
-        if LOG_ENCODERS:
+        if LOG_ENCODERS or compresslog.is_debug_enabled():
             mod = get_encoder_type(encoder)
             if mod:
                 client_options["encoder"] = mod
