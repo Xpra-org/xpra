@@ -12,6 +12,11 @@ from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context #pylint: disable=syntax-error
 from xpra.net.compression import Compressed
 
+cdef extern from "zconf.h":
+    int MAX_MEM_LEVEL
+
+cdef extern from "zlib.h":
+    int Z_HUFFMAN_ONLY
 
 cdef extern from "spng.h":
     int SPNG_VERSION_MAJOR
@@ -29,7 +34,20 @@ cdef extern from "spng.h":
 
     enum spng_option:
         SPNG_ENCODE_TO_BUFFER
+        SPNG_KEEP_UNKNOWN_CHUNKS
+
         SPNG_IMG_COMPRESSION_LEVEL
+
+        SPNG_IMG_WINDOW_BITS
+        SPNG_IMG_MEM_LEVEL
+        SPNG_IMG_COMPRESSION_STRATEGY
+
+        SPNG_TEXT_COMPRESSION_LEVEL
+        SPNG_TEXT_WINDOW_BITS
+        SPNG_TEXT_MEM_LEVEL
+        SPNG_TEXT_COMPRESSION_STRATEGY
+
+        SPNG_FILTER_CHOICE
 
     enum spng_format:
         SPNG_FMT_RGBA8
@@ -83,6 +101,9 @@ COLOR_TYPE_STR = {
 
 def get_version():
     return (SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH)
+
+def get_type():
+    return "spng"
 
 def get_encodings():
     return ("png", )
@@ -154,6 +175,18 @@ def encode(coding, image, options=None):
     cdef int clevel = 1
     if check_error(spng_set_option(ctx, SPNG_IMG_COMPRESSION_LEVEL, clevel),
                    "failed to set compression level"):
+        spng_ctx_free(ctx)
+        return None
+    if check_error(spng_set_option(ctx, SPNG_TEXT_WINDOW_BITS, 15),
+                   "failed to set window bits"):
+        spng_ctx_free(ctx)
+        return None
+    if check_error(spng_set_option(ctx, SPNG_IMG_COMPRESSION_STRATEGY, Z_HUFFMAN_ONLY),
+                   "failed to set compression strategy"):
+        spng_ctx_free(ctx)
+        return None
+    if check_error(spng_set_option(ctx, SPNG_IMG_MEM_LEVEL, MAX_MEM_LEVEL),
+                   "failed to set mem level"):
         spng_ctx_free(ctx)
         return None
 

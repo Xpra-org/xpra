@@ -254,6 +254,7 @@ Suggests:			sshpass
 BuildRequires:		xclip
 Requires:			libspng
 BuildRequires:		libspng-devel
+BuildRequires:		zlib-devel
 %endif
 %endif
 %description -n python3-xpra-client
