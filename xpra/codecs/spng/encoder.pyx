@@ -139,29 +139,31 @@ def encode(coding, image, options=None):
     cdef int speed = options.get("speed", 50)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
+    cdef int rowstride = image.get_rowstride()
     cdef int scaled_width = options.get("scaled-width", width)
     cdef int scaled_height = options.get("scaled-height", height)
     cdef char resize = scaled_width!=width or scaled_height!=height
 
     rgb_format = image.get_pixel_format()
     alpha = options.get("alpha", True)
-    if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4):
+    if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4) or rowstride!=width*len(rgb_format):
+        #best to restride before byte-swapping to trim extra unused data:
+        if rowstride!=width*len(rgb_format):
+            image.restride(width*len(rgb_format))
         from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
-        input_formats = INPUT_FORMATS
-        if resize:
-            input_formats = ("RGBA", )
-        if not argb_swap(image, input_formats, supports_transparency=alpha):
+        if not argb_swap(image, INPUT_FORMATS, supports_transparency=alpha):
             log("spng: argb_swap failed to convert %s to a suitable format: %s" % (
-                rgb_format, input_formats))
+                rgb_format, INPUT_FORMATS))
         log("spng converted %s to %s", rgb_format, image)
         rgb_format = image.get_pixel_format()
+        rowstride = image.get_rowstride()
 
     if resize:
         from xpra.codecs.argb.scale import scale_image
         image = scale_image(image, scaled_width, scaled_height)
         log("jpeg scaled image: %s", image)
 
-    assert rgb_format in ("RGB", "RGBA"), "unsupported input pixel format %s" % rgb_format
+    assert rgb_format in ("RGB", "RGBA", "RGBX"), "unsupported input pixel format %s" % rgb_format
 
     cdef spng_ctx *ctx = spng_ctx_new(SPNG_CTX_ENCODER)
     if ctx==NULL:
@@ -214,7 +216,7 @@ def encode(coding, image, options=None):
 
     cdef spng_format fmt = SPNG_FMT_PNG #SPNG_FMT_PNG
     cdef int flags = SPNG_ENCODE_FINALIZE
-    cdef size_t data_len
+    cdef size_t data_len = 0
     cdef uintptr_t data_ptr
     cdef int r = 0
     pixels = image.get_pixels()
@@ -228,6 +230,8 @@ def encode(coding, image, options=None):
         with nogil:
             r = spng_encode_image(ctx, <const void*> data_ptr, data_len, fmt, flags)
     if check_error(r, "failed to encode image"):
+        log.error(" %i bytes of %s pixel data", data_len, rgb_format)
+        log.error(" for %s", image)
         spng_ctx_free(ctx)
         return None
 
