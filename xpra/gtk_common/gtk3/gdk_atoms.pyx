@@ -51,6 +51,7 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
             str_name = bytestostr(name)
             gdk_atom = Gdk.Atom.intern(str_name, False)
             objects.append(gdk_atom)
+    PyBuffer_Release(&py_buf)
     return objects
 
 def gdk_atom_array_from_atoms(atoms):
