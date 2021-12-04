@@ -13,11 +13,6 @@ from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context #pylint: disabl
 from xpra.net.compression import Compressed
 
 
-cdef extern from "Python.h":
-    int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
-    void PyBuffer_Release(Py_buffer *view)
-    int PyBUF_ANY_CONTIGUOUS
-
 cdef extern from "spng.h":
     int SPNG_VERSION_MAJOR
     int SPNG_VERSION_MINOR
