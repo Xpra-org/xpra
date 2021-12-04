@@ -50,9 +50,10 @@ def get_info() -> dict:
             }
 
 
-def encode(coding : str, image, options):
+def encode(coding : str, image, options=None):
     assert coding in ("jpeg", "webp", "png", "png/P", "png/L"), "unsupported encoding: %s" % coding
     log("pillow.encode%s", (coding, image, options))
+    options = options or {}
     quality = options.get("quality", 50)
     speed = options.get("speed", 50)
     supports_transparency = options.get("alpha", True)
