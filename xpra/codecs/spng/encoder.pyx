@@ -135,7 +135,7 @@ def encode(coding, image, options=None):
 
     rgb_format = image.get_pixel_format()
     alpha = options.get("alpha", True)
-    if rgb_format not in INPUT_FORMATS or resize and len(rgb_format)!=4:
+    if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4):
         from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
         input_formats = INPUT_FORMATS
         if resize:
