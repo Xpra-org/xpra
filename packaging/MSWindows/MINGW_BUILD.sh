@@ -38,7 +38,7 @@ PYTHON=python3
 
 KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
-BUILD_OPTIONS="--without-enc_x265 --without-cuda_rebuild"
+BUILD_OPTIONS=""
 
 if [ "${CLIENT_ONLY}" == "1" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x264 --without-nvenc --without-nvfbc"
