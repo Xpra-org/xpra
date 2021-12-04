@@ -32,6 +32,15 @@ cdef extern from "spng.h":
         SPNG_ENCODE_PROGRESSIVE
         SPNG_ENCODE_FINALIZE
 
+    enum spng_filter_choice:
+        SPNG_DISABLE_FILTERING
+        SPNG_FILTER_CHOICE_NONE
+        SPNG_FILTER_CHOICE_SUB
+        SPNG_FILTER_CHOICE_UP
+        SPNG_FILTER_CHOICE_AVG
+        SPNG_FILTER_CHOICE_PAETH
+        SPNG_FILTER_CHOICE_ALL
+
     enum spng_option:
         SPNG_ENCODE_TO_BUFFER
         SPNG_KEEP_UNKNOWN_CHUNKS
@@ -127,6 +136,7 @@ def encode(coding, image, options=None):
     assert coding=="png"
     options = options or {}
     cdef int grayscale = options.get("grayscale", 0)
+    cdef int speed = options.get("speed", 50)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int scaled_width = options.get("scaled-width", width)
@@ -165,7 +175,7 @@ def encode(coding, image, options=None):
     if rgb_format=="RGBA":
         ihdr.color_type = SPNG_COLOR_TYPE_TRUECOLOR_ALPHA
     ihdr.compression_method = 0
-    ihdr.filter_method = SPNG_FILTER_NONE
+    ihdr.filter_method = 0
     ihdr.interlace_method = SPNG_INTERLACE_NONE
     if check_error(spng_set_ihdr(ctx, &ihdr),
                    "failed to set encode-to-buffer option"):
@@ -187,6 +197,13 @@ def encode(coding, image, options=None):
         return None
     if check_error(spng_set_option(ctx, SPNG_IMG_MEM_LEVEL, MAX_MEM_LEVEL),
                    "failed to set mem level"):
+        spng_ctx_free(ctx)
+        return None
+    cdef int filter = SPNG_FILTER_CHOICE_NONE
+    if speed<30:
+        filter |= SPNG_FILTER_CHOICE_SUB
+    if check_error(spng_set_option(ctx, SPNG_FILTER_CHOICE, filter),
+                   "failed to set filter choice"):
         spng_ctx_free(ctx)
         return None
 
