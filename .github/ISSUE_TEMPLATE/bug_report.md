@@ -24,4 +24,4 @@ Steps to reproduce the behavior:
 
 **Additional context**
 Add any other context about the problem here.
-Please see https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs
+Please see "reporting bugs" in the wiki section.
