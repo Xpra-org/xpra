@@ -14,9 +14,10 @@ from xpra.log import Logger
 
 log = Logger("rfb")
 
+PILLOW_OPTIONS = {"alpha" : False}
 
 def pillow_encode(encoding, img):
-    return encode(encoding, img, 90, 100, False, False, None)[1].data
+    return encode(encoding, img, PILLOW_OPTIONS)[1].data
 
 def make_header(encoding, x, y, w, h):
     fbupdate = struct.pack(b"!BBH", 0, 0, 1)
