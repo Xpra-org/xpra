@@ -325,6 +325,9 @@ cdef WebPPreset DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPR
 cdef WebPPreset PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET_SMALL", "icon").lower(), WEBP_PRESET_ICON)
 
 
+def get_type():
+    return "webp"
+
 def get_encodings():
     return ("webp", )
 
@@ -385,12 +388,13 @@ cdef get_config_info(WebPConfig *config):
         "low_memory"        : config.low_memory,
         }
 
-def encode(coding, image, options):
+def encode(coding, image, options=None):
     log("webp.encode(%s, %s, %s)", coding, image, options)
     assert coding=="webp"
     pixel_format = image.get_pixel_format()
     if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR"):
         raise Exception("unsupported pixel format %s" % pixel_format)
+    options = options or {}
     cdef unsigned int width = image.get_width()
     cdef unsigned int height = image.get_height()
     assert width<16384 and height<16384, "invalid image dimensions: %ix%i" % (width, height)
