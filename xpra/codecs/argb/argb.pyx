@@ -7,7 +7,7 @@
 #cython: boundscheck=False, wraparound=False
 
 from xpra.util import first_time
-from xpra.buffers.membuf cimport getbuf, padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
+from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context #pylint: disable=syntax-error
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
 
@@ -38,7 +38,7 @@ cdef bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
         return None
     assert rgb565_len>0 and rgb565_len % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % rgb565_len
-    cdef MemBuf output_buf = padbuf(rgb565_len*2, 2)
+    cdef MemBuf output_buf = getbuf(rgb565_len*2)
     cdef uint32_t *rgbx = <uint32_t*> output_buf.get_mem()
     cdef uint16_t v
     cdef unsigned int l = rgb565_len//2
@@ -59,7 +59,7 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
         return None
     assert rgb565_len>0 and rgb565_len % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % rgb565_len
-    cdef MemBuf output_buf = padbuf(rgb565_len*3//2, 3)
+    cdef MemBuf output_buf = getbuf(rgb565_len*3//2)
     cdef uint8_t *rgb = <uint8_t*> output_buf.get_mem()
     cdef uint32_t v, i
     cdef unsigned int l = rgb565_len//2
@@ -180,7 +180,7 @@ cdef bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     #number of pixels:
     cdef int mi = bgrx_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = padbuf(mi*3, 3)
+    cdef MemBuf output_buf = getbuf(mi*3)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
@@ -232,7 +232,7 @@ cdef argbdata_to_rgb(const unsigned int* argb, const int argb_len):
     #number of pixels:
     cdef int mi = argb_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = padbuf(mi*3, 3)
+    cdef MemBuf output_buf = getbuf(mi*3)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
@@ -261,7 +261,7 @@ cdef bgradata_to_rgb222(const unsigned char* bgra, const int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len//4                #@DuplicateSignature
     #1 byte per pixel:
-    cdef MemBuf output_buf = padbuf(mi, 0)
+    cdef MemBuf output_buf = getbuf(mi)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0                  #@DuplicateSignature
     with nogil:
@@ -286,7 +286,7 @@ cdef bgradata_to_rgb(const unsigned int* bgra, const int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = padbuf(mi*3, 3)
+    cdef MemBuf output_buf = getbuf(mi*3)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0
     cdef unsigned int p
