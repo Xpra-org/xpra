@@ -19,8 +19,8 @@ Steps to reproduce the behavior:
 **System Information (please complete the following information):**
  - Server OS: [e.g. RHEL 8.x]
  - Client OS: [e.g. Windows 10]
- - Server Version [e.g. 4.2.3]
- - Client Version [e.g. 4.3]
+ - Xpra Server Version [e.g. 4.2.3]
+ - Xpra Client Version [e.g. 4.3]
 
 **Additional context**
 Add any other context about the problem here.
