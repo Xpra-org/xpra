@@ -613,8 +613,9 @@ fi
 
 
 %changelog
-* Fri May 21 2021 Antoine Martin <antoine@xpra.org> 4.3-10
+* Sun Dec 05 2021 Antoine Martin <antoine@xpra.org> 4.3-10
 - TODO
+
 * Tue May 18 2021 Antoine Martin <antoine@xpra.org> 4.2-1
 - use pinentry for password prompts and ssh prompts
 - nvjpeg encoder

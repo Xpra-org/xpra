@@ -1,7 +1,7 @@
 xpra (4.3-1) UNRELEASED; urgency=low
   * TODO
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 21 May 2021 10:33:54 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 05 Dec 2021 22:49:50 +0700
 
 xpra (4.2-1) UNRELEASED; urgency=low
   * use pinentry for password prompts and ssh prompts
