@@ -695,12 +695,11 @@ class WindowVideoSource(WindowSource):
             if self.b_frame_flush_timer and exclude_region is None:
                 #a b-frame is already due, don't clobber it!
                 exclude_region = vr
-            speed_delta = quality_delta = 0
+            quality_pct = 100
             if vr:
                 #give a boost if we have a video region and this is not video:
-                quality_delta = 40
-                speed_delta = 0
-            novideo_options = self.assign_sq_options(options, speed_delta, quality_delta)
+                quality_pct = 140
+            novideo_options = self.assign_sq_options(options, quality_pct=quality_pct)
             WindowSource.do_send_delayed_regions(self, damage_time, regions, encoding, novideo_options,
                                                  exclude_region=exclude_region, get_best_encoding=get_best_encoding)
 
@@ -768,7 +767,7 @@ class WindowVideoSource(WindowSource):
                 send_nonvideo(encoding=None)
                 return
             #send this using the video encoder:
-            video_options = self.assign_sq_options(options, 0, -30)
+            video_options = self.assign_sq_options(options, quality_pct=70)
             #TODO: encode delay can be derived rather than hard-coded
             encode_delay = 50
             video_options["av-delay"] = max(0, self.get_frame_encode_delay(options) - encode_delay)

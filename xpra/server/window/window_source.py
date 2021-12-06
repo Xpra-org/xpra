@@ -1785,7 +1785,7 @@ class WindowSource(WindowIconSource):
             dr = delayed_regions
             self.do_send_delayed_regions(dr.damage_time, dr.regions, dr.encoding, dr.options)
 
-    def assign_sq_options(self, options, speed_delta=0, quality_delta=0):
+    def assign_sq_options(self, options, speed_pct=100, quality_pct=100):
         packets_backlog = None
         speed = options.get("speed", 0)
         if speed==0:
@@ -1795,7 +1795,8 @@ class WindowSource(WindowIconSource):
                 speed = self._current_speed
                 if packets_backlog is None:
                     packets_backlog = self.get_packets_backlog()
-                speed = min(100, max(1, self._fixed_min_speed, speed-packets_backlog*20+speed_delta))
+                speed = (speed - packets_backlog*20) * speed_pct // 100
+                speed = min(100, max(1, self._fixed_min_speed, speed))
         quality = options.get("quality", 0)
         if quality==0:
             if self._fixed_quality>0:
@@ -1811,7 +1812,8 @@ class WindowSource(WindowIconSource):
                     #at least for the first packet:
                     elapsed = now-self.statistics.last_packet_time
                     quality += int(elapsed*25)
-                quality = min(100, max(1, self._fixed_min_quality, quality-packets_backlog*20+quality_delta))
+                quality = (quality - packets_backlog*20) * quality_pct // 100
+                quality = min(100, max(1, self._fixed_min_quality, quality))
         eoptions = dict(options)
         eoptions.update({
             "quality"   : quality,
