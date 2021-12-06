@@ -45,6 +45,7 @@ from xpra.scripts.parsing import (
     parse_display_name, parse_env,
     fixup_defaults, validated_encodings, validate_encryption, do_parse_cmdline, show_sound_codec_help,
     supports_shadow, supports_server, supports_proxy, supports_mdns,
+    MODE_ALIAS,
     )
 from xpra.scripts.config import (
     OPTION_TYPES, TRUE_OPTIONS, FALSE_OPTIONS, OFF_OPTIONS,
@@ -135,6 +136,7 @@ def main(script_file, cmdline):
         if not args:
             raise InitExit(-1, "xpra: need a mode")
         mode = args.pop(0)
+        mode = MODE_ALIAS.get(mode, mode)
         def err(*args):
             raise InitException(*args)
         return run_mode(script_file, cmdline, err, options, args, mode, defaults)
@@ -1671,6 +1673,7 @@ def strip_defaults_start_child(start_child, defaults_start_child):
 
 
 def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
+    mode = MODE_ALIAS.get(mode, mode)
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     if mode in ("start", "start-desktop") and parse_bool("attach", options.attach) is True:
@@ -2950,14 +2953,10 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults):
             mode = m
             break
     print("Recovering display '%s' as a %s server" % (display, mode))
-    mode_cmd = {
-        "seamless"  : "start",
-        "desktop"   : "start-desktop",
-        }.get(mode, mode)
     #use the existing display:
     options.use_display = "yes"
     no_gtk()
-    return run_server(script_file, cmdline, error_cb, options, args, mode_cmd, defaults)
+    return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
 
 def run_displays(args):
     #dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs+opts.client_socket_dirs)

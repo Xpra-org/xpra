@@ -26,6 +26,11 @@ from xpra.scripts.config import (
     )
 
 
+MODE_ALIAS = {
+    "seamless"  : "start",
+    "desktop"   : "start-desktop",
+    }
+
 def enabled_str(v, true_str="yes", false_str="no") -> str:
     if v:
         return true_str
@@ -1836,7 +1841,8 @@ def do_parse_cmdline(cmdline, defaults):
                            "upgrade", "upgrade-desktop", "recover",
                            "listen", "launcher",
                            "bug-report", "encoding", "gui-info")
-    fixup_options(options, defaults, skip_encodings=len(args)==0 or args[0] not in NEED_ENCODING_MODES)
+    fixup_options(options, defaults, skip_encodings=len(args)==0 or
+                  MODE_ALIAS.get(args[0], args[0]) not in NEED_ENCODING_MODES)
 
     for x in ("dpi", "sync_xvfb"):
         try:
