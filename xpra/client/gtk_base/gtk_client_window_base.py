@@ -1142,15 +1142,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     self.set_size_constraints(self.size_constraints, self.max_window_size)
         self.when_realized("fullscreen", do_set_fullscreen)
 
-    def set_opaque_region(self, region=None):
-        if region and len(region)==4:
-            rect = RectangleInt(*self._client.srect(*region))
-            v = Region(rect)
-        else:
-            v = None
+    def set_opaque_region(self, rectangles=()):
+        #gtk can only set a single region!
+        r = Region()
+        for rect in rectangles:
+            rect = RectangleInt(*self._client.srect(*rect))
+            r = r.union(Region(rect))
         def do_set_region():
-            log("set_opaque_region(%s)", v)
-            self.get_window().set_opaque_region(v)
+            log("set_opaque_region(%s)", r)
+            self.get_window().set_opaque_region(r)
         self.when_realized("set-opaque-region", do_set_region)
 
 

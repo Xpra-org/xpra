@@ -471,7 +471,7 @@ class ClientWindowBase(ClientWidgetBase):
                 self.set_skip_pager_hint(skip_pager)
 
         if "opaque-region" in metadata:
-            opaque_region = metadata.inttupleget("opaque-region", None, 0)
+            opaque_region = metadata.tupleget("opaque-region", None, 0)
             if self._opaque_region!=opaque_region:
                 self._opaque_region = opaque_region
                 self.set_opaque_region(opaque_region)

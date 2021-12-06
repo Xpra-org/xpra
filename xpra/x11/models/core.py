@@ -615,13 +615,14 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("class-instance", class_instance)
 
     def _handle_opaque_region_change(self):
+        rectangles = []
         v = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
         if OPAQUE_REGION and len(v)%4==0:
-            region = v
-        else:
-            region = ()
-        metalog("_NET_WM_OPAQUE_REGION(%s)=%s (OPAQUE_REGION=%s)", v, region, OPAQUE_REGION)
-        self._updateprop("opaque-region", region)
+            while v:
+                rectangles.append(v[:4])
+                v = v[4:]
+        metalog("_NET_WM_OPAQUE_REGION(%s)=%s (OPAQUE_REGION=%s)", v, rectangles, OPAQUE_REGION)
+        self._updateprop("opaque-region", tuple(rectangles))
 
     #these handlers must not generate X11 errors (must use XSync)
     _x11_property_handlers = {

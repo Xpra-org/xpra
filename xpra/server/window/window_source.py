@@ -868,14 +868,12 @@ class WindowSource(WindowIconSource):
         self._want_alpha = self.is_tray or (self.has_alpha and self.supports_transparency)
         ww, wh = self.window_dimensions
         opr = self._opaque_region
-        if opr and len(opr)%4==0:
-            while opr:
-                r = rectangle(*(opr[:4]))
-                if r.contains(0, 0, ww, wh):
-                    #window is fully opaque
-                    self._want_alpha = False
-                    break
-                opr = opr[4:]
+        for coords in opr:
+            r = rectangle(*coords)
+            if r.contains(0, 0, ww, wh):
+                #window is fully opaque
+                self._want_alpha = False
+                break
         self._lossless_threshold_base = min(90, 60+self._current_speed//5 + int(cv*100))
         if self.content_type.find("text")>=0 or self.is_shadow:
             self._lossless_threshold_base -= 20
@@ -1977,15 +1975,14 @@ class WindowSource(WindowIconSource):
         image_depth = image.get_depth()
         opr = self._opaque_region
         if image_depth==32 and pixel_format.find("A")>=0 and opr:
-            while opr:
-                r = rectangle(*(opr[:4]))
+            for coords in opr:
+                r = rectangle(*coords)
                 if r.contains(x, y, w, h):
                     pixel_format = pixel_format.replace("A", "X")   #ie: BGRA -> BGRX
                     image.set_pixel_format(pixel_format)
                     image_depth = 24
                     log("removed alpha from image metadata: %s", pixel_format)
                     break
-                opr = opr[4:]
         self.image_depth = image_depth
         self.pixel_format = pixel_format
         return image

@@ -145,7 +145,7 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
     #it was just easier to handle them here
     #(convert to a type that can be encoded for xpra info):
     if propname in ("state", "protocols", "opaque-region"):
-        return {propname : tuple(raw() or [])}
+        return {propname : tuple(raw() or ())}
     if propname == "allowed-actions":
         return {propname : tuple(raw())}
     if propname == "frame":
