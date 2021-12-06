@@ -9,6 +9,7 @@
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
 
+%{!?nthreads: %global nthreads %(nproc)}
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
@@ -316,7 +317,7 @@ pushd xpra-%{version}
 rm -rf build install
 # set pkg_config_path for xpra video libs:
 CFLAGS="%{CFLAGS}" LDFLAGS="%{?LDFLAGS} -Wl,--as-needed" %{__python3} setup.py build \
-	-j `nproc` \
+	-j %{nthreads} \
 	%{build_args} \
 	--without-printing --without-cuda_kernels
 
