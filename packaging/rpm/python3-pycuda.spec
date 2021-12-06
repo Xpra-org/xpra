@@ -3,9 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%{!?__python3: %define __python3 python3}
-%{!?python3_sitearch: %global python3_sitearch %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-
 #we don't want to depend on libcuda via RPM dependencies
 #so that we can install NVidia drivers without using RPM packages:
 %define __requires_exclude ^libcuda.*$

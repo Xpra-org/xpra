@@ -1,5 +1,3 @@
-%{!?__python3: %define __python3 python3}
-%{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %define _disable_source_fetch 0
 %global debug_package %{nil}
 
