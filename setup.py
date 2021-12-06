@@ -2057,6 +2057,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 break
     else:
         nvcc_exe = "nvcc"
+        path_options += ["/usr/local/cuda/bin", "/opt/cuda/bin"]
         path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
         path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
     options = [os.path.join(x, nvcc_exe) for x in path_options]
