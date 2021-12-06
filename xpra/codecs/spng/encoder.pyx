@@ -5,12 +5,17 @@
 
 #cython: wraparound=False
 
+from time import time
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context #pylint: disable=syntax-error
+from xpra.util import envbool
 from xpra.net.compression import Compressed
+
+SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE", False)
+
 
 cdef extern from "zconf.h":
     int MAX_MEM_LEVEL
@@ -250,6 +255,11 @@ def encode(coding, image, options=None):
     cdef membuf = makebuf(png_data, png_len)
     spng_ctx_free(ctx)
     cdata = memoryview(membuf)
+    if SAVE_TO_FILE:    # pragma: no cover
+        filename = "./%s.png" % time()
+        with open(filename, "wb") as f:
+            f.write(cdata)
+        log.info("saved png to %s", filename)
     return coding, Compressed(coding, cdata), {}, width, height, 0, len(rgb_format)*8
 
 
