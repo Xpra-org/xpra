@@ -29,6 +29,7 @@ class NotificationClient(StubClientMixin):
         self.notifications_enabled = False
         self.notifier = None
         self.tray = None
+        self.callbacks = {}
         #override the default handler in client base:
         self.may_notify = self.do_notify
 
@@ -84,12 +85,19 @@ class NotificationClient(StubClientMixin):
     def notification_closed(self, nid, reason=3, text=""):
         log("notification_closed(%i, %i, %s) server notification.close=%s",
             nid, reason, text, self.server_notifications_close)
-        if self.server_notifications_close:
+        callback = self.callbacks.pop(nid, None)
+        if callback:
+            callback("notification-close", nid, reason, text)
+        elif self.server_notifications_close:
             self.send("notification-close", nid, reason, text)
 
     def notification_action(self, nid, action_id):
         log("notification_action(%i, %s)", nid, action_id)
-        self.send("notification-action", nid, action_id)
+        callback = self.callbacks.get(nid, None)
+        if callback:
+            callback("notification-action", nid, action_id)
+        else:
+            self.send("notification-action", nid, action_id)
 
     def get_notifier_classes(self):
         #subclasses will generally add their toolkit specific variants
@@ -99,10 +107,13 @@ class NotificationClient(StubClientMixin):
             return []
         return get_native_notifier_classes()
 
-    def do_notify(self, nid, summary, body, actions=(), hints=None, expire_timeout=10*1000, icon_name=None):
+    def do_notify(self, nid, summary, body, actions=(),
+                  hints=None, expire_timeout=10*1000, icon_name=None, callback=None):
         log("do_notify%s client_supports_notifications=%s, notifier=%s",
             (nid, summary, body, actions, hints, expire_timeout, icon_name),
             self.client_supports_notifications, self.notifier)
+        if callback:
+            self.callbacks[nid] = callback
         n = self.notifier
         if not self.client_supports_notifications or not n:
             #just log it instead:

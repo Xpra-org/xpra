@@ -1095,15 +1095,36 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             window.get_window().restack(other_window, above)  #Above=0
 
     def opengl_setup_failure(self, summary = "Xpra OpenGL Acceleration Failure", body=""):
+        OK = "0"
+        DISABLE = "1"
+        def notify_callback(event, nid, action_id, *args):
+            log("notify_callback(%s, %s, %s, %s)", event, nid, action_id, args)
+            if event=="notification-action" and nid==XPRA_OPENGL_NOTIFICATION_ID and action_id==DISABLE:
+                from xpra.platform.paths import get_user_conf_dirs
+                dirs = get_user_conf_dirs()
+                for d in dirs:
+                    conf_file = os.path.join(d, "xpra.conf")
+                    try:
+                        with open(conf_file, 'ab') as f:
+                            f.write(b"\n")
+                            f.write(b"# user chose to disable the opengl warning:\n")
+                            f.write(b"opengl=nowarn\n")
+                        log.info("OpenGL warning will be silenced from now on,")
+                        log.info(" '%s' has been updated", conf_file)
+                    except OSError:
+                        log("failed to create / append to config file '%s'", conf_file, exc_info=True)
         def delayed_notify():
-            if self.exit_code is None:
-                if OSX:
-                    #don't bother logging an error on MacOS,
-                    #OpenGL is being deprecated
-                    log.info(summary)
-                    log.info(body)
-                else:
-                    self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, icon_name="opengl")
+            if self.exit_code is not None:
+                return
+            if OSX:
+                #don't bother logging an error on MacOS,
+                #OpenGL is being deprecated
+                log.info(summary)
+                log.info(body)
+                return
+            actions = (OK, "OK", DISABLE, "Disable this warning")
+            self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, actions,
+                            icon_name="opengl", callback=notify_callback)
         #wait for the main loop to run:
         self.timeout_add(2*1000, delayed_notify)
 
