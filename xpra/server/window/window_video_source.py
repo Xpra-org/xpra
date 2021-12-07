@@ -433,17 +433,18 @@ class WindowVideoSource(WindowSource):
         return super().get_best_encoding_impl_default()
 
 
-    def get_best_encoding_video(self, ww, wh, speed, quality, current_encoding):
+    def get_best_encoding_video(self, ww, wh, options, current_encoding):
         """
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
         """
         pixel_count = ww*wh
-        def nonvideo(q=quality, info=""):
-            s = max(0, min(100, speed))
-            q = max(0, min(100, q))
-            log("nonvideo(%i, %s)", q, info)
-            return WindowSource.get_auto_encoding(self, ww, wh, s, q)
+        def nonvideo(qdiff=None, info=""):
+            if qdiff:
+                quality = options.get("quality", self._current_quality) + qdiff
+                options["quality"] = max(self._fixed_min_quality, min(100, quality))
+            log("nonvideo(%i, %s)", qdiff, info)
+            return WindowSource.get_auto_encoding(self, ww, wh, options)
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
         #    (pixel_count, ww, wh, speed, quality, current_encoding), self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
@@ -491,7 +492,7 @@ class WindowVideoSource(WindowSource):
         if sr and ((sr.width&self.width_mask)!=cww or (sr.height&self.height_mask)!=cwh):
             #we have a video region, and this is not it, so don't use video
             #raise the quality as the areas around video tend to not be updating as quickly
-            return nonvideo(quality+30, "not the video region")
+            return nonvideo(30, "not the video region")
 
         if not video_hint and not self.is_shadow:
             if now-self.global_statistics.last_congestion_time>5:
@@ -499,14 +500,15 @@ class WindowVideoSource(WindowSource):
                 lim = now-4
                 pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when>lim)
                 if pixels_last_4secs<((3+text_hint*6)*videomin):
-                    return nonvideo(quality+30, "not enough frames")
+                    return nonvideo(30, "not enough frames")
                 lim = now-1
                 pixels_last_sec = sum(w*h for when,_,_,w,h in lde if when>lim)
                 if pixels_last_sec<pixels_last_4secs//8:
                     #framerate is dropping?
-                    return nonvideo(quality+30, "framerate lowered")
+                    return nonvideo(30, "framerate lowered")
 
             #calculate the threshold for using video vs small regions:
+            speed = options.get("speed", self._current_speed)
             factors = (max(1, (speed-75)/5.0),                      #speed multiplier
                        1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
                        max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
@@ -515,12 +517,12 @@ class WindowVideoSource(WindowSource):
             max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
             if pixel_count<=max_nvp:
                 #below threshold
-                return nonvideo(quality+30, "not enough pixels")
+                return nonvideo(30, "not enough pixels")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, ww, wh, speed, quality, current_encoding=None, encoding_options=()):
+    def get_best_nonvideo_encoding(self, ww, wh, options, current_encoding=None, encoding_options=()):
         if self.encoding=="grayscale":
-            return self.encoding_is_grayscale(ww, wh, speed, quality, current_encoding or self.encoding)
+            return self.encoding_is_grayscale(ww, wh, options, current_encoding or self.encoding)
         #if we're here, then the window has no alpha (or the client cannot handle alpha)
         #and we can ignore the current encoding
         encoding_options = encoding_options or self.non_video_encodings
@@ -529,7 +531,7 @@ class WindowVideoSource(WindowSource):
             return "png/P"
         if self._mmap_size>0:
             return "mmap"
-        return super().do_get_auto_encoding(ww, wh, speed, quality, current_encoding or self.encoding, encoding_options)
+        return super().do_get_auto_encoding(ww, wh, options, current_encoding or self.encoding, encoding_options)
 
 
     def do_damage(self, ww, wh, x, y, w, h, options):
@@ -621,7 +623,11 @@ class WindowVideoSource(WindowSource):
         #could have been cleared by another thread:
         if vr:
             w, h = vr.width, vr.height
-        return self.get_best_nonvideo_encoding(w, h, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY,
+        options = {
+            "speed"     : AUTO_REFRESH_SPEED,
+            "quality"   : AUTO_REFRESH_QUALITY,
+            }
+        return self.get_best_nonvideo_encoding(w, h, options,
                                                self.auto_refresh_encodings[0], self.auto_refresh_encodings)
 
     def remove_refresh_region(self, region):
@@ -1676,6 +1682,8 @@ class WindowVideoSource(WindowSource):
     def setup_pipeline_option(self, width, height, src_format,
                       _score, scaling, _csc_scaling, csc_width, csc_height, csc_spec,
                       enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec):
+        options = typedict(self.encoding_options)
+        self.assign_sq_options(options)
         min_w = 1
         min_h = 1
         max_w = 16384
@@ -1690,7 +1698,9 @@ class WindowVideoSource(WindowSource):
             max_h = min(max_h, csc_spec.max_h)
             #csc speed is not very important compared to encoding speed,
             #so make sure it never degrades quality
-            csc_speed = min(speed, 100-quality/2.0)
+            speed = options.get("speed", self._current_speed)
+            quality = options.get("quality", self._current_quality)
+            csc_speed = max(1, min(speed, 100-quality/2.0))
             csc_start = monotonic()
             csce = csc_spec.make_instance()
             csce.init_context(csc_width, csc_height, src_format,
@@ -1716,7 +1726,6 @@ class WindowVideoSource(WindowSource):
         #FIXME: filter dst_formats to only contain formats the encoder knows about?
         dst_formats = self.full_csc_modes.strtupleget(encoder_spec.encoding)
         ve = encoder_spec.make_instance()
-        options = typedict(self.encoding_options)
         options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
         if self.encoding=="grayscale":
             options["grayscale"] = True
@@ -1954,18 +1963,18 @@ class WindowVideoSource(WindowSource):
         del scrolls
         #send the rest as rectangles:
         if non_scroll:
-            speed = options.get("speed", self._current_speed)
-            quality = options.get("quality", self._current_quality)
             #boost quality a bit, because lossless saves refreshing,
             #more so if we have a high match percentage (less to send):
             if self._fixed_quality<=0:
+                quality = options.get("quality", self._current_quality)
                 quality = min(100, quality + max(60, match_pct)//2)
+                options["quality"] = quality
             nsstart = monotonic()
             client_options = options.copy()
             for sy, sh in non_scroll.items():
                 substart = monotonic()
                 sub = image.get_sub_image(0, sy, w, sh)
-                encoding = self.get_best_nonvideo_encoding(w, sh, speed, quality)
+                encoding = self.get_best_nonvideo_encoding(w, sh, options)
                 assert encoding, "no nonvideo encoding found for %ix%i screen update" % (w, sh)
                 encode_fn = self._encoders[encoding]
                 ret = encode_fn(encoding, sub, options)
@@ -2044,9 +2053,7 @@ class WindowVideoSource(WindowSource):
             videolog.warn(" for %s of window %s" % (image, self.wid))
         w = image.get_width()
         h = image.get_height()
-        speed = options.get("speed", self._current_speed)
-        quality = options.get("quality", self._current_quality)
-        encoding = self.do_get_auto_encoding(w, h, speed, quality, None, self.non_video_encodings)
+        encoding = self.do_get_auto_encoding(w, h, options, None, self.non_video_encodings)
         if not encoding:
             return None
         encode_fn = self._encoders[encoding]

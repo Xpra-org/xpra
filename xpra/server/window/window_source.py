@@ -998,7 +998,7 @@ class WindowSource(WindowIconSource):
             return "png/L"
         return e
 
-    def get_transparent_encoding(self, w, h, speed, quality, current_encoding):
+    def get_transparent_encoding(self, w, h, options, current_encoding):
         #small areas prefer rgb, also when high speed and high quality
         if current_encoding in TRANSPARENCY_ENCODINGS:
             return current_encoding
@@ -1007,6 +1007,7 @@ class WindowSource(WindowIconSource):
         co = tuple(e for e in self.common_encodings if e in TRANSPARENCY_ENCODINGS)
         if not co and current_encoding:
             return current_encoding
+        quality = options.get("quality", self._current_quality)
         lossy = quality<100
         if "rgb32" in co and (
                 (pixel_count<self._rgb_auto_threshold) or
@@ -1026,16 +1027,19 @@ class WindowSource(WindowIconSource):
             if e in co:
                 return e
         #so we don't have an encoding that does transparency... any will do:
-        return self.get_auto_encoding(w, h, speed, quality, current_encoding)
+        return self.get_auto_encoding(w, h, options, current_encoding)
 
-    def get_auto_encoding(self, w, h, speed, quality, current_encoding=None):
-        return self.do_get_auto_encoding(w, h, speed, quality, current_encoding, self.common_encodings)
+    def get_auto_encoding(self, w, h, options, current_encoding=None):
+        return self.do_get_auto_encoding(w, h, options, current_encoding, self.common_encodings)
 
-    def do_get_auto_encoding(self, w, h, speed, quality, current_encoding, encoding_options):
+    def do_get_auto_encoding(self, w, h, options, current_encoding, encoding_options):
         co = encoding_options
         depth = self.image_depth
         grayscale = self.encoding=="grayscale"
         alpha = self._want_alpha or self.is_tray
+        quality = options.get("quality", 0)
+        if self._lossless_threshold_base<quality<100 and self._fixed_quality<=0:
+            quality = 100
         if w*h<self._rgb_auto_threshold and not grayscale:
             if depth>24 and self.client_bit_depth>24 and "rgb32" in co:
                 return "rgb32"
@@ -1836,15 +1840,7 @@ class WindowSource(WindowIconSource):
         options = self.assign_sq_options(options)
         get_best_encoding = get_best_encoding or self.get_best_encoding
         def get_encoding(w, h):
-            speed = options.get("speed", 0)
-            quality = options.get("quality", 0)
-            if quality<100 and self._fixed_quality<=0:
-                lossless_q = self._lossless_threshold_base + self._lossless_threshold_pixel_boost * w*h // (ww*wh)
-                if quality>=lossless_q:
-                    quality = 100
-                    #lossless uses more bandwidth, try harder to compress it:
-                    speed = max(self._fixed_min_speed, speed-30)
-            return get_best_encoding(w, h, speed, quality, coding)
+            return get_best_encoding(w, h, options, coding)
 
         def send_full_window_update(cause):
             actual_encoding = get_encoding(ww, wh)
@@ -2245,12 +2241,11 @@ class WindowSource(WindowIconSource):
                                                  exclude_region=refresh_exclude, get_best_encoding=self.get_refresh_encoding)
         return False
 
-    def get_refresh_encoding(self, w, h, speed, quality, coding):
+    def get_refresh_encoding(self, w, h, options, coding):
         refresh_encodings = self.auto_refresh_encodings
-        encoding = self.do_get_auto_encoding(w, h,
-                                             self.refresh_speed, self.refresh_quality,
+        encoding = self.do_get_auto_encoding(w, h, options,
                                              refresh_encodings[0], refresh_encodings)
-        refreshlog("get_refresh_encoding(%i, %i, %i, %i, %s)=%s", w, h, speed, quality, coding, encoding)
+        refreshlog("get_refresh_encoding(%i, %i, %s, %s)=%s", w, h, options, coding, encoding)
         return encoding
 
     def get_refresh_exclude(self):
