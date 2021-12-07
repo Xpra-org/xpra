@@ -12,8 +12,12 @@ from xpra.codecs.image_wrapper import ImageWrapper
 N = 10
 CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg")
 
+#options = {"grayscale" : True}
+options = {}
+
+
 def main(fmt="png", files=()):
-    assert len(files)>1, "specify images to benchmark"
+    assert len(files)>0, "specify images to benchmark"
     from xpra.net import compression
     compression.init_all()
     from xpra.codecs.loader import load_codec, get_codec
@@ -43,7 +47,7 @@ def main(fmt="png", files=()):
             start = monotonic()
             for _ in range(N):
                 try:
-                    r = enc.encode(fmt, image)
+                    r = enc.encode(fmt, image, options)
                 except Exception:
                     print("error on %s %s" % (enc.get_type(), enc.encode))
                     raise
