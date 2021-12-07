@@ -10,6 +10,11 @@
 %define _disable_source_fetch 0
 %global debug_package %{nil}
 
+%define STUBS_DIR targets/x86_64-linux/lib/stubs/
+%ifarch aarch64
+%define STUBS_DIR targets/sbsa-linux/lib/stubs/
+%endif
+
 Name:           python3-pycuda
 Version:        2021.1
 Release:        1
@@ -59,12 +64,12 @@ CUDA=/opt/cuda
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
-LDFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ CXXFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ %{__python3} setup.py build
+LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py build
 #make
 
 %install
 CUDA=/opt/cuda
-LDFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ CXXFLAGS=-L$CUDA/targets/x86_64-linux/lib/stubs/ %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
+LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{__python3} setup.py install --prefix=%{_prefix} --root=%{buildroot}
 
 %clean
 rm -rf %{buildroot}
