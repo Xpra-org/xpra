@@ -695,6 +695,9 @@ cdef class XShmWrapper(object):
         for i in range(size):
             colors[i].flags = DoRed | DoGreen | DoBlue
             colors[i].pixel = i
+        for i in range(size, 256):
+            colors[i].flags = 0
+            colors[i].pixel = 0
         XQueryColors(self.display, colormap, colors, size)
         palette = [(colors[i].red, colors[i].green, colors[i].blue) for i in range(256)]
         return palette
