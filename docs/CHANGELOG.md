@@ -2,47 +2,47 @@
 
 ## [4.3] 2021-12-05
 * Platforms, build and packaging:
-	* arm64 support #3291, including nvenc and nvjpeg: #3378
-	* non-system header builds (eg: conda): #3360
-	* fixed MacOS shadow start via ssh: #3343
-	* parallel builds: #3255
-	* don't ship too may pillow plugins: #3133
-	* easier access to documentation: #3015
-	* Python 3.10 buffer api compatibility: #3031
+	* [arm64 support](https://github.com/Xpra-org/xpra/issues/3291), including [nvenc and nvjpeg](https://github.com/Xpra-org/xpra/issues/3378)
+	* [non-system header builds (eg: conda)](https://github.com/Xpra-org/xpra/issues/3360)
+	* [fixed MacOS shadow start via ssh](https://github.com/Xpra-org/xpra/issues/3343)
+	* [parallel builds](https://github.com/Xpra-org/xpra/issues/3255)
+	* [don't ship too may pillow plugins](https://github.com/Xpra-org/xpra/issues/3133)
+	* [easier access to documentation](https://github.com/Xpra-org/xpra/issues/3015)
+	* [Python 3.10 buffer api compatibility](https://github.com/Xpra-org/xpra/issues/3031)
 * Misc:
-	* make it easier to silence OpenGL validation warnings: #3380
-	* don't wait for printers: #3170
-	* make it easier to autostart: #3134
-	* 'clean' subcommand: #3099
-	* flexible 'run_scaled' subcommand: #3303
-	* more flexible key shortcuts configuration: #3183
+	* [make it easier to silence OpenGL validation warnings](https://github.com/Xpra-org/xpra/issues/3380)
+	* [don't wait for printers](https://github.com/Xpra-org/xpra/issues/3170)
+	* [make it easier to autostart](https://github.com/Xpra-org/xpra/issues/3134)
+	* ['clean' subcommand](https://github.com/Xpra-org/xpra/issues/3099)
+	* [flexible 'run_scaled' subcommand](https://github.com/Xpra-org/xpra/issues/3303)
+	* [more flexible key shortcuts configuration](https://github.com/Xpra-org/xpra/issues/3183)
 * Encodings and latency:
-	* significant latency and performance improvements: #3337
-	* spng decoder #3373 and encoder: #3374
-	* jpeg with transparency: #3367
-	* faster argb module: #3361
-	* faster nvjpeg module using CUDA, add transparency: #2984
-	* faster xshape scaling: #1226
-	* downscale jpeg and webp: #3333
-	* disable av-sync for applications without audio: #3351
-	* opaque region support: #3317
-	* show FPS on client window: #3311
-	* nvenc to use the same device context as nvjpeg: #3195
-	* nvenc disable unsupported presets: #3136
+	* [significant latency and performance improvements](https://github.com/Xpra-org/xpra/issues/3337)
+	* [spng decoder](https://github.com/Xpra-org/xpra/issues/3373) and [encoder](https://github.com/Xpra-org/xpra/issues/3374)
+	* [jpeg with transparency](https://github.com/Xpra-org/xpra/issues/3367)
+	* [faster argb module](https://github.com/Xpra-org/xpra/issues/3361)
+	* [faster nvjpeg module using CUDA, add transparency](https://github.com/Xpra-org/xpra/issues/2984)
+	* [faster xshape scaling](https://github.com/Xpra-org/xpra/issues/1226)
+	* [downscale jpeg and webp](https://github.com/Xpra-org/xpra/issues/3333)
+	* [disable av-sync for applications without audio](https://github.com/Xpra-org/xpra/issues/3351)
+	* [opaque region support](https://github.com/Xpra-org/xpra/issues/3317)
+	* [show FPS on client window](https://github.com/Xpra-org/xpra/issues/3311)
+	* [nvenc to use the same device context as nvjpeg](https://github.com/Xpra-org/xpra/issues/3195)
+	* [nvenc disable unsupported presets](https://github.com/Xpra-org/xpra/issues/3136)
 * Network:
-	* make it easier to use SSL: #3299
-	* support more AES modes: GCM, CFB and CTR, #3247
-	* forked rencodeplus encoder: #3229
+	* [make it easier to use SSL](https://github.com/Xpra-org/xpra/issues/3299)
+	* [support more AES modes: GCM, CFB and CTR](https://github.com/Xpra-org/xpra/issues/3247)
+	* [forked rencodeplus encoder](https://github.com/Xpra-org/xpra/issues/3229)
 * Server:
-	* shadow specific areas or monitors: #3320
-	* faster icon lookup: #3326
-	* don't trust _NET_WM_PID: #3251
-	* move all sessions to a sub-directory: #3217
-	* more reliable server cleanup: #3218
-	* better VNC support: #3256
-	* more seamless server upgrades: #541
-	* source /etc/profile: #3083
-	* switch input method to ibus: #2359
+	* [shadow specific areas or monitors](https://github.com/Xpra-org/xpra/issues/3320)
+	* [faster icon lookup](https://github.com/Xpra-org/xpra/issues/3326)
+	* [don't trust _NET_WM_PID](https://github.com/Xpra-org/xpra/issues/3251)
+	* [move all sessions to a sub-directory](https://github.com/Xpra-org/xpra/issues/3217)
+	* [more reliable server cleanup](https://github.com/Xpra-org/xpra/issues/3218)
+	* [better VNC support](https://github.com/Xpra-org/xpra/issues/3256)
+	* [more seamless server upgrades](https://github.com/Xpra-org/xpra/issues/541)
+	* [source /etc/profile](https://github.com/Xpra-org/xpra/issues/3083)
+	* [switch input method to ibus](https://github.com/Xpra-org/xpra/issues/2359)
 
 
 ## [4.2] 2021-05-18
