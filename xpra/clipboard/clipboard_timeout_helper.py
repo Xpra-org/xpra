@@ -89,7 +89,6 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
             selection, target = self._clipboard_outstanding_requests.pop(request_id)[1:]
         except KeyError:
             log.warn("Warning: clipboard request id %i not found", request_id)
-            log.warn(" selection=%s, target=%s", selection, target)
             return
         finally:
             self.progress()
