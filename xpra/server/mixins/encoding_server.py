@@ -45,17 +45,15 @@ class EncodingServer(StubServerMixin):
         getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
 
     def setup(self):
-        #always load pillow early,
-        #so we have png and jpeg support before calling threaded_setup
+        #essential codecs, load them early:
+        load_codec("enc_rgb")
         load_codec("enc_pillow")
         self.init_encodings()
 
     def threaded_setup(self):
         #load video codecs:
         getVideoHelper().init()
-        #and load the picture codecs:
-        load_codec("enc_rgb")
-        load_codec("enc_pillow")
+        #load the other picture codecs:
         ae = self.allowed_encodings
         if "jpeg" in ae:
             #try to load the fast jpeg encoders:
