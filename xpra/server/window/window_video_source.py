@@ -447,7 +447,8 @@ class WindowVideoSource(WindowSource):
             return WindowSource.get_auto_encoding(self, ww, wh, options)
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
-        #    (pixel_count, ww, wh, speed, quality, current_encoding), self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
+        #    (pixel_count, ww, wh, speed, quality, current_encoding),
+        #     self.non_video_encodings, self.common_video_encodings, self.supports_scrolling)
         if not self.non_video_encodings:
             return current_encoding
         if not self.common_video_encodings and not self.supports_scrolling:
@@ -509,11 +510,12 @@ class WindowVideoSource(WindowSource):
 
             #calculate the threshold for using video vs small regions:
             speed = options.get("speed", self._current_speed)
-            factors = (max(1, (speed-75)/5.0),                      #speed multiplier
-                       1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
-                       max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
-                       1.0 / (int(bool(self._video_encoder)) + 1),  #if we have a video encoder already, make it more likely we'll use it:
-                       )
+            factors = (
+                max(1, (speed-75)/5.0),                      #speed multiplier
+                1 + int(self.is_OR or self.is_tray)*2,       #OR windows tend to be static
+                max(1, 10-self._sequence),                   #gradual discount the first 9 frames, as the window may be temporary
+                1.0 / (int(bool(self._video_encoder)) + 1),  #if we have a video encoder already, make it more likely we'll use it:
+                )
             max_nvp = int(reduce(operator.mul, factors, MAX_NONVIDEO_PIXELS))
             if pixel_count<=max_nvp:
                 #below threshold
@@ -1992,7 +1994,8 @@ class WindowVideoSource(WindowSource):
                 #    #hard-coded for BGRA!
                 #    from xpra.os_util import memoryview_to_bytes
                 #    from PIL import Image
-                #    im = Image.frombuffer("RGBA", (w, sh), memoryview_to_bytes(sub.get_pixels()), "raw", "BGRA", sub.get_rowstride(), 1)
+                #    im = Image.frombuffer("RGBA", (w, sh), memoryview_to_bytes(sub.get_pixels()),
+                #                          "raw", "BGRA", sub.get_rowstride(), 1)
                 #    filename = "./scroll-%i-%i.png" % (self._sequence, len(non_scroll)-flush)
                 #    im.save(filename, "png")
                 #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
@@ -2118,7 +2121,7 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options)
 
         if self.encoding=="grayscale":
-            from xpra.codecs.csc_libyuv.colorspace_converter import argb_to_gray    #@UnresolvedImport
+            from xpra.codecs.csc_libyuv.colorspace_converter import argb_to_gray    #@UnresolvedImport pylint: disable=import-outside-toplevel
             image = argb_to_gray(image)
 
         vh = self.video_helper
