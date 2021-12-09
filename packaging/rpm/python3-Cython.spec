@@ -7,7 +7,7 @@ Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://github.com/cython/cython/archive/refs/tags/cython-%{version}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/09/45/10c39337ba73c38a798165f97e4798827a532eaac71071842cbe0ee13dc5/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python3
 
@@ -21,7 +21,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "dcee4374bff7a0fbd6802dacaf77b2edb1c1324380f11b8646acae9f9efa4fcc" ]; then
+if [ "${sha256}" != "a87cbe3756e7c464acf3e9420d8741e62d3b2eace0846cb39f664ad378aab284" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
