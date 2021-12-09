@@ -1292,7 +1292,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if metadata.intget("transient-for", 0)>0:
                 log("not using opengl for transient-for window")
                 return False
-            if metadata.strget("content-type").find("text")>=0:
+            if metadata.strget("content-type", "").find("text")>=0:
                 return False
         if WIN32:
             #these checks can't be forced ('opengl_force')
