@@ -494,6 +494,7 @@ def load_binary_file(filename) -> bytes:
         with open(filename, "rb") as f:
             return f.read()
     except Exception as e:  # pragma: no cover
+        get_util_logger().debug("load_binary_file(%s)", filename, exc_info=True)
         get_util_logger().warn("Warning: failed to load '%s':", filename)
         get_util_logger().warn(" %s", e)
         return None
