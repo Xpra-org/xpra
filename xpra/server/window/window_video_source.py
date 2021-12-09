@@ -443,7 +443,7 @@ class WindowVideoSource(WindowSource):
             if qdiff:
                 quality = options.get("quality", self._current_quality) + qdiff
                 options["quality"] = max(self._fixed_min_quality, min(100, quality))
-            log("nonvideo(%i, %s)", qdiff, info)
+            log("nonvideo(%s, %s)", qdiff, info)
             return WindowSource.get_auto_encoding(self, ww, wh, options)
 
         #log("get_best_encoding_video%s non_video_encodings=%s, common_video_encodings=%s, supports_scrolling=%s",
