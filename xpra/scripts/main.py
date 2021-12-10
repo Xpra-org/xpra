@@ -212,7 +212,7 @@ def configure_logging(options, mode):
         )
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
-        "start", "start-desktop", "upgrade", "upgrade-desktop", "recover",
+        "start", "start-desktop", "upgrade", "upgrade-seamless", "upgrade-desktop", "recover",
         "attach", "listen", "shadow", "proxy",
         "_sound_record", "_sound_play",
         "stop", "print", "showconfig",
@@ -365,7 +365,11 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         warn("\nWarning: running as root")
 
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock")
-    if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow") and not display_is_remote:
+    if mode in (
+        "start", "start-desktop",
+        "upgrade", "upgrade-seamless", "upgrade-desktop",
+        "shadow",
+        ) and not display_is_remote:
         if use_systemd_run(options.systemd_run):
             #make sure we run via the same interpreter,
             #inject it into the command line if we have to:
@@ -399,14 +403,19 @@ def run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
         #sound commands don't want to set the name
         #(they do it later to prevent glib import conflicts)
         #"attach" does it when it received the session name from the server
-        if mode not in ("attach", "listen", "start", "start-desktop", "upgrade", "upgrade-desktop", "proxy", "shadow"):
+        if mode not in (
+            "attach", "listen",
+            "start", "start-desktop",
+            "upgrade", "upgrade-seamless", "upgrade-desktop",
+            "proxy", "shadow",
+            ):
             from xpra.platform import set_name
             set_name("Xpra", "Xpra %s" % mode.strip("_"))
 
     if mode in (
         "start", "start-desktop",
         "shadow", "attach", "listen",
-        "upgrade", "upgrade-desktop",
+        "upgrade", "upgrade-seamless", "upgrade-desktop",
         "recover",
         "request-start", "request-start-desktop", "request-shadow",
         ):
@@ -441,7 +450,11 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
                     noerr(sys.stdout.write, "existing live display found, attaching")
                     return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
 
-    if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow", "proxy"):
+    if mode in (
+        "start", "start-desktop",
+        "upgrade", "upgrade-seamless", "upgrade-desktop",
+        "shadow", "proxy",
+        ):
         return run_server(script_file, cmdline, error_cb, options, args, mode, defaults)
     elif mode in (
         "attach", "listen", "detach",
@@ -1706,17 +1719,20 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
             if scaling==(1, 1):
                 options.resize_display = "%ix%i" % (root_w, root_h)
 
-    if mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and (OSX or WIN32):
+    if mode in (
+        "start", "start-desktop",
+        "upgrade", "upgrade-seamless", "upgrade-desktop",
+        ) and (OSX or WIN32):
         raise InitException("%s is not supported on this platform" % mode)
 
     if (
-        mode in ("start", "start-desktop", "upgrade", "upgrade-desktop") and not supports_server
+        mode in ("start", "start-desktop", "upgrade", "upgrade-seamless", "upgrade-desktop") and not supports_server
         ) or (
         mode=="shadow" and not supports_shadow
         ) or (
         mode=="proxy" and not supports_proxy
         ) or (
-        mode not in ("start", "start-desktop", "upgrade", "upgrade-desktop", "shadow", "proxy")
+        mode not in ("start", "start-desktop", "upgrade", "upgrade-seamless", "upgrade-desktop", "shadow", "proxy")
         ):
         raise InitException("%s is not supported by this local installation" % mode)
 

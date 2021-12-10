@@ -33,7 +33,7 @@ from xpra.scripts.config import (
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     )
 from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
-from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK, EXIT_FAILURE
+from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK, EXIT_FAILURE, EXIT_UPGRADE
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
     FDChangeCaptureContext,
@@ -467,12 +467,16 @@ SERVER_LOAD_SKIP_OPTIONS = (
     "start-child-on-last-client-exit",
     )
 
-def get_options_file_contents(opts):
+def get_options_file_contents(opts, mode="seamless"):
     from xpra.scripts.parsing import fixup_defaults
     defaults = make_defaults_struct()
     fixup_defaults(defaults)
     fixup_options(defaults)
-    diff_contents = ["# xpra server %s" % __version__]
+    diff_contents = [
+        "# xpra server %s" % __version__,
+        "",
+        "mode=%s" % mode,
+        ]
     for attr, dtype in OPTION_TYPES.items():
         if attr in CLIENT_ONLY_OPTIONS:
             continue
@@ -497,11 +501,14 @@ def load_options():
     config_file = session_file_path("config")
     return read_config(config_file)
 
-def apply_config(opts):
+def apply_config(opts, mode):
     #if we had saved the start / start-desktop config, reload it:
     options = load_options()
     if not options:
-        return
+        return mode
+    if mode=="upgrade":
+        #unspecified upgrade, try to find the original mode used:
+        mode = options.pop("mode", mode)
     upgrade_config = dict_to_validated_config(options)
     #apply the previous session options:
     for k in options.keys():
@@ -521,6 +528,7 @@ def apply_config(opts):
             continue
         value = getattr(upgrade_config, fn)
         setattr(opts, fn, value)
+    return mode
 
 
 def reload_dbus_attributes(display_name):
@@ -591,8 +599,9 @@ def is_splash_enabled(mode, daemon, splash, display):
 MODE_TO_NAME = {
     "start"             : "Seamless",
     "start-desktop"     : "Desktop",
-    "upgrade"           : "Seamless",
-    "upgrade-desktop"   : "Desktop",
+    "upgrade"           : "Upgrade",
+    "upgrade-seamless"  : "Seamless Upgrade",
+    "upgrade-desktop"   : "Desktop Upgrade",
     "shadow"            : "Shadow",
     "proxy"             : "Proxy",
     }
@@ -613,12 +622,12 @@ def request_exit(uri):
         noerr(sys.stderr.write, "Error: failed to 'exit' the server to upgrade\n")
         noerr(sys.stderr.write, " %s\n" % e)
         return False
-    return p.poll()==0
+    return p.poll() in (EXIT_OK, EXIT_UPGRADE)
 
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
         "start", "start-desktop",
-        "upgrade", "upgrade-desktop",
+        "upgrade", "upgrade-seamless", "upgrade-desktop",
         "shadow", "proxy",
         )
     validate_encryption(opts)
@@ -682,8 +691,7 @@ def _do_run_server(script_file, cmdline,
     use_display = parse_bool("use-display", opts.use_display)
     starting  = mode == "start"
     starting_desktop = mode == "start-desktop"
-    upgrading = mode == "upgrade"
-    upgrading_desktop = mode == "upgrade-desktop"
+    upgrading = mode.startswith("upgrade")
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
 
@@ -698,7 +706,7 @@ def _do_run_server(script_file, cmdline,
             opts.start_child_after_connect or
             opts.start_child_on_last_client_exit
             )
-    if proxying or upgrading or upgrading_desktop:
+    if proxying or upgrading:
         #when proxying or upgrading, don't exec any plain start commands:
         opts.start = []
         opts.start_child = []
@@ -711,7 +719,7 @@ def _do_run_server(script_file, cmdline,
         warn(" but 'exit-with-children' is not enabled,")
         warn(" you should just use 'start' instead")
 
-    if (upgrading or upgrading_desktop or shadowing) and opts.pulseaudio is None:
+    if (upgrading or shadowing) and opts.pulseaudio is None:
         #there should already be one running
         #so change None ('auto') to False
         opts.pulseaudio = False
@@ -726,7 +734,7 @@ def _do_run_server(script_file, cmdline,
             from xpra.scripts.main import guess_X11_display
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
             display_name = guess_X11_display(dotxpra, desktop_display)
-    elif (upgrading or upgrading_desktop) and not extra_args:
+    elif upgrading and not extra_args:
         display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
     else:
         if len(extra_args) > 1:
@@ -762,7 +770,7 @@ def _do_run_server(script_file, cmdline,
                 # Use the temporary magic value 'S' as marker:
                 display_name = 'S' + str(os.getpid())
 
-    if upgrading or upgrading_desktop:
+    if upgrading:
         assert display_name, "no display found to upgrade"
         if POSIX and not OSX and get_saved_env_var("DISPLAY", "")==display_name:
             warn("Warning: upgrading from an environment connected to the same display")
@@ -771,26 +779,22 @@ def _do_run_server(script_file, cmdline,
         sessions = get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN, DotXpra.DEAD),
                                      matching_display=display_name, query=True)
         session = sessions.get(display_name)
+        print("session(%s)=%s" % (display_name, session))
         if session:
             socket_path = session.get("socket-path")
             uri = ("socket://%s" % socket_path) if socket_path else display_name
             if request_exit(uri):
                 #the server has terminated as we had requested
                 use_display = True
-                if upgrading:
-                    starting = True
-                    upgrading = False
-                else:
-                    starting_desktop = True
-                    upgrading_desktop = False
                 #but it may need a second to disconnect the clients
                 #and then close the sockets cleanly
                 #(so we can re-create them safely)
                 import time
                 time.sleep(1)
+            else:
+                warn("server for %s is not exiting" % display_name)
 
-    if not (shadowing or proxying or upgrading or upgrading_desktop) and \
-    opts.exit_with_children and not has_child_arg:
+    if not (shadowing or proxying or upgrading) and opts.exit_with_children and not has_child_arg:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
     # Generate the script text now, because os.getcwd() will
@@ -862,7 +866,7 @@ def _do_run_server(script_file, cmdline,
             stderr.write(" %s\n" % e)
             del e
 
-    clobber = int(upgrading or upgrading_desktop)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
+    clobber = int(upgrading)*CLOBBER_UPGRADE | int(use_display or 0)*CLOBBER_USE_DISPLAY
     start_vfb = not (shadowing or proxying or clobber)
     xauth_data = None
     if start_vfb:
@@ -958,10 +962,14 @@ def _do_run_server(script_file, cmdline,
     if env_script:
         write_session_file("server.env", env_script)
     write_session_file("cmdline", "\n".join(cmdline)+"\n")
-    if mode in ("upgrade", "upgrade-desktop"):
+    upgrading_seamless = upgrading_desktop = False
+    if upgrading:
         #if we had saved the start / start-desktop config, reload it:
-        apply_config(opts)
-    write_session_file("config", get_options_file_contents(opts))
+        mode = apply_config(opts, mode)
+        upgrading_desktop = mode=="desktop"
+        upgrading_seamless = not upgrading_desktop
+
+    write_session_file("config", get_options_file_contents(opts, mode))
 
     extra_expand = {"TIMESTAMP" : datetime.datetime.now().strftime("%Y%m%d-%H%M%S")}
     log_to_file = opts.daemon or os.environ.get("XPRA_LOG_TO_FILE", "")=="1"
@@ -1019,7 +1027,7 @@ def _do_run_server(script_file, cmdline,
 
     progress(30, "creating sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
-    retry = 10*int(mode in ("upgrade", "upgrade-desktop"))
+    retry = 10*int(mode.startswith("upgrade"))
     sockets = create_sockets(opts, error_cb, retry=retry)
 
     from xpra.log import Logger
@@ -1039,7 +1047,7 @@ def _do_run_server(script_file, cmdline,
             commands += list(getattr(opts, start_prop.replace("-", "_")))
         if not commands:
             opts.start.append("xpra desktop-greeter")
-    if POSIX and configure_imsettings_env(opts.input_method)=="ibus" and not (upgrading or upgrading_desktop or shadowing or proxying):
+    if POSIX and configure_imsettings_env(opts.input_method)=="ibus" and not (upgrading or shadowing or proxying):
         #start ibus-daemon unless already specified in 'start':
         if IBUS_DAEMON_COMMAND and not (
             any(x.find("ibus-daemon")>=0 for x in opts.start) or any(x.find("ibus-daemon")>=0 for x in opts.start_late)
@@ -1080,10 +1088,10 @@ def _do_run_server(script_file, cmdline,
                 log("found existing XAUTHORITY file '%s'", xauthority)
         write_session_file("xauthority", xauthority)
         #resolve use-display='auto':
-        if use_display is None or upgrading or upgrading_desktop:
+        if use_display is None or upgrading:
             #figure out if we have to start the vfb or not:
             if not display_name:
-                if upgrading or upgrading_desktop:
+                if upgrading:
                     error_cb("no displays found to upgrade")
                 use_display = False
             else:
@@ -1092,7 +1100,7 @@ def _do_run_server(script_file, cmdline,
                 stat = stat_X11_display(display_no)
                 log("stat_X11_display(%i)=%s", display_no, stat)
                 if not stat:
-                    if upgrading or upgrading_desktop:
+                    if upgrading:
                         error_cb("cannot access display '%s'" % (display_name,))
                     #no X11 socket to connect to, so we have to start one:
                     start_vfb = True
@@ -1290,7 +1298,7 @@ def _do_run_server(script_file, cmdline,
                                             username, uid, gid)
         netlog("setting up local sockets: %s", local_sockets)
         sockets.update(local_sockets)
-        if POSIX and (starting or upgrading or starting_desktop or upgrading_desktop):
+        if POSIX and (starting or upgrading or starting_desktop):
             #all unix domain sockets:
             ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
             if ud_paths:
@@ -1336,7 +1344,7 @@ def _do_run_server(script_file, cmdline,
     elif proxying:
         app = make_proxy_server()
     else:
-        if starting or upgrading:
+        if starting or upgrading_seamless:
             app = make_server(clobber)
         else:
             assert starting_desktop or upgrading_desktop
@@ -1348,7 +1356,7 @@ def _do_run_server(script_file, cmdline,
         #check the initial 'mode' value instead of "upgrading" or "upgrading_desktop"
         #as we may have switched to "starting=True"
         #if the existing server has exited as we requested)
-        if mode.find("upgrade")>=0 or use_display:
+        if mode.startswith("upgrade") or use_display:
             #something abnormal occurred,
             #don't kill the vfb on exit:
             from xpra.server import EXITING_CODE

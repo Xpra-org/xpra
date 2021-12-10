@@ -1837,10 +1837,16 @@ def do_parse_cmdline(cmdline, defaults):
                 args[1] = address
                 break
 
-    NEED_ENCODING_MODES = ("attach", "start", "start-desktop", "shadow", "proxy",
-                           "upgrade", "upgrade-desktop", "recover",
-                           "listen", "launcher",
-                           "bug-report", "encoding", "gui-info")
+    NEED_ENCODING_MODES = (
+        "attach",
+        "start", "seamless",
+        "start-desktop", "desktop",
+        "upgrade", "upgrade-seamless", "upgrade-desktop",
+        "recover",
+        "shadow", "proxy",
+        "listen", "launcher",
+        "bug-report", "encoding", "gui-info",
+        )
     fixup_options(options, defaults, skip_encodings=len(args)==0 or
                   MODE_ALIAS.get(args[0], args[0]) not in NEED_ENCODING_MODES)
 
