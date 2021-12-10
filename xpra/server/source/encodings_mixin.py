@@ -84,6 +84,10 @@ class EncodingsMixin(StubSourceMixin):
         self.default_speed          = server.default_speed
         self.default_min_speed      = server.default_min_speed
 
+    def reinit_encodings(self, server):
+        self.server_core_encodings  = server.core_encodings
+        self.server_encodings       = server.encodings
+
     def cleanup(self):
         self.cancel_recalculate_timer()
         if self.cuda_device_context:

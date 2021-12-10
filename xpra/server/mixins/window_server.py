@@ -50,6 +50,7 @@ class WindowServer(StubServerMixin):
 
     def setup(self):
         self.load_existing_windows()
+        self.init_thread_callbacks.append(self.reinit_window_encoders)
 
     def cleanup(self):
         for window in tuple(self._window_to_id.keys()):
@@ -57,6 +58,15 @@ class WindowServer(StubServerMixin):
         #this can cause errors if we receive packets during shutdown:
         #self._window_to_id = {}
         #self._id_to_window = {}
+
+
+    def reinit_window_encoders(self):
+        #any window mapped before the threaded init completed
+        #may need to re-initialize its list of encoders:
+        log("reinit_window_encoders()")
+        for ss in self._server_sources.values():
+            if isinstance(ss, WindowsMixin):
+                ss.reinit_encoders()
 
 
     def last_client_exited(self):

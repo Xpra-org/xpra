@@ -329,7 +329,6 @@ class WindowSource(WindowIconSource):
         self._rgb_auto_threshold = MAX_PIXELS_PREFER_RGB
 
         self.init_encoders()
-        self.update_encoding_selection(encoding, init=True)
         log("initial encoding for %s: %s", self.wid, self.encoding)
         #ready to service:
         self._damage_cancelled = 0
@@ -352,7 +351,6 @@ class WindowSource(WindowIconSource):
     def init_encoders(self):
         self._all_encoders = {}
         self._encoders = {}
-        self.full_csc_modes = typedict()
         picture_encodings = []
         def add(encoder_name):
             encoder = get_codec(encoder_name)
@@ -386,8 +384,9 @@ class WindowSource(WindowIconSource):
             log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
             if self.cuda_device_context:
                 self.enc_nvjpeg = add("enc_nvjpeg")
-        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
         self.picture_encodings = tuple(picture_encodings)
+        self.parse_csc_modes(self.encoding_options.dictget("full_csc_modes", default=None))
+        self.update_encoding_selection(self.encoding, init=True)
 
 
     def init_vars(self):

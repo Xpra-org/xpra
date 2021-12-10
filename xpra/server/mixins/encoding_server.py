@@ -10,6 +10,7 @@ from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
 from xpra.codecs.video_helper import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.source.windows_mixin import WindowsMixin
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -48,10 +49,6 @@ class EncodingServer(StubServerMixin):
         #essential codecs, load them early:
         load_codec("enc_rgb")
         load_codec("enc_pillow")
-        self.init_encodings()
-
-    def threaded_setup(self):
-        #load the other picture codecs:
         ae = self.allowed_encodings
         if "webp" in ae:
             #try to load the fast webp encoder:
@@ -62,6 +59,21 @@ class EncodingServer(StubServerMixin):
         if "jpeg" in ae:
             #try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
+        self.init_encodings()
+        self.init_thread_callbacks.append(self.reinit_encodings)
+
+    def reinit_encodings(self):
+        self.init_encodings()
+        #any window mapped before the threaded init completed
+        #may need to re-initialize its list of encodings:
+        log("reinit_encodings()")
+        for ss in self._server_sources.values():
+            if isinstance(ss, WindowsMixin):
+                ss.reinit_encodings(self)
+
+    def threaded_setup(self):
+        #load the slower codecs
+        if "jpeg" in self.allowed_encodings:
             load_codec("enc_nvjpeg")
         #load video codecs:
         getVideoHelper().init()

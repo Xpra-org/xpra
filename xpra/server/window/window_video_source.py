@@ -191,6 +191,10 @@ class WindowVideoSource(WindowSource):
         self.scroll_data = None
         self.last_scroll_time = 0
 
+        self._csc_encoder = None
+        self._video_encoder = None
+        self._last_pipeline_check = 0
+
     def do_set_auto_refresh_delay(self, min_delay, delay):
         super().do_set_auto_refresh_delay(min_delay, delay)
         r = self.video_subregion

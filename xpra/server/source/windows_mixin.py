@@ -467,6 +467,11 @@ class WindowsMixin(StubSourceMixin):
             ws.cancel_damage()
 
 
+    def reinit_encoders(self):
+        for ws in tuple(self.window_sources.values()):
+            ws.init_encoders()
+
+
     def map_window(self, wid, window, coords=None):
         ws = self.make_window_source(wid, window)
         ws.map(coords)
