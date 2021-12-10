@@ -51,21 +51,20 @@ class EncodingServer(StubServerMixin):
         self.init_encodings()
 
     def threaded_setup(self):
-        #load video codecs:
-        getVideoHelper().init()
         #load the other picture codecs:
         ae = self.allowed_encodings
+        if "webp" in ae:
+            #try to load the fast webp encoder:
+            load_codec("enc_webp")
+        if "png" in ae:
+            #try to load the fast png encoder:
+            load_codec("enc_spng")
         if "jpeg" in ae:
             #try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
             load_codec("enc_nvjpeg")
-        if "webp" in ae:
-            #try to load the fast webp encoder:
-            load_codec("enc_webp")
-        #spng is still producing random 'failed to encode image' errors:
-        if "png" in ae:
-            #try to load the fast png encoder:
-            load_codec("enc_spng")
+        #load video codecs:
+        getVideoHelper().init()
         self.init_encodings()
 
     def cleanup(self):
