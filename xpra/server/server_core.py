@@ -380,15 +380,23 @@ class ServerCore:
 
 
     def threaded_init(self):
-        log("threaded_init() servercore start")
+        self.do_threaded_init()
+        self.call_init_thread_callbacks()
+
+    def do_threaded_init(self):
+        log("do_threaded_init() servercore start")
         #platform specific init:
         threaded_server_init()
         #populate the platform info cache:
         get_platform_info()
         if self.menu_provider:
             self.menu_provider.setup()
+        log("threaded_init() servercore end")
+
+    def call_init_thread_callbacks(self):
         #run the init callbacks:
         with self.init_thread_lock:
+            log("call_init_thread_callbacks() init_thread_callbacks=%s", self.init_thread_callbacks)
             for cb in self.init_thread_callbacks:
                 try:
                     cb()
@@ -396,7 +404,6 @@ class ServerCore:
                     log("threaded_init()", exc_info=True)
                     log.error("Error in initialization thread callback %s", cb)
                     log.error(" %s", e)
-        log("threaded_init() servercore end")
 
     def after_threaded_init(self, callback):
         with self.init_thread_lock:

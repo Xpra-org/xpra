@@ -161,7 +161,7 @@ class ServerBase(ServerBaseClass):
             log("%3ims in %s.setup", 1000*(end-start), c)
 
     def threaded_init(self):
-        super().threaded_init()
+        super().do_threaded_init()
         log("threaded_init() serverbase start")
         for c in SERVER_BASES:
             if c!=ServerCore:
@@ -170,6 +170,7 @@ class ServerBase(ServerBaseClass):
                 except Exception:
                     log.error("Error during threaded setup of %s", c, exc_info=True)
         log("threaded_init() serverbase end")
+        super().call_init_thread_callbacks()
 
 
     def server_is_ready(self):
