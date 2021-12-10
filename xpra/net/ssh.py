@@ -552,7 +552,12 @@ keymd5(host_key),
                         log.warn(" this file seems to be using OpenSSH's own format")
                         log.warn(" please convert it to something more standard (ie: PEM)")
                         log.warn(" so it can be used with the paramiko backend")
-                        log.warn(" or switch to the OpenSSH backend with '--ssh=ssh'")
+                        if WIN32:
+                            log.warn(" or switch to the Putty Plink backend with:")
+                            log.warn(" '--ssh=plink -ssh -agent'")
+                        else:
+                            log.warn(" or switch to the OpenSSH backend with:")
+                            log.warn(" '--ssh=ssh'")
             if key:
                 log("auth_publickey using %s as %s: %s", keyfile_path, pkey_classname, keymd5(key))
                 try:
