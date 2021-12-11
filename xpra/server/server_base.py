@@ -279,7 +279,7 @@ class ServerBase(ServerBaseClass):
         #don't accept this connection if we're going to exit-with-client:
         accepted = True
         if disconnected>0 and share_count==0 and self.exit_with_client:
-            self.disconnect_client(proto, SERVER_EXIT, "last client has exited")
+            self.disconnect_client(proto, SERVER_SHUTDOWN, "last client has exited")
             accepted = False
         return accepted, share_count, disconnected
 
