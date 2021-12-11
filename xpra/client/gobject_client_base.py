@@ -15,7 +15,7 @@ from xpra.util import (
     u, net_utf8, nonl, sorted_nicely, print_nested_dict, envint, flatten_dict, typedict,
     disconnect_is_an_error, ellipsizer, first_time, csv,
     repr_ellipsized,
-    SERVER_UPGRADE, DONE,
+    SERVER_EXIT, DONE,
     )
 from xpra.os_util import (
     bytestostr,
@@ -728,7 +728,7 @@ class ExitXpraClient(HelloRequestClient):
             }
 
     def do_command(self, caps : typedict):
-        self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", SERVER_UPGRADE))
+        self.idle_add(self.send, "exit-server", os.environ.get("XPRA_EXIT_MESSAGE", SERVER_EXIT))
 
 
 class StopXpraClient(HelloRequestClient):
