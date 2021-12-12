@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:	     libvpx-xpra
-Version:     1.9.0
+Version:     1.11.0
 Release:     1%{?dist}
 Summary:     vpx library for xpra
 
@@ -36,7 +36,7 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d279c10e4b9316bf11a570ba16c3d55791e1ad6faa4404c67422eb631782c80a" ]; then
+if [ "${sha256}" != "965e51c91ad9851e2337aebcc0f517440c637c506f3a03948062e3d5ea129a83" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
