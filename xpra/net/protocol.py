@@ -11,7 +11,7 @@
 import os
 from time import monotonic
 from socket import error as socket_error
-from threading import Lock, Event
+from threading import Lock, RLock, Event
 from queue import Queue
 
 from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, hexstr
@@ -181,6 +181,7 @@ class Protocol:
         self.cipher_out_name = None
         self.cipher_out_block_size = 0
         self.cipher_out_padding = INITIAL_PADDING
+        self._threading_lock = RLock()
         self._write_lock = Lock()
         self._write_thread = None
         self._read_thread = make_thread(self._read_thread_loop, "read", daemon=True)
@@ -357,13 +358,14 @@ class Protocol:
         shm = self._source_has_more
         if not shm or self._closed:
             return
+        #from now on, take the shortcut:
+        self.source_has_more = shm.set
         shm.set()
         #start the format thread:
         if not self._write_format_thread and not self._closed:
-            self._write_format_thread = make_thread(self.write_format_thread_loop, "format", daemon=True)
-            self._write_format_thread.start()
-        #from now on, take shortcut:
-        self.source_has_more = self._source_has_more.set
+            with self._threading_lock:
+                assert not self._write_format_thread, "write format thread already started"
+                self._write_format_thread = start_thread(self.write_format_thread_loop, "format", daemon=True)
 
     def write_format_thread_loop(self):
         log("write_format_thread_loop starting")
@@ -462,7 +464,9 @@ class Protocol:
 
 
     def start_write_thread(self):
-        self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
+        with self._threading_lock:
+            assert not self._write_thread, "write thread already started"
+            self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
     def raw_write(self, packet_type, items, start_cb=None, end_cb=None, fail_cb=None, synchronous=True, more=False):
         """ Warning: this bypasses the compression and packet encoder! """
@@ -801,7 +805,9 @@ class Protocol:
         self._read_queue_put = self._read_queue.put
 
     def start_read_parser_thread(self):
-        self._read_parser_thread = start_thread(self._read_parse_thread_loop, "parse", daemon=True)
+        with self._threading_lock:
+            assert not self._read_parser_thread, "read parser thread already started"
+            self._read_parser_thread = start_thread(self._read_parse_thread_loop, "parse", daemon=True)
 
     def _read_parse_thread_loop(self):
         log("read_parse_thread_loop starting")
