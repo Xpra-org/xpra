@@ -459,10 +459,12 @@ def load_desktop_sessions():
                 name = de.getName()
                 if not entry.get("IconData"):
                     names = get_icon_names_for_session(name.lower())
-                    v = find_icon(*names)
-                    if v:
-                        entry["IconData"] = v[0]
-                        entry["IconType"] = v[1]
+                    icon_filename = find_icon(*names)
+                    if icon_filename:
+                        icondata = icon_util.load_icon_from_file(icon_filename)
+                        if icondata:
+                            entry["IconData"] = icondata[0]
+                            entry["IconType"] = icondata[1]
                 xsessions[name] = entry
             except Exception as e:
                 log("load_desktop_sessions(%s)", remove_icons, exc_info=True)
