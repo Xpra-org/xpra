@@ -411,7 +411,6 @@ def get_output_colorspaces(encoding, input_colorspace):
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
 
-assert X264_BUILD>146, "invalid version of libx264: %s" % X264_BUILD
 #actual limits (which we cannot reach because we hit OOM):
 #MAX_WIDTH, MAX_HEIGHT = 16384, 16384
 MAX_WIDTH, MAX_HEIGHT = 8192, 4096
