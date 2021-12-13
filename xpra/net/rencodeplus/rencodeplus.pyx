@@ -70,7 +70,7 @@ cdef enum:
     # Lists with length embedded in typecode.
     LIST_FIXED_START = STR_FIXED_START+STR_FIXED_COUNT
     LIST_FIXED_COUNT = 64
-assert LIST_FIXED_START + LIST_FIXED_COUNT == 256
+#assert LIST_FIXED_START + LIST_FIXED_COUNT == 256
 
 cdef swap_byte_order_ushort(unsigned short *s):
     s[0] = (s[0] >> 8) | (s[0] << 8)
