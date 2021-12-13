@@ -1321,7 +1321,7 @@ class ServerCore:
 
     def do_make_protocol(self, socktype, conn, socket_options, protocol_class, pre_read=None):
         """ create a new Protocol instance and start it """
-        netlog("make_protocol(%s, %s, %s, %s)", socktype, conn, socket_options, protocol_class)
+        netlog("make_protocol%s", (socktype, conn, socket_options, protocol_class, pre_read))
         socktype = socktype.lower()
         protocol = protocol_class(conn)
         protocol._pre_read = pre_read
