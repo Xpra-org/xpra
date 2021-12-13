@@ -1296,7 +1296,7 @@ class ServerCore:
         netlog("make_protocol(%s, %s, %s, %s)", socktype, conn, socket_options, protocol_class)
         socktype = socktype.lower()
         protocol = protocol_class(conn)
-        protocol.pre_read = pre_read
+        protocol._pre_read = pre_read
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
