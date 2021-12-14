@@ -1,6 +1,6 @@
 %define _disable_source_fetch 0
 %define _build_id_links none
-%define commit 544c61f082194728d0391fb280a6e138ba320a96
+%define commit 5db6aa6cab1b146e07b60cc1736a01f21da01154
 %global debug_package %{nil}
 
 Name:	     x264-xpra
@@ -38,7 +38,7 @@ This package contains the development files for %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "7e8950c4f29a7e96b58cf5506c8990c6dda1740d855f55fd2022f4e6faf3a18f" ]; then
+if [ "${sha256}" != "f3795b0b428e1b329305b2c19eb244e3e911231023f5bb8456dcb705a74d9545" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
