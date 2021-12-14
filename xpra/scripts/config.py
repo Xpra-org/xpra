@@ -915,7 +915,7 @@ def get_defaults():
         #try to find it quickly:
         try:
             import glob
-            fake_xinerama = sorted_nicely(glob.glob("/usr/lib*/libfakeXinerama.so.*"))[-1]
+            fake_xinerama = sorted_nicely(glob.glob("/lib*/libfakeXinerama.so.*"))[-1]
         except Exception:
             fake_xinerama = "auto"
     else:
