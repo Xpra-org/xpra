@@ -12,7 +12,7 @@
 %global   real_name ffmpeg
 Name:	     ffmpeg-xpra
 Version:     4.4.1
-Release:     1%{?dist}
+Release:     2%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
@@ -198,6 +198,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Dec 14 2021 Antoine Martin <antoine@xpra.org> 4.4.1-2
+- force rebuild against updated libx264
+
 * Tue Nov 02 2021 Antoine Martin <antoine@xpra.org> 4.4.1-1
 - new upstream release
 
