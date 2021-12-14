@@ -1533,6 +1533,17 @@ def fixup_options(options, defaults=None, skip_encodings=False):
     if not skip_encodings:
         fixup_encodings(options)
         fixup_video_all_or_none(options, defaults)
+    else:
+        for setting, default_value in {
+            "video_encoders"        : ["all"],
+            "video_decoders"        : ["all"],
+            "csc_modules"           : ["all"],
+            "proxy_video_encoders"  : ["none"],
+            "encodings"             : ["all"],
+            }.items():
+            v = getattr(options, setting)
+            if not v:
+                setattr(options, setting, default_value)
     fixup_pings(options)
     fixup_compression(options)
     fixup_packetencoding(options)
