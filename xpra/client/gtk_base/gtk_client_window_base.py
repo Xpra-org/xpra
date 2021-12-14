@@ -1147,7 +1147,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         r = Region()
         for rect in rectangles:
             rect = RectangleInt(*self._client.srect(*rect))
-            r = r.union(Region(rect))
+            r.union(Region(rect))
         def do_set_region():
             log("set_opaque_region(%s)", r)
             self.get_window().set_opaque_region(r)
