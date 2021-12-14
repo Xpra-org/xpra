@@ -46,7 +46,7 @@ def load_content_type_defs():
         log("load_content_type_defs() content_type_dir=%s", content_type_dir)
         load_content_type_dir(content_type_dir)
         for d in get_user_conf_dirs():
-            load_content_type_dir(d)
+            load_content_type_dir(os.path.join(d, "content-type"))
         for e in CONTENT_TYPE_DEFS.split(","):
             if not process_content_type_entry(e):
                 log.warn(" invalid entry in environment variable")
