@@ -4,7 +4,7 @@
 %global debug_package %{nil}
 
 Name:	     x264-xpra
-Version:     20210301
+Version:     20211215
 Release:     1%{?dist}
 Summary:     x264 library for xpra
 Group:       Applications/Multimedia
@@ -83,6 +83,9 @@ rm -rf %{buildroot}
 %{_libdir}/xpra/pkgconfig/x264.pc
 
 %changelog
+* Wed Dec 15 2021 Antoine Martin <antoine@xpra.org> - 20211215-1
+- bump version no as well as commit id
+
 * Mon Mar 01 2021 Antoine Martin <antoine@xpra.org> - 20210301-1
 - remove legacy CentOS 7 switches
 - build from github mirror snapshot
