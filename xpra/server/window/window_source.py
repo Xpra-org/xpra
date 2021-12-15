@@ -2572,8 +2572,11 @@ class WindowSource(WindowIconSource):
             client_options["z.sha256"] = chksum
             client_options["z.len"] = len(data)
             log("added len and hash of compressed data integrity %19s: %8i / %s", type(v), len(v), chksum)
-        if LOG_ENCODERS or compresslog.is_debug_enabled():
-            mod = get_encoder_type(encoder)
+        if (LOG_ENCODERS or compresslog.is_debug_enabled()) and "encoder" not in client_options:
+            if encoder==self.mmap_encode:  #pylint: disable=comparison-with-callable
+                mod = "mmap_encode"
+            else:
+                mod = get_encoder_type(encoder)
             if mod:
                 client_options["encoder"] = mod
         #actual network packet:

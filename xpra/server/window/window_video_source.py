@@ -2234,7 +2234,7 @@ class WindowVideoSource(WindowSource):
             scaled_size = enc_width, enc_height
             client_options["scaled_size"] = scaled_size
 
-        if LOG_ENCODERS:
+        if LOG_ENCODERS or compresslog.is_debug_enabled():
             client_options["encoder"] = ve.get_type()
 
         #deal with delayed b-frames:
