@@ -155,32 +155,29 @@ cdef class Encoder:
     cdef tjhandle compressor
     cdef int width
     cdef int height
-    cdef object scaling
     cdef object src_format
     cdef int quality
-    cdef int speed
     cdef int grayscale
     cdef long frames
     cdef object __weakref__
 
     def __init__(self):
-        self.width = self.height = self.quality = self.speed = self.frames = 0
+        self.width = self.height = self.quality = self.frames = 0
         self.compressor = tjInitCompress()
         if self.compressor==NULL:
             raise Exception("Error: failed to instantiate a JPEG compressor")
 
-    def init_context(self, device_context, width : int, height : int,
-                     src_format, dst_formats, encoding, quality : int, speed : int, scaling, options : typedict):
+    def init_context(self, encoding, width : int, height : int, src_format, options : typedict):
         assert encoding=="jpeg"
         assert src_format in get_input_colorspaces(encoding)
-        assert scaling==(1, 1)
+        scaled_width = options.intget("scaled-width", width)
+        scaled_height = options.intget("scaled-height", height)
+        assert scaled_width==width and scaled_height==height, "jpeg encoder does not handle scaling"
         self.width = width
         self.height = height
         self.src_format = src_format
         self.grayscale = options.boolget("grayscale")
-        self.scaling = scaling
-        self.quality = quality
-        self.speed = speed
+        self.quality = options.intget("quality", 50)
 
     def is_ready(self):
         return self.compressor!=NULL
@@ -189,7 +186,7 @@ cdef class Encoder:
         return self.compressor==NULL
 
     def clean(self):
-        self.width = self.height = self.quality = self.speed = 0
+        self.width = self.height = self.quality = 0
         r = tjDestroy(self.compressor)
         self.compressor = NULL
         if r:
@@ -217,21 +214,18 @@ cdef class Encoder:
             "frames"        : int(self.frames),
             "width"         : self.width,
             "height"        : self.height,
-            "speed"         : self.speed,
             "quality"       : self.quality,
             "grayscale"     : bool(self.grayscale),
             })
         return info
 
-    def compress_image(self, device_context, image, int quality=-1, int speed=-1, options=None):
+    def compress_image(self, image, options=None):
+        options = options or {}
+        quality = options.get("quality", -1)
         if quality>0:
             self.quality = quality
         else:
             quality = self.quality
-        if speed>0:
-            self.speed = speed
-        else:
-            speed = self.speed
         pfstr = image.get_pixel_format()
         if pfstr in ("YUV420P", "YUV422P", "YUV444P"):
             cdata = encode_yuv(self.compressor, image, quality, self.grayscale)
