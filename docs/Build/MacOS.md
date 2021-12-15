@@ -20,7 +20,7 @@ export PATH=$PATH:~/.local/bin/
   <summary>Configure `jhbuild` to use our modules</summary>
 
 ```shell
-curl -O ~/.jhbuildrc-custom \
+curl -o ~/.jhbuildrc-custom \
      https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/jhbuildrc-custom-xpra
 ```
 Download everything required for the build:
