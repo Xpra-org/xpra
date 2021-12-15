@@ -40,9 +40,6 @@ cdef dd(uint16_t *d, uint16_t l):
     return csv([h(d[i]) for i in range(l)])
 
 
-assert sizeof(uint64_t)==64//8, "uint64_t is not 64-bit: %i!" % sizeof(uint64_t)
-
-
 cdef class ScrollData:
 
     cdef object __weakref__
