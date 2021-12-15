@@ -4,6 +4,21 @@
 Install [XCode](https://developer.apple.com/xcode/) and its command line tools.
 
 <details>
+  <summary>Workaround curl certificate issue</summary>
+
+This step is optional and only needed if curl fails to validate SSL connections.
+```shell
+curl -k -sSL http://curl.haxx.se/ca/cacert.pem >> cacert.pem
+export CURL_CA_BUNDLE=`pwd`/cacert.pem
+```
+On some older versions of MacOS, you may also need:
+```shell
+git config --global http.sslverify "false"
+```
+At least initially.
+</details>
+
+<details>
   <summary>Setup gtk-osx</summary>
 
 Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK/OSX/Building) setup script and run it:
@@ -11,7 +26,7 @@ Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK
 curl -O -osx-setup.sh https://gitlab.gnome.org/GNOME/gtk-osx/raw/master/gtk-osx-setup.sh
 sh gtk-osx-setup.sh
 ```
-This will have installed `jhbuild` in `~/.local/bin`, so let's add this to our `$PATH`:
+This will have installed `jhbuild` in `~/.new_local/bin`, so let's add this to our `$PATH`:
 ```shell
 export PATH=$PATH:~/.local/bin/
 ```
