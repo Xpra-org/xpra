@@ -15,8 +15,6 @@ import struct
 from xpra.log import Logger
 log = Logger("encoding")
 
-assert sizeof(int) == 4
-
 
 cdef inline unsigned int round8up(unsigned int n) nogil:
     return (n + 7) & ~7
