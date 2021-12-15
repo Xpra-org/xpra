@@ -3112,7 +3112,7 @@ def get_display_info(display):
             display_info["state"] = "DEAD"
         else:
             wmname = wminfo.get("wmname")
-            if wmname and wmname.find("xpra")>=0:
+            if wmname and wmname.lower().find("xpra")>=0:
                 #check if the xpra server process still exists:
                 pid = wminfo.get("xpra-server-pid")
                 if pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid):
