@@ -35,7 +35,11 @@ class TestPillow(unittest.TestCase):
             image = ImageWrapper(0, 0, W, H, pixel_data, "BGRX", 32,
                                  W*Bpp, Bpp, planes=ImageWrapper.PACKED,
                                  thread_safe=True)
-            comp = encode("png", image, 50, speed, False, resize=(64, 64))
+            comp = encode("png", image, {
+                "speed" : speed,
+                "scaled-width" : 64,
+                "scaled-height" : 64,
+                })
             assert comp
 
     def test_grayscale(self):
@@ -46,7 +50,7 @@ class TestPillow(unittest.TestCase):
         image = ImageWrapper(0, 0, W, H, pixel_data, "BGRA", 32,
                              W*Bpp, Bpp, planes=ImageWrapper.PACKED,
                              thread_safe=True)
-        comp = encode("png", image, 50, 50, True, grayscale=True)
+        comp = encode("png", image, {"grayscale"  : True})
         assert comp
 
     def test_encode_image_formats(self):
@@ -76,7 +80,11 @@ class TestPillow(unittest.TestCase):
                             image = ImageWrapper(0, 0, width, height, pixel_data, pixel_format, 32,
                                                  width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                                                  thread_safe=True, palette=palette)
-                            comp = encode(encoding, image, quality, speed, transparency)
+                            comp = encode(encoding, image, {
+                                "quality" : quality,
+                                "speed" : speed,
+                                "alpha" : transparency,
+                                })
                             assert comp
 
     def test_invalid_pixel_format(self):
@@ -90,7 +98,7 @@ class TestPillow(unittest.TestCase):
                              width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                              thread_safe=True, palette=None)
         try:
-            encode("png", image, 10, 10, True)
+            encode("png", image)
         except Exception:
             pass
         else:
@@ -108,7 +116,7 @@ class TestPillow(unittest.TestCase):
                              thread_safe=True, palette=None)
         for encoding in (None, "", True, "hello", 1):
             try:
-                encode(encoding, image, 10, 10, True)
+                encode(encoding, image)
             except Exception:
                 pass
             else:
