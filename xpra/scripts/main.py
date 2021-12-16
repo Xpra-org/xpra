@@ -3108,14 +3108,14 @@ def get_display_info(display):
         display_info.update(wminfo)
         mode = wminfo.get("xpra-server-mode", "")
         #seamless servers and non-xpra servers should have a window manager:
-        if (mode.find("seamless")>=0) and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
+        if mode.find("seamless")>=0 and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
             display_info["state"] = "DEAD"
         else:
             wmname = wminfo.get("wmname")
             if wmname and wmname.lower().find("xpra")>=0:
                 #check if the xpra server process still exists:
                 pid = wminfo.get("xpra-server-pid")
-                if pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid):
+                if not pid or (os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid)):
                     display_info["state"] = "DEAD"
     else:
         display_info.update({"state" : "UNKNOWN"})
