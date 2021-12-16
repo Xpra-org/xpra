@@ -35,7 +35,7 @@ from xpra.exit_codes import (
     )
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
-    bytestostr, use_tty,
+    bytestostr, use_tty, osexpand,
     set_proc_title,
     is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
@@ -2789,18 +2789,38 @@ def run_list_mdns(error_cb, extra_args):
 
 def run_clean(opts, args):
     no_gtk()
-    if args:
-        clean = args
-        kill_displays = True
-    else:
-        #TODO: find the sessions to clean:
-        clean = []
-        kill_displays = False
-    from xpra.scripts.server import get_session_dir
     try:
         uid = int(opts.uid)
     except (ValueError, TypeError):
         uid = getuid()
+    from xpra.scripts.server import get_session_dir
+    clean = {}
+    if args:
+        for display in args:
+            session_dir = get_session_dir(None, opts.sessions_dir, display, uid)
+            if not os.path.exists(session_dir) or not os.path.isdir(session_dir):
+                print("session %s not found" % (display,))
+            else:
+                clean[display] = session_dir
+        #the user specified the sessions to clean,
+        #so we can also kill the display:
+        kill_displays = True
+    else:
+        session_dir = osexpand(opts.sessions_dir)
+        if not os.path.exists(session_dir):
+            raise ValueError("cannot find sessions directory %r" % opts.sessions_dir)
+        #try to find all the session directories:
+        for x in os.listdir(session_dir):
+            d = os.path.join(session_dir, x)
+            if not os.path.isdir(d):
+                continue
+            try:
+                display = int(x)
+            except ValueError:
+                continue
+            else:
+                clean["%s" % x] = d
+        kill_displays = False
     def kill_pid(pid):
         if pid:
             try:
@@ -2821,8 +2841,7 @@ def run_clean(opts, args):
 
     #also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-    for display in clean:
-        session_dir = get_session_dir(None, opts.sessions_dir, display, uid)
+    for display, session_dir in clean.items():
         if not os.path.exists(session_dir):
             print("session %s not found" % (display,))
             continue
@@ -2831,7 +2850,14 @@ def run_clean(opts, args):
         if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
             #this session is still active
             #do not try to clean it!
-            print("session %s is %s" % (display, state))
+            if args:
+                print("session %s is %s" % (display, state))
+                print(" the session directory %r has not been removed" % session_dir)
+            continue
+        server_pid = load_pid(session_dir, "server.pid")
+        if server_pid and POSIX and not OSX and os.path.exists("/proc/%i" % server_pid):
+            print("server process for session %s is still running with pid %i" % (display, server_pid))
+            print(" the session directory %r has not been removed" % session_dir)
             continue
         try:
             dno = int(display.lstrip(":"))
@@ -2851,7 +2877,7 @@ def run_clean(opts, args):
                         print(" run clean-displays to terminate it")
                     else:
                         print(" cowardly refusing to clean the session")
-                continue
+                    continue
         #print("session_dir: %s : %s" % (session_dir, state))
         for pid_filename in ("dbus.pid", "pulseaudio.pid", ):
             pid = load_pid(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
