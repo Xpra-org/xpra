@@ -21,7 +21,7 @@ import traceback
 from xpra import __version__ as XPRA_VERSION
 from xpra.platform.dotxpra import DotXpra
 from xpra.util import (
-    csv, envbool, envint, nonl, pver,
+    csv, envbool, envint, nonl, pver, engs,
     noerr, sorted_nicely, typedict,
     DEFAULT_PORTS,
     )
@@ -1938,7 +1938,7 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
     return r
 
 
-X11_SOCKET_DIR = "/tmp/.X11-unix/"
+X11_SOCKET_DIR = "/tmp/.X11-unix"
 
 def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
     displays = {}
@@ -2784,7 +2784,6 @@ def run_list_mdns(error_cb, extra_args):
     if not found:
         print("no services found")
     else:
-        from xpra.util import engs
         print("%i service%s found" % (len(found), engs(found)))
 
 
@@ -2805,10 +2804,21 @@ def run_clean(opts, args):
     def kill_pid(pid):
         if pid:
             try:
-                if pid and pid!=os.getpid():
+                if pid and pid>1 and pid!=os.getpid():
                     os.kill(pid, signal.SIGTERM)
             except OSError as e:
                 error("Error sending SIGTERM signal to %r %i %s" % (pid_filename, pid, e))
+    def load_pid(session_dir, pid_filename):
+        pid_file = os.path.join(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
+        if not os.path.exists(pid_file):
+            return 0
+        try:
+            with open(pid_file, "rb") as f:
+                return int(f.read().rstrip(b"\n\r"))
+        except (ValueError, OSError) as e:
+            error("failed to read %r: %s" % (pid_file, e))
+            return 0
+
     #also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     for display in clean:
@@ -2816,16 +2826,6 @@ def run_clean(opts, args):
         if not os.path.exists(session_dir):
             print("session %s not found" % (display,))
             continue
-        def load_pid(pid_filename):
-            pid_file = os.path.join(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
-            if not os.path.exists(pid_file):
-                return 0
-            try:
-                with open(pid_file, "rb") as f:
-                    return int(f.read().rstrip(b"\n\r"))
-            except (ValueError, OSError) as e:
-                error("failed to read %r: %s" % (pid_file, e))
-                return 0
         sockpath = os.path.join(session_dir, "socket")
         state = dotxpra.is_socket_match(sockpath, check_uid=uid, matching_state=None)
         if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
@@ -2842,7 +2842,7 @@ def run_clean(opts, args):
             if r:
                 #so the X11 server may still be running
                 #x11_sockpath = X11_SOCKET_DIR+"/X%i" % dno
-                xvfb_pid = load_pid("xvfb.pid")
+                xvfb_pid = load_pid(session_dir, "xvfb.pid")
                 if xvfb_pid and kill_displays:
                     kill_pid(xvfb_pid)
                 else:
@@ -2854,7 +2854,7 @@ def run_clean(opts, args):
                 continue
         #print("session_dir: %s : %s" % (session_dir, state))
         for pid_filename in ("dbus.pid", "pulseaudio.pid", ):
-            pid = load_pid(pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
+            pid = load_pid(session_dir, pid_filename)  #ie: "/run/user/1000/xpra/7/dbus.pid"
             kill_pid(pid)
         try:
             session_files = os.listdir(session_dir)
@@ -3007,8 +3007,9 @@ def run_clean_displays(args):
     for display in sorted_nicely(dead_displays):
         #find the X11 server PID
         inodes = []
-        sockpath = X11_SOCKET_DIR+"/X%s" % (display.lstrip(":"))
-        with open("/proc/net/unix", "r") as f:
+        sockpath = os.path.join(X11_SOCKET_DIR, "X%s" % display.lstrip(":"))
+        PROC_NET_UNIX = "/proc/net/unix"
+        with open(PROC_NET_UNIX, "r") as f:
             for line in f:
                 parts = line.rstrip("\n\r").split(" ")
                 if not parts or len(parts)<8:
@@ -3023,46 +3024,47 @@ def run_clean_displays(args):
                         inodes_display[inode] = display
     #now find the processes that own these inodes
     display_pids = {}
-    for f in os.listdir("/proc"):
-        try:
-            pid = int(f)
-        except ValueError:
-            continue
-        if pid==1:
-            #pid 1 is our friend, don't try to kill it
-            continue
-        procpath = os.path.join("/proc", f)
-        if not os.path.isdir(procpath):
-            continue
-        fddir = os.path.join(procpath, "fd")
-        if not os.path.exists(fddir) or not os.path.isdir(fddir):
-            continue
-        try:
-            fds = os.listdir(fddir)
-        except PermissionError:
-            continue
-        for fd in fds:
-            fdpath = os.path.join(fddir, fd)
-            if not os.path.islink(fdpath):
+    if inodes_display:
+        for f in os.listdir("/proc"):
+            try:
+                pid = int(f)
+            except ValueError:
+                continue
+            if pid==1:
+                #pid 1 is our friend, don't try to kill it
+                continue
+            procpath = os.path.join("/proc", f)
+            if not os.path.isdir(procpath):
+                continue
+            fddir = os.path.join(procpath, "fd")
+            if not os.path.exists(fddir) or not os.path.isdir(fddir):
                 continue
             try:
-                ref = os.readlink(fdpath)
+                fds = os.listdir(fddir)
             except PermissionError:
                 continue
-            if not ref:
-                continue
-            for inode, display in inodes_display.items():
-                if ref=="socket:[%i]" % inode:
-                    cmd = ""
-                    try:
-                        cmdline = os.path.join(procpath, "cmdline")
-                        cmd = open(cmdline, "r").read()
-                        cmd = shlex.join(cmd.split("\0"))
-                    except Exception:
-                        pass
-                    display_pids[display] = (pid, cmd)
+            for fd in fds:
+                fdpath = os.path.join(fddir, fd)
+                if not os.path.islink(fdpath):
+                    continue
+                try:
+                    ref = os.readlink(fdpath)
+                except PermissionError:
+                    continue
+                if not ref:
+                    continue
+                for inode, display in inodes_display.items():
+                    if ref=="socket:[%i]" % inode:
+                        cmd = ""
+                        try:
+                            cmdline = os.path.join(procpath, "cmdline")
+                            cmd = open(cmdline, "r").read()
+                            cmd = shlex.join(cmd.split("\0"))
+                        except Exception:
+                            pass
+                        display_pids[display] = (pid, cmd)
     if not display_pids:
-        print("No pids found for dead displays %s" % (csv(sorted_nicely(dead_displays)),))
+        print("No pids found for dead display%s %s" % (engs(dead_displays), csv(sorted_nicely(dead_displays)),))
         if args:
             print(" matching %s" % csv(args))
         return
