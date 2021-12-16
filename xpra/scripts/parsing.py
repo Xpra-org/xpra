@@ -764,7 +764,6 @@ def get_usage():
                         "bug-report",
                         "toolbox",
                         "displays",
-                        "clean-displays",
                         "docs",
                         "html5",
                         "autostart",
