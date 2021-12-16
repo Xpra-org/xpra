@@ -16,6 +16,7 @@ from cairo import (  #pylint: disable=no-name-in-module
     )
 import gi
 gi.require_version("Gtk", "3.0")
+gi.require_version('PangoCairo', '1.0')
 from gi.repository import PangoCairo, Gtk, GLib
 
 
