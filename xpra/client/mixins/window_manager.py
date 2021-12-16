@@ -1090,14 +1090,15 @@ class WindowClient(StubClientMixin):
 
     def _process_configure_override_redirect(self, packet):
         wid, x, y, w, h = packet[1:6]
-        window = self._id_to_window[wid]
+        window = self._id_to_window.get(wid)
         ax = self.sx(x)
         ay = self.sy(y)
         aw = max(1, self.sx(w))
         ah = max(1, self.sy(h))
         geomlog("_process_configure_override_redirect%s move resize window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax,ay,aw,ah))
-        window.move_resize(ax, ay, aw, ah, -1)
+        if window:
+            window.move_resize(ax, ay, aw, ah, -1)
 
 
     def window_close_event(self, wid):
