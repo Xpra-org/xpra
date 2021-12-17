@@ -156,7 +156,8 @@ def testencoder(encoder_module, full):
             testencoding(encoder_module, encoding, full)
         except Exception as e:
             log("%s: %s encoding failed", encoder_module.get_type(), encoding, exc_info=True)
-            log.warn("%s: %s encoding failed: %s", encoder_module.get_type(), encoding, e)
+            log.warn("Warning: %s encoder testing failed with %s: %s",
+                     encoder_module.get_type(), encoding, e)
             del e
             codecs.remove(encoding)
     if not codecs:
