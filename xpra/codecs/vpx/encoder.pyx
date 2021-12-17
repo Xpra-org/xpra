@@ -685,7 +685,8 @@ cdef class Encoder:
             ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
         if ret!=0:
             free(image)
-            log.error("%s codec encoding error %s: %s", self.encoding, ret, get_error_string(ret))
+            log.error("Error: %s encoder failure")
+            log.error(" %r (%i)", get_error_string(ret), ret)
             return None
         cdef double end = monotonic()
         log("vpx_codec_encode for %s took %ims (deadline=%16s for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline_str, self.speed, self.quality)
