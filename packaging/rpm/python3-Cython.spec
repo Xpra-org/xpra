@@ -1,13 +1,13 @@
 %define _disable_source_fetch 0
 
 Name:		python3-Cython
-Version:	0.29.25
+Version:	0.29.26
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://files.pythonhosted.org/packages/09/45/10c39337ba73c38a798165f97e4798827a532eaac71071842cbe0ee13dc5/Cython-%{version}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/bc/fa/8604d92ef753e0036d807f1b3179813ab2fa283e3b19c926e11673c8205b/Cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   python3
 
@@ -21,7 +21,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "a87cbe3756e7c464acf3e9420d8741e62d3b2eace0846cb39f664ad378aab284" ]; then
+if [ "${sha256}" != "af377d543a762867da11fcf6e558f7a4a535ff8693f30cce123fab10c00fa312" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
