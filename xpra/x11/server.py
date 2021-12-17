@@ -272,7 +272,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         from xpra.x11.gtk_x11.wm import Wm
         x11_errors = []
         self._wm = None
-        while self._wm==None:
+        while self._wm is None:
             try:
                 with xsync:
                     self._wm = Wm(self.clobber, self.wm_name)
