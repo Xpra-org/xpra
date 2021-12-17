@@ -9,7 +9,7 @@
 import os
 import signal
 import math
-from time import monotonic
+from time import monotonic, sleep
 from collections import deque
 from gi.repository import GObject, Gtk, Gdk, GdkX11
 
@@ -262,12 +262,20 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     with xswallow:
                         X11Window.XCompositeReleaseOverlayWindow(self.root_overlay)
                     self.root_overlay = None
+        self.init_wm()
+        #for handling resize synchronization between client and server (this is not xsync!):
+        self.last_client_configure_event = 0
+        self.snc_timer = 0
 
+    def init_wm(self):
         ### Create the WM object
-        with xsync:
-            from xpra.x11.gtk_x11.wm import Wm
+        from xpra.x11.gtk_x11.wm import Wm
+        x11_errors = []
+        self._wm = None
+        while self._wm==None:
             try:
-                self._wm = Wm(self.clobber, self.wm_name)
+                with xsync:
+                    self._wm = Wm(self.clobber, self.wm_name)
             except AlreadyOwned:
                 log("Error: cannot create our window manager", exc_info=True)
                 display = os.environ.get("DISPLAY", "")
@@ -278,14 +286,21 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 wm_name = get_x11_wm_name() or "another window manager"
                 err = "%s is already active on display %r" % (wm_name, display)
                 raise InitException(err) from None
+            except XError as e:
+                x11_errors.append(e)
+                count = len(x11_errors)
+                if count>5:
+                    log.error("Error: failed to initialize the window manager")
+                    for x in list(set(str(x) for x in x11_errors)):
+                        log.error(" %s", x)
+                    raise
+                #retry:
+                sleep(0.010*count)
         if server_features.windows:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
 
-        #for handling resize synchronization between client and server (this is not xsync!):
-        self.last_client_configure_event = 0
-        self.snc_timer = 0
 
     def do_cleanup(self):
         if self._tray:
