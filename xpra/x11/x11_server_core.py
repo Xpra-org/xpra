@@ -855,15 +855,6 @@ class X11ServerCore(GTKServerBase):
             ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
-    def get_screen_number(self, _wid):
-        #maybe this should be in all cases (it is in desktop_server):
-        #model = self._id_to_window.get(wid)
-        #return model.client_window.get_screen().get_number()
-        #return Gdk.Display.get_default().get_default_screen().get_number()
-        #-1 uses the current screen
-        return -1
-
-
     def setup_input_devices(self):
         from xpra.server import server_features
         xinputlog("setup_input_devices() input_devices feature=%s", server_features.input_devices)
@@ -945,7 +936,7 @@ class X11ServerCore(GTKServerBase):
 
     def _move_pointer(self, wid, pos, deviceid=-1, *args):
         #(this is called within an xswallow context)
-        screen_no = self.get_screen_number(wid)
+        screen_no = -1
         device = self.get_pointer_device(deviceid)
         x, y = self._get_pointer_abs_coordinates(wid, pos)
         mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s",

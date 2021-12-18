@@ -531,10 +531,6 @@ class XpraDesktopServer(DesktopServerBaseClass):
         return changes
 
 
-    def get_screen_number(self, wid):
-        model = self._id_to_window.get(wid)
-        return model.client_window.get_screen().get_number()
-
     def get_window_position(self, _window):
         #we export the whole desktop as a window:
         return 0, 0
