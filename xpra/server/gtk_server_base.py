@@ -109,12 +109,11 @@ class GTKServerBase(ServerBase):
             self.ui_watcher.start()
         if server_features.windows:
             display = Gdk.Display.get_default()
-            i=0
-            while i<display.get_n_screens():
-                screen = display.get_screen(i)
-                screen.connect("size-changed", self._screen_size_changed)
-                screen.connect("monitors-changed", self._monitors_changed)
-                i += 1
+            #n = display.get_n_screens()
+            #assert n==1, "unsupported number of screens: %i" % n
+            screen = display.get_default_screen()
+            screen.connect("size-changed", self._screen_size_changed)
+            screen.connect("monitors-changed", self._monitors_changed)
         log("do_run() calling %s", Gtk.main)
         Gtk.main()
         log("do_run() end of gtk.main()")
