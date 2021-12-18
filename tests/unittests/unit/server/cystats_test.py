@@ -8,7 +8,6 @@ import unittest
 import random
 from time import monotonic
 
-from xpra.util import iround
 try:
     from xpra.server import cystats
 except ImportError:
@@ -36,12 +35,12 @@ class TestCystats(unittest.TestCase):
             v = [(now, i*x, x) for i in range(1, 1000)]
             a, ra = cystats.calculate_size_weighted_average(v)
             #but we need to round to an int to compare
-            self.assertEqual(x, iround(a), "average should be %i, got %i" % (x, a))
-            self.assertEqual(x, iround(ra), "recent average should be %i, got %i" % (x, ra))
+            self.assertEqual(x, round(a), "average should be %i, got %i" % (x, a))
+            self.assertEqual(x, round(ra), "recent average should be %i, got %i" % (x, ra))
         def t(v, ea, era):
             a, ra = cystats.calculate_size_weighted_average(v)
-            self.assertEqual(iround(a), iround(ea), "average should be %s, got %s" % (iround(ea), iround(a)))
-            self.assertEqual(iround(ra), iround(era), "recent average should be %s, got %s" % (iround(era), iround(ra)))
+            self.assertEqual(round(a), round(ea), "average should be %s, got %s" % (round(ea), round(a)))
+            self.assertEqual(round(ra), round(era), "recent average should be %s, got %s" % (round(era), round(ra)))
         #an old record won't make any difference
         #compared with one that was taken just now:
         for v in (1, 10, 1000):
@@ -62,7 +61,7 @@ class TestCystats(unittest.TestCase):
         v = [(now, 100*1000, 1000), (now, 50*1000, 1000)]
         a, ra = cystats.calculate_size_weighted_average(v)
         #recent is the same as "normal" average:
-        self.assertEqual(iround(a), iround(ra))
+        self.assertEqual(round(a), round(ra))
         self.assertGreater(a, 75)
         #real data:
         T = monotonic()
