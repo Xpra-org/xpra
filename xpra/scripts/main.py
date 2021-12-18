@@ -1984,6 +1984,7 @@ def stat_X11_display(display_no, timeout=VERIFY_X11_SOCKET_TIMEOUT):
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
                 sock.connect(socket_path)
+                sock.close()
         except OSError:
             return {}
         else:
