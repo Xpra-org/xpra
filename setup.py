@@ -598,7 +598,7 @@ def add_cython_ext(*args, **kwargs):
             ('CYTHON_TRACE_NOGIL', 1),
             ]
         extra_compile_args = kwargs.setdefault("extra_compile_args", [])
-        extra_compile_args += ["-fpermissive", "-Wno-error"]
+        extra_compile_args += ["-Wno-error"]
     from Cython.Distutils import build_ext
     global cmdclass, ext_modules
     ext_modules.append(Extension(*args, **kwargs))
