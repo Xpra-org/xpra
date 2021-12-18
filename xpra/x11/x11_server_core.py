@@ -79,7 +79,6 @@ class X11ServerCore(GTKServerBase):
     """
 
     def __init__(self):
-        self.screen_number = Gdk.Screen.get_default().get_number()
         self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
