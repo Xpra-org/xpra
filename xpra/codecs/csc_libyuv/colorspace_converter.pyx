@@ -42,10 +42,10 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
 
 
 cdef extern from "libyuv/scale.h" namespace "libyuv":
-    ctypedef unsigned int FilterMode
-    FilterMode  kFilterNone
-    FilterMode  kFilterBilinear
-    FilterMode  kFilterBox
+    ctypedef enum FilterMode:
+        kFilterNone
+        kFilterBilinear
+        kFilterBox
     void ScalePlane(const uint8_t* src, int src_stride,
                 int src_width, int src_height,
                 uint8_t* dst, int dst_stride,
@@ -80,7 +80,7 @@ cdef get_fiter_mode_str(FilterMode fm):
         return  "Box"
     return "invalid"
 
-cdef FilterMode get_filtermode(int speed):
+cdef inline FilterMode get_filtermode(int speed):
     if speed>66:
         return kFilterNone
     elif speed>33:
