@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import shutil
 import sys
 import time
 import tempfile
@@ -177,14 +178,7 @@ class ProcessTestUtil(unittest.TestCase):
 
     @classmethod
     def which(cls, cmd):
-        try:
-            from xpra.os_util import get_status_output
-            code, out, _ = get_status_output(["command", "-v", cmd])
-            if code==0:
-                return out.splitlines()[0]
-        except OSError:
-            pass
-        return cmd
+        return shutil.which(cmd) or cmd
 
     def run_command(self, command, **kwargs):
         return self.class_run_command(command, **kwargs)
