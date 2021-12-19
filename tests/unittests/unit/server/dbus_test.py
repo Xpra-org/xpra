@@ -15,6 +15,7 @@ def noop(*_args, **_kwargs):
 
 class FakeLogger:
     error = noop
+    warn = noop
     info = noop
     debug = noop
     def __call__(self, *args, **kwargs):
