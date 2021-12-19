@@ -69,7 +69,7 @@ class AVSyncMixin(StubSourceMixin):
         self.update_av_sync_delay_total()
 
     def update_av_sync_delay_total(self):
-        enabled = self.av_sync and bool(self.sound_source)
+        enabled = self.av_sync and bool(getattr(self, "sound_source", None))
         if enabled:
             encoder_latency = self.get_sound_source_latency()
             self.av_sync_delay_total = min(1000, max(0, int(self.av_sync_delay) + self.av_sync_delta + encoder_latency))
