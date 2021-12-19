@@ -395,8 +395,9 @@ class X11ServerBase(X11ServerCore):
                 def set_xsettings_value(name, value_type, value):
                     #remove existing one, if any:
                     serial, values = v
-                    new_values = [(_t,_n,_v,_s) for (_t,_n,_v,_s) in values if _n!=name]
-                    new_values.append((value_type, name.encode("utf-8"), value, 0))
+                    bn = name.encode("utf-8")
+                    new_values = [(_t,_n,_v,_s) for (_t,_n,_v,_s) in values if _n!=bn]
+                    new_values.append((value_type, bn, value, 0))
                     return serial, new_values
                 def set_xsettings_int(name, value):
                     if value<0: #not set, return v unchanged
