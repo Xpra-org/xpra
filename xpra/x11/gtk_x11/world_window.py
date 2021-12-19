@@ -187,7 +187,7 @@ class WorldWindow(Gtk.Window):
     def do_focus_out_event(self, event):
         focuslog("world window lost focus: %s", event)
         # Do nothing -- harder:
-        self.stop_emission("focus-out-event")
+        self.stop_emission_by_name("focus-out-event")
         return False
 
     def _take_focus(self):
