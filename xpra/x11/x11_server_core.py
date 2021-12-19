@@ -968,7 +968,8 @@ class X11ServerCore(GTKServerBase):
             if wid==self.get_focus():
                 ss.user_event()
 
-    def do_process_button_action(self, proto, wid, button, pressed, pointer, modifiers, _buttons=(), deviceid=-1, *_args):
+    def do_process_button_action(self, proto, wid, button, pressed, pointer,
+                                 modifiers, _buttons=(), deviceid=-1, *_args):
         self._update_modifiers(proto, wid, modifiers)
         #TODO: pass extra args
         if self._process_mouse_common(proto, wid, pointer, deviceid):
@@ -1001,7 +1002,7 @@ class X11ServerCore(GTKServerBase):
         width = maxx-minx
         height = maxy-miny
         log("screenshot: %sx%s, min x=%s y=%s", width, height, minx, miny)
-        from PIL import Image                           #@UnresolvedImport
+        from PIL import Image                           #@UnresolvedImport pylint: disable=import-outside-toplevel
         screenshot = Image.new("RGBA", (width, height))
         for wid, x, y, img in reversed(regions):
             pixel_format = img.get_pixel_format()
