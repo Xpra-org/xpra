@@ -1202,6 +1202,7 @@ class ServerCore:
                 data = conn.read(1)
                 if not data:
                     netlog("%s connection already closed", socktype)
+                    noerr(conn.close)
                     return
                 pre_read = [data, ]
                 netlog("pre_read data=%r", data)
