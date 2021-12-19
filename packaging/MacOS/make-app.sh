@@ -307,6 +307,9 @@ echo " * move GTK css"
 mv ${RSCDIR}/share/xpra/css ${RSCDIR}/
 #unused py2app scripts:
 rm ${RSCDIR}/__boot__.py ${RSCDIR}/__error__.sh
+echo " * fixup pixbuf loader"
+#executable_path is now automatically inserted?
+sed -i '' -e "s+@executable_path/++g" "${RSCDIR}/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache"
 
 echo " * docs"
 if [ -d "${JHBUILD_PREFIX}/share/xpra/doc" ]; then
