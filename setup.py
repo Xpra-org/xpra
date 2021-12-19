@@ -2061,17 +2061,9 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
         path_options += list(reversed(sorted_nicely(glob.glob("/usr/local/cuda*/bin"))))
         path_options += list(reversed(sorted_nicely(glob.glob("/opt/cuda*/bin"))))
     options = [os.path.join(x, nvcc_exe) for x in path_options]
-    def which(cmd):
-        try:
-            code, out, _ = get_status_output(["command", "-v", cmd])
-            if code==0:
-                return out
-        except:
-            pass
-        return None
     #prefer the one we find on the $PATH, if any:
     try:
-        v = which(nvcc_exe)
+        v = shutil.which(nvcc_exe)
         if v and (v not in options):
             options.insert(0, v)
     except:
