@@ -52,7 +52,6 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         key = self.headers.get("Sec-WebSocket-Key")
         if key is None:
             raise Exception("Missing Sec-WebSocket-Key header")
-        self.close_connection = False
         for upgrade_string in (
             b"HTTP/1.1 101 Switching Protocols",
             b"Upgrade: websocket",
@@ -64,6 +63,9 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             self.wfile.write(b"%s\r\n" % upgrade_string)
         self.wfile.flush()
         self.new_websocket_client(self)
+        #don't use our finish method that closes the socket,
+        #but do call the superclass's finish() method:
+        self.finish = super().finish
 
     def do_GET(self):
         upgrade_requested = (self.headers.get('upgrade') or "").lower() == 'websocket'
