@@ -50,7 +50,7 @@ class WindowServer(StubServerMixin):
 
     def setup(self):
         self.load_existing_windows()
-        self.init_thread_callbacks.append(self.reinit_window_encoders)
+        self.add_init_thread_callback(self.reinit_window_encoders)
 
     def cleanup(self):
         for window in tuple(self._window_to_id.keys()):

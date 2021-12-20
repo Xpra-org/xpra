@@ -28,6 +28,12 @@ class StubServerMixin:
         Initialize state attributes.
         """
 
+    def add_init_thread_callback(self, callback):
+        """
+        Adds a callback that will be executed
+        after the init thread has completed.
+        """
+
 
     def reset_focus(self):
         """

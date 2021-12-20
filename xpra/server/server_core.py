@@ -405,10 +405,13 @@ class ServerCore:
                     log.error("Error in initialization thread callback %s", cb)
                     log.error(" %s", e)
 
+    def add_init_thread_callback(self, callback):
+        self.init_thread_callbacks.append(callback)
+
     def after_threaded_init(self, callback):
         with self.init_thread_lock:
             if self.init_thread is None or self.init_thread.is_alive():
-                self.init_thread_callbacks.append(callback)
+                self.add_init_thread_callback(callback)
             else:
                 callback()
 

@@ -60,7 +60,7 @@ class EncodingServer(StubServerMixin):
             #try to load the fast jpeg encoders:
             load_codec("enc_jpeg")
         self.init_encodings()
-        self.init_thread_callbacks.append(self.reinit_encodings)
+        self.add_init_thread_callback(self.reinit_encodings)
 
     def reinit_encodings(self):
         self.init_encodings()
