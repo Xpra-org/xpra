@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -11,7 +11,7 @@ from xpra.os_util import hexstr
 from xpra.util import envbool
 
 from xpra.net.crypto import (
-    DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_BLOCKSIZE, DEFAULT_IV,
+    DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_IV,
     validate_backend,
     )
 
@@ -41,10 +41,11 @@ class TestCrypto(unittest.TestCase):
 
         password = "this is our secret"
         key_salt = DEFAULT_SALT
+        key_hash = DEFAULT_KEY_HASH
         iterations = DEFAULT_ITERATIONS
-        block_size = DEFAULT_BLOCKSIZE
+        block_size = DEFAULT_KEYSIZE
         #test key stretching:
-        args = password, key_salt, block_size, iterations
+        args = password, key_salt, key_hash, block_size, iterations
         secret = self.backend.get_key(*args)
         log("%s%s=%s" % (self.backend.get_key, args, hexstr(secret)))
         assert secret is not None
