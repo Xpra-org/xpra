@@ -69,6 +69,8 @@ class ServerSocketsTest(ServerTestUtil):
 		server.terminate()
 		if r!=exit_code:
 			log.error("Exit code mismatch")
+			log.error(" expected %s (%s)", estr(exit_code), exit_code)
+			log.error(" got %s (%s)", estr(r), r)
 			log.error(" server args=%s", server_args)
 			log.error(" client args=%s", client_args)
 			if r is None:
