@@ -5,14 +5,14 @@
 # later version. See the file COPYING for details.
 
 
-def silence_info(module):
-    return LoggerSilencer(module, ("info", ))
+def silence_info(module, logger="log"):
+    return LoggerSilencer(module, ("info", ), logger)
 
-def silence_warn(module):
-    return LoggerSilencer(module, ("warn", ))
+def silence_warn(module, logger="log"):
+    return LoggerSilencer(module, ("warn", ), logger)
 
-def silence_error(module):
-    return LoggerSilencer(module, ("error", ))
+def silence_error(module, logger="log"):
+    return LoggerSilencer(module, ("error", ), logger)
 
 #to silence warnings triggered by the tests:
 from xpra.log import Logger
@@ -27,14 +27,15 @@ class SilencedLogger(Logger):
 
 class LoggerSilencer:
 
-    def __init__(self, module, silence=("error", "warn", "info")):
+    def __init__(self, module, silence=("error", "warn", "info"), logger="log"):
         self.module = module
+        self.logger = logger
         self.silence = silence
         self.saved = None
     def __enter__(self):
-        self.saved = self.module.log
-        self.module.log = SilencedLogger(self.silence)
+        self.saved = getattr(self.module, self.logger)
+        setattr(self.module, self.logger, SilencedLogger(self.silence))
     def __exit__(self, *_args):
-        self.module.log = self.saved
+        setattr(self.module, self.logger, self.saved)
     def __repr__(self):
         return "LoggerSilencer"

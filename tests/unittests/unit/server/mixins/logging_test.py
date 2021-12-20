@@ -10,7 +10,7 @@ import unittest
 from unit.test_util import silence_error
 from xpra.util import AdHocStruct
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.server.mixins.logging_server import LoggingServer, log
+from xpra.server.mixins import logging_server
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
@@ -31,7 +31,7 @@ class InputMixinTest(ServerMixinTest):
         def do_log(level, line):
             log_messages.append((level, line))
         def _LoggingServer():
-            ls = LoggingServer()
+            ls = logging_server.LoggingServer()
             ls.do_log = do_log
             return ls
         self._test_mixin_class(_LoggingServer, opts, {}, FakeSource)
@@ -42,12 +42,12 @@ class InputMixinTest(ServerMixinTest):
         #multi-part:
         self.handle_packet(("logging", 20, ["multi", "messages"], time.time()))
         #invalid:
-        with silence_error(log):
+        with silence_error(logging_server):
             self.handle_packet(("logging", 20, nostr(), time.time()))
 
 
     def test_invalid(self):
-        l = LoggingServer()
+        l = logging_server.LoggingServer()
         opts = AdHocStruct()
         opts.remote_logging = "on"
         l.init(opts)
