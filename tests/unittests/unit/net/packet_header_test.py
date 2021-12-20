@@ -12,7 +12,7 @@ import unittest
 from xpra.net.header import (
     unpack_header, pack_header,
     FLAGS_BENCODE, FLAGS_RENCODE, FLAGS_CIPHER, FLAGS_YAML,
-    ZLIB_FLAG, LZ4_FLAG, LZO_FLAG, BROTLI_FLAG,
+    ZLIB_FLAG, LZ4_FLAG, BROTLI_FLAG,
     )
 
 class TestPacketHeader(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestPacketHeader(unittest.TestCase):
     def test_roundtrip(self):
         print("hello")
         for encode_flag in (FLAGS_BENCODE, FLAGS_RENCODE, FLAGS_YAML):
-            for comp_flag in (ZLIB_FLAG, LZ4_FLAG, LZO_FLAG, BROTLI_FLAG):
+            for comp_flag in (ZLIB_FLAG, LZ4_FLAG, BROTLI_FLAG):
                 for cipher in (0, FLAGS_CIPHER):
                     for level in (0, 1, 10):
                         for index in (0, 1, 255):
