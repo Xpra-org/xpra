@@ -60,7 +60,8 @@ class ChildCommandMixinTest(ServerMixinTest):
         tmpfile = os.path.join(tempfile.gettempdir(), "xpra-test-start-command-%s" % os.getpid())
         assert not os.path.exists(tmpfile)
         command = (b"touch", tmpfile.encode("utf8"))
-        self.handle_packet(("start-command", b"test", command, True))
+        with silence_info(child_command_server):
+            self.handle_packet(("start-command", b"test", command, True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
         commands = info.get("commands")
@@ -72,7 +73,8 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert os.path.exists(tmpfile)
         os.unlink(tmpfile)
         #test signals:
-        self.handle_packet(("start-command", b"sleep", b"sleep 10", True))
+        with silence_info(child_command_server):
+            self.handle_packet(("start-command", b"sleep", b"sleep 10", True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
         commands = info.get("commands")

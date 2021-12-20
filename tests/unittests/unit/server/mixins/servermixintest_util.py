@@ -97,6 +97,7 @@ class ServerMixinTest(unittest.TestCase):
         if source_mixin_class:
             self.source = source_mixin_class()
             self.protocol = AdHocStruct()
+            self.protocol.TYPE = "xpra"
             self.source.timeout_add = self.glib.timeout_add
             self.source.idle_add = self.glib.idle_add
             self.source.source_remove = self.glib.source_remove
