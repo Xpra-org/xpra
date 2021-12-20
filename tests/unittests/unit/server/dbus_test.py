@@ -26,8 +26,6 @@ class DBUSTest(unittest.TestCase):
     def test_exception_wrap(self):
         from xpra.server.dbus import dbus_common
         dbus_common.log = FakeLogger()
-        def r1():
-            return 1
         def rimporterror():
             raise ImportError()
         def rfail():
@@ -57,7 +55,7 @@ class DBUSTest(unittest.TestCase):
             f("no")
             f("0")
             os.environ["DBUS_SESSION_BUS_ADDRESS"] = "whatever"
-            f("dbus-launch")
+            w("dbus-launch")
             rm()
             f("this-is-not-a-valid-command")
             f("shlex-parsing-error '")
