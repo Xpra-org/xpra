@@ -26,13 +26,15 @@ class ChildCommandMixinTest(ServerMixinTest):
             self.do_test_command_server()
 
     def do_test_command_server(self):
-        from xpra.server.mixins.child_command_server import ChildCommandServer, log
+        from xpra.server.mixins import child_command_server
         opts = AdHocStruct()
         opts.exit_with_children = True
         opts.terminate_children = True
         opts.start_new_commands = True
         opts.start = []
         opts.start_child = []
+        opts.start_late = []
+        opts.start_child_late = []
         opts.start_after_connect = []
         opts.start_child_after_connect = []
         opts.start_on_connect = []
@@ -47,7 +49,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         def noop():
             pass
         def _ChildCommandServer():
-            ccs = ChildCommandServer()
+            ccs = child_command_server.ChildCommandServer()
             ccs.setup_menu_watcher = noop
             return ccs
         self._test_mixin_class(_ChildCommandServer, opts)
@@ -82,7 +84,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert proc_info.get("name")=="sleep"
         assert proc_info.get("dead") is False
         #send it a SIGINT:
-        with silence_info(log):
+        with silence_info(child_command_server):
             self.handle_packet(("command-signal", pid, "SIGINT"))
         time.sleep(1)
         self.mixin.child_reaper.poll()
