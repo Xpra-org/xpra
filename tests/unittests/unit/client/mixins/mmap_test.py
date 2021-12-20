@@ -9,7 +9,7 @@ import unittest
 
 from xpra.os_util import DummyContextManager
 from xpra.util import AdHocStruct
-from xpra.client.mixins.mmap import MmapClient, log
+from xpra.client.mixins import mmap
 
 from unit.test_util import silence_info, silence_error
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
@@ -23,21 +23,21 @@ class MixinsTest(ClientMixinTest):
 				raise Exception("test close failure handling")
 		import tempfile
 		tmp_dir = tempfile.gettempdir()
-		for mmap, ctx in {
+		for mmap_option, ctx in {
 			"off" : DummyContextManager(),
-			"on"  : silence_info(log),
-			tmp_dir+"/xpra-mmap-test-file-%i" % os.getpid() : silence_info(log),
-			tmp_dir+"/xpra-fail-mmap-test-file-%i" % os.getpid() : silence_error(log),
+			"on"  : silence_info(mmap),
+			tmp_dir+"/xpra-mmap-test-file-%i" % os.getpid() : silence_info(mmap),
+			tmp_dir+"/xpra-fail-mmap-test-file-%i" % os.getpid() : silence_error(mmap),
 			}.items():
 			opts = AdHocStruct()
-			opts.mmap = mmap
+			opts.mmap = mmap_option
 			opts.mmap_group = False
 			with ctx:
-				m = self._test_mixin_class(MmapClient, opts, {
+				m = self._test_mixin_class(mmap.MmapClient, opts, {
 					"mmap.enabled"		: True,
 					})
 			fail = bool(m.mmap_filename) and m.mmap_filename.find("fail")>=0
-			assert m.mmap_enabled == (mmap!="off" and not fail)
+			assert m.mmap_enabled == (mmap_option!="off" and not fail)
 			assert len(self.exit_codes)==int(fail)
 			m.cleanup()
 			#no-op:

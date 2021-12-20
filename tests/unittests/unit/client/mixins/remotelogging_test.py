@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.client.mixins.remote_logging import RemoteLogging, log
+from xpra.client.mixins import remote_logging
 from unit.test_util import silence_info
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
@@ -23,8 +23,8 @@ class MixinsTest(ClientMixinTest):
 				return
 		opts = AdHocStruct()
 		opts.remote_logging = "yes"
-		with silence_info(log):
-			self._test_mixin_class(RemoteLogging, opts, {
+		with silence_info(remote_logging):
+			self._test_mixin_class(remote_logging.RemoteLogging, opts, {
 				"remote-logging"	: True,
 				})
 		assert len(self.packets)==0
@@ -35,11 +35,13 @@ class MixinsTest(ClientMixinTest):
 		packet = self.packets[0]
 		assert packet[0]=="logging", "expected logging packet but got '%s'" % (packet[0],)
 		assert packet[1]==20, "expected INFO level (20) but got %s" % (packet[1],)
-		assert packet[2].data==message, "expected message '%s' but got '%s'" % (message, packet[2].data)
+		#data might be using a compressed wrapper:
+		data = getattr(packet[2], "data", packet[2])
+		assert data==message, "expected message '%s' but got '%s'" % (message, data)
 		#after cleanup, log messages should not be intercepted:
 		self.packets = []
 		self.mixin.cleanup()
-		with silence_info(log):
+		with silence_info(remote_logging):
 			logger.info("foo")
 		assert len(self.packets)==0
 

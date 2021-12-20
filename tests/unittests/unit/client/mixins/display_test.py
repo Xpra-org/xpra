@@ -16,9 +16,9 @@ class DisplayClientTest(ClientMixinTest):
 
 	def test_display(self):
 		with DisplayContext():
-			from xpra.client.mixins.display import DisplayClient, log
+			from xpra.client.mixins import display
 			def _DisplayClient():
-				dc = DisplayClient()
+				dc = display.DisplayClient()
 				def get_root_size():
 					return 1024, 768
 				dc.get_root_size = get_root_size
@@ -30,7 +30,7 @@ class DisplayClientTest(ClientMixinTest):
 			opts.desktop_fullscreen = False
 			opts.desktop_scaling = False
 			opts.dpi = 144
-			with silence_info(log):
+			with silence_info(display):
 				self._test_mixin_class(_DisplayClient, opts, {
 					"display" : ":999",
 					"desktop_size" : (1024, 768),

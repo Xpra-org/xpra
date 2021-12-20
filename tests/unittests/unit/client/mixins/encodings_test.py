@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util import AdHocStruct
-from xpra.client.mixins.encodings import Encodings, log
+from xpra.client.mixins import encodings
 from unit.test_util import silence_error
 from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
@@ -26,7 +26,7 @@ class EncodingClientTest(ClientMixinTest):
 		opts.video_decoders = []
 		opts.csc_modules = []
 		opts.video_encoders = []
-		m = self._test_mixin_class(Encodings, opts, {
+		m = self._test_mixin_class(encodings.Encodings, opts, {
 			"encodings" : ["rgb"],
 			"encodings.core" : ["rgb32", "rgb24", "png"],
 			"encodings.problematic" : [],
@@ -44,7 +44,7 @@ class EncodingClientTest(ClientMixinTest):
 			m.set_encoding("invalid")
 		f(set_invalid_encoding, "should not be able to set encoding 'invalid'")
 		#this will trigger a warning:
-		with silence_error(log):
+		with silence_error(encodings):
 			m.set_encoding("jpeg")
 		#quality:
 		for q in (-1, 0, 1, 99, 100):
