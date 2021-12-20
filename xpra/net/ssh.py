@@ -384,7 +384,7 @@ def do_ssh_paramiko_connect_to(transport, host, username, password, host_config=
         known_host_key = (keys or {}).get(host_key.get_name())
         def keyname():
             return host_key.get_name().replace("ssh-", "")
-        if host_key==known_host_key:
+        if known_host_key and host_key==known_host_key:
             assert host_key
             log("%s host key '%s' OK for host '%s'", keyname(), keymd5(host_key), host)
         else:
