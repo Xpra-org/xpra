@@ -212,11 +212,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError) as e:
                 log("handle_request() %s", e)
             except TypeError:
+                self.close_connection = True
                 log("handle_request()", exc_info=True)
                 log.error("Error handling http request")
                 log.error(" for '%s'", self.path)
                 log.error(" content type is %s", type(content))
             except Exception:
+                self.close_connection = True
                 log.error("Error handling http request")
                 log.error(" for '%s'", self.path, exc_info=True)
 
@@ -333,6 +335,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 })
             self.end_headers()
         except IOError as e:
+            self.close_connection = True
             log("send_head()", exc_info=True)
             log.error("Error sending '%s':", path)
             emsg = str(e)
