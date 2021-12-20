@@ -7,13 +7,13 @@
 import unittest
 
 from collections import defaultdict
+from xpra.net import net_util
 from xpra.net.net_util import (
     get_info, get_interfaces, get_interfaces_addresses, #get_interface,
     get_gateways, get_bind_IPs, do_get_bind_ifacemask,
     get_ssl_info, get_interface,
     if_nametoindex, if_indextoname, get_iface,
     get_free_tcp_port,
-    log
     )
 from unit.test_util import silence_error
 
@@ -41,7 +41,7 @@ class TestVersionUtilModule(unittest.TestCase):
             ipmasks = do_get_bind_ifacemask(iface)
             for ip, _ in ipmasks:
                 ip_ifaces[ip].append(iface)
-        for ip, ifaces in ip_ifaces:
+        for ip, ifaces in ip_ifaces.items():
             assert get_iface(ip) in ifaces, "expected interface for ip %s to be one of %s but got %s" % (
                     ip, ifaces, get_iface(ip))
         ia = get_interfaces_addresses()
@@ -65,7 +65,7 @@ class TestVersionUtilModule(unittest.TestCase):
         invalid_iface("")
         invalid_iface("%")
         invalid_iface(":")
-        with silence_error(log):
+        with silence_error(net_util):
             invalid_iface("INVALIDHOSTNAME")
         invalid_iface("10.0.0")
         get_iface("localhost")
