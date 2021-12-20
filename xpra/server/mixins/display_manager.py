@@ -41,6 +41,9 @@ class DisplayManager(StubServerMixin):
         self.default_dpi = int(opts.dpi)
         self.bit_depth = self.get_display_bit_depth()
 
+    def get_display_bit_depth(self):
+        return 0
+
 
     def parse_hello(self, ss, caps, send_ui):
         if send_ui:

@@ -9,6 +9,8 @@ import shlex
 import os.path
 from time import monotonic
 
+from gi.repository import GLib
+
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.child_reaper import getChildReaper, reaper_cleanup
 from xpra.os_util import (
@@ -66,7 +68,7 @@ class ChildCommandServer(StubServerMixin):
             self.session_name = ""
         self.menu_provider = None
         #wait for main loop to run:
-        self.idle_add(self.late_start)
+        GLib.idle_add(self.late_start)
 
     def late_start(self):
         def do_late_start():
