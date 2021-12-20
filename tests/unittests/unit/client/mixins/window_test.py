@@ -36,6 +36,7 @@ class WindowManagerTest(ClientMixinTest):
 			opts.modal_windows = True
 			opts.border = "red"
 			opts.mousewheel = "yes"
+			opts.tray_icon = "yes"
 			self._test_mixin_class(_WindowClient, opts)
 
 def main():
