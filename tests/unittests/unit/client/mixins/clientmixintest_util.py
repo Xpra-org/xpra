@@ -79,12 +79,13 @@ class ClientMixinTest(unittest.TestCase):
 	def fake_quit(self, code):
 		self.exit_codes.append(code)
 
-	def _test_mixin_class(self, mclass, opts, caps=None):
+	def _test_mixin_class(self, mclass, opts, caps=None, protocol_type="xpra"):
 		x = self.mixin = mclass()
 		x.quit = self.fake_quit
 		fake_protocol = AdHocStruct()
 		fake_protocol.get_info = lambda : {}
 		fake_protocol.set_compression_level = lambda _x : None
+		fake_protocol.TYPE = protocol_type
 		x._protocol = fake_protocol  #pylint: disable=protected-access
 		x.add_packet_handlers = self.add_packet_handlers
 		x.add_packet_handler = self.add_packet_handler
