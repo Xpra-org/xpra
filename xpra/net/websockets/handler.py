@@ -52,6 +52,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         key = self.headers.get("Sec-WebSocket-Key")
         if key is None:
             raise Exception("Missing Sec-WebSocket-Key header")
+        self.close_connection = False
         for upgrade_string in (
             b"HTTP/1.1 101 Switching Protocols",
             b"Upgrade: websocket",
@@ -111,3 +112,9 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             self.send_error(405, "Method Not Allowed")
             return
         super().handle_request()
+
+    def finish(self):
+        super().finish()
+        log("finish() close_connection=%s, connection=%s", self.close_connection, self.connection)
+        if self.close_connection:
+            self.connection.close()
