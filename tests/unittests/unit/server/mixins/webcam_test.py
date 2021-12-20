@@ -16,11 +16,12 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 class WebcamMixinTest(ServerMixinTest):
 
     def test_webcam(self):
-        from xpra.server.mixins.webcam_server import WebcamServer, log as serverlog
+        from xpra.server.mixins import webcam_server
+        from xpra.server.mixins.webcam_server import WebcamServer
         from xpra.server.source.webcam_mixin import WebcamMixin, log as sourcelog
         opts = AdHocStruct()
         opts.webcam = "yes"
-        with silence_info(serverlog):
+        with silence_info(webcam_server):
             self._test_mixin_class(WebcamServer, opts, {}, WebcamMixin)
         if self.mixin.get_info(self.protocol).get("webcam", {}).get("virtual-video-devices", 0)>0:
             with silence_info(sourcelog):
