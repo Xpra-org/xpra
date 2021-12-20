@@ -9,7 +9,7 @@ import unittest
 
 from xpra.util import AdHocStruct
 from xpra.codecs.image_wrapper import ImageWrapper
-from xpra.net.rfb.rfb_source import RFBSource
+from xpra.server.rfb.rfb_source import RFBSource
 
 def noop(*_args):
     pass
