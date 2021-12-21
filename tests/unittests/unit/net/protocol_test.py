@@ -10,12 +10,15 @@ import unittest
 from gi.repository import GLib
 
 from xpra.util import csv, envint, envbool
-from xpra.net.protocol import Protocol, verify_packet, log
+from xpra.net import protocol
+from xpra.net.protocol import Protocol, verify_packet
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 from unit.test_util import silence_error
+
+log = protocol.log
 
 TIMEOUT = envint("XPRA_PROTOCOL_TEST_TIMEOUT", 20)
 PROFILING = envbool("XPRA_PROTOCOL_PROFILING", False)
@@ -83,7 +86,15 @@ def make_profiling_protocol_class(protocol_class):
 class ProtocolTest(unittest.TestCase):
     protocol_class = Protocol
 
-    def make_memory_protocol(self, data=(b""), read_buffer_size=1, hangup_delay=0, process_packet_cb=noop, get_packet_cb=nodata):
+    @classmethod
+    def setUpClass(cls):
+        from xpra.net import packet_encoding
+        packet_encoding.init_all()
+        from xpra.net import compression
+        compression.init_all()
+
+    def make_memory_protocol(self, data=(b""), read_buffer_size=1, hangup_delay=0,
+                             process_packet_cb=noop, get_packet_cb=nodata):
         conn = FastMemoryConnection(data)
         if PROFILING:
             pc = make_profiling_protocol_class(self.protocol_class)
@@ -104,7 +115,7 @@ class ProtocolTest(unittest.TestCase):
             assert verify_packet(x) is False
         assert verify_packet(["foo", 1]) is True
         assert verify_packet(["foo", [1,2,3], {1:2}]) is True
-        with silence_error(log):
+        with silence_error(protocol):
             assert verify_packet(["no-floats test", 1.1]) is False, "floats are not allowed"
             assert verify_packet(["foo", [None], {1:2}]) is False, "no None values"
             assert verify_packet(["foo", [1,2,3], {object() : 2}]) is False
@@ -116,19 +127,19 @@ class ProtocolTest(unittest.TestCase):
 
     def do_test_invalid_data(self, data):
         errs = []
-        protocol = self.make_memory_protocol(data)
+        proto = self.make_memory_protocol(data)
         def check_failed():
-            if not protocol.is_closed():
+            if not proto.is_closed():
                 errs.append("protocol not closed")
-            if protocol.input_packetcount>0:
-                errs.append("processed %i packets" % protocol.input_packetcount)
-            if protocol.input_raw_packetcount==0:
+            if proto.input_packetcount>0:
+                errs.append("processed %i packets" % proto.input_packetcount)
+            if proto.input_raw_packetcount==0:
                 errs.append("not read any raw packets")
             loop.quit()
         loop = GLib.MainLoop()
         GLib.timeout_add(500, check_failed)
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
-        protocol.start()
+        proto.start()
         loop.run()
         assert not errs, "%s" % csv(errs)
 
@@ -180,16 +191,16 @@ class ProtocolTest(unittest.TestCase):
         parsed_packets = []
         def process_packet_cb(proto, packet):
             #log.info("process_packet_cb%s", packet[0])
-            if packet[0]==Protocol.CONNECTION_LOST:
+            if packet[0]==protocol.CONNECTION_LOST:
                 loop.quit()
             else:
                 parsed_packets.append(packet[0])
         #run the protocol on this data:
         loop = GLib.MainLoop()
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
-        protocol = self.make_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
+        proto = self.make_memory_protocol(ldata, read_buffer_size=65536, process_packet_cb=process_packet_cb)
         start = time.monotonic()
-        protocol.start()
+        proto.start()
         loop.run()
         end = time.monotonic()
         assert len(parsed_packets)==N*3, "expected to parse %i packets but got %i" % (N*3, len(parsed_packets))
@@ -224,23 +235,23 @@ class ProtocolTest(unittest.TestCase):
                 packet = many.pop(0)
                 return (packet, None, None, None, False, True, False)
             except IndexError:
-                protocol.close()
+                proto.close()
                 return (None, )
         def process_packet_cb(proto, packet):
-            if packet[0]==Protocol.CONNECTION_LOST:
+            if packet[0]==protocol.CONNECTION_LOST:
                 GLib.timeout_add(1000, loop.quit)
-        protocol = self.make_memory_protocol(None, process_packet_cb=process_packet_cb, get_packet_cb=get_packet_cb)
-        conn = protocol._conn
+        proto = self.make_memory_protocol(None, process_packet_cb=process_packet_cb, get_packet_cb=get_packet_cb)
+        conn = proto._conn
         loop = GLib.MainLoop()
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
-        protocol.enable_compressor("lz4")
-        protocol.enable_encoder("rencode")
-        protocol.start()
-        protocol.source_has_more()
+        proto.enable_compressor("lz4")
+        proto.enable_encoder("rencode")
+        proto.start()
+        proto.source_has_more()
         start = time.monotonic()
         loop.run()
         end = time.monotonic()
-        assert protocol.is_closed()
+        assert proto.is_closed()
         log("protocol: %s", protocol)
         log("%s write-data=%s", conn, len(conn.write_data))
         total_size = sum(len(packet) for packet in conn.write_data)
@@ -248,9 +259,9 @@ class ProtocolTest(unittest.TestCase):
         log("bytes=%s, elapsed=%s", total_size, elapsed)
         if SHOW_PERF:
             print("\n")
-            print("%-9s format thread:\t\t\t%iMB/s" % (protocol.TYPE, int(total_size/elapsed//1024//1024)))
+            print("%-9s format thread:\t\t\t%iMB/s" % (proto.TYPE, int(total_size/elapsed//1024//1024)))
             n_packets = len(packets)*N
-            print("%-9s packets formatted per second:\t\t%i" % (protocol.TYPE, int(n_packets/elapsed)))
+            print("%-9s packets formatted per second:\t\t%i" % (proto.TYPE, int(n_packets/elapsed)))
         assert conn.write_data
 
 
