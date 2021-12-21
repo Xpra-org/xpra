@@ -61,6 +61,12 @@ class X11ServerTest(ServerTestUtil):
 		assert display in self.dotxpra.displays(), "server display not found"
 		#shut it down now
 		self.check_stop_server(server, "stop", display)
+		#the socket may be removed before the vfb is stopped,
+		#so wait a little:
+		for i in range(5):
+			if display not in self.find_X11_displays():
+				break
+			time.sleep(1)
 		assert display not in self.find_X11_displays(), "the display %s should have been killed" % display
 
 
