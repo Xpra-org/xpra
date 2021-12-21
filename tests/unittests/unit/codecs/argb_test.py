@@ -12,7 +12,7 @@ from xpra.codecs.argb import argb  #pylint: disable=no-name-in-module
 
 
 def measure_fn(fn, data, *args):
-    N = 100
+    N = 10
     start = monotonic()
     for _ in range(N):
         r = fn(data, *args)
