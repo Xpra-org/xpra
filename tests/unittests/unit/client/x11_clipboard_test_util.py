@@ -23,13 +23,13 @@ def has_xclip():
 class X11ClipboardTestUtil(X11ClientTestUtil):
 
 	def get_clipboard_value(self, display, selection="clipboard"):
-		out = X11ClientTestUtil.get_command_output("xclip -d %s -selection %s -o" % (display, selection), shell=True)
+		out = X11ClientTestUtil.get_command_output("xclip -display %s -selection %s -o" % (display, selection), shell=True)
 		return out.decode()
 
 	def set_clipboard_value(self, display, value, selection="clipboard"):
-		cmd = "echo -n '%s' | xclip -d %s -selection %s -i" % (value, display, selection)
+		cmd = "echo -n '%s' | xclip -display %s -selection %s -i" % (value, display, selection)
 		xclip = self.run_command(cmd, shell=True)
-		assert pollwait(xclip, 5)==0, "xclip command %s returned %s" % (cmd, xclip.poll())
+		assert pollwait(xclip, 5)==0, "xclip command '%s' returned %s" % (cmd, xclip.poll())
 
 
 	def copy_and_verify(self, display1, display2, synced=True, wait=1, selection="clipboard"):
