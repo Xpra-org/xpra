@@ -83,6 +83,13 @@ GObject.type_register(TestCallee)
 
 class SubprocessWrapperTest(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        from xpra.net import packet_encoding
+        packet_encoding.init_all()
+        from xpra.net import compression
+        compression.init_compressors("none")
+
     def test_loopback_caller(self):
         mainloop = GLib.MainLoop()
         lp = loopback_process()
