@@ -330,8 +330,9 @@ def load_menu():
         l = sum(len(x) for x in xdg_menu_data.values())
         log.info("loaded %i start menu entries from %i sub-menus in %.1f seconds",
                  l, len(xdg_menu_data), end-start)
-    if icon_util.large_icons:
-        log.warn("Warning: found %i large icon%s:", len(icon_util.large_icons), engs(icon_util.large_icons))
+    n_large = len(icon_util.large_icons)
+    if n_large:
+        log.warn("Warning: found %i large icon%s:", n_large, engs(n_large))
         for filename, size in icon_util.large_icons:
             log.warn(" '%s' (%i KB)", filename, size//1024)
         log.warn(" more bandwidth will be used by the start menu data")
