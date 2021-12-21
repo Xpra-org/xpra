@@ -582,11 +582,15 @@ class ServerCore(object):
         if www_dir:
             self._www_dir = www_dir
         else:
-            for ad,d in (
+            dirs = [
                 (get_resources_dir(), "html5"),
                 (get_resources_dir(), "www"),
                 (get_app_dir(), "www"),
-                ):
+                ]
+            if POSIX:
+                for d in ("/usr/share/xpra", "/usr/local/share/xpra"):
+                    dirs.append((d, "www"))
+            for ad,d in dirs:
                 self._www_dir = os.path.abspath(os.path.join(ad, d))
                 if os.path.exists(self._www_dir):
                     httplog("found html5 client in '%s'", self._www_dir)
