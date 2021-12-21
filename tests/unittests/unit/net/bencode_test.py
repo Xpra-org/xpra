@@ -312,7 +312,8 @@ class TestFailCython(unittest.TestCase):
         try:
             #backup = sys.modules.copy()
             sys.modules["xpra.net.bencode.cython_bencode"] = None
-            with silence_warn(get_util_logger()):
+            from xpra import os_util
+            with silence_warn(os_util, "util_logger"):
                 bencode.init()
         finally:
             del sys.modules["xpra.net.bencode.cython_bencode"]
