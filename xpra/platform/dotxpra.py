@@ -140,15 +140,15 @@ class DotXpra:
                 debug("%s.close()", sock, exc_info=True)
 
 
-    def displays(self, check_uid=0, matching_state=None):
+    def displays(self, check_uid=None, matching_state=None):
         return list(set(v[1] for v in self.sockets(check_uid, matching_state)))
 
-    def sockets(self, check_uid=0, matching_state=None):
+    def sockets(self, check_uid=None, matching_state=None):
         #flatten the dictionnary into a list:
         return list(set((v[0], v[1]) for details_values in
                         self.socket_details(check_uid, matching_state).values() for v in details_values))
 
-    def socket_paths(self, check_uid=0, matching_state=None, matching_display=None):
+    def socket_paths(self, check_uid=None, matching_state=None, matching_display=None):
         paths = []
         for details in self.socket_details(check_uid, matching_state, matching_display).values():
             for _, _, socket_path in details:

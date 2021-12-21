@@ -66,7 +66,7 @@ class DotXpra:
 
     #find the matching sockets, and return:
     #(state, local_display, sockpath)
-    def socket_details(self, check_uid=0, matching_state=None, matching_display=None):
+    def socket_details(self, check_uid=None, matching_state=None, matching_display=None):
         np = self.get_all_namedpipes()
         if not np:
             return {}
