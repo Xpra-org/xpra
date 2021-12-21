@@ -53,12 +53,9 @@ class TestCompression(unittest.TestCase):
                 raise Exception("%s is not a valid compression" % x)
 
     def test_compressed_wrapper(self):
-        try:
-            compression.compressed_wrapper("test", b"abc")
-        except compression.InvalidCompressionException:
-            pass
-        else:
-            raise Exception("should not be able to use the wrapper without enabling a compressor")
+        r = compression.compressed_wrapper("test", b"a"*(compression.MIN_COMPRESS_SIZE+1))
+        if not r.datatype.startswith("raw"):
+            raise Exception("should not be able to use the wrapper without enabling a compressor, but got %s" % r)
         for x in ("lz4", "brotli", "zlib", "none"):
             if not compression.use(x):
                 continue
