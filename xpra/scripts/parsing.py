@@ -543,7 +543,7 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
         _parse_host_string(host, 22)
         ssh_port = desc.pop("port", 22)
         if ssh_port!=22:
-            desc["ssh-port"] = ssh_port
+            desc["port"] = ssh_port
         username = desc.get("username")
         password = desc.get("password")
         host = desc.get("host")

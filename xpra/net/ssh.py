@@ -156,7 +156,7 @@ class SSHProxyCommandConnection(SSHSocketConnection):
 def ssh_paramiko_connect_to(display_desc):
     #plain socket attributes:
     host = display_desc["host"]
-    port = display_desc.get("ssh-port", 22)
+    port = display_desc.get("port", 22)
     #ssh and command attributes:
     username = display_desc.get("username") or get_username()
     if "proxy_host" in display_desc:
@@ -204,7 +204,7 @@ def ssh_paramiko_connect_to(display_desc):
                 host = host_config.get("hostname", host)
                 if "username" not in display_desc:
                     username = host_config.get("user", username)
-                if "ssh-port" not in display_desc:
+                if "port" not in display_desc:
                     port = host_config.get("port", port)
                     try:
                         port = int(port)
@@ -944,7 +944,7 @@ def ssh_exec_connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=ssh_
         except Exception as e:
             print("error trying to stop ssh tunnel process: %s" % e)
     host = display_desc["host"]
-    port = display_desc.get("ssh-port", 22)
+    port = display_desc.get("port", 22)
     username = display_desc.get("username")
     display = display_desc.get("display")
     info = {

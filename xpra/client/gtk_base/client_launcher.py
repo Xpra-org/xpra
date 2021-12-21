@@ -720,7 +720,7 @@ class ApplicationWindow:
                     password = username[ppos+1:]
                     username = username[:ppos]
             if self.config.ssh_port and self.config.ssh_port!=22:
-                params["ssh-port"] = self.config.ssh_port
+                params["port"] = self.config.ssh_port
             ssh_cmd = parse_ssh_string(self.config.ssh)
             ssh_cmd_0 = ssh_cmd[0].strip().lower()
             self.is_putty = ssh_cmd_0.endswith("plink") or ssh_cmd_0.endswith("plink.exe")
