@@ -22,6 +22,11 @@ SERVER_TIMEOUT = envint("XPRA_TEST_SERVER_TIMEOUT", 8)
 STOP_WAIT_TIMEOUT = envint("XPRA_STOP_WAIT_TIMEOUT", 20)
 
 
+def log_gap(N=10):
+    for _ in range(N):
+        log("")
+
+
 def estr(r):
     s = EXIT_STR.get(r)
     if s:
