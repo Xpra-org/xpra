@@ -2847,7 +2847,7 @@ def run_clean(opts, args):
             print("session %s not found" % (display,))
             continue
         sockpath = os.path.join(session_dir, "socket")
-        state = dotxpra.is_socket_match(sockpath, check_uid=uid, matching_state=None)
+        state = dotxpra.is_socket_match(sockpath, check_uid=uid)
         if state in (dotxpra.LIVE, dotxpra.INACCESSIBLE):
             #this session is still active
             #do not try to clean it!
