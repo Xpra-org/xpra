@@ -15,6 +15,14 @@ from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 class AudioMixinTest(ServerMixinTest):
 
+    @classmethod
+    def setUpClass(cls):
+        ServerMixinTest.setUpClass()
+        from xpra.net import packet_encoding
+        packet_encoding.init_all()
+        from xpra.net import compression
+        compression.init_all()
+
     def test_audio(self):
         from xpra.server.mixins import audio_server
         from xpra.server.source.audio_mixin import AudioMixin
