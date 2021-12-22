@@ -111,6 +111,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
                 ('sound-data', b'opus', b'fc4d2e0df8779efc983d56a4881571c36a50ce90597b0be6a8d4d9194d5620c2c0bd0b9d7ecb0b8e724e7a9acbb9e9cf1d5ec31635f1bfa99ec410c49fc09bed96b9dd5a9b372c0e09a9ffd8ab8bfe3cbcdb97f2170cd3a1ddcce7505b2824c81aefefec32a085dabd037e36d65f5fd652f9c33d96673b2bcedf4d2a21d7d5dd1406f0c06d7bddd6defadc6b6de26d6924e071017d8fdb25645f50105c730413', {b'duration': 20000000, b'timestamp': 73500000, b'time': 159963616, 'sequence': 0}),
                 ('sound-data', b'opus', '', {'end-of-stream': True, 'sequence': 0}),
             ]
+        L = len(packet_data)
         def feed_data():
             packet = packet_data.pop(0)
             self.handle_packet(packet)
@@ -129,7 +130,8 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         self.glib.timeout_add(5000, stop)
         #self.debug_all()
         self.main_loop.run()
-        assert not packet_data, "data was not fed to the receiver"
+        assert len(packet_data)<L, "none of the data was fed to the receiver"
+        assert not packet_data, "not all the data was fed to the receiver: remains: %s" % len(packet_data)
         self.verify_packet(0, ("sound-control", "start", "opus"))
         self.verify_packet(1, ("sound-control", "new-sequence", 1))
         #assert not self.packets, "sent some unexpected packets: %s" % (self.packets,)
