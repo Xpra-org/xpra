@@ -88,6 +88,7 @@ class ProtocolTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        unittest.TestCase.setUpClass()
         from xpra.net import packet_encoding
         packet_encoding.init_all()
         from xpra.net import compression
