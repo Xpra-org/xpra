@@ -186,15 +186,15 @@ class DotXpra:
                 #ie: /run/user/1000/xpra/10/socket
                 sockpath = os.path.join(session_dir, "socket")
                 if os.path.exists(sockpath):
-                    state = self.is_socket_match(sockpath, None, (self.LIVE, self.UNKNOWN))
-                    if state:
+                    state = self.is_socket_match(sockpath)
+                    if state is self.LIVE:
                         return state
             #when not using a session directory,
             #add the prefix to prevent clashes on NFS:
             #ie: "~/.xpra/HOSTNAME-10"
             sockpath = os.path.join(d, PREFIX+strip_display_prefix(display))
-            state = self.is_socket_match(sockpath, None, (self.LIVE, self.UNKNOWN))
-            if state:
+            state = self.is_socket_match(sockpath)
+            if state is self.LIVE:
                 return state
         return state or self.DEAD
 
