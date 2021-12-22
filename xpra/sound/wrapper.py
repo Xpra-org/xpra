@@ -273,8 +273,11 @@ class sound_subprocess_wrapper(subprocess_caller):
     def verify_started(self):
         p = self.process
         log("verify_started() process=%s, info=%s, codec=%s", p, self.info, self.codec)
-        if p is None or p.poll() is not None:
-            #process has terminated already
+        if p is None:
+            log("no process")
+            return
+        if p.poll() is not None:
+            log("process has already terminated: exit code=%s", p.poll())
             return
         #if we don't get an "info" packet, then the pipeline must have failed to start
         if not self.info:
