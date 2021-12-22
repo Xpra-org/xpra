@@ -424,7 +424,7 @@ class AudioClient(StubClientMixin):
             log("sound_sink_state_changed(%s, %s) not the current sink, ignoring it", sound_sink, state)
             return
         log("sound_sink_state_changed(%s, %s) on_sink_ready=%s", sound_sink, state, self.on_sink_ready)
-        if state==b"ready" and self.on_sink_ready:
+        if bytestostr(state)=="ready" and self.on_sink_ready:
             if not self.on_sink_ready():
                 self.on_sink_ready = None
         self.emit("speaker-changed")
