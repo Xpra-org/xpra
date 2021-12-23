@@ -769,7 +769,7 @@ class X11ServerCore(GTKServerBase):
                 sources[0].may_notify(XPRA_DPI_NOTIFICATION_ID, "DPI Issue", body, icon_name="font")
 
     def set_dpi(self, xdpi, ydpi):
-        raise NotImplementedError
+        """ overriden in the seamless server """
 
 
     def _process_server_settings(self, _proto, packet):
