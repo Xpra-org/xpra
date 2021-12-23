@@ -455,9 +455,13 @@ class XpraServer(GObject.GObject, X11ServerBase):
             wm.set_desktop_geometry(width, height)
 
     def set_dpi(self, xdpi, ydpi):
-        wm = self._wm
-        if wm:
-            wm.set_dpi(xdpi, ydpi)
+        #this is used by some newer versions of the dummy driver (xf86-driver-dummy)
+        #(and will not be honoured by anything else..)
+        root = get_default_root_window()
+        xid = root.get_xid()
+        raw_prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
+        raw_prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
+        screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
 
     def add_system_tray(self):
