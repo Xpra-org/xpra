@@ -439,7 +439,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         except Exception as e:
             geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
             geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
-            geomlog.error(" %s", e)
+            geomlog.error(" %s", str(e) or type(e))
 
 
     def set_desktop_geometry_attributes(self, w, h):
