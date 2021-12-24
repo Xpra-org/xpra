@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.3
+%define version 4.3.1
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -614,6 +614,19 @@ fi
 
 
 %changelog
+* Fri Dec 24 2021 Antoine Martin <antoine@xpra.org> 4.3.1-10
+- fix vpx encoder
+- ssh errors with some versions of paramiko
+- failures to locate existing servers (ie: remote start / attach)
+- dpi errors with desktop servers, causing blurry scaling
+- 'video-scaling' argument parsing errors
+- duplicate dpi xsettings
+- avoid resource leak warning
+- proxy video encoder errors
+- update some of the failing unit tests
+- MacOS broken helper commands, pixbuf loader path errors
+- try harder to locate the html5 client installation path
+
 * Wed Dec 08 2021 Antoine Martin <antoine@xpra.org> 4.3-10
 - Platforms, build and packaging:
    arm64 support #3291, including nvenc and nvjpeg: #3378

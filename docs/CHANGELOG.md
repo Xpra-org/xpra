@@ -1,5 +1,18 @@
 # Changelog
 
+## [4.3.1] 2021-12-24
+* fix vpx encoder
+* ssh errors with some versions of paramiko
+* failures to locate existing servers (ie: remote start / attach)
+* dpi errors with desktop servers, causing blurry scaling
+* 'video-scaling' argument parsing errors
+* duplicate dpi xsettings
+* avoid resource leak warning
+* proxy video encoder errors
+* update some of the failing unit tests
+* MacOS broken helper commands, pixbuf loader path errors
+* try harder to locate the html5 client installation path
+
 ## [4.3] 2021-12-05
 * Platforms, build and packaging:
 	* [arm64 support](https://github.com/Xpra-org/xpra/issues/3291), including [nvenc and nvjpeg](https://github.com/Xpra-org/xpra/issues/3378)

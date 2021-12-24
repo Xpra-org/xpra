@@ -1,3 +1,18 @@
+xpra (4.3.1-1) UNRELEASED; urgency=low
+  * fix vpx encoder
+  * ssh errors with some versions of paramiko
+  * failures to locate existing servers (ie: remote start / attach)
+  * dpi errors with desktop servers, causing blurry scaling
+  * 'video-scaling' argument parsing errors
+  * duplicate dpi xsettings
+  * avoid resource leak warning
+  * proxy video encoder errors
+  * update some of the failing unit tests
+  * MacOS broken helper commands, pixbuf loader path errors
+  * try harder to locate the html5 client installation path
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 24 Dec 2021 11:41:23 +0700
+
 xpra (4.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     - arm64 support #3291, including nvenc and nvjpeg: #3378
