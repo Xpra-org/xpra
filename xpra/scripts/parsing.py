@@ -1326,7 +1326,7 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="video_decoders", default=[],
                       help="Specify which video decoders to enable,"
                       +" to get a list of all the options specify 'help'")
-    group.add_option("--video-scaling", action="append",
+    group.add_option("--video-scaling", action="store",
                       metavar="SCALING",
                       dest="video_scaling", type="str", default=defaults.video_scaling,
                       help="How much automatic video downscaling should be used,"
