@@ -369,11 +369,11 @@ def make_session_dir(mode, sessions_dir, display_name, uid=0, gid=0):
     session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
     if not os.path.exists(session_dir):
         try:
-            os.makedirs(session_dir, 0o750)
+            os.makedirs(session_dir, 0o750, exist_ok=True)
         except OSError:
             import tempfile
             session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
-            os.makedirs(session_dir, 0o750)
+            os.makedirs(session_dir, 0o750, exist_ok=True)
         ROOT = POSIX and getuid()==0
         if ROOT and (session_dir.startswith("/run/user") or session_dir.startswith("/run/xpra")):
             os.lchown(session_dir, uid, gid)
