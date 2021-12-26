@@ -4,8 +4,10 @@
 # later version. See the file COPYING for details.
 
 import sys
+import json
 import shlex
 import os.path
+from subprocess import Popen, PIPE
 
 from xpra.util import envbool
 from xpra.os_util import (
@@ -16,6 +18,7 @@ from xpra.os_util import (
     osexpand, umask_context,
     close_all_fds,
     )
+from xpra.log import Logger
 from xpra.platform.dotxpra import norm_makepath
 from xpra.scripts.config import InitException
 
@@ -36,12 +39,21 @@ def source_env(source=()) -> dict:
     return env
 
 
+def decode_dict(out):
+    env = {}
+    for line in out.splitlines():
+        parts = line.split("=", 1)
+        if len(parts)==2:
+            env[parts[0]] = parts[1]
+    return env
+
+def decode_json(out):
+    return json.loads(out)
+
+
 # credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
 def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
-    import json
-    import subprocess
-    from xpra.log import Logger
     log = Logger("exec")
     cmd = shlex.split(file_to_source_path)
     filename = which(cmd[0])
@@ -64,31 +76,17 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     else:
         log("first line of '%s': %r", filename, first_line)
     if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
-        def decode(out):
-            env = {}
-            for line in out.splitlines():
-                parts = line.split("=", 1)
-                if len(parts)==2:
-                    env[parts[0]] = parts[1]
-            log("decode(%r)=%s", out, env)
-            return env
+        decode = decode_dict
     else:
         source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", filename)
-        dump = 'python%i.%i -c "import os, json;print(json.dumps(dict(os.environ)))"' % (sys.version_info.major, sys.version_info.minor)
-        cmd = ['/bin/bash', '-c', '%s && %s' % (source, dump)]
-        def decode(out):
-            try:
-                env = json.loads(out)
-                log("json loads(%r)=%s", out, env)
-                return env
-            except json.decoder.JSONDecodeError:
-                log.error("Error decoding json output from sourcing script '%s'",
-                          file_to_source_path, exc_info=True)
-                return {}
+        dump = 'python%i.%i -c "import os, json;print(json.dumps(dict(os.environ)))"' % (
+            sys.version_info.major, sys.version_info.minor)
+        cmd = ['/bin/bash', '-c', '%s 1>&2 && %s' % (source, dump)]
+        decode = decode_json
     try:
         log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        out = proc.communicate()[0]
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        out, err = proc.communicate()
         if proc.returncode!=0:
             log.error("Error %i running source script '%s'", proc.returncode, filename)
     except OSError as e:
@@ -98,14 +96,18 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         log.error(" %s", e)
         return {}
     log("stdout(%s)=%r", filename, out)
-    if not out:
-        return {}
-    try:
-        out = out.decode()
-    except UnicodeDecodeError:
-        log.error("Error decoding output from '%s'", filename, exc_info=True)
-        return {}
-    return decode(out)
+    log("stderr(%s)=%r", filename, err)
+    def proc_str(b, fdname="stdout"):
+        try:
+            return (b or b"").decode()
+        except UnicodeDecodeError:
+            log.error("Error decoding %s from '%s'", fdname, filename, exc_info=True)
+        return ""
+    env = {}
+    env.update(decode(proc_str(out, "stdout")))
+    env.update(decode_dict(proc_str(err, "stderr")))
+    log("env_from_sourcing%s=%s", (file_to_source_path, include_unexported_variables), env)
+    return env
 
 
 def sh_quotemeta(s):
