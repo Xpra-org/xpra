@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.3.1] 2021-12-26
+## [4.3.1] 2021-12-27
 * fix vpx encoder
 * ssh errors with some versions of paramiko
 * failures to locate existing servers (ie: remote start / attach)
@@ -11,6 +11,7 @@
 * proxy video encoder errors
 * update some of the failing unit tests
 * MacOS broken helper commands, pixbuf loader path errors
+* MacOS packaging of spng codec
 * try harder to locate the html5 client installation path
 * handle source command stdout pollution, trap all errors
 

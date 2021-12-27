@@ -614,7 +614,7 @@ fi
 
 
 %changelog
-* Sun Dec 26 2021 Antoine Martin <antoine@xpra.org> 4.3.1-10
+* Mon Dec 27 2021 Antoine Martin <antoine@xpra.org> 4.3.1-10
 - fix vpx encoder
 - ssh errors with some versions of paramiko
 - failures to locate existing servers (ie: remote start / attach)
@@ -625,6 +625,7 @@ fi
 - proxy video encoder errors
 - update some of the failing unit tests
 - MacOS broken helper commands, pixbuf loader path errors
+- MacOS packaging of spng codec
 - try harder to locate the html5 client installation path
 - handle source command stdout pollution, trap all errors
 
