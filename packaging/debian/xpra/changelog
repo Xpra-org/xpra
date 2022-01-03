@@ -1,5 +1,7 @@
 xpra (4.3.1-1) UNRELEASED; urgency=low
   * fix vpx encoder
+  * errors when using the 'password-file' command line option
+  * bash path compatibility issue with source commands
   * ssh errors with some versions of paramiko
   * failures to locate existing servers (ie: remote start / attach)
   * dpi errors with desktop servers, causing blurry scaling
@@ -13,7 +15,7 @@ xpra (4.3.1-1) UNRELEASED; urgency=low
   * try harder to locate the html5 client installation path
   * handle source command stdout pollution, trap all errors
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 27 Dec 2021 21:35:09 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 03 Jan 2022 22:09:26 +0700
 
 xpra (4.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -1,7 +1,9 @@
 # Changelog
 
-## [4.3.1] 2021-12-27
+## [4.3.1] 2022-01-03
 * fix vpx encoder
+* errors when using the 'password-file' command line option
+* bash path compatibility issue with source commands
 * ssh errors with some versions of paramiko
 * failures to locate existing servers (ie: remote start / attach)
 * dpi errors with desktop servers, causing blurry scaling

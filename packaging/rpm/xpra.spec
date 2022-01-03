@@ -614,8 +614,10 @@ fi
 
 
 %changelog
-* Mon Dec 27 2021 Antoine Martin <antoine@xpra.org> 4.3.1-10
+* Mon Jan 03 2022 Antoine Martin <antoine@xpra.org> 4.3.1-10
 - fix vpx encoder
+- errors when using the 'password-file' command line option
+- bash path compatibility issue with source commands
 - ssh errors with some versions of paramiko
 - failures to locate existing servers (ie: remote start / attach)
 - dpi errors with desktop servers, causing blurry scaling
