@@ -14,7 +14,7 @@ from xpra.util import repr_ellipsized, envint
 from xpra.os_util import load_binary_file, pollwait, OSX, POSIX
 from xpra.exit_codes import EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_SSL_CERTIFICATE_VERIFY_FAILURE
 from xpra.net.net_util import get_free_tcp_port
-from xpra.platform.dotxpra import DISPLAY_PREFIX, norm_makepath
+from xpra.platform.dotxpra import DISPLAY_PREFIX
 from unit.server_test_util import ServerTestUtil, log, estr, log_gap
 
 
@@ -78,10 +78,10 @@ class ServerSocketsTest(ServerTestUtil):
             raise Exception("expected info client to return %s but got %s" % (estr(exit_code), estr(r)))
         pollwait(server, 10)
 
-    def Xtest_default_socket(self):
+    def test_default_socket(self):
         self._test_connect([], "allow", [], b"hello", DISPLAY_PREFIX, EXIT_OK)
 
-    def Xtest_tcp_socket(self):
+    def test_tcp_socket(self):
         port = get_free_tcp_port()
         self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello",
 						"tcp://127.0.0.1:%i/" % port, EXIT_OK)
@@ -89,13 +89,13 @@ class ServerSocketsTest(ServerTestUtil):
         self._test_connect(["--bind-tcp=0.0.0.0:%i" % port], "allow", [], b"hello",
 						"ws://127.0.0.1:%i/" % port, EXIT_OK)
 
-    def Xtest_ws_socket(self):
+    def test_ws_socket(self):
         port = get_free_tcp_port()
         self._test_connect(["--bind-ws=0.0.0.0:%i" % port], "allow", [], b"hello",
 						"ws://127.0.0.1:%i/" % port, EXIT_OK)
 
 
-    def Xtest_ssl(self):
+    def test_ssl(self):
         server = None
         display_no = self.find_free_display_no()
         display = ":%s" % display_no
