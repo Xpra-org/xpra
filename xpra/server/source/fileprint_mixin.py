@@ -101,7 +101,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 log.error("Error: cannot forward authentication attributes to printer backend:")
                 log.error(" %s", e)
             if auth_password_file or password_file:
-                attributes["password-file"] = makeabs(auth_password_file or password_file)
+                attributes["password-file"] = makeabs(auth_password_file or password_file[0])
         if encryption:
             if not encryption_keyfile:
                 log.error("Error: no encryption keyfile found for printing")
