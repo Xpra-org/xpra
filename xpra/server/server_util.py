@@ -85,7 +85,8 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", filename)
         dump = 'python%i.%i -c "import os, json;print(json.dumps(dict(os.environ)))"' % (
             sys.version_info.major, sys.version_info.minor)
-        cmd = ['/bin/bash', '-c', '%s 1>&2 && %s' % (source, dump)]
+        sh = which("bash") or "/bin/sh"
+        cmd = [sh, '-c', '%s 1>&2 && %s' % (source, dump)]
         decode = decode_json
     try:
         log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
