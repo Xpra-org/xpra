@@ -396,7 +396,7 @@ def load_password_file(password_file):
         warn("Error: password file '%s' does not exist:\n" % password_file)
         return None
     try:
-        with open(password_file, "rb") as f:
+        with open(password_file, "r") as f:
             return f.read()
     except Exception as e:
         warn("Error: failed to read the password file '%s':\n" % password_file)
