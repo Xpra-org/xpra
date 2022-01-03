@@ -470,8 +470,8 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
 
     def _set_password():
         password = desc.get("password")
-        if password is None:
-            password = load_password_file(opts.password_file)
+        if password is None and opts.password_file:
+            password = load_password_file(opts.password_file[0])
             if password:
                 desc["password"] = password
         if password:
