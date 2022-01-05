@@ -82,7 +82,7 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
     if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
         decode = decode_dict
     else:
-        source = '%ssource %s' % ("set -a && " if include_unexported_variables else "", filename)
+        source = '%s. %s' % ("set -a && " if include_unexported_variables else "", filename)
         dump = 'python%i.%i -c "import os, json;print(json.dumps(dict(os.environ)))"' % (
             sys.version_info.major, sys.version_info.minor)
         sh = which("bash") or "/bin/sh"
