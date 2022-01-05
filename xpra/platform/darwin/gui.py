@@ -655,10 +655,14 @@ def can_access_display() -> bool:
     d = Quartz.CGSessionCopyCurrentDictionary()
     if not d:
         return False
-    if d.get("kCGSSessionOnConsoleKey", 0)==0:
+    kCGSSessionOnConsoleKey = d.get("kCGSSessionOnConsoleKey", 0)
+    log("kCGSSessionOnConsoleKey=%s", kCGSSessionOnConsoleKey)
+    if kCGSSessionOnConsoleKey==0:
         #GUI session doesn't own the console, or the console's screens are asleep
         return False
-    if d.get("CGSSessionScreenIsLocked", 0):
+    CGSSessionScreenIsLocked = d.get("CGSSessionScreenIsLocked", 0)
+    log("CGSSessionScreenIsLocked=%s", CGSSessionScreenIsLocked)
+    if CGSSessionScreenIsLocked:
         #screen is locked
         return False
     return True
