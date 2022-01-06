@@ -942,8 +942,13 @@ class XpraServer(gobject.GObject, X11ServerBase):
             return
         geomlog("client %s mapped window %i - %s, at: %s", ss, wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
+        cp = {}
         if len(packet)>=7:
-            self._set_client_properties(proto, wid, window, packet[6])
+            cp = packet[6]
+        #this ensures that we will initialize the window source completely,
+        #even if the client did not provide any client properties:
+        cp["event"] = "map"
+        self._set_client_properties(proto, wid, window, cp)
         if not self.ui_driver:
             self.set_ui_driver(ss)
         if self.ui_driver==ss.uuid or not self._desktop_manager.is_shown(window):
