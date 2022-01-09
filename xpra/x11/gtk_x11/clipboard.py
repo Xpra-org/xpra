@@ -20,7 +20,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
 from xpra.gtk_common.error import XError
 from xpra.clipboard.clipboard_core import (
     ClipboardProxyCore, TEXT_TARGETS,
-    must_discard, must_discard_extra, _filter_targets,
+    must_discard, must_discard_extra,
     )
 from xpra.clipboard.clipboard_timeout_helper import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.window_bindings import ( #@UnresolvedImport
