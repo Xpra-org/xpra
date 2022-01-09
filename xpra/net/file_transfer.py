@@ -11,7 +11,7 @@ import uuid
 from time import monotonic
 
 from xpra.child_reaper import getChildReaper
-from xpra.os_util import bytestostr, umask_context, POSIX, WIN32
+from xpra.os_util import bytestostr, strtobytes, umask_context, POSIX, WIN32
 from xpra.util import typedict, csv, envint, envbool, engs, net_utf8, u
 from xpra.scripts.config import parse_bool, parse_with_unit
 from xpra.simple_stats import std_unit
@@ -333,6 +333,7 @@ class FileTransferHandler(FileTransferAttributes):
             osclose(fd)
             progress(-1, "chunk no mismatch")
             return
+        file_data = strtobytes(file_data)
         #update chunk number:
         chunk_state[-1] = chunk
         digest = chunk_state[8]
