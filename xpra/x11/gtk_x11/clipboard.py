@@ -452,7 +452,10 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
                     if isinstance(data, str):
                         #the data is already in the correct format,
                         #but the cython bindings require real 'bytes'
-                        data = strtobytes(data)
+                        try:
+                            data = data.encode("utf8")
+                        except UnicodeEncodeError:
+                            data = strtobytes(data)
                     X11Window.XChangeProperty(xid, prop, dtype, dformat, data)
                 else:
                     #maybe even delete the property?
