@@ -169,7 +169,7 @@ class ClipboardInstance:
         if weownit:
             owner_info="(us)"
         else:
-            owner_info = hex(event.owner or 0)
+            owner_info = event.owner or 0
         self.log("Owner changed, reason: %s, new owner=%s" % (
                         event.reason, owner_info))
 
