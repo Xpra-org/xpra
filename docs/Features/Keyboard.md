@@ -17,7 +17,7 @@ That's because each platform does things slightly differently and xpra has to so
 ## Reporting Bugs
 First, please check for existing issues that may match your problem.
 Failing that, make sure to read the [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs) guidelines and generally you will need to include (only those that apply):
-* try the keyboard debugging tool which can be launched using `xpra keyboard-test` or from the `xpra toolbox`
+* try the keyboard debugging tool found in the `xpra toolbox`
 * active keyboard layout(s)
 * input methods
 * keyboard related configuration setup/files
