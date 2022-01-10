@@ -155,6 +155,7 @@ cdef class Encoder:
     cdef tjhandle compressor
     cdef int width
     cdef int height
+    cdef object encoding
     cdef object src_format
     cdef int quality
     cdef int grayscale
@@ -168,11 +169,12 @@ cdef class Encoder:
             raise Exception("Error: failed to instantiate a JPEG compressor")
 
     def init_context(self, encoding, width : int, height : int, src_format, options : typedict):
-        assert encoding=="jpeg"
+        assert encoding in ("jpeg", "jpega"), "invalid encoding: %s" % encoding
         assert src_format in get_input_colorspaces(encoding)
         scaled_width = options.intget("scaled-width", width)
         scaled_height = options.intget("scaled-height", height)
         assert scaled_width==width and scaled_height==height, "jpeg encoder does not handle scaling"
+        self.encoding = encoding
         self.width = width
         self.height = height
         self.src_format = src_format
@@ -194,7 +196,7 @@ cdef class Encoder:
             log.error(" %s", get_error_str())
 
     def get_encoding(self):
-        return "jpeg"
+        return self.encoding
 
     def get_width(self):
         return self.width
@@ -212,6 +214,7 @@ cdef class Encoder:
         info = get_info()
         info.update({
             "frames"        : int(self.frames),
+            "encoding"      : self.encoding,
             "width"         : self.width,
             "height"        : self.height,
             "quality"       : self.quality,
@@ -233,8 +236,19 @@ cdef class Encoder:
             cdata = encode_rgb(self.compressor, image, quality, self.grayscale)
         if not cdata:
             return None
+        client_options = {}
+        if self.encoding=="jpega":
+            from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
+            a = alpha(image)
+            planes = (a, )
+            rowstrides = (image.get_rowstride()//4, )
+            adata = do_encode_yuv(self.compressor, "YUV400P", planes,
+                                  self.width, self.height, rowstrides,
+                                  quality, TJSAMP_GRAY)
+            client_options["alpha-offset"] = len(cdata)
+            cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
         self.frames += 1
-        return memoryview(cdata), {}
+        return memoryview(cdata), client_options
 
 
 def get_error_str():
@@ -284,7 +298,7 @@ def encode(coding, image, options=None):
         cdata = encode_rgb(compressor, image, quality, grayscale)
         if not cdata:
             return None
-        now = time.time()
+        now = time.monotonic()
         if SAVE_TO_FILE:    # pragma: no cover
             filename = "./%s.jpeg" % (now, )
             with open(filename, "wb") as f:
