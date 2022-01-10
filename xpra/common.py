@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from xpra.util import envint
+from xpra.util import envint, csv
 
 #X11 constants we use for gravity:
 NorthWestGravity = 1
@@ -61,3 +61,6 @@ def noop(*_args):
 
 class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")
+
+    def __repr__(self):
+        return "KeyEvent(%s)" % csv("%s=%s" % (k, getattr(self, k)) for k in KeyEvent.__slots__)
