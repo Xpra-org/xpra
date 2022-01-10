@@ -2147,6 +2147,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         keycode = event.hardware_keycode
         keyname = Gdk.keyval_name(keyval)
         keyname = KEY_TRANSLATIONS.get((keyname, keyval, keycode), keyname)
+        if keyname=="U+001B":
+            #workaround for MS Windows, try harder to find a valid key
+            #see ticket #3417
+            keymap = Gdk.Keymap.get_default()
+            r = keymap.get_entries_for_keycode(event.hardware_keycode)
+            if r[0]:
+                for kc in r[2]:
+                    keyname = Gdk.keyval_name(kc)
+                    if keyname!="U+001B":
+                        break
         key_event = KeyEvent()
         key_event.modifiers = self._client.mask_to_names(event.state)
         key_event.keyname = keyname or ""
