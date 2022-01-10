@@ -323,6 +323,7 @@ def write_pidfile(pidfile):
                 inode = 0
         log.info("wrote pid %s to '%s'", pidstr, pidfile)
     except Exception as e:
+        log("write_pidfile(%s)", pidfile, exc_info=True)
         log.error("Error: failed to write pid %i to pidfile '%s':", os.getpid(), pidfile)
         log.error(" %s", e)
     return inode
