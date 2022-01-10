@@ -231,6 +231,7 @@ def guess_xpra_display(socket_dir, socket_dirs):
 
 def show_encoding_help(opts):
     #avoid errors and warnings:
+    opts.pidfile = None
     opts.encoding = ""
     opts.clipboard = False
     opts.notifications = False
