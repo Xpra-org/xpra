@@ -1345,7 +1345,6 @@ def get_COLORSPACES(encoding):
         out_cs.append("YUV444P")
     COLORSPACES = {
         "BGRX" : out_cs,
-        "BGRA" : out_cs,
         "XRGB" : out_cs,
         "ARGB" : out_cs,
         }
@@ -1409,7 +1408,7 @@ def get_spec(encoding, colorspace):
     #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
     global MAX_SIZE
     max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-    has_lossless_mode = colorspace in ("XRGB", "ARGB", "BGRX", "BGRA", "r210") and encoding=="h264"
+    has_lossless_mode = colorspace in ("XRGB", "BGRX", "r210") and encoding=="h264"
     cs = video_spec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED),
                       codec_class=Encoder, codec_type=get_type(),
                       quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
@@ -1625,7 +1624,7 @@ cdef class Encoder:
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
         self.cuda_device_context = cuda_device_context
-        assert src_format in ("ARGB", "XRGB", "BGRA", "BGRX", "r210"), "invalid source format %s" % src_format
+        assert src_format in ("XRGB", "BGRX", "r210"), "invalid source format %s" % src_format
         dst_formats = options.strtupleget("dst-formats")
         assert "YUV420P" in dst_formats or "YUV444P" in dst_formats
         self.width = width
@@ -1667,7 +1666,7 @@ cdef class Encoder:
     cdef _get_profile(self, options):
         #convert the pixel format into a "colourspace" string:
         csc_mode = "YUV420P"
-        if self.pixel_format in ("BGRX", "BGRA", "YUV444P"):
+        if self.pixel_format in ("BGRX", "YUV444P"):
             csc_mode = "YUV444P"
         elif self.pixel_format=="r210":
             csc_mode = "YUV444P10"
@@ -1739,7 +1738,7 @@ cdef class Encoder:
         v = None
         hasyuv444 = YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats
         nativergb = NATIVE_RGB and hasyuv444
-        if nativergb and self.src_format in ("BGRX", "BGRA"):
+        if nativergb and self.src_format in ("BGRX", ):
             v = "BGRX"
         elif self.src_format=="r210":
             v = "r210"
