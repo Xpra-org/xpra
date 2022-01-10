@@ -438,7 +438,7 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
 def alpha(image):
     pixel_format = image.get_pixel_format()
     cdef char i = pixel_format.find("A")
-    if i<0:
+    if i<0 or i>=4:
         return None
     pixels = image.get_pixels()
     assert pixels, "failed to get pixels from %s" % image
