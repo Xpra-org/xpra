@@ -40,7 +40,6 @@ from xpra.client.gobject_client_base import GObjectXpraClient
 from xpra.client.gtk_base.gtk_keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk_base.css_overrides import inject_css_overrides
 from xpra.client.mixins.window_manager import WindowClient
-from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
