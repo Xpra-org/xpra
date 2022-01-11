@@ -559,32 +559,6 @@ def livefds():
                 live.add(fd)
     return live
 
-def get_all_fds():
-    fd_dirs = ["/dev/fd", "/proc/self/fd"]
-    fds = []
-    for fd_dir in fd_dirs:
-        if os.path.exists(fd_dir):
-            for fd_str in os.listdir(fd_dir):
-                try:
-                    fd = int(fd_str)
-                    fds.append(fd)
-                except OSError:
-                    # This exception happens inevitably, because the fd used
-                    # by listdir() is already closed.
-                    pass
-            return fds
-    sys.stderr.write("Uh-oh, can't close fds, please port me to your system...\n")
-    return fds
-
-def close_all_fds(exceptions=()):
-    for fd in get_all_fds():
-        try:
-            if fd not in exceptions:
-                os.close(fd)
-        except OSError:
-            # This exception happens inevitably, because the fd used
-            # by listdir() is already closed.
-            pass
 
 def use_tty():
     from xpra.util import envbool
@@ -721,22 +695,6 @@ class OSEnvContext:
     def __repr__(self):
         return "OSEnvContext"
 
-
-class FDChangeCaptureContext:
-    __slots__ = ("enter_fds", "exit_fds")
-    def __init__(self):
-        self.enter_fds = []
-        self.exit_fds = []
-    def __enter__(self):
-        self.enter_fds = get_all_fds()
-    def __exit__(self, *_args):
-        self.exit_fds = get_all_fds()
-    def __repr__(self):
-        return "FDChangeCaptureContext"
-    def get_new_fds(self):
-        return sorted(tuple(set(self.exit_fds)-set(self.enter_fds)))
-    def get_lost_fds(self):
-        return sorted(tuple(set(self.enter_fds)-set(self.exit_fds)))
 
 class DummyContextManager:
     __slots__ = ()

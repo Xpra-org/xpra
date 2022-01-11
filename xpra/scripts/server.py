@@ -36,7 +36,6 @@ from xpra.common import CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE
 from xpra.exit_codes import EXIT_VFB_ERROR, EXIT_OK, EXIT_FAILURE, EXIT_UPGRADE
 from xpra.os_util import (
     SIGNAMES, POSIX, WIN32, OSX,
-    FDChangeCaptureContext,
     force_quit,
     which,
     get_saved_env, get_saved_env_var,
@@ -845,7 +844,6 @@ def _do_run_server(script_file, cmdline,
     def write_session_file(filename, contents):
         return save_session_file(filename, contents, uid, gid)
 
-    protected_fds = []
     protected_env = {}
     stdout = sys.stdout
     stderr = sys.stderr
@@ -860,8 +858,6 @@ def _do_run_server(script_file, cmdline,
     if POSIX and opts.displayfd:
         try:
             displayfd = int(opts.displayfd)
-            if displayfd>0:
-                protected_fds.append(displayfd)
         except ValueError as e:
             stderr.write("Error: invalid displayfd '%s':\n" % opts.displayfd)
             stderr.write(" %s\n" % e)
@@ -885,35 +881,30 @@ def _do_run_server(script_file, cmdline,
             del e
             PAM_OPEN = False
     if PAM_OPEN:
-        fdc = FDChangeCaptureContext()
-        with fdc:
-            pam = pam_session(username)
-            env = {
-                   #"XDG_SEAT"               : "seat1",
-                   #"XDG_VTNR"               : "0",
-                   "XDG_SESSION_TYPE"       : "x11",
-                   #"XDG_SESSION_CLASS"      : "user",
-                   "XDG_SESSION_DESKTOP"    : "xpra",
-                   }
-            #maybe we should just bail out instead?
-            if pam.start():
-                pam.set_env(env)
-                items = {}
-                if display_name.startswith(":"):
-                    items["XDISPLAY"] = display_name
-                if xauth_data:
-                    items["XAUTHDATA"] = xauth_data
-                pam.set_items(items)
-                if pam.open():
-                    #we can't close it, because we're not going to be root any more,
-                    #but since we're the process leader for the session,
-                    #terminating will also close the session
-                    #atexit.register(pam.close)
-                    protected_env = pam.get_envlist()
-                    os.environ.update(protected_env)
-        #closing the pam fd causes the session to be closed,
-        #and we don't want that!
-        protected_fds += fdc.get_new_fds()
+        pam = pam_session(username)
+        env = {
+               #"XDG_SEAT"               : "seat1",
+               #"XDG_VTNR"               : "0",
+               "XDG_SESSION_TYPE"       : "x11",
+               #"XDG_SESSION_CLASS"      : "user",
+               "XDG_SESSION_DESKTOP"    : "xpra",
+              }
+        #maybe we should just bail out instead?
+        if pam.start():
+            pam.set_env(env)
+            items = {}
+            if display_name.startswith(":"):
+                items["XDISPLAY"] = display_name
+            if xauth_data:
+                items["XAUTHDATA"] = xauth_data
+            pam.set_items(items)
+            if pam.open():
+                #we can't close it, because we're not going to be root any more,
+                #but since we're the process leader for the session,
+                #terminating will also close the session
+                #atexit.register(pam.close)
+                protected_env = pam.get_envlist()
+                os.environ.update(protected_env)
 
     #get XDG_RUNTIME_DIR from env options,
     #which may not have updated os.environ yet when running as root with "--uid="
@@ -1001,7 +992,7 @@ def _do_run_server(script_file, cmdline,
                 except OSError as e:
                     noerr(stderr.write, "failed to chown the log file '%s'\n" % log_filename0)
                     noerr(stderr.flush)
-        stdout, stderr = redirect_std_to_log(logfd, *protected_fds)
+        stdout, stderr = redirect_std_to_log(logfd)
         noerr(stderr.write, "Entering daemon mode; "
                      + "any further errors will be reported to:\n"
                      + ("  %s\n" % log_filename0))
