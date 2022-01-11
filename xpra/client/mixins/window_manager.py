@@ -147,6 +147,7 @@ class WindowClient(StubClientMixin):
         self.lost_focus_timer = None
         self._focused = None
         self._window_with_grab = None
+        self.pointer_grabbed = None
         self._suspended_at = 0
         self._button_state = {}
 
@@ -297,6 +298,7 @@ class WindowClient(StubClientMixin):
             },
             "focused"       : self._focused or 0,
             "grabbed"       : self._window_with_grab or 0,
+            "pointer-grab"  : self.pointer_grabbed or 0,
             "buttons"       : self._button_state,
         }
         for wid, window in tuple(self._id_to_window.items()):
@@ -1179,6 +1181,8 @@ class WindowClient(StubClientMixin):
             log("destroying window %s which has grab, ungrabbing!", wid)
             self.window_ungrab()
             self._window_with_grab = None
+        if self.pointer_grabbed==wid:
+            self.pointer_grabbed = None
         #deal with signal watchers:
         log("looking for window %i in %s", wid, self._signalwatcher_to_wids)
         for signalwatcher, wids in tuple(self._signalwatcher_to_wids.items()):

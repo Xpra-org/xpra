@@ -478,14 +478,17 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._focus_latest:
             self._focus()
         else:
-            self._client.pointer_grabbed = False
             self._unfocus()
 
     def _focus(self):
         super()._focus()
 
     def _unfocus(self):
-        self._client.window_ungrab()
+        client = self._client
+        client.window_ungrab()
+        if client.pointer_grabbed and client.pointer_grabbed==self._id:
+            #we lost focus, assume we also lost the grab:
+            client.pointer_grabbed = None
         super()._unfocus()
 
     def cancel_focus_timer(self):
@@ -1414,14 +1417,15 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                       em.ENTER_NOTIFY_MASK |
                       em.LEAVE_NOTIFY_MASK)
         r = Gdk.pointer_grab(gdkwin, True, event_mask, gdkwin, None, Gdk.CURRENT_TIME)
-        self._client.pointer_grabbed = r==Gdk.GrabStatus.SUCCESS
+        if r==Gdk.GrabStatus.SUCCESS:
+            self._client.pointer_grabbed = self._id
         grablog("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
                 args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
 
     def pointer_ungrab(self, *args):
         grablog("pointer_ungrab%s pointer_grabbed=%s",
                 args, self._client.pointer_grabbed)
-        self._client.pointer_grabbed = False
+        self._client.pointer_grabbed = None
         gdkwin = self.get_window()
         if gdkwin:
             d = gdkwin.get_display()
@@ -1431,8 +1435,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def toggle_pointer_grab(self):
         pg = self._client.pointer_grabbed
-        grablog("toggle_pointer_grab() pointer_grabbed=%s", pg)
-        if pg:
+        grablog("toggle_pointer_grab() pointer_grabbed=%s, our id=%s", pg, self._id)
+        if pg==self._id:
             self.pointer_ungrab()
         else:
             self.pointer_grab()

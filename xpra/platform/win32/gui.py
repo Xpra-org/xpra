@@ -360,7 +360,7 @@ def pointer_grab(window, *args):
     hwnd = get_window_handle(window)
     grablog("pointer_grab%s window=%s, hwnd=%s", args, window, hwnd)
     if not hwnd:
-        window._client.pointer_grabbed = False
+        window._client.pointer_grabbed = None
         return
     wrect = RECT()
     GetWindowRect(hwnd, byref(wrect))
@@ -383,7 +383,7 @@ def pointer_grab(window, *args):
     clip = RECT(*coords)
     r = ClipCursor(clip)
     grablog("ClipCursor%s=%s", coords, r)
-    window._client.pointer_grabbed = bool(r)
+    window._client.pointer_grabbed = window._id
 
 def pointer_ungrab(window, *args):
     hwnd = get_window_handle(window)
@@ -393,7 +393,7 @@ def pointer_ungrab(window, *args):
     if hwnd:
         grablog("ClipCursor(None)")
         ClipCursor(None)
-    client.pointer_grabbed = False
+    client.pointer_grabbed = None
 
 def fixup_window_style(self, *_args):
     """ a fixup function we want to call from other places """

@@ -158,7 +158,6 @@ class UIXpraClient(ClientBaseClass):
         self.keyboard_helper = None
         self.keyboard_grabbed = False
         self.keyboard_sync = False
-        self.pointer_grabbed = False
         self.kh_warning = False
         self.menu_helper = None
 
