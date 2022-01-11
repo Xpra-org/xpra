@@ -379,8 +379,9 @@ def pointer_grab(window, *args):
     if style & win32con.WS_CAPTION:
         top += GetSystemMetrics(win32con.SM_CYCAPTION)
     grablog(" window style=%s, SIZEFRAME=%s, top=%i", style_str(style), (bx, by), top)
-    clip = RECT(wrect.left+bx, wrect.top+top, wrect.right-bx, wrect.bottom-by)
-    grablog("ClipCursor(%s)", clip)
+    coords = wrect.left+bx, wrect.top+top, wrect.right-bx, wrect.bottom-by
+    clip = RECT(*coords)
+    grablog("ClipCursor%s", coords)
     ClipCursor(clip)
     window._client.pointer_grabbed = True
 
