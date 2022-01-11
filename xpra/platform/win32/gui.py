@@ -354,7 +354,7 @@ WS_NAMES = {
             }
 
 def style_str(style):
-    return csv([s for c,s in WS_NAMES.items() if (c & style)==c])
+    return csv(s for c,s in WS_NAMES.items() if (c & style)==c)
 
 def pointer_grab(window, *args):
     hwnd = get_window_handle(window)
