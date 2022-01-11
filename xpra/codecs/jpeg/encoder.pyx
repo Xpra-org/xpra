@@ -420,8 +420,8 @@ cdef do_encode_yuv(tjhandle compressor, pfstr, planes,
         src[i] = NULL
         strides[i] = 0
     for i, (xdiv, ydiv) in enumerate(divs):
-        assert rowstrides[i]>=width//xdiv, "stride %i is too small for width %i of plane %s" % (
-            rowstrides[i], width//xdiv, "YUV"[i])
+        assert rowstrides[i]>=width//xdiv, "stride %i is too small for width %i of plane %s from %s" % (
+            rowstrides[i], width//xdiv, "YUV"[i], pfstr)
         strides[i] = rowstrides[i]
     contexts = []
     try:
