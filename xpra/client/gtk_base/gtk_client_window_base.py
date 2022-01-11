@@ -478,6 +478,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._focus_latest:
             self._focus()
         else:
+            self._client.pointer_grabbed = False
             self._unfocus()
 
     def _focus(self):
