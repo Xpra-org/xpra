@@ -16,7 +16,6 @@ from xpra.os_util import (
     shellsub,
     get_util_logger,
     osexpand, umask_context,
-    close_all_fds,
     )
 from xpra.log import Logger
 from xpra.platform.dotxpra import norm_makepath
@@ -275,24 +274,33 @@ def select_log_file(log_dir, log_file, display_name):
         logpath = os.path.join(log_dir, "tmp_%d.log" % os.getpid())
     return logpath
 
-def redirect_std_to_log(logfd, *noclose_fds):
-    # save current stdout/stderr to be able to print info
-    # before exiting the non-deamon process
-    # and closing those file descriptors definitively
+# Redirects stdin from /dev/null, and stdout and stderr to the file with the
+# given file descriptor. Returns file objects pointing to the old stdout and
+# stderr, which can be used to write a message about the redirection.
+def redirect_std_to_log(logfd):
+    # preserve old stdio in new filehandles for use (and subsequent closing)
+    # by the caller
     old_fd_stdout = os.dup(1)
     old_fd_stderr = os.dup(2)
-    close_all_fds(exceptions=[logfd, old_fd_stdout, old_fd_stderr]+list(noclose_fds))
+    stdout = os.fdopen(old_fd_stdout, "w", 1)
+    stderr = os.fdopen(old_fd_stderr, "w", 1)
+
+    # close the old stdio file handles
+    os.close(0)
+    os.close(1)
+    os.close(2)
+
+    # replace stdin with /dev/null
     fd0 = os.open("/dev/null", os.O_RDONLY)
     if fd0 != 0:
         os.dup2(fd0, 0)
         os.close(fd0)
-    # reopen STDIO files
-    stdout = os.fdopen(old_fd_stdout, "w", 1)
-    stderr = os.fdopen(old_fd_stderr, "w", 1)
+
     # replace standard stdout/stderr by the log file
     os.dup2(logfd, 1)
     os.dup2(logfd, 2)
     os.close(logfd)
+
     # Make these line-buffered:
     sys.stdout = os.fdopen(1, "w", 1)
     sys.stderr = os.fdopen(2, "w", 1)
