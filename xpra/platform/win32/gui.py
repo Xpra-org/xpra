@@ -381,9 +381,9 @@ def pointer_grab(window, *args):
     grablog(" window style=%s, SIZEFRAME=%s, top=%i", style_str(style), (bx, by), top)
     coords = wrect.left+bx, wrect.top+top, wrect.right-bx, wrect.bottom-by
     clip = RECT(*coords)
-    grablog("ClipCursor%s", coords)
-    ClipCursor(clip)
-    window._client.pointer_grabbed = True
+    r = ClipCursor(clip)
+    grablog("ClipCursor%s=%s", coords, r)
+    window._client.pointer_grabbed = bool(r)
 
 def pointer_ungrab(window, *args):
     hwnd = get_window_handle(window)
