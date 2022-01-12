@@ -488,6 +488,7 @@ class Protocol:
             if caps.boolget(e, e=="bencode"):
                 self.enable_encoder(e)
                 return True
+            log("client does not support %s", e)
         log.error("no matching packet encoder found!")
         return False
 
@@ -517,6 +518,7 @@ class Protocol:
             if c in compressors or caps.boolget(c):
                 self.enable_compressor(c)
                 return
+            log("client does not support %s", c)
         log.warn("Warning: compression disabled, no matching compressor found")
         self.enable_compressor("none")
 
