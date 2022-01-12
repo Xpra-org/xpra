@@ -213,7 +213,7 @@ def do_get_sound_command():
 
 def do_get_python_exec_command():
     helpers = do_get_libexec_dir()
-    return [os.path.join(helpers, "Python")]
+    return [os.path.join(helpers, "Python"), "-c"]
 
 def do_get_python_execfile_command():
     helpers = do_get_libexec_dir()
