@@ -305,7 +305,7 @@ def restore_script_env(env):
     if "_PYTHON_WRAPPER_VARS" in env:
         for v in env["_PYTHON_WRAPPER_VARS"].split():
             origv = "_" + v
-            if origv in env:
+            if env.get(origv):
                 env[v] = env[origv]
             elif v in env:
                 del env[v]
