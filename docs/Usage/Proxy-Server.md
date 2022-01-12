@@ -6,6 +6,8 @@ This can be useful for hosts that have a limited number of publicly accessible p
 
 When started as `root`, which is the case when the proxy server runs as a [system service](./Service.md), this can also help to ensure that the sessions outlive the environment they were started from.
 
+Alternatively, you can use an [apache proxy server](./Apache-Proxy.md).
+
 
 ## Configuration
 Depending on the [authentication](./Authentication.md) module configured, the proxy server can:

@@ -111,5 +111,6 @@ The local printers should be virtualized on the server.
 * [Encodings](./Encodings.md) - advanced picture encoding configuration, ie: [NVENC](./NVENC.md)
 * [Logging](./Logging.md) - debugging
 * [Proxy Server](./Proxy-Server.md) - using the proxy server as a single entry point
+* [Apache Proxy Server](./Apache-Proxy.md) - using the apache http server as a proxy
 * [WSL](./WSL.md) - Windows Subsystem for Linux
 * [Xdummy](./Xdummy.md) - the alternative virtual framebuffer
