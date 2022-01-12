@@ -990,7 +990,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         port = display_desc["port"]
         sock = retry_socket_connect(dtype, host, port)
         sock.settimeout(None)
-        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype, socket_options=display_desc)
+        conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name,
+                                dtype, socket_options=display_desc)
 
         if dtype in ("ssl", "wss"):
             strict_host_check = display_desc.get("strict-host-check")
@@ -1052,7 +1053,6 @@ def run_send_file(extra_args):
         if not files:
             return
     filelog = Logger("file")
-    import subprocess
     from xpra.platform.paths import get_xpra_command
     xpra_cmd = get_xpra_command()
     errors = 0
@@ -1063,7 +1063,7 @@ def run_send_file(extra_args):
         #xpra control :10 send-file /path/to/the-file-to-send open CLIENT_UUID
         cmd = xpra_cmd + ["control", uri, "send-file", f]
         filelog("cmd=%s", cmd)
-        proc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = Popen(cmd, stdin=None, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         if proc.returncode:
             filelog.error("Error: failed to send file '%s'", f)
