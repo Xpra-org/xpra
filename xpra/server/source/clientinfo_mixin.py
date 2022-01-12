@@ -144,13 +144,13 @@ class ClientInfoMixin(StubSourceMixin):
                 "session-type.full" : self.client_session_type_full or "",
                 "sharing"           : bool(self.sharing),
                 }
-        def addattr(k, name):
-            v = getattr(self, name.replace("-", "_"))
+        def addattr(k, name=None):
+            v = getattr(self, (name or k).replace("-", "_"))
             #skip empty values:
             if v is not None:
                 info[k] = v
         for k in ("session-id", "uuid", "user", "name", "argv"):
-            addattr(self, k)
+            addattr(k)
         for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name", "session_type"):
             addattr(x, "client_"+x)
         return info
