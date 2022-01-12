@@ -142,19 +142,15 @@ class ClientInfoMixin(StubSourceMixin):
                 "platform_name"     : platform_name(self.client_platform, self.client_release),
                 "session-type"      : self.client_session_type or "",
                 "session-type.full" : self.client_session_type_full or "",
-                "session-id"        : self.session_id or "",
-                "uuid"              : self.uuid or "",
-                "hostname"          : self.hostname or "",
-                "user"              : self.user or "",
-                "name"              : self.name or "",
-                "argv"              : self.argv or (),
                 "sharing"           : bool(self.sharing),
                 }
-
         def addattr(k, name):
-            v = getattr(self, name)
+            v = getattr(self, name.replace("-", "_"))
+            #skip empty values:
             if v is not None:
                 info[k] = v
+        for k in ("session-id", "uuid", "user", "name", "argv"):
+            addattr(self, k)
         for x in ("type", "platform", "release", "machine", "processor", "proxy", "wm_name", "session_type"):
             addattr(x, "client_"+x)
         return info
