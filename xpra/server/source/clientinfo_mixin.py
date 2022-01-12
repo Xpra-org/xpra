@@ -145,8 +145,8 @@ class ClientInfoMixin(StubSourceMixin):
                 "session-id"        : self.session_id or "",
                 "uuid"              : self.uuid or "",
                 "hostname"          : self.hostname or "",
-                "user"              : self.user,
-                "name"              : self.name,
+                "user"              : self.user or "",
+                "name"              : self.name or "",
                 "argv"              : self.argv or (),
                 "sharing"           : bool(self.sharing),
                 }
