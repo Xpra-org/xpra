@@ -88,6 +88,8 @@ def verify_response_headers(headers, key):
     if not headers:
         raise Exception("no http headers found in response")
     upgrade = headers.get(b"upgrade", b"")
+    if not upgrade:
+        raise Exception("http connection was not upgraded to websocket")
     if upgrade!=b"websocket":
         raise Exception("invalid http upgrade: '%s'" % bytestostr(upgrade))
     protocol = headers.get(b"sec-websocket-protocol", b"")
