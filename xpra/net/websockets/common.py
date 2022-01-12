@@ -89,10 +89,10 @@ def verify_response_headers(headers, key):
         raise Exception("no http headers found in response")
     upgrade = headers.get(b"upgrade", b"")
     if upgrade!=b"websocket":
-        raise Exception("invalid http upgrade: '%s'" % upgrade)
+        raise Exception("invalid http upgrade: '%s'" % bytestostr(upgrade))
     protocol = headers.get(b"sec-websocket-protocol", b"")
     if protocol!=b"binary":
-        raise Exception("invalid websocket protocol: '%s'" % protocol)
+        raise Exception("invalid websocket protocol: '%s'" % bytestostr(protocol))
     accept_key = headers.get(b"sec-websocket-accept", b"")
     if not accept_key:
         raise Exception("websocket accept key is missing")
