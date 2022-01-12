@@ -370,6 +370,7 @@ def get_info():
         "nodock_command"    : get_nodock_command(),
         "sound_command"     : get_sound_command(),
         "sshpass_command"   : get_sshpass_command(),
+        "python-exec"       : get_python_exec_command(),
         "python-execfile"   : get_python_execfile_command(),
         }
 
