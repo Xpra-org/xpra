@@ -265,5 +265,9 @@ def do_get_xpra_command():
         return [sys.executable]
     return _get_xpra_exe_command("Xpra", "Xpra_cmd")
 
+
+def do_get_python_exec_command():
+    return _get_xpra_exe_command("Python_exec_gui", "Python")
+
 def do_get_python_execfile_command():
     return _get_xpra_exe_command("Python_execfile_gui", "Python")

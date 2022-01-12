@@ -282,14 +282,24 @@ def get_sound_command():
 def do_get_sound_command():
     return get_xpra_command()
 
+
+def get_python_exec_command():
+    envvalue = os.environ.get("XPRA_PYTHON_EXEC_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
+    if envvalue:
+        import shlex
+        return shlex.split(envvalue)
+    return do_get_python_exec_command()
+def do_get_python_exec_command():
+    return ["python%i.%i" % (sys.version_info.major, sys.version_info.minor), "-c"]
+
 def get_python_execfile_command():
-    envvalue = os.environ.get("XPRA_PYTHON_COMMAND")
+    envvalue = os.environ.get("XPRA_PYTHON_EXECFILE_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
     if envvalue:
         import shlex
         return shlex.split(envvalue)
     return do_get_python_execfile_command()
 def do_get_python_execfile_command():
-    return ["python3"]
+    return ["python%i.%i" % (sys.version_info.major, sys.version_info.minor)]
 
 
 platform_import(globals(), "paths", True,
@@ -319,6 +329,7 @@ platform_import(globals(), "paths", False,
                 "do_get_xpra_tmp_dir",
                 "do_get_script_bin_dirs",
                 "do_get_desktop_background_paths",
+                "do_get_python_exec_command",
                 "do_get_python_execfile_command",
                 )
 

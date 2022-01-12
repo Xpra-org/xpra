@@ -19,6 +19,7 @@ from xpra.os_util import (
     )
 from xpra.log import Logger
 from xpra.platform.dotxpra import norm_makepath
+from xpra.platform.paths import get_python_exec_command
 from xpra.scripts.config import InitException
 
 UINPUT_UUID_LEN = 12
@@ -82,8 +83,10 @@ def env_from_sourcing(file_to_source_path, include_unexported_variables=False):
         decode = decode_dict
     else:
         source = '%s. %s' % ("set -a && " if include_unexported_variables else "", filename)
-        dump = 'python%i.%i -c "import os, json;print(json.dumps(dict(os.environ)))"' % (
-            sys.version_info.major, sys.version_info.minor)
+        #ie: this is "python3.9 -c" on Posix
+        #(but our 'Python_exec_cmd.exe' wrapper on MS Windows):
+        python_cmd = " ".join(get_python_exec_command())
+        dump = '%s "import os, json;print(json.dumps(dict(os.environ)))"' % (python_cmd)
         sh = which("bash") or "/bin/sh"
         cmd = [sh, '-c', '%s 1>&2 && %s' % (source, dump)]
         decode = decode_json
