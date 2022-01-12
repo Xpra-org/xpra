@@ -47,7 +47,9 @@ def get_headers(host, port):
 
 
 def client_upgrade(read, write, host, port, path=""):
-    lines = [b"GET /%s HTTP/1.1" % path.encode("latin1")]
+    request = "GET /%s HTTP/1.1" % path
+    log("client_upgrade: http request: %s", request)
+    lines = [request.encode("latin1")]
     key = b64encode(uuid.uuid4().bytes)
     headers = get_headers(host, port)
     headers[b"Sec-WebSocket-Key"] = key
