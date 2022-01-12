@@ -78,7 +78,7 @@ def get_name():
 def get_user_info():
     return {
             "username"  : get_username(),
-            "name"      : get_name()
+            "name"      : get_name(),
             }
 
 platform_import(globals(), "info", False,
