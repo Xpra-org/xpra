@@ -116,7 +116,7 @@ class WindowVideoSource(WindowSource):
         self.supports_video_scaling = self.encoding_options.boolget("video_scaling", False)
         self.supports_video_b_frames = self.encoding_options.strlistget("video_b_frames", [])
         self.video_max_size = self.encoding_options.intlistget("video_max_size", (8192, 8192), 2, 2)
-        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay)
+        self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.video_stream_file = None
 
     def init_encoders(self):
