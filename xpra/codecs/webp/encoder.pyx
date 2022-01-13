@@ -348,6 +348,10 @@ def get_info():
             "presets"       : tuple(PRESETS.values()),
             }
 
+
+INPUT_PIXEL_FORMATS = ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR")
+
+
 def webp_check(int ret):
     if ret==0:
         return
@@ -432,7 +436,7 @@ def encode(coding, image, options=None):
     log("webp.encode(%s, %s, %s)", coding, image, options)
     assert coding=="webp"
     pixel_format = image.get_pixel_format()
-    if pixel_format not in ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR"):
+    if pixel_format not in INPUT_PIXEL_FORMATS:
         raise Exception("unsupported pixel format %s" % pixel_format)
     options = options or {}
     cdef unsigned int width = image.get_width()
