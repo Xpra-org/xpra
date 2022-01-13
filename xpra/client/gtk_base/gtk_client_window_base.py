@@ -114,6 +114,7 @@ DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
 REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
 REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
+UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -2063,7 +2064,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
     def parse_key_event(self, event, pressed):
         keyval = event.keyval
         keycode = event.hardware_keycode
-        keyname = gdk.keyval_name(keyval)
+        keyname = gdk.keyval_name(keyval) or ""
         keyname = KEY_TRANSLATIONS.get((keyname, keyval, keycode), keyname)
         if keyname.startswith("U+") and not UNICODE_KEYNAMES:
             #workaround for MS Windows, try harder to find a valid key
@@ -2077,7 +2078,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
                         break
         key_event = GTKKeyEvent()
         key_event.modifiers = self._client.mask_to_names(event.state)
-        key_event.keyname = keyname or ""
+        key_event.keyname = keyname
         key_event.keyval = keyval or 0
         key_event.keycode = keycode
         key_event.group = event.group
