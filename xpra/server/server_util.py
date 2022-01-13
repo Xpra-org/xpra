@@ -16,9 +16,13 @@ def source_env(source=()):
     log = get_util_logger()
     env = {}
     for f in source:
-        e = env_from_sourcing(f)
-        log("source_env %s=%s", f, e)
-        env.update(e)
+        try:
+            e = env_from_sourcing(f)
+        except Exception:
+            log.error("Error sourcing %r", f, exc_info=True)
+        else:
+            log("source_env %s=%s", f, e)
+            env.update(e)
     return env
 
 
