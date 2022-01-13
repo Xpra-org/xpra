@@ -2052,6 +2052,7 @@ def find_X11_displays(max_display_no=None, match_uid=None, match_gid=None):
                         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                         sock.settimeout(VERIFY_X11_SOCKET_TIMEOUT)
                         sock.connect(sockpath)
+                        sock.close()
                 except (IOError, OSError):
                     pass
                 else:
