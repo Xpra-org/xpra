@@ -1614,21 +1614,21 @@ def make_client(error_cb, opts):
                 opts.opengl = "no"
             else:
                 app.show_progress(20, "validating OpenGL configuration")
-                probe, info = run_opengl_probe()
+                probe, glinfo = run_opengl_probe()
                 if opts.opengl=="nowarn":
                     #just on or off from here on:
-                    safe = info.get("safe", "False").lower() in TRUE_OPTIONS
+                    safe = glinfo.get("safe", "False").lower() in TRUE_OPTIONS
                     opts.opengl = ["off", "on"][safe]
                 else:
                     opts.opengl = "probe-%s" % probe
                 r = probe   #ie: "success"
                 if info:
-                    renderer = info.get("renderer")
+                    renderer = glinfo.get("renderer")
                     if renderer:
                         r += " (%s)" % renderer
                 app.show_progress(20, "validating OpenGL: %s" % r)
                 if probe=="error":
-                    message = info.get("message")
+                    message = glinfo.get("message")
                     if message:
                         app.show_progress(21, " %s" % message)
     except Exception:
