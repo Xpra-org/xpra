@@ -393,10 +393,23 @@ cdef get_config_info(WebPConfig *config):
         }
 
 
+cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type):
+    cdef WebPPreset preset = DEFAULT_PRESET
+    #only use icon for small squarish rectangles
+    if width*height<=2304 and abs(width-height)<=16:
+        preset = PRESET_SMALL
+    return CONTENT_TYPE_PRESET.get(content_type, preset)
+
+cdef config_init(WebPConfig *config):
+    cdef int ret = WebPConfigInit(config)
+    if not ret:
+        raise Exception("failed to initialize webp config")
+
+
 cdef configure_encoder(WebPConfig *config,
                       unsigned int quality, unsigned int speed,
-                      unsigned int resize, unsigned int alpha):
-    config.lossless = quality>=100 and not resize
+                      unsigned int alpha):
+    config.lossless = quality>=100
     if config.lossless:
         #'quality' actually controls the speed
         #and anything above zero is just too slow:
@@ -427,9 +440,15 @@ cdef configure_encoder(WebPConfig *config,
     config.thread_level = WEBP_THREADING
     config.partitions = 3
     config.partition_limit = MAX(0, MIN(100, 100-quality))
-    log("webp.configure_encoder config: lossless=%-5s, quality=%3i, method=%i, alpha=%3i,%3i,%3i, preset=%-8s, image hint=%s",
+    log("webp.configure_encoder config: lossless=%-5s, quality=%3i, method=%i, alpha=%3i,%3i,%3i",
         config.lossless, config.quality, config.method,
         config.alpha_compression, config.alpha_filtering, config.alpha_quality)
+
+cdef validate_config(WebPConfig *config):
+    ret = WebPValidateConfig(config)
+    if not ret:
+        info = get_config_info(config)
+        raise Exception("invalid webp configuration: %s" % info)
 
 
 def encode(coding, image, options=None):
@@ -439,143 +458,57 @@ def encode(coding, image, options=None):
     if pixel_format not in INPUT_PIXEL_FORMATS:
         raise Exception("unsupported pixel format %s" % pixel_format)
     options = options or {}
+
     cdef unsigned int width = image.get_width()
     cdef unsigned int height = image.get_height()
+    cdef unsigned int stride = image.get_rowstride()
     assert width<16384 and height<16384, "invalid image dimensions: %ix%i" % (width, height)
     cdef unsigned int scaled_width = options.get("scaled-width", width)
     cdef unsigned int scaled_height = options.get("scaled-height", height)
     assert scaled_width<16384 and scaled_height<16384, "invalid image dimensions: %ix%i" % (width, height)
-    resize = None
-    if scaled_width!=width or scaled_height!=height:
-        resize = (scaled_width, scaled_height)
-    cdef unsigned int stride = image.get_rowstride()
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
-    cdef int size = stride * height
-    pixels = image.get_pixels()
-    cdef int supports_alpha = options.get("alpha", False)
-    cdef int alpha_int = supports_alpha and pixel_format.find("A")>=0
+    cdef unsigned int supports_alpha = options.get("alpha", False)
+    cdef unsigned int alpha_int = supports_alpha and pixel_format.find("A")>=0
     cdef int quality = options.get("quality", 50)
-    cdef int yuv420p = quality<SUBSAMPLING_THRESHOLD
+    cdef int speed = options.get("speed", 50)
 
     cdef WebPConfig config
-    cdef WebPPreset preset = DEFAULT_PRESET
-    #only use icon for small squarish rectangles
-    if width*height<=2304 and abs(width-height)<=16:
-        preset = PRESET_SMALL
+    config_init(&config)
+
     content_type = options.get("content-type", None)
-    preset = CONTENT_TYPE_PRESET.get(content_type, preset)
-    cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
-
-    cdef int ret = WebPConfigInit(&config)
-    if not ret:
-        raise Exception("failed to initialize webp config")
-
+    cdef WebPPreset preset = get_preset(width, height, content_type)
     ret = WebPConfigPreset(&config, preset, fclamp(quality))
     if not ret:
         raise Exception("failed to set webp preset")
 
-    cdef int speed = options.get("speed", 50)
-    configure_encoder(&config, quality, speed, bool(resize), alpha_int)
+    configure_encoder(&config, quality, speed, alpha_int)
+
+    cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
     config.image_hint = image_hint
 
     log("webp.compress config: preset=%-8s, image hint=%s",
         PRESETS.get(preset, preset), IMAGE_HINT.get(image_hint, image_hint))
-    ret = WebPValidateConfig(&config)
-    if not ret:
-        info = get_config_info(&config)
-        raise Exception("invalid webp configuration: %s" % info)
+    validate_config(&config)
+
+    pixels = image.get_pixels()
+    cdef WebPPicture pic
+    import_picture(&pic, width, height,
+                   stride,
+                   supports_alpha,
+                   pixel_format, pixels)
+
+    if scaled_width!=width or scaled_height!=height:
+        scale_picture(&pic, scaled_width, scaled_height)
 
     client_options = {
-        #no need to expose speed
-        #(not used for anything downstream)
-        #"speed"       : speed,
         "rgb_format"  : pixel_format,
         }
 
-    cdef WebPPicture pic
-    memset(&pic, 0, sizeof(WebPPicture))
-    ret = WebPPictureInit(&pic)
-    if not ret:
-        raise Exception("failed to initialise webp picture")
-    pic.width = width
-    pic.height = height
-    pic.use_argb = 1
-    pic.argb_stride = stride//Bpp
-
-    cdef double start = monotonic()
-    cdef double end
-    cdef const uint8_t* src
-    with buffer_context(pixels) as bc:
-        log("webp.compress(%s, %i, %i, %s, %s) buf=%#x", image, width, height, supports_alpha, content_type, <uintptr_t> int(bc))
-        assert len(bc)>=size, "pixel buffer is too small: expected at least %s bytes but got %s" % (size, len(bc))
-        src = <const uint8_t*> (<uintptr_t> int(bc))
-
-        #import the pixel data into WebPPicture
-        if pixel_format=="RGB":
-            with nogil:
-                ret = WebPPictureImportRGB(&pic, src, stride)
-        elif pixel_format=="BGR":
-            with nogil:
-                ret = WebPPictureImportBGR(&pic, src, stride)
-        elif pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
-            with nogil:
-                ret = WebPPictureImportRGBX(&pic, src, stride)
-        elif pixel_format=="RGBA":
-            with nogil:
-                ret = WebPPictureImportRGBA(&pic, src, stride)
-        elif pixel_format=="BGRX" or (pixel_format=="BGRA" and not supports_alpha):
-            with nogil:
-                ret = WebPPictureImportBGRX(&pic, src, stride)
-        else:
-            assert pixel_format=="BGRA"
-            with nogil:
-                ret = WebPPictureImportBGRA(&pic, src, stride)
-    if not ret:
-        WebPPictureFree(&pic)
-        raise Exception("WebP importing image failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
-    end = monotonic()
-    log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
-
-    if resize:
-        start = monotonic()
-        with nogil:
-            ret = WebPPictureRescale(&pic, scaled_width, scaled_height)
-        if not ret:
-            WebPPictureFree(&pic)
-            raise Exception("WebP failed to resize %s to %s" % (image, resize))
-        end = monotonic()
-        log("webp %s resizing took %.1fms", 1000*(end-start))
-
-    if yuv420p:
-        start = monotonic()
-        with nogil:
-            ret = WebPPictureARGBToYUVA(&pic, WEBP_YUV420)
-        if not ret:
-            raise Exception("WebPPictureARGBToYUVA failed for %s" % image)
-        end = monotonic()
-        log("webp YUVA subsampling took %.1fms", 1000*(end-start))
+    if quality<SUBSAMPLING_THRESHOLD:
+        yuv420p(&pic)
         client_options["subsampling"] = "YUV420P"
 
-    cdef WebPMemoryWriter memory_writer
-    memset(&memory_writer, 0, sizeof(WebPMemoryWriter))
-    try:
-        #TODO: custom writer that over-allocates memory
-        WebPMemoryWriterInit(&memory_writer)
-        pic.writer = <WebPWriterFunction> WebPMemoryWrite
-        pic.custom_ptr = <void*> &memory_writer
-        start = monotonic()
-        with nogil:
-            ret = WebPEncode(&config, &pic)
-        if not ret:
-            raise Exception("WebPEncode failed: %s, config=%s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(&config)))
-        end = monotonic()
-        log("webp encode took %.1fms", 1000*(end-start))
-
-        cdata = memory_writer.mem[:memory_writer.size]
-    finally:
-        if memory_writer.mem:
-            free(memory_writer.mem)
-        WebPPictureFree(&pic)
+    cdata = webp_encode(&config, &pic)
 
     if config.lossless:
         client_options["quality"] = 100
@@ -583,15 +516,111 @@ def encode(coding, image, options=None):
         client_options["quality"] = max(0, min(99, quality))
     if alpha_int:
         client_options["has_alpha"] = True
-    log("webp.compress ratio=%i%%, client-options=%s", 100*memory_writer.size//size, client_options)
+    log("webp.compress ratio=%i%%, client-options=%s", 100*len(cdata)//(width*height*Bpp), client_options)
     if LOG_CONFIG>0:
         log("webp.compress used config: %s", get_config_info(&config))
     if SAVE_TO_FILE:    # pragma: no cover
-        filename = "./%s.webp" % time()
-        with open(filename, "wb") as f:
-            f.write(cdata)
-        log.info("saved %i bytes to %s", len(cdata), filename)
+        save_webp(cdata)
     return "webp", Compressed("webp", cdata), client_options, width, height, 0, len(pixel_format.replace("A", ""))*8
+
+
+cdef import_picture(WebPPicture *pic,
+                  unsigned int width, unsigned int height,
+                  unsigned int stride,
+                  unsigned int supports_alpha,
+                  pixel_format, pixels):
+    memset(pic, 0, sizeof(WebPPicture))
+    ret = WebPPictureInit(pic)
+    if not ret:
+        raise Exception("failed to initialise webp picture")
+    cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
+    pic.width = width
+    pic.height = height
+    pic.use_argb = 1
+    pic.argb_stride = stride//Bpp
+    cdef int size = stride * height
+    cdef double start = monotonic()
+    cdef double end
+    cdef const uint8_t* src
+    with buffer_context(pixels) as bc:
+        log("webp.import_picture")
+        assert len(bc)>=size, "pixel buffer is too small: expected at least %s bytes but got %s" % (size, len(bc))
+        src = <const uint8_t*> (<uintptr_t> int(bc))
+
+        #import the pixel data into WebPPicture
+        if pixel_format=="RGB":
+            with nogil:
+                ret = WebPPictureImportRGB(pic, src, stride)
+        elif pixel_format=="BGR":
+            with nogil:
+                ret = WebPPictureImportBGR(pic, src, stride)
+        elif pixel_format=="RGBX" or (pixel_format=="RGBA" and not supports_alpha):
+            with nogil:
+                ret = WebPPictureImportRGBX(pic, src, stride)
+        elif pixel_format=="RGBA":
+            with nogil:
+                ret = WebPPictureImportRGBA(pic, src, stride)
+        elif pixel_format=="BGRX" or (pixel_format=="BGRA" and not supports_alpha):
+            with nogil:
+                ret = WebPPictureImportBGRX(pic, src, stride)
+        else:
+            assert pixel_format=="BGRA"
+            with nogil:
+                ret = WebPPictureImportBGRA(pic, src, stride)
+    if not ret:
+        WebPPictureFree(pic)
+        raise Exception("WebP importing image failed: %s" % (ERROR_TO_NAME.get(pic.error_code, pic.error_code)))
+    end = monotonic()
+    log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
+
+cdef scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_height):
+    cdef double start = monotonic()
+    with nogil:
+        ret = WebPPictureRescale(pic, scaled_width, scaled_height)
+    if not ret:
+        WebPPictureFree(pic)
+        raise Exception("WebP failed to resize to %ix%i" % (scaled_width, scaled_height))
+    cdef double end = monotonic()
+    log("webp %s resizing took %.1fms", 1000*(end-start))
+
+cdef yuv420p(WebPPicture *pic):
+    cdef double start = monotonic()
+    with nogil:
+        ret = WebPPictureARGBToYUVA(pic, WEBP_YUV420)
+    if not ret:
+        raise Exception("WebPPictureARGBToYUVA failed")
+    cdef double end = monotonic()
+    log("webp YUVA subsampling took %.1fms", 1000*(end-start))
+
+
+cdef webp_encode(WebPConfig *config, WebPPicture *pic):
+    cdef double start = monotonic()
+    cdef WebPMemoryWriter memory_writer
+    memset(&memory_writer, 0, sizeof(WebPMemoryWriter))
+    try:
+        #TODO: custom writer that over-allocates memory
+        WebPMemoryWriterInit(&memory_writer)
+        pic.writer = <WebPWriterFunction> WebPMemoryWrite
+        pic.custom_ptr = <void*> &memory_writer
+        with nogil:
+            ret = WebPEncode(config, pic)
+        if not ret:
+            raise Exception("WebPEncode failed: %s, config=%s" % (
+                ERROR_TO_NAME.get(pic.error_code, pic.error_code), get_config_info(config)))
+        cdata = memory_writer.mem[:memory_writer.size]
+    finally:
+        if memory_writer.mem:
+            free(memory_writer.mem)
+        WebPPictureFree(pic)
+    cdef double end = monotonic()
+    log("webp encode took %.1fms", 1000*(end-start))
+    return cdata
+
+def save_webp(cdata):
+    filename = "./%s.webp" % time()
+    with open(filename, "wb") as f:
+        f.write(cdata)
+    log.info("saved %i bytes to %s", len(cdata), filename)
 
 
 def selftest(full=False):
