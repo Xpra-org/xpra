@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -388,6 +388,46 @@ cdef get_config_info(WebPConfig *config):
         "low_memory"        : config.low_memory,
         }
 
+
+cdef configure_encoder(WebPConfig *config,
+                      unsigned int quality, unsigned int speed,
+                      unsigned int resize, unsigned int alpha):
+    config.lossless = quality>=100 and not resize
+    if config.lossless:
+        #'quality' actually controls the speed
+        #and anything above zero is just too slow:
+        config.quality = 0
+        config.autofilter = 1
+    else:
+        #normalize quality: webp quality is much higher than jpeg's
+        #so we can go lower,
+        #[0,10,...,90,100] maps to:
+        #[0, 1, 3, 5, 9, 14, 23, 34, 50, 71, 99]
+        config.quality = fclamp((quality//4+((quality+15)**4//(100**3)))//2)
+        config.segments = 1
+        config.sns_strength = 0
+        config.filter_strength = 0
+        config.filter_sharpness = 7-quality//15
+        config.filter_type = 0
+        config.autofilter = 0
+    #"method" takes values from 0 to 6,
+    #but anything higher than 1 is dreadfully slow,
+    #so only use method=1 when speed is already very low
+    config.method = int(speed<10)
+    config.alpha_compression = alpha
+    config.alpha_filtering = MAX(0, MIN(2, speed/50)) * alpha
+    config.alpha_quality = quality * alpha
+    config.emulate_jpeg_size = 1
+    config._pass = MAX(1, MIN(10, (40-speed)//10))
+    config.preprocessing = int(speed<30)
+    config.thread_level = WEBP_THREADING
+    config.partitions = 3
+    config.partition_limit = MAX(0, MIN(100, 100-quality))
+    log("webp.configure_encoder config: lossless=%-5s, quality=%3i, method=%i, alpha=%3i,%3i,%3i, preset=%-8s, image hint=%s",
+        config.lossless, config.quality, config.method,
+        config.alpha_compression, config.alpha_filtering, config.alpha_quality)
+
+
 def encode(coding, image, options=None):
     log("webp.encode(%s, %s, %s)", coding, image, options)
     assert coding=="webp"
@@ -431,42 +471,11 @@ def encode(coding, image, options=None):
         raise Exception("failed to set webp preset")
 
     cdef int speed = options.get("speed", 50)
-    #tune it:
-    config.lossless = quality>=100 and not resize
-    if config.lossless:
-        #'quality' actually controls the speed
-        #and anything above zero is just too slow:
-        config.quality = 0
-        config.autofilter = 1
-    else:
-        #normalize quality: webp quality is much higher than jpeg's
-        #so we can go lower,
-        #[0,10,...,90,100] maps to:
-        #[0, 1, 3, 5, 9, 14, 23, 34, 50, 71, 99]
-        config.quality = fclamp((quality//4+((quality+15)**4//(100**3)))//2)
-        config.segments = 1
-        config.sns_strength = 0
-        config.filter_strength = 0
-        config.filter_sharpness = 7-quality//15
-        config.filter_type = 0
-        config.autofilter = 0
-    #"method" takes values from 0 to 6,
-    #but anything higher than 1 is dreadfully slow,
-    #so only use method=1 when speed is already very low
-    config.method = int(speed<10)
-    config.alpha_compression = alpha_int
-    config.alpha_filtering = MAX(0, MIN(2, speed/50)) * alpha_int
-    config.alpha_quality = quality * alpha_int
-    config.emulate_jpeg_size = 1
-    config._pass = MAX(1, MIN(10, (40-speed)//10))
-    config.preprocessing = int(speed<30)
+    configure_encoder(&config, quality, speed, bool(resize), alpha_int)
     config.image_hint = image_hint
-    config.thread_level = WEBP_THREADING
-    config.partitions = 3
-    config.partition_limit = MAX(0, MIN(100, 100-quality))
 
-    log("webp.compress config: lossless=%-5s, quality=%3i, method=%i, alpha=%3i,%3i,%3i, preset=%-8s, image hint=%s", config.lossless, config.quality, config.method,
-                    config.alpha_compression, config.alpha_filtering, config.alpha_quality, PRESETS.get(preset, preset), IMAGE_HINT.get(image_hint, image_hint))
+    log("webp.compress config: preset=%-8s, image hint=%s",
+        PRESETS.get(preset, preset), IMAGE_HINT.get(image_hint, image_hint))
     ret = WebPValidateConfig(&config)
     if not ret:
         info = get_config_info(&config)
