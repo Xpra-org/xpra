@@ -27,6 +27,7 @@ CODEC_TO_MODULE = {
     "avcodec2"   : "dec_avcodec2",
     "ffmpeg"     : "enc_ffmpeg",
     "jpeg"       : "jpeg",
+    "webp"       : "webp",
     "nvjpeg"     : "nvjpeg",
     }
 
@@ -50,13 +51,13 @@ def try_import_modules(*codec_names):
 
 #all the codecs we know about:
 #try to import the module that contains them (cheap check):
-ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg")
+ALL_VIDEO_ENCODER_OPTIONS = try_import_modules("x264", "vpx", "x265", "nvenc", "ffmpeg", "nvjpeg", "jpeg", "webp")
 HARDWARE_ENCODER_OPTIONS = try_import_modules("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS = try_import_modules("swscale", "cython", "libyuv")
 NO_GFX_CSC_OPTIONS = []
 ALL_VIDEO_DECODER_OPTIONS = try_import_modules("avcodec2", "vpx")
 
-PREFERRED_ENCODER_ORDER = ("nvenc", "x264", "vpx", "x265")
+PREFERRED_ENCODER_ORDER = ("nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "x265")
 PREFERRED_DECODER_ORDER = ("avcodec2", "vpx")
 log("video_helper: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video_helper: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)

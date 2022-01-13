@@ -12,7 +12,7 @@ from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
 from xpra.net.compression import Compressed
-from xpra.util import envbool, envint
+from xpra.util import envbool, envint, typedict
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
@@ -348,8 +348,35 @@ def get_info():
             "presets"       : tuple(PRESETS.values()),
             }
 
+def init_module():
+    log("webp.init_module()")
+
+def cleanup_module():
+    log("webp.cleanup_module()")
+
 
 INPUT_PIXEL_FORMATS = ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR")
+
+def get_input_colorspaces(encoding):
+    assert encoding=="webp"
+    return INPUT_PIXEL_FORMATS
+
+def get_output_colorspaces(encoding, input_colorspace):
+    assert encoding=="webp"
+    assert input_colorspace in INPUT_PIXEL_FORMATS
+    return (input_colorspace, )
+
+def get_spec(encoding, colorspace):
+    assert encoding=="webp"
+    assert colorspace in get_input_colorspaces(encoding)
+    from xpra.codecs.codec_constants import video_spec
+    return video_spec(encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
+                      codec_class=Encoder, codec_type="webp",
+                      setup_cost=0, cpu_cost=100, gpu_cost=0,
+                      min_w=16, min_h=16, max_w=4*1024, max_h=4*1024,
+                      can_scale=True,
+                      score_boost=-50,
+                      )
 
 
 def webp_check(int ret):
@@ -393,6 +420,148 @@ cdef get_config_info(WebPConfig *config):
         }
 
 
+
+cdef class Encoder:
+    cdef int width
+    cdef int height
+    cdef object src_format
+    cdef unsigned int Bpp
+    cdef int quality
+    cdef int speed
+    cdef unsigned char alpha
+    cdef object content_type
+    cdef long frames
+    cdef WebPConfig config
+    cdef WebPPreset preset
+    cdef object __weakref__
+
+    def __init__(self):
+        self.width = self.height = self.quality = self.frames = 0
+
+    def init_context(self, encoding, width : int, height : int, src_format, options : typedict):
+        assert encoding=="webp", "invalid encoding: %s" % encoding
+        assert src_format in get_input_colorspaces(encoding)
+        self.width = width
+        self.height = height
+        self.src_format = src_format
+        self.Bpp = len(src_format)     #ie: "BGRA" -> 4
+        self.quality = options.intget("quality", 50)
+        self.speed = options.intget("speed", 50)
+        self.alpha = src_format.find("A")>=0
+        self.content_type = options.get("content-type", None)
+        self.configure_encoder()
+
+    cdef configure_encoder(self):
+        cdef int ret = WebPConfigInit(&self.config)
+        if not ret:
+            raise Exception("failed to initialize webp config")
+        config_init(&self.config)
+        self.preset = get_preset(self.width, self.height, self.content_type)
+        configure_preset(&self.config, self.preset, self.quality)
+        configure_encoder(&self.config, self.quality, self.speed, self.alpha)
+        configure_image_hint(&self.config, self.content_type)
+        validate_config(&self.config)
+
+
+    def is_ready(self):
+        return self.width>0 and self.height>0
+
+    def is_closed(self):
+        return self.width==0 or self.height==0
+
+    def clean(self):
+        self.width = self.height = self.quality = 0
+
+    def get_encoding(self):
+        return "webp"
+
+    def get_width(self):
+        return self.width
+
+    def get_height(self):
+        return self.height
+
+    def get_type(self):
+        return "webp"
+
+    def get_src_format(self):
+        return self.src_format
+
+    def get_info(self) -> dict:
+        info = get_info()
+        info.update({
+            "frames"        : int(self.frames),
+            "width"         : self.width,
+            "height"        : self.height,
+            "alpha"         : bool(self.alpha),
+            "pixel-format"  : self.src_format,
+            "content-type"  : self.content_type or "",
+            })
+        return info
+
+    def compress_image(self, image, options=None):
+        options = options or {}
+        reconfigure = False
+        quality = options.get("quality", -1)
+        speed = options.get("speed", -1)
+        pixel_format = image.get_pixel_format()
+        if quality>0 and quality!=self.quality:
+            self.quality = quality
+            reconfigure = True
+        if speed>0 and speed!=self.speed:
+            self.speed = speed
+            reconfigure = True
+        if image.get_width()!=self.width or image.get_height()!=self.height:
+            self.width = image.get_width()
+            self.height = image.get_height()
+            reconfigure = True
+        if pixel_format!=self.src_format:
+            self.src_format = pixel_format
+            self.Bpp = len(pixel_format)
+            self.alpha = pixel_format.find("A")>=0
+            reconfigure = True
+        if options.get("content-type")!=self.content_type:
+            self.content_type = options.get("content-type")
+            reconfigure = True
+        if reconfigure:
+            log("webp reconfigure")
+            self.configure_encoder()
+
+        cdef unsigned int stride = image.get_rowstride()
+        pixels = image.get_pixels()
+        cdef WebPPicture pic
+        import_picture(&pic, self.width, self.height,
+                       stride,
+                       self.alpha,
+                       pixel_format, pixels)
+
+        cdef int scaled_width = options.get("scaled-width", self.width)
+        cdef int scaled_height = options.get("scaled-height", self.height)
+        if scaled_width!=self.width or scaled_height!=self.height:
+            scale_picture(&pic, self.scaled_width, self.scaled_height)
+
+        client_options = {
+            "rgb_format"  : pixel_format,
+            }
+        if self.quality<SUBSAMPLING_THRESHOLD:
+            yuv420p(&pic)
+            client_options["subsampling"] = "YUV420P"
+
+        cdata = webp_encode(&self.config, &pic)
+
+        if self.config.lossless:
+            client_options["quality"] = 100
+        else:
+            client_options["quality"] = max(0, min(99, quality))
+        if self.alpha:
+            client_options["has_alpha"] = True
+        log("webp compression ratio=%2i%%, client-options=%s",
+            100*len(cdata)//(self.width*self.height*self.Bpp), client_options)
+        if LOG_CONFIG>0:
+            log("webp.compress used config: %s", get_config_info(&self.config))
+        return cdata, client_options
+
+
 cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type):
     cdef WebPPreset preset = DEFAULT_PRESET
     #only use icon for small squarish rectangles
@@ -405,10 +574,9 @@ cdef config_init(WebPConfig *config):
     if not ret:
         raise Exception("failed to initialize webp config")
 
-
 cdef configure_encoder(WebPConfig *config,
                       unsigned int quality, unsigned int speed,
-                      unsigned int alpha):
+                      unsigned char alpha):
     config.lossless = quality>=100
     if config.lossless:
         #'quality' actually controls the speed
@@ -444,6 +612,17 @@ cdef configure_encoder(WebPConfig *config,
         config.lossless, config.quality, config.method,
         config.alpha_compression, config.alpha_filtering, config.alpha_quality)
 
+cdef configure_preset(WebPConfig *config, WebPPreset preset, int quality):
+    ret = WebPConfigPreset(config, preset, fclamp(quality))
+    if not ret:
+        raise Exception("failed to set webp preset")
+    log("webp config: preset=%-8s", PRESETS.get(preset, preset))
+
+cdef configure_image_hint(WebPConfig *config, content_type):
+    cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
+    config.image_hint = image_hint
+    log("webp config: image hint=%s", IMAGE_HINT.get(image_hint, image_hint))
+
 cdef validate_config(WebPConfig *config):
     ret = WebPValidateConfig(config)
     if not ret:
@@ -468,7 +647,7 @@ def encode(coding, image, options=None):
     assert scaled_width<16384 and scaled_height<16384, "invalid image dimensions: %ix%i" % (width, height)
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
     cdef unsigned int supports_alpha = options.get("alpha", False)
-    cdef unsigned int alpha_int = supports_alpha and pixel_format.find("A")>=0
+    cdef unsigned char alpha = supports_alpha and pixel_format.find("A")>=0
     cdef int quality = options.get("quality", 50)
     cdef int speed = options.get("speed", 50)
 
@@ -477,17 +656,9 @@ def encode(coding, image, options=None):
 
     content_type = options.get("content-type", None)
     cdef WebPPreset preset = get_preset(width, height, content_type)
-    ret = WebPConfigPreset(&config, preset, fclamp(quality))
-    if not ret:
-        raise Exception("failed to set webp preset")
-
-    configure_encoder(&config, quality, speed, alpha_int)
-
-    cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
-    config.image_hint = image_hint
-
-    log("webp.compress config: preset=%-8s, image hint=%s",
-        PRESETS.get(preset, preset), IMAGE_HINT.get(image_hint, image_hint))
+    configure_preset(&config, preset, quality)
+    configure_encoder(&config, quality, speed, alpha)
+    configure_image_hint(&config, content_type)
     validate_config(&config)
 
     pixels = image.get_pixels()
@@ -503,7 +674,6 @@ def encode(coding, image, options=None):
     client_options = {
         "rgb_format"  : pixel_format,
         }
-
     if quality<SUBSAMPLING_THRESHOLD:
         yuv420p(&pic)
         client_options["subsampling"] = "YUV420P"
@@ -514,7 +684,7 @@ def encode(coding, image, options=None):
         client_options["quality"] = 100
     else:
         client_options["quality"] = max(0, min(99, quality))
-    if alpha_int:
+    if alpha:
         client_options["has_alpha"] = True
     log("webp.compress ratio=%i%%, client-options=%s", 100*len(cdata)//(width*height*Bpp), client_options)
     if LOG_CONFIG>0:
@@ -527,7 +697,7 @@ def encode(coding, image, options=None):
 cdef import_picture(WebPPicture *pic,
                   unsigned int width, unsigned int height,
                   unsigned int stride,
-                  unsigned int supports_alpha,
+                  unsigned char supports_alpha,
                   pixel_format, pixels):
     memset(pic, 0, sizeof(WebPPicture))
     ret = WebPPictureInit(pic)
@@ -543,7 +713,6 @@ cdef import_picture(WebPPicture *pic,
     cdef double end
     cdef const uint8_t* src
     with buffer_context(pixels) as bc:
-        log("webp.import_picture")
         assert len(bc)>=size, "pixel buffer is too small: expected at least %s bytes but got %s" % (size, len(bc))
         src = <const uint8_t*> (<uintptr_t> int(bc))
 
