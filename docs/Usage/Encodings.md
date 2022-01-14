@@ -69,17 +69,18 @@ You can choose which video encoders are loaded at runtime using the `video-encod
 Some of these video encoders may require a colorspace conversion step:
 </details>
 <details>
-  <summary>colorspace Conversion</summary>
+  <summary>colorspace conversion</summary>
 
 These modules are used for:
 * converting the pixel data received by the xpra server into a pixel format that can be consumed by the video encoders
 * converting the pixel data from the video decoders into a pixel format that can be used to paint the client's window (different windows may have different capabilities)
 * up / down scaling the pixel data when needed
-|Codename|Colorspaces supported|Notes|
-|--------|-------------------|-----|
-|`cython`|`r210`, `BGR48`, `GBRP10`, `YUV444P10`|slow but useful for some high bit depth modes|
+ 
+|Codename |Colorspaces supported|Notes|
+|---------|---------------------|-----|
+|`cython` |`r210`, `BGR48`, `GBRP10`, `YUV444P10`|slow but useful for some high bit depth modes|
 |`swscale`|`RGB24`, `BGR24`, `0RGB`, `BGR0`, `ARGB`, `BGRA`, `ABGR`, `YUV420P`, `YUV422P`, `YUV444P`, `GBRP`, `NV12`|fast|
-|`libyuv`|`BGRX`, `YUV420P`, `NV12`|fastest|
+|`libyuv` |`BGRX`, `YUV420P`, `NV12`|fastest|
 
 You can choose which colorspace conversion modules are loaded at runtime using the `csc-modules` option.
 </details>
