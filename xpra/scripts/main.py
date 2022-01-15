@@ -1265,7 +1265,13 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
     if opts.quality!=-1 and (opts.quality < 0 or opts.quality > 100):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
+    socket_dirs = opts.socket_dirs
+    if mode in (
+        "info", "id", "connect-test", "control", "version", "detach",
+        "show-menu", "show-about", "show-session-info",
+        ):
+        socket_dirs += opts.client_socket_dirs or []
+    dotxpra = DotXpra(opts.socket_dir, socket_dirs)
     if mode=="screenshot":
         from xpra.client.gobject_client_base import ScreenshotXpraClient
         app = ScreenshotXpraClient(opts, screenshot_filename)
@@ -1277,8 +1283,6 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
         app = IDXpraClient(opts)
     elif mode in ("show-menu", "show-about", "show-session-info"):
         from xpra.client.gobject_client_base import RequestXpraClient
-        #search the client sockets:
-        dotxpra = DotXpra(None, opts.client_socket_dirs)
         app = RequestXpraClient(request=mode, opts=opts)
     elif mode=="connect-test":
         from xpra.client.gobject_client_base import ConnectTestXpraClient

@@ -209,6 +209,8 @@ class NetworkListener(StubClientMixin):
             elif request=="show-session-info":
                 self.show_session_info()
                 hello_reply({})
+            elif request=="connect_test":
+                hello_reply({})
             elif request=="command":
                 command = caps.strtupleget("command_request")
                 log("command request: %s", command)
