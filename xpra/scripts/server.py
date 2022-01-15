@@ -779,7 +779,6 @@ def _do_run_server(script_file, cmdline,
         sessions = get_xpra_sessions(dotxpra, ignore_state=(DotXpra.UNKNOWN, DotXpra.DEAD),
                                      matching_display=display_name, query=True)
         session = sessions.get(display_name)
-        print("session(%s)=%s" % (display_name, session))
         if session:
             socket_path = session.get("socket-path")
             uri = ("socket://%s" % socket_path) if socket_path else display_name
