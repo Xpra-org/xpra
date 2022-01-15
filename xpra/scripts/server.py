@@ -506,7 +506,7 @@ def apply_config(opts, mode):
     options = load_options()
     if not options:
         return mode
-    if mode=="upgrade":
+    if mode.find("upgrade")>=0:
         #unspecified upgrade, try to find the original mode used:
         mode = options.pop("mode", mode)
     upgrade_config = dict_to_validated_config(options)
