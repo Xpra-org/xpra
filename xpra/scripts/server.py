@@ -957,6 +957,8 @@ def _do_run_server(script_file, cmdline,
     if upgrading:
         #if we had saved the start / start-desktop config, reload it:
         mode = apply_config(opts, mode)
+        if mode.startswith("upgrade-"):
+            mode = mode[len("upgrade-"):]
         upgrading_desktop = mode=="desktop"
         upgrading_seamless = not upgrading_desktop
 
