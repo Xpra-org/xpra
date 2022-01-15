@@ -1063,7 +1063,7 @@ def get_defaults():
                     "swap-keys"         : OSX,  #only used on osx
                     "desktop-fullscreen": False,
                     "global-menus"      : True,
-                    "forward-xdg-open"  : True,
+                    "forward-xdg-open"  : None,
                     "modal-windows"     : False,
                     "bandwidth-detection" : True,
                     "ssh-upgrade"       : True,

@@ -1293,9 +1293,11 @@ def _do_run_server(script_file, cmdline,
         if POSIX and (starting or upgrading or starting_desktop):
             #all unix domain sockets:
             ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
+            forward_xdg_open = bool(opts.forward_xdg_open) or (
+                opts.forward_xdg_open is None and mode.find("desktop")<0)
             if ud_paths:
                 #choose one so our xdg-open override script can use to talk back to us:
-                if opts.forward_xdg_open:
+                if forward_xdg_open:
                     for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
                         xdg_override = os.path.join(x, "xdg-open")
                         if os.path.exists(xdg_override):
@@ -1304,7 +1306,7 @@ def _do_run_server(script_file, cmdline,
                             break
             else:
                 log.warn("Warning: no local server sockets,")
-                if opts.forward_xdg_open:
+                if forward_xdg_open:
                     log.warn(" forward-xdg-open cannot be enabled")
                 log.warn(" non-embedded ssh connections will not be available")
 
