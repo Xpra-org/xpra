@@ -511,7 +511,7 @@ def apply_config(opts, mode):
         mode = options.pop("mode", mode)
     upgrade_config = dict_to_validated_config(options)
     #apply the previous session options:
-    for k in options.keys():
+    for k in options:
         if k in CLIENT_ONLY_OPTIONS:
             continue
         if k in SERVER_LOAD_SKIP_OPTIONS:
