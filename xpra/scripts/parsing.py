@@ -812,6 +812,8 @@ def do_parse_cmdline(cmdline, defaults):
                 " or ".join(["'%s'" % x for x in get_server_modes()]))
     parser.add_option_group(group)
     #we support remote start, so we need those even if we don't have server support:
+    def nonedefault(v):
+        return repr(v) if v else "none"
     def dcsv(v):
         return csv(v or ["none"])
     group.add_option("--start", action="append",
@@ -864,7 +866,7 @@ def do_parse_cmdline(cmdline, defaults):
                       +" Default: %s." % dcsv(defaults.start_child_on_last_client_exit))
     group.add_option("--exec-wrapper", action="store",
                       dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
-                      help="Wrapper for executing commands. Default: %default.")
+                      help="Wrapper for executing commands. Default: %s." % nonedefault(defaults.exec_wrapper))
     legacy_bool_parse("terminate-children")
     group.add_option("--terminate-children", action="store", metavar="yes|no",
                       dest="terminate_children", default=defaults.terminate_children,
@@ -890,15 +892,15 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--dbus-launch", action="store",
                       dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
                       help="Start the session within a dbus-launch context,"
-                      +" leave empty to turn off. Default: %default.")
+                      +" leave empty to turn off. Default: %s." % nonedefault(defaults.dbus_launch))
     group.add_option("--source", action="append",
                       dest="source", default=list(defaults.source or []),
                       help="Script to source into the server environment. Default: %s." % csv(
                           ("'%s'" % x) for x in (defaults.source or []) if not x.startswith("#")))
     group.add_option("--source-start", action="append",
                       dest="source_start", default=list(defaults.source_start or []),
-                      help="Script to source into the environment used for starting commands. Default: %s." % csv(
-                          ("'%s'" % x) for x in (defaults.source_start or []) if not x.startswith("#")))
+                      help="Script to source into the environment used for starting commands. Default: %s." % dcsv(
+                          list(x for x in (defaults.source_start or []) if x and not x.startswith("#"))))
     group.add_option("--start-env", action="append",
                       dest="start_env", default=list(defaults.start_env or []),
                       help="Define environment variables used with 'start-child' and 'start',"
@@ -1000,7 +1002,7 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Support printing. Default: %s." % enabled_str(defaults.printing))
     group.add_option("--file-size-limit", action="store", metavar="SIZE",
                       dest="file_size_limit", default=defaults.file_size_limit,
-                      help="Maximum size of file transfers. Default: %s." % defaults.file_size_limit)
+                      help="Maximum size of file transfers. Default: '%s'." % defaults.file_size_limit)
     if supports_server:
         group.add_option("--lpadmin", action="store",
                           dest="lpadmin", default=defaults.lpadmin,
@@ -1408,11 +1410,12 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--min-size", action="store",
                       dest="min_size", default=defaults.min_size,
                       metavar="MIN_SIZE",
-                      help="The minimum size for normal decorated windows, ie: 100x20. Default: '%default'.")
+                      help="The minimum size for normal decorated windows, ie: 100x20. Default: %s." %
+                      nonedefault(defaults.min_size))
     group.add_option("--max-size", action="store",
                       dest="max_size", default=defaults.max_size,
                       metavar="MAX_SIZE",
-                      help="The maximum size for normal windows, ie: 800x600. Default: '%default'.")
+                      help="The maximum size for normal windows, ie: 800x600. Default: %s." % nonedefault(defaults.max_size))
     group.add_option("--desktop-scaling", action="store",
                       dest="desktop_scaling", default=defaults.desktop_scaling,
                       metavar="SCALING",
@@ -1490,19 +1493,19 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Send raw keyboard keycodes. Default: %s." % enabled_str(defaults.keyboard_raw))
     group.add_option("--keyboard-layout", action="store", metavar="LAYOUT",
                       dest="keyboard_layout", default=defaults.keyboard_layout,
-                      help="The keyboard layout to use. Default: %default.")
+                      help="The keyboard layout to use. Default: %s." % nonedefault(defaults.keyboard_layout))
     group.add_option("--keyboard-layouts", action="store", metavar="LAYOUTS",
                       dest="keyboard_layouts", default=defaults.keyboard_layouts,
-                      help="The keyboard layouts to enable. Default: %s." % csv(defaults.keyboard_layouts))
+                      help="The keyboard layouts to enable. Default: %s." % dcsv(defaults.keyboard_layouts))
     group.add_option("--keyboard-variant", action="store", metavar="VARIANT",
                       dest="keyboard_variant", default=defaults.keyboard_variant,
-                      help="The keyboard layout variant to use. Default: %default.")
+                      help="The keyboard layout variant to use. Default: %s." % nonedefault(defaults.keyboard_variant))
     group.add_option("--keyboard-variants", action="store", metavar="VARIANTS",
-                      dest="keyboard_variants", default=defaults.keyboard_variant,
-                      help="The keyboard layout variants to enable. Default: %s." % csv(defaults.keyboard_variants))
+                      dest="keyboard_variants", default=defaults.keyboard_variants,
+                      help="The keyboard layout variants to enable. Default: %s." % dcsv(defaults.keyboard_variants))
     group.add_option("--keyboard-options", action="store", metavar="OPTIONS",
                       dest="keyboard_options", default=defaults.keyboard_options,
-                      help="The keyboard layout options to use. Default: %default.")
+                      help="The keyboard layout options to use. Default: %s." % nonedefault(defaults.keyboard_options))
 
     group = optparse.OptionGroup(parser, "SSL Options",
                 "These options apply to both client and server. Please refer to the man page for details.")
@@ -1571,17 +1574,17 @@ def do_parse_cmdline(cmdline, defaults):
                       dest="env", default=list(defaults.env or []),
                       help="Define environment variables which will apply to this process and all subprocesses,"
                       +" can be specified multiple times."
-                      +" Default: %s." % csv(
-                          ("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#")))
+                      +" Default: %s." % dcsv(
+                          list(("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#"))))
     group.add_option("--challenge-handlers", action="append",
                       dest="challenge_handlers", default=[],
                       help="Which handlers to use for processing server authentication challenges."
-                      +" Default: %s." % csv(defaults.challenge_handlers))
+                      +" Default: %s." % dcsv(defaults.challenge_handlers))
     group.add_option("--password-file", action="append",
                       dest="password_file", default=defaults.password_file,
                       help="The file containing the password required to connect"
                       +" (useful to secure TCP mode)."
-                      +" Default: %s." % csv(defaults.password_file))
+                      +" Default: %s." % dcsv(defaults.password_file))
     group.add_option("--forward-xdg-open", action="store",
                       dest="forward_xdg_open", default=defaults.forward_xdg_open,
                       help="Intercept calls to xdg-open and forward them to the client."
@@ -1638,7 +1641,7 @@ def do_parse_cmdline(cmdline, defaults):
     group.add_option("--rfb-upgrade", action="store",
                       dest="rfb_upgrade", default=defaults.rfb_upgrade,
                       help="Upgrade TCP sockets to send a RFB handshake after this delay"
-                      +" (in seconds). Default: '%default'.")
+                      +" (in seconds). Default: %default.")
     group.add_option("-d", "--debug", action="store",
                       dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
                       help="List of categories to enable debugging for"
