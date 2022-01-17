@@ -59,11 +59,11 @@ def wm_check(wm_name="xpra", upgrading=False):
     wm_so = info.get("WM_S0")
     cwm_so = info.get("_NEW_WM_CM_S0")
     ewmh_xid = info.get("_NET_SUPPORTING_WM_CHECK", 0)
+    xpra_name = name and name.lower().startswith("xpra")
     if not upgrading and not (ewmh_xid or wm_so or cwm_so):
         log("no window manager on %s", display_name)
         return True
-    found_name = False
-    if upgrading and name and name==wm_name:
+    if upgrading and xpra_name:
         log.info("found previous Xpra instance")
         return True
     if not name:
@@ -73,22 +73,24 @@ def wm_check(wm_name="xpra", upgrading=False):
         log.warn("Warning: found an existing window manager")
         log.warn(" on display %s using EWMH window %#x: '%s'", display_name, ewmh_xid, name)
     if not wm_so and not cwm_so:
-        if name and name.lower().startswith("xpra"):
-            log.info("found remnants of a previous Xpra instance")
+        if xpra_name:
+            log.info(" found remnants of a previous Xpra instance")
             return True
         if FORCE_REPLACE_WM:
-            log.warn("XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
-        else:
-            log.error("it does not own the selection '%s' or '%s'", WM_S0, _NEW_WM_CM_S0)
-            log.error("so we cannot take over and make it exit")
-            log.error("please stop %s so you can run xpra on this display",
-                      name or "the existing window manager")
-            log.warn("if you are certain that the window manager is already gone,")
-            log.warn(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue")
-            log.warn(" at your own risk")
-            return False
-    if upgrading and not found_name and not FORCE_REPLACE_WM:
-        log.error("Error: xpra server not found")
+            log.warn(" XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
+            return True
+        log.warn(" it does not own the selection '%s' or '%s'", WM_S0, _NEW_WM_CM_S0)
+        log.warn(" so we cannot take over and make it exit")
+        log.warn(" please stop %s so you can run xpra on this display",
+                  name or "the existing window manager")
+        log.warn(" if you are certain that the window manager is already gone,")
+        log.warn(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue")
+        log.warn(" at your own risk")
+        return False
+    if upgrading and not FORCE_REPLACE_WM and name:
+        log.error("Error: %r is managing this display", name)
+        log.error(" you may set XPRA_FORCE_REPLACE_WM=1 to force xpra to continue")
+        log.error(" at your own risk")
         return False
     return True
 
