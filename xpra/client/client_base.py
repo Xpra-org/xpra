@@ -1024,6 +1024,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p = self._protocol
         exit_code = EXIT_PACKET_FAILURE
         pcount = p.input_packetcount if p else 0
+        data = bytestostr(data).strip("\n\r")
+        show_as_text = pcount<=1 and len(data)<128 and all((c in string.printable) or c in ("\n\r") for c in data)
         if pcount<=1:
             exit_code = EXIT_CONNECTION_FAILED
             netlog.error("Error: failed to connect")
@@ -1038,9 +1040,9 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             parts = message.split(" read buffer=", 1)
             netlog.error(" received uninterpretable nonsense: %r", parts[0])
             if len(parts)==2:
-                netlog.error(" %s", parts[1])
-        data = bytestostr(data).strip("\n\r")
-        show_as_text = pcount<=1 and len(data)<128 and all((c in string.printable) or c in ("\n\r") for c in data)
+                text = bytestostr(parts[1])
+                netlog.error(" %s", text)
+                show_as_text = not data.startswith(text)
         if show_as_text:
             if data.find("\n")>=0:
                 netlog.error(" data:")
