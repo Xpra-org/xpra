@@ -143,7 +143,7 @@ def decode(data, protocol_flags):
     e = ENCODERS.get(ptype)
     if e:
         return e.decode(data)
-    raise InvalidPacketEncodingException("%s decoder is not available" % ptype)
+    raise InvalidPacketEncodingException("%r decoder is not available" % ptype)
 
 
 def main(): # pragma: no cover
