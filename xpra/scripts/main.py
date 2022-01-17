@@ -1269,7 +1269,7 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
     if mode in (
         "info", "id", "connect-test", "control", "version", "detach",
         "show-menu", "show-about", "show-session-info",
-        ):
+        ) and extra_args:
         socket_dirs += opts.client_socket_dirs or []
     dotxpra = DotXpra(opts.socket_dir, socket_dirs)
     if mode=="screenshot":
