@@ -2090,11 +2090,11 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             nvcc_versions[vnum] = filename
     if nvcc_versions:
         #choose the most recent one:
-        version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
+        nvcc_version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
         if len(nvcc_versions)>1:
-            print(" using version %s from %s" % (version, nvcc))
+            print(" using version %s from %s" % (nvcc_version, nvcc))
     else:
-        version = nvcc = None
+        nvcc_version = nvcc = None
     if ((nvenc_ENABLED or nvjpeg_ENABLED) and cuda_kernels_ENABLED):
         assert nvcc_versions, "cannot find nvcc compiler!"
         #first compile the cuda kernels
@@ -2119,11 +2119,6 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             print("rebuilding %s: %s" % (kernel, reason))
             cmd = [nvcc,
                    '-fatbin',
-                   #"-cubin",
-                   #"-arch=compute_30", "-code=compute_30,sm_30,sm_35",
-                   #"-gencode=arch=compute_50,code=sm_50",
-                   #"-gencode=arch=compute_52,code=sm_52",
-                   #"-gencode=arch=compute_52,code=compute_52",
                    "-c", cuda_src,
                    "-o", cuda_bin]
             #GCC 8.1 has compatibility issues with CUDA 9.2,
@@ -2144,24 +2139,31 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 #cmd += ["--input-drive-prefix", "/"]
                 #cmd += ["--dependency-drive-prefix", "/"]
                 cmd += ["-I%s" % os.path.abspath("win32")]
-            comp_code_options = []
-            if version>=(7, 5):
-                comp_code_options.append((52, 52))
-                comp_code_options.append((53, 53))
-            if version>=(8, 0):
-                comp_code_options.append((60, 60))
-                comp_code_options.append((61, 61))
-                comp_code_options.append((62, 62))
-            if version>=(9, 0):
-                comp_code_options.append((70, 70))
-            if version>=(10, 0):
-                comp_code_options.append((75, 75))
-            if version>=(11, 0):
-                comp_code_options.append((80, 80))
-            if version>=(11, 1):
-                comp_code_options.append((86, 86))
-            for arch, code in comp_code_options:
-                cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
+            if nvcc_version>=(11, 5):
+                cmd += ["-arch=all"]
+                if nvcc_version>=(11, 6):
+                    cmd += ["-Xnvlink", "-ignore-host-info"]
+            else:
+                comp_code_options = []
+                if nvcc_version>=(7, 5):
+                    comp_code_options.append((52, 52))
+                    comp_code_options.append((53, 53))
+                if nvcc_version>=(8, 0):
+                    comp_code_options.append((60, 60))
+                    comp_code_options.append((61, 61))
+                    comp_code_options.append((62, 62))
+                if nvcc_version>=(9, 0):
+                    comp_code_options.append((70, 70))
+                if nvcc_version>=(10, 0):
+                    comp_code_options.append((75, 75))
+                if nvcc_version>=(11, 0):
+                    comp_code_options.append((80, 80))
+                if nvcc_version>=(11, 1):
+                    comp_code_options.append((86, 86))
+                #if nvcc_version>=(11, 6):
+                #    comp_code_options.append((87, 87))
+                for arch, code in comp_code_options:
+                    cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
             print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
             print(" %s" % " ".join("'%s'" % x for x in cmd))
             nvcc_commands.append(cmd)
