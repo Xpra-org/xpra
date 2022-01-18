@@ -625,7 +625,7 @@ def checkdirs(*dirs):
             raise Exception("cannot find a directory which is required for building: '%s'" % d)
 
 
-GCC_VERSION = []
+GCC_VERSION = ()
 def get_gcc_version():
     global GCC_VERSION
     if not GCC_VERSION:
@@ -633,16 +633,18 @@ def get_gcc_version():
         r, _, err = get_status_output([cc]+["-v"])
         if r==0:
             V_LINE = "gcc version "
+            tmp_version = []
             for line in err.splitlines():
                 if line.startswith(V_LINE):
                     v_str = line[len(V_LINE):].split(" ")[0]
                     for p in v_str.split("."):
                         try:
-                            GCC_VERSION.append(int(p))
+                            tmp_version.append(int(p))
                         except ValueError:
                             break
                     print("found gcc version: %s" % ".".join([str(x) for x in GCC_VERSION]))
                     break
+            GCC_VERSION = tuple(tmp_version)
     return GCC_VERSION
 
 
@@ -717,7 +719,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                     "-Wno-deprecated-register",
                     "-Wno-unused-command-line-argument",
                     ]
-        elif get_gcc_version()>=[4, 4]:
+        elif get_gcc_version()>=(4, 4):
             eifd = ["-Werror"]
             if NETBSD:
                 #see: http://trac.cython.org/ticket/395
@@ -736,7 +738,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if debug_ENABLED:
         add_to_keywords(kw, 'extra_compile_args', '-g')
         add_to_keywords(kw, 'extra_compile_args', '-ggdb')
-        if get_gcc_version()>=[4, 8] and not WIN32:
+        if get_gcc_version()>=(4, 8) and not WIN32:
             add_to_keywords(kw, 'extra_compile_args', '-fsanitize=address')
             add_to_keywords(kw, 'extra_link_args', '-fsanitize=address')
     if rpath and kw.get("libraries"):
@@ -2124,10 +2126,10 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             #GCC 8.1 has compatibility issues with CUDA 9.2,
             #so revert to C++03:
             gcc_version = get_gcc_version()
-            if gcc_version>=[8, 1] and gcc_version<[9, ]:
+            if (8,1)<=gcc_version<(9, ):
                 cmd.append("-std=c++03")
             #GCC 6 uses C++11 by default:
-            elif gcc_version>=[6, 0]:
+            elif gcc_version>=(6, 0):
                 cmd.append("-std=c++11")
             CL_VERSION = os.environ.get("CL_VERSION")
             if CL_VERSION:
@@ -2195,7 +2197,7 @@ add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 if nvenc_ENABLED:
     nvencmodule = "nvenc"
     nvenc_pkgconfig = pkgconfig(nvencmodule, ignored_flags=["-l", "-L"])
-    if get_gcc_version()<=[8, 0]:
+    if get_gcc_version()<=(8, 0):
         add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=sign-compare")
     #make it possible to build against SDK v10
     add_to_keywords(nvenc_pkgconfig, 'extra_compile_args', "-Wno-error=deprecated-declarations")
