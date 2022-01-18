@@ -2128,10 +2128,11 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                    "-o", cuda_bin]
             #GCC 8.1 has compatibility issues with CUDA 9.2,
             #so revert to C++03:
-            if get_gcc_version()>=[8, 1]:
+            gcc_version = get_gcc_version()
+            if gcc_version>=[8, 1] and gcc_version<[9, ]:
                 cmd.append("-std=c++03")
             #GCC 6 uses C++11 by default:
-            elif get_gcc_version()>=[6, 0]:
+            elif gcc_version>=[6, 0]:
                 cmd.append("-std=c++11")
             CL_VERSION = os.environ.get("CL_VERSION")
             if CL_VERSION:
