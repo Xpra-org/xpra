@@ -1824,6 +1824,9 @@ class WindowVideoSource(WindowSource):
         if not self.supports_scrolling:
             scrolllog("no scrolling: not supported")
             return False
+        if options.get("auto_refresh"):
+            scrolllog("no scrolling: auto-refresh")
+            return False
         #don't download the pixels if we have a GPU buffer,
         #since that means we're likely to be able to compress on the GPU too with NVENC:
         if not image.has_pixels():
