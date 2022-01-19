@@ -20,6 +20,7 @@ from xpra.util import csv
 from xpra.os_util import bytestostr
 
 cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+cdef int YUV = envbool("XPRA_TURBOJPEG_YUV")
 
 
 ctypedef int TJSAMP
@@ -114,9 +115,15 @@ def init_module():
 def cleanup_module():
     log("jpeg.cleanup_module()")
 
+if YUV:
+    JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR", "YUV420P", "YUV422P", "YUV444P")
+else:
+    JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR")
+
+
 def get_input_colorspaces(encoding):
     if encoding=="jpeg":
-        return ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR", "YUV420P", "YUV422P", "YUV444P")
+        return JPEG_INPUT_COLORSPACES
     assert encoding=="jpega"
     return ("BGRA", "RGBA", )
 
