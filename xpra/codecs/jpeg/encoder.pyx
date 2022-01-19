@@ -236,6 +236,12 @@ cdef class Encoder:
             cdata = encode_rgb(self.compressor, image, quality, self.grayscale)
         if not cdata:
             return None
+        now = monotonic()
+        if SAVE_TO_FILE:    # pragma: no cover
+            filename = "./%s.jpeg" % (now, )
+            with open(filename, "wb") as f:
+                f.write(cdata)
+            log.info("saved %i bytes to %s", len(cdata), filename)
         client_options = {}
         if self.encoding=="jpega":
             from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
@@ -246,6 +252,11 @@ cdef class Encoder:
                                   self.width, self.height, rowstrides,
                                   quality, TJSAMP_GRAY)
             client_options["alpha-offset"] = len(cdata)
+            if SAVE_TO_FILE:    # pragma: no cover
+                filename = "./%s-alpha.jpeg" % (now, )
+                with open(filename, "wb") as f:
+                    f.write(adata)
+                log.info("saved %i bytes to %s", len(adata), filename)
             cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
         self.frames += 1
         return memoryview(cdata), client_options
@@ -314,7 +325,7 @@ def encode(coding, image, options=None):
                                   width, height, rowstrides,
                                   quality, TJSAMP_GRAY)
             if SAVE_TO_FILE:    # pragma: no cover
-                filename = "./%s.jpega" % (now, )
+                filename = "./%s-alpha.jpeg" % (now, )
                 with open(filename, "wb") as f:
                     f.write(adata)
                 log.info("saved %i bytes to %s", len(adata), filename)
