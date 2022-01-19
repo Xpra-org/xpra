@@ -609,15 +609,20 @@ class WindowVideoSource(WindowSource):
 
     def refresh_subregion(self, regions):
         #callback from video subregion to trigger a refresh of some areas
-        regionrefreshlog("refresh_subregion(%s)", regions)
-        if not regions or not self.can_refresh():
+        if not regions:
+            regionrefreshlog("refresh_subregion(%s) nothing to refresh", regions)
+            return False
+        if not self.can_refresh():
+            regionrefreshlog("refresh_subregion(%s) cannot refresh", regions)
             return False
         now = monotonic()
         if now-self.global_statistics.last_congestion_time<5:
+            regionrefreshlog("refresh_subregion(%s) skipping refresh due to congestion", regions)
             return False
         self.flush_video_encoder_now()
         encoding = self.auto_refresh_encodings[0]
         options = self.get_refresh_options()
+        regionrefreshlog("refresh_subregion(%s) using %s and %s", regions, encoding, options)
         super().do_send_delayed_regions(now, regions, encoding, options,
                                         get_best_encoding=self.get_refresh_subregion_encoding)
         return True

@@ -204,7 +204,6 @@ class VideoSubregion:
             if not rect.contains_rect(r):
                 nonvideo += r.substract_rect(rect)
         delay = max(150, self.auto_refresh_delay)
-        refreshlog("add_video_refresh(%s) rectangle=%s, delay=%ims", region, rect, delay)
         self.nonvideo_regions += nonvideo
         if self.nonvideo_regions:
             if not self.nonvideo_refresh_timer:
@@ -213,7 +212,9 @@ class VideoSubregion:
             #only keep the regions still in the video region:
             inrect = (rect.intersection_rect(r) for r in self.refresh_regions)
             self.refresh_regions = [r for r in inrect if r is not None]
-        #re-schedule the video region refresh (if we have regions to fresh):
+        refreshlog("add_video_refresh(%s) rectangle=%s, delay=%ims, nonvideo=%s, refresh_regions=%s",
+                   region, rect, delay, self.nonvideo_regions, self.refresh_regions)
+        #re-schedule the video region refresh (if we still have regions to fresh):
         if self.refresh_regions:
             self.refresh_timer = self.timeout_add(delay, self.refresh)
 
@@ -238,11 +239,12 @@ class VideoSubregion:
         #from add_video_refresh()
 
     def refresh(self):
-        refreshlog("refresh() refresh_timer=%s", self.refresh_timer)
-        #runs via timeout_add, safe to call UI!
-        self.refresh_timer = 0
         regions = self.refresh_regions
         rect = self.rectangle
+        refreshlog("refresh() refresh_timer=%s, refresh_regions=%s, rectangle=%s",
+                   self.refresh_timer, regions, rect)
+        #runs via timeout_add, safe to call UI!
+        self.refresh_timer = 0
         if rect and len(regions)>=2:
             #figure out if it makes sense to refresh the whole area,
             #or if we just send the list of smaller rectangles:
