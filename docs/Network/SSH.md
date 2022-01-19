@@ -62,6 +62,17 @@ The `--exit-ssh` switch controls whether the SSH transport is killed when the cl
 This backend is built into the client connection code and provides better diagnostics (using the `--debug=ssh` switch), and it provides a GUI for confirming host keys, entering key passphrases or passwords.\
 The downside is that since it does not use OpenSSH at all, it does not have the same flexibility, it may require re-confirmation of known hosts and it may not support all the configuration options normally used with OpenSSH.
 
+Paramiko can accept configuration options in the command line.
+After `--ssh=paramiko`, add a double-colon `:` and then one or more of the available options:
+* `auth`: Specify the authentication methods used, in the order that they will be used.
+  Available values: `agent`, `key`, `password`, `none`
+  e.g.: `--ssh=paramiko:auth=agent+key`
+* `stricthostkeychecking`: _See `man ssh_config` --> `StrictHostKeyChecking`_
+  Available values: `yes (default)`, `no`
+  e.g.: `--ssh=paramiko:stricthostkeychecking=no`
+
+Multiple options can be given as a comma-separated string, e.g.: `--ssh=paramiko:auth=agent+key,stricthostkeychecking=no`
+
 ### passwords
 
 You can specify the password to use on the command line URI:
