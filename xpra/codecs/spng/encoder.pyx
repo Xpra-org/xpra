@@ -5,7 +5,7 @@
 
 #cython: wraparound=False
 
-from time import time
+from time import monotonic
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
@@ -256,7 +256,7 @@ def encode(coding, image, options=None):
     spng_ctx_free(ctx)
     cdata = memoryview(membuf)
     if SAVE_TO_FILE:    # pragma: no cover
-        filename = "./%s.png" % time()
+        filename = "./%s.png" % monotonic()
         with open(filename, "wb") as f:
             f.write(cdata)
         log.info("saved png to %s", filename)

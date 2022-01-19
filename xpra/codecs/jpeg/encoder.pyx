@@ -5,7 +5,7 @@
 
 #cython: wraparound=False
 
-import time
+from time import monotonic
 
 from xpra.util import envbool, typedict
 from xpra.log import Logger
@@ -298,7 +298,7 @@ def encode(coding, image, options=None):
         cdata = encode_rgb(compressor, image, quality, grayscale)
         if not cdata:
             return None
-        now = time.monotonic()
+        now = monotonic()
         if SAVE_TO_FILE:    # pragma: no cover
             filename = "./%s.jpeg" % (now, )
             with open(filename, "wb") as f:

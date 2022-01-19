@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from time import monotonic, time
+from time import monotonic
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t   #pylint: disable=syntax-error
 from libc.stdlib cimport free   #pylint: disable=syntax-error
@@ -786,7 +786,7 @@ cdef webp_encode(WebPConfig *config, WebPPicture *pic):
     return cdata
 
 def save_webp(cdata):
-    filename = "./%s.webp" % time()
+    filename = "./%s.webp" % monotonic()
     with open(filename, "wb") as f:
         f.write(cdata)
     log.info("saved %i bytes to %s", len(cdata), filename)

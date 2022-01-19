@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from time import monotonic, time
+from time import monotonic
 from math import ceil
 import numpy
 
@@ -687,7 +687,7 @@ def encode(coding, image, options=None):
             return None
         cdata, options = r
         if SAVE_TO_FILE:    # pragma: no cover
-            filename = "./%s.jpeg" % time()
+            filename = "./%s.jpeg" % monotonic()
             with open(filename, "wb") as f:
                 f.write(cdata)
             log.info("saved %i bytes to %s", len(cdata), filename)
