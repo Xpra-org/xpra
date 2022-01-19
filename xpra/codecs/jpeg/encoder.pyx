@@ -241,7 +241,7 @@ cdef class Encoder:
             filename = "./%s.jpeg" % (now, )
             with open(filename, "wb") as f:
                 f.write(cdata)
-            log.info("saved %i bytes to %s", len(cdata), filename)
+            log.info("saved %7i bytes to %s", len(cdata), filename)
         client_options = {}
         if self.encoding=="jpega":
             from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
@@ -256,7 +256,7 @@ cdef class Encoder:
                 filename = "./%s-alpha.jpeg" % (now, )
                 with open(filename, "wb") as f:
                     f.write(adata)
-                log.info("saved %i bytes to %s", len(adata), filename)
+                log.info("saved %7i bytes to %s", len(adata), filename)
             cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
         self.frames += 1
         return memoryview(cdata), client_options
@@ -314,7 +314,7 @@ def encode(coding, image, options=None):
             filename = "./%s.jpeg" % (now, )
             with open(filename, "wb") as f:
                 f.write(cdata)
-            log.info("saved %i bytes to %s", len(cdata), filename)
+            log.info("saved %7i bytes to %s", len(cdata), filename)
         bpp = 24
         if coding=="jpega":
             from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
@@ -328,7 +328,7 @@ def encode(coding, image, options=None):
                 filename = "./%s-alpha.jpeg" % (now, )
                 with open(filename, "wb") as f:
                     f.write(adata)
-                log.info("saved %i bytes to %s", len(adata), filename)
+                log.info("saved %7i bytes to %s", len(adata), filename)
             client_options["alpha-offset"] = len(cdata)
             cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
             bpp = 32

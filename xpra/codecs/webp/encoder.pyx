@@ -789,7 +789,7 @@ def save_webp(cdata):
     filename = "./%s.webp" % monotonic()
     with open(filename, "wb") as f:
         f.write(cdata)
-    log.info("saved %i bytes to %s", len(cdata), filename)
+    log.info("saved %7i bytes to %s", len(cdata), filename)
 
 
 def selftest(full=False):

@@ -690,7 +690,7 @@ def encode(coding, image, options=None):
             filename = "./%s.jpeg" % monotonic()
             with open(filename, "wb") as f:
                 f.write(cdata)
-            log.info("saved %i bytes to %s", len(cdata), filename)
+            log.info("saved %7i bytes to %s", len(cdata), filename)
         return coding, Compressed(coding, cdata, False), options, width, height, 0, 24
     except NVJPEG_Exception as e:
         errors.append(str(e))

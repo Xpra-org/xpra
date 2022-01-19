@@ -259,7 +259,7 @@ def encode(coding, image, options=None):
         filename = "./%s.png" % monotonic()
         with open(filename, "wb") as f:
             f.write(cdata)
-        log.info("saved png to %s", filename)
+        log.info("saved %7i bytes to %s", len(cdata), filename)
     return coding, Compressed(coding, cdata), {}, width, height, 0, len(rgb_format)*8
 
 

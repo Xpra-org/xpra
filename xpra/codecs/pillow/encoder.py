@@ -239,12 +239,13 @@ def encode(coding : str, image, options=None):
         pil_fmt = "PNG"
     buf = BytesIO()
     im.save(buf, pil_fmt, **kwargs)
-    if SAVE_TO_FILE:    # pragma: no cover
-        filename = "./%s.%s" % (monotonic(), pil_fmt.lower())
-        im.save(filename, pil_fmt)
-        log.info("saved %s to %s", coding, filename)
-    log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     data = buf.getvalue()
+    if SAVE_TO_FILE:    # pragma: no cover
+        filename = "./%s.%s" % (monotonic(), pil_fmt.lower().replace("/", "-"))
+        with open(filename, "wb") as f:
+            f.write(data)
+        log.info("saved %7i bytes to %s", len(data), filename)
+    log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     buf.close()
     return coding, Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp
 
