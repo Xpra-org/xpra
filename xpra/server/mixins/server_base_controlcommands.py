@@ -6,6 +6,7 @@
 #pylint: disable-msg=E1101
 
 import os.path
+from time import monotonic
 
 from xpra.util import parse_scaling_value, csv, from0to100, net_utf8, typedict
 from xpra.os_util import load_binary_file
@@ -101,6 +102,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("auto-refresh",          "set a specific auto-refresh value", min_args=1, validation=[float]),
             ArgsControlCommand("refresh",               "refresh some or all windows",      min_args=0),
             ArgsControlCommand("encoding",              "picture encoding",                 min_args=2),
+            ArgsControlCommand("request-update",        "request a screen update using a specific encoding",  min_args=3),
             ArgsControlCommand("video-region-enabled",  "enable video region",              min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region-detection","enable video detection",           min_args=2, max_args=2, validation=[int, parse_boolean_value]),
             ArgsControlCommand("video-region-exclusion-zones","set window regions to exclude from video regions: 'WID,(x,y,w,h),(x,y,w,h),..', ie: '1 (0,10,100,20),(200,300,20,20)'",  min_args=2, max_args=2, validation=[int, parse_4intlist]),
@@ -536,6 +538,21 @@ class ServerBaseControlCommands(StubServerMixin):
             ws.set_new_encoding(encoding, strict)
             ws.refresh()
         return "set encoding to %s%s for windows %s" % (encoding, ["", " (strict)"][int(strict or 0)], wids)
+
+    def control_command_request_update(self, encoding, geom, *args):
+        wids = args
+        now = monotonic()
+        options = {"auto_refresh" : True}
+        log("request-update using %r, geometry=%s, windows(%s)=%s",
+                 encoding, geom, wids, self._ws_from_args(*wids))
+        for ws in tuple(self._ws_from_args(*wids)):
+            if geom=="all":
+                x = y = 0
+                w, h = ws.window_dimensions
+            else:
+                x, y, w, h = (int(x) for x in geom.split(","))
+            ws.process_damage_region(now, x, y, w, h, encoding, options, flush=0)
+        return "damage requested"
 
     def control_command_clipboard_direction(self, direction, *_args):
         ch = self._clipboard_helper
