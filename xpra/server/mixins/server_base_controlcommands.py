@@ -542,7 +542,10 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_request_update(self, encoding, geom, *args):
         wids = args
         now = monotonic()
-        options = {"auto_refresh" : True}
+        options = {
+            "auto_refresh" : True,
+            "av-delay" : 0,
+            }
         log("request-update using %r, geometry=%s, windows(%s)=%s",
                  encoding, geom, wids, self._ws_from_args(*wids))
         for ws in tuple(self._ws_from_args(*wids)):
