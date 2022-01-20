@@ -22,10 +22,6 @@ from libc.stdlib cimport free
 cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
-cdef extern from "../../buffers/memalign.h":
-    unsigned int MEMALIGN_ALIGNMENT
-
-
 cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
     #int BGRAToI420(const uint8_t* src_frame, ...
     #this is actually BGRX for little endian systems:
@@ -94,6 +90,8 @@ cdef inline FilterMode get_filtermode(int speed):
     return kFilterBox
 
 
+DEF ALIGN = 4   #MEMALIGN_ALIGNMENT
+
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
@@ -101,7 +99,7 @@ cdef inline uintptr_t roundupl(uintptr_t n, uintptr_t m):
     return (n + m - 1) & ~(m - 1)
 
 cdef inline uintptr_t memalign_ptr(uintptr_t ptr):
-    return <uintptr_t> roundupl(<uintptr_t> ptr, MEMALIGN_ALIGNMENT)
+    return <uintptr_t> roundupl(<uintptr_t> ptr, ALIGN)
 
 
 def init_module():
@@ -292,18 +290,18 @@ cdef class ColorspaceConverter:
                 #we don't scale, so the size is the src size:
                 self.out_width[i]   = src_width // xdiv
                 self.out_height[i]  = src_height // ydiv
-            self.out_stride[i]  = roundup(self.out_width[i], MEMALIGN_ALIGNMENT)
+            self.out_stride[i]  = roundup(self.out_width[i], ALIGN)
             self.out_size[i]    = self.out_stride[i] * self.out_height[i]
             self.out_offsets[i] = self.out_buffer_size
             #add two extra lines to height so we can access two rowstrides at a time,
             #no matter where we start to read on the last line
             #and round up to memalign each plane:
             #(why two and not just one? libyuv will do this for input data with odd height)
-            self.out_buffer_size += roundupl(self.out_size[i] + 2*self.out_stride[i], MEMALIGN_ALIGNMENT)
+            self.out_buffer_size += roundupl(self.out_size[i] + 2*self.out_stride[i], ALIGN)
             if self.yuv_scaling:
                 self.scaled_width[i]    = dst_width // xdiv
                 self.scaled_height[i]   = dst_height // ydiv
-                self.scaled_stride[i]   = roundup(self.scaled_width[i], MEMALIGN_ALIGNMENT)
+                self.scaled_stride[i]   = roundup(self.scaled_width[i], ALIGN)
                 self.scaled_size[i]     = self.scaled_stride[i] * self.scaled_height[i]
                 self.scaled_offsets[i]  = self.scaled_buffer_size
                 self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
