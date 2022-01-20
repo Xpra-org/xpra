@@ -174,17 +174,17 @@ CODEC_OPTIONS = {
     }
 
 def load_codec(name):
-    if has_codec(name):
-        return
-    try:
-        option = CODEC_OPTIONS[name]
-        description, top_module, class_module = option[:3]
-        classnames = option[3:]
-    except KeyError:
-        log("load_codec(%s)", name, exc_info=True)
-        log.error("Error: invalid codec name '%s'", name)
-    else:
-        xpra_codec_import(name, description, top_module, class_module, classnames)
+    if not has_codec(name):
+        try:
+            option = CODEC_OPTIONS[name]
+            description, top_module, class_module = option[:3]
+            classnames = option[3:]
+        except KeyError:
+            log("load_codec(%s)", name, exc_info=True)
+            log.error("Error: invalid codec name '%s'", name)
+        else:
+            xpra_codec_import(name, description, top_module, class_module, classnames)
+    return get_codec(name)
 
 
 def load_codecs(encoders=True, decoders=True, csc=True, video=True):
