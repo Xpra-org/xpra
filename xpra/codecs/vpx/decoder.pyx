@@ -54,11 +54,42 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int d_w
         unsigned int d_h
         vpx_img_fmt_t fmt
+        vpx_color_space_t cs
+        vpx_color_range_t range
         unsigned char *planes[4]
         int stride[4]
         int bps
         unsigned int x_chroma_shift
         unsigned int y_chroma_shift
+
+    ctypedef enum vpx_color_space_t:
+        VPX_CS_UNKNOWN
+        VPX_CS_BT_601
+        VPX_CS_BT_709
+        VPX_CS_SMPTE_170
+        VPX_CS_SMPTE_240
+        VPX_CS_BT_2020
+        VPX_CS_RESERVED
+        VPX_CS_SRGB
+
+    ctypedef enum vpx_color_range_t:
+        VPX_CR_STUDIO_RANGE
+        VPX_CR_FULL_RANGE
+
+VPX_COLOR_SPACES = {
+    VPX_CS_UNKNOWN  : "unknown",
+    VPX_CS_BT_601   : "BT601",
+    VPX_CS_BT_709   : "BT709",
+    VPX_CS_SMPTE_170    : "SMPTE170",
+    VPX_CS_SMPTE_240    : "SMPTE240",
+    VPX_CS_BT_2020  : "BT2020",
+    VPX_CS_RESERVED : "reserved",
+    VPX_CS_SRGB     : "SRGB",
+    }
+VPX_COLOR_RANGES = {
+    VPX_CR_STUDIO_RANGE : "studio",
+    VPX_CR_FULL_RANGE   : " full",
+    }
 
 cdef extern from "vpx/vp8dx.h":
     const vpx_codec_iface_t *vpx_codec_vp8_dx()
@@ -301,7 +332,8 @@ cdef class Decoder:
             pixels.append(memoryview(output_buf))
         self.frames += 1
         cdef double elapsed = 1000*(monotonic()-start)
-        log("%s frame %4i decoded in %3ims", self.encoding, self.frames, elapsed)
+        log("%s frame %4i decoded in %3ims, colorspace=%s, range=%s",
+            self.encoding, self.frames, elapsed, VPX_COLOR_SPACES.get(img.cs, img.cs), VPX_COLOR_RANGES.get(img.range, img.range))
         return ImageWrapper(0, 0, self.width, self.height, pixels, self.get_colorspace(), 24, strides, 1, ImageWrapper.PLANAR_3)
 
     def codec_error_str(self):
