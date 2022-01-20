@@ -89,11 +89,27 @@ cdef extern from "vpx/vpx_image.h":
         unsigned int d_w
         unsigned int d_h
         vpx_img_fmt_t fmt
+        vpx_color_space_t cs
+        vpx_color_range_t range
         unsigned char *planes[4]
         int stride[4]
         int bps
         unsigned int x_chroma_shift
         unsigned int y_chroma_shift
+
+    ctypedef enum vpx_color_space_t:
+        VPX_CS_UNKNOWN
+        VPX_CS_BT_601
+        VPX_CS_BT_709
+        VPX_CS_SMPTE_170
+        VPX_CS_SMPTE_240
+        VPX_CS_BT_2020
+        VPX_CS_RESERVED
+        VPX_CS_SRGB
+
+    ctypedef enum vpx_color_range_t:
+        VPX_CR_STUDIO_RANGE
+        VPX_CR_FULL_RANGE
 
 cdef extern from "vpx/vp8cx.h":
     const vpx_codec_iface_t *vpx_codec_vp8_cx()
@@ -646,6 +662,8 @@ cdef class Encoder:
         image.w = self.width
         image.h = self.height
         image.fmt = self.pixfmt
+        image.cs = VPX_CS_BT_601
+        image.range = VPX_CR_FULL_RANGE
         for i in range(3):
             image.planes[i] = pic_in[i]
             image.stride[i] = strides[i]
