@@ -17,7 +17,7 @@ from xpra.codecs.codec_checks import make_test_image
 def h2b(s):
     return binascii.unhexlify(s)
 
-def cmpp(p1, p2, tolerance=2):
+def cmpp(p1, p2, tolerance=3):
     #compare planes, tolerate a rounding difference
     l = min(len(p1), len(p2))
     for i in range(l):
@@ -31,12 +31,12 @@ def cmpp(p1, p2, tolerance=2):
 #(studio-swing)
 SAMPLE_YUV420P_IMAGES = {
     "black" : (
-        0x10,   #Y
+        0x00,   #Y
         0x80,   #U
         0x80,   #V
         ),
     "white" : (
-        0xEB,   #Y
+        0xFF,   #Y
         0x80,   #U
         0x80,   #V
         ),
