@@ -628,7 +628,9 @@ cdef class ColorspaceConverter:
         for i in range(3):
             strides.append(self.dst_strides[i])
             planes.append(PyMemoryView_FromMemory(<char *> ((<uintptr_t> buf) + self.offsets[i]), self.dst_sizes[i], True))
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, bpp, strides, ImageWrapper.PLANAR_3)
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height,
+                                       planes, self.dst_format, bpp, strides,
+                                       planes=ImageWrapper.PLANAR_3)
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
 
