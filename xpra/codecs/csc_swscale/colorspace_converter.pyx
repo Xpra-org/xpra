@@ -23,12 +23,12 @@ cdef extern from "Python.h":
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
 
-ctypedef long AVPixelFormat
 cdef extern from "libavcodec/version.h":
     int LIBSWSCALE_VERSION_MAJOR
     int LIBSWSCALE_VERSION_MINOR
     int LIBSWSCALE_VERSION_MICRO
 
+ctypedef long AVPixelFormat
 cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_YUV420P
     AVPixelFormat AV_PIX_FMT_YUV422P
@@ -45,6 +45,74 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_NV12
     AVPixelFormat AV_PIX_FMT_NONE
     AVPixelFormat AV_PIX_FMT_GBRP9LE
+
+    ctypedef enum AVColorRange:
+        AVCOL_RANGE_UNSPECIFIED
+        AVCOL_RANGE_MPEG
+        AVCOL_RANGE_JPEG
+
+    ctypedef enum AVColorPrimaries:
+        AVCOL_PRI_RESERVED0
+        AVCOL_PRI_BT709
+        AVCOL_PRI_UNSPECIFIED
+        AVCOL_PRI_RESERVED
+        AVCOL_PRI_BT470M
+        AVCOL_PRI_BT470BG
+        AVCOL_PRI_SMPTE170M
+        AVCOL_PRI_SMPTE240M
+        AVCOL_PRI_FILM
+        AVCOL_PRI_BT2020
+        AVCOL_PRI_SMPTE428
+        AVCOL_PRI_SMPTEST428_1
+        AVCOL_PRI_SMPTE431
+        AVCOL_PRI_SMPTE432
+        AVCOL_PRI_EBU3213
+        AVCOL_PRI_JEDEC_P22
+        AVCOL_PRI_NB
+
+    ctypedef enum AVColorTransferCharacteristic:
+        AVCOL_TRC_RESERVED0
+        AVCOL_TRC_BT709
+        AVCOL_TRC_UNSPECIFIED
+        AVCOL_TRC_RESERVED
+        AVCOL_TRC_GAMMA22
+        AVCOL_TRC_GAMMA28
+        AVCOL_TRC_SMPTE170M
+        AVCOL_TRC_SMPTE240M
+        AVCOL_TRC_LINEAR
+        AVCOL_TRC_LOG
+        AVCOL_TRC_LOG_SQRT
+        AVCOL_TRC_IEC61966_2_4
+        AVCOL_TRC_BT1361_ECG
+        AVCOL_TRC_IEC61966_2_1
+        AVCOL_TRC_BT2020_10
+        AVCOL_TRC_BT2020_12
+        AVCOL_TRC_SMPTE2084
+        AVCOL_TRC_SMPTEST2084
+        AVCOL_TRC_SMPTE428
+        AVCOL_TRC_SMPTEST428_1
+        AVCOL_TRC_ARIB_STD_B67
+        AVCOL_TRC_NB
+
+    ctypedef enum AVColorSpace:
+        AVCOL_SPC_RGB
+        AVCOL_SPC_BT709
+        AVCOL_SPC_UNSPECIFIED
+        AVCOL_SPC_RESERVED
+        AVCOL_SPC_FCC
+        AVCOL_SPC_BT470BG
+        AVCOL_SPC_SMPTE170M
+        AVCOL_SPC_SMPTE240M
+        AVCOL_SPC_YCGCO
+        AVCOL_SPC_YCOCG
+        AVCOL_SPC_BT2020_NCL
+        AVCOL_SPC_BT2020_CL
+        AVCOL_SPC_SMPTE2085
+        AVCOL_SPC_CHROMA_DERIVED_NCL
+        AVCOL_SPC_CHROMA_DERIVED_CL
+        AVCOL_SPC_ICTCP
+        AVCOL_SPC_NB
+
 
 ctypedef void SwsContext
 cdef extern from "libswscale/swscale.h":
@@ -66,6 +134,13 @@ cdef extern from "libswscale/swscale.h":
     int sws_scale(SwsContext *c, const uint8_t *const srcSlice[],
                   const int srcStride[], int srcSliceY, int srcSliceH,
                   uint8_t *const dst[], const int dstStride[]) nogil
+
+    int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4],
+                             int srcRange, const int table[4], int dstRange,
+                             int brightness, int contrast, int saturation);
+    int sws_getColorspaceDetails(SwsContext *c, int **inv_table,
+                             int *srcRange, int **table, int *dstRange,
+                             int *brightness, int *contrast, int *saturation)
 
 
 cdef class CSCPixelFormat:
@@ -321,7 +396,31 @@ cdef class ColorspaceConverter:
                                       self.dst_width, self.dst_height, self.dst_format_enum,
                                       self.flags, NULL, NULL, NULL)
         log("sws context=%#x", <uintptr_t> self.context)
+        #self.enable_fullrange()
         assert self.context!=NULL, "sws_getContext returned NULL"
+
+    def enable_fullrange(self):
+        cdef int* inv_table
+        cdef int srcRange
+        cdef int* table
+        cdef int dstRange
+        cdef int brightness
+        cdef int contrast
+        cdef int saturation
+        if sws_getColorspaceDetails(self.context, &inv_table,
+                                 &srcRange, &table, &dstRange,
+                                 &brightness, &contrast, &saturation)==-1:
+            log.warn("Warning: cannot enable fullrange")
+            return
+        log("brightness=%#x, contrast=%#x, saturation=%#x",
+                 brightness, contrast, saturation)
+        srcRange = 1
+        dstRange = 1
+        if sws_setColorspaceDetails(self.context, inv_table,
+                             srcRange, table, dstRange,
+                             brightness, contrast, saturation)==-1:
+            log.warn("Warning: cannot enable fullrange")
+            return
 
     def get_info(self) -> dict:
         info = get_info()
