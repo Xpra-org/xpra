@@ -35,6 +35,12 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                uint8_t* dst_v, int dst_stride_v,
                int width, int height) nogil
 
+    int ARGBToJ420(const uint8_t* src_frame, int src_stride_frame,
+               uint8_t* dst_y, int dst_stride_y,
+               uint8_t* dst_u, int dst_stride_u,
+               uint8_t* dst_v, int dst_stride_v,
+               int width, int height) nogil
+
     int ARGBToNV12(const uint8_t* src_argb, int src_stride_argb,
                    uint8_t* dst_y, int dst_stride_y,
                    uint8_t* dst_uv, int dst_stride_uv,
@@ -440,7 +446,7 @@ cdef class ColorspaceConverter:
                                         out_planes[1], self.out_stride[1],
                                         out_planes[2], self.out_stride[2],
                                         width, height)
-        assert result==0, "libyuv BGRAToI420/NV12 failed and returned %i" % result
+        assert result==0, "libyuv ARGBToJ420/NV12 failed and returned %i" % result
         cdef double elapsed = monotonic()-start
         log("libyuv.ARGBToI420/NV12 took %.1fms", 1000.0*elapsed)
         self.time += elapsed
