@@ -31,13 +31,8 @@ class Test_CSC_Colorspace(unittest.TestCase):
     def _test_csc(self, mod,
                  width=16, height=16,
                  in_csc="BGRX", out_csc="YUV420P",
-                 pixel="00000000", expected=(
-                     '10101010101010101010101010101010',
-                     '8080808080808080',
-                     '8080808080808080',
-                     )):
-        loader.load_codec(mod)
-        csc_mod = loader.get_codec(mod)
+                 pixel="00000000", expected=()):
+        csc_mod = loader.load_codec(mod)
         if not csc_mod:
             print("%s not found" % mod)
             return
@@ -66,27 +61,34 @@ class Test_CSC_Colorspace(unittest.TestCase):
                 raise Exception("%s: plane %s, expected %s but got %s" % (
                     mod, out_csc[i], v_str, hexstr(plane_bytes[:len(v)])))
             #print("%s %s : %s (%i bytes - %s)" % (mod, out_csc[i], hexstr(plane), len(plane), type(plane)))
+            print("%s : %s" % (out_csc[i], hexstr(plane_bytes)))
 
     def test_BGRX_to_YUV420P(self):
+        width = height = 16
         for mod in loader.CODEC_OPTIONS:
             if not mod.startswith("csc_"):
                 continue
             #black:
-            self._test_csc(mod)
+            self._test_csc(mod, width, height,
+                           pixel="00000000", expected=(
+                               "10"*width,
+                               "80"*(width//2),
+                               "80"*(width//2),
+                           ))
             #white:
-            self._test_csc(mod,
+            self._test_csc(mod, width, height,
                            pixel="ffffffff", expected=(
-                               'ebebebebebebebebebebebebebebebeb',
-                               '8080808080808080',
-                               '8080808080808080',
+                               "eb"*width,
+                               "80"*(width//2),
+                               "80"*(width//2),
                                )
                            )
             #blue?
-            self._test_csc(mod,
+            self._test_csc(mod, width, height,
                            pixel="ff000000", expected=(
-                               '29292929292929292929292929292929',
-                               'f0f0f0f0f0f0f0f0',
-                               '6e6e6e6e6e6e6e6e',
+                               "29"*width,
+                               "f0"*(width//2),
+                               "6e"*(width//2),
                                )
                            )
 
