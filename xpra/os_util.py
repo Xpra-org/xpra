@@ -118,7 +118,7 @@ def bytestostr(x) -> str:
         return x.decode("latin1")
     return str(x)
 def hexstr(v) -> str:
-    return bytestostr(binascii.hexlify(strtobytes(v)))
+    return bytestostr(binascii.hexlify(memoryview_to_bytes(v)))
 
 
 util_logger = None
