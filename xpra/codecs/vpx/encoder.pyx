@@ -662,7 +662,7 @@ cdef class Encoder:
         image.w = self.width
         image.h = self.height
         image.fmt = self.pixfmt
-        image.cs = VPX_CS_BT_601
+        image.cs = VPX_CS_BT_709
         image.range = VPX_CR_FULL_RANGE
         for i in range(3):
             image.planes[i] = pic_in[i]
