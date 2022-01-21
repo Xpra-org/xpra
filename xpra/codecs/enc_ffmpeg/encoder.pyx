@@ -9,7 +9,6 @@ import os
 import time
 import errno
 import weakref
-import platform
 from xpra.log import Logger
 log = Logger("encoder", "ffmpeg")
 
