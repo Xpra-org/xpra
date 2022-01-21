@@ -28,10 +28,10 @@ extern "C" __global__ void XRGB_to_YUV444(uint8_t *srcImage, int src_w, int src_
 
         uint32_t di;
         di = (gy * dstPitch) + gx;
-        dstImage[di] = __float2int_rn(0.257 * R + 0.504 * G + 0.098 * B + 16);
+        dstImage[di] = __float2int_rn(0.299 * R + 0.587 * G + 0.114 * B);
         di += dstPitch*dst_h;
-        dstImage[di] = __float2int_rn(-0.148 * R - 0.291 * G + 0.439 * B + 128);
+        dstImage[di] = __float2int_rn(-0.169 * R - 0.331 * G + 0.500 * B + 128);
         di += dstPitch*dst_h;
-        dstImage[di] = __float2int_rn(0.439 * R - 0.368 * G - 0.071 * B + 128);
+        dstImage[di] = __float2int_rn(0.500 * R - 0.419 * G - 0.081 * B + 128);
     }
 }

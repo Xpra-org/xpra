@@ -439,7 +439,7 @@ cdef class ColorspaceConverter:
                                         out_planes[1], self.out_stride[1],
                                         width, height)
                 else:
-                    result = ARGBToI420(src, stride,
+                    result = ARGBToJ420(src, stride,
                                         out_planes[0], self.out_stride[0],
                                         out_planes[1], self.out_stride[1],
                                         out_planes[2], self.out_stride[2],

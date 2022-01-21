@@ -1,11 +1,27 @@
 /*
  * This file is part of Xpra.
- * Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+ * Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  */
 
 #include <stdint.h>
+
+// Y = 0.299 * R + 0.587 * G + 0.114 * B
+#define YR 0.299
+#define YG 0.587
+#define YB 0.114
+#define YC 0
+// U = -0.169 * R - 0.331 * G + 0.500 * B
+#define UR -0.169
+#define UG -0.331
+#define UB 0.500
+#define UC 128
+// V = 0.500 * R - 0.419 * G - 0.081 * B
+#define VR 0.500
+#define VG -0.419
+#define VB -0.081
+#define VC 128
 
 extern "C" __global__ void XRGB_to_NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
                           uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
@@ -37,12 +53,12 @@ extern "C" __global__ void XRGB_to_NV12(uint8_t *srcImage, int src_w, int src_h,
 
         //write up to 4 Y pixels:
         uint32_t di = (gy * 2 * dstPitch) + gx * 2;
-        dstImage[di] = __float2int_rn(0.257 * R[0] + 0.504 * G[0] + 0.098 * B[0] + 16);
+        dstImage[di] = __float2int_rn(YR * R[0] + YG * G[0] + YB * B[0] + YC);
         if (gx*2 + 1 < src_w) {
             R[1] = srcImage[si+5];
             G[1] = srcImage[si+6];
             B[1] = srcImage[si+7];
-            dstImage[di + 1] = __float2int_rn(0.257 * R[1] + 0.504 * G[1] + 0.098 * B[1] + 16);
+            dstImage[di + 1] = __float2int_rn(YR * R[1] + YG * G[1] + YB * B[1] + YC);
         }
         if (gy*2 + 1 < src_h) {
             si += srcPitch;
@@ -50,12 +66,12 @@ extern "C" __global__ void XRGB_to_NV12(uint8_t *srcImage, int src_w, int src_h,
             R[2] = srcImage[si+1];
             G[2] = srcImage[si+2];
             B[2] = srcImage[si+3];
-            dstImage[di] = __float2int_rn(0.257 * R[2] + 0.504 * G[2] + 0.098 * B[2] + 16);
+            dstImage[di] = __float2int_rn(YR * R[2] + YG * G[2] + YB * B[2] + YC);
             if (gx*2 + 1 < src_w) {
                 R[3] = srcImage[si+5];
                 G[3] = srcImage[si+6];
                 B[3] = srcImage[si+7];
-                dstImage[di + 1] = __float2int_rn(0.257 * R[3] + 0.504 * G[3] + 0.098 * B[3] + 16);
+                dstImage[di + 1] = __float2int_rn(YR * R[3] + YG * G[3] + YB * B[3] + YC);
             }
         }
 
@@ -63,8 +79,8 @@ extern "C" __global__ void XRGB_to_NV12(uint8_t *srcImage, int src_w, int src_h,
         float u = 0;
         float v = 0;
         for (j=0; j<4; j++) {
-            u += -0.148 * R[j] - 0.291 * G[j] + 0.439 * B[j] + 128;
-            v +=  0.439 * R[j] - 0.368 * G[j] - 0.071 * B[j] + 128;
+            u += UR * R[j] + UG * G[j] + UB * B[j] + UC;
+            v += VR * R[j] + VG * G[j] + VB * B[j] + VC;
         }
         di = (dst_h + gy) * dstPitch + gx * 2;
         dstImage[di]      = __float2int_rn(u / 4.0);

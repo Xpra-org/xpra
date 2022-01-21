@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -396,7 +396,7 @@ cdef class ColorspaceConverter:
                                       self.dst_width, self.dst_height, self.dst_format_enum,
                                       self.flags, NULL, NULL, NULL)
         log("sws context=%#x", <uintptr_t> self.context)
-        #self.enable_fullrange()
+        self.enable_fullrange()
         assert self.context!=NULL, "sws_getContext returned NULL"
 
     def enable_fullrange(self):
@@ -420,7 +420,6 @@ cdef class ColorspaceConverter:
                              srcRange, table, dstRange,
                              brightness, contrast, saturation)==-1:
             log.warn("Warning: cannot enable fullrange")
-            return
 
     def get_info(self) -> dict:
         info = get_info()

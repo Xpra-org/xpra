@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2021 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -149,27 +149,24 @@ DEF STRIDE_ROUNDUP = 2
 #To get the result as a byte, we just bitshift:
 
 #RGB to YUV
-#Y[o] = clamp(0.257 * R + 0.504 * G + 0.098 * B + 16)
-# Y = 0.257 * R + 0.504 * G + 0.098 * B + 16
-DEF YR = 16843      # 0.257 * 2**16
-DEF YG = 33030      # 0.504 * 2**16
-DEF YB = 6423       # 0.098 * 2**16
-DEF Yc = 16
-DEF YC = 1048576    # 16    * 2**16
-#U[y*self.dst_strides[1] + x] = clamp(-0.148 * Rsum/sum - 0.291 * Gsum/sum + 0.439 * Bsum/sum + 128)
-# U = -0.148 * R - 0.291 * G + 0.439 * B + 128
-DEF UR = -9699      #-0.148 * 2**16
-DEF UG = -19071     #-0.291 * 2**16
-DEF UB = 28770      # 0.439 * 2**16
+# Y = 0.299 * R + 0.587 * G + 0.114 * B
+DEF YR = 19595      # 0.299 * 2**16
+DEF YG = 38470      # 0.587 * 2**16
+DEF YB = 7471       # 0.114 * 2**16
+DEF Yc = 0
+DEF YC = 0
+# U = -0.169 * R - 0.331 * G + 0.500 * B
+DEF UR = -11076     #-0.169 * 2**16
+DEF UG = -21692     #-0.331 * 2**16
+DEF UB = 32768      # 0.500 * 2**16
 DEF Uc = 128
-DEF UC = 8388608    # 128   * 2**16
-#V[y*self.dst_strides[2] + x] = clamp(0.439 * Rsum/sum - 0.368 * Gsum/sum - 0.071 * Bsum/sum + 128)
-# V = 0.439 * R - 0.368 * G - 0.071 * B + 128
-DEF VR = 28770      # 0.439  * 2**16
-DEF VG = -24117     #-0.368  * 2**16
-DEF VB = -4653      #-0.071  * 2**16
+DEF UC = 8388608
+# V = 0.500 * R - 0.419 * G - 0.081 * B
+DEF VR = 32768      # 0.500  * 2**16
+DEF VG = -27460     #-0.419 * 2**16
+DEF VB = -5308      #-0.081  * 2**16
 DEF Vc = 128
-DEF VC = 8388608    # 128    * 2**16
+DEF VC = 8388608
 
 DEF MAX_CLAMP = 16777216    #2**(16+8)
 DEF MAX_CLAMP10 = 67108864  #2**(16+10)
@@ -181,20 +178,19 @@ DEF MAX_CLAMP10 = 67108864  #2**(16+10)
 #Cr' = Cr - 128
 # (see YC, UC and VC above)
 #RGB:
-#R = 1.164*Y'                 + 1.596 * Cr'
-#G = 1.164*Y' - 0.391   * Cb' - 0.813   * Cr'
-#B = 1.164*Y' + 2.018   * Cb'
-
-DEF RY = 76284      #1.164    * 2**16
+#R = 1*Y'                 + 1.403 * Cr'
+#G = 1*Y' - 0.344   * Cb' - 0.714   * Cr'
+#B = 1*Y' + 1.770   * Cb'
+DEF RY = 65536      #1        * 2**16
 DEF RU = 0
-DEF RV = 104582     #1.5958   * 2**16
+DEF RV = 91947      #1.403    * 2**16
 
-DEF GY = 76284      #1.164    * 2**16
-DEF GU = -25672     #-0.39173 * 2**16
-DEF GV = -53274     #-0.81290 * 2**16
+DEF GY = 65536      #1        * 2**16
+DEF GU = -22544     #-0.344   * 2**16
+DEF GV = -46793     #-0.714   * 2**16
 
-DEF BY = 76284      #1.164    * 2**16
-DEF BU = 132186     #2.017    * 2**16
+DEF BY = 65536      #1        * 2**16
+DEF BU = 115999     #1.77     * 2**16
 DEF BV = 0
 
 
