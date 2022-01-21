@@ -25,10 +25,6 @@ from libc.stdlib cimport free
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
-THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", 2)
-THREAD_COUNT= envint("XPRA_FFMPEG_THREAD_COUNT")
-AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
-
 
 cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
@@ -879,6 +875,13 @@ def get_version():
 
 
 VAAPI = envbool("XPRA_VAAPI", False)
+THREAD_TYPE = envint("XPRA_FFMPEG_THREAD_TYPE", FF_THREAD_SLICE)
+#0=auto:
+THREAD_COUNT = envint("XPRA_FFMPEG_THREAD_COUNT", 0)
+#avoid ffmpeg warnings:
+MPEG4_THREAD_COUNT = envint("XPRA_FFMPEG_MPEG4_THREAD_COUNT", 1)
+
+AUDIO = envbool("XPRA_FFMPEG_MPEG4_AUDIO", False)
 
 CODECS = ()
 
@@ -1378,8 +1381,8 @@ cdef class Encoder:
             raise Exception("failed to allocate video codec context!")
         list_options(self.video_ctx, self.video_ctx.av_class)
         cdef int b_frames = 0
+        self.video_ctx.global_quality = 0
         #we need a framerate.. make one up:
-        self.video_ctx.global_quality = 20
         self.video_ctx.framerate.num = 25
         self.video_ctx.framerate.den = 1
         self.video_ctx.time_base.num = 1
@@ -1452,7 +1455,10 @@ cdef class Encoder:
             self.video_ctx.pix_fmt = self.pix_fmt
             if self.encoding not in ("mpeg1", "mpeg2"):
                 self.video_ctx.thread_type = THREAD_TYPE
-                self.video_ctx.thread_count = THREAD_COUNT     #0=auto
+                if self.encoding.find("mpeg4")>=0:
+                    self.video_ctx.thread_count = MPEG4_THREAD_COUNT     #avoid ffmpeg warnings
+                else:
+                    self.video_ctx.thread_count = THREAD_COUNT
                 self.video_ctx.flags |= AV_CODEC_FLAG_GLOBAL_HEADER
                 self.video_ctx.flags2 |= AV_CODEC_FLAG2_FAST   #may cause "no deblock across slices" - which should be fine
                 log("init_encoder() thread-type=%i, thread-count=%i", THREAD_TYPE, THREAD_COUNT)
