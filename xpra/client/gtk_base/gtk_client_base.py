@@ -230,6 +230,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     def get_vrefresh(self):
+        rate = envint("XPRA_VREFRESH", 0)
+        if rate:
+            return rate
         #try via GTK:
         rates = {}
         display = Gdk.Display.get_default()
