@@ -20,7 +20,7 @@ from xpra.util import csv
 from xpra.os_util import bytestostr
 
 cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
-cdef int YUV = envbool("XPRA_TURBOJPEG_YUV")
+cdef int YUV = envbool("XPRA_TURBOJPEG_YUV", True)
 
 
 ctypedef int TJSAMP
