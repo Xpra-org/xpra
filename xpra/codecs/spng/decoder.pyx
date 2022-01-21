@@ -151,7 +151,7 @@ def decompress(data):
         return None
 
     close()
-    return memoryview(membuf), rgb_format, ihdr.width, ihdr.height 
+    return memoryview(membuf), rgb_format, ihdr.width, ihdr.height
 
 
 def selftest(full=False):
