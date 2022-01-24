@@ -8,6 +8,7 @@ from time import monotonic
 from xpra.log import Logger
 log = Logger("csc", "swscale")
 
+from xpra.util import typedict
 from xpra.codecs.codec_constants import csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.libav_common.av_log cimport override_logger, restore_logger #@UnresolvedImport pylint: disable=syntax-error
@@ -357,8 +358,9 @@ cdef class ColorspaceConverter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed=100):
-        log("swscale.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
+                           int dst_width, int dst_height, dst_format, options:typedict=None):
+        log("swscale.ColorspaceConverter.init_context%s", (
+            src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         #src:
         cdef CSCPixelFormat src = FORMATS.get(src_format)
         log("source format=%s", src)
@@ -387,6 +389,7 @@ cdef class ColorspaceConverter:
         self.dst_height = dst_height
 
         cdef int scaling = (src_width!=dst_width) or (src_height!=dst_height)
+        cdef int speed = typedict(options or {}).intget("speed", 100)
         self.flags = get_swscale_flags(speed, scaling, subsampling, dst_format)
         #log("sws get_swscale_flags(%s, %s, %s)=%s", speed, scaling, subsampling, get_swscale_flags_strs(self.flags))
         self.time = 0

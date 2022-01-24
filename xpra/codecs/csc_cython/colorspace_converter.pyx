@@ -312,11 +312,12 @@ cdef class ColorspaceConverter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed=100):
+                           int dst_width, int dst_height, dst_format, options=None):
         cdef int i
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
-        log("csc_cython.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
+        log("csc_cython.ColorspaceConverter.init_context%s", (
+            src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         self.src_width = src_width
         self.src_height = src_height
         self.dst_width = dst_width

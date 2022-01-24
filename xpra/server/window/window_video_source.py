@@ -1712,10 +1712,11 @@ class WindowVideoSource(WindowSource):
             speed = options.get("speed", self._current_speed)
             quality = options.get("quality", self._current_quality)
             csc_speed = max(1, min(speed, 100-quality/2.0))
+            csc_options = typedict({"speed" : csc_speed})
             csc_start = monotonic()
             csce = csc_spec.make_instance()
             csce.init_context(csc_width, csc_height, src_format,
-                                   enc_width, enc_height, enc_in_format, csc_speed)
+                                   enc_width, enc_height, enc_in_format, csc_options)
             csc_end = monotonic()
             csclog("setup_pipeline: csc=%s, info=%s, setup took %.2fms",
                   csce, csce.get_info(), (csc_end-csc_start)*1000.0)

@@ -11,6 +11,7 @@ from time import monotonic
 from xpra.log import Logger
 log = Logger("csc", "libyuv")
 
+from xpra.util import typedict
 from xpra.codecs.codec_constants import get_subsampling_divs, csc_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context   #pylint: disable=syntax-error
@@ -255,8 +256,9 @@ cdef class ColorspaceConverter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, int speed=100):
-        log("libyuv.ColorspaceConverter.init_context%s", (src_width, src_height, src_format, dst_width, dst_height, dst_format, speed))
+                           int dst_width, int dst_height, dst_format, options:typedict=None):
+        log("libyuv.ColorspaceConverter.init_context%s", (
+            src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         assert src_format=="BGRX", "invalid source format: %s" % src_format
         self.src_format = "BGRX"
         if dst_format=="YUV420P":
@@ -271,6 +273,7 @@ cdef class ColorspaceConverter:
             self.rgb_scaling = int(src_width!=dst_width or src_height!=dst_height)
         else:
             raise Exception("invalid destination format: %s" % dst_format)
+        cdef int speed = typedict(options or {}).intget("speed", 100)
         self.filtermode = get_filtermode(speed)
         self.src_width = src_width
         self.src_height = src_height
