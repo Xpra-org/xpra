@@ -632,6 +632,7 @@ fi
 - do handle alpha with the new 'jpega' video encoder
 - handle clipboard data sent using strings (ie: some MS Windows clients)
 - file transfer errors with legacy packet encoders
+- client file upload size warning triggered a formatting error
 - enable video subregion by default (fix for HTML5 clients)
 - always initialize the window source fully when the window is mapped
 - cython csc regression
