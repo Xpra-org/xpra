@@ -969,6 +969,8 @@ def _do_run_server(script_file, cmdline,
         mode = apply_config(opts, mode)
         if mode.startswith("upgrade-"):
             mode = mode[len("upgrade-"):]
+        if mode.startswith("start-"):
+            mode = mode[len("start-"):]
         upgrading_desktop = mode=="desktop"
         upgrading_seamless = not upgrading_desktop
 
