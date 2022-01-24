@@ -615,25 +615,25 @@ fi
 
 %changelog
 * Sun Jan 23 2022 Antoine Martin <antoine@xpra.org> 4.3.2-10
-* color mismatch with jpeg video and html5 client (don't use YUV input)
-* missing auto-refresh
-* support CUDA 11.6 and all targets, compile C++11
-* 'mode' warnings on desktop upgrade
-* 'Content-Security-Policy' fixes and workarounds for Safari
-* None value errors with bencode clients
-* honour http path in websocket client connections
-* correctly restore original MacOS environment for subcommands
-* better tracking of pointer grabs
-* try harder to find matching unicode keys with MS Windows clients
-* advertize that we support `_NET_WM_OPAQUE_REGION`
-* avoid pidfile warning when shwoing encoding help
-* don't use x264 encoder for source data with an alpha channel
-* do handle alpha with the new 'jpega' video encoder
-* handle clipboard data sent using strings (ie: some MS Windows clients)
-* file transfer errors with legacy packet encoders
-* enable video subregion by default (fix for HTML5 clients)
-* always initialize the window source fully when the window is mapped
-* cython csc regression
+- color mismatch with jpeg video and html5 client (don't use YUV input)
+- missing auto-refresh
+- support CUDA 11.6 and all targets, compile C++11
+- 'mode' warnings on desktop upgrade
+- 'Content-Security-Policy' fixes and workarounds for Safari
+- None value errors with bencode clients
+- honour http path in websocket client connections
+- correctly restore original MacOS environment for subcommands
+- better tracking of pointer grabs
+- try harder to find matching unicode keys with MS Windows clients
+- advertize that we support `_NET_WM_OPAQUE_REGION`
+- avoid pidfile warning when shwoing encoding help
+- don't use x264 encoder for source data with an alpha channel
+- do handle alpha with the new 'jpega' video encoder
+- handle clipboard data sent using strings (ie: some MS Windows clients)
+- file transfer errors with legacy packet encoders
+- enable video subregion by default (fix for HTML5 clients)
+- always initialize the window source fully when the window is mapped
+- cython csc regression
 
 * Mon Jan 03 2022 Antoine Martin <antoine@xpra.org> 4.3.1-10
 - fix vpx encoder
