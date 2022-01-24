@@ -36,6 +36,7 @@ from xpra.exit_codes import (
 from xpra.os_util import (
     get_util_logger, getuid, getgid, get_username_for_uid,
     bytestostr, use_tty, osexpand,
+    OSEnvContext,
     set_proc_title,
     is_systemd_pid1,
     WIN32, OSX, POSIX, SIGNAMES, is_Ubuntu,
@@ -3201,10 +3202,12 @@ def display_wm_info(args):
         pass
     else:
         raise InitExit(EXIT_NO_DISPLAY, "you must specify a display")
-    from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
-    init_gdk_display_source()
-    from xpra.x11.gtk_x11.wm_check import get_wm_info
-    return get_wm_info()
+    with OSEnvContext():
+        os.environ["GDK_BACKEND"] = "x11"
+        from xpra.x11.gtk_x11.gdk_display_source import init_gdk_display_source
+        init_gdk_display_source()
+        from xpra.x11.gtk_x11.wm_check import get_wm_info
+        return get_wm_info()
 
 def run_wminfo(args):
     for k,v in display_wm_info(args).items():
