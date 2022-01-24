@@ -1,10 +1,11 @@
 # Changelog
 
-## [4.3.2] 2022-01-23
+## [4.3.2] 2022-01-24
 * color mismatch with jpeg video and html5 client (don't use YUV input)
 * missing auto-refresh
 * support CUDA 11.6 and all targets, compile C++11
 * 'mode' warnings on desktop upgrade
+* detect what type of session to 'upgrade' automatically
 * 'Content-Security-Policy' fixes and workarounds for Safari
 * None value errors with bencode clients
 * honour http path in websocket client connections

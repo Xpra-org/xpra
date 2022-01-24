@@ -614,11 +614,12 @@ fi
 
 
 %changelog
-* Sun Jan 23 2022 Antoine Martin <antoine@xpra.org> 4.3.2-10
+* Mon Jan 24 2022 Antoine Martin <antoine@xpra.org> 4.3.2-10
 - color mismatch with jpeg video and html5 client (don't use YUV input)
 - missing auto-refresh
 - support CUDA 11.6 and all targets, compile C++11
 - 'mode' warnings on desktop upgrade
+- detect what type of session to 'upgrade' automatically
 - 'Content-Security-Policy' fixes and workarounds for Safari
 - None value errors with bencode clients
 - honour http path in websocket client connections

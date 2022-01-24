@@ -3,6 +3,7 @@ xpra (4.3.2-1) UNRELEASED; urgency=low
   * missing auto-refresh
   * support CUDA 11.6 and all targets, compile C++11
   * 'mode' warnings on desktop upgrade
+  * detect what type of session to 'upgrade' automatically
   * 'Content-Security-Policy' fixes and workarounds for Safari
   * None value errors with bencode clients
   * honour http path in websocket client connections
@@ -19,7 +20,7 @@ xpra (4.3.2-1) UNRELEASED; urgency=low
   * always initialize the window source fully when the window is mapped
   * cython csc regression
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Sun, 23 Jan 2022 20:15:21 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Mon, 24 Jan 2022 21:22:42 +0700
 
 xpra (4.3.1-1) UNRELEASED; urgency=low
   * fix vpx encoder
