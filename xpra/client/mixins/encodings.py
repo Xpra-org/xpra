@@ -195,7 +195,7 @@ class Encodings(StubClientMixin):
             # so we don't bother specifying anything for those two.
             h264_caps = {}
             for csc_name, default_profile in (
-                        ("YUV420P", "high10"),
+                        ("YUV420P", "high"),
                         ("YUV422P", ""),
                         ("YUV444P", "")):
                 profile = os.environ.get("XPRA_H264_%s_PROFILE" % (csc_name), default_profile)
