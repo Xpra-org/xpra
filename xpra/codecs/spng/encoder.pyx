@@ -166,7 +166,7 @@ def encode(coding, image, options=None):
     if resize:
         from xpra.codecs.argb.scale import scale_image
         image = scale_image(image, scaled_width, scaled_height)
-        log("jpeg scaled image: %s", image)
+        log("spng scaled image: %s", image)
 
     assert rgb_format in ("RGB", "RGBA", "RGBX"), "unsupported input pixel format %s" % rgb_format
 
