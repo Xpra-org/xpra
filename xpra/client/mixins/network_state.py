@@ -20,6 +20,8 @@ bandwidthlog = Logger("bandwidth")
 
 FAKE_BROKEN_CONNECTION = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
+MIN_PING_TIMEOUT = envint("XPRA_MIN_PING_TIMEOUT", 2)
+MAX_PING_TIMEOUT = envint("XPRA_MAX_PING_TIMEOUT", 10)
 SWALLOW_PINGS = envbool("XPRA_SWALLOW_PINGS", False)
 #LOG_INFO_RESPONSE = ("^window.*position", "^window.*size$")
 LOG_INFO_RESPONSE = os.environ.get("XPRA_LOG_INFO_RESPONSE", "")
@@ -222,7 +224,7 @@ class NetworkState(StubClientMixin):
         if spl:
             spl = tuple(x[1] for x in spl)
             avg = sum(spl) / len(spl)
-            wait = min(5, 1.0+avg*2.0)
+            wait = max(MIN_PING_TIMEOUT, min(MAX_PING_TIMEOUT, 1.0+avg*2.0))
             log("send_ping() timestamp=%s, average server latency=%.1f, using max wait %.2fs",
                 now_ms, 1000.0*avg, wait)
         t = self.timeout_add(int(1000.0*wait), self.check_server_echo, now_ms)
