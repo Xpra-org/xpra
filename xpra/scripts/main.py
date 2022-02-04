@@ -3369,7 +3369,7 @@ def run_list_windows(error_cb, opts, extra_args):
     import re
     def sort_human(l):
         convert = lambda text: float(text) if text.isdigit() else text
-        alphanum = lambda key: [convert(c) for c in re.split(r'([-+]?[0-9]*\.?[0-9]*)', key)]
+        alphanum = lambda key: [convert(c) for c in re.split(r'([-+]?[0-9]+\.?[0-9]*)', key)]
         l.sort(key=alphanum)
         return l
     def exec_and_parse(subcommand="id", display=""):
