@@ -16,7 +16,7 @@ log = Logger("opengl", "window")
 Rectangle = namedtuple("Rectangle", "x,y,width,height")
 DrawEvent = namedtuple("DrawEvent", "area")
 
-MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", True)
+MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", False)
 
 
 class GLClientWindowBase(GTK3ClientWindow):
