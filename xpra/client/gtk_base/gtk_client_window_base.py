@@ -242,7 +242,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._resize_counter = 0
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         self._current_frame_extents = None
-        self._screen = -1
         self._frozen = False
         self._focus_latest = None
         self._ondeiconify = []
