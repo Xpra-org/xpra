@@ -1,9 +1,8 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 from time import monotonic
 
 from xpra.exit_codes import EXIT_INTERNAL_ERROR
@@ -16,8 +15,12 @@ from xpra.platform.gui import (
 from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE
+from xpra.client.scaling_parser import (
+    parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
+    MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME,
+    )
 from xpra.util import (
-    envint, envfloat, envbool, log_screen_sizes, flatten_dict, typedict,
+    envint, envbool, log_screen_sizes, flatten_dict, typedict,
     XPRA_SCALING_NOTIFICATION_ID,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
@@ -29,18 +32,8 @@ scalinglog = Logger("scaling")
 
 MONITOR_CHANGE_REINIT = envint("XPRA_MONITOR_CHANGE_REINIT")
 
-
-MIN_SCALING = envfloat("XPRA_MIN_SCALING", "0.1")
-MAX_SCALING = envfloat("XPRA_MAX_SCALING", "8")
-SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS", "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
-SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000.0
 SYNC_ICC = envbool("XPRA_SYNC_ICC", True)
 
-
-def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
-    return round(v*rounding)
-def fequ(v1, v2):
-    return r4cmp(v1)==r4cmp(v2)
 
 
 class DisplayClient(StubClientMixin):
@@ -81,7 +74,6 @@ class DisplayClient(StubClientMixin):
 
     def parse_scaling(self, desktop_scaling):
         root_w, root_h = self.get_root_size()
-        from xpra.client.scaling_parser import parse_scaling
         self.initial_scaling = parse_scaling(desktop_scaling, root_w, root_h, MIN_SCALING, MAX_SCALING)
         self.xscale, self.yscale = self.initial_scaling
         scalinglog("scaling(%s)=%s", self.initial_scaling, (self.xscale, self.yscale))
@@ -511,15 +503,15 @@ class DisplayClient(StubClientMixin):
 
     def scaleup(self):
         scaling = max(self.xscale, self.yscale)
-        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)>r4cmp(scaling, 10)]
-        scalinglog("scaleup() options>%s : %s", r4cmp(scaling, 1000)/1000.0, options)
+        options = scaleup_value(scaling)
+        scalinglog("scaleup() options=%s", options)
         if options:
             self._scaleto(min(options))
 
     def scaledown(self):
-        scaling = max(self.xscale, self.yscale)
-        options = [v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10)]
-        scalinglog("scaledown() options<%s : %s", r4cmp(scaling, 1000)/1000.0, options)
+        scaling = min(self.xscale, self.yscale)
+        options = scaledown_value(scaling)
+        scalinglog("scaledown() options=%s", options)
         if options:
             self._scaleto(max(options))
 

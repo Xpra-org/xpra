@@ -1,15 +1,33 @@
 # This file is part of Xpra.
-# Copyright (C) 2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+from xpra.util import envfloat
 from xpra.log import Logger
 from xpra.scripts.config import TRUE_OPTIONS
 
 log = Logger("scaling")
 
 
-def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=0.1, max_scaling=8):
+MIN_SCALING = envfloat("XPRA_MIN_SCALING", "0.1")
+MAX_SCALING = envfloat("XPRA_MAX_SCALING", "8")
+SCALING_OPTIONS = [float(x) for x in os.environ.get("XPRA_TRAY_SCALING_OPTIONS",
+                                                    "0.25,0.5,0.666,1,1.25,1.5,2.0,3.0,4.0,5.0").split(",") if float(x)>=MIN_SCALING and float(x)<=MAX_SCALING]
+SCALING_EMBARGO_TIME = int(os.environ.get("XPRA_SCALING_EMBARGO_TIME", "1000"))/1000
+
+def r4cmp(v, rounding=1000.0):    #ignore small differences in floats for scale values
+    return round(v*rounding)
+def fequ(v1, v2):
+    return r4cmp(v1)==r4cmp(v2)
+
+def scaleup_value(scaling):
+    return tuple(v for v in SCALING_OPTIONS if r4cmp(v, 10)>r4cmp(scaling, 10))
+def scaledown_value(scaling):
+    return tuple(v for v in SCALING_OPTIONS if r4cmp(v, 10)<r4cmp(scaling, 10))
+
+def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING):
     log("parse_scaling(%s)", (desktop_scaling, root_w, root_h, min_scaling, max_scaling))
     if desktop_scaling in TRUE_OPTIONS:
         return 1, 1
