@@ -542,7 +542,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         clamp_to(*self.MAX_VIEWPORT_DIMS)
         #backing dimensions are harder,
         #we have to take scaling into account (if any):
-        clamp_to(*self._client.sp(*self.MAX_BACKING_DIMS))
+        clamp_to(*self.sp(*self.MAX_BACKING_DIMS))
         if self.max_window_size!=saved_mws:
             log("init_max_window_size(..) max-window-size changed from %s to %s",
                 saved_mws, self.max_window_size)
@@ -1001,8 +1001,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 rectangles = shape.get("%s.rectangles" % name)      #ie: Bounding.rectangles = [(0, 0, 150, 100)]
                 if rectangles:
                     #adjust for scaling:
-                    if self._client.xscale!=1 or self._client.yscale!=1:
-                        x_off, y_off = self._client.sp(x_off, y_off)
+                    if self._xscale!=1 or self._yscale!=1:
+                        x_off, y_off = self._sp(x_off, y_off)
                         rectangles = self.scale_shape_rectangles(name, rectangles)
                     #too expensive to log with actual rectangles:
                     shapelog("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)",
@@ -1015,11 +1015,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if LAZY_SHAPE or len(rectangles)<2:
             #scale the rectangles without a bitmap...
             #results aren't so good! (but better than nothing?)
-            srect = self._client.srect
-            return [srect(*x) for x in rectangles]
+            return [self.srect(*x) for x in rectangles]
         from PIL import Image, ImageDraw        #@UnresolvedImport
         ww, wh = self._size
-        sw, sh = self._client.cp(ww, wh)
+        sw, sh = self.cp(ww, wh)
         img = Image.new('1', (sw, sh), color=0)
         shapelog("drawing %s on bitmap(%s,%s)=%s", kind_name, sw, sh, img)
         d = ImageDraw.Draw(img)
@@ -1056,9 +1055,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             v = d.intget(x, 0)
             #handle scaling:
             if x in ("left", "right"):
-                v = self._client.sx(v)
+                v = self.sx(v)
             else:
-                v = self._client.sy(v)
+                v = self.sy(v)
             values.append(v)
         has_partial = False
         for x in ("left_start_y", "left_end_y",
@@ -1069,9 +1068,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 has_partial = True
             v = d.intget(x, 0)
             if x.find("_x"):
-                v = self._client.sx(v)
+                v = self.sx(v)
             elif x.find("_y"):
-                v = self._client.sy(v)
+                v = self.sy(v)
             values.append(v)
         log("setting strut=%s, has partial=%s", values, has_partial)
         def do_set_strut():
@@ -1151,7 +1150,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #gtk can only set a single region!
         r = Region()
         for rect in rectangles:
-            rect = RectangleInt(*self._client.srect(*rect))
+            rect = RectangleInt(*self.srect(*rect))
             r.union(Region(rect))
         def do_set_region():
             log("set_opaque_region(%s)", r)
@@ -1211,7 +1210,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     #tell server about new value:
                     self._current_frame_extents = v
                     statelog("sending configure event to update _NET_FRAME_EXTENTS to %s", v)
-                    self._window_state["frame"] = self._client.crect(*v)
+                    self._window_state["frame"] = self.crect(*v)
                     self.send_configure_event(True)
         elif atom=="XKLAVIER_STATE":
             if prop_get:
@@ -1479,7 +1478,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 return
             #store both scaled and unscaled value:
             #(the opengl client uses the raw value)
-            value = pos[:2]+self._client.sp(*pos[:2])+pos[2:]
+            value = pos[:2]+self.sp(*pos[:2])+pos[2:]
         mouselog("show_pointer_overlay(%s) previous value=%s, new value=%s", pos, prev, value)
         b.pointer_overlay = value
         if not self.show_pointer_overlay_timer:
@@ -1805,7 +1804,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #(as this also honoured correctly with CSD,
         # whereas set_geometry_hints is not..)
         minw, minh = self.size_constraints.intpair("minimum-size", (0, 0))
-        w, h = self._client.sp(minw, minh)
+        w, h = self.sp(minw, minh)
         geomlog("do_map_event %s.set_size_request%s", self.drawing_area, (minw, minh))
         self.drawing_area.set_size_request(w, h)
 
@@ -1836,12 +1835,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._client.server_window_frame_extents and "frame" not in state:
             wfs = self.get_window_frame_size()
             if wfs and len(wfs)==4:
-                state["frame"] = self._client.crect(*wfs)
+                state["frame"] = self.crect(*wfs)
                 self._current_frame_extents = wfs
         geomlog("map-window wid=%s, geometry=%s, client props=%s, state=%s", self._id, (x, y, w, h), props, state)
-        cx = self._client.cx
-        cy = self._client.cy
-        sx, sy, sw, sh = cx(x), cy(y), cx(w), cy(h)
+        sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
         if self._backing is None:
             #we may have cleared the backing, so we must re-create one:
             self._set_backing_size(w, h)
@@ -1953,9 +1950,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                              wn(self._window_workspace), wn(workspace))
                 self._window_workspace = workspace
                 props["workspace"] = workspace
-        cx = self._client.cx
-        cy = self._client.cy
-        sx, sy, sw, sh = cx(x), cy(y), cx(w), cy(h)
+        sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
         packet = ["configure-window", self._id, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
         pwid = self._id
         if self.is_OR():
@@ -1968,8 +1963,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def _set_backing_size(self, ww, wh):
         b = self._backing
-        bw = self._client.cx(ww)
-        bh = self._client.cy(wh)
+        bw = self.cx(ww)
+        bh = self.cy(wh)
         if max(ww, wh)>=32000 or min(ww, wh)<0:
             raise Exception("invalid window size %ix%i" % (ww, wh))
         if max(bw, bh)>=32000:
@@ -2146,7 +2141,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self.window_offset:
             x -= self.window_offset[0]
             y -= self.window_offset[1]
-        return self._client.cp(x, y)
+        return self.cp(x, y)
 
     def _get_pointer(self, event):
         return event.x_root, event.y_root
@@ -2164,7 +2159,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #relative coordinates are scaled only:
         data = self._offset_pointer(x, y)
         if self._client.server_pointer_relative:
-            data = list(data) + list(self._client.cp(rx, ry))
+            data = list(data) + list(self.cp(rx, ry))
         return data
 
     def _pointer_modifiers(self, event):

@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -10,6 +10,7 @@ import re
 
 from xpra.client.client_widget_base import ClientWidgetBase
 from xpra.client.window_backing_base import fire_paint_callbacks
+from xpra.client.scaling_parser import scaleup_value, scaledown_value
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
 from xpra.common import GRAVITY_STR
 from xpra.util import net_utf8, typedict, envbool, envint, WORKSPACE_UNSET, WORKSPACE_NAMES
@@ -25,6 +26,7 @@ metalog = Logger("metadata")
 geomlog = Logger("geometry")
 iconlog = Logger("icon")
 alphalog = Logger("alpha")
+scalinglog = Logger("scaling")
 
 
 SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
@@ -53,6 +55,8 @@ class ClientWindowBase(ClientWidgetBase):
         self.group_leader = group_leader
         self._pos = (wx, wy)
         self._size = (ww, wh)
+        self._xscale = client.xscale
+        self._yscale = client.yscale
         self._client_properties = client_properties
         self._set_initial_position = metadata.boolget("set-initial-position", False)
         self.size_constraints = typedict()
@@ -165,6 +169,41 @@ class ClientWindowBase(ClientWidgetBase):
 
     def get_window_workspace(self):
         return None
+
+
+    ######################################################################
+    # screen scaling:
+    def fsx(self, v):
+        """ convert X coordinate from server to client """
+        return v*self._xscale
+    def fsy(self, v):
+        """ convert Y coordinate from server to client """
+        return v*self._yscale
+    def sx(self, v) -> int:
+        """ convert X coordinate from server to client """
+        return round(self.fsx(v))
+    def sy(self, v) -> int:
+        """ convert Y coordinate from server to client """
+        return round(self.fsy(v))
+    def srect(self, x, y, w, h):
+        """ convert rectangle coordinates from server to client """
+        return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
+    def sp(self, x, y):
+        """ convert X,Y coordinates from server to client """
+        return self.sx(x), self.sy(y)
+
+    def cx(self, v) -> int:
+        """ convert X coordinate from client to server """
+        return round(v/self._xscale)
+    def cy(self, v) -> int:
+        """ convert Y coordinate from client to server """
+        return round(v/self._yscale)
+    def crect(self, x, y, w, h):
+        """ convert rectangle coordinates from client to server """
+        return self.cx(x), self.cy(y), self.cx(w), self.cy(h)
+    def cp(self, x, y):
+        """ convert X,Y coordinates from client to server """
+        return self.cx(x), self.cy(y)
 
 
     def new_backing(self, bw, bh):
@@ -573,7 +612,7 @@ class ClientWindowBase(ClientWidgetBase):
                 v = size_constraints.intpair(a)
                 if v:
                     v1, v2 = v
-                    hints[h] = (v1*self._client.xscale)/(v2*self._client.yscale)
+                    hints[h] = (v1*self._xscale)/(v2*self._yscale)
         #apply max-size override if needed:
         w,h = max_window_size
         if w>0 and h>0 and not self._fullscreen:
@@ -599,7 +638,7 @@ class ClientWindowBase(ClientWidgetBase):
             #not honouring "base" + "inc", but honouring just "min" instead:
             maxw = max(minw, maxw)
             maxh = max(minh, maxh)
-            scaling_info = self._client.xscale, self._client.yscale
+            scaling_info = self._xscale, self._yscale
             geomlog("modified hints for max window size %s and scaling %s: %s (rw=%s, rh=%s) -> max=%sx%s",
                     max_window_size, scaling_info, hints, rw, rh, maxw, maxh)
             #ensure we don't have duplicates with bytes / strings,
@@ -698,17 +737,37 @@ class ClientWindowBase(ClientWidgetBase):
             self._client.send_min_speed()
             log("new min-speed=%s", self._client.min_speed)
 
+
     def scaleup(self, *_args):
-        self._client.scaleup()
+        scaling = max(self._xscale, self._yscale)
+        options = scaleup_value(scaling)
+        scalinglog("scaleup() options=%s", options)
+        if options:
+            self._scaleto(min(options))
 
     def scaledown(self, *_args):
-        self._client.scaledown()
+        scaling = min(self._xscale, self._yscale)
+        options = scaledown_value(scaling)
+        scalinglog("scaledown() options=%s", options)
+        if options:
+            self._scaleto(max(options))
 
     def scalingoff(self):
-        self._client.scalingoff()
+        self._scaleto(1)
+
+    def _scaleto(self, scaling):
+        xscale = self._xscale
+        yscale = self._yscale
+        w, h = self._size
+        self._xscale = self._yscale = scaling
+        nw = round(w/xscale*self._xscale)
+        nh = round(h/yscale*self._yscale)
+        self.reset_size_constraints()
+        self.resize(nw, nh)
 
     def scalereset(self, *_args):
         self._client.scalereset()
+
 
     def magic_key(self, *args):
         b = self.border
@@ -755,7 +814,7 @@ class ClientWindowBase(ClientWidgetBase):
         backing = self._backing
         if not backing:
             return
-        if backing.repaint_all or self._client.xscale!=1 or self._client.yscale!=1 or is_Wayland():
+        if backing.repaint_all or self._xscale!=1 or self._yscale!=1 or is_Wayland():
             #easy: just repaint the whole window:
             rw, rh = self.get_size()
             self.idle_add(self.repaint, 0, 0, rw, rh)

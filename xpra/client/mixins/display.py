@@ -592,6 +592,11 @@ class DisplayClient(StubClientMixin):
             scalinglog.info("setting scaling to %i%% x %i%%:", round(100*self.xscale), round(100*self.yscale))
         self.update_screen_size()
         #re-initialize all the windows with their new size
+        for win in self._id_to_window.values():
+            if hasattr(win, "_xscale"):
+                win._xscale *= xchange
+            if hasattr(win, "_yscale"):
+                win._yscale *= ychange
         def new_size_fn(w, h):
             minx, miny = 16384, 16384
             if self.max_window_size!=(0, 0):
