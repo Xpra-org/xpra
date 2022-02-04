@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2012 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,13 +8,15 @@ from collections import namedtuple
 
 from xpra.client.gtk3.gtk3_client_window import GTK3ClientWindow
 from xpra.gtk_common.gtk_util import set_visual
-from xpra.util import typedict
+from xpra.util import typedict, envbool
 from xpra.log import Logger
 
 log = Logger("opengl", "window")
 
 Rectangle = namedtuple("Rectangle", "x,y,width,height")
 DrawEvent = namedtuple("DrawEvent", "area")
+
+MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", True)
 
 
 class GLClientWindowBase(GTK3ClientWindow):
@@ -39,6 +41,20 @@ class GLClientWindowBase(GTK3ClientWindow):
         if b._backing and b.paint_screen:
             w, h = self.get_size()
             self.repaint(0, 0, w, h)
+
+    def monitor_changed(self, monitor):
+        super().monitor_changed(monitor)
+        da = self.drawing_area
+        if da and MONITOR_REINIT:
+            #re-create the drawing area,
+            #which will re-create the opengl context:
+            try:
+                self.remove(da)
+            except Exception:
+                log("monitor_changed: failed to remove %s", da)
+            self.drawing_area = None
+            w, h = self.get_size()
+            self.new_backing(w, h)
 
 
     def remove_backing(self):

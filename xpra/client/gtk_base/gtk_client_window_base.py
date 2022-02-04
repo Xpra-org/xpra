@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -1865,6 +1865,32 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         return frame
 
 
+    def monitor_changed(self, monitor):
+        display = monitor.get_display()
+        mid = -1
+        for i in range(display.get_n_monitors()):
+            m = display.get_monitor(i)
+            if m==monitor:
+                mid = i
+                break
+        geom = monitor.get_geometry()
+        manufacturer, model = monitor.get_manufacturer(), monitor.get_model()
+        if manufacturer=="unknown":
+            manufacturer = ""
+        if model=="unknown":
+            model = ""
+        if manufacturer and model:
+            plug_name = "%s %s" % (manufacturer, model)
+        elif manufacturer:
+            plug_name = manufacturer
+        elif model:
+            plug_name = model
+        else:
+            plug_name = "%i" % mid
+        plug_name += " %ix%i at %i,%i" % (geom.width, geom.height, geom.x, geom.y)
+        eventslog.info("window %i has been moved to monitor %i: %s", self._id, mid, plug_name)
+
+
     def may_send_client_properties(self):
         #if there are client properties the server should know about,
         #we currently have no other way to send them to the server:
@@ -1892,6 +1918,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             for window in self._override_redirect_windows:
                 x, y = window.get_position()
                 window.move(x+dx, y+dy)
+        gdkwin = self.get_window()
+        screen = gdkwin.get_screen()
+        display = screen.get_display()
+        monitor = display.get_monitor_at_window(gdkwin)
+        if monitor!=self._monitor:
+            if self._monitor is not None:
+                self.monitor_changed(monitor)
+            self._monitor = monitor
         geomlog("configure event: current size=%s, new size=%s, backing=%s, iconified=%s",
                 self._size, (w, h), self._backing, self._iconified)
         self._size = (w, h)

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -50,7 +50,8 @@ class GLDrawingArea(GLWindowBackingBase):
         if not b:
             return None
         gdk_window = b.get_window()
-        assert gdk_window
+        if not gdk_window:
+            raise Exception("backing %s does not have a gdk window!" % b)
         self.window_context = self.context.get_paint_context(gdk_window)
         return self.window_context
 
