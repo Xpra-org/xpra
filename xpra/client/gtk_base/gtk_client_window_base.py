@@ -242,6 +242,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._resize_counter = 0
         self._can_set_workspace = HAS_X11_BINDINGS and CAN_SET_WORKSPACE
         self._current_frame_extents = None
+        self._monitor = None
         self._frozen = False
         self._focus_latest = None
         self._ondeiconify = []
@@ -1877,11 +1878,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         eventslog("%s.do_configure_event(%s) OR=%s, iconified=%s",
                   self, event, self._override_redirect, self._iconified)
         Gtk.Window.do_configure_event(self, event)
-        if not self._override_redirect and not self._iconified:
-            self.process_configure_event()
-
-    def process_configure_event(self, skip_geometry=False):
-        assert skip_geometry or not self.is_OR()
+        if self._override_redirect or self._iconified:
+            #don't send configure packet for OR windows or iconified windows
+            return
         x, y, w, h = self.get_drawing_area_geometry()
         w = max(1, w)
         h = max(1, h)
@@ -1897,7 +1896,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self._size, (w, h), self._backing, self._iconified)
         self._size = (w, h)
         self._set_backing_size(w, h)
-        self.send_configure_event(skip_geometry)
+        self.send_configure_event()
         if self._backing and not self._iconified:
             geomlog("configure event: queueing redraw")
             self.repaint(0, 0, w, h)
