@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -23,6 +23,8 @@ MAX_ICON_SIZE = envint("XPRA_XDG_MAX_ICON_SIZE", 0)
 SVG_TO_PNG = envbool("XPRA_SVG_TO_PNG", True)
 
 INKSCAPE_RE = b'\\sinkscape:[a-zA-Z]*=["a-zA-Z0-9]*'
+INKSCAPE_BROKEN_SODIPODI_DTD = b'xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/s odipodi-0.dtd"'
+INKSCAPE_SODIPODI_DTD = b'xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"'
 
 large_icons = []
 
@@ -113,6 +115,9 @@ def svg_to_png(filename, icondata, w=128, h=128):
             #try again after stripping the bogus inkscape attributes
             #as some rsvg versions can't handle that (ie: Debian Bullseye)
             icondata = re.sub(INKSCAPE_RE, b"", icondata)
+            return svg_to_png(filename, icondata, w, h)
+        if icondata.find(INKSCAPE_BROKEN_SODIPODI_DTD)>0:
+            icondata = icondata.replace(INKSCAPE_BROKEN_SODIPODI_DTD, INKSCAPE_SODIPODI_DTD)
             return svg_to_png(filename, icondata, w, h)
         log.error("Error: failed to convert svg icon")
         if filename:
