@@ -140,7 +140,6 @@ INPUT_FORMATS = "RGBA", "RGB"
 def encode(coding, image, options=None):
     assert coding=="png"
     options = options or {}
-    cdef int grayscale = options.get("grayscale", 0)
     cdef int speed = options.get("speed", 50)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
@@ -168,8 +167,6 @@ def encode(coding, image, options=None):
         image = scale_image(image, scaled_width, scaled_height)
         log("spng scaled image: %s", image)
 
-    assert rgb_format in ("RGB", "RGBA", "RGBX"), "unsupported input pixel format %s" % rgb_format
-
     cdef spng_ctx *ctx = spng_ctx_new(SPNG_CTX_ENCODER)
     if ctx==NULL:
         raise Exception("failed to instantiate an spng context")
@@ -178,9 +175,13 @@ def encode(coding, image, options=None):
     ihdr.width = scaled_width
     ihdr.height = scaled_height
     ihdr.bit_depth = 8
-    ihdr.color_type = SPNG_COLOR_TYPE_TRUECOLOR
     if rgb_format=="RGBA":
         ihdr.color_type = SPNG_COLOR_TYPE_TRUECOLOR_ALPHA
+    elif rgb_format=="RGB":
+        ihdr.color_type = SPNG_COLOR_TYPE_TRUECOLOR
+    else:
+        raise Exception("unsupported input pixel format %s" % rgb_format)
+
     ihdr.compression_method = 0
     ihdr.filter_method = 0
     ihdr.interlace_method = SPNG_INTERLACE_NONE
@@ -268,4 +269,4 @@ def selftest(full=False):
     from xpra.codecs.codec_checks import make_test_image
     for rgb_format in ("RGBA", "RGB", "BGRA", "BGRX"):
         image = make_test_image(rgb_format, 1024, 768)
-        assert encode("png", image)
+        assert encode("png", image), "failed to encode %s" % image
