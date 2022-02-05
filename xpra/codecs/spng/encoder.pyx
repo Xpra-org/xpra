@@ -120,7 +120,7 @@ def get_type():
     return "spng"
 
 def get_encodings():
-    return ("png", )
+    return ("png", "png/L")
 
 def get_error_str(int r):
     b = spng_strerror(r)
@@ -138,8 +138,9 @@ def log_error(int r, msg):
 INPUT_FORMATS = "RGBA", "RGB"
 
 def encode(coding, image, options=None):
-    assert coding=="png"
+    assert coding in ("png", "png/L")
     options = options or {}
+    cdef int grayscale = options.get("grayscale", 0) or coding=="png/L"
     cdef int speed = options.get("speed", 50)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
@@ -150,22 +151,37 @@ def encode(coding, image, options=None):
 
     rgb_format = image.get_pixel_format()
     alpha = options.get("alpha", True)
-    if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4) or rowstride!=width*len(rgb_format):
+    if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4) or rowstride!=width*len(rgb_format) or grayscale:
         #best to restride before byte-swapping to trim extra unused data:
         if rowstride!=width*len(rgb_format):
             image.restride(width*len(rgb_format))
-        from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
-        if not argb_swap(image, INPUT_FORMATS, supports_transparency=alpha):
-            log("spng: argb_swap failed to convert %s to a suitable format: %s" % (
-                rgb_format, INPUT_FORMATS))
-        log("spng converted %s to %s", rgb_format, image)
-        rgb_format = image.get_pixel_format()
+        input_formats = INPUT_FORMATS
+        if grayscale:
+            input_formats = ("BGRX", "BGRA")
+        if rgb_format not in input_formats:
+            from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
+            if not argb_swap(image, input_formats, supports_transparency=alpha):
+                log("spng: argb_swap failed to convert %s to a suitable format: %s" % (
+                    rgb_format, input_formats))
+            else:
+                log("spng converted %s to %s", rgb_format, image)
+                rgb_format = image.get_pixel_format()
         rowstride = image.get_rowstride()
 
     if resize:
         from xpra.codecs.argb.scale import scale_image
         image = scale_image(image, scaled_width, scaled_height)
         log("spng scaled image: %s", image)
+
+    pixels = image.get_pixels()
+    if grayscale:
+        from xpra.codecs.argb.argb import bgrx_to_l, bgra_to_la
+        if alpha:
+            pixels = bgra_to_la(pixels)
+            rgb_format = "LA"
+        else:
+            pixels = bgrx_to_l(pixels)
+            rgb_format = "L"
 
     cdef spng_ctx *ctx = spng_ctx_new(SPNG_CTX_ENCODER)
     if ctx==NULL:
@@ -175,7 +191,11 @@ def encode(coding, image, options=None):
     ihdr.width = scaled_width
     ihdr.height = scaled_height
     ihdr.bit_depth = 8
-    if rgb_format=="RGBA":
+    if rgb_format=="L":
+        ihdr.color_type = SPNG_COLOR_TYPE_GRAYSCALE
+    elif rgb_format=="LA":
+        ihdr.color_type = SPNG_COLOR_TYPE_GRAYSCALE_ALPHA
+    elif rgb_format=="RGBA":
         ihdr.color_type = SPNG_COLOR_TYPE_TRUECOLOR_ALPHA
     elif rgb_format=="RGB":
         ihdr.color_type = SPNG_COLOR_TYPE_TRUECOLOR
@@ -225,10 +245,9 @@ def encode(coding, image, options=None):
     cdef size_t data_len = 0
     cdef uintptr_t data_ptr
     cdef int r = 0
-    pixels = image.get_pixels()
     assert len(pixels)>=ihdr.width*ihdr.height*len(rgb_format), \
-        "pixel buffer is too small, expected %i bytes but got %i" % (
-        ihdr.width*ihdr.height*4, len(pixels))
+        "pixel buffer is too small, expected %i bytes but got %i for %ix%i '%s'" % (
+        ihdr.width*ihdr.height*4, len(pixels), ihdr.width, ihdr.height, rgb_format)
     with buffer_context(pixels) as bc:
         data_ptr = <uintptr_t> int(bc)
         data_len = len(bc)

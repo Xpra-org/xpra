@@ -193,6 +193,69 @@ cdef bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     return memoryview(output_buf)
 
 
+def bgrx_to_l(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    cdef const unsigned int* bgrx
+    with buffer_context(buf) as bc:
+        bgrx = <const unsigned int*> (<uintptr_t> int(bc))
+        return bgrxdata_to_l(bgrx, len(bc))
+
+cdef bgrxdata_to_l(const unsigned int *bgrx, const int bgrx_len):
+    if bgrx_len <= 0:
+        return None
+    assert bgrx_len>0 and bgrx_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgrx_len
+    #number of pixels:
+    cdef int mi = bgrx_len//4
+    #3 bytes per pixel:
+    cdef MemBuf output_buf = getbuf(mi)
+    cdef unsigned char* l = <unsigned char*> output_buf.get_mem()
+    cdef int i = 0
+    cdef unsigned int p
+    cdef unsigned char r, g, b
+    with nogil:
+        while i < mi:
+            p = bgrx[i]
+            r = p & 0xFF                #R
+            g = (p>>8) & 0xFF           #G
+            b = (p>>16) & 0xFF          #B
+            l[i] = (r*3+b+g*4)>>3
+            i += 1
+    return memoryview(output_buf)
+
+
+def bgra_to_la(buf):
+    assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
+    cdef const unsigned int* bgra
+    with buffer_context(buf) as bc:
+        bgra = <const unsigned int*> (<uintptr_t> int(bc))
+        return bgradata_to_la(bgra, len(bc))
+
+cdef bgradata_to_la(const unsigned int *bgra, const int bgra_len):
+    if bgra_len <= 0:
+        return None
+    assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
+    #number of pixels:
+    cdef int mi = bgra_len//4
+    #3 bytes per pixel:
+    cdef MemBuf output_buf = getbuf(mi*2)
+    cdef unsigned char* la = <unsigned char*> output_buf.get_mem()
+    cdef int si = 0, di = 0
+    cdef unsigned int p
+    cdef unsigned char r, g, b, a
+    with nogil:
+        while si < mi:
+            p = bgra[si]
+            r = p & 0xFF
+            g = (p>>8) & 0xFF
+            b = (p>>16) & 0xFF
+            a = (p>>24) & 0xFF
+            la[di] = (r*3+b+g*4)>>3
+            la[di+1] = a
+            di += 2
+            si += 1
+    return memoryview(output_buf)
+
+
 def argb_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* argb
@@ -512,6 +575,16 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             return True
     elif pixel_format in ("BGRX", "BGRA"):
         assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
+        if pixel_format=="BGRX" and "L" in rgb_formats:
+            log("argb_swap: bgrx_to_l for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgrx_to_l(pixels))
+            image.set_pixel_format("L")
+            return True
+        if pixel_format=="BGRA" and "LA" in rgb_formats:
+            log("argb_swap: bgra_to_la for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(bgra_to_la(pixels))
+            image.set_pixel_format("LA")
+            return True
         if pixel_format=="BGRA" and supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgba(pixels))
