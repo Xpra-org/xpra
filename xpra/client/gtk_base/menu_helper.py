@@ -376,6 +376,9 @@ class MenuHelper:
 
     def show_menu(self, button, time):
         self.close_menu()
+        if not self.menu:
+            log.warn("menu is not available yet")
+            return
         self.menu.popup(None, None, None, None, button, time)
         self.menu_shown = True
 
