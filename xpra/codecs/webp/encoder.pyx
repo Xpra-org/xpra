@@ -57,11 +57,12 @@ cdef extern from "webp/encode.h":
     WebPPreset WEBP_PRESET_ICON         #small-sized colorful images
     WebPPreset WEBP_PRESET_TEXT         #text-like
 
-    ctypedef int WebPEncCSP
-    #chroma sampling
-    WebPEncCSP WEBP_YUV420              #4:2:0
-    WebPEncCSP WEBP_CSP_UV_MASK         #bit-mask to get the UV sampling factors
-    WebPEncCSP WEBP_CSP_ALPHA_BIT       #bit that is set if alpha is present
+    ctypedef enum WebPEncCSP:
+        #chroma sampling
+        WEBP_YUV420                     #4:2:0
+        WEBP_YUV420A                    #4:2:0 + alpha
+        WEBP_CSP_UV_MASK                #bit-mask to get the UV sampling factors
+        #WEBP_CSP_ALPHA_BIT              #bit that is set if alpha is present
 
     ctypedef int WebPEncodingError
     WebPEncodingError VP8_ENC_OK
@@ -306,6 +307,12 @@ CONTENT_TYPE_PRESET = {
     "browser"   : WEBP_PRESET_TEXT,
     }
 
+CSP_NAMES = {
+    WEBP_YUV420         : "YUV420",
+    WEBP_YUV420A        : "YUV420A",
+    WEBP_CSP_UV_MASK    : "UV_MASK",
+    }
+
 IMAGE_HINT = {
     WEBP_HINT_DEFAULT     : "default",
     WEBP_HINT_PICTURE     : "picture",
@@ -544,7 +551,10 @@ cdef class Encoder:
             "rgb_format"  : pixel_format,
             }
         if self.quality<SUBSAMPLING_THRESHOLD:
-            yuv420p(&pic)
+            if self.alpha:
+                to_yuv(&pic, WEBP_YUV420A)
+            else:
+                to_yuv(&pic, WEBP_YUV420)
             client_options["subsampling"] = "YUV420P"
 
         cdata = webp_encode(&self.config, &pic)
@@ -646,7 +656,7 @@ def encode(coding, image, options=None):
     cdef unsigned int scaled_height = options.get("scaled-height", height)
     assert scaled_width<16384 and scaled_height<16384, "invalid image dimensions: %ix%i" % (width, height)
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
-    cdef unsigned int supports_alpha = options.get("alpha", False)
+    cdef unsigned int supports_alpha = options.get("alpha", True)
     cdef unsigned char alpha = supports_alpha and pixel_format.find("A")>=0
     cdef int quality = options.get("quality", 50)
     cdef int speed = options.get("speed", 50)
@@ -675,7 +685,10 @@ def encode(coding, image, options=None):
         "rgb_format"  : pixel_format,
         }
     if quality<SUBSAMPLING_THRESHOLD:
-        yuv420p(&pic)
+        if alpha:
+            to_yuv(&pic, WEBP_YUV420A)
+        else:
+            to_yuv(&pic, WEBP_YUV420)
         client_options["subsampling"] = "YUV420P"
 
     cdata = webp_encode(&config, &pic)
@@ -752,14 +765,14 @@ cdef scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_
     cdef double end = monotonic()
     log("webp %s resizing took %.1fms", 1000*(end-start))
 
-cdef yuv420p(WebPPicture *pic):
+cdef to_yuv(WebPPicture *pic, WebPEncCSP csp=WEBP_YUV420):
     cdef double start = monotonic()
     with nogil:
-        ret = WebPPictureARGBToYUVA(pic, WEBP_YUV420)
+        ret = WebPPictureARGBToYUVA(pic, csp)
     if not ret:
         raise Exception("WebPPictureARGBToYUVA failed")
     cdef double end = monotonic()
-    log("webp YUVA subsampling took %.1fms", 1000*(end-start))
+    log("webp subsampling ARGB to %s took %.1fms", CSP_NAMES.get(csp, csp), 1000*(end-start))
 
 
 cdef webp_encode(WebPConfig *config, WebPPicture *pic):
