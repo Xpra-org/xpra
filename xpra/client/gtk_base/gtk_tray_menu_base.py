@@ -649,7 +649,7 @@ class GTKTrayMenuBase(MenuHelper):
     def make_scalingmenu(self):
         scaling_submenu = Gtk.Menu()
         scaling_submenu.updating = False
-        from xpra.client.mixins.display import SCALING_OPTIONS
+        from xpra.client.scaling_parser import SCALING_OPTIONS
         for x in SCALING_OPTIONS:
             scaling_submenu.append(self.make_scalingvaluemenuitem(scaling_submenu, x))
         def scaling_changed(*args):
