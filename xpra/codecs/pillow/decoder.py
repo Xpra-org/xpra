@@ -101,7 +101,7 @@ def decompress(coding, img_data, options):
         raise Exception("expected %s image data but received %s" % (coding, actual or "unknown"))
     buf = BytesIO(img_data)
     img = Image.open(buf)
-    assert img.mode in ("L", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
+    assert img.mode in ("L", "LA", "P", "RGB", "RGBA", "RGBX"), "invalid image mode: %s" % img.mode
     transparency = options.intget("transparency", -1)
     if img.mode=="P":
         if transparency>=0:
@@ -127,6 +127,8 @@ def decompress(coding, img_data, options):
             img.putalpha(mask)
         else:
             img = img.convert("RGB")
+    elif img.mode=="LA":
+        img = img.convert("RGBA")
 
     width = img.size[0]
     if img.mode=="RGB":
