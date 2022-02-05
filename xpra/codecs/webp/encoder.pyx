@@ -408,10 +408,10 @@ def encode(coding, image, options=None):
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
     cdef int size = stride * height
     pixels = image.get_pixels()
-    cdef int supports_alpha = options.get("alpha", False)
+    cdef int supports_alpha = options.get("alpha", True)
     cdef int alpha_int = supports_alpha and pixel_format.find("A")>=0
     cdef int quality = options.get("quality", 50)
-    cdef int yuv420p = quality<SUBSAMPLING_THRESHOLD
+    cdef int yuv420p = quality<SUBSAMPLING_THRESHOLD and not alpha_int
 
     cdef WebPConfig config
     cdef WebPPreset preset = DEFAULT_PRESET
