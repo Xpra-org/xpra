@@ -74,7 +74,7 @@ def get_version():
     return (SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH)
 
 def get_encodings():
-    return ("png", )
+    return ("png", "png/L", "png/P")
 
 def get_error_str(int r):
     s = spng_strerror(r)
@@ -126,6 +126,14 @@ def decompress(data):
         fmt = SPNG_FMT_RGB8
         rgb_format = "RGB"
     elif ihdr.color_type==SPNG_COLOR_TYPE_TRUECOLOR_ALPHA:
+        fmt = SPNG_FMT_RGBA8
+        rgb_format = "RGBA"
+        flags = SPNG_DECODE_TRNS
+    elif ihdr.color_type==SPNG_COLOR_TYPE_GRAYSCALE:
+        fmt = SPNG_FMT_RGB8
+        rgb_format = "RGB"
+        flags = SPNG_DECODE_TRNS
+    elif ihdr.color_type==SPNG_COLOR_TYPE_GRAYSCALE_ALPHA:
         fmt = SPNG_FMT_RGBA8
         rgb_format = "RGBA"
         flags = SPNG_DECODE_TRNS
