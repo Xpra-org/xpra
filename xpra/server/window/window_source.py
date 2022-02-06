@@ -2072,7 +2072,7 @@ class WindowSource(WindowIconSource):
         assert data
         if encoding.startswith("png"):
             actual_quality = 100
-            lossy = self.image_depth<=24 or self.image_depth==32
+            lossy = self.image_depth>32 or self.image_depth==30
         elif encoding.startswith("rgb") or encoding=="mmap":
             actual_quality = 100
             lossy = False
