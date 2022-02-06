@@ -789,7 +789,7 @@ class WindowVideoSource(WindowSource):
             encode_delay = 50
             video_options["av-delay"] = max(0, self.get_frame_encode_delay(options) - encode_delay)
             self.process_damage_region(damage_time, actual_vr.x, actual_vr.y, actual_vr.width, actual_vr.height,
-                                       coding, video_options, 0)
+                                       coding, video_options)
 
             #now substract this region from the rest:
             trimmed = []
@@ -835,7 +835,7 @@ class WindowVideoSource(WindowSource):
         return r
 
 
-    def process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=0):
+    def process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=None):
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -876,7 +876,7 @@ class WindowVideoSource(WindowSource):
             av_delay, must_freeze, (w, h), coding)
         if must_freeze:
             image.freeze()
-        def call_encode(ew, eh, eimage, encoding):
+        def call_encode(ew, eh, eimage, encoding, flush):
             if self.is_cancelled(sequence):
                 image.free()
                 log("call_encode: sequence %s is cancelled", sequence)
@@ -896,18 +896,27 @@ class WindowVideoSource(WindowSource):
         oh = h
         w = w & self.width_mask
         h = h & self.height_mask
+        regions = []
         if video_mode and ee:
             dw = ow - w
             dh = oh - h
             if dw>0:
                 sub = image.get_sub_image(w, 0, dw, h)
-                call_encode(dw, h, sub, ee)
+                regions.append((dw, h, sub, ee))
             if dh>0:
                 sub = image.get_sub_image(0, h, w, dh)
-                call_encode(dw, h, sub, ee)
+                regions.append((dw, h, sub, ee))
         #the main area:
         if w>0 and h>0:
-            call_encode(w, h, image, coding)
+            regions.append((w, h, image, coding))
+        #process all regions:
+        if regions:
+            #ensure that the flush value ends at 0 on the last region:
+            flush = max(len(regions)-1, flush or 0)
+            for i, region in enumerate(regions):
+                w, h, image, coding = region
+                call_encode(w, h, image, coding, flush-i)
+                log.info("call_encode: %s", flush-i)
         return True
 
     def get_frame_encode_delay(self, options):
