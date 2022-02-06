@@ -554,7 +554,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 w, h = ws.window_dimensions
             else:
                 x, y, w, h = (int(x) for x in geom.split(","))
-            ws.process_damage_region(now, x, y, w, h, encoding, options, flush=0)
+            ws.process_damage_region(now, x, y, w, h, encoding, options)
         return "damage requested"
 
     def control_command_clipboard_direction(self, direction, *_args):
