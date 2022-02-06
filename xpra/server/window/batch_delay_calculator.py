@@ -258,7 +258,7 @@ def get_target_quality(window_dimensions, batch,
     #backlog factor:
     packets_backlog, pixels_backlog, _ = statistics.get_client_backlog()
     pb_ratio = pixels_backlog/low_limit
-    pixels_bl_q = 1 - logp(pb_ratio/4)    #4 frames behind or more -> min quality
+    pixels_bl_q = 1 - sqrt(pb_ratio/8)    #8 frames behind or more -> min quality
 
     #bandwidth limit factor:
     bandwidth_q = 1
