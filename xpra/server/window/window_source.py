@@ -1815,7 +1815,10 @@ class WindowSource(WindowIconSource):
                     #at least for the first packet:
                     elapsed = now-self.statistics.last_packet_time
                     quality += int(elapsed*25)
-                quality = (quality - packets_backlog*20) * quality_pct // 100
+                scaling_discount = 0
+                if "scaled-width" in options or "scaled-height" in options:
+                    scaling_discount = 20
+                quality = (quality - packets_backlog*20 - scaling_discount) * quality_pct // 100
                 quality = min(100, max(1, self._fixed_min_quality, quality))
         eoptions = dict(options)
         eoptions.update({
