@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -17,6 +17,7 @@ Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/33/9c/12bbfc79ba8b351ca2898b56d0996f719707a17feea30135e844be080ecf/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
+BuildRequires:  python3-devel
 
 %description
 Python Bindings for the NVIDIA Management Library
@@ -42,8 +43,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
-%{python3_sitelib}/__pycache__/pynvml*
-%{python3_sitelib}/pynvml.py*
+%pycached %{python3_sitelib}/pynvml.py*
 %{python3_sitelib}/nvidia_ml_py-%{version}?-py*.egg-info
 
 %changelog
