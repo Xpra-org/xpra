@@ -44,9 +44,12 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 %{python3_sitelib}/__pycache__/pynvml*
 %{python3_sitelib}/pynvml.py*
-%{python3_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
+%{python3_sitelib}/nvidia_ml_py-%{version}?-py*.egg-info
 
 %changelog
+* Mon Feb 07 2022 Antoine Martin <antoine@xpra.org> - 11.515.0-1
+- new upstream release
+
 * Thu Nov 04 2021 Antoine Martin <antoine@xpra.org> - 11.495.46-1
 - new upstream release
 
