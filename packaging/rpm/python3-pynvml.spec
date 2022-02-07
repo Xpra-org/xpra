@@ -43,7 +43,8 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
-%pycached %{python3_sitelib}/pynvml.py*
+%{python3_sitelib}/__pycache__/pynvml*
+%{python3_sitelib}/pynvml.py*
 %{python3_sitelib}/nvidia_ml_py-%{version}?-py*.egg-info
 
 %changelog
