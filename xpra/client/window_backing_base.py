@@ -591,14 +591,15 @@ class WindowBackingBase:
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     continue
+                options = {"speed" : speed}
                 try:
                     csc = spec.make_instance()
                     csc.init_context(src_width, src_height, src_format,
-                               dst_width, dst_height, dst_format, speed)
+                               dst_width, dst_height, dst_format, options)
                     return csc
                 except Exception as e:
                     videolog("make_csc%s",
-                        (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed),
+                        (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, options),
                         exc_info=True)
                     videolog.error("Error: failed to create csc instance %s", spec.codec_class)
                     videolog.error(" for %s to %s: %s", src_format, dst_format, e)
