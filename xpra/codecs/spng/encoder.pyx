@@ -1,20 +1,17 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
 
-from time import monotonic
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
+from xpra.codecs.codec_debug import may_save_image
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context #pylint: disable=syntax-error
-from xpra.util import envbool
 from xpra.net.compression import Compressed
-
-SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE", False)
 
 
 cdef extern from "zconf.h":
@@ -275,11 +272,7 @@ def encode(coding, image, options=None):
     cdef membuf = makebuf(png_data, png_len)
     spng_ctx_free(ctx)
     cdata = memoryview(membuf)
-    if SAVE_TO_FILE:    # pragma: no cover
-        filename = "./%s.png" % monotonic()
-        with open(filename, "wb") as f:
-            f.write(cdata)
-        log.info("saved %7i bytes to %s", len(cdata), filename)
+    may_save_image("png", cdata)
     return coding, Compressed(coding, cdata), {}, width, height, 0, len(rgb_format)*8
 
 

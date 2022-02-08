@@ -15,11 +15,11 @@ from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context    #pylint: disable=syntax-error
 
 from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.codecs.codec_debug import may_save_image
 from xpra.net.compression import Compressed
 from xpra.util import csv
 from xpra.os_util import bytestostr
 
-cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 cdef int YUV = envbool("XPRA_TURBOJPEG_YUV", True)
 
 
@@ -244,11 +244,7 @@ cdef class Encoder:
         if not cdata:
             return None
         now = monotonic()
-        if SAVE_TO_FILE:    # pragma: no cover
-            filename = "./%s.jpeg" % (now, )
-            with open(filename, "wb") as f:
-                f.write(cdata)
-            log.info("saved %7i bytes to %s", len(cdata), filename)
+        may_save_image("jpeg", cdata, now)
         client_options = {}
         if self.encoding=="jpega":
             from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
@@ -259,11 +255,7 @@ cdef class Encoder:
                                   self.width, self.height, rowstrides,
                                   quality, TJSAMP_GRAY)
             client_options["alpha-offset"] = len(cdata)
-            if SAVE_TO_FILE:    # pragma: no cover
-                filename = "./%s-alpha.jpeg" % (now, )
-                with open(filename, "wb") as f:
-                    f.write(adata)
-                log.info("saved %7i bytes to %s", len(adata), filename)
+            may_save_image("jpeg", adata, now)
             cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
         self.frames += 1
         return memoryview(cdata), client_options
@@ -317,11 +309,7 @@ def encode(coding, image, options=None):
         if not cdata:
             return None
         now = monotonic()
-        if SAVE_TO_FILE:    # pragma: no cover
-            filename = "./%s.jpeg" % (now, )
-            with open(filename, "wb") as f:
-                f.write(cdata)
-            log.info("saved %7i bytes to %s", len(cdata), filename)
+        may_save_image("jpeg", cdata, now)
         bpp = 24
         if coding=="jpega":
             from xpra.codecs.argb.argb import alpha  #@UnresolvedImport
@@ -331,11 +319,7 @@ def encode(coding, image, options=None):
             adata = do_encode_yuv(compressor, "YUV400P", planes,
                                   width, height, rowstrides,
                                   quality, TJSAMP_GRAY)
-            if SAVE_TO_FILE:    # pragma: no cover
-                filename = "./%s-alpha.jpeg" % (now, )
-                with open(filename, "wb") as f:
-                    f.write(adata)
-                log.info("saved %7i bytes to %s", len(adata), filename)
+            may_save_image("jpeg", adata, now)
             client_options["alpha-offset"] = len(cdata)
             cdata = memoryview(cdata).tobytes()+memoryview(adata).tobytes()
             bpp = 32

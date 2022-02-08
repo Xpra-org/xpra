@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,15 +12,14 @@ from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 
 from pycuda import driver
 
+from xpra.codecs.codec_debug import may_save_image
 from xpra.codecs.cuda_common.cuda_context import get_CUDA_function
 from xpra.net.compression import Compressed
-from xpra.util import envbool, typedict
+from xpra.util import typedict
 
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
 
-
-cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 DEF NVJPEG_MAX_COMPONENT = 4
 
@@ -686,11 +685,7 @@ def encode(coding, image, options=None):
         if not r:
             return None
         cdata, options = r
-        if SAVE_TO_FILE:    # pragma: no cover
-            filename = "./%s.jpeg" % monotonic()
-            with open(filename, "wb") as f:
-                f.write(cdata)
-            log.info("saved %7i bytes to %s", len(cdata), filename)
+        may_save_image("jpeg", cdata)
         return coding, Compressed(coding, cdata, False), options, width, height, 0, 24
     except NVJPEG_Exception as e:
         errors.append(str(e))

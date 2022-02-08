@@ -1,21 +1,20 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-from time import monotonic
 from io import BytesIO
 import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
 
-from xpra.util import envbool, csv
+from xpra.codecs.codec_debug import may_save_image
+from xpra.util import csv
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
 
-SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
 
 Image.init()
@@ -240,11 +239,7 @@ def encode(coding : str, image, options=None):
     buf = BytesIO()
     im.save(buf, pil_fmt, **kwargs)
     data = buf.getvalue()
-    if SAVE_TO_FILE:    # pragma: no cover
-        filename = "./%s.%s" % (monotonic(), pil_fmt.lower().replace("/", "-"))
-        with open(filename, "wb") as f:
-            f.write(data)
-        log.info("saved %7i bytes to %s", len(data), filename)
+    may_save_image(pil_fmt, data)
     log("sending %sx%s %s as %s, mode=%s, options=%s", w, h, pixel_format, coding, im.mode, kwargs)
     buf.close()
     return coding, Compressed(coding, data), client_options, image.get_width(), image.get_height(), 0, bpp

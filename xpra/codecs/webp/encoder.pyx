@@ -12,12 +12,12 @@ from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
 from xpra.net.compression import Compressed
+from xpra.codecs.codec_debug import may_save_image
 from xpra.util import envbool, envint, typedict
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 
-cdef int SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
 cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 80)
@@ -702,8 +702,7 @@ def encode(coding, image, options=None):
     log("webp.compress ratio=%i%%, client-options=%s", 100*len(cdata)//(width*height*Bpp), client_options)
     if LOG_CONFIG>0:
         log("webp.compress used config: %s", get_config_info(&config))
-    if SAVE_TO_FILE:    # pragma: no cover
-        save_webp(cdata)
+    may_save_image("webp", cdata)
     return "webp", Compressed("webp", cdata), client_options, width, height, 0, len(pixel_format.replace("A", ""))*8
 
 
@@ -797,12 +796,6 @@ cdef webp_encode(WebPConfig *config, WebPPicture *pic):
     cdef double end = monotonic()
     log("webp encode took %.1fms", 1000*(end-start))
     return cdata
-
-def save_webp(cdata):
-    filename = "./%s.webp" % monotonic()
-    with open(filename, "wb") as f:
-        f.write(cdata)
-    log.info("saved %7i bytes to %s", len(cdata), filename)
 
 
 def selftest(full=False):

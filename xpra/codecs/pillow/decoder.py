@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,6 +11,7 @@ from PIL import Image           #@UnresolvedImport
 
 from xpra.util import csv
 from xpra.os_util import hexstr, strtobytes
+from xpra.codecs.codec_debug import may_save_image
 from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
@@ -171,6 +172,7 @@ def decompress(coding, img_data, options):
         raise Exception("invalid image mode: %s" % img.mode)
     raw_data = img.tobytes("raw", img.mode)
     log("pillow decoded %i bytes of %s data to %i bytes of %s", len(img_data), coding, len(raw_data), rgb_format)
+    may_save_image(coding, img_data)
     return rgb_format, raw_data, width, height, rowstride
 
 

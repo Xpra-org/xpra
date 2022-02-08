@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,6 +7,7 @@ from xpra.log import Logger
 log = Logger("encoder", "webp")
 
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.codec_debug import may_save_image
 from xpra.buffers.membuf cimport memalign, buffer_context
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
@@ -240,7 +241,7 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     webp_check(ret)
     #we use external memory, so this is not needed:
     #WebPFreeDecBuffer(&config.output)
-
+    may_save_image("webp", data)
     return b, config.input.width, config.input.height, stride, has_alpha and config.input.has_alpha, out_format
 
 
