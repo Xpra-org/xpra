@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,13 +14,15 @@ log = Logger("decoder", "vpx")
 from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.os_util import bytestostr
-from xpra.util import envint
+from xpra.util import envint, envbool
 
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.string cimport memset, memcpy
 from libc.stdlib cimport malloc
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
 
+
+SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 cpus = os.cpu_count()
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
@@ -201,6 +203,7 @@ cdef class Decoder:
     cdef vpx_img_fmt_t pixfmt
     cdef object dst_format
     cdef object encoding
+    cdef object file
 
     cdef object __weakref__
 
@@ -230,6 +233,10 @@ cdef class Decoder:
         if vpx_codec_dec_init_ver(self.context, codec_iface, &dec_cfg,
                               flags, VPX_DECODER_ABI_VERSION)!=VPX_CODEC_OK:
             raise Exception("failed to instantiate %s decoder with ABI version %s: %s" % (encoding, VPX_DECODER_ABI_VERSION, self.codec_error_str()))
+        if SAVE_TO_FILE:
+            filename = "./%s.%s" % (monotonic(), self.encoding)
+            self.file = open(filename, 'wb')
+            log.info("saving %s stream to %s", self.encoding, filename)
         log("vpx_codec_dec_init_ver for %s succeeded with ABI version %s", encoding, VPX_DECODER_ABI_VERSION)
 
     def __repr__(self):
@@ -277,6 +284,10 @@ cdef class Decoder:
         self.pixfmt = 0
         self.dst_format = ""
         self.encoding = ""
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
 
 
     def decompress_image(self, data, options=None):

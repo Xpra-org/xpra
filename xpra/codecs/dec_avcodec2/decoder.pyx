@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,9 +7,12 @@
 
 import errno
 import weakref
+from time import monotonic
+
 from xpra.log import Logger
 log = Logger("decoder", "avcodec")
 
+from xpra.util import envbool
 from xpra.os_util import bytestostr
 from xpra.util import csv
 from xpra.codecs.codec_constants import get_subsampling_divs
@@ -21,6 +24,8 @@ from xpra.buffers.membuf cimport memalign, buffer_context
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
+
+SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 
 
 cdef extern from "Python.h":
@@ -711,6 +716,7 @@ cdef class Decoder:
     cdef int width
     cdef int height
     cdef object encoding
+    cdef object file
 
     cdef object __weakref__
 
@@ -778,6 +784,10 @@ cdef class Decoder:
         self.weakref_images = weakref.WeakSet()
         #register this decoder in the global dictionary:
         log("dec_avcodec.Decoder.init_context(%s, %s, %s) self=%s", width, height, colorspace, self.get_info())
+        if SAVE_TO_FILE:
+            filename = "./%s.%s" % (monotonic(), self.encoding)
+            self.file = open(filename, 'wb')
+            log.info("saving %s stream to %s", self.encoding, filename)
         return True
 
     def clean(self):
@@ -815,6 +825,10 @@ cdef class Decoder:
                 log.error(" %s", av_error_str(r))
             av_free(self.codec_ctx)
             self.codec_ctx = NULL
+        f = self.file
+        if f:
+            self.file = None
+            f.close()
         log("clean_decoder() done")
 
     def __repr__(self):
