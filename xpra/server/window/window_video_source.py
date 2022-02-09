@@ -900,10 +900,10 @@ class WindowVideoSource(WindowSource):
         if video_mode and ee:
             dw = ow - w
             dh = oh - h
-            if dw>0:
+            if dw>0 and h>0:
                 sub = image.get_sub_image(w, 0, dw, h)
                 regions.append((dw, h, sub, ee))
-            if dh>0:
+            if dh>0 and w>0:
                 sub = image.get_sub_image(0, h, w, dh)
                 regions.append((dw, h, sub, ee))
         #the main area:
