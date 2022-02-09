@@ -901,10 +901,10 @@ class WindowVideoSource(WindowSource):
             dw = ow - w
             dh = oh - h
             if dw>0 and h>0:
-                sub = image.get_sub_image(w, 0, dw, h)
+                sub = image.get_sub_image(w, 0, dw, oh)
                 regions.append((dw, h, sub, ee))
             if dh>0 and w>0:
-                sub = image.get_sub_image(0, h, w, dh)
+                sub = image.get_sub_image(0, h, ow, dh)
                 regions.append((dw, h, sub, ee))
         #the main area:
         if w>0 and h>0:
