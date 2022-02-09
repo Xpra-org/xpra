@@ -685,6 +685,10 @@ class ServerBase(ServerBaseClass):
                     log.warn("removing invalid None property for %s", k)
                     continue
                 k = strtobytes(k)
+                if k=="event":
+                    #event is used as a workaround in _process_map_window,
+                    #it isn't a real client property and should not be stored:
+                    continue
                 if not k.startswith(b"encoding"):
                     ncp[k] = v
             if ncp:
