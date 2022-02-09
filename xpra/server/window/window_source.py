@@ -60,6 +60,7 @@ ACK_TOLERANCE = envint("XPRA_ACK_TOLERANCE", 250)
 SLOW_SEND_THRESHOLD = envint("XPRA_SLOW_SEND_THRESHOLD", 20*1000*1000)
 
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
+BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
 FORCE_BATCH = envint("XPRA_FORCE_BATCH", True)
 STRICT_MODE = envint("XPRA_ENCODING_STRICT_MODE", False)
 MERGE_REGIONS = envbool("XPRA_MERGE_REGIONS", True)
@@ -221,7 +222,7 @@ class WindowSource(WindowIconSource):
         self.is_OR = window.is_OR()
         self.is_tray = window.is_tray()
         self.is_shadow = window.is_shadow()
-        self.has_alpha = window.has_alpha()
+        self.has_alpha = HAS_ALPHA and window.has_alpha()
         self.window_dimensions = ww, wh
         #where the window is mapped on the client:
         self.mapped_at = None
@@ -309,6 +310,13 @@ class WindowSource(WindowIconSource):
         if "opaque-region" in dyn_props:
             sid = window.connect("notify::opaque-region", self.window_opaque_region_changed)
             self.window_signal_handlers.append(sid)
+
+        if self.has_alpha and BROWSER_ALPHA_FIX and not self.is_OR:
+            #remove alpha from 'NORMAL' browser windows
+            #of a size greater than 200x200:
+            if self.content_type.find("browser")>=0 and "NORMAL" in self.window_type and ww>=200 and wh>=200:
+                self.has_alpha = False
+
         #will be overriden by update_quality() and update_speed() called from update_encoding_selection()
         #just here for clarity:
         nobwl = (self.bandwidth_limit or 0)<=0
@@ -1977,16 +1985,20 @@ class WindowSource(WindowIconSource):
             return nodata("sequence %i is cancelled", sequence)
         pixel_format = image.get_pixel_format()
         image_depth = image.get_depth()
-        opr = self._opaque_region
-        if image_depth==32 and pixel_format.find("A")>=0 and opr:
-            for coords in opr:
-                r = rectangle(*coords)
-                if r.contains(x, y, w, h):
-                    pixel_format = pixel_format.replace("A", "X")   #ie: BGRA -> BGRX
-                    image.set_pixel_format(pixel_format)
-                    image_depth = 24
-                    log("removed alpha from image metadata: %s", pixel_format)
-                    break
+        if image_depth==32 and pixel_format.find("A")>=0:
+            alpha = self.has_alpha
+            opr = self._opaque_region
+            if alpha and opr:
+                for coords in opr:
+                    r = rectangle(*coords)
+                    if r.contains(x, y, w, h):
+                        alpha = False
+                        break
+            if not alpha:
+                pixel_format = pixel_format.replace("A", "X")   #ie: BGRA -> BGRX
+                image.set_pixel_format(pixel_format)
+                image_depth = 24
+                log("removed alpha from image metadata: %s", pixel_format)
         self.image_depth = image_depth
         self.pixel_format = pixel_format
         return image
