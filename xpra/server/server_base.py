@@ -13,7 +13,7 @@ from xpra.server.server_core import ServerCore
 from xpra.server.mixins.server_base_controlcommands import ServerBaseControlCommands
 from xpra.server.background_worker import add_work_item
 from xpra.net.common import may_log_packet
-from xpra.os_util import bytestostr, strtobytes, WIN32
+from xpra.os_util import bytestostr, WIN32
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool, csv,
     SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
@@ -684,12 +684,12 @@ class ServerBase(ServerBaseClass):
                 if v is None:
                     log.warn("removing invalid None property for %s", k)
                     continue
-                k = strtobytes(k)
+                k = bytestostr(k)
                 if k=="event":
                     #event is used as a workaround in _process_map_window,
                     #it isn't a real client property and should not be stored:
                     continue
-                if not k.startswith(b"encoding"):
+                if not k.startswith("encoding"):
                     ncp[k] = v
             if ncp:
                 log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
