@@ -13,6 +13,7 @@ from math import sqrt
 from collections import deque
 from time import monotonic
 
+from xpra.os_util import bytestostr
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
@@ -759,7 +760,10 @@ class WindowSource(WindowIconSource):
         #only override if values are specified:
         log("parse_csc_modes(%s) current value=%s", full_csc_modes, self.full_csc_modes)
         if full_csc_modes is not None and isinstance(full_csc_modes, dict):
-            self.full_csc_modes = typedict(full_csc_modes)
+            self.full_csc_modes = typedict()
+            #workaround for older packet encoders: (strings vs bytes nonsense)
+            for enc, csc_formats in full_csc_modes.items():
+                self.full_csc_modes[bytestostr(enc)] = tuple(bytestostr(v) for v in csc_formats)
 
 
     def set_auto_refresh_delay(self, d):
