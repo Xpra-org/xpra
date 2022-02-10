@@ -218,13 +218,13 @@ def w_to_utf8(data):
     if l==0:
         raise Exception("failed to convert to UTF8: %s" % FormatError(get_last_error()))
     if buf.raw[l-1:l]==b"\0":
-        s = buf.raw[:l-1]
+        b = buf.raw[:l-1]
     else:
-        s = buf.raw[:l]
-    log("got %i bytes of UNICODE data: %s", len(s), ellipsizer(s))
+        b = buf.raw[:l]
+    log("got %i UTF8 bytes: %s", len(b), ellipsizer(b))
     if CONVERT_LINE_ENDINGS:
-        return s.decode("utf8").replace("\r\n", "\n")
-    return str(s)
+        return b.decode("utf8").replace("\r\n", "\n").encode("utf8")
+    return b
 
 
 class Win32Clipboard(ClipboardTimeoutHelper):
