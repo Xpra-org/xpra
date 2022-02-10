@@ -896,18 +896,28 @@ fi
 
 
 %changelog
-* Mon Nov 08 2021 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
+* Thu Feb 10 2021 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
 - handling of packet parsing errors
 - packaging fixes:
     dependency updates
     package updates: pynvml, cython
     MacOS new package signing key
+- clipboard errors with MS Windows clients and UTF8 data
+- workaround for missing video mode client metadata
+- store and send client properties as strings
+- missing auto-refresh
+- server errors on encoding change (ie: client tray menu)
+- configurable ping timeout delay
+- 'Content-Security-Policy' fixes and workarounds for Safari
 - silence spurious authentication modules warnings
-- 'xpra showsetting' subcommand errors
+ 'xpra showsetting' subcommand errors
 - keyboard mapping not honouring the more specific keymap definition
 - honour system prefix when loading xkb keymaps
 - clipboard error messages when there is no client handling it
-- build using CUDA 11.5 by default
+- disable vaapi with the ffmpeg encoder (crashy)
+- handle grayscale png images with transparency
+- don't send empty alpha channel
+- build using CUDA 11.6 by default, compile as C++11
 - logging tweaks and fixes
 
 * Tue Oct 19 2021 Antoine Martin <antoine@xpra.org> 3.1.2-10.1xpra1
