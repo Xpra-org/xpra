@@ -478,7 +478,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             image.set_rowstride(rs*2)
             return True
     elif pixel_format in ("BGRX", "BGRA"):
-        if supports_transparency and "RGBA" in rgb_formats:
+        if pixel_format=="BGRA" and supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: bgra_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgra_to_rgba(pixels))
             image.set_pixel_format("RGBA")
@@ -495,7 +495,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             image.set_pixel_format("RGBX")
             return True
     elif pixel_format in ("XRGB", "ARGB"):
-        if supports_transparency and "RGBA" in rgb_formats:
+        if pixel_format=="ARGB" and supports_transparency and "RGBA" in rgb_formats:
             log("argb_swap: argb_to_rgba for %s on %s", pixel_format, type(pixels))
             image.set_pixels(argb_to_rgba(pixels))
             image.set_pixel_format("RGBA")
