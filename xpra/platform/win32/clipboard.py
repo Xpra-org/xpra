@@ -270,15 +270,13 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
                 if l>0:
                     if buf.raw[l-1:l]==b"\0":
-                        s = buf.raw[:l-1]
+                        b = buf.raw[:l-1]
                     else:
-                        s = buf.raw[:l]
+                        b = buf.raw[:l]
                     if CONVERT_LINE_ENDINGS:
-                        v = s.decode("utf8").replace("\r\n", "\n").encode("utf8")
-                    else:
-                        v = strtobytes(s)
-                    log("got %i bytes of data: %s", len(s), ellipsizer(s))
-                    callback(v)
+                        b = b.decode("utf8").replace("\r\n", "\n").encode("utf8")
+                    log("got %i UTF8 bytes: %s", len(b), ellipsizer(b))
+                    callback(b)
                 else:
                     errback("failed to convert to UTF8: %s" % FormatError(get_last_error()))
             finally:
