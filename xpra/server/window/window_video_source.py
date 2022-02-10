@@ -1786,6 +1786,9 @@ class WindowVideoSource(WindowSource):
             scrolllog("no scrolling: detection has already been used on this image")
             #we've already checked
             return False
+        if options.get("auto_refresh"):
+            scrolllog("no scrolling: auto-refresh")
+            return False
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
