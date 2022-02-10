@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 #pylint: disable-msg=E1101
 
+from xpra.os_util import bytestostr
 from xpra.scripts.config import parse_bool_or_int
 from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, PROBLEMATIC_ENCODINGS
 from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
@@ -171,7 +172,7 @@ class EncodingServer(StubServerMixin):
 
 
     def _process_encoding(self, proto, packet):
-        encoding = packet[1].decode("latin1")
+        encoding = bytestostr(packet[1])
         ss = self.get_server_source(proto)
         if ss is None:
             return
