@@ -979,14 +979,12 @@ class X11ServerCore(GTKServerBase):
         device = self.get_pointer_device(deviceid)
         assert device, "pointer device %s not found" % deviceid
         try:
-            log("%s%s", device.click, (button, pressed, args))
+            mouselog("%s%s", device.click, (button, pressed, args))
             with xsync:
                 device.click(button, pressed, *args)
         except XError:
-            log("button_action(%s, %s, %s, %s, %s)", pointer, button, pressed, deviceid, args, exc_info=True)
-            log.error("Error: failed (un)press mouse button %s", button)
-            if button>=4:
-                log.error(" (perhaps your Xvfb does not support mousewheels?)")
+            mouselog("button_action(%s, %s, %s, %s, %s)", pointer, button, pressed, deviceid, args, exc_info=True)
+            mouselog.error("Error: failed (un)press mouse button %s", button)
 
 
     def make_screenshot_packet_from_regions(self, regions):
