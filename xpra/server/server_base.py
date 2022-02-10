@@ -673,12 +673,12 @@ class ServerBase(ServerBaseClass):
                 if v is None:
                     log.warn("removing invalid None property for %s", k)
                     continue
-                k = strtobytes(k)
+                k = bytestostr(k)
                 if k=="event":
                     #event is used as a workaround in _process_map_window,
                     #it isn't a real client property and should not be stored:
                     continue
-                if not k.startswith(b"encoding"):
+                if not k.startswith("encoding"):
                     ncp[k] = v
             if ncp:
                 log("set_client_properties updating window %s of source %s with %s", wid, ss.uuid, ncp)
