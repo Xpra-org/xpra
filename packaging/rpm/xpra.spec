@@ -99,7 +99,7 @@ Summary:			Common files for xpra server packages
 Group:				Networking
 BuildArch:			noarch
 Requires:			xpra-common
-%if 0%{?fedora}>=34
+%if 0%{?fedora}
 Suggests:			xmodmap
 Suggests:			xrandr
 Requires:			xrdb
