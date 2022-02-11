@@ -25,7 +25,9 @@
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc --without-nvjpeg
 %endif
 %if 0%{?fedora}>=36
-%define build_args %{DEFAULT_BUILD_ARGS} --without-enc_ffmpeg --without-dec_avcodec2 --without-csc_swscale
+%define build_args %{DEFAULT_BUILD_ARGS} --without-enc_ffmpeg --without-dec_avcodec2 --without-csc_swscale --without-nvenc --without-nvfbc --without-nvjpeg
+#until CUDA supports this version of gcc:
+%define with_cuda 0
 %endif
 %if 0%{?el9}
 #no pandoc!
