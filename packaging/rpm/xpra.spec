@@ -27,6 +27,10 @@
 %if 0%{?fedora}>=36
 %define build_args %{DEFAULT_BUILD_ARGS} --without-enc_ffmpeg --without-dec_avcodec2 --without-csc_swscale
 %endif
+%if 0%{?el9}
+#no pandoc!
+%define build_args %{DEFAULT_BUILD_ARGS} --without-docs
+%endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 #we never want to depend on proprietary nvidia bits,
@@ -81,7 +85,9 @@ Group:				Networking
 BuildArch:			noarch
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 2.1
+%if !0%{?el9}
 BuildRequires:		pandoc
+%endif
 BuildRequires:		libfakeXinerama
 %description common
 This package contains the files which are shared between all the xpra packages.
