@@ -393,7 +393,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/cuda
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*
+%if !0%{?el9}
 %{_docdir}/xpra
+%endif
 %{_datadir}/metainfo/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %{_datadir}/icons/xpra-mdns.png
