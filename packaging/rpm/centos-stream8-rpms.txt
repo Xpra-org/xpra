@@ -1,5 +1,6 @@
 fake-cuda
 libfakeXinerama
+xorg-x11-drv-dummy
 gstreamer1-plugin-timestamp
 libyuv
 nasm
