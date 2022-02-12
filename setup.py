@@ -192,6 +192,7 @@ spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
+avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
@@ -2284,6 +2285,14 @@ if jpeg:
         add_cython_ext("xpra.codecs.jpeg.decoder",
                 ["xpra/codecs/jpeg/decoder.pyx"],
                 **jpeg_pkgconfig)
+
+toggle_packages(avif_ENABLED, "xpra.codecs.avif")
+if avif_ENABLED:
+    avif_pkgconfig = pkgconfig("libavif")
+    add_cython_ext("xpra.codecs.avif.encoder",
+            ["xpra/codecs/avif/encoder.pyx"],
+            **avif_pkgconfig)
+
 
 #swscale and avcodec2 use libav_common/av_log:
 libav_common = dec_avcodec2_ENABLED or csc_swscale_ENABLED

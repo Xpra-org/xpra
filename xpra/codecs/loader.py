@@ -152,6 +152,7 @@ CODEC_OPTIONS = {
     "enc_spng"      : ("png encoder",       "spng",         "encoder", "encode"),
     "enc_webp"      : ("webp encoder",      "webp",         "encoder", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
+    "enc_avif"      : ("avif encoder",      "avif",         "encoder", "encode"),
     "enc_nvjpeg"    : ("nvjpeg encoder",    "nvjpeg",       "encoder", "encode"),
     #video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
@@ -168,6 +169,7 @@ CODEC_OPTIONS = {
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
+    "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
     #video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),
@@ -236,9 +238,9 @@ def has_codec(name) -> bool:
 
 
 CSC_CODECS = "csc_swscale", "csc_cython", "csc_libyuv"
-ENCODER_CODECS = "enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg"
+ENCODER_CODECS = "enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif"
 ENCODER_VIDEO_CODECS = "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg"
-DECODER_CODECS = "dec_pillow", "dec_spng", "dec_webp", "dec_jpeg"
+DECODER_CODECS = "dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_avif"
 DECODER_VIDEO_CODECS = "dec_vpx", "dec_avcodec2"
 
 ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))
@@ -267,6 +269,7 @@ def get_encoding_name(encoding):
           "png/L"   : "PNG (8bpp grayscale)",
           "jpeg"    : "JPEG",
           "jpega"   : "JPEG with alpha",
+          "avif"    : "AVIF",
           "rgb"     : " + ".join(get_rgb_compression_options()) + " (24/32bpp)",
         }
     return ENCODINGS_TO_NAME.get(encoding, encoding)
@@ -288,6 +291,7 @@ def get_encoding_help(encoding):
           "png/L"   : "Portable Network Graphics (lossy, 8bpp grayscale)",
           "webp"    : "WebP compression (supports lossless and lossy modes)",
           "jpeg"    : "JPEG lossy compression",
+          "avif"    : "AVIF",
           "rgb"     : "Raw RGB pixels, lossless,"
                       +" compressed using %s (24bpp or 32bpp for transparency)" % (" or ".join(compressors)),
           "scroll"  : "motion vectors, supplemented with picture codecs",

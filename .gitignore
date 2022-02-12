@@ -124,6 +124,8 @@ tests/unittests/test-file*
 /xpra/codecs/vpx/encoder.c
 /xpra/codecs/webp/encoder.c
 /xpra/codecs/webp/decoder.c
+/xpra/codecs/avif/encoder.c
+/xpra/codecs/avif/decoder.c
 /xpra/codecs/nvjpeg/encoder.c
 /xpra/gtk_common/gdk_atoms.c
 /xpra/gtk_common/gtk3/gdk_atoms.c

@@ -256,6 +256,7 @@ STRUCT_KNOWN_FILTERS = {
                 "x264"          : "libx264 encoder",
                 "x265"          : "libx265 encoder",
                 "webp"          : "libwebp encoder and decoder",
+                "avif"          : "libavif encoder and decoder",
                 "webcam"        : "webcam access",
                 },
     "Pointer" : {

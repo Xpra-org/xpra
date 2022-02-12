@@ -389,6 +389,7 @@ class WindowSource(WindowIconSource):
             add("enc_spng")
             add("enc_webp")
             add("enc_jpeg")
+            add("enc_avif")
             #prefer nvjpeg over all the other jpeg encoders:
             log("init_encoders() cuda_device_context=%s", self.cuda_device_context)
             if self.cuda_device_context:
@@ -1078,6 +1079,9 @@ class WindowSource(WindowIconSource):
             return "png"
         if jpeg:
             return "jpeg"
+        avif = "avif" in co
+        if avif:
+            return "avif"
         if current_encoding in co:
             return current_encoding
         return next(x for x in co if x!="rgb")

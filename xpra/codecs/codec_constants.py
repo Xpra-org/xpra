@@ -12,7 +12,7 @@ import weakref
 PREFERRED_ENCODING_ORDER = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
-    "png", "png/P", "png/L", "webp",
+    "png", "png/P", "png/L", "webp", "avif",
     "rgb", "rgb24", "rgb32", "jpeg", "jpega",
     "h265", "mpeg1", "mpeg2",
     "scroll",
@@ -29,7 +29,7 @@ HELP_ORDER = (
     "auto",
     "grayscale",
     "h264", "h265", "vp8", "vp9", "mpeg4",
-    "png", "png/P", "png/L", "webp",
+    "png", "png/P", "png/L", "webp", "avif",
     "rgb", "jpeg", "jpega",
     "scroll",
     )
