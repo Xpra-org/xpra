@@ -190,6 +190,10 @@ Recommends:         python3-ldap3
 Recommends:         python3-brotli
 #Suggests:           python3-cpuinfo
 Requires:			libwebp
+%if 0%{?fedora}
+Requires:			libavif
+BuildRequires:		libavif-devel
+%endif
 BuildRequires:		which
 BuildRequires:		libwebp-devel
 BuildRequires:		turbojpeg-devel

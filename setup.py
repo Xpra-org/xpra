@@ -192,7 +192,7 @@ spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 jpeg_encoder_ENABLED    = DEFAULT and pkg_config_version("1.2", "libturbojpeg")
 jpeg_decoder_ENABLED    = DEFAULT and pkg_config_version("1.4", "libturbojpeg")
-avif_ENABLED            = DEFAULT and pkg_config_version("0.9", "libavif")
+avif_ENABLED            = DEFAULT and pkg_config_version("0.8", "libavif")
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.4", "vpx")
 enc_ffmpeg_ENABLED      = DEFAULT and BITS==64 and pkg_config_version("58.18", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):

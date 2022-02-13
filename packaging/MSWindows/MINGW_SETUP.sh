@@ -39,7 +39,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}l
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil libavif; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
 $PACMAN --noconfirm --needed -S ${XPKG}cython
