@@ -56,18 +56,3 @@ cdef extern from "vpx/vpx_image.h":
     ctypedef enum vpx_color_range_t:
         VPX_CR_STUDIO_RANGE
         VPX_CR_FULL_RANGE
-
-VPX_COLOR_SPACES = {
-    VPX_CS_UNKNOWN  : "unknown",
-    VPX_CS_BT_601   : "BT601",
-    VPX_CS_BT_709   : "BT709",
-    VPX_CS_SMPTE_170    : "SMPTE170",
-    VPX_CS_SMPTE_240    : "SMPTE240",
-    VPX_CS_BT_2020  : "BT2020",
-    VPX_CS_RESERVED : "reserved",
-    VPX_CS_SRGB     : "SRGB",
-    }
-VPX_COLOR_RANGES = {
-    VPX_CR_STUDIO_RANGE : "studio",
-    VPX_CR_FULL_RANGE   : " full",
-    }

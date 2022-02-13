@@ -26,13 +26,33 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_error, vpx_codec_destroy,
     vpx_codec_version_str, vpx_codec_build_config,
     VPX_IMG_FMT_I420, VPX_IMG_FMT_I444, VPX_IMG_FMT_HIGHBITDEPTH,
+    VPX_CS_UNKNOWN, VPX_CS_BT_601, VPX_CS_BT_709,
+    VPX_CS_SMPTE_170, VPX_CS_SMPTE_240, VPX_CS_BT_2020,
+    VPX_CS_RESERVED, VPX_CS_SRGB,
     vpx_image_t, vpx_color_space_t, vpx_color_range_t,
-    VPX_COLOR_SPACES, VPX_COLOR_RANGES,
+    VPX_CR_STUDIO_RANGE, VPX_CR_FULL_RANGE,
     )
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
 
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
+
+VPX_COLOR_SPACES = {
+    VPX_CS_UNKNOWN  : "unknown",
+    VPX_CS_BT_601   : "BT601",
+    VPX_CS_BT_709   : "BT709",
+    VPX_CS_SMPTE_170    : "SMPTE170",
+    VPX_CS_SMPTE_240    : "SMPTE240",
+    VPX_CS_BT_2020  : "BT2020",
+    VPX_CS_RESERVED : "reserved",
+    VPX_CS_SRGB     : "SRGB",
+    }
+
+VPX_COLOR_RANGES = {
+    VPX_CR_STUDIO_RANGE : "studio",
+    VPX_CR_FULL_RANGE   : " full",
+    }
+
 
 cpus = os.cpu_count()
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
