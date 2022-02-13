@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,6 +8,18 @@
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
+from xpra.codecs.spng.spng cimport (
+    SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH,
+    SPNG_CTX_ENCODER, 
+    SPNG_DECODE_TRNS,
+    SPNG_FMT_RGBA8, SPNG_FMT_RGBA16, SPNG_FMT_RGB8,
+    SPNG_COLOR_TYPE_GRAYSCALE, SPNG_COLOR_TYPE_TRUECOLOR, SPNG_COLOR_TYPE_GRAYSCALE_ALPHA,
+    SPNG_COLOR_TYPE_TRUECOLOR_ALPHA, SPNG_COLOR_TYPE_INDEXED,
+    spng_ctx, spng_ihdr, spng_strerror,
+    spng_ctx_new, spng_ctx_free,
+    spng_get_ihdr, spng_format,
+    spng_decode_image, spng_set_png_buffer, spng_decoded_image_size,
+    )
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from xpra.util import envint
@@ -20,46 +32,6 @@ cdef extern from "Python.h":
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
 
-cdef extern from "spng.h":
-    int SPNG_VERSION_MAJOR
-    int SPNG_VERSION_MINOR
-    int SPNG_VERSION_PATCH
-
-    int SPNG_DECODE_TRNS
-
-    enum spng_format:
-        SPNG_FMT_RGBA8
-        SPNG_FMT_RGBA16
-        SPNG_FMT_RGB8
-
-    enum spng_color_type:
-        SPNG_COLOR_TYPE_GRAYSCALE
-        SPNG_COLOR_TYPE_TRUECOLOR
-        SPNG_COLOR_TYPE_INDEXED
-        SPNG_COLOR_TYPE_GRAYSCALE_ALPHA
-        SPNG_COLOR_TYPE_TRUECOLOR_ALPHA
-
-    ctypedef struct spng_ctx:
-        pass
-
-    cdef struct spng_ihdr:
-        uint32_t height
-        uint32_t width
-        uint8_t bit_depth
-        uint8_t color_type
-        uint8_t compression_method
-        uint8_t filter_method
-        uint8_t interlace_method
-
-    const char *spng_version_string()
-    const char *spng_strerror(int err)
-    spng_ctx *spng_ctx_new(int flags)
-    void spng_ctx_free(spng_ctx *ctx)
-    int spng_get_ihdr(spng_ctx *ctx, spng_ihdr *ihdr)
-    int spng_set_png_buffer(spng_ctx *ctx, const void *buf, size_t size) nogil
-    int spng_decoded_image_size(spng_ctx *ctx, int fmt, size_t *len) nogil
-    int spng_decode_image(spng_ctx *ctx, void *out, size_t len, int fmt, int flags) nogil
-
 
 COLOR_TYPE_STR = {
     SPNG_COLOR_TYPE_GRAYSCALE       : "GRAYSCALE",
@@ -68,7 +40,6 @@ COLOR_TYPE_STR = {
     SPNG_COLOR_TYPE_GRAYSCALE_ALPHA : "GRAYSCALE_ALPHA",
     SPNG_COLOR_TYPE_TRUECOLOR_ALPHA : "TRUECOLOR_ALPHA",
     }
-
 
 def get_version():
     return (SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH)
@@ -121,7 +92,7 @@ def decompress(data):
 
     cdef int flags = 0
     cdef size_t out_size
-    cdef int fmt
+    cdef spng_format fmt
     if ihdr.color_type==SPNG_COLOR_TYPE_TRUECOLOR:
         fmt = SPNG_FMT_RGB8
         rgb_format = "RGB"

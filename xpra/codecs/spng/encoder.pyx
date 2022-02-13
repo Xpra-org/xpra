@@ -8,10 +8,28 @@
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
+from xpra.net.compression import Compressed
 from xpra.codecs.codec_debug import may_save_image
+from xpra.codecs.spng.spng cimport (
+    SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH,
+    SPNG_CTX_ENCODER, 
+    SPNG_INTERLACE_NONE,
+    SPNG_ENCODE_FINALIZE,
+    SPNG_FILTER_CHOICE, SPNG_FILTER_CHOICE_NONE, SPNG_FILTER_CHOICE_SUB,
+    SPNG_ENCODE_TO_BUFFER,
+    SPNG_IMG_COMPRESSION_LEVEL,
+    SPNG_IMG_MEM_LEVEL,
+    SPNG_IMG_COMPRESSION_STRATEGY,
+    SPNG_TEXT_WINDOW_BITS,
+    SPNG_FMT_PNG,
+    SPNG_COLOR_TYPE_GRAYSCALE, SPNG_COLOR_TYPE_TRUECOLOR, SPNG_COLOR_TYPE_GRAYSCALE_ALPHA, SPNG_COLOR_TYPE_TRUECOLOR_ALPHA,
+    spng_ctx, spng_ihdr, spng_strerror,
+    spng_ctx_new, spng_ctx_free,
+    spng_set_option, spng_set_ihdr,
+    spng_encode_image, spng_get_png_buffer,
+    )
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context #pylint: disable=syntax-error
-from xpra.net.compression import Compressed
 
 
 cdef extern from "zconf.h":
@@ -19,95 +37,6 @@ cdef extern from "zconf.h":
 
 cdef extern from "zlib.h":
     int Z_HUFFMAN_ONLY
-
-cdef extern from "spng.h":
-    int SPNG_VERSION_MAJOR
-    int SPNG_VERSION_MINOR
-    int SPNG_VERSION_PATCH
-
-    int SPNG_CTX_ENCODER
-
-    int SPNG_FILTER_NONE
-    int SPNG_INTERLACE_NONE
-
-    enum spng_encode_flags:
-        SPNG_ENCODE_PROGRESSIVE
-        SPNG_ENCODE_FINALIZE
-
-    enum spng_filter_choice:
-        SPNG_DISABLE_FILTERING
-        SPNG_FILTER_CHOICE_NONE
-        SPNG_FILTER_CHOICE_SUB
-        SPNG_FILTER_CHOICE_UP
-        SPNG_FILTER_CHOICE_AVG
-        SPNG_FILTER_CHOICE_PAETH
-        SPNG_FILTER_CHOICE_ALL
-
-    enum spng_option:
-        SPNG_ENCODE_TO_BUFFER
-        SPNG_KEEP_UNKNOWN_CHUNKS
-
-        SPNG_IMG_COMPRESSION_LEVEL
-
-        SPNG_IMG_WINDOW_BITS
-        SPNG_IMG_MEM_LEVEL
-        SPNG_IMG_COMPRESSION_STRATEGY
-
-        SPNG_TEXT_COMPRESSION_LEVEL
-        SPNG_TEXT_WINDOW_BITS
-        SPNG_TEXT_MEM_LEVEL
-        SPNG_TEXT_COMPRESSION_STRATEGY
-
-        SPNG_FILTER_CHOICE
-
-    enum spng_format:
-        SPNG_FMT_RGBA8
-        SPNG_FMT_RGBA16
-        SPNG_FMT_RGB8
-        # Partially implemented, see documentation
-        SPNG_FMT_GA8
-        SPNG_FMT_GA16
-        SPNG_FMT_G8
-        SPNG_FMT_PNG        #host-endian
-        SPNG_FMT_RAW        #big-endian
-
-    enum spng_color_type:
-        SPNG_COLOR_TYPE_GRAYSCALE
-        SPNG_COLOR_TYPE_TRUECOLOR
-        SPNG_COLOR_TYPE_INDEXED
-        SPNG_COLOR_TYPE_GRAYSCALE_ALPHA
-        SPNG_COLOR_TYPE_TRUECOLOR_ALPHA
-
-    ctypedef struct spng_ctx:
-        pass
-
-    cdef struct spng_ihdr:
-        uint32_t height
-        uint32_t width
-        uint8_t bit_depth
-        uint8_t color_type
-        uint8_t compression_method
-        uint8_t filter_method
-        uint8_t interlace_method
-
-    const char *spng_version_string()
-    const char *spng_strerror(int err)
-    spng_ctx *spng_ctx_new(int flags)
-    void spng_ctx_free(spng_ctx *ctx)
-    int spng_set_option(spng_ctx *ctx, spng_option option, int value)
-    int spng_set_ihdr(spng_ctx *ctx, spng_ihdr *ihdr)
-    int spng_encode_image(spng_ctx *ctx, const void *img, size_t len, int fmt, int flags) nogil
-    void *spng_get_png_buffer(spng_ctx *ctx, size_t *len, int *error)
-
-
-
-COLOR_TYPE_STR = {
-    SPNG_COLOR_TYPE_GRAYSCALE       : "GRAYSCALE",
-    SPNG_COLOR_TYPE_TRUECOLOR       : "TRUECOLOR",
-    SPNG_COLOR_TYPE_INDEXED         : "INDEXED",
-    SPNG_COLOR_TYPE_GRAYSCALE_ALPHA : "GRAYSCALE_ALPHA",
-    SPNG_COLOR_TYPE_TRUECOLOR_ALPHA : "TRUECOLOR_ALPHA",
-    }
 
 
 def get_version():
@@ -237,7 +166,7 @@ def encode(coding, image, options=None):
         spng_ctx_free(ctx)
         return None
 
-    cdef spng_format fmt = SPNG_FMT_PNG #SPNG_FMT_PNG
+    cdef spng_format fmt = SPNG_FMT_PNG
     cdef int flags = SPNG_ENCODE_FINALIZE
     cdef size_t data_len = 0
     cdef uintptr_t data_ptr
