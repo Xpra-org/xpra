@@ -15,6 +15,17 @@ from xpra.codecs.codec_constants import video_spec, get_subsampling_divs
 from xpra.os_util import WIN32, OSX, POSIX, BITS
 from xpra.util import AtomicInteger, envint, envbool, typedict
 
+from xpra.codecs.vpx.vpx cimport (
+    vpx_img_fmt_t, vpx_codec_iface_t,
+    vpx_codec_iter_t, vpx_codec_flags_t, vpx_codec_err_t,
+    vpx_codec_ctx_t,
+    vpx_codec_error, vpx_codec_destroy,
+    vpx_codec_version_str, vpx_codec_build_config,
+    VPX_IMG_FMT_I420, VPX_IMG_FMT_I444, VPX_IMG_FMT_I44416,
+    vpx_image_t,
+    VPX_CS_BT_709, VPX_CR_FULL_RANGE,
+    vpx_codec_err_to_string, vpx_codec_control_,
+    )
 from libc.stdint cimport uint8_t
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset
@@ -45,9 +56,6 @@ cdef inline int MAX(int a, int b):
 from libc.stdint cimport int64_t
 
 
-ctypedef long vpx_img_fmt_t
-ctypedef void vpx_codec_iface_t
-
 DEF USAGE_STREAM_FROM_SERVER    = 0x0
 DEF USAGE_LOCAL_FILE_PLAYBACK   = 0x1
 DEF USAGE_CONSTRAINED_QUALITY   = 0x2
@@ -60,56 +68,6 @@ cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
-
-cdef extern from "vpx/vpx_codec.h":
-    ctypedef const void *vpx_codec_iter_t
-    ctypedef long vpx_codec_flags_t
-    ctypedef int vpx_codec_err_t
-    ctypedef struct vpx_codec_ctx_t:
-        pass
-    const char *vpx_codec_err_to_string(vpx_codec_err_t err)
-    const char *vpx_codec_error(vpx_codec_ctx_t  *ctx)
-    vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
-    const char *vpx_codec_version_str()
-    const char *vpx_codec_build_config()
-    #this should be a vararg function, but we only use it with a single int argument,
-    #so define it that way (easier on cython):
-    vpx_codec_err_t vpx_codec_control_(vpx_codec_ctx_t *ctx, int ctrl_id, int value)
-
-cdef extern from "vpx/vpx_image.h":
-    cdef int VPX_IMG_FMT_I420
-    cdef int VPX_IMG_FMT_I444
-    cdef int VPX_IMG_FMT_I44416
-    cdef int VPX_IMG_FMT_HIGHBITDEPTH
-    cdef int VPX_IMG_FMT_HAS_ALPHA
-
-    ctypedef struct vpx_image_t:
-        unsigned int w
-        unsigned int h
-        unsigned int d_w
-        unsigned int d_h
-        vpx_img_fmt_t fmt
-        vpx_color_space_t cs
-        vpx_color_range_t range
-        unsigned char *planes[4]
-        int stride[4]
-        int bps
-        unsigned int x_chroma_shift
-        unsigned int y_chroma_shift
-
-    ctypedef enum vpx_color_space_t:
-        VPX_CS_UNKNOWN
-        VPX_CS_BT_601
-        VPX_CS_BT_709
-        VPX_CS_SMPTE_170
-        VPX_CS_SMPTE_240
-        VPX_CS_BT_2020
-        VPX_CS_RESERVED
-        VPX_CS_SRGB
-
-    ctypedef enum vpx_color_range_t:
-        VPX_CR_STUDIO_RANGE
-        VPX_CR_FULL_RANGE
 
 cdef extern from "vpx/vp8cx.h":
     const vpx_codec_iface_t *vpx_codec_vp8_cx()

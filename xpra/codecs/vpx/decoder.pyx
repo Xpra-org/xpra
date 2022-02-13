@@ -19,6 +19,16 @@ from xpra.util import envint, envbool
 from libc.stdint cimport uintptr_t, uint8_t
 from libc.string cimport memset, memcpy
 from libc.stdlib cimport malloc
+from xpra.codecs.vpx.vpx cimport (
+    vpx_img_fmt_t, vpx_codec_iface_t,
+    vpx_codec_iter_t, vpx_codec_flags_t, vpx_codec_err_t,
+    vpx_codec_ctx_t,
+    vpx_codec_error, vpx_codec_destroy,
+    vpx_codec_version_str, vpx_codec_build_config,
+    VPX_IMG_FMT_I420, VPX_IMG_FMT_I444, VPX_IMG_FMT_HIGHBITDEPTH,
+    vpx_image_t, vpx_color_space_t, vpx_color_range_t,
+    VPX_COLOR_SPACES, VPX_COLOR_RANGES,
+    )
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context #pylint: disable=syntax-error
 
 
@@ -30,68 +40,6 @@ cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
-
-ctypedef long vpx_img_fmt_t
-ctypedef void vpx_codec_iface_t
-
-
-cdef extern from "vpx/vpx_codec.h":
-    ctypedef const void *vpx_codec_iter_t
-    ctypedef long vpx_codec_flags_t
-    ctypedef int vpx_codec_err_t
-    ctypedef struct vpx_codec_ctx_t:
-        pass
-    const char *vpx_codec_error(vpx_codec_ctx_t  *ctx)
-    vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
-    const char *vpx_codec_version_str()
-    const char *vpx_codec_build_config()
-
-cdef extern from "vpx/vpx_image.h":
-    cdef int VPX_IMG_FMT_I420
-    cdef int VPX_IMG_FMT_I444
-    cdef int VPX_IMG_FMT_HIGHBITDEPTH
-    ctypedef struct vpx_image_t:
-        unsigned int w
-        unsigned int h
-        unsigned int d_w
-        unsigned int d_h
-        vpx_img_fmt_t fmt
-        vpx_color_space_t cs
-        vpx_color_range_t range
-        unsigned char *planes[4]
-        int stride[4]
-        int bps
-        unsigned int x_chroma_shift
-        unsigned int y_chroma_shift
-
-    ctypedef enum vpx_color_space_t:
-        VPX_CS_UNKNOWN
-        VPX_CS_BT_601
-        VPX_CS_BT_709
-        VPX_CS_SMPTE_170
-        VPX_CS_SMPTE_240
-        VPX_CS_BT_2020
-        VPX_CS_RESERVED
-        VPX_CS_SRGB
-
-    ctypedef enum vpx_color_range_t:
-        VPX_CR_STUDIO_RANGE
-        VPX_CR_FULL_RANGE
-
-VPX_COLOR_SPACES = {
-    VPX_CS_UNKNOWN  : "unknown",
-    VPX_CS_BT_601   : "BT601",
-    VPX_CS_BT_709   : "BT709",
-    VPX_CS_SMPTE_170    : "SMPTE170",
-    VPX_CS_SMPTE_240    : "SMPTE240",
-    VPX_CS_BT_2020  : "BT2020",
-    VPX_CS_RESERVED : "reserved",
-    VPX_CS_SRGB     : "SRGB",
-    }
-VPX_COLOR_RANGES = {
-    VPX_CR_STUDIO_RANGE : "studio",
-    VPX_CR_FULL_RANGE   : " full",
-    }
 
 cdef extern from "vpx/vp8dx.h":
     const vpx_codec_iface_t *vpx_codec_vp8_dx()
