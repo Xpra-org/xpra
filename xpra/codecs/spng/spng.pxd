@@ -23,6 +23,12 @@ cdef extern from "spng.h":
         SPNG_FMT_RGBA8
         SPNG_FMT_RGBA16
         SPNG_FMT_RGB8
+        # Partially implemented, see documentation
+        SPNG_FMT_GA8
+        SPNG_FMT_GA16
+        SPNG_FMT_G8
+        SPNG_FMT_PNG        #host-endian
+        SPNG_FMT_RAW        #big-endian
 
     enum spng_color_type:
         SPNG_COLOR_TYPE_GRAYSCALE
@@ -72,17 +78,6 @@ cdef extern from "spng.h":
         SPNG_TEXT_COMPRESSION_STRATEGY
 
         SPNG_FILTER_CHOICE
-
-    enum spng_format:
-        SPNG_FMT_RGBA8
-        SPNG_FMT_RGBA16
-        SPNG_FMT_RGB8
-        # Partially implemented, see documentation
-        SPNG_FMT_GA8
-        SPNG_FMT_GA16
-        SPNG_FMT_G8
-        SPNG_FMT_PNG        #host-endian
-        SPNG_FMT_RAW        #big-endian
 
     const char *spng_version_string()
     const char *spng_strerror(int err)

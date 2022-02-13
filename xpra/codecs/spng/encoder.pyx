@@ -27,6 +27,7 @@ from xpra.codecs.spng.spng cimport (
     spng_ctx_new, spng_ctx_free,
     spng_set_option, spng_set_ihdr,
     spng_encode_image, spng_get_png_buffer,
+    spng_format,
     )
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context #pylint: disable=syntax-error
