@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,6 +26,14 @@ log = Logger("x11", "bindings", "gtk")
 verbose = Logger("x11", "bindings", "gtk", "verbose")
 
 
+from xpra.x11.bindings.xlib cimport (
+    Display, Window, Visual, XID, XRectangle, Atom, Time, CARD32, Bool,
+    XEvent, XSelectionRequestEvent, XSelectionClearEvent,
+    XSelectionEvent, 
+    XFree, XGetErrorText,
+    XQueryExtension, XQueryTree,
+    NoSymbol,
+    )
 from libc.stdint cimport uintptr_t
 from xpra.gtk_common.gtk3.gdk_bindings cimport wrap, unwrap, get_raw_display_for
 from xpra.gtk_common.gtk3.gdk_bindings import get_display_for
@@ -102,12 +110,7 @@ cdef extern from "pygobject-3.0/pygobject.h":
 # Xlib primitives and constants
 ######
 
-ctypedef unsigned long CARD32
-ctypedef unsigned short CARD16
 DEF XNone = 0
-
-cdef extern from "X11/X.h":
-    unsigned long NoSymbol
 
 cdef extern from "X11/Xlib.h":
     int BadWindow
@@ -146,205 +149,7 @@ cdef extern from "X11/Xlib.h":
     int MotionNotify
     int GenericEvent
 
-    ctypedef struct Display:
-        pass
-    # To make it easier to translate stuff in the X header files into
-    # appropriate pyrex declarations, without having to untangle the typedefs
-    # over and over again, here are some convenience typedefs.  (Yes, CARD32
-    # really is 64 bits on 64-bit systems.  Why? Because CARD32 was defined
-    # as a long.. and a long is now 64-bit, it was easier to do this than
-    # to change a lot of existing X11 client code)
-    ctypedef CARD32 XID
 
-    ctypedef int Bool
-    ctypedef int Status
-    ctypedef CARD32 Atom
-    ctypedef XID Drawable
-    ctypedef XID Window
-    ctypedef XID Pixmap
-    ctypedef CARD32 Time
-
-    ctypedef CARD32 VisualID
-    ctypedef CARD32 Colormap
-
-    ctypedef struct Visual:
-        void    *ext_data       #XExtData *ext_data;     /* hook for extension to hang data */
-        VisualID visualid
-        int c_class
-        unsigned long red_mask
-        unsigned long green_mask
-        unsigned long blue_mask
-        int bits_per_rgb
-        int map_entries
-
-    ctypedef struct XRectangle:
-        short x, y
-        unsigned short width, height
-
-
-    int XFree(void * data)
-
-    void XGetErrorText(Display * display, int code, char * buffer_return, int length)
-
-    # There are way more event types than this; add them as needed.
-    ctypedef struct XAnyEvent:
-        int type
-        unsigned long serial
-        Bool send_event
-        Display * display
-        Window window
-    # Needed to broadcast that we are a window manager, among other things:
-    union payload_for_XClientMessageEvent:
-        char b[20]
-        short s[10]
-        unsigned long l[5]
-    ctypedef struct XClientMessageEvent:
-        Atom message_type
-        int format
-        payload_for_XClientMessageEvent data
-    # SubstructureRedirect-related events:
-    ctypedef struct XMapRequestEvent:
-        Window parent  # Same as xany.window, confusingly.
-        Window window
-    ctypedef struct XConfigureRequestEvent:
-        Window parent  # Same as xany.window, confusingly.
-        Window window
-        int x, y, width, height, border_width
-        Window above
-        int detail
-        unsigned long value_mask
-    ctypedef struct XSelectionRequestEvent:
-        Window owner
-        Window requestor
-        Atom selection
-        Atom target
-        Atom property
-        Time time
-    ctypedef struct XSelectionClearEvent:
-        Window window
-        Atom selection
-        Time time
-    ctypedef struct XSelectionEvent:
-        int subtype
-        Window requestor
-        Atom selection
-        Atom target
-        Atom property
-        Time time
-    ctypedef struct XResizeRequestEvent:
-        Window window
-        int width, height
-    ctypedef struct XReparentEvent:
-        Window window
-        Window parent
-        int x, y
-    ctypedef struct XCirculateRequestEvent:
-        Window parent  # Same as xany.window, confusingly.
-        Window window
-        int place
-    # For pointer grabs:
-    ctypedef struct XCrossingEvent:
-        unsigned long serial
-        Bool send_event
-        Window window
-        Window root
-        Window subwindow
-        int mode                # NotifyNormal, NotifyGrab, NotifyUngrab
-        int detail              # NotifyAncestor, NotifyVirtual, NotifyInferior, NotifyNonlinear,NotifyNonlinearVirtual
-        Bool focus
-        unsigned int state
-    # Focus handling
-    ctypedef struct XFocusChangeEvent:
-        Window window
-        int mode                #NotifyNormal, NotifyGrab, NotifyUngrab
-        int detail              #NotifyAncestor, NotifyVirtual, NotifyInferior,
-                                #NotifyNonlinear,NotifyNonlinearVirtual, NotifyPointer,
-                                #NotifyPointerRoot, NotifyDetailNone
-    ctypedef struct XMotionEvent:
-        Window window           #event window reported relative to
-        Window root             #root window that the event occurred on
-        Window subwindow        #child window
-        Time time               #milliseconds
-        int x, y                #pointer x, y coordinates in event window
-        int x_root, y_root      #coordinates relative to root
-        unsigned int state      #key or button mask
-        char is_hint            #detail
-        Bool same_screen        #same screen
-    # We have to generate synthetic ConfigureNotify's:
-    ctypedef struct XConfigureEvent:
-        Window event    # Same as xany.window, confusingly.
-                        # The selected-on window.
-        Window window   # The effected window.
-        int x, y, width, height, border_width
-        Window above
-        Bool override_redirect
-    ctypedef struct XCreateWindowEvent:
-        Window window
-        int width
-        int height
-    # The only way we can learn about override redirects is through MapNotify,
-    # which means we need to be able to get MapNotify for windows we have
-    # never seen before, which means we can't rely on GDK:
-    ctypedef struct XMapEvent:
-        Window window
-        Bool override_redirect
-    ctypedef struct XUnmapEvent:
-        Window window
-    ctypedef struct XDestroyWindowEvent:
-        Window window
-    ctypedef struct XPropertyEvent:
-        Atom atom
-        Time time
-    ctypedef struct XKeyEvent:
-        unsigned int keycode, state
-    ctypedef struct XButtonEvent:
-        Window root
-        Window subwindow
-        Time time
-        int x, y                # pointer x, y coordinates in event window
-        int x_root, y_root      # coordinates relative to root */
-        unsigned int state      # key or button mask
-        unsigned int button
-        Bool same_screen
-    ctypedef struct XGenericEventCookie:
-        int            type     # of event. Always GenericEvent
-        unsigned long  serial
-        Bool           send_event
-        Display        *display
-        int            extension    #major opcode of extension that caused the event
-        int            evtype       #actual event type
-        unsigned int   cookie
-        void           *data
-    ctypedef union XEvent:
-        int type
-        XAnyEvent xany
-        XKeyEvent xkey
-        XButtonEvent xbutton
-        XMapRequestEvent xmaprequest
-        XConfigureRequestEvent xconfigurerequest
-        XSelectionRequestEvent xselectionrequest
-        XSelectionClearEvent xselectionclear
-        XResizeRequestEvent xresizerequest
-        XCirculateRequestEvent xcirculaterequest
-        XConfigureEvent xconfigure
-        XCrossingEvent xcrossing
-        XFocusChangeEvent xfocus
-        XMotionEvent xmotion
-        XClientMessageEvent xclient
-        XMapEvent xmap
-        XCreateWindowEvent xcreatewindow
-        XUnmapEvent xunmap
-        XReparentEvent xreparent
-        XDestroyWindowEvent xdestroywindow
-        XPropertyEvent xproperty
-        XGenericEventCookie xcookie
-
-    Bool XQueryExtension(Display * display, char *name,
-                         int *major_opcode_return, int *first_event_return, int *first_error_return)
-
-    Status XQueryTree(Display * display, Window w,
-                      Window * root, Window * parent,
-                      Window ** children, unsigned int * nchildren)
 
 
 cdef extern from "X11/extensions/xfixeswire.h":

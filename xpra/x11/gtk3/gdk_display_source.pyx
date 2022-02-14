@@ -8,6 +8,7 @@
 
 from xpra.os_util import is_X11
 from xpra.scripts.config import InitException
+from xpra.x11.bindings.xlib cimport Display
 from xpra.x11.bindings.display_source cimport set_display  #pylint: disable=syntax-error
 from xpra.x11.bindings.display_source import set_display_name
 
@@ -15,10 +16,6 @@ from xpra.x11.bindings.display_source import set_display_name
 ###################################
 # Headers, python magic
 ###################################
-cdef extern from "X11/Xlib.h":
-    ctypedef struct Display:
-        pass
-
 cdef extern from "gtk-3.0/gdk/gdk.h":
     pass
 

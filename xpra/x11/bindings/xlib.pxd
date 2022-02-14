@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-
 ctypedef unsigned long CARD32
 ctypedef int Bool
 ctypedef int Status
@@ -298,8 +297,102 @@ cdef extern from "X11/Xlib.h":
     int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time ctime)
     int XConvertSelection(Display * display, Atom selection, Atom target, Atom property, Window requestor, Time time)
 
-    # events:
     # There are way more event types than this; add them as needed.
+    ctypedef struct XAnyEvent:
+        int type
+        unsigned long serial
+        Bool send_event
+        Display * display
+        Window window
+    # Needed to broadcast that we are a window manager, among other things:
+    union payload_for_XClientMessageEvent:
+        char b[20]
+        short s[10]
+        unsigned long l[5]
+    ctypedef struct XClientMessageEvent:
+        Atom message_type
+        int format
+        payload_for_XClientMessageEvent data
+    # SubstructureRedirect-related events:
+    ctypedef struct XMapRequestEvent:
+        Window parent  # Same as xany.window, confusingly.
+        Window window
+    ctypedef struct XConfigureRequestEvent:
+        Window parent  # Same as xany.window, confusingly.
+        Window window
+        int x, y, width, height, border_width
+        Window above
+        int detail
+        unsigned long value_mask
+    ctypedef struct XSelectionRequestEvent:
+        Window owner
+        Window requestor
+        Atom selection
+        Atom target
+        Atom property
+        Time time
+    ctypedef struct XSelectionClearEvent:
+        Window window
+        Atom selection
+        Time time
+    ctypedef struct XSelectionEvent:
+        int subtype
+        Window requestor
+        Atom selection
+        Atom target
+        Atom property
+        Time time
+    ctypedef struct XResizeRequestEvent:
+        Window window
+        int width, height
+    ctypedef struct XReparentEvent:
+        Window window
+        Window parent
+        int x, y
+    ctypedef struct XCirculateRequestEvent:
+        Window parent  # Same as xany.window, confusingly.
+        Window window
+        int place
+    # For pointer grabs:
+    ctypedef struct XCrossingEvent:
+        unsigned long serial
+        Bool send_event
+        Window window
+        Window root
+        Window subwindow
+        int mode                # NotifyNormal, NotifyGrab, NotifyUngrab
+        int detail              # NotifyAncestor, NotifyVirtual, NotifyInferior, NotifyNonlinear,NotifyNonlinearVirtual
+        Bool focus
+        unsigned int state
+    # Focus handling
+    ctypedef struct XFocusChangeEvent:
+        Window window
+        int mode                #NotifyNormal, NotifyGrab, NotifyUngrab
+        int detail              #NotifyAncestor, NotifyVirtual, NotifyInferior,
+                                #NotifyNonlinear,NotifyNonlinearVirtual, NotifyPointer,
+                                #NotifyPointerRoot, NotifyDetailNone
+    ctypedef struct XMotionEvent:
+        Window window           #event window reported relative to
+        Window root             #root window that the event occurred on
+        Window subwindow        #child window
+        Time time               #milliseconds
+        int x, y                #pointer x, y coordinates in event window
+        int x_root, y_root      #coordinates relative to root
+        unsigned int state      #key or button mask
+        char is_hint            #detail
+        Bool same_screen        #same screen
+    # We have to generate synthetic ConfigureNotify's:
+    ctypedef struct XConfigureEvent:
+        Window event    # Same as xany.window, confusingly.
+                        # The selected-on window.
+        Window window   # The effected window.
+        int x, y, width, height, border_width
+        Window above
+        Bool override_redirect
+    ctypedef struct XCreateWindowEvent:
+        Window window
+        int width
+        int height
     ctypedef struct XAnyEvent:
         int type
         unsigned long serial
@@ -337,13 +430,58 @@ cdef extern from "X11/Xlib.h":
         Atom target
         Atom property
         Time time
-    # The only way we can learn about override redirects is through MapNotify,
-    # which means we need to be able to get MapNotify for windows we have
-    # never seen before, which means we can't rely on GDK:
+    ctypedef struct XMapEvent:
+        Window window
+        Bool override_redirect
+    ctypedef struct XUnmapEvent:
+        Window window
+    ctypedef struct XDestroyWindowEvent:
+        Window window
+    ctypedef struct XPropertyEvent:
+        Atom atom
+        Time time
+    ctypedef struct XKeyEvent:
+        unsigned int keycode, state
+    ctypedef struct XButtonEvent:
+        Window root
+        Window subwindow
+        Time time
+        int x, y                # pointer x, y coordinates in event window
+        int x_root, y_root      # coordinates relative to root */
+        unsigned int state      # key or button mask
+        unsigned int button
+        Bool same_screen
+    ctypedef struct XGenericEventCookie:
+        int            type     # of event. Always GenericEvent
+        unsigned long  serial
+        Bool           send_event
+        Display        *display
+        int            extension    #major opcode of extension that caused the event
+        int            evtype       #actual event type
+        unsigned int   cookie
+        void           *data
+
     ctypedef union XEvent:
         int type
         XAnyEvent xany
+        XKeyEvent xkey
         XButtonEvent xbutton
+        XMapRequestEvent xmaprequest
+        XConfigureRequestEvent xconfigurerequest
+        XSelectionRequestEvent xselectionrequest
+        XSelectionClearEvent xselectionclear
+        XResizeRequestEvent xresizerequest
+        XCirculateRequestEvent xcirculaterequest
         XConfigureEvent xconfigure
+        XCrossingEvent xcrossing
+        XFocusChangeEvent xfocus
+        XMotionEvent xmotion
         XClientMessageEvent xclient
         XSelectionEvent xselection
+        XMapEvent xmap
+        XCreateWindowEvent xcreatewindow
+        XUnmapEvent xunmap
+        XReparentEvent xreparent
+        XDestroyWindowEvent xdestroywindow
+        XPropertyEvent xproperty
+        XGenericEventCookie xcookie
