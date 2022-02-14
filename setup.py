@@ -2292,6 +2292,9 @@ if avif_ENABLED:
     add_cython_ext("xpra.codecs.avif.encoder",
             ["xpra/codecs/avif/encoder.pyx"],
             **avif_pkgconfig)
+    add_cython_ext("xpra.codecs.avif.decoder",
+            ["xpra/codecs/avif/decoder.pyx"],
+            **avif_pkgconfig)
 
 
 #swscale and avcodec2 use libav_common/av_log:

@@ -38,7 +38,7 @@ def get_core_encodings():
     """
     #we always support rgb:
     core_encodings = ["rgb24", "rgb32"]
-    for codec in ("dec_pillow", "dec_webp", "dec_jpeg"):
+    for codec in ("dec_pillow", "dec_webp", "dec_jpeg", "dec_avif"):
         if has_codec(codec):
             c = get_codec(codec)
             encs = c.get_encodings()
@@ -107,6 +107,8 @@ class Encodings(StubClientMixin):
         if "webp" in ae:
             #try to load the fast webp decoder:
             load_codec("dec_webp")
+        if "avif" in ae:
+            load_codec("dec_avif")
         vh = getVideoHelper()
         vh.set_modules(video_decoders=opts.video_decoders, csc_modules=opts.csc_modules or NO_GFX_CSC_OPTIONS)
         vh.init()

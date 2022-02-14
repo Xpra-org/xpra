@@ -122,7 +122,7 @@ def encode(coding, image, options=None):
             log("avifEncoderFinish()=%i", r)
             check(r, "Failed to finish encode")
     
-            client_options = {}
+            client_options = {"alpha" : pixel_format.find("A")>=0}
             cdata = avifOutput.data[:avifOutput.size]
             log("avif: got %i bytes", avifOutput.size)
             may_save_image("avif", cdata)

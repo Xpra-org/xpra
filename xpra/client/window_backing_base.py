@@ -152,6 +152,7 @@ class WindowBackingBase:
         self.jpeg_decoder = get_codec("dec_jpeg")
         self.webp_decoder = get_codec("dec_webp")
         self.spng_decoder = get_codec("dec_spng")
+        self.avif_decoder = get_codec("dec_avif")
         self.draw_needs_refresh = True
         self.repaint_all = REPAINT_ALL
         self.mmap = None
@@ -451,6 +452,15 @@ class WindowBackingBase:
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, w, h, width, height, rowstride, options, callbacks)
 
+    def paint_avif(self, img_data, x, y, width, height, options, callbacks):
+        img = self.avif_decoder.decompress(img_data, options)
+        rgb_format = img.get_pixel_format()
+        img_data = img.get_pixels()
+        rowstride = img.get_rowstride()
+        w = img.get_width()
+        h = img.get_height()
+        self.idle_add(self.do_paint_rgb, rgb_format, img_data,
+                      x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_image(self, coding, img_data, x, y, width, height, options, callbacks):
         # can be called from any thread
@@ -806,6 +816,8 @@ class WindowBackingBase:
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
             elif self.jpeg_decoder and coding=="jpega":
                 self.paint_jpega(img_data, x, y, width, height, options, callbacks)
+            elif self.avif_decoder and coding=="avif":
+                self.paint_avif(img_data, x, y, width, height, options, callbacks)
             elif coding == "webp":
                 self.paint_webp(img_data, x, y, width, height, options, callbacks)
             elif self.spng_decoder and coding=="png":
