@@ -15,6 +15,7 @@ from xpra.codecs.avif.avif cimport (
     avifDecoderParse, avifDecoderNextImage, avifDecoderDestroy,
     avifDecoderNextImage, avifRGBImageSetDefaults, avifImageYUVToRGB,
     AVIF_RESULT, AVIF_RESULT_OK, AVIF_RGB_FORMAT_BGRA,
+    #AVIF_STRICT_ENABLED,
     )
 from xpra.buffers.membuf cimport memalign, buffer_context
 
@@ -60,6 +61,11 @@ def decompress(data, options=None):
     cdef avifDecoder * decoder = avifDecoderCreate()
     if decoder==NULL:
         raise Exception("failed to create avif decoder")
+    decoder.ignoreExif = 1
+    decoder.ignoreXMP = 1
+    #decoder.imageSizeLimit = 4096*4096
+    #decoder.imageCountLimit = 1
+    #decoder.strictFlags = AVIF_STRICT_ENABLED
     cdef avifResult r
     cdef size_t data_len
     cdef const uint8_t* data_buf
@@ -67,9 +73,7 @@ def decompress(data, options=None):
     cdef uint8_t bpp = 32
     cdef MemBuf pixels
     cdef avifImage *image = NULL
-    cdef uint8_t has_alpha = (options or {}).get("alpha", 0)
     try:
-        # Override decoder defaults here (codecChoice, requestedSource, ignoreExif, ignoreXMP, etc)
         with buffer_context(data) as bc:
             data_len = len(bc)
             data_buf = <const uint8_t*> (<uintptr_t> int(bc))
@@ -100,10 +104,8 @@ def decompress(data, options=None):
             # * this frame's sequence timing
             avifRGBImageSetDefaults(&rgb, image)
             # Override YUV(A)->RGB(A) defaults here: depth, format, chromaUpsampling, ignoreAlpha, alphaPremultiplied, libYUVUsage, etc
-            # Alternative: set rgb.pixels and rgb.rowBytes yourself, which should match your chosen rgb.format
-            # Be sure to use uint16_t* instead of uint8_t* for rgb.pixels/rgb.rowBytes if (rgb.depth > 8)
             rgb_format = "BGRA"
-            if not has_alpha:
+            if not decoder.alphaPresent:
                 rgb.ignoreAlpha = 1
                 rgb_format = "BGRX"
                 bpp = 24
@@ -112,14 +114,14 @@ def decompress(data, options=None):
             pixels = getbuf(width*4*height)
             rgb.pixels = <uint8_t *> pixels.get_mem()
             rgb.rowBytes = stride
+            rgb.alphaPremultiplied = 1
             r = avifImageYUVToRGB(image, &rgb)
             check(r, "Conversion from YUV failed")
-    
-            # Now available:
-            # * RGB(A) pixel data (rgb.pixels, rgb.rowBytes)
             if rgb.depth>8:
                 raise Exception("cannot handle depth %s" % rgb.depth)
             may_save_image("avif", data)
+            if decoder.imageCount>1:
+                log.warn("Warning: more than one image in avif data")
             return ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, ImageWrapper.PACKED)
     finally:
         avifDecoderDestroy(decoder)

@@ -340,6 +340,7 @@ cdef extern from "avif/avif.h":
         size_t alphaOBUSize
     ctypedef struct avifIO:
         pass
+    ctypedef uint32_t avifStrictFlags
     ctypedef struct avifDecoder:
         # Defaults to AVIF_CODEC_CHOICE_AUTO: Preference determined by order in availableCodecs table (avif.c)
         avifCodecChoice codecChoice
@@ -380,6 +381,10 @@ cdef extern from "avif/avif.h":
         # If you don't actually leverage this data, it is best to ignore it here.
         avifBool ignoreExif
         avifBool ignoreXMP
+        uint32_t imageSizeLimit
+        #uint32_t imageCountLimit
+        avifStrictFlags strictFlags
+
         # stats from the most recent read, possibly 0s if reading an image sequence
         avifIOStats ioStats
         # Use one of the avifDecoderSetIO*() functions to set this
