@@ -10,6 +10,14 @@ from xpra.os_util import bytestostr
 from xpra.x11.bindings.display_source import get_display_name
 from xpra.log import Logger
 
+from xpra.x11.bindings.xlib cimport (
+    XImage, Display, Pixmap,
+    XColor, Visual, VisualID, XVisualInfo, VisualIDMask,
+    Status, Window, Drawable, Bool, 
+    XFree, XWindowAttributes,
+    MSBFirst, LSBFirst, ZPixmap,
+    DoRed, DoGreen, DoBlue, AllPlanes,
+    )
 from libc.stdlib cimport free
 from libc.string cimport memcpy
 from libc.stdint cimport uint64_t, uintptr_t
@@ -68,7 +76,7 @@ cdef extern from "sys/shm.h":
 
 cdef extern from "errno.h" nogil:
     int errno
-    enum:
+    enum errno:
         EINVAL
 
 ctypedef unsigned long CARD32
@@ -84,96 +92,12 @@ cdef extern from "X11/Xatom.h":
     int XA_RGB_BEST_MAP
 
 cdef extern from "X11/Xlib.h":
-    ctypedef struct Display:
-        pass
-    # To make it easier to translate stuff in the X header files into
-    # appropriate pyrex declarations, without having to untangle the typedefs
-    # over and over again, here are some convenience typedefs.  (Yes, CARD32
-    # really is 64 bits on 64-bit systems.  Why? Because CARD32 was defined
-    # as a long.. and a long is now 64-bit, it was easier to do this than
-    # to change a lot of existing X11 client code)
-    ctypedef CARD32 XID
-
-    ctypedef int Bool
-    ctypedef int Status
-    ctypedef CARD32 Atom
-    ctypedef XID Drawable
-    ctypedef XID Window
-    ctypedef XID Pixmap
-
-    ctypedef CARD32 VisualID
-
-    ctypedef struct Visual:
-        void    *ext_data       #XExtData *ext_data;     /* hook for extension to hang data */
-        VisualID visualid
-        int c_class
-        unsigned long red_mask
-        unsigned long green_mask
-        unsigned long blue_mask
-        int bits_per_rgb
-        int map_entries
-
-    ctypedef struct XVisualInfo:
-        Visual *visual
-        VisualID visualid
-        int screen
-        unsigned int depth
-        int c_class
-        unsigned long red_mask
-        unsigned long green_mask
-        unsigned long blue_mask
-        int colormap_size
-        int bits_per_rgb
-
-    ctypedef struct XColor:
-        unsigned long pixel                 # pixel value
-        unsigned short red, green, blue     # rgb values
-        char flags                          # DoRed, DoGreen, DoBlue
-
-    int VisualIDMask
-    #query colors flags:
-    int DoRed
-    int DoGreen
-    int DoBlue
     void XQueryColors(Display *display, Colormap colormap, XColor defs_in_out[], int ncolors)
     VisualID XVisualIDFromVisual(Visual *visual)
     XVisualInfo *XGetVisualInfo(Display *display, long vinfo_mask, XVisualInfo *vinfo_template, int *nitems_return)
 
-    int XFree(void * data)
-
-    ctypedef struct XWindowAttributes:
-        int x, y, width, height, depth, border_width
-        Visual *visual
-        Colormap colormap
-        Bool map_installed
     Status XGetWindowAttributes(Display * display, Window w, XWindowAttributes * attributes)
 
-    ctypedef char* XPointer
-
-    ctypedef struct XImage:
-        int width
-        int height
-        int xoffset             # number of pixels offset in X direction
-        int format              # XYBitmap, XYPixmap, ZPixmap
-        char *data              # pointer to image data
-        int byte_order          # data byte order, LSBFirst, MSBFirst
-        int bitmap_unit         # quant. of scanline 8, 16, 32
-        int bitmap_bit_order    # LSBFirst, MSBFirst
-        int bitmap_pad          # 8, 16, 32 either XY or ZPixmap
-        int depth               # depth of image
-        int bytes_per_line      # accelerator to next scanline
-        int bits_per_pixel      # bits per pixel (ZPixmap)
-        unsigned long red_mask  # bits in z arrangement
-        unsigned long green_mask
-        unsigned long blue_mask
-        XPointer *obdata
-        void *funcs
-
-    unsigned long AllPlanes
-    int XYPixmap
-    int ZPixmap
-    int MSBFirst
-    int LSBFirst
 
     XImage *XGetImage(Display *display, Drawable d,
             int x, int y, unsigned int width, unsigned int  height,

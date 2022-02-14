@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,17 +12,18 @@ log = Logger("x11", "bindings", "xinput")
 from xpra.x11.common import X11Event
 from xpra.os_util import hexstr
 
+from libc.string cimport memset #pylint: disable=syntax-error
+from xpra.x11.bindings.xlib cimport (
+    Display, Bool, Time, Window, Atom, Status,
+    XGenericEventCookie,
+    XQueryExtension,
+    XGetEventData, XFreeEventData, XDefaultRootWindow, XQueryPointer,
+    XFlush,
+    XInternAtom, XFree,
+    BadRequest, Success, XIAnyPropertyType,
+    )
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 
-
-###################################
-# Headers, python magic
-###################################
-cdef extern from "string.h":
-    void* memset(void * ptr, int value, size_t num)
-
-cdef extern from "X11/Xutil.h":
-    pass
 
 ######
 # Xlib primitives and constants
@@ -30,47 +31,6 @@ cdef extern from "X11/Xutil.h":
 
 ctypedef unsigned long CARD32
 DEF XNone = 0
-
-cdef extern from "X11/Xlib.h":
-    int BadRequest
-    int Success
-
-    ctypedef struct Display:
-        pass
-
-    ctypedef CARD32 XID
-    ctypedef int Bool
-    ctypedef int Status
-    ctypedef CARD32 Atom
-    ctypedef XID Window
-    ctypedef CARD32 Time
-
-    ctypedef struct XGenericEventCookie:
-        int            type     # of event. Always GenericEvent
-        unsigned long  serial
-        Bool           send_event
-        Display        *display
-        int            extension    #major opcode of extension that caused the event
-        int            evtype       #actual event type
-        unsigned int   cookie
-        void           *data
-
-    int XIAnyPropertyType
-
-    Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
-    int XFree(void * data)
-
-    Bool XQueryExtension(Display * display, char *name,
-                         int *major_opcode_return, int *first_event_return, int *first_error_return)
-
-    Bool XGetEventData(Display *display, XGenericEventCookie *cookie)
-    void XFreeEventData(Display *display, XGenericEventCookie *cookie)
-
-    Window XDefaultRootWindow(Display * display)
-
-    Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return,
-                       int *win_x_return, int *win_y_return, unsigned int *mask_return)
-    int XFlush(Display *dpy)
 
 cdef extern from "X11/extensions/XInput2.h":
     int XI_LASTEVENT

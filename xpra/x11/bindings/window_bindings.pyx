@@ -10,6 +10,24 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "window")
 
 
+from xpra.x11.bindings.xlib cimport (
+    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time,
+    XRectangle, XEvent, XClassHint,
+    XWMHints, XSizeHints,
+    XWindowAttributes, XWindowChanges,
+    XDefaultRootWindow,
+    XInternAtom, XFree, XGetErrorText,
+    XGetSelectionOwner, XSetSelectionOwner, XConvertSelection,
+    XMapWindow, XMapRaised, XUnmapWindow, XWithdrawWindow, XReparentWindow, XIconifyWindow, XRaiseWindow,
+    NextRequest, XSendEvent, XSelectInput, XAddToSaveSet, XRemoveFromSaveSet,
+    XGetWindowAttributes, XGetWindowProperty, XDeleteProperty, XChangeProperty,
+    XGetWMNormalHints, XSetWMNormalHints, XGetWMHints, XGetWMProtocols,
+    XGetGeometry, XTranslateCoordinates, XConfigureWindow, XMoveResizeWindow,
+    XGetInputFocus, XSetInputFocus,
+    XAllocClassHint, XAllocSizeHints, XGetClassHint, XSetClassHint,
+    XQueryTree,
+    XKillClient,
+    )
 from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
 
 ###################################
@@ -20,53 +38,7 @@ from libc.stdlib cimport free, malloc       #pylint: disable=syntax-error
 # Xlib primitives and constants
 ######
 
-# To make it easier to translate stuff in the X header files into
-# appropriate pyrex declarations, without having to untangle the typedefs
-# over and over again, here are some convenience typedefs.  (Yes, CARD32
-# really is 64 bits on 64-bit systems.
-# Why? Because it was defined as a C "unsigned long" a long long time ago,
-# when all longs were 32 bits - and it was just badly named..
-ctypedef unsigned long CARD32
-
-ctypedef int Bool
-ctypedef int Status
-ctypedef CARD32 XID
-ctypedef CARD32 Atom
-ctypedef XID Drawable
-ctypedef XID Window
-ctypedef XID Pixmap
-ctypedef CARD32 Time
-ctypedef CARD32 VisualID
-ctypedef CARD32 Colormap
 DEF XNone = 0
-
-cdef extern from "X11/X.h":
-    unsigned long NoSymbol
-
-cdef extern from "X11/Xutil.h":
-    ctypedef struct aspect:
-        int x,y
-    ctypedef struct XSizeHints:
-        long flags                  #marks which fields in this structure are defined
-        int x, y                    #Obsolete
-        int width, height           #Obsolete
-        int min_width, min_height
-        int max_width, max_height
-        int width_inc, height_inc
-        aspect min_aspect, max_aspect
-        int base_width, base_height
-        int win_gravity
-        #this structure may be extended in the future
-
-    ctypedef struct XWMHints:
-        long flags                  #marks which fields in this structure are defined
-        Bool input                  #does this application rely on the window manager to get keyboard input?
-        int initial_state
-        Pixmap icon_pixmap          #pixmap to be used as icon
-        Window icon_window          #window to be used as icon
-        int icon_x, icon_y          #initial position of icon
-        Pixmap icon_mask            #pixmap to be used as mask for icon_pixmap
-        XID window_group            #id of related window group
 
 
 cdef extern from "X11/Xlib.h":
@@ -153,187 +125,7 @@ cdef extern from "X11/Xlib.h":
     int NotifyPointerRoot
     int NotifyDetailNone
 
-    ctypedef struct Display:
-        pass
 
-    Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
-
-    Window XDefaultRootWindow(Display * display)
-
-    int XFree(void * data)
-
-    void XGetErrorText(Display * display, int code, char * buffer_return, int length)
-
-    # Needed to find the secret window Gtk creates to own the selection, so we
-    # can broadcast it:
-    Window XGetSelectionOwner(Display * display, Atom selection)
-
-    int XSetSelectionOwner(Display * display, Atom selection, Window owner, Time ctime)
-
-    int XConvertSelection(Display * display, Atom selection, Atom target, Atom property, Window requestor, Time time)
-
-    # There are way more event types than this; add them as needed.
-    ctypedef struct XAnyEvent:
-        int type
-        unsigned long serial
-        Bool send_event
-        Display * display
-        Window window
-    ctypedef struct XConfigureEvent:
-        Window event    # Same as xany.window, confusingly.
-                        # The selected-on window.
-        Window window   # The effected window.
-        int x, y, width, height, border_width
-        Window above
-        Bool override_redirect
-    # Needed to broadcast that we are a window manager, among other things:
-    union payload_for_XClientMessageEvent:
-        char b[20]
-        short s[10]
-        unsigned long l[5]
-    ctypedef struct XClientMessageEvent:
-        Atom message_type
-        int format
-        payload_for_XClientMessageEvent data
-    ctypedef struct XButtonEvent:
-        Window root
-        Window subwindow
-        Time time
-        int x, y                # pointer x, y coordinates in event window
-        int x_root, y_root      # coordinates relative to root */
-        unsigned int state      # key or button mask
-        unsigned int button
-        Bool same_screen
-    ctypedef struct XSelectionEvent:
-        Window requestor
-        Atom selection
-        Atom target
-        Atom property
-        Time time
-    # The only way we can learn about override redirects is through MapNotify,
-    # which means we need to be able to get MapNotify for windows we have
-    # never seen before, which means we can't rely on GDK:
-    ctypedef union XEvent:
-        int type
-        XAnyEvent xany
-        XButtonEvent xbutton
-        XConfigureEvent xconfigure
-        XClientMessageEvent xclient
-        XSelectionEvent xselection
-
-    Status XSendEvent(Display *, Window target, Bool propagate,
-                      unsigned long event_mask, XEvent * event)
-
-    int XSelectInput(Display * display, Window w, unsigned long event_mask)
-
-    int XChangeProperty(Display *, Window w, Atom property,
-         Atom type, int format, int mode, unsigned char * data, int nelements)
-    int XGetWindowProperty(Display * display, Window w, Atom property,
-         long offset, long length, Bool delete,
-         Atom req_type, Atom * actual_type,
-         int * actual_format,
-         unsigned long * nitems, unsigned long * bytes_after,
-         unsigned char ** prop)
-    int XDeleteProperty(Display * display, Window w, Atom property)
-
-
-    int XAddToSaveSet(Display *, Window w)
-    int XRemoveFromSaveSet(Display *, Window w)
-
-    ctypedef struct XWindowAttributes:
-        int x, y, width, height, border_width
-        int depth
-        Visual *visual
-        int _class "class"
-        int bit_gravity, win_gravity, backing_store
-        unsigned long backing_planes, backing_pixel
-        Bool save_under
-        Colormap colormap
-        Bool map_installed
-        int map_state
-        long all_event_masks
-        long your_event_mask
-        long do_not_propagate_mask
-        Bool override_redirect
-        #Screen *screen
-    Status XGetWindowAttributes(Display * display, Window w,
-                                XWindowAttributes * attributes)
-
-    ctypedef struct XWindowChanges:
-        int x, y, width, height, border_width
-        Window sibling
-        int stack_mode
-    int XConfigureWindow(Display * display, Window w,
-         unsigned int value_mask, XWindowChanges * changes)
-    Status XReconfigureWMWindow(Display * display, Window w, int screen_number,
-                                unsigned int value_mask, XWindowChanges *values)
-    int XMoveResizeWindow(Display * display, Window w, int x, int y, int width, int height)
-
-    Bool XTranslateCoordinates(Display * display,
-                               Window src_w, Window dest_w,
-                               int src_x, int src_y,
-                               int * dest_x, int * dest_y,
-                               Window * child)
-
-    Status XQueryTree(Display * display, Window w,
-                      Window * root, Window * parent,
-                      Window ** children, unsigned int * nchildren)
-
-    int XSetInputFocus(Display * display, Window focus,
-                                          int revert_to, Time ctime)
-    # Debugging:
-    int XGetInputFocus(Display * display, Window * focus,
-                                          int * revert_to)
-
-    # XKillClient
-    int XKillClient(Display *, XID)
-
-    # XUnmapWindow
-    int XUnmapWindow(Display *, Window)
-    unsigned long NextRequest(Display *)
-
-    int XIconifyWindow(Display *, Window, int screen_number)
-
-    # XMapWindow
-    int XMapWindow(Display *, Window)
-    int XMapRaised(Display *, Window)
-    Status XWithdrawWindow(Display *, Window, int screen_number)
-    void XReparentWindow(Display *, Window w, Window parent, int x, int y)
-    void XRaiseWindow(Display *display, Window w)
-
-    ctypedef struct Visual:
-        void    *ext_data       #XExtData *ext_data;     /* hook for extension to hang data */
-        VisualID visualid
-        int c_class
-        unsigned long red_mask
-        unsigned long green_mask
-        unsigned long blue_mask
-        int bits_per_rgb
-        int map_entries
-
-    ctypedef struct XRectangle:
-        short x, y
-        unsigned short width, height
-
-    ctypedef struct XClassHint:
-        char *res_name
-        char *res_class
-
-    XClassHint *XAllocClassHint()
-    Status XGetClassHint(Display *display, Window w, XClassHint *class_hints_return)
-    void XSetClassHint(Display *display, Window w, XClassHint *class_hints)
-
-    Status XGetGeometry(Display *display, Drawable d, Window *root_return,
-                        int *x_return, int *y_return, unsigned int  *width_return, unsigned int *height_return,
-                        unsigned int *border_width_return, unsigned int *depth_return)
-
-    XSizeHints *XAllocSizeHints()
-    #Status XGetWMSizeHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return, Atom property)
-    void XSetWMNormalHints(Display *display, Window w, XSizeHints *hints)
-    Status XGetWMNormalHints(Display *display, Window w, XSizeHints *hints_return, long *supplied_return)
-    XWMHints *XGetWMHints(Display *display, Window w)
-
-    Status XGetWMProtocols(Display *display, Window w, Atom **protocols_return, int *count_return)
 
 constants = {
     "CWX"               : CWX,

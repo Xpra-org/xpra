@@ -1,9 +1,19 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.x11.bindings.xlib cimport (
+    Display, Time, Bool, Status,
+    XInternAtom, XInternAtoms,
+    XGetAtomName,
+    XFree,
+    XGetErrorText,
+    XUngrabKeyboard, XUngrabPointer,
+    XSynchronize,
+    CurrentTime, MappingBusy, GrabModeAsync, AnyModifier
+    )
 from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 
@@ -11,47 +21,6 @@ from xpra.util import envbool
 from xpra.os_util import strtobytes, is_X11
 from xpra.log import Logger
 log = Logger("x11", "bindings", "core")
-
-
-###################################
-# Headers, python magic
-###################################
-cdef extern from "X11/Xutil.h":
-    pass
-
-cdef extern from "X11/Xmd.h":
-    pass
-
-
-######
-# Xlib primitives and constants
-######
-
-cdef extern from "X11/Xlib.h":
-    int CurrentTime
-    int MappingBusy
-    int GrabModeAsync
-    int AnyModifier
-
-    ctypedef struct Display:
-        pass
-    ctypedef unsigned long Time
-    ctypedef int Bool
-    ctypedef int Status
-
-    Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
-    Status XInternAtoms(Display *display, char **names, int count, Bool only_if_exists, Atom *atoms_return)
-    char *XGetAtomName(Display *display, Atom atom)
-
-    int XFree(void * data)
-
-    void XGetErrorText(Display * display, int code, char * buffer_return, int length)
-
-    int XUngrabKeyboard(Display * display, Time t)
-    int XUngrabPointer(Display * display, Time t)
-
-    int *XSynchronize(Display *display, Bool onoff)
-
 
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.display_source import get_display_name

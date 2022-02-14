@@ -1,11 +1,16 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
+
+from xpra.x11.bindings.xlib cimport (
+    Display, XID, Bool, Status, Drawable, Window, Time,
+    XDefaultRootWindow,
+    )
 from xpra.util import envint, csv, first_time, decode_str
 from xpra.os_util import strtobytes
 
@@ -20,26 +25,6 @@ ctypedef unsigned long CARD32
 cdef extern from "X11/X.h":
     unsigned long CurrentTime
     unsigned long Success
-
-######
-# Xlib primitives and constants
-######
-cdef extern from "X11/Xlib.h":
-    ctypedef struct Display:
-        pass
-    # To make it easier to translate stuff in the X header files into
-    # appropriate pyrex declarations, without having to untangle the typedefs
-    # over and over again, here are some convenience typedefs.  (Yes, CARD32
-    # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
-    ctypedef CARD32 XID
-
-    ctypedef int Bool
-    ctypedef int Status
-    ctypedef XID Drawable
-    ctypedef XID Window
-    ctypedef CARD32 Time
-
-    Window XDefaultRootWindow(Display * display)
 
 ###################################
 # Randr

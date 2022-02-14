@@ -3,12 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-ctypedef unsigned long CARD32
 
-cdef extern from "X11/Xlib.h":
-    ctypedef struct Display:
-        pass
-    ctypedef CARD32 Atom
+from xpra.x11.bindings.xlib cimport Display, Atom
 
 cdef class X11CoreBindingsInstance:
     cdef Display * display

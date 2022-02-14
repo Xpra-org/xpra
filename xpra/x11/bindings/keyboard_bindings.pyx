@@ -11,6 +11,19 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
 from xpra.os_util import bytestostr, strtobytes
+from xpra.x11.bindings.xlib cimport (
+    Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
+    XModifierKeymap,
+    XDefaultRootWindow,
+    XOpenDisplay, XCloseDisplay, XFlush, XFree, XInternAtom,
+    XQueryPointer,
+    XDisplayKeycodes, XQueryKeymap,
+    XGetModifierMapping, XSetModifierMapping,
+    XFreeModifiermap, XChangeKeyboardMapping, XGetKeyboardMapping, XInsertModifiermapEntry,
+    XStringToKeysym, XKeysymToString,
+    XGrabKey, XUngrabKey,
+    MappingBusy, GrabModeAsync, AnyKey, AnyModifier, NoSymbol,
+    )
 from libc.stdint cimport uintptr_t      #pylint: disable=syntax-error
 from libc.stdlib cimport free, malloc
 
@@ -25,82 +38,9 @@ cdef extern from "locale.h":
     char *setlocale(int category, const char *locale)
     int LC_ALL
 
-cdef extern from "X11/Xutil.h":
-    pass
-
 ######
 # Xlib primitives and constants
 ######
-
-ctypedef unsigned long CARD32
-
-cdef extern from "X11/X.h":
-    unsigned long NoSymbol
-
-cdef extern from "X11/Xlib.h":
-    int MappingBusy
-    int GrabModeAsync
-    int AnyKey
-    int AnyModifier
-
-    ctypedef struct Display:
-        pass
-    # To make it easier to translate stuff in the X header files into
-    # appropriate pyrex declarations, without having to untangle the typedefs
-    # over and over again, here are some convenience typedefs.  (Yes, CARD32
-    # really is 64 bits on 64-bit systems.  Why?  I have no idea.)
-    ctypedef CARD32 XID
-
-    ctypedef int Bool
-    ctypedef int Status
-    ctypedef CARD32 Atom
-    ctypedef XID Window
-    ctypedef XID KeySym
-    ctypedef CARD32 Time
-
-    ctypedef struct XRectangle:
-        short x, y
-        unsigned short width, height
-
-
-    Display *XOpenDisplay(char *display_name)
-    int XCloseDisplay(Display *display)
-
-    Atom XInternAtom(Display * display, char * atom_name, Bool only_if_exists)
-    int XFree(void * data)
-    void XGetErrorText(Display * display, int code, char * buffer_return, int length)
-
-    Window XDefaultRootWindow(Display * display)
-
-    # Keyboard bindings
-    ctypedef unsigned char KeyCode
-    ctypedef struct XModifierKeymap:
-        int max_keypermod
-        KeyCode * modifiermap # an array with 8*max_keypermod elements
-    XModifierKeymap* XGetModifierMapping(Display* display)
-    int XFreeModifiermap(XModifierKeymap* modifiermap)
-    int XDisplayKeycodes(Display* display, int* min_keycodes, int* max_keycodes)
-    KeySym XStringToKeysym(char* string)
-    KeySym* XGetKeyboardMapping(Display* display, KeyCode first_keycode, int keycode_count, int* keysyms_per_keycode_return)
-    int XChangeKeyboardMapping(Display* display, int first_keycode, int keysyms_per_keycode, KeySym* keysyms, int num_codes)
-    XModifierKeymap* XInsertModifiermapEntry(XModifierKeymap* modifiermap, KeyCode keycode_entry, int modifier)
-    char* XKeysymToString(KeySym keysym)
-
-    int XSetModifierMapping(Display* display, XModifierKeymap* modifiermap)
-
-    int XGrabKey(Display * display, int keycode, unsigned int modifiers,
-                 Window grab_window, Bool owner_events,
-                 int pointer_mode, int keyboard_mode)
-    int XUngrabKey(Display * display, int keycode, unsigned int modifiers,
-                   Window grab_window)
-    int XQueryKeymap(Display * display, char [32] keys_return)
-    int XFlush(Display *dpy)
-
-    Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return,
-                       int *win_x_return, int *win_y_return, unsigned int *mask_return)
-
-
-
 DEF XkbKeyTypesMask             = 1<<0
 DEF XkbKeySymsMask              = 1<<1
 DEF XkbModifierMapMask          = 1<<2

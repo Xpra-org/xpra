@@ -3,29 +3,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.x11.bindings.xlib cimport (
+    Display, XID, Atom, Bool, Status, Window, CARD32,
+    Success,
+    )
 from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
 from xpra.log import Logger
 log = Logger("x11", "bindings")
 
 ctypedef int pid_t
-ctypedef unsigned long CARD32
-
-cdef extern from "X11/X.h":
-    unsigned long Success
-
-######
-# Xlib primitives and constants
-######
-cdef extern from "X11/Xlib.h":
-    ctypedef struct Display:
-        pass
-    ctypedef CARD32 XID
-    ctypedef unsigned long int Atom
-    ctypedef int Bool
-    ctypedef int Status
-    ctypedef int Window
-
 
 ###################################
 # XRes

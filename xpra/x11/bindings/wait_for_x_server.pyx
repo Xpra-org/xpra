@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,11 +10,7 @@
 from time import sleep, monotonic
 from xpra.os_util import bytestostr
 
-cdef extern from "X11/Xlib.h":
-    ctypedef struct Display:
-        pass
-    Display * XOpenDisplay(char * name)
-    int XCloseDisplay(Display * xdisplay)
+from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 
 
 # timeout is in seconds
