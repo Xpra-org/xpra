@@ -84,7 +84,7 @@ def encode(coding, image, options=None):
             image.restride(width*len(rgb_format))
         input_formats = INPUT_FORMATS
         if grayscale:
-            input_formats = ("BGRX", "BGRA")
+            input_formats = ("BGRX", "BGRA", "BGR", "RGB")
         if rgb_format not in input_formats:
             from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
             if not argb_swap(image, input_formats, supports_transparency=alpha):
@@ -102,13 +102,21 @@ def encode(coding, image, options=None):
 
     pixels = image.get_pixels()
     if grayscale:
-        from xpra.codecs.argb.argb import bgrx_to_l, bgra_to_la
+        from xpra.codecs.argb.argb import bgrx_to_l, bgra_to_la, bgr_to_l, rgb_to_l  #@UnresolvedImport
         if alpha:
             pixels = bgra_to_la(pixels)
             rgb_format = "LA"
-        else:
+        elif rgb_format=="BGRX":
             pixels = bgrx_to_l(pixels)
             rgb_format = "L"
+        elif rgb_format=="BGR":
+            pixels = bgr_to_l(pixels)
+            rgb_format = "L"
+        elif rgb_format=="RGB":
+            pixels = rgb_to_l(pixels)
+            rgb_format = "L"
+        else:
+            raise Exception("invalid rgb pixel format %s" % rgb_format)
 
     cdef spng_ctx *ctx = spng_ctx_new(SPNG_CTX_ENCODER)
     if ctx==NULL:
