@@ -397,6 +397,7 @@ cdef bgradata_to_rgb(const unsigned int* bgra, const int bgra_len):
             si += 1
     return memoryview(output_buf)
 
+
 def bgra_to_rgba(buf):
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* bgra
@@ -652,6 +653,12 @@ def argb_swap(image, rgb_formats, supports_transparency=False):
             return True
     elif pixel_format in ("RGBA", "RGBX"):
         assert rs%4==0, "invalid rowstride for %s is not a multiple of 4"  % pixel_format
+        if pixel_format=="RGBA" and "BGRA" in rgb_formats and supports_transparency:
+            log("argb_swap: rgba_to_bgra for %s on %s", pixel_format, type(pixels))
+            image.set_pixels(rgba_to_bgra(pixels))
+            image.set_pixel_format("BGRA")
+            image.set_rowstride(rs*3//4)
+            return True
         if "RGB" in rgb_formats:
             log("argb_swap: bgrx_to_rgb for %s on %s", pixel_format, type(pixels))
             image.set_pixels(bgrx_to_rgb(pixels))
