@@ -232,18 +232,18 @@ def bgr_to_l(buf):
 
 def rgb_to_l(buf):
     assert len(buf) % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % len(buf)
-    cdef const unsigned char* bgr
+    cdef const unsigned char* rgb
     with buffer_context(buf) as bc:
-        bgr = <const unsigned char*> (<uintptr_t> int(bc))
-        return rgbdata_to_l(bgr, len(bc), 0, 1, 2)
+        rgb = <const unsigned char*> (<uintptr_t> int(bc))
+        return rgbdata_to_l(rgb, len(bc), 0, 1, 2)
 
-cdef rgbdata_to_l(const unsigned char *bgr, const int bgr_len,
+cdef rgbdata_to_l(const unsigned char *rgb, const int rgb_len,
                   const unsigned char rindex, const unsigned char gindex, const unsigned char bindex):
-    if bgr_len <= 0:
+    if rgb_len <= 0:
         return None
-    assert bgr_len>0 and bgr_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % bgr_len
+    assert rgb_len>0 and rgb_len % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % rgb_len
     #number of pixels:
-    cdef int mi = bgr_len//3
+    cdef int mi = rgb_len//3
     #3 bytes per pixel:
     cdef MemBuf output_buf = getbuf(mi)
     cdef unsigned char* l = <unsigned char*> output_buf.get_mem()
@@ -251,9 +251,9 @@ cdef rgbdata_to_l(const unsigned char *bgr, const int bgr_len,
     cdef unsigned char r, g, b
     with nogil:
         while i < mi:
-            r = bgr[i+rindex]
-            g = bgr[i+gindex]
-            b = bgr[i+bindex]
+            r = rgb[i+rindex]
+            g = rgb[i+gindex]
+            b = rgb[i+bindex]
             l[i] = (r*3+b+g*4)>>3
             i += 3
     return memoryview(output_buf)
