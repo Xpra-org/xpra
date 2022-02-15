@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t   #pylint: disable=syntax-error
 from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
@@ -27,12 +29,13 @@ from xpra.codecs.avif.avif cimport (
     avifResultToString,
     )
 
+from xpra.util import envint
 from xpra.net.compression import Compressed
 from xpra.codecs.codec_debug import may_save_image
 from xpra.log import Logger
 log = Logger("encoder", "avif")
 
-
+THREADS = envint("XPRA_AVIF_THREADS", min(4, max(1, os.cpu_count()//2)))
 DEF AVIF_PLANE_COUNT_YUV = 3
 
 
@@ -103,7 +106,7 @@ def encode(coding, image, options=None):
                 raise Exception("failed to create avif encoder")
             # Configure your encoder here (see avif/avif.h):
             encoder.speed = 10
-            encoder.maxThreads = 2
+            encoder.maxThreads = THREADS
             # * maxThreads
             # * minQuantizer
             # * maxQuantizer
