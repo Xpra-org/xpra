@@ -77,7 +77,7 @@ def encode(coding, image, options=None):
     cdef char resize = scaled_width!=width or scaled_height!=height
 
     rgb_format = image.get_pixel_format()
-    alpha = options.get("alpha", True)
+    alpha = options.get("alpha", rgb_format.find("A")>=0)
     if rgb_format not in INPUT_FORMATS or (resize and len(rgb_format)!=4) or rowstride!=width*len(rgb_format) or grayscale:
         #best to restride before byte-swapping to trim extra unused data:
         if rowstride!=width*len(rgb_format):
