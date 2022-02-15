@@ -31,11 +31,9 @@ Build-Depends: debhelper (>= 8)
               ,libsystemd-dev
               ,libpam-dev
               ,pandoc
-#hirsute:              ,libavif-dev
-#impish:              ,libavif-dev
 #jammy:              ,libavif-dev
 #bookworm:              ,libavif-dev
-#bullseye:              ,libavif-dev
+#sid:              ,libavif-dev
 Standards-Version: 3.9.3
 Homepage: https://xpra.org/
 Vcs-Git: https://github.com/Xpra-org/xpra

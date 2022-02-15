@@ -110,8 +110,7 @@ def encode(coding, image, options=None):
     rgb.format = INPUT_PIXEL_FORMATS.get(pixel_format)
     rgb.chromaUpsampling = AVIF_CHROMA_UPSAMPLING_FASTEST
     rgb.ignoreAlpha = not alpha
-    if AVIF_VERSION_MAJOR>0 or AVIF_VERSION_MINOR>8:
-        rgb.alphaPremultiplied = alpha
+    rgb.alphaPremultiplied = alpha
     rgb.rowBytes = image.get_rowstride()
 
     cdef avifResult r
