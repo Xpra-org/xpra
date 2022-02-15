@@ -143,7 +143,8 @@ def decompress(data, options=None, yuv=False):
             pixels = getbuf(width*4*height)
             rgb.pixels = <uint8_t *> pixels.get_mem()
             rgb.rowBytes = stride
-            rgb.alphaPremultiplied = 1
+            if AVIF_VERSION_MAJOR>0 or AVIF_VERSION_MINOR>8:
+                rgb.alphaPremultiplied = 1
             r = avifImageYUVToRGB(image, &rgb)
             check(r, "Conversion from YUV failed")
             if rgb.depth>8:
