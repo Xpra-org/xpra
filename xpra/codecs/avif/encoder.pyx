@@ -12,11 +12,15 @@ from xpra.codecs.avif.avif cimport (
     AVIF_RESULT_OK, AVIF_RESULT,
     AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH,
     AVIF_QUANTIZER_LOSSLESS, AVIF_QUANTIZER_BEST_QUALITY, AVIF_QUANTIZER_WORST_QUALITY,
+    AVIF_RANGE_FULL,
     avifResult,
     avifRWData,
-    AVIF_PIXEL_FORMAT_YUV444,
+    AVIF_PIXEL_FORMAT_NONE, AVIF_PIXEL_FORMAT_YUV400,
+    AVIF_PIXEL_FORMAT_YUV444, AVIF_PIXEL_FORMAT_YUV422, AVIF_PIXEL_FORMAT_YUV420,
     avifImage, avifRGBImage, avifImageCreate, avifImageDestroy,
-    AVIF_RGB_FORMAT_BGRA,
+    AVIF_RGB_FORMAT_BGRA, AVIF_RGB_FORMAT_BGR,
+    AVIF_RGB_FORMAT_RGBA, AVIF_RGB_FORMAT_RGB,
+    AVIF_RGB_FORMAT_ARGB, AVIF_RGB_FORMAT_ABGR,
     avifRGBFormat,
     AVIF_CHROMA_UPSAMPLING_FASTEST,
     avifChromaUpsampling,
@@ -61,7 +65,25 @@ def cleanup_module():
     log("avif.cleanup_module()")
 
 
-INPUT_PIXEL_FORMATS = ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR")
+AVIF_PIXEL_FORMAT = {
+    AVIF_PIXEL_FORMAT_NONE      : "NONE",
+    AVIF_PIXEL_FORMAT_YUV444    : "YUV444",
+    AVIF_PIXEL_FORMAT_YUV422    : "YUV422",
+    AVIF_PIXEL_FORMAT_YUV420    : "YUV420",
+    AVIF_PIXEL_FORMAT_YUV400    : "YUV400",
+    }
+
+INPUT_PIXEL_FORMATS = {
+    "RGBX"  : AVIF_RGB_FORMAT_RGBA,
+    "RGBA"  : AVIF_RGB_FORMAT_RGBA,
+    "BGRX"  : AVIF_RGB_FORMAT_BGRA,
+    "BGRA"  : AVIF_RGB_FORMAT_BGRA,
+    "RGB"   : AVIF_RGB_FORMAT_RGB,
+    "BGR"   : AVIF_RGB_FORMAT_BGR,
+    "ARGB"  : AVIF_RGB_FORMAT_ARGB,
+    "ABGR"  : AVIF_RGB_FORMAT_ABGR,
+    }
+
 
 cdef check(avifResult r, message):
     if r != AVIF_RESULT_OK:
@@ -71,7 +93,11 @@ cdef check(avifResult r, message):
 def encode(coding, image, options=None):
     options = typedict(options or {})
     pixel_format = image.get_pixel_format()
+    if pixel_format not in INPUT_PIXEL_FORMATS:
+        raise Exception("invalid input format: %s" % pixel_format)
     pixels = image.get_pixels()
+    cdef uint8_t grayscale = options.boolget("grayscale", False)
+    cdef uint8_t alpha = pixel_format.find("A")>=0
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef avifImage *avif_image = avifImageCreate(width, height, 8, AVIF_PIXEL_FORMAT_YUV444)
@@ -81,10 +107,10 @@ def encode(coding, image, options=None):
     memset(&rgb, 0, sizeof(avifRGBImage))
 
     avifRGBImageSetDefaults(&rgb, avif_image)
-    rgb.format = AVIF_RGB_FORMAT_BGRA
+    rgb.format = INPUT_PIXEL_FORMATS.get(pixel_format)
     rgb.chromaUpsampling = AVIF_CHROMA_UPSAMPLING_FASTEST
-    rgb.ignoreAlpha = pixel_format.find("A")<0
-    rgb.alphaPremultiplied = 1
+    rgb.ignoreAlpha = not alpha
+    rgb.alphaPremultiplied = alpha
     rgb.rowBytes = image.get_rowstride()
 
     cdef avifResult r
@@ -92,7 +118,6 @@ def encode(coding, image, options=None):
     cdef avifRWData avifOutput
     memset(&avifOutput, 0, sizeof(avifRWData))
 
-    cdef uint8_t alpha = pixel_format.find("A")>=0
     AVIF_QUANTIZER_WORST_QUALITY
     AVIF_QUANTIZER_BEST_QUALITY
     cdef int speed = options.intget("speed", 50)
@@ -108,8 +133,17 @@ def encode(coding, image, options=None):
         log("avif.encode(%s, %s, %s) pixels=%#x", coding, image, options, int(bc))
 
         try:
+            avif_image.yuvRange = AVIF_RANGE_FULL
+            if grayscale:
+                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV400
+            elif quality>80:
+                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV444
+            elif quality>50:
+                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV422
+            else:
+                avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV420
             r = avifImageRGBToYUV(avif_image, &rgb)
-            log("avifImageRGBToYUV()=%i", r)
+            log("avifImageRGBToYUV()=%i for %s", r, AVIF_PIXEL_FORMAT.get(avif_image.yuvFormat))
             check(r, "Failed to convert to YUV(A)")
     
             encoder = avifEncoderCreate()
@@ -136,7 +170,9 @@ def encode(coding, image, options=None):
             log("avifEncoderFinish()=%i", r)
             check(r, "Failed to finish encode")
     
-            client_options = {"alpha" : alpha, "quality" : quality}
+            client_options = {"quality" : quality}
+            if alpha:
+                client_options["alpha"] = alpha
             cdata = avifOutput.data[:avifOutput.size]
             log("avif: got %i bytes", avifOutput.size)
             may_save_image("avif", cdata)

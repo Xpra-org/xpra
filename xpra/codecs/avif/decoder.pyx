@@ -15,6 +15,10 @@ from xpra.codecs.avif.avif cimport (
     avifDecoderParse, avifDecoderNextImage, avifDecoderDestroy,
     avifDecoderNextImage, avifRGBImageSetDefaults, avifImageYUVToRGB,
     AVIF_RESULT, AVIF_RESULT_OK, AVIF_RGB_FORMAT_BGRA,
+    AVIF_PIXEL_FORMAT_NONE, AVIF_PIXEL_FORMAT_YUV444, AVIF_PIXEL_FORMAT_YUV422,
+    AVIF_PIXEL_FORMAT_YUV420, AVIF_PIXEL_FORMAT_YUV400,
+    AVIF_RANGE_LIMITED, AVIF_RANGE_FULL,
+    AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH,
     #AVIF_STRICT_ENABLED,
     )
 from xpra.buffers.membuf cimport memalign, buffer_context
@@ -31,10 +35,19 @@ cdef extern from *:
 cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
 
-cdef extern from "avif/avif.h":
-    int AVIF_VERSION_MAJOR
-    int AVIF_VERSION_MINOR
-    int AVIF_VERSION_PATCH
+
+AVIF_PIXEL_FORMAT = {
+    AVIF_PIXEL_FORMAT_NONE      : "NONE",
+    AVIF_PIXEL_FORMAT_YUV444    : "YUV444",
+    AVIF_PIXEL_FORMAT_YUV422    : "YUV422",
+    AVIF_PIXEL_FORMAT_YUV420    : "YUV420",
+    AVIF_PIXEL_FORMAT_YUV400    : "YUV400",
+    }
+
+AVIF_RANGE = {
+    AVIF_RANGE_LIMITED  : "LIMITED",
+    AVIF_RANGE_FULL     : "FULL",
+    }
 
 
 def get_version():
@@ -100,6 +113,7 @@ def decompress(data, options=None):
             check(r, "failed to get next image")
             # Now available (for this frame):
             # * All decoder->image YUV pixel data (yuvFormat, yuvPlanes, yuvRange, yuvChromaSamplePosition, yuvRowBytes)
+            log("yuvFormat=%s, yuvRange=%s", AVIF_PIXEL_FORMAT.get(image.yuvFormat), AVIF_RANGE.get(image.yuvRange))
             # * decoder->image alpha data (alphaRange, alphaPlane, alphaRowBytes)
             # * this frame's sequence timing
             avifRGBImageSetDefaults(&rgb, image)
