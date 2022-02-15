@@ -9,9 +9,9 @@ from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t   #pylint: disab
 from libc.string cimport memset #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 from xpra.codecs.avif.avif cimport (
-    AVIF_RESULT_OK,
+    AVIF_RESULT_OK, AVIF_RESULT,
     AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH,
-    AVIF_RESULT,
+    AVIF_QUANTIZER_LOSSLESS, AVIF_QUANTIZER_BEST_QUALITY, AVIF_QUANTIZER_WORST_QUALITY,
     avifResult,
     avifRWData,
     AVIF_PIXEL_FORMAT_YUV444,
@@ -29,7 +29,7 @@ from xpra.codecs.avif.avif cimport (
     avifResultToString,
     )
 
-from xpra.util import envint
+from xpra.util import envint, typedict
 from xpra.net.compression import Compressed
 from xpra.codecs.codec_debug import may_save_image
 from xpra.log import Logger
@@ -69,6 +69,7 @@ cdef check(avifResult r, message):
         raise Exception("%s : %s" % (message, err))
 
 def encode(coding, image, options=None):
+    options = typedict(options or {})
     pixel_format = image.get_pixel_format()
     pixels = image.get_pixels()
     cdef int width = image.get_width()
@@ -91,6 +92,17 @@ def encode(coding, image, options=None):
     cdef avifRWData avifOutput
     memset(&avifOutput, 0, sizeof(avifRWData))
 
+    cdef uint8_t alpha = pixel_format.find("A")>=0
+    AVIF_QUANTIZER_WORST_QUALITY
+    AVIF_QUANTIZER_BEST_QUALITY
+    cdef int speed = options.intget("speed", 50)
+    cdef int quality = options.intget("quality", 50)
+    #AVIF_QUANTIZER_BEST_QUALITY 0
+    #AVIF_QUANTIZER_WORST_QUALITY 63
+    qrange = 20
+    cdef int minq = AVIF_QUANTIZER_WORST_QUALITY - AVIF_QUANTIZER_WORST_QUALITY*100//quality
+    cdef int maxq = max(0, minq-qrange)
+
     with buffer_context(pixels) as bc:
         rgb.pixels = <uint8_t*> (<uintptr_t> int(bc))
         log("avif.encode(%s, %s, %s) pixels=%#x", coding, image, options, int(bc))
@@ -105,16 +117,15 @@ def encode(coding, image, options=None):
             if encoder==NULL:
                 raise Exception("failed to create avif encoder")
             # Configure your encoder here (see avif/avif.h):
-            encoder.speed = 10
+            encoder.speed = 9+int(speed>=50)
             encoder.maxThreads = THREADS
-            # * maxThreads
-            # * minQuantizer
-            # * maxQuantizer
-            # * minQuantizerAlpha
-            # * maxQuantizerAlpha
+            encoder.minQuantizer = minq
+            encoder.maxQuantizer = maxq
+            if alpha>0:
+                encoder.minQuantizerAlpha = minq
+                encoder.maxQuantizerAlpha = maxq
             # * tileRowsLog2
             # * tileColsLog2
-            # * speed
             # * keyframeInterval
             # * timescale
             r = avifEncoderAddImage(encoder, avif_image, 1, AVIF_ADD_IMAGE_FLAG_SINGLE)
@@ -125,7 +136,7 @@ def encode(coding, image, options=None):
             log("avifEncoderFinish()=%i", r)
             check(r, "Failed to finish encode")
     
-            client_options = {"alpha" : pixel_format.find("A")>=0}
+            client_options = {"alpha" : alpha, "quality" : quality}
             cdata = avifOutput.data[:avifOutput.size]
             log("avif: got %i bytes", avifOutput.size)
             may_save_image("avif", cdata)

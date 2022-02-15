@@ -7,11 +7,14 @@ from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t   #pylint: disab
 
 DEF AVIF_PLANE_COUNT_YUV = 3
 
-
 cdef extern from "avif/avif.h":
     int AVIF_VERSION_MAJOR
     int AVIF_VERSION_MINOR
     int AVIF_VERSION_PATCH
+
+    int AVIF_QUANTIZER_LOSSLESS
+    int AVIF_QUANTIZER_BEST_QUALITY
+    int AVIF_QUANTIZER_WORST_QUALITY
 
     ctypedef int avifBool
 
