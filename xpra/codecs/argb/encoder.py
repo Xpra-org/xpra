@@ -31,10 +31,10 @@ def encode(coding : str, image, options : dict):
     pixel_format = image.get_pixel_format()
     #log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
-    if pixel_format in ("BGRX", "BGRA"):
-        rgb_formats = options.get("rgb_formats", ("BGRX", "BGRA"))
-    elif pixel_format in ("RGB", ):
-        rgb_formats = options.get("rgb_formats", ("RGB", ))
+    if pixel_format in ("BGRX", "BGRA", "RGBA"):
+        rgb_formats = options.get("rgb_formats", ("BGRX", "BGRA", "RGBA"))
+    elif pixel_format in ("RGB", "BGR"):
+        rgb_formats = options.get("rgb_formats", ("RGB", "BGR"))
     else:
         raise Exception("unsupported pixel format %s" % pixel_format)
     supports_transparency = options.get("alpha", True)
