@@ -10,10 +10,13 @@ from time import monotonic
 from xpra.codecs.image_wrapper import ImageWrapper
 
 N = 10
-CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
+CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_avif")
+#CODECS = ("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
 
-#options = {"grayscale" : True}
-options = {}
+options = {
+    #"quality" : 10,
+    #"grayscale" : True,
+    }
 
 
 def main(fmt="png", files=()):
@@ -64,7 +67,7 @@ def main(fmt="png", files=()):
                 end = monotonic()
                 cdata = r[1]
                 ratio = 100*len(cdata)/len(rgb_data)
-                print("%-10s %-10s   :    %6.1f MPixels/s    size=%6iKB    %3.1f%%" % (
+                print("%-10s %-10s   :    %10.1f MPixels/s    size=%8iKB    %3.1f%%" % (
                     encoding, enc.get_type(), w*h*N/(end-start)/1024/1024, size*N/1024, ratio))
                 #verify that the png data is valid using pillow:
                 if encoding not in ("rgb24", "rgb32", "avif"):

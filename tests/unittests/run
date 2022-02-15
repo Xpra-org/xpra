@@ -14,7 +14,7 @@ SRC_DIR=`dirname $TESTS_DIR`
 
 INSTALL_ROOT="$SRC_DIR/dist/python3"
 pushd $SRC_DIR
-python3 ./setup.py install --with-scripts --with-cython_tracing --home=$INSTALL_ROOT || die "failed to build"
+python3 ./setup.py install --without-printing  --without-docs --with-scripts --with-cython_tracing --home=$INSTALL_ROOT || die "failed to build"
 popd
 
 if [ `uname` == "Linux" ]; then
