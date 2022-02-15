@@ -311,6 +311,8 @@ def ssh_paramiko_connect_to(display_desc):
             proxy_username = display_desc.get("proxy_username", username)
             proxy_password = display_desc.get("proxy_password", password)
             sock = socket_connect(dtype, proxy_host, proxy_port)
+            if not sock:
+                fail("SSH proxy transport failed to connect to %s:%s" % (proxy_host, proxy_port))
             middle_transport = Transport(sock)
             middle_transport.use_compression(False)
             try:
@@ -352,6 +354,8 @@ def ssh_paramiko_connect_to(display_desc):
         #plain TCP connection to the server,
         #we open it then give the socket to paramiko:
         sock = socket_connect(dtype, host, port)
+        if not sock:
+            fail("SSH failed to connect to %s:%s" % (host, port))
         sockname = sock.getsockname()
         peername = sock.getpeername()
         log("paramiko socket_connect: sockname=%s, peername=%s", sockname, peername)
