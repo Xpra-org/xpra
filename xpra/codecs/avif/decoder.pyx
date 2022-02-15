@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.codec_constants import get_subsampling_divs
 from xpra.codecs.codec_debug import may_save_image
 
 from libc.string cimport memset #pylint: disable=syntax-error
@@ -68,7 +69,7 @@ cdef check(avifResult r, message):
         err = avifResultToString(r).decode("latin1") or AVIF_RESULT.get(r, r)
         raise Exception("%s : %s" % (message, err))
 
-def decompress(data, options=None):
+def decompress(data, options=None, yuv=False):
     cdef avifRGBImage rgb
     memset(&rgb, 0, sizeof(avifRGBImage))
     cdef avifDecoder * decoder = avifDecoderCreate()
@@ -82,7 +83,7 @@ def decompress(data, options=None):
     cdef avifResult r
     cdef size_t data_len
     cdef const uint8_t* data_buf
-    cdef uint32_t width, height, stride
+    cdef uint32_t width, height, stride, ydiv, size
     cdef uint8_t bpp = 32
     cdef MemBuf pixels
     cdef avifImage *image = NULL
@@ -108,12 +109,26 @@ def decompress(data, options=None):
             # * overall image sequence timing (including per-frame timing with avifDecoderNthImageTiming())
             width = image.width
             height = image.height
-            log("avif parsed: %ux%u (%ubpc)\n", width, height, image.depth)
             r = avifDecoderNextImage(decoder)
             check(r, "failed to get next image")
             # Now available (for this frame):
             # * All decoder->image YUV pixel data (yuvFormat, yuvPlanes, yuvRange, yuvChromaSamplePosition, yuvRowBytes)
-            log("yuvFormat=%s, yuvRange=%s", AVIF_PIXEL_FORMAT.get(image.yuvFormat), AVIF_RANGE.get(image.yuvRange))
+            log("avif parsed: %ux%u (%ubpc) yuvFormat=%s, yuvRange=%s",
+                width, height, image.depth, AVIF_PIXEL_FORMAT.get(image.yuvFormat), AVIF_RANGE.get(image.yuvRange))
+            if yuv:
+                #do we still need to copy if image.imageOwnsYUVPlanes?
+                #could we keep the decoder context alive until the image is freed instead?
+                yuv_format = "%sP" % AVIF_PIXEL_FORMAT.get(image.yuvFormat) #ie: YUV420P
+                divs = get_subsampling_divs(yuv_format)
+                planes = []
+                strides = []
+                for i in range(3):
+                    ydiv = divs[i][1]
+                    size = image.yuvRowBytes[i]*height//ydiv
+                    planes.append(image.yuvPlanes[i][:size])
+                    strides.append(image.yuvRowBytes[i])
+                return ImageWrapper(0, 0, width, height, planes, yuv_format, 24, strides, ImageWrapper.PLANAR_3)
+
             # * decoder->image alpha data (alphaRange, alphaPlane, alphaRowBytes)
             # * this frame's sequence timing
             avifRGBImageSetDefaults(&rgb, image)

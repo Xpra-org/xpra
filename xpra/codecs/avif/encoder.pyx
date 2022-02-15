@@ -127,21 +127,25 @@ def encode(coding, image, options=None):
     qrange = 20
     cdef int minq = AVIF_QUANTIZER_WORST_QUALITY - AVIF_QUANTIZER_WORST_QUALITY*100//quality
     cdef int maxq = max(0, minq-qrange)
+    client_options = {"quality" : quality}
 
     with buffer_context(pixels) as bc:
         rgb.pixels = <uint8_t*> (<uintptr_t> int(bc))
         log("avif.encode(%s, %s, %s) pixels=%#x", coding, image, options, int(bc))
-
         try:
             avif_image.yuvRange = AVIF_RANGE_FULL
             if grayscale:
                 avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV400
+                client_options["subsampling"] = "YUV400"
             elif quality>80:
                 avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV444
+                client_options["subsampling"] = "YUV444"
             elif quality>50:
                 avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV422
+                client_options["subsampling"] = "YUV422"
             else:
                 avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV420
+                client_options["subsampling"] = "YUV420"
             r = avifImageRGBToYUV(avif_image, &rgb)
             log("avifImageRGBToYUV()=%i for %s", r, AVIF_PIXEL_FORMAT.get(avif_image.yuvFormat))
             check(r, "Failed to convert to YUV(A)")
@@ -156,6 +160,8 @@ def encode(coding, image, options=None):
             encoder.minQuantizer = minq
             encoder.maxQuantizer = maxq
             if alpha>0:
+                #we need this client side to know if we can use planar gl paint:
+                client_options["alpha"] = alpha
                 encoder.minQuantizerAlpha = minq
                 encoder.maxQuantizerAlpha = maxq
             # * tileRowsLog2
@@ -170,9 +176,6 @@ def encode(coding, image, options=None):
             log("avifEncoderFinish()=%i", r)
             check(r, "Failed to finish encode")
     
-            client_options = {"quality" : quality}
-            if alpha:
-                client_options["alpha"] = alpha
             cdata = avifOutput.data[:avifOutput.size]
             log("avif: got %i bytes", avifOutput.size)
             may_save_image("avif", cdata)

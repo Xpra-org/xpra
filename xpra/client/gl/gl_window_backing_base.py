@@ -1071,6 +1071,20 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
+    def paint_avif(self, img_data, x, y, width, height, options, callbacks):
+        alpha = options.boolget("alpha")
+        img = self.avif_decoder.decompress(img_data, options, yuv=not alpha)
+        pixel_format = img.get_pixel_format()
+        flush = options.intget("flush", 0)
+        w = img.get_width()
+        h = img.get_height()
+        if pixel_format.startswith("YUV"):
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "avif", img,
+                          x, y, w, h, width, height, options, callbacks)
+        else:
+            self.idle_add(self.do_paint_rgb, pixel_format, img.get_pixels(), x, y, w, h, width, height,
+                          img.get_rowstride(), options, callbacks)
+
     def do_paint_rgb(self, rgb_format, img_data,
                      x : int, y : int, width : int, height : int, render_width : int, render_height : int,
                      rowstride, options, callbacks):
