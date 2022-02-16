@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2018-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,6 +18,7 @@ from xpra.net.ssh import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
 from xpra.util import csv, envint, first_time, decode_str
 from xpra.os_util import osexpand, getuid, WIN32, POSIX
+from xpra.scripts.config import parse_bool
 from xpra.platform.paths import get_ssh_conf_dirs
 from xpra.log import Logger
 
@@ -264,7 +265,7 @@ class SSHServer(paramiko.ServerInterface):
 def make_ssh_server_connection(conn, socket_options, none_auth=False, password_auth=None):
     log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
     ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth)
-    DoGSSAPIKeyExchange = False
+    DoGSSAPIKeyExchange = parse_bool("ssh-gss-key-exchange", socket_options.get("ssh-gss-key-exchange", False), False)
     sock = conn._socket
     t = None
     def close():
