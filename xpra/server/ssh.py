@@ -130,6 +130,10 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
     def check_channel_exec_request(self, channel, command):
+        def fail():
+            self.event.set()
+            channel.close()
+            return False
         def chan_send(send_fn, data, timeout=5):
             if not data:
                 return
@@ -189,7 +193,7 @@ class SSHServer(paramiko.ServerInterface):
                     }[subcommand]
                 log.warn("Warning: received a proxy %r session request", proxy_command)
                 log.warn(" this feature is not yet implemented with the builtin ssh server")
-                return False
+                return fail()
             elif subcommand=="_proxy":
                 if len(cmd)==3:
                     #only the display can be specified here
@@ -198,10 +202,10 @@ class SSHServer(paramiko.ServerInterface):
                     if display_name!=display:
                         log.warn("Warning: the display requested (%r)", display)
                         log.warn(" is not the current display (%r)", display_name)
-                        return False
+                        return fail()
             else:
                 log.warn("Warning: unsupported xpra subcommand '%s'", cmd[1])
-                return False
+                return fail()
             #we're ready to use this socket as an xpra channel
             self._run_proxy(channel)
         else:
@@ -227,7 +231,10 @@ class SSHServer(paramiko.ServerInterface):
             #and identify the subcommands from there
             subcommands = []
             for s in parse_cmd.split("if "):
-                if (s.startswith("type \"xpra\"") or s.startswith("which \"xpra\"") or s.startswith("[ -x")) and s.find("then ")>0:
+                if (s.startswith("type \"xpra\"") or
+                    s.startswith("which \"xpra\"") or
+                    s.startswith("[ -x")
+                    ) and s.find("then ")>0:
                     then_str = s.split("then ", 1)[1]
                     #ie: then_str="$XDG_RUNTIME_DIR/xpra/run-xpra _proxy; el"
                     if then_str.find(";")>0:
@@ -242,7 +249,7 @@ class SSHServer(paramiko.ServerInterface):
             else:
                 log.warn("Warning: unsupported ssh command:")
                 log.warn(" %s", cmd)
-                return False
+                return fail()
         return True
 
     def _run_proxy(self, channel):
@@ -365,12 +372,13 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
         close()
         return None
     log("client authenticated, channel=%s", chan)
-    ssh_server.event.wait(SERVER_WAIT)
-    log("proxy channel=%s", ssh_server.proxy_channel)
+    timedout = not ssh_server.event.wait(SERVER_WAIT)
     proxy_channel = ssh_server.proxy_channel
+    log("proxy channel=%s, timedout=%s", proxy_channel, timedout)
     if not ssh_server.event.is_set() or not proxy_channel:
-        log.warn("Warning: timeout waiting for xpra SSH subcommand,")
-        log.warn(" closing connection from %s", pretty_socket(conn.target))
+        if timedout:
+            log.warn("Warning: timeout waiting for xpra SSH subcommand,")
+            log.warn(" closing connection from %s", pretty_socket(conn.target))
         close()
         return None
     log("client authenticated, channel=%s", chan)
