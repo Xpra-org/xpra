@@ -72,7 +72,7 @@ fi
 INSTALL_LOG=`pwd`/install.log
 echo "./setup.py install ${BUILD_ARGS}"
 echo " (see ${INSTALL_LOG} for details)"
-${PYTHON} ./setup.py install ${BUILD_ARGS} >& ${INSTALL_LOG}
+${PYTHON} ./setup.py install --old-and-unmanageable ${BUILD_ARGS} >& ${INSTALL_LOG}
 if [ "$?" != "0" ]; then
 	popd
 	echo "ERROR: install failed"
