@@ -2257,7 +2257,8 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
     proc.terminate()
     raise Exception("timeout: failed to identify the new shadow server '%s'" % display_name)
 
-def start_server_subprocess(script_file, args, mode, opts, username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
+def start_server_subprocess(script_file, args, mode, opts,
+                            username="", uid=getuid(), gid=getgid(), env=os.environ.copy(), cwd=None):
     log = Logger("server", "exec")
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
