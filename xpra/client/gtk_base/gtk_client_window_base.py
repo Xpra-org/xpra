@@ -99,10 +99,10 @@ if USE_X11_BINDINGS:
                 workspacelog.error("Error: failed to setup workspace hooks:")
                 workspacelog.error(" %s", e)
         CAN_SET_WORKSPACE = can_set_workspace()
-    except ImportError as e:
+    except ImportError as x11e:
         log("x11 bindings", exc_info=True)
         log.error("Error: cannot import X11 bindings:")
-        log.error(" %s", e)
+        log.error(" %s", x11e)
 
 
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
@@ -681,7 +681,11 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if not monitors:
             geomlog("screen %s lacks monitors information: %s", screen0)
             return None
-        from xpra.rectangle import rectangle #@UnresolvedImport
+        try:
+            from xpra.rectangle import rectangle #@UnresolvedImport
+        except ImportError as e:
+            geomlog("cannot calculate offset: %s", e)
+            return None
         wrect = rectangle(wx, wy, ww, wh)
         rects = [wrect]
         pixels_in_monitor = {}
