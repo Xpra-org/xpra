@@ -16,10 +16,11 @@ import paramiko
 
 from xpra.net.ssh import SSHSocketConnection
 from xpra.net.bytestreams import pretty_socket
-from xpra.util import csv, envint, first_time, decode_str
+from xpra.util import csv, envint, first_time, decode_str, ellipsizer
 from xpra.os_util import osexpand, getuid, WIN32, POSIX
+from xpra.make_thread import start_thread
 from xpra.scripts.config import parse_bool
-from xpra.platform.paths import get_ssh_conf_dirs
+from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command
 from xpra.log import Logger
 
 log = Logger("network", "ssh")
@@ -30,13 +31,29 @@ AUTHORIZED_KEYS_HASHES = os.environ.get("XPRA_AUTHORIZED_KEYS_HASHES",
                                         "md5,sha1,sha224,sha256,sha384,sha512").split(",")
 
 
+def chan_send(send_fn, data, timeout=5):
+    if not data:
+        return
+    size = len(data)
+    start = monotonic()
+    while data and monotonic()-start<timeout:
+        sent = send_fn(data)
+        log("chan_send: sent %i bytes out of %i using %s", sent, size, send_fn)
+        if not sent:
+            break
+        data = data[sent:]
+    if data:
+        raise Exception("failed to send all the data using %s" % send_fn)
+
+
 class SSHServer(paramiko.ServerInterface):
-    def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None):
+    def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None, options=None):
         self.event = Event()
         self.none_auth = none_auth
         self.pubkey_auth = pubkey_auth
         self.password_auth = password_auth
         self.proxy_channel = None
+        self.options = options or {}
 
     def get_allowed_auths(self, username):
         #return "gssapi-keyex,gssapi-with-mic,password,publickey"
@@ -134,20 +151,6 @@ class SSHServer(paramiko.ServerInterface):
             self.event.set()
             channel.close()
             return False
-        def chan_send(send_fn, data, timeout=5):
-            if not data:
-                return
-            size = len(data)
-            start = monotonic()
-            while data and monotonic()-start<timeout:
-                sent = send_fn(data)
-                log("chan_send: sent %i bytes out of %i using %s", sent, size, send_fn)
-                if not sent:
-                    break
-                data = data[sent:]
-            if data:
-                raise Exception("failed to send all the data using %s" % send_fn)
-        #TODO: close channel after use? when?
         log("check_channel_exec_request(%s, %s)", channel, command)
         cmd = shlex.split(decode_str(command))
         log("check_channel_exec_request: cmd=%s", cmd)
@@ -186,14 +189,12 @@ class SSHServer(paramiko.ServerInterface):
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log("ssh xpra subcommand: %s", subcommand)
             if subcommand in ("_proxy_start", "_proxy_start_desktop", "_proxy_shadow_start"):
-                proxy_command = {
-                    "_proxy_start"          : "start",
-                    "_proxy_start_desktop"  : "start-desktop",
-                    "_proxy_shadow_start"   : "shadow",
-                    }[subcommand]
-                log.warn("Warning: received a proxy %r session request", proxy_command)
-                log.warn(" this feature is not yet implemented with the builtin ssh server")
-                return fail()
+                proxy_start = parse_bool("proxy-start", self.options.get("proxy-start"), False)
+                if not proxy_start:
+                    log.warn("Warning: received a %r session request", subcommand)
+                    log.warn(" this feature is not yet implemented with the builtin ssh server")
+                    return fail()
+                self.proxy_start(channel, subcommand, cmd[2:])
             elif subcommand=="_proxy":
                 if len(cmd)==3:
                     #only the display can be specified here
@@ -268,10 +269,71 @@ class SSHServer(paramiko.ServerInterface):
         log("enable_auth_gssapi()")
         return False
 
+    def proxy_start(self, channel, subcommand, args):
+        log("ssh proxy-start(%s, %s, %s)", channel, subcommand, args)
+        server_mode = {
+                       "_proxy_start"           : "seamless",
+                       "_proxy_start_desktop"   : "desktop",
+                       "_proxy_shadow_start"    : "shadow",
+                       }.get(subcommand, subcommand.replace("_proxy", ""))
+        log.info("ssh channel starting proxy %s session", server_mode)
+        cmd = get_xpra_command()+[subcommand]+args
+        try:
+            proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=0, close_fds=True)
+            proc.poll()
+        except OSError:
+            log.error("Error starting proxy subcommand %s", subcommand, exc_info=True)
+            log.error(" with args=%s", args)
+            return
+        from xpra.child_reaper import getChildReaper
+        def proxy_ended(*args):
+            log("proxy_ended(%s)", args)
+        def close():
+            if proc.poll() is None:
+                proc.terminate()
+        getChildReaper().add_process(proc, "proxy-start-%s" % subcommand, cmd, True, True, proxy_ended)
+        def proc_to_channel(read, send):
+            while proc.poll() is None:
+                #log("proc_to_channel(%s, %s) waiting for data", read, send)
+                try:
+                    r = read(4096)
+                except paramiko.buffered_pipe.PipeTimeout:
+                    log("proc_to_channel(%s, %s)", read, send, exc_info=True)
+                    close()
+                    break
+                #log("proc_to_channel(%s, %s) %i bytes: %s", read, send, len(r or b""), ellipsizer(r))
+                if r:
+                    try:
+                        chan_send(send, r)
+                    except OSError:
+                        log("proc_to_channel(%s, %s)", read, send, exc_info=True)
+                        close()
+                        break
+        #forward to/from the process and the channel:
+        def stderr_reader():
+            proc_to_channel(proc.stderr.read, channel.send_stderr)
+        def stdout_reader():
+            proc_to_channel(proc.stdout.read, channel.send)
+        def stdin_reader():
+            stdin = proc.stdin
+            while proc.poll() is None:
+                r = channel.recv(4096)
+                if not r:
+                    close()
+                    break
+                #log("stdin_reader() %i bytes: %s", len(r or b""), ellipsizer(r))
+                stdin.write(r)
+                stdin.flush()
+        tname = subcommand.replace("_proxy_", "proxy-")
+        start_thread(stderr_reader, "%s-stderr" % tname, True)
+        start_thread(stdout_reader, "%s-stdout" % tname, True)
+        start_thread(stdin_reader, "%s-stdin" % tname, True)
+        channel.proxy_process = proc
+
 
 def make_ssh_server_connection(conn, socket_options, none_auth=False, password_auth=None):
     log("make_ssh_server_connection%s", (conn, socket_options, none_auth, password_auth))
-    ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth)
+    ssh_server = SSHServer(none_auth=none_auth, password_auth=password_auth, options=socket_options)
     DoGSSAPIKeyExchange = parse_bool("ssh-gss-key-exchange", socket_options.get("ssh-gss-key-exchange", False), False)
     sock = conn._socket
     t = None
@@ -380,6 +442,9 @@ def make_ssh_server_connection(conn, socket_options, none_auth=False, password_a
             log.warn("Warning: timeout waiting for xpra SSH subcommand,")
             log.warn(" closing connection from %s", pretty_socket(conn.target))
         close()
+        return None
+    if getattr(proxy_channel, "proxy_process", None):
+        log("proxy channel is handled using a subprocess")
         return None
     log("client authenticated, channel=%s", chan)
     return SSHSocketConnection(proxy_channel, sock,
