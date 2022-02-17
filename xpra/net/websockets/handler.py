@@ -68,6 +68,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         self.finish = super().finish
 
     def do_GET(self):
+        log("do_GET() path=%s, headers=%s", self.path, self.headers)
         upgrade_requested = (self.headers.get('upgrade') or "").lower() == 'websocket'
         if self.only_upgrade or upgrade_requested:
             if not upgrade_requested:
