@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -738,7 +738,9 @@ class Protocol:
 
     def con_read(self):
         if self._pre_read:
-            return self._pre_read.pop(0)
+            r = self._pre_read.pop(0)
+            log("con_read() using pre_read value: %r", ellipsizer(r))
+            return r
         return self._conn.read(self.read_buffer_size)
 
 
@@ -841,6 +843,7 @@ class Protocol:
         raw_packets = {}
         PACKET_HEADER_CHAR = ord("P")
         while not self._closed:
+            #log("parse thread: %i items in read queue", self._read_queue.qsize())
             buf = self._read_queue.get()
             if not buf:
                 log("parse thread: empty marker, exiting")
