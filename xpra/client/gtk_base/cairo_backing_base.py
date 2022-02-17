@@ -167,10 +167,10 @@ class CairoBackingBase(WindowBackingBase):
 
         if self.paint_box_line_width:
             gc.restore()
-            encoding = options.strget("encoding")
+            encoding = options.get("encoding")
             self.cairo_paint_box(gc, encoding, x, y, width, height)
 
-        flush = options.intget("flush", 0)
+        flush = options.get("flush", 0)
         if flush==0:
             self.record_fps_event()
 
