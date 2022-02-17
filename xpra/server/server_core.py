@@ -1185,7 +1185,7 @@ class ServerCore:
             #that we need to handle via a tcp proxy, ssl wrapper or the websocket adapter:
             try:
                 cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_info, socket_options, peek_data)
-                netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, peek_data)
+                netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
                 if not cont:
                     return
                 packet_type = guess_packet_type(peek_data)
@@ -1290,7 +1290,8 @@ class ServerCore:
                     if not r:
                         return False
             return True
-        return make_ssh_server_connection(conn, socket_options, none_auth=none_auth, password_auth=ssh_password_authenticate)
+        return make_ssh_server_connection(conn, socket_options,
+                                          none_auth=none_auth, password_auth=ssh_password_authenticate)
 
     def try_upgrade_to_rfb(self, proto):
         self.cancel_upgrade_to_rfb_timer(proto)
