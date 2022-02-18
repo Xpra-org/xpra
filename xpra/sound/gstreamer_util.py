@@ -891,12 +891,15 @@ def main():
             log.enable_debug()
         import_gst()
         v = get_gst_version()
-        if v[-1]==0:
-            v = v[:-1]
-        gst_vinfo = ".".join((str(x) for x in v))
-        print("Loaded Python GStreamer version %s for Python %s.%s" % (
-            gst_vinfo, sys.version_info[0], sys.version_info[1])
-        )
+        if not v:
+            print("no gstreamer version information")
+        else:
+            if v[-1]==0:
+                v = v[:-1]
+            gst_vinfo = ".".join((str(x) for x in v))
+            print("Loaded Python GStreamer version %s for Python %s.%s" % (
+                gst_vinfo, sys.version_info[0], sys.version_info[1])
+            )
         apn = get_all_plugin_names()
         print("GStreamer plugins found: %s" % csv(apn))
         print("")
