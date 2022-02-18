@@ -8,6 +8,7 @@ import sys
 import os.path
 
 from xpra.util import envbool, csv
+from xpra.os_util import OSX
 from xpra.log import Logger
 log = Logger("codec", "loader")
 
@@ -237,13 +238,20 @@ def has_codec(name) -> bool:
     return name in codecs
 
 
-CSC_CODECS = "csc_swscale", "csc_cython", "csc_libyuv"
-ENCODER_CODECS = "enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif"
-ENCODER_VIDEO_CODECS = "enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg"
-DECODER_CODECS = "dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_avif"
-DECODER_VIDEO_CODECS = "dec_vpx", "dec_avcodec2"
+def filt(*values):
+    if not OSX:
+        return tuple(values)
+    return tuple(x for x in values if x.find("avif")<0 and x.find("nvenc")<0 and x.find("nvjpeg")<0 and x.find("x265")<0)
 
-ALL_CODECS = tuple(set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))
+CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
+ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
+ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
+DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_avif")
+DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
+
+ALL_CODECS = filt(*set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))
+
+
 
 
 def get_rgb_compression_options():
