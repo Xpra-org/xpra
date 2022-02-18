@@ -66,6 +66,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("resume",                "resume screen updates",            max_args=0),
             ArgsControlCommand("ungrab",                "cancels any grabs",                max_args=0),
             #server globals:
+            ArgsControlCommand("readonly",              "set readonly state for client(s)", min_args=1, max_args=1, validation=[parse_boolean_value]),
             ArgsControlCommand("idle-timeout",          "set the idle tiemout",             validation=[int]),
             ArgsControlCommand("server-idle-timeout",   "set the server idle timeout",      validation=[int]),
             ArgsControlCommand("start",                 "executes the command arguments in the server context", min_args=1),
@@ -183,6 +184,13 @@ class ServerBaseControlCommands(StubServerMixin):
         for csource in tuple(self._server_sources.values()):
             csource.pointer_ungrab(-1)
         return "ungrabbed %s clients" % len(self._server_sources)
+
+    def control_command_readonly(self, onoff):
+        log("control_command_readonly(%s)", onoff)
+        self.readonly = onoff
+        msg = "server readonly: %s" % onoff
+        log.info(msg)
+        return msg
 
     def control_command_idle_timeout(self, t):
         self.idle_timeout = t
