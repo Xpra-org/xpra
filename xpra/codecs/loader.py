@@ -26,11 +26,31 @@ CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")
 log("codec loader settings: SELFTEST=%s, FULL_SELFTEST=%s, CODEC_FAIL_IMPORT=%s, CODEC_FAIL_SELFTEST=%s",
         SELFTEST, FULL_SELFTEST, CODEC_FAIL_IMPORT, CODEC_FAIL_SELFTEST)
 
+
+if OSX:
+    SKIP_LIST = ("avif", "nvenc", "nvjpeg", "x265")
+else:
+    SKIP_LIST = ()
+def filt(*values):
+    return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
+
+CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
+ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
+ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
+DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_avif")
+DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
+
+ALL_CODECS = filt(*set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))
+
+
 codec_errors = {}
 codecs = {}
 def codec_import_check(name, description, top_module, class_module, classnames):
     log("%s:", name)
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
+    if any(name.find(s)>=0 for s in SKIP_LIST):
+        log(" skipped from list: %s", csv(SKIP_LIST))
+        return None
     try:
         try:
             if name in CODEC_FAIL_IMPORT:
@@ -236,22 +256,6 @@ def get_codec_version(name):
 
 def has_codec(name) -> bool:
     return name in codecs
-
-
-def filt(*values):
-    if not OSX:
-        return tuple(values)
-    return tuple(x for x in values if x.find("avif")<0 and x.find("nvenc")<0 and x.find("nvjpeg")<0 and x.find("x265")<0)
-
-CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
-ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
-ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
-DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_avif")
-DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
-
-ALL_CODECS = filt(*set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))
-
-
 
 
 def get_rgb_compression_options():
