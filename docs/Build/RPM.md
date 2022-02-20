@@ -46,7 +46,7 @@ dnf install python3-pyopengl
 
 ## Build
 ```shell
-python3 ./setup.py install --without-html5 --without-printing
+python3 ./setup.py install --without-printing
 ```
 
 When building against the private video codec libraries, you must point the compiler and linker to their location, ie:
