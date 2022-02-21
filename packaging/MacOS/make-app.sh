@@ -340,7 +340,7 @@ ln -sf Resources/lib Frameworks
 pushd Resources/lib
 if [ "$STRIP_GSTREAMER_PLUGINS" == "1" ]; then
 	echo "removing extra gstreamer dylib deps:"
-	for x in check photography rtsp sdp; do
+	for x in check photography; do
 		echo "* removing "$x
 		rm libgst${x}*
 	done
