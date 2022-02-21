@@ -1499,7 +1499,8 @@ class ServerCore:
                 from xpra.net.websockets.protocol import WebSocketProtocol
                 wslog("new_websocket_client(%s) socket=%s", wsh, sock)
                 newsocktype = "wss" if is_ssl else "ws"
-                self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
+                proto = self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
+                proto.http_request = wsh
             scripts = self.get_http_scripts()
             conn.socktype = "wss" if is_ssl else "ws"
             redirect_https = False

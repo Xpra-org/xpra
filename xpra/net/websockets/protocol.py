@@ -47,6 +47,7 @@ class WebSocketProtocol(Protocol):
         self._process_read = self.parse_ws_frame
         self.make_chunk_header = self.make_xpra_header
         self.make_frame_header = self.make_wsframe_header
+        self.http_request = None # WebSocketRequestHandler
 
     def __repr__(self):
         return "WebSocket(%s)" % self._conn
