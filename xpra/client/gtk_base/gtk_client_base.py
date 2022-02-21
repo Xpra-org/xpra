@@ -1092,9 +1092,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         window = self._id_to_window.get(wid)
         other_window = self._id_to_window.get(other_wid)
         focuslog("restack window %s - %s %s %s",
-            wid, window, ["below", "above"][above], other_window)
+            wid, window, ["above", "below"][above], other_window)
         if window:
-            window.get_window().restack(other_window, above)  #Above=0
+            window.restack(other_window, above)
 
     def opengl_setup_failure(self, summary = "Xpra OpenGL Acceleration Failure", body=""):
         OK = "0"

@@ -1132,6 +1132,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.when_realized("shaded", do_set_shaded)
 
 
+    def restack(self, other_window, above=0):
+        log("restack(%s, %s)", other_window, above)
+        def do_restack():
+            self.get_window().restack(other_window, above)
+        self.when_realized("restack", do_restack)
+
+
     def set_fullscreen(self, fullscreen):
         statelog("%s.set_fullscreen(%s)", self, fullscreen)
         def do_set_fullscreen():
