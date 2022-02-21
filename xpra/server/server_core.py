@@ -1276,7 +1276,7 @@ class ServerCore:
                     sshlog.warn(" username does not match:")
                     sshlog.warn(" expected '%s', got '%s'", sysusername, username)
                     return False
-            auth_modules = self.make_authenticators(socktype, {"username" : username}, conn)
+            auth_modules = self.make_authenticators(socktype, {"username" : username}, conn, None)
             sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*"*len(password), auth_modules)
             for auth in auth_modules:
                 #mimic a client challenge:
@@ -1832,8 +1832,8 @@ class ServerCore:
         #in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
-    def make_authenticators(self, socktype, remote, conn):
-        authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
+    def make_authenticators(self, socktype, remote, conn, http_request):
+        authlog("make_authenticators%s socket options=%s", (socktype, remote, conn, http_request), conn.options)
         sock_options = conn.options
         sock_auth = sock_options.get("auth", "")
         if sock_auth:
@@ -1858,6 +1858,7 @@ class ServerCore:
                 opts["remote"] = remote
                 opts.update(sock_options)
                 opts["connection"] = conn
+                opts["http_request"] = http_request
                 def parse_socket_dirs(v):
                     if isinstance(v, (tuple, list)):
                         return v
@@ -1902,7 +1903,7 @@ class ServerCore:
         if not proto.authenticators:
             socktype = conn.socktype_wrapped
             try:
-                proto.authenticators = self.make_authenticators(socktype, remote, conn)
+                proto.authenticators = self.make_authenticators(socktype, remote, conn, getattr(proto, 'http_request', None))
             except Exception as e:
                 authlog("instantiating authenticator for %s", socktype, exc_info=True)
                 authlog.error("Error instantiating authenticators for %s:", proto.socket_type)

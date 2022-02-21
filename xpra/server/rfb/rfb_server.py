@@ -68,7 +68,7 @@ class RFBServer:
             conn.close()
             return
         def rfb_protocol_class(conn):
-            auths = self.make_authenticators("rfb", "rfb", conn)
+            auths = self.make_authenticators("rfb", "rfb", conn, None)
             assert len(auths)<=1, "rfb does not support multiple authentication modules"
             auth = None
             if len(auths)==1:
