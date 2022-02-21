@@ -45,7 +45,7 @@ class Authenticator(SysAuthenticator):
         super().__init__(**kwargs)
 
     def requires_challenge(self) -> bool:
-        return False
+        return bool(self.http_request)
 
     def authenticate(self, caps : typedict) -> bool:
         info = "Connection request from %s" % self.connection_str
