@@ -80,6 +80,7 @@ MOUSE_SCROLL_SQRT_SCALE = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
 MOUSE_SCROLL_MULTIPLIER = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
+SHOW_DELAY = envint("XPRA_SHOW_DELAY", -1)
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
@@ -792,12 +793,18 @@ class WindowClient(StubClientMixin):
         log("make_new_window(..) window(%i)=%s", wid, window)
         self._id_to_window[wid] = window
         self._window_to_id[window] = wid
+        if SHOW_DELAY>=0:
+            self.timeout_add(SHOW_DELAY, self.show_window, wid, window, metadata, override_redirect)
+        else:
+            self.show_window(wid, window, metadata, override_redirect)
+        return window
+
+    def show_window(self, wid, window, metadata, override_redirect):
         window.show_all()
         if override_redirect:
             if self.should_force_grab(metadata):
                 grablog.warn("forcing grab for OR window %i, matches %s", wid, OR_FORCE_GRAB)
                 self.window_grab(wid, window)
-        return window
 
     def should_force_grab(self, metadata):
         if not OR_FORCE_GRAB:
