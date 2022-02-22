@@ -79,6 +79,7 @@ FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 MOUSE_SCROLL_SQRT_SCALE = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
 MOUSE_SCROLL_MULTIPLIER = envint("XPRA_MOUSE_SCROLL_MULTIPLIER", 100)
 
+PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
 
 DRAW_TYPES = {bytes : "bytes", str : "bytes", tuple : "arrays", list : "arrays"}
 
@@ -339,6 +340,7 @@ class WindowClient(StubClientMixin):
             "min-size"                  : self.min_window_size,
             "max-size"                  : self.max_window_size,
             "restack"                   : True,
+            "pre-map"                   : PRE_MAP,
             }
 
 

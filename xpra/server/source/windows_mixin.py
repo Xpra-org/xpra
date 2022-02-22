@@ -80,6 +80,7 @@ class WindowsMixin(StubSourceMixin):
         self.window_min_size = 0, 0
         self.window_max_size = 0, 0
         self.window_restack = False
+        self.window_pre_map = False
         self.system_tray = False
         self.metadata_supported = ()
 
@@ -146,6 +147,7 @@ class WindowsMixin(StubSourceMixin):
         self.window_min_size = c.inttupleget("window.min-size", (0, 0))
         self.window_max_size = c.inttupleget("window.max-size", (0, 0))
         self.window_restack = c.boolget("window.restack", False)
+        self.window_pre_map = c.boolget("window.pre-map", False)
         log("cursors=%s (encodings=%s), bell=%s",
             self.send_cursors, self.cursor_encodings, self.send_bell)
         #window filters:
@@ -169,6 +171,8 @@ class WindowsMixin(StubSourceMixin):
             "bell"          : self.send_bell,
             "system-tray"   : self.system_tray,
             "suspended"     : self.suspended,
+            "restack"       : self.window_restack,
+            "pre-map"       : self.window_pre_map,
             }
         wsize = info.setdefault("window-size", {})
         wsize.update({

@@ -18,6 +18,10 @@ log = Logger("opengl", "paint")
 
 class GLDrawingArea(GLWindowBackingBase):
 
+    def __init__(self, wid : int, window_alpha : bool, pixel_depth : int=0):
+        self.on_realize_cb = []
+        super().__init__(wid, window_alpha, pixel_depth)
+
     def __repr__(self):
         return "GLDrawingArea(%s, %s, %s)" % (self.wid, self.size, self.pixel_format)
 
@@ -33,6 +37,7 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def init_backing(self):
         da = Gtk.DrawingArea()
+        da.connect_after("realize", self.on_realize)
         #da.connect('configure_event', self.on_configure_event)
         #da.connect('draw', self.on_draw)
         #double-buffering is enabled by default anyway, so this is redundant:
@@ -41,6 +46,32 @@ class GLDrawingArea(GLWindowBackingBase):
         da.set_events(da.get_events() | Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK)
         da.show()
         self._backing = da
+
+    def on_realize(self, *args):
+        onrcb = self.on_realize_cb
+        log("GLDrawingArea.on_realize%s callbacks=%s", args, onrcb)
+        self.on_realize_cb = []
+        gl_context = self.gl_context()
+        with gl_context:
+            for x, args in onrcb:
+                try:
+                    x(gl_context, *args)
+                except Exception:
+                    log.error("Error calling realize callback %s", x, exc_info=True)
+
+    def with_gl_context(self, cb, *args):
+        da = self._backing
+        if da and da.get_mapped():
+            gl_context = self.gl_context()
+            if gl_context:
+                with gl_context:
+                    cb(gl_context, *args)
+            else:
+                cb(None, *args)
+        else:
+            log("GLDrawingArea.with_gl_context delayed: %s%s", cb, args)
+            self.on_realize_cb.append((cb, args))
+
 
     def get_bit_depth(self, pixel_depth=0):
         return pixel_depth or self.context.get_bit_depth() or 24

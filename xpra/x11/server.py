@@ -55,6 +55,7 @@ CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
 ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
+PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
 
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
@@ -636,6 +637,18 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self._desktop_manager.add_window(window, x, y, w, h)
         window.managed_connect("notify::geometry", self._window_resized_signaled)
         self._send_new_window_packet(window)
+        if PRE_MAP:
+            #pre-map the window if any client supports this,
+            #so we can send the pixel data immediately after:
+            sources = tuple(filter(lambda source : getattr(source, "window_pre_map", False), self._server_sources.values()))
+            if sources:
+                wid = self._window_to_id.get(window)
+                log("pre-mapping window %i for %s", wid, sources)
+                self._desktop_manager.configure_window(window, x, y, w, h)
+                self._desktop_manager.show_window(window)
+                for s in sources:
+                    s.map_window(wid, window, (x, y, w, h))
+                self.schedule_configure_damage(wid, 0)
 
 
     def _window_resized_signaled(self, window, *args):
@@ -1108,7 +1121,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if damage:
             self.schedule_configure_damage(wid)
 
-    def schedule_configure_damage(self, wid):
+    def schedule_configure_damage(self, wid, delay=CONFIGURE_DAMAGE_RATE):
         #rate-limit the damage events
         timer = self.configure_damage_timers.get(wid)
         if timer:
@@ -1118,7 +1131,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             window = self._lookup_window(wid)
             if window and window.is_managed():
                 self.refresh_window(window)
-        self.configure_damage_timers[wid] = self.timeout_add(CONFIGURE_DAMAGE_RATE, damage)
+        self.configure_damage_timers[wid] = self.timeout_add(delay, damage)
 
     def cancel_configure_damage(self, wid):
         timer = self.configure_damage_timers.pop(wid, None)
