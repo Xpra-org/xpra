@@ -67,8 +67,6 @@ See [authentication modules](../Usage/Authentication.md)
 |[pyparsing](https://github.com/pyparsing/pyparsing/)|https://pypi.org/project/pyparsing/|required by python-cryptography: r15310|
 |[cffi](https://cffi.readthedocs.io/en/latest/)|https://pypi.org/project/cffi/|required by python-cryptography: r11633|
 |[six](https://github.com/benjaminp/six)|https://pypi.org/project/six/|required by python-cryptography: r11640|
-|[enum-compat](https://github.com/jstasiak/enum-compat)|https://pypi.org/project/enum-compat/|required by zeroconf: r20441|
-|[enum34](https://bitbucket.org/stoneleaf/enum34)|https://pypi.org/project/enum34/|required by enum-compat: r15397|
 |[setuptools](https://github.com/pypa/setuptools)|https://pypi.org/project/setuptools/|unspecified: r5829|
 |[pycparser](https://github.com/eliben/pycparser)|https://pypi.org/project/pycparser/|required by cffi: r11634|
 |[pynacl](https://github.com/pyca/pynacl/)|https://pypi.org/project/PyNaCl/|crypto library used by paramiko: r19967|
