@@ -135,6 +135,7 @@ class UIXpraClient(ClientBaseClass):
         self.xsettings_enabled = False
         self.server_start_new_commands = False
         self.server_xdg_menu = None
+        self.start_new_commands = False
         self.request_start = []
         self.request_start_child = []
         self.headerbar = None
@@ -211,7 +212,8 @@ class UIXpraClient(ClientBaseClass):
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)   #pylint: disable=not-callable
 
-        if opts.start or opts.start_child:
+        self.start_new_commands = parse_bool("start-new-commands", opts.start_new_commands, True)
+        if self.start_new_commands and (opts.start or opts.start_child):
             from xpra.scripts.main import strip_defaults_start_child
             from xpra.scripts.config import make_defaults_struct
             defaults = make_defaults_struct()
