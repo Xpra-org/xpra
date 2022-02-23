@@ -111,7 +111,7 @@ class ClientConnection(StubSourceMixin):
         #what we send back in hello packet:
         self.ui_client = True
         self.wants_aliases = True
-        self.wants_encodings = True
+        self.wants_encodings = False
         self.wants_versions = True
         self.wants_features = True
         self.wants_display = True
