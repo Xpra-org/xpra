@@ -58,6 +58,10 @@ DEFAULT_XDG_DATA_DIRS = ":".join(
 def noop(*_args):
     """ do nothing """
 
+WINDOW_DECODE_SKIPPED = 0
+WINDOW_DECODE_ERROR = -1
+WINDOW_NOT_FOUND = -2
+
 
 class KeyEvent:
     __slots__ = ("modifiers", "keyname", "keyval", "keycode", "group", "string", "pressed")

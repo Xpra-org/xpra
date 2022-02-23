@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -21,6 +21,7 @@ from xpra.platform.gui import (
     get_window_min_size, get_window_max_size,
     get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
     )
+from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.config import FALSE_OPTIONS
@@ -1448,7 +1449,7 @@ class WindowClient(StubClientMixin):
                     data_start.value = offset+length
                     #clear the mmap area via idle_add so any pending draw requests
                     #will get a chance to run first (preserving the order)
-                self.send_damage_sequence(wid, packet_sequence, width, height, -1)
+                self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
             self.idle_add(draw_cleanup)
             return
         #rename old encoding aliases early:
@@ -1469,12 +1470,12 @@ class WindowClient(StubClientMixin):
                 paintlog("record_decode_time(%s, %s) wid=%s, %s: %sx%s, %s",
                          success, message, wid, coding, width, height, dms)
             elif success==0:
-                decode_time = -1
+                decode_time = WINDOW_DECODE_ERROR
                 paintlog("record_decode_time(%s, %s) decoding error on wid=%s, %s: %sx%s",
                          success, message, wid, coding, width, height)
             else:
                 assert success<0
-                decode_time = 0
+                decode_time = WINDOW_DECODE_SKIPPED
                 paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%s, %s: %sx%s",
                          success, message, wid, coding, width, height)
             self.send_damage_sequence(wid, packet_sequence, width, height, decode_time, repr_ellipsized(message, 512))

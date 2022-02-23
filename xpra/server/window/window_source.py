@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -15,7 +15,7 @@ from time import monotonic
 
 from xpra.os_util import bytestostr
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
-from xpra.common import MAX_WINDOW_SIZE
+from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.server.window.window_stats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -2437,7 +2437,11 @@ class WindowSource(WindowIconSource):
                       damage_packet_sequence, self.wid, width, height, decode_time/1000.0)
         if decode_time>0:
             self.statistics.client_decode_time.append((monotonic(), width*height, decode_time))
-        elif decode_time<0:
+        elif decode_time==WINDOW_DECODE_SKIPPED:
+            pass
+        elif decode_time==WINDOW_NOT_FOUND:
+            log.warn("Warning: client cannot find window %i", self.wid)
+        elif decode_time==WINDOW_DECODE_ERROR:
             self.client_decode_error(decode_time, message)
         pending = self.statistics.damage_ack_pending.pop(damage_packet_sequence, None)
         if pending is None:
