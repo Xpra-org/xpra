@@ -395,6 +395,7 @@ class UIXpraClient(ClientBaseClass):
             #generic server flags:
             "share"                     : self.client_supports_sharing,
             "lock"                      : self.client_lock,
+            "xdg-menu"                  : self.start_new_commands,
             })
         caps.update({"mouse" : True})
         caps.update(self.get_keyboard_caps())

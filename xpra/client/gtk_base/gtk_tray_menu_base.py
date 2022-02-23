@@ -1394,6 +1394,10 @@ class GTKTrayMenuBase(MenuHelper):
         start_menu_item = self.handshake_menuitem("Start", "start.png")
         start_menu_item.show()
         def update_menu_data():
+            if not self.client.start_new_commands:
+                set_sensitive(start_menu_item, False)
+                start_menu_item.set_tooltip_text("Starting new commands is disabled")
+                return
             if not self.client.server_start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not support starting new commands")

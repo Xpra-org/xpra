@@ -149,7 +149,10 @@ class ChildCommandServer(StubServerMixin):
             caps["subcommands"] = get_subcommands()
         return caps
 
+
     def send_initial_data(self, ss, caps, send_ui, share_count):
+        if not getattr(ss, "xdg_menu", False):
+            return
         if ss.xdg_menu_update:
             #this method may block if the menus are still being loaded,
             #so do it in a throw-away thread:
