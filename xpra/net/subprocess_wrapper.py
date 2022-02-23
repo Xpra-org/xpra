@@ -9,7 +9,7 @@ import subprocess
 from queue import Queue
 
 from xpra.gtk_common.gobject_compat import register_os_signals
-from xpra.util import repr_ellipsized, envint, envbool
+from xpra.util import repr_ellipsized, envint, envbool, csv
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException, PACKET_TYPES
 from xpra.net.protocol import Protocol, CONNECTION_LOST, GIBBERISH
@@ -272,7 +272,7 @@ class subprocess_callee:
         #make it easier to hookup signals to methods:
         attr = command.replace("-", "_")
         if self.method_whitelist is not None and attr not in self.method_whitelist:
-            log.warn("invalid command: %s (not in whitelist: %s)", attr, self.method_whitelist)
+            log.warn("invalid command %r, not in whitelist: %s", attr, csv(self.method_whitelist))
             return
         wo = self.wrapped_object
         if not wo:
