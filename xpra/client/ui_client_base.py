@@ -135,8 +135,8 @@ class UIXpraClient(ClientBaseClass):
         self.xsettings_enabled = False
         self.server_start_new_commands = False
         self.server_xdg_menu = None
-        self.start_new_commands  = []
-        self.start_child_new_commands  = []
+        self.request_start = []
+        self.request_start_child = []
         self.headerbar = None
 
         #in WindowClient - should it be?
@@ -215,8 +215,8 @@ class UIXpraClient(ClientBaseClass):
             from xpra.scripts.main import strip_defaults_start_child
             from xpra.scripts.config import make_defaults_struct
             defaults = make_defaults_struct()
-            self.start_new_commands  = strip_defaults_start_child(opts.start, defaults.start)   #pylint: disable=no-member
-            self.start_child_new_commands  = strip_defaults_start_child(opts.start_child, defaults.start_child) #pylint: disable=no-member
+            self.request_start = strip_defaults_start_child(opts.start, defaults.start)   #pylint: disable=no-member
+            self.request_start_child = strip_defaults_start_child(opts.start_child, defaults.start_child) #pylint: disable=no-member
 
         if MOUSE_DELAY_AUTO:
             try:
@@ -320,13 +320,13 @@ class UIXpraClient(ClientBaseClass):
 
 
     def send_start_new_commands(self):
-        log("send_start_new_commands() start_new_commands=%s, start_child_new_commands=%s",
-            self.start_new_commands, self.start_child_new_commands)
+        log("send_start_new_commands() request_start=%s, request_start_child=%s",
+            self.request_start, self.request_start_child)
         import shlex
-        for cmd in self.start_new_commands:
+        for cmd in self.request_start:
             cmd_parts = shlex.split(cmd)
             self.send_start_command(cmd_parts[0], cmd, True)
-        for cmd in self.start_child_new_commands:
+        for cmd in self.request_start_child:
             cmd_parts = shlex.split(cmd)
             self.send_start_command(cmd_parts[0], cmd, False)
 
@@ -441,7 +441,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_start_new_commands = c.boolget("start-new-commands")
         if self.server_start_new_commands:
             self.server_xdg_menu = c.dictget("xdg-menu", None)
-        if self.start_new_commands or self.start_child_new_commands:
+        if self.request_start or self.request_start_child:
             if self.server_start_new_commands:
                 self.after_handshake(self.send_start_new_commands)
             else:
