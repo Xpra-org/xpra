@@ -219,6 +219,16 @@ class ProxyInstance:
         return info
 
 
+    def get_connection_info(self) -> dict:
+        return {
+            "client" : self.client_protocol.get_info(),
+            "server" : self.server_protocol.get_info(),
+            }
+
+    def get_info(self) -> dict:
+        return {"connection" : self.get_connection_info()}
+
+
     ################################################################################
 
     def send_hello(self, challenge_response=None, client_salt=None):

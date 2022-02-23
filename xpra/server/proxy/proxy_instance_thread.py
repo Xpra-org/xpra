@@ -69,14 +69,3 @@ class ProxyInstanceThread(ProxyInstance):
         #no need to start the client protocol,
         #it was started when we processed authentication in the proxy server
         #self.client_protocol.start()
-
-
-    def get_info(self) -> dict:
-        info = {}
-        cinfo = info.setdefault("connection", {})
-        def add_protocol_info(prefix, proto):
-            pinfo = proto.get_info()
-            cinfo[prefix] = pinfo.get("thread", ())
-        add_protocol_info("client", self.client_protocol)
-        add_protocol_info("server", self.server_protocol)
-        return info

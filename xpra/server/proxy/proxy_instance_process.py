@@ -301,7 +301,9 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             def is_req(mode):
                 return generic_request==mode or caps.boolget("%s_request" % mode)
             if is_req("info"):
-                proto.send_now(("hello", self.get_proxy_info(proto)))
+                info = self.get_proxy_info(proto)
+                info.setdefault("connection", {}).update(self.get_connection_info())
+                proto.send_now(("hello", info))
                 self.timeout_add(5*1000, self.send_disconnect, proto, CLIENT_EXIT_TIMEOUT, "info sent")
                 return
             if is_req("stop"):
