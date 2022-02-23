@@ -1116,7 +1116,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
             context = self.gl_context()
             if not context:
-                log("%s._do_paint_rgb(..) no context!", self)
+                log("%s.gl_paint_planar(..) no context!", self)
                 fire_paint_callbacks(callbacks, False, "failed to get a gl context")
                 return
             with context:
