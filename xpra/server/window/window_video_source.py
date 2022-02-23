@@ -400,7 +400,9 @@ class WindowVideoSource(WindowSource):
                     log.warn(*msg_args)
                 else:
                     log(*msg_args)
-        self.common_video_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.video_encodings and x in self.core_encodings]
+                log(" csc modes=%", self.full_csc_modes)
+        self.common_video_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER
+                                            if x in self.video_encodings and x in self.core_encodings)
         log("update_encoding_options: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         super().update_encoding_selection(encoding, exclude, init)
