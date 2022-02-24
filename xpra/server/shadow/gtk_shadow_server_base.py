@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -26,6 +26,31 @@ screenlog = Logger("screen")
 log = Logger("shadow")
 
 MULTI_WINDOW = envbool("XPRA_SHADOW_MULTI_WINDOW", True)
+
+
+def parse_geometry(s):
+    try:
+        parts = s.split("@")
+        if len(parts)==1:
+            x = y = 0
+        else:
+            x, y = [int(v.strip(" ")) for v in parts[1].split("x")]
+        w, h = [int(v.strip(" ")) for v in parts[0].split("x")]
+        geometry = [x, y, w, h]
+        screenlog("capture geometry: %s", geometry)
+        return geometry
+    except ValueError:
+        screenlog("failed to parse geometry %r", s, exc_info=True)
+        screenlog.error("Error: invalid display geometry specified: %r", s)
+        screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
+        raise
+
+def parse_geometries(s):
+    g = []
+    for geometry_str in s.split("/"):
+        if geometry_str:
+            g.append(parse_geometry(geometry_str))
+    return g
 
 
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
@@ -169,28 +194,6 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         match_str = None
         multi_window = MULTI_WINDOW
         geometries = None
-        def parse_geometry(s):
-            try:
-                parts = s.split("@")
-                if len(parts)==1:
-                    x = y = 0
-                else:
-                    x, y = [int(v.strip(" ")) for v in parts[1].split("x")]
-                w, h = [int(v.strip(" ")) for v in parts[0].split("x")]
-                geometry = [x, y, w, h]
-                screenlog("capture geometry: %s", geometry)
-                return geometry
-            except ValueError:
-                screenlog("failed to parse geometry %r", s, exc_info=True)
-                screenlog.error("Error: invalid display geometry specified: %r", s)
-                screenlog.error(" use the format: WIDTHxHEIGHT@x,y")
-                raise
-        def parse_geometries(s):
-            g = []
-            for geometry_str in s.split("/"):
-                if geometry_str:
-                    g.append(parse_geometry(geometry_str))
-            return g
         if "=" in self.display_options:
             #parse the display options as a dictionary:
             opt_dict = parse_simple_dict(self.display_options)
@@ -202,7 +205,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         else:
             try:
                 geometries = parse_geometries(self.display_options)
-            except:
+            except Exception:
                 match_str = self.display_options
         if not multi_window or geometries:
             for geometry in (geometries or (None,)):
