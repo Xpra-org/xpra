@@ -110,6 +110,7 @@ FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 0)
 REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
 REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
 UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
+SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -255,7 +256,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #add platform hooks
         self.connect_after("realize", self.on_realize)
         self.connect('unrealize', self.on_unrealize)
-        self.add_events(WINDOW_EVENT_MASK)
+        self.add_events(self.get_window_event_mask())
         if DRAGNDROP and not self._client.readonly:
             self.init_dragndrop()
         self.init_focus()
@@ -277,8 +278,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             widget.queue_draw_area(x, y, w, h)
 
 
+    def get_window_event_mask(self):
+        mask = WINDOW_EVENT_MASK
+        if self._client.wheel_smooth:
+            mask |= Gdk.EventMask.SMOOTH_SCROLL_MASK
+        return mask
+
     def init_widget_events(self, widget):
-        widget.add_events(WINDOW_EVENT_MASK)
+        widget.add_events(self.get_window_event_mask())
         def motion(_w, event):
             self._do_motion_notify_event(event)
             return True

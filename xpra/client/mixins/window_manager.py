@@ -50,6 +50,7 @@ metalog = Logger("metadata")
 traylog = Logger("client", "tray")
 
 MOUSE_SHOW = envbool("XPRA_MOUSE_SHOW", True)
+SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
 
 PAINT_FAULT_RATE = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
 PAINT_FAULT_TELL = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
@@ -142,6 +143,7 @@ class WindowClient(StubClientMixin):
         self._pid_to_signalwatcher = {}
         self._signalwatcher_to_wids = {}
 
+        self.wheel_smooth = SMOOTH_SCROLL
         self.wheel_map = {}
         self.wheel_deltax = 0
         self.wheel_deltay = 0
@@ -199,19 +201,22 @@ class WindowClient(StubClientMixin):
             self.parse_border()
 
         #mouse wheel:
-        mw = (opts.mousewheel or "").lower().replace("-", "")
-        if mw not in FALSE_OPTIONS:
+        mw = (opts.mousewheel or "").lower().replace("-", "").split(",")
+        if "coarse" in mw:
+            mw.remove("coarse")
+            self.wheel_smooth = False
+        if not any(x in FALSE_OPTIONS for x in mw):
             UP = 4
             LEFT = 6
             Z1 = 8
+            invertall = len(mw)==1 and mw[0] in ("invert", "invertall")
             for i in range(20):
                 btn = 4+i*2
                 invert = (
-                    mw=="invert" or
-                    mw=="invertall" or
-                    (btn==UP and mw=="inverty") or
-                    (btn==LEFT and mw=="invertx") or
-                    (btn==Z1 and mw=="invertz")
+                    invertall or
+                    (btn==UP and "inverty" in mw) or
+                    (btn==LEFT and "invertx" in mw) or
+                    (btn==Z1 and "invertz" in mw)
                     )
                 if not invert:
                     self.wheel_map[btn] = btn
@@ -219,7 +224,7 @@ class WindowClient(StubClientMixin):
                 else:
                     self.wheel_map[btn+1] = btn
                     self.wheel_map[btn] = btn+1
-        mouselog("wheel_map(%s)=%s", mw, self.wheel_map)
+        mouselog("wheel_map(%s)=%s, wheel_smooth=%s", mw, self.wheel_map, self.wheel_smooth)
 
         if 0<ICON_OVERLAY<=100:
             icon_filename = opts.tray_icon
