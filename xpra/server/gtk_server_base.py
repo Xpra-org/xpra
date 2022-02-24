@@ -56,7 +56,17 @@ class GTKServerBase(ServerBase):
         ### Set up keymap change notification:
         display = Gdk.Display.get_default()
         keymap = Gdk.Keymap.get_for_display(display)
-        keymap.connect("keys-changed", self._keys_changed)
+        #this event can fire many times in succession
+        #throttle how many times we call self._keys_changed()
+        def keys_changed(*_args):
+            if self.keymap_changing:
+                return
+            self.keymap_changing = True
+            def do_keys_changed():
+                self._keys_changed()
+                self.keymap_changing = False
+            self.timeout_add(500, do_keys_changed)
+        keymap.connect("keys-changed", keys_changed)
 
     def install_signal_handlers(self, callback):
         sstr = "%s server" % self.get_server_mode()
