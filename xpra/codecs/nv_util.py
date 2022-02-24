@@ -43,7 +43,7 @@ def get_nvml_driver_version():
                 finally:
                     nvmlShutdown()
                 log("nvmlSystemGetDriverVersion=%s", bytestostr(v))
-                return v.split(b".")
+                return bytestostr(v).split(".")
         except Exception as e:
             log("get_nvml_driver_version() pynvml error", exc_info=True)
             log.warn("Warning: failed to query the NVidia kernel module version using NVML:")
