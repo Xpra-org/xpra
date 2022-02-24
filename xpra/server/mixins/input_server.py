@@ -16,6 +16,7 @@ from xpra.log import Logger
 keylog = Logger("keyboard")
 mouselog = Logger("mouse")
 
+
 class InputServer(StubServerMixin):
     """
     Mixin for servers that handle input devices
@@ -296,7 +297,8 @@ class InputServer(StubServerMixin):
         ss.keyboard_config.sync = bool(packet[1])
         keylog("toggled keyboard-sync to %s for %s", self.keyboard_config.sync, ss)
 
-    def _keys_changed(self, *_args):
+    def _keys_changed(self):
+        keylog("input server: the keymap has been changed, keymap_changin=%s", self.keymap_changing)
         if not self.keymap_changing:
             for ss in self._server_sources.values():
                 if hasattr(ss, "keys_changed"):
