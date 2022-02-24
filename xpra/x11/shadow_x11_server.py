@@ -12,6 +12,7 @@ from xpra.util import (
     envbool, envint, merge_dicts,
     XPRA_DISPLAY_NOTIFICATION_ID, XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
     )
+from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
@@ -129,6 +130,20 @@ def setup_capture(window):
     return capture
 
 
+class X11ShadowModel(RootWindowModel):
+    __slots__ = ("xid", )
+    def __init__(self, root_window, capture=None):
+        super().__init__(root_window, capture)
+        try:
+            self.xid = root_window.get_xid()
+            self.property_names.append("xid")
+        except Exception:
+            self.xid = 0
+
+    def __repr__(self):
+        return "X11ShadowModel(%s : %24s : %s)" % (self.capture, self.geometry, self.xid)
+
+
 #FIXME: warning: this class inherits from ServerBase twice..
 #so many calls will happen twice there (__init__ and init)
 class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
@@ -157,6 +172,9 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def setup_capture(self):
         return setup_capture(self.root)
+
+    def get_root_window_model_class(self):
+        return X11ShadowModel
 
 
     def client_startup_complete(self, ss):
