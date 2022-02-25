@@ -65,7 +65,7 @@ class XImageCapture:
         if getattr(e, "msg", None)=="BadMatch":
             log("BadMatch - temporary error in %s of window #%x", op, self.xwindow, exc_info=True)
         else:
-            log.warn("Warning: failed to %s of window %#x:", self.xwindow)
+            log.warn("Warning: failed to %s of window %#x:", op, self.xwindow)
             log.warn(" %s", e)
         self.close_xshm()
 
