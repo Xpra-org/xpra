@@ -110,6 +110,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if not self.mapped:
             self.refresh_timer = None
             return False
+        self.refresh_window_models()
         if self.capture:
             try:
                 if not self.capture.refresh():
@@ -197,6 +198,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         if "=" in self.display_options:
             #parse the display options as a dictionary:
             opt_dict = parse_simple_dict(self.display_options)
+            windows = opt_dict.get("windows")
+            if windows:
+                self.window_matches = windows.split("/")
+                return self.makeDynamicWindowModels()
             match_str = opt_dict.get("plug")
             multi_window = parse_bool("multi-window", opt_dict.get("multi-window", multi_window))
             geometries_str = opt_dict.get("geometry")
@@ -233,6 +238,46 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             screenlog.warn(" only found: %s", csv(found))
         return models
 
+    def makeDynamicWindowModels(self):
+        assert self.window_matches
+        raise NotImplementedError("dynamic window shadow is not implemented on this platform")
+
+    def refresh_window_models(self):
+        if not self.window_matches or not server_features.windows:
+            return
+        #update the window models which may have changed,
+        #some may have disappeared, new ones created,
+        #or they may just have changed their geometry:
+        try:
+            windows = self.makeDynamicWindowModels()
+        except Exception as e:
+            log("refresh_window_models()", exc_info=True)
+            log.error("Error refreshing window models")
+            log.error(" %s", e)
+            return
+        xid_to_window = {}
+        for window in windows:
+            xid = window.get_property("xid")
+            xid_to_window[xid] = window
+        sources = self.window_sources()
+        for wid, window in tuple(self._id_to_window.items()):
+            xid = window.get_property("xid")
+            new_model = xid_to_window.pop(xid, None)
+            if new_model is None:
+                #window no longer exists:
+                self._remove_window(window)
+                continue
+            resized = window.geometry[2:]!=new_model.geometry[2:]
+            window.geometry = new_model.geometry
+            if resized:
+                #it has been resized:
+                window.geometry = new_model.geometry
+                window.notify("size-hints")
+                for ss in sources:
+                    ss.resize_window(wid, window, window.geometry[2], window.geometry[3])
+        #any models left are new windows:
+        for window in xid_to_window.values():
+            self._add_new_window(window)
 
     def _adjust_pointer(self, proto, wid, opointer):
         window = self._id_to_window.get(wid)

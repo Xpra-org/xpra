@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -368,6 +368,43 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def getDefaultRootWindow(self):
         assert self.display
         return XDefaultRootWindow(self.display)
+
+
+    def get_all_x11_windows(self):
+        cdef Window root = XDefaultRootWindow(self.display);
+        return self.get_all_children(root)
+
+    def get_all_children(self, Window xid):
+        cdef Window root = XDefaultRootWindow(self.display)
+        cdef Window parent = 0
+        cdef Window * children = <Window *> 0
+        cdef unsigned int i, nchildren = 0
+        windows = []
+        try:
+            if not XQueryTree(self.display,
+                              xid,
+                              &root, &parent, &children, &nchildren):
+                return []
+            for i in range(nchildren):
+                windows.append(children[i])
+        finally:
+            if nchildren > 0 and children != NULL:
+                XFree(children)
+        for window in tuple(windows):
+            windows += self.get_all_children(window)
+        return windows
+
+
+    def get_absolute_position(self, Window xid):
+        cdef Window root = XDefaultRootWindow(self.display)
+        cdef int dest_x = 0, dest_y = 0
+        cdef Window child = 0
+        if not XTranslateCoordinates(self.display, xid,
+                                     root,
+                                     0, 0,
+                                     &dest_x, &dest_y, &child):
+            return None
+        return dest_x, dest_y
 
 
     def MapWindow(self, Window xwindow):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -40,6 +40,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         super().__init__()
         self.capture = capture
         self.root = root_window
+        self.window_matches = None
         self.mapped = []
         self.pulseaudio = False
         self.sharing = True
@@ -105,6 +106,8 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             log.info(" on display '%s' of size %ix%i", display, w, h)
         else:
             log.info(" on display of size %ix%i", w, h)
+        if self.window_matches:
+            return
         try:
             l = len(self._id_to_window)
         except AttributeError as e:

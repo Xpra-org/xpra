@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 from time import monotonic
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import is_Wayland, get_loaded_kernel_modules
@@ -16,7 +17,10 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
+from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
+from xpra.gtk_common.gtk_util import get_default_root_window, get_root_size
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
@@ -177,6 +181,86 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return X11ShadowModel
 
 
+    def makeDynamicWindowModels(self):
+        assert self.window_matches
+        with xsync:
+            wb = X11WindowBindings()
+            allw = [wxid for wxid in wb.get_all_x11_windows() if
+                    not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
+            class wrap():
+                def __init__(self, xid):
+                    self.xid = xid
+                def get_xid(self):
+                    return self.xid
+            names = {}
+            for wxid in allw:
+                w = wrap(wxid)
+                name = prop_get(w, "_NET_WM_NAME", "utf8", True) or prop_get(w, "WM_NAME", "latin1", True)
+                if name:
+                    names[wxid] = name
+
+            #log.error("get_all_x11_windows()=%s", allw)
+            windows = []
+            skip = []
+            for m in self.window_matches:
+                xids = []
+                try:
+                    if m.startswith("0x"):
+                        xid = int(m, 16)
+                    else:
+                        xid = int(m)
+                    xids.append(xid)
+                except ValueError:
+                    #assume this is a window name:
+                    #log.info("names=%s", dict((hex(wmxid), name) for wmxid, name in names.items()))
+                    namere = re.compile(m, re.IGNORECASE)
+                    for wxid, name in names.items():
+                        if namere.match(name):
+                            xids.append(wxid)
+                    #log.info("matches for %s: %s", m, tuple(hex(wmxid) for wmxid in xids))
+                for xid in sorted(xids):
+                    if xid in skip:
+                        #log.info("%s skipped", hex(xid))
+                        continue
+                    #log.info("added %s", hex(xid))
+                    windows.append(xid)
+                    children = wb.get_all_children(xid)
+                    skip += children
+                    #for cxid in wb.get_all_children(xid):
+                    #    if cxid not in windows:
+                    #        windows.append(cxid)
+            #log.error("windows(%s)=%s", self.window_matches, tuple(hex(window) for window in windows))
+            models = []
+            rwmc = self.get_root_window_model_class()
+            root = get_default_root_window()
+            for window in windows:
+                x, y, w, h = wb.getGeometry(window)[:4]
+                absp = wb.get_absolute_position(window)
+                if not absp:
+                    continue
+                ox, oy = absp
+                x += ox
+                y += oy
+                if x<=0:
+                    if w+x<=0:
+                        continue
+                    w += x
+                    x = 0
+                if y<=0:
+                    if h+y<=0:
+                        continue
+                    h += y
+                    y = 0
+                if w>0 and h>0:
+                    title = names.get(window, "unknown %r" % m)
+                    geometry = x, y, w, h
+                    model = rwmc(root, self.capture, title, geometry)
+                    model.dynamic_property_names.append("size-hints")
+                    models.append(model)
+            log("models(%s)=%s", self.window_matches, models)
+            return models
+
+
     def client_startup_complete(self, ss):
         super().client_startup_complete(ss)
         log("is_Wayland()=%s", is_Wayland())
@@ -253,7 +337,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 def main(filename):
     from io import BytesIO
     from xpra.os_util import memoryview_to_bytes
-    from xpra.gtk_common.gtk_util import get_default_root_window, get_root_size
     root = get_default_root_window()
     capture = setup_capture(root)
     capture.refresh()
