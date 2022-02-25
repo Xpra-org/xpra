@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import socket
 
-from xpra.util import prettify_plug_name
+from xpra.util import prettify_plug_name, AdHocStruct
 from xpra.os_util import (
     get_generic_os_name, do_get_generic_os_name,
     load_binary_file, get_linux_distribution,
@@ -18,7 +18,9 @@ log = Logger("shadow")
 
 
 class RootWindowModel:
-    __slots__ = ("window", "title", "geometry", "capture", "property_names", "dynamic_property_names", "internal_property_names")
+    __slots__ = ("window", "title", "geometry", "capture",
+                 "property_names", "dynamic_property_names", "internal_property_names",
+                 "signal_listeners")
     def __init__(self, root_window, capture=None):
         self.window = root_window
         self.title = prettify_plug_name(root_window.get_screen().get_display().get_name())
@@ -32,6 +34,7 @@ class RootWindowModel:
             ]
         self.dynamic_property_names = []
         self.internal_property_names = ["content-type"]
+        self.signal_listeners = {}
 
     def __repr__(self):
         return "RootWindowModel(%s : %24s)" % (self.capture, self.geometry)
@@ -168,12 +171,28 @@ class RootWindowModel:
             log("get(%s, %s) %s on %s", name, default_value, e, self)
             return default_value
 
+    def notify(self, prop):
+        if prop not in self.dynamic_property_names:
+            log.warn("ignoring notify for: %s", prop)
+            return
+        pspec = AdHocStruct()
+        pspec.name = prop
+        listeners = self.signal_listeners.get(prop)
+        for listener, *args in listeners:
+            try:
+                listener(self, pspec, *args)
+            except Exception:
+                log.error("Error on %s signal listener %s", prop, listener, exc_info=True)
 
-    def managed_connect(self, *args):   # pragma: no cover
-        log.warn("ignoring managed signal connect request: %s", args)
+    def managed_connect(self, signal, *args):   # pragma: no cover
+        self.connect(signal, *args)
 
-    def connect(self, *args):           # pragma: no cover
-        log.warn("ignoring signal connect request: %s", args)
+    def connect(self, signal, *args):           # pragma: no cover
+        prop = signal.split(":")[-1]        #notify::geometry
+        if prop not in self.dynamic_property_names:
+            log.warn("ignoring signal connect request: %s", args)
+            return
+        self.signal_listeners.setdefault(prop, []).append(args)
 
     def disconnect(self, *args):        # pragma: no cover
         log.warn("ignoring signal disconnect request: %s", args)
