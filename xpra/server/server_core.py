@@ -1344,6 +1344,8 @@ class ServerCore:
             #special case for legacy encryption code:
             protocol.encryption = protocol.encryption or self.tcp_encryption
             protocol.keyfile = protocol.keyfile or self.tcp_encryption_keyfile
+        if protocol.encryption is not None and parse_bool("encryption", protocol.encryption, False):
+            protocol.encryption = None
         netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         if protocol.encryption:
             from xpra.net.crypto import crypto_backend_init
