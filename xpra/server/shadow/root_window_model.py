@@ -21,10 +21,10 @@ class RootWindowModel:
     __slots__ = ("window", "title", "geometry", "capture",
                  "property_names", "dynamic_property_names", "internal_property_names",
                  "signal_listeners")
-    def __init__(self, root_window, capture=None):
+    def __init__(self, root_window, capture=None, title="", geometry=None):
         self.window = root_window
-        self.title = prettify_plug_name(root_window.get_screen().get_display().get_name())
-        self.geometry = root_window.get_geometry()[:4]
+        self.title = title
+        self.geometry = geometry
         self.capture = capture
         self.property_names = [
             "title", "class-instance",

@@ -208,11 +208,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             except Exception:
                 match_str = self.display_options
         if not multi_window or geometries:
-            for geometry in (geometries or (None,)):
-                model = model_class(self.root, self.capture)
-                model.title = display_name
-                if geometry:
-                    model.geometry = geometry
+            for geometry in (geometries or (self.root.get_geometry()[:4],)):
+                model = model_class(self.root, self.capture, display_name, geometry)
                 models.append(model)
             return models
         found = []
@@ -226,11 +223,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             if match_str and not(title in match_str or plug_name in match_str):
                 screenlog.info(" skipped monitor %s", plug_name or title)
                 continue
-            model = model_class(self.root, self.capture)
-            model.title = title
-            model.geometry = (x, y, width, height)
+            geometry = (x, y, width, height)
+            model = model_class(self.root, self.capture, title, geometry)
             models.append(model)
-            screenlog("monitor %i: %10s geometry=%s, scale factor=%s", i, title, model.geometry, scale_factor)
+            screenlog("monitor %i: %10s geometry=%s, scale factor=%s", i, title, geometry, scale_factor)
         screenlog("makeRootWindowModels()=%s", models)
         if not models and match_str:
             screenlog.warn("Warning: no monitors found matching %r", match_str)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -132,8 +132,8 @@ def setup_capture(window):
 
 class X11ShadowModel(RootWindowModel):
     __slots__ = ("xid", )
-    def __init__(self, root_window, capture=None):
-        super().__init__(root_window, capture)
+    def __init__(self, root_window, capture=None, title="", geometry=None):
+        super().__init__(root_window, capture, title, geometry)
         try:
             self.xid = root_window.get_xid()
             self.property_names.append("xid")
@@ -282,7 +282,7 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv)!=2:
         print("usage: %s filename.png" % sys.argv[0])
-        v = 1
+        r = 1
     else:
-        v = main(sys.argv[1])
-    sys.exit(v)
+        r = main(sys.argv[1])
+    sys.exit(r)
