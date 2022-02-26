@@ -1251,6 +1251,7 @@ class ServerCore:
             else:
                 log.error(" check your certificate paths: %s", cpaths)
             log.error(" %s", e)
+            noerr(sock.close)
             return None
 
 
