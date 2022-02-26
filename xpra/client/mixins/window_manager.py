@@ -32,7 +32,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     envint, envbool, typedict,
-    make_instance, updict, repr_ellipsized, u,
+    make_instance, updict, repr_ellipsized, u, noerr,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -1220,6 +1220,8 @@ class WindowClient(StubClientMixin):
             if stdout_io_watch:
                 proc.stdout_io_watch = None
                 self.source_remove(stdout_io_watch)
+            noerr(proc.stdout.close)
+            noerr(proc.stderr.close)
             try:
                 proc.stdin.write(b"exit\n")
                 proc.stdin.flush()

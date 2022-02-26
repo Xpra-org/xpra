@@ -1493,11 +1493,20 @@ def make_progress_process(title="Xpra"):
     except OSError as e:
         werr("Error launching 'splash' subprocess", " %s" % e)
         return None
+    #always close stdin when terminating the splash screen process:
+    saved_terminate = progress_process.terminate
+    def terminate():
+        noerr(progress_process.stdin.close)
+        progress_process.stdin = None
+        saved_terminate()
+    progress_process.terminate = terminate
     def progress(pct, text):
         if progress_process.poll():
             return
-        progress_process.stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
-        progress_process.stdin.flush()
+        stdin = progress_process.stdin
+        if stdin:
+            stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
+            stdin.flush()
     add_process(progress_process, "splash", cmd, ignore=True, forget=True)
     progress(0, title)
     progress(10, "initializing")
