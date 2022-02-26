@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -66,7 +66,8 @@ from xpra.make_thread import start_thread
 from xpra.util import (
     first_time, noerr, net_utf8,
     csv, merge_dicts, typedict, notypedict, flatten_dict,
-    ellipsizer, dump_all_frames, envint, envbool, envfloat,
+    ellipsizer, repr_ellipsized,
+    dump_all_frames, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
     )
@@ -1344,7 +1345,7 @@ class ServerCore:
             #special case for legacy encryption code:
             protocol.encryption = protocol.encryption or self.tcp_encryption
             protocol.keyfile = protocol.keyfile or self.tcp_encryption_keyfile
-        if protocol.encryption is not None and parse_bool("encryption", protocol.encryption, False):
+        if (protocol.encryption or "").lower() not in ("", "aes") and parse_bool("encryption", protocol.encryption, False):
             protocol.encryption = None
         netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         if protocol.encryption:
@@ -2102,7 +2103,7 @@ class ServerCore:
             if key_hash not in KEY_HASHES:
                 return auth_failed("unsupported key hash algorithm: %s" % key_hash)
             cryptolog("setting output cipher using %s encryption key '%s'",
-                      cipher, ellipsizer(encryption_key))
+                      cipher, repr_ellipsized(bytestostr(encryption_key)))
             key_size = c.intget("cipher.key_size", DEFAULT_KEYSIZE)
             proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv,
                                  encryption_key, key_salt, key_hash, key_size, iterations, padding)
