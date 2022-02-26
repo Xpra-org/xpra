@@ -301,8 +301,8 @@ def systemd_run_wrap(mode, args, systemd_run_args=None, **kwargs):
     if LOG_SYSTEMD_WRAP_COMMAND:
         noerr(stderr.write, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
     try:
-        p = Popen(cmd, **kwargs)
-        return p.wait()
+        with Popen(cmd, **kwargs) as p:
+            return p.wait()
     except KeyboardInterrupt:
         return 128+signal.SIGINT
 
