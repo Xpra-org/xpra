@@ -423,7 +423,7 @@ class Protocol:
                 assert len(padded)==actual_size, "expected padded size to be %i, but got %i" % (len(padded), actual_size)
                 data = self.cipher_out.encrypt(padded)
                 assert len(data)==actual_size, "expected encrypted size to be %i, but got %i" % (len(data), actual_size)
-                cryptolog("sending %s bytes %s encrypted with %s padding",
+                cryptolog("sending %s bytes %s encrypted with %s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
