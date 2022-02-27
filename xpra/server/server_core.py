@@ -1346,7 +1346,8 @@ class ServerCore:
             #special case for legacy encryption code:
             protocol.encryption = protocol.encryption or self.tcp_encryption
             protocol.keyfile = protocol.keyfile or self.tcp_encryption_keyfile
-        if (protocol.encryption or "").lower() not in ("", "aes") and parse_bool("encryption", protocol.encryption, False):
+        enc = (protocol.encryption or "").lower()
+        if enc and not enc.startswith("aes") and not parse_bool("encryption", enc, False):
             protocol.encryption = None
         netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
         if protocol.encryption:
@@ -2103,8 +2104,8 @@ class ServerCore:
                 return auth_failed("unsupported padding: %s" % padding)
             if key_hash not in KEY_HASHES:
                 return auth_failed("unsupported key hash algorithm: %s" % key_hash)
-            cryptolog("setting output cipher using %s encryption key '%s'",
-                      cipher, repr_ellipsized(bytestostr(encryption_key)))
+            cryptolog("setting output cipher using %s-%s encryption key '%s'",
+                      cipher, cipher_mode, repr_ellipsized(bytestostr(encryption_key)))
             key_size = c.intget("cipher.key_size", DEFAULT_KEYSIZE)
             proto.set_cipher_out(cipher+"-"+cipher_mode, cipher_iv,
                                  encryption_key, key_salt, key_hash, key_size, iterations, padding)
