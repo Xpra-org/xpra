@@ -144,6 +144,9 @@ class X11ShadowModel(RootWindowModel):
         except Exception:
             self.xid = 0
 
+    def get_id(self):
+        return self.xid
+
     def __repr__(self):
         return "X11ShadowModel(%s : %24s : %s)" % (self.capture, self.geometry, self.xid)
 

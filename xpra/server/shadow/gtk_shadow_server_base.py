@@ -257,11 +257,11 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             return
         xid_to_window = {}
         for window in windows:
-            xid = window.get_property("xid")
+            xid = window.get_id()
             xid_to_window[xid] = window
         sources = self.window_sources()
         for wid, window in tuple(self._id_to_window.items()):
-            xid = window.get_property("xid")
+            xid = window.get_id()
             new_model = xid_to_window.pop(xid, None)
             if new_model is None:
                 #window no longer exists:
