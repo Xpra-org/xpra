@@ -5,8 +5,9 @@
 # later version. See the file COPYING for details.
 
 import socket
+from collections import namedtuple
 
-from xpra.util import prettify_plug_name, AdHocStruct
+from xpra.util import AdHocStruct
 from xpra.os_util import (
     get_generic_os_name, do_get_generic_os_name,
     load_binary_file, get_linux_distribution,
@@ -175,8 +176,8 @@ class RootWindowModel:
         if prop not in self.dynamic_property_names:
             log.warn("ignoring notify for: %s", prop)
             return
-        pspec = AdHocStruct()
-        pspec.name = prop
+        PSpec = namedtuple("PSpec", "name")
+        pspec = PSpec(name=prop)
         listeners = self.signal_listeners.get(prop)
         for listener, *args in listeners:
             try:
