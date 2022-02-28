@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from time import monotonic
-from collections import namedtuple
 from ctypes import (
     create_string_buffer, create_unicode_buffer,
     sizeof, byref, addressof, c_int,
@@ -226,7 +225,6 @@ class SeamlessRootWindowModel(RootWindowModel):
         self.property_names.append("shape")
         self.dynamic_property_names.append("shape")
         self.rectangles = self.get_shape_rectangles(logit=True)
-        self.shape_notify = []
 
     def refresh_shape(self):
         rectangles = self.get_shape_rectangles()
@@ -234,21 +232,7 @@ class SeamlessRootWindowModel(RootWindowModel):
             return  #unchanged
         self.rectangles = rectangles
         shapelog("refresh_shape() sending notify for updated rectangles: %s", rectangles)
-        #notify listeners:
-        PSpec = namedtuple("PSpec", "name")
-        pspec = PSpec(name="shape")
-        for cb, args in self.shape_notify:
-            shapelog("refresh_shape() notifying: %s", cb)
-            try:
-                cb(self, pspec, *args)
-            except Exception:
-                shapelog.error("error in shape notify callback %s", cb, exc_info=True)
-
-    def connect(self, signal, cb, *args):
-        if signal=="notify::shape":
-            self.shape_notify.append((cb, args))
-        else:
-            super().connect(signal, cb, *args)
+        self.notify("shape")
 
     def get_shape_rectangles(self, logit=False):
         #get the list of windows
