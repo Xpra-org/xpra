@@ -219,8 +219,8 @@ def init_capture(w, h, pixel_depth=32):
 
 class SeamlessRootWindowModel(RootWindowModel):
 
-    def __init__(self, root, capture):
-        super().__init__(root, capture)
+    def __init__(self, root, capture, title, geometry):
+        super().__init__(root, capture, title, geometry)
         log("SeamlessRootWindowModel(%s, %s) SEAMLESS=%s", root, capture, SEAMLESS)
         self.property_names.append("shape")
         self.dynamic_property_names.append("shape")
