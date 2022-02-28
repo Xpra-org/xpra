@@ -90,7 +90,7 @@ def do_make_window_metadata(window, propname, get_transient_for=None, get_window
         if wid:
             return {propname : wid}
         return {}
-    if propname in ("window-type", "shape", "children"):
+    if propname in ("window-type", "shape", "children", "hwnd"):
         v = raw()
         if not v and skip_defaults:
             return {}

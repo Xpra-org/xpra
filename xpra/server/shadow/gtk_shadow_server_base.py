@@ -255,6 +255,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             log.error("Error refreshing window models")
             log.error(" %s", e)
             return
+        #build a map of window identifier -> window model:
         xid_to_window = {}
         for window in windows:
             xid = window.get_id()

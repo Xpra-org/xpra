@@ -5,10 +5,11 @@
 # later version. See the file COPYING for details.
 
 import os
+import re
 from time import monotonic
 from ctypes import (
     create_string_buffer, create_unicode_buffer,
-    sizeof, byref, addressof, c_int,
+    sizeof, byref, addressof, c_ulong,
     )
 from ctypes.wintypes import RECT, POINT, BYTE, MAX_PATH
 
@@ -248,7 +249,7 @@ class SeamlessRootWindowModel(RootWindowModel):
             if not IsWindowVisible(hwnd):
                 l("skipped invisible window %#x", hwnd)
                 return True
-            pid = c_int()
+            pid = c_ulong()
             thread_id = GetWindowThreadProcessId(hwnd, byref(pid))
             if pid==ourpid:
                 l("skipped our own window %#x", hwnd)
@@ -311,7 +312,7 @@ class SeamlessRootWindowModel(RootWindowModel):
                 h = bottom
             rectangles.append((left, top, w, h))
             return True
-        EnumWindows(EnumWindowsProc(enum_windows_cb))
+        EnumWindows(EnumWindowsProc(enum_windows_cb), 0)
         l("get_shape_rectangles()=%s", rectangles)
         return sorted(rectangles)
 
@@ -321,6 +322,22 @@ class SeamlessRootWindowModel(RootWindowModel):
             #provide clip rectangle? (based on workspace area?)
             return shape
         return super().get_property(prop)
+
+
+class Win32ShadowModel(RootWindowModel):
+    __slots__ = ("hwnd", "iconic")
+    def __init__(self, root_window, capture=None, title="", geometry=None):
+        super().__init__(root_window, capture, title, geometry)
+        self.hwnd = 0
+        self.iconic = geometry[2]==-32000 and geometry[3]==-32000
+        self.property_names.append("hwnd")
+        self.dynamic_property_names.append("size-hints")
+
+    def get_id(self):
+        return self.hwnd
+
+    def __repr__(self):
+        return "Win32ShadowModel(%s : %24s : %s)" % (self.capture, self.geometry, self.hwnd)
 
 
 class ShadowServer(GTKShadowServerBase):
@@ -396,6 +413,74 @@ class ShadowServer(GTKShadowServerBase):
         if SEAMLESS:
             return SeamlessRootWindowModel
         return RootWindowModel
+
+
+    def makeDynamicWindowModels(self):
+        assert self.window_matches
+        ourpid = os.getpid()
+        taskbar = FindWindowA("Shell_TrayWnd", None)
+        windows = {}
+        def enum_windows_cb(hwnd, lparam):
+            if not IsWindowVisible(hwnd):
+                log("window %#x is not visible", hwnd)
+                return True
+            pid = c_ulong()
+            thread_id = GetWindowThreadProcessId(hwnd, byref(pid))
+            if pid==ourpid:
+                log("skipped our own window %#x, thread id=%#x", hwnd, thread_id)
+                return True
+            rect = RECT()
+            if GetWindowRect(hwnd, byref(rect))==0:
+                log("GetWindowRect failure")
+                return True
+            if hwnd==taskbar:
+                log("skipped taskbar")
+                return True
+            #skipping IsWindowEnabled check
+            length = GetWindowTextLengthW(hwnd)
+            buf = create_unicode_buffer(length+1)
+            if GetWindowTextW(hwnd, buf, length+1)>0:
+                window_title = buf.value
+            else:
+                window_title = ''
+            left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
+            w = right-left
+            h = bottom-top
+            if left<=-32000 or top<=-32000:
+                log("%r is not visible: %s", window_title, (left, top, w, h))
+            if w<=0 and h<=0:
+                log("skipped invalid window size: %ix%i", w, h)
+                return True
+            windows[hwnd] = (window_title, (left, top, w, h))
+            return True
+        EnumWindows(EnumWindowsProc(enum_windows_cb), 0)
+        log("makeDynamicWindowModels() windows=%s", windows)
+        models = []
+        def add_model(hwnd, title, geometry):
+            model = Win32ShadowModel(self.root, self.capture, title=title, geometry=geometry)
+            model.hwnd = hwnd
+            models.append(model)
+        for m in self.window_matches:
+            window = None
+            try:
+                if m.startswith("0x"):
+                    hwnd = int(m, 16)
+                else:
+                    hwnd = int(m)
+                if hwnd:
+                    window = windows.pop(hwnd, None)
+                    if window:
+                        add_model(hwnd, *window)
+            except ValueError:
+                namere = re.compile(m, re.IGNORECASE)
+                for hwnd, window in tuple(windows.items()):
+                    title, geometry = window
+                    if namere.match(title):
+                        add_model(hwnd, title, geometry)
+                        windows.pop(hwnd)
+        log("makeDynamicWindowModels()=%s", models)
+        return models
+
 
     def get_shadow_monitors(self):
         #convert to the format expected by GTKShadowServerBase:
