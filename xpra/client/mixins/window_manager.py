@@ -1220,12 +1220,18 @@ class WindowClient(StubClientMixin):
             if stdout_io_watch:
                 proc.stdout_io_watch = None
                 self.source_remove(stdout_io_watch)
-            noerr(proc.stdout.close)
-            noerr(proc.stderr.close)
+            stdout = proc.stdout
+            if stdout:
+                noerr(stdout.close)
+            stderr = proc.stderr
+            if stderr:
+                noerr(stderr.close)
             try:
-                proc.stdin.write(b"exit\n")
-                proc.stdin.flush()
-                proc.stdin.close()
+                stdin = proc.stdin
+                if stdin:
+                    stdin.write(b"exit\n")
+                    stdin.flush()
+                    stdin.close()
             except IOError:
                 log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
             try:
