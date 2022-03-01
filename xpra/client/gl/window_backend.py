@@ -192,7 +192,7 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
         if window:
             window.destroy()
     log("test_gl_client_window(..) draw_result=%s", draw_result)
-    return draw_result
+    return draw_result or {"success" : False, "message" : "not painted on screen"}
 
 
 
