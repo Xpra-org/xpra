@@ -291,6 +291,16 @@ def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding
     encodings_submenu.encoding_to_index = {}
     NAME_TO_ENCODING = {}
     for i, encoding in enumerate(encodings):
+        if encoding=="-":
+            encodings_submenu.append(Gtk.SeparatorMenuItem())
+            continue
+        if encoding.startswith("label:"):
+            if not HIDE_DISABLED_MENU_ENTRIES:
+                label = Gtk.MenuItem()
+                label.set_label(encoding[len("label:"):])
+                set_sensitive(label, False)
+                encodings_submenu.append(label)
+            continue
         name = get_encoding_name(encoding)
         descr = get_encoding_help(encoding)
         NAME_TO_ENCODING[name] = encoding

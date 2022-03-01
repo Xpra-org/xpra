@@ -623,12 +623,24 @@ class GTKTrayMenuBase(MenuHelper):
 
     def make_encodingssubmenu(self):
         server_encodings = list(self.client.server_encodings)
-        encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
-        encodings.insert(0, "auto")
+        client_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
+        #separator:
+        client_encodings.insert(0, "-")
+        server_encodings.insert(0, "-")
+        client_encodings.insert(1, "label:Don't use these directly:")
+        server_encodings.insert(1, "label:Don't use these directly:")
+        if "grayscale" in client_encodings and "grayscale" in server_encodings:
+            #move grayscale to the top:
+            client_encodings.remove("grayscale")
+            server_encodings.remove("grayscale")
+            client_encodings.insert(0, "grayscale")
+            server_encodings.insert(0, "grayscale")
+        #auto at the very top:
+        client_encodings.insert(0, "auto")
         server_encodings.insert(0, "auto")
         encodings_submenu = make_encodingsmenu(self.get_current_encoding,
                                                self.set_current_encoding,
-                                               encodings, server_encodings)
+                                               client_encodings, server_encodings)
         return encodings_submenu
 
     def get_current_encoding(self):
