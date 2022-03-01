@@ -57,6 +57,7 @@ class FakeClient(AdHocStruct):
         self.encoding_defaults = {}
         self.get_window_frame_sizes = get_None
         self._focused = None
+        self.wheel_smooth = False
         self.pointer_grabbed = None
         def noop(*_args):
             """ pretend this method exists and does something """
