@@ -402,8 +402,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def get_window_info(self, window):
         info = super().get_window_info(window)
         info.update({
-                     "focused"  : self._has_focus and self._window_to_id.get(window, -1)==self._has_focus,
-                     "grabbed"  : self._has_grab and self._window_to_id.get(window, -1)==self._has_grab,
+                     "focused"  : bool(self._has_focus and self._window_to_id.get(window, -1)==self._has_focus),
+                     "grabbed"  : bool(self._has_grab and self._window_to_id.get(window, -1)==self._has_grab),
                      "shown"    : self._desktop_manager.is_shown(window),
                      })
         try:
