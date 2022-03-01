@@ -675,10 +675,15 @@ class Protocol:
         conn = self._conn
         if not conn:
             return False
-        if more or len(buf_data)>1:
-            conn.set_nodelay(False)
-        if len(buf_data)>1:
-            conn.set_cork(True)
+        try:
+            if more or len(buf_data)>1:
+                conn.set_nodelay(False)
+            if len(buf_data)>1:
+                conn.set_cork(True)
+        except OSError:
+            log("write_items(..)", exc_info=True)
+            if not self._closed:
+                raise
         if start_cb:
             try:
                 start_cb(conn.output_bytecount)
@@ -686,10 +691,15 @@ class Protocol:
                 if not self._closed:
                     log.error("Error on write start callback %s", start_cb, exc_info=True)
         self.write_buffers(buf_data, fail_cb, synchronous)
-        if len(buf_data)>1:
-            conn.set_cork(False)
-        if not more:
-            conn.set_nodelay(True)
+        try:
+            if len(buf_data)>1:
+                conn.set_cork(False)
+            if not more:
+                conn.set_nodelay(True)
+        except OSError:
+            log("write_items(..)", exc_info=True)
+            if not self._closed:
+                raise
         if end_cb:
             try:
                 end_cb(self._conn.output_bytecount)
