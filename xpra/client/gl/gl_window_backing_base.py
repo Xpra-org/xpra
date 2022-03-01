@@ -369,7 +369,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.with_gl_context(self.resize_fbo, oldw, oldh, bw, bh)
 
     def resize_fbo(self, context, oldw : int, oldh : int, bw : int, bh : int):
-        log("resize_fbo%s context=%s, offscreen_fbo=%s",
+        log("resize_fbo%s offscreen_fbo=%s",
             (context, oldw, oldh, bw, bh), self.offscreen_fbo)
         if not context or self.offscreen_fbo is None:
             return
