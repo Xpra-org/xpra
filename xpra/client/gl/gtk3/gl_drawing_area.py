@@ -6,6 +6,7 @@
 import sys
 from gi.repository import GLib, Gtk, Gdk
 
+from xpra.util import ellipsizer
 from xpra.client.gl.gl_window_backing_base import GLWindowBackingBase
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
@@ -69,7 +70,7 @@ class GLDrawingArea(GLWindowBackingBase):
             else:
                 cb(None, *args)
         else:
-            log("GLDrawingArea.with_gl_context delayed: %s%s", cb, args)
+            log("GLDrawingArea.with_gl_context delayed: %s%s", cb, ellipsizer(args))
             self.on_realize_cb.append((cb, args))
 
 
