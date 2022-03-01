@@ -672,7 +672,7 @@ def set_debug_events():
             name = name[1:]
         else:
             event_set = debug_set
-        if name=="*":
+        if name in ("*", "all"):
             events = names_to_event_type.keys()
         elif name in names_to_event_type:
             events = [name]
