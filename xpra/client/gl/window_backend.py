@@ -183,6 +183,10 @@ def test_gl_client_window(gl_client_window_class, max_window_size=(1024, 1024), 
             Gtk.main()
         else:
             draw()
+            #ugly workaround for calling the paint handler
+            #when the main loop is not running:
+            if hasattr(window_backing, "on_realize"):
+                window_backing.on_realize()
         if window_backing.last_present_fbo_error:
             return {
                 "success" : False,
