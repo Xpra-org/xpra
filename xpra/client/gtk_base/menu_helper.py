@@ -24,7 +24,7 @@ from xpra.log import Logger
 log = Logger("menu")
 
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
-HIDE_DISABLED_MENU_ENTRIES = OSX
+HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)
 
 
 LOSSLESS = "Lossless"
