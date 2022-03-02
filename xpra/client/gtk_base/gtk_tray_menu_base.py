@@ -621,7 +621,7 @@ class GTKTrayMenuBase(MenuHelper):
             self.client._process_encodings = process_encodings
         return encodings
 
-    def make_encodingssubmenu(self):
+    def get_encoding_options(self):
         server_encodings = list(self.client.server_encodings)
         client_encodings = [x for x in PREFERRED_ENCODING_ORDER if x in self.client.get_encodings()]
         #separator:
@@ -638,6 +638,10 @@ class GTKTrayMenuBase(MenuHelper):
         #auto at the very top:
         client_encodings.insert(0, "auto")
         server_encodings.insert(0, "auto")
+        return client_encodings, server_encodings
+
+    def make_encodingssubmenu(self):
+        client_encodings, server_encodings = self.get_encoding_options()
         encodings_submenu = make_encodingsmenu(self.get_current_encoding,
                                                self.set_current_encoding,
                                                client_encodings, server_encodings)
