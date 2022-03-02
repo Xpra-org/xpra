@@ -49,7 +49,7 @@ Or you may want to add each application individually using a `start` option for 
 ### Some gnome applications take a long time to start (ie: `gnome-terminal`)
 Try adding `--source-start=gnome-keyring-daemon` to your server. (see [gnome-terminal takes too long to launch](https://github.com/Xpra-org/xpra/issues/3109), not supported with older versions so use `--start=gnome-keyring-daemon` instead)
 ### My xpra seamless or desktop session has crashed! Can I recover it?
-Generally yes, as long as the virtual display server (vfb) has not crashed.\
+Generally yes, as long as the virtual display server (vfb) has not crashed - and it very rarely does. Use `xpra recover`.\
 If the xpra server is completely gone, you can start a new one to re-use the existing display.\
 If the xpra server is still running but unresponsive, you should kill it first (and use `kill -9` to prevent the tear down code from also stopping the vfb display)
 ### Application X creates a new tab or window on an existing display, not the display I want to use
@@ -75,6 +75,10 @@ If your SSH key is not detected and used correctly by default, you may want to u
 ### "`cannot create group socket '/run/xpra/USERNAME'`", usually followed by `[Errno 13] Permission denied`
 Harmless warning, safe to ignore. Or you can add your user to the `xpra` group.\
 The server tries to create a socket in the shared group directory `/run/xpra`. This is only useful for sharing access to sessions via unix group membership, in combination with the `socket-permissions` option.
+### `/run/user/$UID` does not exist
+You probably used `su` or and `ssh` login (not all distributions are afflicted by the ssh variant of this bug).
+See [The directory /run/user/ID is not created when the user is switched via su or sudo](https://bugzilla.redhat.com/show_bug.cgi?id=967509)
+Use `machinectl shell --uid=username` instead of `su` / `sudo`.
 ### `uinput` warnings:
 `uinput` is optional, all these warnings are safe to ignore:
 * "`Error: cannot query uinput device path`" or "`cannot access python uinput module: No module named uinput`"
