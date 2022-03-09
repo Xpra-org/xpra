@@ -9,6 +9,8 @@
 import os
 import threading
 from time import monotonic
+import gi
+gi.require_version('Gdk', '3.0')
 from gi.repository import Gdk
 
 from xpra.x11.bindings.core_bindings import set_context_check, X11CoreBindings     #@UnresolvedImport

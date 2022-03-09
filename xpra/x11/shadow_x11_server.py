@@ -43,6 +43,85 @@ if USE_NVFBC:
         USE_NVFBC = False
 
 
+def window_matches(wspec, model_class):
+    with xsync:
+        wb = X11WindowBindings()
+        allw = [wxid for wxid in wb.get_all_x11_windows() if
+                not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
+        class wrap():
+            def __init__(self, xid):
+                self.xid = xid
+            def get_xid(self):
+                return self.xid
+        names = {}
+        for wxid in allw:
+            w = wrap(wxid)
+            name = prop_get(w, "_NET_WM_NAME", "utf8", True) or prop_get(w, "WM_NAME", "latin1", True)
+            if name:
+                names[wxid] = name
+
+        #log.error("get_all_x11_windows()=%s", allw)
+        windows = []
+        skip = []
+        for m in wspec:
+            xids = []
+            try:
+                if m.startswith("0x"):
+                    xid = int(m, 16)
+                else:
+                    xid = int(m)
+                xids.append(xid)
+            except ValueError:
+                #assume this is a window name:
+                #log.info("names=%s", dict((hex(wmxid), name) for wmxid, name in names.items()))
+                try:
+                    namere = re.compile(m, re.IGNORECASE)
+                except re.error:
+                    log.error("Error: invalid window regular expression %r", m)
+                    continue
+                for wxid, name in names.items():
+                    if namere.match(name):
+                        xids.append(wxid)
+                #log.info("matches for %s: %s", m, tuple(hex(wmxid) for wmxid in xids))
+            for xid in sorted(xids):
+                if xid in skip:
+                    #log.info("%s skipped", hex(xid))
+                    continue
+                #log.info("added %s", hex(xid))
+                windows.append(xid)
+                children = wb.get_all_children(xid)
+                skip += children
+                #for cxid in wb.get_all_children(xid):
+                #    if cxid not in windows:
+                #        windows.append(cxid)
+        #log.error("windows(%s)=%s", self.window_matches, tuple(hex(window) for window in windows))
+        models = []
+        for window in windows:
+            x, y, w, h = wb.getGeometry(window)[:4]
+            absp = wb.get_absolute_position(window)
+            if not absp:
+                continue
+            ox, oy = absp
+            x += ox
+            y += oy
+            if x<=0:
+                if w+x<=0:
+                    continue
+                w += x
+                x = 0
+            if y<=0:
+                if h+y<=0:
+                    continue
+                h += y
+                y = 0
+            if w>0 and h>0:
+                title = names.get(window, "unknown %r" % m)
+                model = model_class(title, (x, y, w, h))
+                models.append(model)
+        log("window_matches(%s, %s)=%s", wspec, model_class, models)
+        return models
+
+
 class XImageCapture:
     __slots__ = ("xshm", "xwindow")
     def __init__(self, xwindow):
@@ -186,82 +265,13 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
     def makeDynamicWindowModels(self):
         assert self.window_matches
-        with xsync:
-            wb = X11WindowBindings()
-            allw = [wxid for wxid in wb.get_all_x11_windows() if
-                    not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
-            class wrap():
-                def __init__(self, xid):
-                    self.xid = xid
-                def get_xid(self):
-                    return self.xid
-            names = {}
-            for wxid in allw:
-                w = wrap(wxid)
-                name = prop_get(w, "_NET_WM_NAME", "utf8", True) or prop_get(w, "WM_NAME", "latin1", True)
-                if name:
-                    names[wxid] = name
-
-            #log.error("get_all_x11_windows()=%s", allw)
-            windows = []
-            skip = []
-            for m in self.window_matches:
-                xids = []
-                try:
-                    if m.startswith("0x"):
-                        xid = int(m, 16)
-                    else:
-                        xid = int(m)
-                    xids.append(xid)
-                except ValueError:
-                    #assume this is a window name:
-                    #log.info("names=%s", dict((hex(wmxid), name) for wmxid, name in names.items()))
-                    namere = re.compile(m, re.IGNORECASE)
-                    for wxid, name in names.items():
-                        if namere.match(name):
-                            xids.append(wxid)
-                    #log.info("matches for %s: %s", m, tuple(hex(wmxid) for wmxid in xids))
-                for xid in sorted(xids):
-                    if xid in skip:
-                        #log.info("%s skipped", hex(xid))
-                        continue
-                    #log.info("added %s", hex(xid))
-                    windows.append(xid)
-                    children = wb.get_all_children(xid)
-                    skip += children
-                    #for cxid in wb.get_all_children(xid):
-                    #    if cxid not in windows:
-                    #        windows.append(cxid)
-            #log.error("windows(%s)=%s", self.window_matches, tuple(hex(window) for window in windows))
-            models = []
-            rwmc = self.get_root_window_model_class()
-            root = get_default_root_window()
-            for window in windows:
-                x, y, w, h = wb.getGeometry(window)[:4]
-                absp = wb.get_absolute_position(window)
-                if not absp:
-                    continue
-                ox, oy = absp
-                x += ox
-                y += oy
-                if x<=0:
-                    if w+x<=0:
-                        continue
-                    w += x
-                    x = 0
-                if y<=0:
-                    if h+y<=0:
-                        continue
-                    h += y
-                    y = 0
-                if w>0 and h>0:
-                    title = names.get(window, "unknown %r" % m)
-                    geometry = x, y, w, h
-                    model = rwmc(root, self.capture, title, geometry)
-                    model.dynamic_property_names.append("size-hints")
-                    models.append(model)
-            log("models(%s)=%s", self.window_matches, models)
-            return models
+        rwmc = self.get_root_window_model_class()
+        root = get_default_root_window()
+        def model_class(title, geometry):
+            model = rwmc(root, self.capture, title, geometry)
+            model.dynamic_property_names.append("size-hints")
+            return model
+        return window_matches(self.window_matches, model_class)
 
 
     def client_startup_complete(self, ss):
@@ -337,7 +347,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
 
 
-def main(filename):
+def snapshot(filename):
     from io import BytesIO
     from xpra.os_util import memoryview_to_bytes
     root = get_default_root_window()
@@ -364,11 +374,24 @@ def main(filename):
         f.write(data)
     return 0
 
+
+def main(*args):
+    assert len(args)>0
+    if args[0].endswith(".png"):
+        return snapshot(args[0])
+    def cb(title, geom):
+        print("%32s : %s"  %(title, geom))
+    from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
+    init_gdk_display_source()
+    window_matches(args, cb)
+
+
 if __name__ == "__main__":
     import sys
-    if len(sys.argv)!=2:
+    if len(sys.argv)==1:
         print("usage: %s filename.png" % sys.argv[0])
+        print("usage: %s windowname|windowpid" % sys.argv[0])
         r = 1
     else:
-        r = main(sys.argv[1])
+        r = main(*sys.argv[1:])
     sys.exit(r)
