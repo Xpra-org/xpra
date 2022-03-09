@@ -19,6 +19,7 @@ from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.x11.gtk_x11.prop import prop_get
 from xpra.x11.bindings.ximage import XImageBindings     #@UnresolvedImport
+from xpra.x11.bindings.res_bindings import ResBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import X11WindowBindings     #@UnresolvedImport
 from xpra.gtk_common.gtk_util import get_default_root_window, get_root_size
 from xpra.gtk_common.error import xsync, xlog
@@ -45,6 +46,9 @@ if USE_NVFBC:
 
 def window_matches(wspec, model_class):
     with xsync:
+        XRes = ResBindings()
+        if not XRes.check_xres():
+            XRes = None
         wb = X11WindowBindings()
         allw = [wxid for wxid in wb.get_all_x11_windows() if
                 not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
@@ -60,18 +64,31 @@ def window_matches(wspec, model_class):
             if name:
                 names[wxid] = name
 
+        def i(v):
+            try:
+                if v.startswith("0x"):
+                    return int(v, 16)
+                return int(v)
+            except ValueError:
+                return 0
+
         #log.error("get_all_x11_windows()=%s", allw)
         windows = []
         skip = []
         for m in wspec:
             xids = []
-            try:
-                if m.startswith("0x"):
-                    xid = int(m, 16)
-                else:
-                    xid = int(m)
+            if m.startswith("xid="):
+                m = m[4:]
+            xid = i(m)
+            if xid:
                 xids.append(xid)
-            except ValueError:
+            elif m.startswith("pid="):
+                pid = i(m[4:])
+                if XRes and pid:
+                    for xid in names.keys():
+                        if XRes.get_pid(xid)==pid:
+                            xids.append(xid)
+            else:
                 #assume this is a window name:
                 #log.info("names=%s", dict((hex(wmxid), name) for wmxid, name in names.items()))
                 try:
