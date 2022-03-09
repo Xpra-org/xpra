@@ -58,12 +58,31 @@ def window_matches(wspec, model_class):
             def get_xid(self):
                 return self.xid
         names = {}
+        commands = {}
+        classes = {}
         for wxid in allw:
             w = wrap(wxid)
             name = prop_get(w, "_NET_WM_NAME", "utf8", True) or prop_get(w, "WM_NAME", "latin1", True)
             if name:
                 names[wxid] = name
+            command = prop_get(w, "WM_COMMAND", "latin1", True)
+            if command:
+                commands[wxid] = command.strip("\0")
+            class_instance = wb.getClassHint(wxid)
+            if class_instance:
+                classes[wxid] = class_instance[0].decode("latin1")
 
+        def matchre(re_str, xid_dict):
+            xids = []
+            try:
+                re_c = re.compile(re_str, re.IGNORECASE)
+            except re.error:
+                log.error("Error: invalid window regular expression %r", m)
+            else:
+                for wxid, vstr in xid_dict.items():
+                    if re_c.match(vstr):
+                        xids.append(wxid)
+            return xids
         def i(v):
             try:
                 if v.startswith("0x"):
@@ -88,18 +107,15 @@ def window_matches(wspec, model_class):
                     for xid in names.keys():
                         if XRes.get_pid(xid)==pid:
                             xids.append(xid)
+            elif m.startswith("command="):
+                command = m[len("command="):]
+                xids += matchre(command, commands)
+            elif m.startswith("class="):
+                _class = m[len("class="):]
+                xids += matchre(_class, classes)
             else:
                 #assume this is a window name:
-                #log.info("names=%s", dict((hex(wmxid), name) for wmxid, name in names.items()))
-                try:
-                    namere = re.compile(m, re.IGNORECASE)
-                except re.error:
-                    log.error("Error: invalid window regular expression %r", m)
-                    continue
-                for wxid, name in names.items():
-                    if namere.match(name):
-                        xids.append(wxid)
-                #log.info("matches for %s: %s", m, tuple(hex(wmxid) for wmxid in xids))
+                xids += matchre(m, names)
             for xid in sorted(xids):
                 if xid in skip:
                     #log.info("%s skipped", hex(xid))
