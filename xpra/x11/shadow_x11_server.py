@@ -148,7 +148,7 @@ def window_matches(wspec, model_class):
                 h += y
                 y = 0
             if w>0 and h>0:
-                title = names.get(window, "unknown %r" % m)
+                title = names.get(window, "unknown window")
                 model = model_class(title, (x, y, w, h))
                 models.append(model)
         log("window_matches(%s, %s)=%s", wspec, model_class, models)
