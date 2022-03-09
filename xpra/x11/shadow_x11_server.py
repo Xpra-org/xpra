@@ -45,6 +45,13 @@ if USE_NVFBC:
 
 
 def window_matches(wspec, model_class):
+    wspec = list(wspec)
+    try:
+        wspec.remove("skip-children")
+    except ValueError:
+        skip_children = False
+    else:
+        skip_children = True
     with xsync:
         XRes = ResBindings()
         if not XRes.check_xres():
@@ -122,8 +129,9 @@ def window_matches(wspec, model_class):
                     continue
                 #log.info("added %s", hex(xid))
                 windows.append(xid)
-                children = wb.get_all_children(xid)
-                skip += children
+                if skip_children:
+                    children = wb.get_all_children(xid)
+                    skip += children
                 #for cxid in wb.get_all_children(xid):
                 #    if cxid not in windows:
                 #        windows.append(cxid)
