@@ -518,24 +518,6 @@ class XpraServer(GObject.GObject, X11ServerBase):
         assert isinstance(wid, int), "window id value '%s' is a %s and not a number" % (wid, type(wid))
         return self._id_to_window.get(wid)
 
-    def get_transient_for(self, window):
-        transient_for = window.get_property("transient-for")
-        log("get_transient_for window=%s, transient_for=%s", window, transient_for)
-        if transient_for is None:
-            return 0
-        xid = transient_for.get_xid()
-        log("transient_for.xid=%#x", xid)
-        for w,wid in self._window_to_id.items():
-            if w.get_property("xid")==xid:
-                log("found match, window id=%s", wid)
-                return wid
-        root = get_default_root_window()
-        if root.get_xid()==xid:
-            log("transient-for using root")
-            return -1       #-1 is the backwards compatible marker for root...
-        log("not found transient_for=%s, xid=%#x", transient_for, xid)
-        return 0
-
 
     def parse_hello_ui_window_settings(self, ss, _caps):
         #FIXME: with multiple users, don't set any frame size?

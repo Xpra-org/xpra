@@ -366,10 +366,11 @@ class BaseWindowModel(CoreX11WindowModel):
         group_leader = None
         if "window_group" in wm_hints:
             xid = wm_hints.get("window_group")
-            try:
-                group_leader = xid, get_pywindow(xid)
-            except Exception:
-                group_leader = xid, None
+            if xid:
+                try:
+                    group_leader = get_pywindow(xid)
+                except Exception:
+                    log.error("Error locating group leader window %#x", xid)
         self._updateprop("group-leader", group_leader)
         self._updateprop("attention-requested", wm_hints.get("urgency", False))
         _input = wm_hints.get("input")

@@ -142,8 +142,9 @@ class WindowServer(StubServerMixin):
         return True
 
 
-    def get_window_id(self, window):
-        return self._window_to_id.get(window)
+    def get_window_id(self, _gdkwindow):
+        #the X11 server can find the model from the window's xid
+        return 0
 
 
     def reset_window_filters(self):
@@ -164,7 +165,7 @@ class WindowServer(StubServerMixin):
         for prop in window.get_property_names():
             if prop=="icons" or prop is None:
                 continue
-            metadata = make_window_metadata(window, prop, get_transient_for=self.get_transient_for)
+            metadata = make_window_metadata(window, prop)
             info.update(metadata)
         for prop in window.get_internal_property_names():
             metadata = make_window_metadata(window, prop)
@@ -225,10 +226,11 @@ class WindowServer(StubServerMixin):
             x, y, w, h = geometry
             #adjust if the transient-for window is not mapped in the same place by the client we send to:
             if "transient-for" in window.get_property_names():
-                transient_for = self.get_transient_for(window)
-                if transient_for>0:
-                    parent = self._id_to_window.get(transient_for)
-                    parent_ws = ss.get_window_source(transient_for)
+                transient_for = window.get_property("transient-for")
+                if transient_for:
+                    window_tf = self.get_window_id(transient_for)
+                    parent = self._id_to_window.get(window_tf)
+                    parent_ws = ss.get_window_source(window_tf)
                     pos = self.get_window_position(parent)
                     geomlog("transient-for=%s : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
                     if pos and parent and parent_ws:
@@ -336,8 +338,6 @@ class WindowServer(StubServerMixin):
         else:
             ss.unmap_window(wid, window)
 
-    def get_transient_for(self, _window):
-        return 0
 
     def _process_map_window(self, proto, packet):
         log.info("_process_map_window(%s, %s)", proto, packet)

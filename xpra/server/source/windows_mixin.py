@@ -47,7 +47,6 @@ class WindowsMixin(StubSourceMixin):
 
 
     def __init__(self):
-        self.get_transient_for = None
         self.get_focus = None
         self.get_cursor_data_cb = None
         self.get_window_id = None
@@ -59,7 +58,6 @@ class WindowsMixin(StubSourceMixin):
         self.statistics = None
 
     def init_from(self, _protocol, server):
-        self.get_transient_for  = server.get_transient_for
         self.get_focus          = server.get_focus
         self.get_cursor_data_cb = server.get_cursor_data
         self.get_window_id      = server.get_window_id
@@ -391,7 +389,6 @@ class WindowsMixin(StubSourceMixin):
             metalog("make_metadata: client does not support '%s'", propname)
             return {}
         metadata = make_window_metadata(window, propname,
-                                        get_transient_for=self.get_transient_for,
                                         get_window_id=self.get_window_id,
                                         skip_defaults=skip_defaults)
         if self.readonly:

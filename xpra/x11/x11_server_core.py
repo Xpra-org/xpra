@@ -426,6 +426,18 @@ class X11ServerCore(GTKServerBase):
         return info
 
 
+    def get_window_id(self, gdkwindow):
+        if not gdkwindow:
+            return 0
+        xid = gdkwindow.get_xid()
+        if not xid:
+            return 0
+        for wid, window in self._id_to_window.items():
+            if window.get("xid", 0)==xid:
+                return wid
+        return 0
+
+
     def get_keyboard_config(self, props=typedict()):
         from xpra.x11.server_keyboard_config import KeyboardConfig
         keyboard_config = KeyboardConfig()
