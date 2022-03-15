@@ -28,6 +28,10 @@ from xpra.log import Logger
 log = Logger("x11", "shadow")
 
 XImage = XImageBindings()
+XRes = ResBindings()
+if not XRes.check_xres():
+    XRes = None
+wb = X11WindowBindings()
 
 USE_XSHM = envbool("XPRA_XSHM", True)
 POLL_CURSOR = envint("XPRA_POLL_CURSOR", 20)
@@ -53,10 +57,6 @@ def window_matches(wspec, model_class):
     else:
         skip_children = True
     with xsync:
-        XRes = ResBindings()
-        if not XRes.check_xres():
-            XRes = None
-        wb = X11WindowBindings()
         allw = [wxid for wxid in wb.get_all_x11_windows() if
                 not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
         class wrap():
