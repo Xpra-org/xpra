@@ -204,7 +204,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 items = (
                     "uri", "file", "env",
                     "kerberos", "gss",
-                    "u2f",
+                    "keycloak", "u2f",
                     "prompt", "prompt", "prompt", "prompt",
                     )
                 ierror = authlog
