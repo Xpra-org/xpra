@@ -896,7 +896,7 @@ fi
 
 
 %changelog
-* Thu Feb 10 2021 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
+* Thu Feb 10 2022 Antoine Martin <antoine@xpra.org> 3.1.3-10.1xpra1
 - handling of packet parsing errors
 - packaging fixes:
     dependency updates
