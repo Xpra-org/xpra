@@ -55,7 +55,7 @@ def get_core_encodings():
     for encoding in video_decodings:
         if encoding not in core_encodings:
             core_encodings.append(encoding)
-    #remove duplicates and use prefered encoding order:
+    #remove duplicates and use preferred encoding order:
     return [x for x in PREFERRED_ENCODING_ORDER if x in set(core_encodings)]
 
 
