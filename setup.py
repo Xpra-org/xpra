@@ -1546,6 +1546,8 @@ else:
         man_pages = ["fs/share/man/man1/xpra.1", "fs/share/man/man1/xpra_launcher.1"]
         if not OSX:
             man_pages.append("fs/share/man/man1/run_scaled.1")
+        if (LINUX or FREEBSD) and scripts_ENABLED:
+            man_pages.append("fs/share/man/man1/xpra_signal_listener.1")
         add_data_files("%s/man1" % man_path,  man_pages)
         add_data_files("share/applications",  glob.glob("fs/share/applications/*.desktop"))
         add_data_files("share/mime/packages", ["fs/share/mime/packages/application-x-xpraconfig.xml"])
