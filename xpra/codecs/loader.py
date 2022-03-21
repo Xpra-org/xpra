@@ -304,7 +304,7 @@ def main():
         if verbose:
             format_string = LOG_FORMAT
             log.enable_debug()
-        enable_color(format_string)
+        enable_color(format_string=format_string)
 
         load_codecs()
         #not really a codec, but gets used by codecs, so include version info:
