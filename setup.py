@@ -349,6 +349,10 @@ if install is None and WIN32:
 if share_xpra is None:
     share_xpra = os.path.join("share", "xpra")
 
+if is_Fedora() or is_CentOS() or is_RedHat() or FREEBSD:
+    libexec = "libexec"
+else:
+    libexec = "lib"
 
 
 def should_rebuild(src_file, bin_file):
@@ -906,6 +910,7 @@ def build_xpra_conf(install_dir):
             'mmap'                  : bstr(True),
             'opengl'                : "probe",
             'headerbar'             : ["auto", "no"][OSX or WIN32],
+            'libexec'               : libexec,
             }
     def convert_templates(subdirs):
         dirname = os.path.join(*(["fs", "etc", "xpra"] + subdirs))
@@ -1523,14 +1528,11 @@ else:
         icons_dir = "icons"
     else:
         icons_dir = "pixmaps"
-    if is_Fedora() or is_CentOS() or is_RedHat() or FREEBSD:
-        libexec = "libexec"
-    else:
-        libexec = "lib"
     if LINUX or FREEBSD:
-        if scripts_ENABLED:
-            scripts += ["fs/bin/xpra_udev_product_version", "fs/bin/xpra_signal_listener"]
         libexec_scripts = []
+        if scripts_ENABLED:
+            scripts += ["fs/bin/xpra_signal_listener"]
+            libexec_scripts += ["fs/bin/xpra_udev_product_version"]
         if xdg_open_ENABLED:
             libexec_scripts += ["fs/bin/xdg-open", "fs/bin/gnome-open", "fs/bin/gvfs-open"]
         if server_ENABLED:
@@ -1706,7 +1708,7 @@ else:
                 for x in ("tmpfiles.d", "sysusers.d"):
                     add_data_files("lib/%s" % x, ["fs/lib/%s/xpra.conf" % x])
             if uinput_ENABLED:
-                add_data_files("lib/udev/rules.d/", ["fs/lib/udev/rules.d/71-xpra-virtual-pointer.rules"])
+                add_data_files("lib/udev/rules.d/", ["fs/lib/udev/rules.d/71-xpra-virtual-pointer.rules.in"])
 
     #gentoo does weird things, calls --no-compile with build *and* install
     #then expects to find the cython modules!? ie:
