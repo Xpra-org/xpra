@@ -186,7 +186,8 @@ COLORSPACES = {}
 CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
 VP9_COLORSPACES = ["YUV420P", "YUV444P"]
-if VPX_ENCODER_ABI_VERSION>23 and not OSX:
+cdef int VP9_10BPP = envbool("XPRA_VP9_10BPP", VPX_ENCODER_ABI_VERSION>23)
+if VP9_10BPP:
     VP9_COLORSPACES.append("YUV444P10")
 COLORSPACES["vp9"] = tuple(VP9_COLORSPACES)
 
@@ -399,7 +400,7 @@ cdef class Encoder:
         self.cfg.g_error_resilient = 0              #we currently use TCP, guaranteed delivery
         self.cfg.g_pass = VPX_RC_ONE_PASS
         self.cfg.g_lag_in_frames = 0                #always give us compressed output for each frame without delay
-        self.cfg.rc_resize_allowed = 1
+        self.cfg.rc_resize_allowed = 0
         self.cfg.rc_end_usage = VPX_VBR
         #we choose when to use keyframes (never):
         self.cfg.kf_mode = VPX_KF_DISABLED
