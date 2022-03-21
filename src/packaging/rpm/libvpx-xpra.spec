@@ -64,6 +64,7 @@ exit 1
     --enable-shared \
     --enable-vp8 \
     --enable-vp9 \
+#    --enable-debug \
     --enable-realtime-only \
     --enable-runtime-cpu-detect
 
@@ -97,6 +98,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Mar 21 2022 Antoine Martin <antoine@xpra.org> 1.11.0-1
+- new upstream release
+
 * Thu Oct 15 2020 Antoine Martin <antoine@xpra.org> 1.9.0-1
 - new upstream release
 
