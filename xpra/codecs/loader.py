@@ -319,7 +319,7 @@ def main(args):
         if verbose:
             format_string = LOG_FORMAT
             log.enable_debug()
-        enable_color(format_string)
+        enable_color(format_string=format_string)
 
         if len(args)>1:
             for x in args[1:]:
