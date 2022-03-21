@@ -1299,14 +1299,9 @@ def _do_run_server(script_file, cmdline,
             forward_xdg_open = bool(opts.forward_xdg_open) or (
                 opts.forward_xdg_open is None and mode.find("desktop")<0)
             if ud_paths:
-                #choose one so our xdg-open override script can use to talk back to us:
-                if forward_xdg_open:
-                    for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
-                        xdg_override = os.path.join(x, "xdg-open")
-                        if os.path.exists(xdg_override):
-                            os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
-                            os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
-                            break
+                if forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):
+                    os.environ["PATH"] = "/usr/libexec/xpra"+os.pathsep+os.environ.get("PATH", "")
+                    os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
             else:
                 log.warn("Warning: no local server sockets,")
                 if forward_xdg_open:
