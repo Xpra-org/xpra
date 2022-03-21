@@ -48,7 +48,7 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root)
 %{python2_sitelib}/pynvml.py*
-%{python2_sitelib}/nvidia_ml_py-%{version}-py*.egg-info
+%{python2_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
 * Mon Mar 21 2022 Antoine Martin <antoine@xpra.org> - 11.515.0-1
