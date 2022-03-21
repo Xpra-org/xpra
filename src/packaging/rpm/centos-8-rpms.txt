@@ -17,6 +17,8 @@ python2-pytools
 python2-pyopengl
 python2-pyu2f
 python2-uinput
+python3-pkgconfig
+python3-lz4
 python3-pytools
 python3-puda
 python3-pynvml
