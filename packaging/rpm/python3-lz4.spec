@@ -4,7 +4,7 @@
 
 Name:           python3-%{srcname}
 Version:        3.0.2
-Release:        6%{?dist}
+Release:        8%{?dist}
 URL:            https://github.com/%{name}/%{name}
 Summary:        LZ4 Bindings for Python
 License:        BSD
@@ -16,10 +16,12 @@ BuildRequires:  gcc
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-setuptools_scm
-#BuildRequires:  python3-pkgconfig
+BuildRequires:  python3-pkgconfig
+
 
 %description
 Python 3 bindings for the lz4 compression library.
+
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -28,9 +30,8 @@ if [ "${sha256}" != "9c9f6a8b71c18c24bd83537a4d616f0301623a5e98db7c7ca956d608e1b
 	exit 1
 fi
 %autosetup -n %{srcname}-%{version} -p1
-# Keep the bundled lz4 instead of the system lib
-# since we don't have python3-pkgconfig to locate it
-#rm lz4libs/lz4*.[ch]
+# remove bundled lib so we build against the system lib:
+rm lz4libs/lz4*.[ch]
 
 
 %build
@@ -56,5 +57,5 @@ PYTHONPATH=$RPM_BUILD_ROOT%{python3_sitearch} %{__python3} -c "import lz4"
 
 
 %changelog
-* Mon Mar 21 2022 Antoine Martin <antoine@xpra.org> - 3.0.2-6
+* Mon Mar 21 2022 Antoine Martin <antoine@xpra.org> - 3.0.2-8
 - initial packaging for CentOS 8 based on the Fedora spec file
