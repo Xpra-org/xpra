@@ -702,13 +702,13 @@ cdef class Encoder:
         #Valid range for VP9: -8..8
         #But we only use positive values, negative values are just too slow
         cdef int minv = 4
-        cdef int range = 12
+        cdef int vrange = 12
         if self.encoding=="vp9":
             minv = 5
-            range = VP9_RANGE
+            vrange = VP9_RANGE
         #note: we don't use the full range since the percentages are mapped to -20% to +120%
-        cdef int value = (speed-20)*3*range//200
-        value = minv + MIN(range, MAX(0, value))
+        cdef int value = (speed-20)*3*vrange//200
+        value = minv + MIN(vrange, MAX(0, value))
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct):
