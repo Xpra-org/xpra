@@ -20,6 +20,8 @@ Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/c6/9d/8d37f1dd80f2c5ab1cc8d51bfb8e5a795427db8c35566e257fafacb38ecb/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
+BuildRequires:  python2-devel
+
 
 %description
 Python Bindings for the NVIDIA Management Library
