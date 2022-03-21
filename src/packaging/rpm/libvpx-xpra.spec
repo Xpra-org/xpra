@@ -64,9 +64,10 @@ exit 1
     --enable-shared \
     --enable-vp8 \
     --enable-vp9 \
-#    --enable-debug \
+    --enable-vp9-highbitdepth \
     --enable-realtime-only \
     --enable-runtime-cpu-detect
+#    --enable-debug
 
 make %{?_smp_mflags}
 
