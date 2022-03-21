@@ -465,10 +465,12 @@ cdef class Encoder:
         if self.bandwidth_limit>0:
             #vpx bitrate values are in Kbps:
             bitrate_kbps = min(self.bandwidth_limit//1024, bitrate_kbps)
-        bitrate_kbps = max(16, min(15000, bitrate_kbps))
+        MIN_BITRATE = 1024
+        MAX_BITRATE = 15000
+        bitrate_kbps = max(MIN_BITRATE, min(MAX_BITRATE, bitrate_kbps))
         log("update_cfg() bitrate(%i,%i,%.3f,%i)=%iKbps",
             self.width, self.height, self.initial_bitrate_per_pixel, self.bandwidth_limit, bitrate_kbps)
-        self.cfg.rc_target_bitrate = max(16, min(15000, bitrate_kbps))
+        self.cfg.rc_target_bitrate = bitrate_kbps
         self.cfg.g_threads = self.max_threads
         self.cfg.rc_min_quantizer = MAX(0, MIN(63, int((80-self.quality) * 0.63)))
         self.cfg.rc_max_quantizer = MAX(self.cfg.rc_min_quantizer, MIN(63, int((100-self.quality) * 0.63)))
