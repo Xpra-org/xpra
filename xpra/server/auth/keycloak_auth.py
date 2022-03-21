@@ -62,25 +62,36 @@ class Authenticator(SysAuthenticator):
 
     def check(self, response_json) -> bool:
         assert self.challenge_sent
+        #log("response_json: %r", repr(response_json))
         
-        if response_json is None or response_json == "":
-          log.error("keycloak authentication failed: invalid response received from authorization endpoint.")
+        if not response_json:
+          log.error("Error: keycloak authentication failed as invalid response was received from authorization endpoint.")
           return False
         
-        #log("response_json: %s", repr(response_json))
-        response = json.loads(response_json)
+        try:
+          response = json.loads(response_json)
+        except Exception:
+          log.error("Error: keycloak authentication failed as invalid response was received from authorization endpoint.")
+          return False 
 
-        if type(response) != dict or ("code" not in response and "error" not in response):
-          log.error("keycloak authentication failed: invalid response received from authorization endpoint.")
+        if not isinstance(response, dict):
+          log.error("Error: keycloak authentication failed as invalid response was received from authorization endpoint.")
           return False
 
-        log("check(%s)", repr(response))
+        log("check(%r)", repr(response))
 
-        if "error" in response:
-          log.error("keycloak authentication failed with error %s: %s", response["error"], response["error_description"])
+        auth_code = response.get("code")
+        error = response.get("error")
+
+        if not error and not auth_code:
+          log.error("Error: keycloak authentication failed as invalid response was received from authorization endpoint.")
           return False
 
-        if "code" in response:
+        if error:
+          log.error("Error: keycloak authentication failed with %s: %s", error, response.get("error_description"))
+          return False
+
+        if auth_code:
           # Configure client
           keycloak_openid = KeycloakOpenID(server_url=KEYCLOAK_SERVER_URL,
                             client_id=KEYCLOAK_CLIENT_ID,
@@ -89,25 +100,26 @@ class Authenticator(SysAuthenticator):
 
           try:
             # Get well_known
-            #config_well_know = keycloak_openid.well_know()
-            #log("well_known: %s", repr(config_well_know))
+            config_well_know = keycloak_openid.well_know()
+            log("well_known: %r", repr(config_well_know))
         
             # Get token
-            token = keycloak_openid.token(code=response["code"], grant_type=[KEYCLOAK_GRANT_TYPE], redirect_uri=KEYCLOAK_REDIRECT_URI)
+            token = keycloak_openid.token(code=auth_code, grant_type=[KEYCLOAK_GRANT_TYPE], redirect_uri=KEYCLOAK_REDIRECT_URI)
 
             # Verify token
             token_info = keycloak_openid.introspect(token['access_token'])
-            #log("token_info: %s", repr(token_info))
+            log("token_info: %r", repr(token_info))
 
             if token_info["active"]:
               # Get userinfo
-              #user_info = keycloak_openid.userinfo(token['access_token'])
-              #log("userinfo_info: %s", repr(user_info))
+              user_info = keycloak_openid.userinfo(token['access_token'])
+              log("userinfo_info: %r", repr(user_info))
 
               log("keycloak authentication succeeded: token is active")
+              return True
             else:
-              log.error("keycloak authentication failed: token is not active")
-            return token_info["active"]
+              log.error("Error: keycloak authentication failed as token is not active")
+              return False
           except Exception as e:
-            log.error("keycloak authentication failed with error code %s: %s", e.response_code, e.error_message)
+            log.error("Error: keycloak authentication failed with code %s: %s", e.response_code, e.error_message)
             return False
