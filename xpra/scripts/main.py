@@ -191,19 +191,9 @@ def configure_logging(options, mode):
         "webcam",
         "showconfig",
         ):
-        s = sys.stdout
+        to = sys.stdout
     else:
-        s = sys.stderr
-    to = s
-    try:
-        import codecs
-        #print("locale.getpreferredencoding()=%s" % (locale.getpreferredencoding(),))
-        #python3 has a buffer attribute,
-        #which we must use if we want to be able to write bytes:
-        sbuf = getattr(s, "buffer", s)
-        to = codecs.getwriter("utf-8")(sbuf, "replace")
-    except Exception:   # pragma: no cover
-        pass
+        to = sys.stderr
     #a bit naughty here, but it's easier to let xpra.log initialize
     #the logging system every time, and just undo things here..
     from xpra.log import (
