@@ -14,7 +14,7 @@ from xpra.gtk_common.gtk_util import import_gtk
 
 gtk = import_gtk()
 
-HIDE_DISABLED_MENU_ENTRIES = OSX
+HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)
 
 def make_min_auto_menu(title, min_options, options,
                        get_current_min_value,

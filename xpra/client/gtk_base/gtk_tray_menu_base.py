@@ -34,7 +34,7 @@ bandwidthlog = Logger("bandwidth", "network")
 gtk = import_gtk()
 glib = import_glib()
 
-HIDE_DISABLED_MENU_ENTRIES = OSX
+HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)
 
 SHOW_TITLE_ITEM = envbool("XPRA_SHOW_TITLE_ITEM", True)
 SHOW_VERSION_CHECK = envbool("XPRA_SHOW_VERSION_CHECK", True)
