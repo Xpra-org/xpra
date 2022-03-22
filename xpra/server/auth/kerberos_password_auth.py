@@ -21,7 +21,8 @@ class Authenticator(SysAuthenticatorBase):
         self.uid = parse_uid(kwargs.pop("uid", None))
         self.gid = parse_gid(kwargs.pop("gid", None))
         super().__init__(**kwargs)
-        log("kerberos-password auth: service=%r, realm=%r, username=%r", self.service, self.realm, kwargs.get("username"))
+        log("kerberos-password auth: service=%r, realm=%r, username=%r",
+            self.service, self.realm, kwargs.get("username"))
 
     def get_uid(self) -> int:
         return self.uid
@@ -60,6 +61,7 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv):
+    #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Kerberos-Password-Auth", "Kerberos-Password-Authentication"):
         if len(argv) not in (3,4,5):

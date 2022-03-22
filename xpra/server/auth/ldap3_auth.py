@@ -37,7 +37,8 @@ class Authenticator(SysAuthenticatorBase):
             default_port = 389
         self.port = int(kwargs.pop("port", default_port))
         self.authentication = kwargs.pop("authentication", "NTLM").upper()
-        assert self.authentication in ("SIMPLE", "SASL", "NTLM"), "invalid authentication mechanism '%s'" % self.authentication
+        assert self.authentication in ("SIMPLE", "SASL", "NTLM"), \
+            "invalid authentication mechanism '%s'" % self.authentication
         super().__init__(**kwargs)
         log("ldap auth: host=%s, port=%i, tls=%s",
             self.host, self.port, self.tls)
@@ -79,7 +80,8 @@ class Authenticator(SysAuthenticatorBase):
                 log("TLS=%s", tls)
             server = Server(self.host, port=self.port, tls=tls, use_ssl=self.tls, get_info=ALL)
             log("ldap3 Server(%s)=%s", (self.host, self.port, self.tls), server)
-            conn = Connection(server, user=self.username, password=password, authentication=authentication, receive_timeout=10)
+            conn = Connection(server, user=self.username, password=password,
+                              authentication=authentication, receive_timeout=10)
             log("ldap3 Connection(%s, %s, %s)=%s", server, self.username, self.authentication, conn)
             if self.tls:
                 conn.start_tls()
@@ -101,6 +103,7 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv):
+    #pylint: disable=import-outside-toplevel
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP3-Password-Auth", "LDAP3-Password-Authentication"):

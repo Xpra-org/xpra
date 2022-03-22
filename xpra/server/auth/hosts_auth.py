@@ -77,6 +77,7 @@ class Authenticator(SysAuthenticator):
 
 
 def main(argv):
+    #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Host Check", "Host Check"):
         for x in ("-v", "--verbose"):

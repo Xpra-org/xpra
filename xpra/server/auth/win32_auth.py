@@ -69,6 +69,7 @@ class Authenticator(SysAuthenticator):
 
 
 def main(argv):
+    #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Auth-Test", "Auth-Test"):

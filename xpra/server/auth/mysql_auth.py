@@ -29,7 +29,7 @@ def url_path_to_dict(path):
 def db_from_uri(uri):
     d = url_path_to_dict(uri)
     log("settings for uri=%s : %s", uri, d)
-    import mysql.connector as mysql  #@UnresolvedImport
+    import mysql.connector as mysql  #@UnresolvedImport pylint: disable=import-outside-toplevel
     db = mysql.connect(
         host = d.get("host", "localhost"),
         #port = int(d.get("port", 3306)),
