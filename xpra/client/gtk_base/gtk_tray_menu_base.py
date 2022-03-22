@@ -9,7 +9,7 @@ import re
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
 from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
-from xpra.os_util import bytestostr, OSX, WIN32
+from xpra.os_util import bytestostr, OSX, WIN32, PYTHON3
 from xpra.gtk_common.gtk_util import (
     ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem,
     get_pixbuf_from_data, scaled_image,
@@ -34,7 +34,7 @@ bandwidthlog = Logger("bandwidth", "network")
 gtk = import_gtk()
 glib = import_glib()
 
-HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)
+HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", PYTHON3)
 
 SHOW_TITLE_ITEM = envbool("XPRA_SHOW_TITLE_ITEM", True)
 SHOW_VERSION_CHECK = envbool("XPRA_SHOW_VERSION_CHECK", True)
