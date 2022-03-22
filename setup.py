@@ -1379,7 +1379,7 @@ if WIN32:
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
-            add_gui_exe("fs/bin/auth_dialog",                  "authentication.ico", "Auth_Dialog")
+            add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
         if mdns_ENABLED and gtk3_ENABLED:
             add_gui_exe("xpra/client/gtk_base/mdns_gui.py",     "mdns.ico",         "Xpra_Browser")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
