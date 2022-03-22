@@ -116,12 +116,6 @@ def do_get_download_dir():
     return d
 
 
-def get_libexec_dir():
-    return env_or_delegate("XPRA_LIBEXEC_DIR", do_get_libexec_dir)
-def do_get_libexec_dir():
-    return get_app_dir()
-
-
 def get_mmap_dir():
     return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
 def do_get_mmap_dir():
