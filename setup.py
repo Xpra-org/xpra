@@ -1669,7 +1669,7 @@ else:
                     #keep everything in our own directory:
                     doc_dir = "%s/share/xpra/doc" % self.install_dir
                 else:
-                    doc_dir = "%s/share/doc/xpra" % self.install_dir
+                    doc_dir = "%s/share/doc/xpra/manual" % self.install_dir
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
