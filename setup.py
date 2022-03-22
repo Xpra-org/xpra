@@ -114,11 +114,14 @@ def pkg_config_ok(*args):
     return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0]==0
 
 def pkg_config_version(req_version, pkgname):
-    cmd = [PKG_CONFIG, "--modversion", pkgname]
-    r, out, _ = get_status_output(cmd)
+    r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r!=0 or not out:
         return False
-    from distutils.version import LooseVersion
+    try:
+        from packaging.version import parse
+        return parse(out)>=parse(req_version)
+    except ImportError:
+        from distutils.version import LooseVersion
     return LooseVersion(out)>=LooseVersion(req_version)
 
 def is_RH():
