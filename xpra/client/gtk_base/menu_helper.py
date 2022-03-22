@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util import envbool
-from xpra.os_util import OSX, PYTHON3
+from xpra.os_util import OSX, PYTHON2
 from xpra.gtk_common.gtk_util import menuitem
 from xpra.gtk_common.about import about, close_about
 from xpra.platform.gui import get_icon_size
@@ -14,7 +14,7 @@ from xpra.gtk_common.gtk_util import import_gtk
 
 gtk = import_gtk()
 
-HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", PYTHON3)
+HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", PYTHON2 and OSX)
 
 def make_min_auto_menu(title, min_options, options,
                        get_current_min_value,
