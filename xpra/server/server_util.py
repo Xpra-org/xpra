@@ -428,7 +428,7 @@ def create_uinput_device(uuid, uid, events, name):
     #BUS_VIRTUAL = 0x06
     VENDOR = 0xffff
     PRODUCT = 0x1000
-    #our xpra_udev_product_version script will use the version attribute to set
+    #our 'udev_product_version' script will use the version attribute to set
     #the udev OWNER value
     VERSION = uid
     try:

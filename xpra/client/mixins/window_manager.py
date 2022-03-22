@@ -76,6 +76,10 @@ ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
+SIGNAL_WATCHER_COMMAND = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "/usr/libexec/xpra/xpra_signal_listener")
+if not os.path.exists(SIGNAL_WATCHER_COMMAND):
+    log.warn("Warning: %r not found", SIGNAL_WATCHER_COMMAND)
+    SIGNAL_WATCHER = False
 
 FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 MOUSE_SCROLL_SQRT_SCALE = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
@@ -841,7 +845,7 @@ class WindowClient(StubClientMixin):
             from xpra.child_reaper import getChildReaper
             from subprocess import Popen, PIPE, STDOUT
             try:
-                proc = Popen(["xpra_signal_listener"],
+                proc = Popen([SIGNAL_WATCHER_COMMAND],
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
                              start_new_session=True)
             except OSError as e:
