@@ -31,7 +31,7 @@ from xpra.os_util import (
     )
 from xpra.util import (
     envint, envbool, typedict,
-    make_instance, updict, repr_ellipsized, u,
+    make_instance, updict, repr_ellipsized, u, noerr,
     )
 from xpra.client.mixins.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -1201,10 +1201,18 @@ class WindowClient(StubClientMixin):
             if stdout_io_watch:
                 proc.stdout_io_watch = None
                 self.source_remove(stdout_io_watch)
+            stdout = proc.stdout
+            if stdout:
+                noerr(stdout.close)
+            stderr = proc.stderr
+            if stderr:
+                noerr(stderr.close)
             try:
-                proc.stdin.write(b"exit\n")
-                proc.stdin.flush()
-                proc.stdin.close()
+                stdin = proc.stdin
+                if stdin:
+                    stdin.write(b"exit\n")
+                    stdin.flush()
+                    stdin.close()
             except IOError:
                 log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
             try:
