@@ -1526,12 +1526,12 @@ else:
     if LINUX or FREEBSD:
         libexec_scripts = []
         if scripts_ENABLED:
-            libexec_scripts += ["fs/bin/xpra_udev_product_version"]
+            libexec_scripts += ["fs/libexec/xpra/xpra_udev_product_version"]
             scripts += ["fs/bin/xpra_signal_listener"]
         if xdg_open_ENABLED:
-            libexec_scripts += ["fs/bin/xdg-open", "fs/bin/gnome-open", "fs/bin/gvfs-open"]
+            libexec_scripts += ["fs/libexec/xpra/xdg-open", "fs/libexec/xpra/gnome-open", "fs/libexec/xpra/gvfs-open"]
         if server_ENABLED:
-            libexec_scripts.append("fs/bin/auth_dialog")
+            libexec_scripts.append("fs/libexec/xpra/auth_dialog")
         if libexec_scripts:
             add_data_files("libexec/xpra/", libexec_scripts)
     if data_ENABLED:
