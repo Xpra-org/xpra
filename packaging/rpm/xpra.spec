@@ -428,13 +428,13 @@ rm -rf $RPM_BUILD_ROOT
 
 %files common-server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
-%{_bindir}/xpra_udev_product_version
 /lib/systemd/system/xpra.service
 /lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
+%{_libexecdir}/xpra/xpra_udev_product_version
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open
 %{_libexecdir}/xpra/gvfs-open
