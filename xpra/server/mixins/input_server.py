@@ -298,7 +298,7 @@ class InputServer(StubServerMixin):
         keylog("toggled keyboard-sync to %s for %s", self.keyboard_config.sync, ss)
 
     def _keys_changed(self):
-        keylog("input server: the keymap has been changed, keymap_changin=%s", self.keymap_changing)
+        keylog("input server: the keymap has been changed, keymap_changing=%s", self.keymap_changing)
         if not self.keymap_changing:
             for ss in self._server_sources.values():
                 if hasattr(ss, "keys_changed"):
