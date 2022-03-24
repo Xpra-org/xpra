@@ -842,6 +842,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             ms += ["command", "workspace", "above", "below", "sticky",
                    "set-initial-position",  #0.17
                    "content-type",
+                   #4.4:
+                   "parent", "relative-position",
                    ]
         if POSIX:
             #this is only really supported on X11, but posix is easier to check for..
@@ -1322,29 +1324,33 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.reinit_window_icons()
 
 
+    def find_window(self, metadata, metadata_key="transient-for"):
+        fwid = metadata.intget(metadata_key, -1)
+        log("find_window(%s, %s) wid=%s", metadata, metadata_key, fwid)
+        if fwid>0:
+            return self._id_to_window.get(fwid)
+        return None
+
+    def find_gdk_window(self, metadata, metadata_key="transient-for"):
+        client_window = self.find_window(metadata, metadata_key)
+        if client_window:
+            gdk_window = client_window.get_window()
+            if gdk_window:
+                return gdk_window
+        return None
+
     def get_group_leader(self, wid, metadata, _override_redirect):
-        transient_for = metadata.intget("transient-for", -1)
-        log("get_group_leader: transient_for=%s", transient_for)
-        if transient_for>0:
-            client_window = self._id_to_window.get(transient_for)
-            if client_window:
-                gdk_window = client_window.get_window()
-                if gdk_window:
-                    return gdk_window
+        def find_gdk_window(metadata_key="transient-for"):
+            return self.find_gdk_window(metadata, metadata_key)
+        win = find_gdk_window("group-leader-wid") or find_gdk_window("transient-for") or find_gdk_window("parent")
+        log("get_group_leader(..)=%s", win)
+        if win:
+            return win
         pid = metadata.intget("pid", -1)
         leader_xid = metadata.intget("group-leader-xid", -1)
-        leader_wid = metadata.intget("group-leader-wid", -1)
-        group_leader_window = self._id_to_window.get(leader_wid)
-        if group_leader_window:
-            #leader is another managed window
-            log("found group leader window %s for wid=%s", group_leader_window, leader_wid)
-            return group_leader_window
-        log("get_group_leader: leader pid=%s, xid=%s, wid=%s", pid, leader_xid, leader_wid)
+        log("get_group_leader: leader pid=%s, xid=%s", pid, leader_xid)
         reftype = "xid"
         ref = leader_xid
-        if ref<0:
-            reftype = "leader-wid"
-            ref = leader_wid
         if ref<0:
             ci = metadata.strtupleget("class-instance")
             if ci:
@@ -1353,11 +1359,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             elif pid>0:
                 reftype = "pid"
                 ref = pid
-            elif transient_for>0:
-                #this should have matched a client window above..
-                #but try to use it anyway:
-                reftype = "transient-for"
-                ref = transient_for
             else:
                 #no reference to use
                 return None
