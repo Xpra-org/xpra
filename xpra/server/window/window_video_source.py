@@ -814,7 +814,7 @@ class WindowVideoSource(WindowSource):
         #decide if we want to send the rest now or delay some more,
         #only delay once the video encoder has dealt with a few frames:
         event_count = max(0, self.statistics.damage_events_count - self.video_subregion.set_at)
-        if event_count<100:
+        if not actual_vr or event_count<100:
             delay = 0
         else:
             #non-video is delayed at least 50ms, 4 times the batch delay, but no more than non_max_wait:
