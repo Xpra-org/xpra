@@ -28,7 +28,7 @@ import xpra
 from xpra.os_util import (
     get_status_output, load_binary_file, get_distribution_version_id,
     BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
-    is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat,
+    is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat, is_openSUSE,
     )
 
 
@@ -1541,6 +1541,7 @@ else:
         icons_dir = "icons"
         if OPENBSD or FREEBSD:
             man_path = "man"
+        if OPENBSD or FREEBSD or is_openSUSE():
             icons_dir = "pixmaps"
         man_pages = ["fs/share/man/man1/xpra.1", "fs/share/man/man1/xpra_launcher.1"]
         if not OSX:
@@ -1635,6 +1636,8 @@ else:
                 copytodir("fs/etc/pam.d/xpra", "/etc/pam.d")
 
             systemd_dir = "/lib/systemd/system"
+            if is_openSUSE():
+                systemd_dir = "__UNITDIR__"
             if service_ENABLED:
                 #Linux init service:
                 subs = {}
@@ -1646,11 +1649,18 @@ else:
                     cdir = "/etc/sysconfig"
                 else:
                     cdir = "/etc/default"
-                copytodir("fs/etc/sysconfig/xpra", cdir)
+                if is_openSUSE():
+                    #openSUSE does things differently:
+                    cdir = "__FILLUPDIR__"
+                    shutil.copy("fs/etc/sysconfig/xpra", "fs/etc/sysconfig/sysconfig.xpra")
+                    os.chmod("fs/etc/sysconfig/sysconfig.xpra", 0o644)
+                    copytodir("fs/etc/sysconfig/sysconfig.xpra", cdir)
+                else:
+                    copytodir("fs/etc/sysconfig/xpra", cdir)
                 if cdir!="/etc/sysconfig":
                     #also replace the reference to it in the service file below
                     subs[b"/etc/sysconfig"] = cdir.encode()
-                if os.path.exists("/bin/systemctl"):
+                if os.path.exists("/bin/systemctl") or os.path.exists("/usr/bin/systemctl"):
                     if sd_listen_ENABLED:
                         copytodir("fs/lib/systemd/system/xpra.service", systemd_dir,
                                   subs=subs)
@@ -1766,7 +1776,8 @@ if scripts_ENABLED:
 toggle_modules(WIN32, "xpra/scripts/win32_service")
 
 if data_ENABLED:
-    add_data_files(share_xpra,                      ["README.md", "COPYING"])
+    if not is_openSUSE():
+        add_data_files(share_xpra,                      ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
     if LINUX:
         add_data_files(share_xpra,                  ["fs/share/xpra/autostart.desktop"])
