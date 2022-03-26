@@ -822,6 +822,8 @@ class WindowVideoSource(WindowSource):
             delay = max(self.batch_config.delay*4, self.batch_config.expire_delay)
             delay = min(delay, self.video_subregion.non_max_wait-elapsed)
             delay = int(delay)
+        sublog("do_send_delayed_regions event_count=%s, actual_vr=%s, delay=%s",
+               event_count, actual_vr, delay)
         if delay<=25:
             send_nonvideo(regions=regions, encoding=None, exclude_region=actual_vr)
         else:
