@@ -135,7 +135,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
                 if propname=="group-leader":
                     p["%s-wid" % propname] = wid
                 else:
-                    p["propname"] = wid
+                    p[propname] = wid
         return p
     #the properties below are not actually exported to the client (yet?)
     #it was just easier to handle them here
