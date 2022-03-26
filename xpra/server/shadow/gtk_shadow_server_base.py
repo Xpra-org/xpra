@@ -256,10 +256,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             log.error(" %s", e)
             return
         #build a map of window identifier -> window model:
-        xid_to_window = {}
-        for window in windows:
-            xid = window.get_id()
-            xid_to_window[xid] = window
+        xid_to_window = dict((window.get_id(), window) for window in windows)
+        log("xid_to_window(%s)=%s", windows, xid_to_window)
         sources = self.window_sources()
         for wid, window in tuple(self._id_to_window.items()):
             xid = window.get_id()
@@ -279,6 +277,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         #any models left are new windows:
         for window in xid_to_window.values():
             self._add_new_window(window)
+            self.refresh_window(window)
+
 
     def _adjust_pointer(self, proto, wid, opointer):
         window = self._id_to_window.get(wid)
