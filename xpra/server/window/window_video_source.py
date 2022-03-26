@@ -855,6 +855,7 @@ class WindowVideoSource(WindowSource):
         image = self.get_damage_image(x, y, w, h)
         if image is None:
             return False
+        log("get_damage_image%s took %ims", (x, y, w, h), 1000*(monotonic()-rgb_request_time))
         sequence = self._sequence
 
         w = image.get_width()

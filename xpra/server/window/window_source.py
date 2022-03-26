@@ -2026,6 +2026,7 @@ class WindowSource(WindowIconSource):
         image = self.get_damage_image(x, y, w, h)
         if image is None:
             return False
+        log("get_damage_image%s took %ims", (x, y, w, h), 1000*(monotonic()-rgb_request_time))
         sequence = self._sequence
 
         if self.send_window_size:
@@ -2555,8 +2556,11 @@ class WindowSource(WindowIconSource):
             return nodata("cancelled")
         if self.suspended:
             return nodata("suspended")
+        start = monotonic()
         if SCROLL_ALL and self.may_use_scrolling(image, options):
             return nodata("used scrolling instead")
+        end = monotonic()
+        log("scroll detection took %ims", 1000*(end-start))
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
