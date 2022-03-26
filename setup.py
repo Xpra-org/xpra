@@ -1522,10 +1522,6 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
-    if FREEBSD:
-        icons_dir = "icons"
-    else:
-        icons_dir = "pixmaps"
     if LINUX or FREEBSD:
         libexec_scripts = []
         if scripts_ENABLED:
