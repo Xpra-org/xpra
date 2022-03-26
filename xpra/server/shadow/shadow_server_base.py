@@ -423,11 +423,18 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def _add_new_window(self, window):
         self._add_new_window_common(window)
-        self._send_new_window_packet(window)
+        if window.get("override-redirect", False):
+            self._send_new_or_window_packet(window)
+        else:
+            self._send_new_window_packet(window)
 
     def _send_new_window_packet(self, window):
         geometry = window.get_geometry()
         self._do_send_new_window_packet("new-window", window, geometry)
+
+    def _send_new_or_window_packet(self, window):
+        geometry = window.get_property("geometry")
+        self._do_send_new_window_packet("new-override-redirect", window, geometry)
 
     def _process_window_common(self, wid):
         window = self._id_to_window.get(wid)
