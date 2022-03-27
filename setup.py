@@ -117,6 +117,11 @@ def pkg_config_version(req_version, pkgname):
     r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r!=0 or not out:
         return False
+    out = out.rstrip("\n\r")
+    #workaround for libx264 version numbers:
+    #ie: 0.163.x
+    if out.endswith(".x"):
+        out = out[:-2]
     try:
         from packaging.version import parse
         return parse(out)>=parse(req_version)
