@@ -40,7 +40,7 @@ def do_get_encodings():
 def get_encodings():
     return ENCODINGS
 
-ENCODINGS = do_get_encodings()
+ENCODINGS = tuple(do_get_encodings())
 
 def get_info() -> dict:
     return  {
