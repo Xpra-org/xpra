@@ -112,48 +112,21 @@ cdef extern from "nvjpeg.h":
         unsigned char * channel[NVJPEG_MAX_COMPONENT]
         size_t    pitch[NVJPEG_MAX_COMPONENT]
 
-    ctypedef int (*tDevMalloc)(void**, size_t)
-    ctypedef int (*tDevFree)(void*)
-
-    ctypedef int (*tPinnedMalloc)(void**, size_t, unsigned int flags)
-    ctypedef int (*tPinnedFree)(void*)
-
     ctypedef struct nvjpegDevAllocator_t:
-        tDevMalloc dev_malloc;
-        tDevFree dev_free;
+        pass
 
     ctypedef struct nvjpegPinnedAllocator_t:
-        tPinnedMalloc pinned_malloc
-        tPinnedFree pinned_free
+        pass
 
     ctypedef struct nvjpegHandle:
         pass
     ctypedef nvjpegHandle* nvjpegHandle_t
 
     nvjpegStatus_t nvjpegGetProperty(libraryPropertyType_t type, int *value)
-    nvjpegStatus_t nvjpegGetCudartProperty(libraryPropertyType_t type, int *value)
     nvjpegStatus_t nvjpegCreate(nvjpegBackend_t backend, nvjpegDevAllocator_t *dev_allocator, nvjpegHandle_t *handle)
     nvjpegStatus_t nvjpegCreateSimple(nvjpegHandle_t *handle)
-    nvjpegStatus_t nvjpegCreateEx(nvjpegBackend_t backend,
-        nvjpegDevAllocator_t *dev_allocator,
-        nvjpegPinnedAllocator_t *pinned_allocator,
-        unsigned int flags,
-        nvjpegHandle_t *handle)
 
     nvjpegStatus_t nvjpegDestroy(nvjpegHandle_t handle)
-    nvjpegStatus_t nvjpegSetDeviceMemoryPadding(size_t padding, nvjpegHandle_t handle)
-    nvjpegStatus_t nvjpegGetDeviceMemoryPadding(size_t *padding, nvjpegHandle_t handle)
-    nvjpegStatus_t nvjpegSetPinnedMemoryPadding(size_t padding, nvjpegHandle_t handle)
-    nvjpegStatus_t nvjpegGetPinnedMemoryPadding(size_t *padding, nvjpegHandle_t handle)
-
-    nvjpegStatus_t nvjpegGetImageInfo(
-        nvjpegHandle_t handle,
-        const unsigned char *data,
-        size_t length,
-        int *nComponents,
-        nvjpegChromaSubsampling_t *subsampling,
-        int *widths,
-        int *heights)
 
     #Encode:
     ctypedef struct nvjpegEncoderState:
@@ -285,10 +258,10 @@ def get_info():
     return {"version"   : get_version()}
 
 def init_module():
-    log("nvjpeg.init_module() version=%s", get_version())
+    log("nvjpeg.encoder.init_module() version=%s", get_version())
 
 def cleanup_module():
-    log("nvjpeg.cleanup_module()")
+    log("nvjpeg.encoder.cleanup_module()")
 
 NVJPEG_INPUT_FORMATS = {
     "jpeg"  : ("BGRX", "RGBX", ),
@@ -358,6 +331,7 @@ cdef class Encoder:
             kernel_name = "%s_to_RGB" % src_format
         else:
             kernel_name = "%s_to_RGBAP" % src_format
+        self.stream = NULL
         with cuda_device_context:
             self.cuda_kernel = get_CUDA_function(kernel_name)
         if not self.cuda_kernel:
@@ -696,6 +670,8 @@ def encode(coding, image, options=None):
 
 def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
+    if not full:
+        return
     from xpra.codecs.codec_checks import make_test_image
     options = {
         "cuda-device-context"   : get_device_context(),
