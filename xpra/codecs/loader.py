@@ -37,7 +37,7 @@ def filt(*values):
 CSC_CODECS = filt("csc_swscale", "csc_cython", "csc_libyuv")
 ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg", "enc_nvjpeg", "enc_avif")
 ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
-DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_avif")
+DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif")
 DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
 
 ALL_CODECS = filt(*set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS))
@@ -191,6 +191,7 @@ CODEC_OPTIONS = {
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb", "decompress_to_yuv"),
     "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
+    "dec_nvjpeg"    : ("nvjpeg decoder",    "nvjpeg",       "decoder", "decompress"),
     #video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),

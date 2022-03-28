@@ -2282,6 +2282,9 @@ if nvjpeg_ENABLED:
     add_cython_ext("xpra.codecs.nvjpeg.encoder",
                          ["xpra/codecs/nvjpeg/encoder.pyx"],
                          **nvjpeg_pkgconfig)
+    #add_cython_ext("xpra.codecs.nvjpeg.decoder",
+    #                     ["xpra/codecs/nvjpeg/decoder.pyx"],
+    #                     **nvjpeg_pkgconfig)
 
 jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED
 toggle_packages(jpeg, "xpra.codecs.jpeg")

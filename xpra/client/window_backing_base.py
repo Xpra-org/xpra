@@ -153,6 +153,7 @@ class WindowBackingBase:
         self.webp_decoder = get_codec("dec_webp")
         self.spng_decoder = get_codec("dec_spng")
         self.avif_decoder = get_codec("dec_avif")
+        self.nvjpeg_decoder = get_codec("dec_nvjpeg")
         self.draw_needs_refresh = True
         self.repaint_all = REPAINT_ALL
         self.mmap = None
@@ -443,14 +444,18 @@ class WindowBackingBase:
 
     def do_paint_jpeg(self, rgb_format, img_data, x, y, width, height, options, callbacks):
         alpha_offset = options.intget("alpha-offset", 0)
-        img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
+        log.info("do_paint_jpeg: nvjpeg_decoder=%s", self.nvjpeg_decoder)
+        if self.nvjpeg_decoder and not alpha_offset:
+            img = self.nvjpeg_decoder.decompress(rgb_format, img_data)
+        else:
+            img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
         rowstride = img.get_rowstride()
         w = img.get_width()
         h = img.get_height()
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
-                      x, y, w, h, width, height, rowstride, options, callbacks)
+                  x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_avif(self, img_data, x, y, width, height, options, callbacks):
         img = self.avif_decoder.decompress(img_data, options)

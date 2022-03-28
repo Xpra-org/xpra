@@ -38,7 +38,7 @@ def get_core_encodings():
     """
     #we always support rgb:
     core_encodings = ["rgb24", "rgb32"]
-    for codec in ("dec_pillow", "dec_webp", "dec_jpeg", "dec_avif"):
+    for codec in ("dec_pillow", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif"):
         if has_codec(codec):
             c = get_codec(codec)
             encs = c.get_encodings()
@@ -104,6 +104,7 @@ class Encodings(StubClientMixin):
         if "jpeg" in ae:
             #try to load the fast jpeg decoder:
             load_codec("dec_jpeg")
+            load_codec("dec_nvjpeg")
         if "webp" in ae:
             #try to load the fast webp decoder:
             load_codec("dec_webp")
