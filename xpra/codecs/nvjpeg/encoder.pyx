@@ -24,10 +24,7 @@ log = Logger("encoder", "nvjpeg")
 DEF NVJPEG_MAX_COMPONENT = 4
 
 cdef extern from "cuda_runtime_api.h":
-    ctypedef int cudaError_t
     ctypedef void* cudaStream_t
-    cudaError_t cudaStreamCreate(cudaStream_t* pStream)
-    cudaError_t cudaStreamSynchronize(cudaStream_t stream)
 
 cdef extern from "library_types.h":
     cdef enum libraryPropertyType_t:
