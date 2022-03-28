@@ -325,7 +325,7 @@ def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
         elapsed = monotonic()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",
             rgb_format, size/elapsed//1024//1024, size, 1000*elapsed)
-    return ImageWrapper(0, 0, w, h, memoryview(membuf), rgb_format, 24, stride, ImageWrapper.PACKED)
+    return ImageWrapper(0, 0, w, h, memoryview(membuf), rgb_format, 24, stride, planes=ImageWrapper.PACKED)
 
 
 def selftest(full=False):
