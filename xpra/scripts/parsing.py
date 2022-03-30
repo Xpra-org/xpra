@@ -894,11 +894,11 @@ def do_parse_cmdline(cmdline, defaults):
                       help="Start the session within a dbus-launch context,"
                       +" leave empty to turn off. Default: %s." % nonedefault(defaults.dbus_launch))
     group.add_option("--source", action="append",
-                      dest="source", default=list(defaults.source or []),
+                      dest="source", default=[],
                       help="Script to source into the server environment. Default: %s." % csv(
                           ("'%s'" % x) for x in (defaults.source or []) if not x.startswith("#")))
     group.add_option("--source-start", action="append",
-                      dest="source_start", default=list(defaults.source_start or []),
+                      dest="source_start", default=[],
                       help="Script to source into the environment used for starting commands. Default: %s." % dcsv(
                           list(x for x in (defaults.source_start or []) if x and not x.startswith("#"))))
     group.add_option("--start-env", action="append",

@@ -1544,6 +1544,11 @@ def fixup_options(options, defaults=None, skip_encodings=False):
             v = getattr(options, setting)
             if not v:
                 setattr(options, setting, default_value)
+    #fixup sourcing, only use the defaults if no value is specified:
+    if defaults:
+        for setting in ("source", "source_start"):
+            if not getattr(options, setting):
+                setattr(options, setting, getattr(defaults, setting, []))
     fixup_pings(options)
     fixup_compression(options)
     fixup_packetencoding(options)
