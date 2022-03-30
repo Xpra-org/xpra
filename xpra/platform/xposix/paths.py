@@ -80,7 +80,10 @@ def do_get_script_bin_dirs():
 
 
 def do_get_system_conf_dirs():
-    dirs = ["/etc/xpra", "/usr/local/etc/xpra"]
+    if os.environ.get("XPRA_SYSCONF_DIR") is not None:
+        dirs = [os.environ.get("XPRA_SYSCONF_DIR")]
+    else:
+        dirs = ["/etc/xpra", "/usr/local/etc/xpra"]
     for d in os.environ.get("XDG_CONFIG_DIRS", "/etc/xdg").split(":"):
         dirs.append(os.path.join(d, "xpra"))
     #hope the prefix is something like "/usr/local" or "$HOME/.local":
