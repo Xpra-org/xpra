@@ -20,7 +20,7 @@ from xpra.os_util import (
 from xpra.log import Logger
 from xpra.platform.dotxpra import norm_makepath
 from xpra.platform.paths import get_python_exec_command
-from xpra.scripts.config import InitException
+from xpra.scripts.config import InitException, FALSE_OPTIONS
 
 UINPUT_UUID_LEN = 12
 
@@ -30,7 +30,7 @@ def source_env(source=()) -> dict:
     log("source_env(%s)", source)
     env = {}
     for f in source:
-        if not f:
+        if not f or f.lower() in FALSE_OPTIONS:
             continue
         try:
             e = env_from_sourcing(f)
