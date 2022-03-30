@@ -2142,7 +2142,9 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 #cmd += ["--dependency-drive-prefix", "/"]
                 cmd += ["-I%s" % os.path.abspath("win32")]
             if nvcc_version>=(11, 5):
-                cmd += ["-arch=all"]
+                cmd += ["-arch=all",
+                        "-Wno-deprecated-gpu-targets",
+                        ]
                 if nvcc_version>=(11, 6):
                     cmd += ["-Xnvlink", "-ignore-host-info"]
             else:
