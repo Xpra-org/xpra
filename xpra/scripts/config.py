@@ -1380,7 +1380,7 @@ def fixup_socketdirs(options):
         if isinstance(value, str):
             value = value.split(os.path.pathsep)
         else:
-            assert isinstance(options.socket_dirs, (list, tuple))
+            assert isinstance(getattr(options, option_name), (list, tuple))
             value = [v for x in value for v in x.split(os.path.pathsep)]
         setattr(options, option_name, value)
 
