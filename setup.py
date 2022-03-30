@@ -2143,6 +2143,8 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             #GCC 6 uses C++11 by default:
             elif gcc_version>=(6, 0):
                 cmd.append("-std=c++11")
+            if gcc_version>=(12, 0):
+                cmd.append("--allow-unsupported-compiler")
             CL_VERSION = os.environ.get("CL_VERSION")
             if CL_VERSION:
                 cmd += ["--use-local-env", "--cl-version", CL_VERSION]
