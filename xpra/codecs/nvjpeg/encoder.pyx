@@ -6,11 +6,11 @@
 from time import monotonic
 from math import ceil
 import numpy
+from pycuda import driver
 
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from xpra.codecs.nvjpeg.nvjpeg cimport (
-    NVJPEG_VER_MAJOR, NVJPEG_VER_MINOR, NVJPEG_VER_PATCH, NVJPEG_VER_BUILD,
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
     nvjpegStatus_t, nvjpegChromaSubsampling_t, nvjpegOutputFormat_t,
     nvjpegInputFormat_t, nvjpegBackend_t, nvjpegJpegEncoding_t,
@@ -18,11 +18,12 @@ from xpra.codecs.nvjpeg.nvjpeg cimport (
     nvjpegGetProperty, nvjpegCreateSimple, nvjpegDestroy,
     NVJPEG_ENCODING_BASELINE_DCT, NVJPEG_CSS_GRAY, NVJPEG_INPUT_RGBI, NVJPEG_INPUT_RGB,
     NVJPEG_CSS_444, NVJPEG_CSS_422, NVJPEG_CSS_420,
-    ERR_STRS, CSS_STR, ENCODING_STR, NVJPEG_INPUT_STR,
     )
-
-from pycuda import driver
-
+from xpra.codecs.nvjpeg.common import (
+    get_version,
+    errcheck, NVJPEG_Exception,
+    CSS_STR, ENCODING_STR, NVJPEG_INPUT_STR,
+    )
 from xpra.codecs.codec_debug import may_save_image
 from xpra.codecs.cuda_common.cuda_context import get_CUDA_function
 from xpra.net.compression import Compressed
@@ -36,12 +37,6 @@ DEF NVJPEG_MAX_COMPONENT = 4
 
 cdef extern from "cuda_runtime_api.h":
     ctypedef void* cudaStream_t
-
-cdef extern from "library_types.h":
-    cdef enum libraryPropertyType_t:
-        MAJOR_VERSION
-        MINOR_VERSION
-        PATCH_LEVEL
 
 cdef extern from "nvjpeg.h":
     #Encode specific:
@@ -114,16 +109,6 @@ cdef extern from "nvjpeg.h":
             unsigned char *data,
             size_t *length,
             cudaStream_t stream) nogil
-
-def get_version():
-    cdef int major_version, minor_version, patch_level
-    r = nvjpegGetProperty(MAJOR_VERSION, &major_version)
-    errcheck(r, "nvjpegGetProperty MAJOR_VERSION")
-    r = nvjpegGetProperty(MINOR_VERSION, &minor_version)
-    errcheck(r, "nvjpegGetProperty MINOR_VERSION")
-    r = nvjpegGetProperty(PATCH_LEVEL, &patch_level)
-    errcheck(r, "nvjpegGetProperty PATCH_LEVEL")
-    return (major_version, minor_version, patch_level)
 
 def get_type() -> str:
     return "nvjpeg"
@@ -454,14 +439,6 @@ cdef class Encoder:
                 if self.quality<100:
                     self.configure_quality(self.quality)
 
-class NVJPEG_Exception(Exception):
-    pass
-
-def errcheck(int r, fnname="", *args):
-    if r:
-        fstr = fnname % (args)
-        raise NVJPEG_Exception("%s failed: %s" % (fstr, ERR_STRS.get(r, r)))
-
 
 def compress_file(filename, save_to="./out.jpeg"):
     from PIL import Image
@@ -547,8 +524,6 @@ def encode(coding, image, options=None):
 
 def selftest(full=False):
     #this is expensive, so don't run it unless "full" is set:
-    if not full:
-        return
     from xpra.codecs.codec_checks import make_test_image
     options = {
         "cuda-device-context"   : get_device_context(),

@@ -10,7 +10,6 @@ from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport memalign, buffer_context
 from xpra.codecs.nvjpeg.nvjpeg cimport (
-    NVJPEG_VER_MAJOR, NVJPEG_VER_MINOR, NVJPEG_VER_PATCH, NVJPEG_VER_BUILD,
     NVJPEG_OUTPUT_BGRI,
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
     nvjpegStatus_t, nvjpegChromaSubsampling_t, nvjpegOutputFormat_t,
@@ -20,9 +19,12 @@ from xpra.codecs.nvjpeg.nvjpeg cimport (
     nvjpegJpegState_t,
     nvjpegJpegStateCreate, nvjpegJpegStateDestroy,
     nvjpegGetImageInfo,
-    ERR_STRS, CSS_STR, ENCODING_STR, NVJPEG_OUTPUT_STR,
     )
-
+from xpra.codecs.nvjpeg.common import (
+    get_version,
+    errcheck, NVJPEG_Exception,
+    ERR_STR, CSS_STR,
+    )
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
@@ -55,15 +57,6 @@ cdef extern from "nvjpeg.h":
 
 device = None
 
-def get_version():
-    cdef int major_version, minor_version, patch_level
-    r = nvjpegGetProperty(MAJOR_VERSION, &major_version)
-    errcheck(r, "nvjpegGetProperty MAJOR_VERSION")
-    r = nvjpegGetProperty(MINOR_VERSION, &minor_version)
-    errcheck(r, "nvjpegGetProperty MINOR_VERSION")
-    r = nvjpegGetProperty(PATCH_LEVEL, &patch_level)
-    errcheck(r, "nvjpegGetProperty PATCH_LEVEL")
-    return (major_version, minor_version, patch_level)
 
 def get_type() -> str:
     return "nvjpeg"
@@ -86,11 +79,6 @@ def cleanup_module():
 
 class NVJPEG_Exception(Exception):
     pass
-
-def errcheck(int r, fnname="", *args):
-    if r:
-        fstr = fnname % (args)
-        raise NVJPEG_Exception("%s failed: %s" % (fstr, ERR_STRS.get(r, r)))
 
 
 errors = []
@@ -154,7 +142,7 @@ def decompress(rgb_format, img_data, options=None):
                                     &nv_image,
                                     nv_stream)
                     if r:
-                        raise NVJPEG_Exception("decoding failed: %s" % ERR_STRS.get(r, r))
+                        raise NVJPEG_Exception("decoding failed: %s" % ERR_STR.get(r, r))
                     if stream:
                         stream.synchronize()
                     end = monotonic()

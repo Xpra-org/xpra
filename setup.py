@@ -2283,6 +2283,9 @@ if nvjpeg_ENABLED:
         assert skip_build or cuda_pkgconfig, "failed to locate cuda pkgconfig"
         for k, v in cuda_pkgconfig.items():
             add_to_keywords(nvjpeg_pkgconfig, k, *v)
+    add_cython_ext("xpra.codecs.nvjpeg.common",
+                         ["xpra/codecs/nvjpeg/common.pyx"],
+                         **nvjpeg_pkgconfig)
     add_cython_ext("xpra.codecs.nvjpeg.encoder",
                          ["xpra/codecs/nvjpeg/encoder.pyx"],
                          **nvjpeg_pkgconfig)
