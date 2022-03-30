@@ -1244,6 +1244,8 @@ def _do_run_server(script_file, cmdline,
         #now we've changed uid, it is safe to honour all the env updates:
         configure_env(opts.env)
         os.environ.update(protected_env)
+    else:
+        configure_env(opts.env)
 
     if opts.chdir:
         log("chdir(%s)", opts.chdir)
