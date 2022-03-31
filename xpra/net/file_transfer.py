@@ -493,7 +493,7 @@ class FileTransferHandler(FileTransferAttributes):
         check_digest("sha1", hashlib.sha1)
         check_digest("md5", hashlib.md5)
         try:
-            os.write(fd, file_data)
+            os.write(fd, strtobytes(file_data))
         finally:
             os.close(fd)
         self.transfer_progress_update(False, send_id, monotonic()-start, filesize, filesize, None)
