@@ -411,6 +411,8 @@ def load_xdg_menu_data():
         from xdg.Menu import MenuEntry
         entries = {}
         for d in LOAD_APPLICATIONS:
+            if not os.path.exists(d):
+                continue
             for f in os.listdir(d):
                 if not f.endswith(".desktop"):
                     continue
