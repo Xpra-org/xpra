@@ -207,7 +207,7 @@ class WindowPerformanceStatistics(object):
         if self.encoding_totals:
             tf = info.setdefault("total_frames", {})
             tp = info.setdefault("total_pixels", {})
-        for encoding, totals in self.encoding_totals.items():
+        for encoding, totals in tuple(self.encoding_totals.items()):
             tf[encoding] = totals[0]
             tp[encoding] = totals[1]
         return info
