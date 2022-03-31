@@ -202,9 +202,9 @@ class WindowPerformanceStatistics:
 
         dinfo = info.setdefault("damage", {})
         latencies = tuple(x[-1]*1000 for x in tuple(self.damage_in_latency))
-        dinfo["in_latency"]  = get_list_stats(latencies, show_percentile=[9])
+        dinfo["in_latency"]  = get_list_stats(latencies, show_percentile=(9, ))
         latencies = tuple(x[-1]*1000 for x in tuple(self.damage_out_latency))
-        dinfo["out_latency"] = get_list_stats(latencies, show_percentile=[9])
+        dinfo["out_latency"] = get_list_stats(latencies, show_percentile=(9, ))
         #per encoding totals:
         if self.encoding_totals:
             tf = info.setdefault("total_frames", {})
