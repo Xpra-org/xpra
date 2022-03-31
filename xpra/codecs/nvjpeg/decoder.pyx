@@ -34,12 +34,6 @@ log = Logger("encoder", "nvjpeg")
 DEF NVJPEG_MAX_COMPONENT = 4
 
 
-cdef extern from "library_types.h":
-    cdef enum libraryPropertyType_t:
-        MAJOR_VERSION
-        MINOR_VERSION
-        PATCH_LEVEL
-
 cdef extern from "nvjpeg.h":
     ctypedef void* cudaStream_t
     nvjpegStatus_t nvjpegDecode(nvjpegHandle_t handle, nvjpegJpegState_t jpeg_handle,
