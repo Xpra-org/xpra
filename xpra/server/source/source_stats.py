@@ -256,10 +256,10 @@ class GlobalPerformanceStatistics:
             "connection" : self.get_connection_info(),
             }
         if self.quality:
-            ql = tuple(quality for _,_,quality in self.quality)
+            ql = tuple(quality for _,_,quality in tuple(self.quality))
             info["encoding"]["quality"] = get_list_stats(ql)
         if self.speed:
-            sl = tuple(speed for _,_,speed in self.speed)
+            sl = tuple(speed for _,_,speed in tuple(self.speed))
             info["encoding"]["speed"] = get_list_stats(sl)
         #client pixels per second:
         #pixels per second: decode time and overall
