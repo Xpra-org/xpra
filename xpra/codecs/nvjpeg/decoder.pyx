@@ -11,7 +11,7 @@ from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport memalign, buffer_context
 from xpra.codecs.nvjpeg.nvjpeg cimport (
-    NVJPEG_OUTPUT_RGBI,
+    NVJPEG_OUTPUT_RGBI, NVJPEG_OUTPUT_BGRI,
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
     nvjpegStatus_t, nvjpegChromaSubsampling_t, nvjpegOutputFormat_t,
     nvjpegInputFormat_t, nvjpegBackend_t, nvjpegJpegEncoding_t,
@@ -26,6 +26,7 @@ from xpra.codecs.nvjpeg.common import (
     errcheck, NVJPEG_Exception,
     ERR_STR, CSS_STR,
     )
+from xpra.codecs.cuda_common.cuda_context import select_device, cuda_device_context
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
@@ -53,8 +54,8 @@ def get_encodings():
 
 def get_info():
     info = {"version"   : get_version()}
-    if device:
-        info["device"] = device.get_info()
+    #if default_device:
+    #    info["device"] = default_device.get_info()
     return info
 
 def init_module():
@@ -69,7 +70,19 @@ class NVJPEG_Exception(Exception):
 
 
 def decompress(rgb_format, img_data, options=None):
-    log("decompress(%s, %i bytes, %s)", rgb_format, len(img_data), options)
+    #decompress using the default device:
+    def download_buffer(buf, size):
+        start = monotonic()
+        pixels = bytearray(size)
+        driver.memcpy_dtoh(pixels, buf)
+        end = monotonic()
+        log("nvjpeg downloaded %i bytes in %ims", size, 1000*(end-start))
+        return pixels
+    return decompress_with_device(default_device, rgb_format, img_data, options, download_buffer)
+
+def decompress_with_device(device, rgb_format, img_data, options=None, download=None):
+    log("decompress_with_device(%s, %s, %i bytes, %s)", device, rgb_format, len(img_data), options)
+    cdef double start, end
     cdef nvjpegHandle_t nv_handle
     cdef nvjpegJpegState_t jpeg_handle
     cdef size_t data_len
@@ -79,14 +92,22 @@ def decompress(rgb_format, img_data, options=None):
     cdef int[NVJPEG_MAX_COMPONENT] widths
     cdef int[NVJPEG_MAX_COMPONENT] heights
     cdef nvjpegOutputFormat_t output_format = NVJPEG_OUTPUT_RGBI
+    if rgb_format=="BGR":
+        output_format = NVJPEG_OUTPUT_BGRI
+    elif rgb_format=="RGB":
+        output_format = NVJPEG_OUTPUT_RGBI
+    else:
+        raise ValueError("invalid rgb format %r" % rgb_format)
     cdef nvjpegImage_t nv_image
     cdef cudaStream_t nv_stream = NULL
     cdef nvjpegStatus_t r
-    cdef uintptr_t dmem
+    cdef uintptr_t dmem = 0
     cdef unsigned int rowstride = 0, width = 0, height = 0
 
     buf = None
-    with device:
+    pixels = None
+    with device as cuda_context:
+        log("cuda_context=%s for device=%s", cuda_context, device.get_info())
         try:
             errcheck(nvjpegCreateSimple(&nv_handle), "nvjpegCreateSimple")
             try:
@@ -105,7 +126,7 @@ def decompress(rgb_format, img_data, options=None):
                         nv_image.channel[i] = NULL
                         nv_image.pitch[i] = 0
                     nv_image.pitch[0] = rowstride
-                    buf = driver.mem_alloc(rowstride * height)
+                    buf = driver.mem_alloc(rowstride*height)
                     dmem = <uintptr_t> int(buf)
                     nv_image.channel[0] = <unsigned char *> dmem
                     start = monotonic()
@@ -119,21 +140,16 @@ def decompress(rgb_format, img_data, options=None):
                         raise NVJPEG_Exception("decoding failed: %s" % ERR_STR.get(r, r))
                     end = monotonic()
                     log("nvjpegDecode took %ims", 1000*(end-start))
-                start = monotonic()
-                pixels = bytearray(rowstride * height)
-                driver.memcpy_dtoh(pixels, buf)
-                end = monotonic()
-                log("nvjpeg downloaded %i bytes in %ims", rowstride * height, 1000*(end-start))
+                if download:
+                    pixels = download(buf, rowstride*height)
             finally:
-                if buf:
-                    buf.free()
                 errcheck(nvjpegJpegStateDestroy(jpeg_handle), "nvjpegJpegStateDestroy")
         finally:
             errcheck(nvjpegDestroy(nv_handle), "nvjpegDestroy")
-    return ImageWrapper(0, 0, width, height, pixels, "RGB", 24, rowstride, planes=ImageWrapper.PACKED)
+    return ImageWrapper(0, 0, width, height, pixels, rgb_format, 24, rowstride, planes=ImageWrapper.PACKED)
+
 
 def get_device_context():
-    from xpra.codecs.cuda_common.cuda_context import select_device, cuda_device_context
     cdef double start = monotonic()
     cuda_device_id, cuda_device = select_device()
     if cuda_device_id<0 or not cuda_device:
@@ -144,7 +160,9 @@ def get_device_context():
     log("device init took %.1fms", 1000*(end-start))
     return cuda_context
 
-device = get_device_context()
+default_device = get_device_context()
+def get_default_device():
+    return default_device
 
 
 def selftest(full=False):

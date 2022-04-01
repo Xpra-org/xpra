@@ -446,7 +446,7 @@ class WindowBackingBase:
         alpha_offset = options.intget("alpha-offset", 0)
         log.info("do_paint_jpeg: nvjpeg_decoder=%s", self.nvjpeg_decoder)
         if self.nvjpeg_decoder and not alpha_offset:
-            img = self.nvjpeg_decoder.decompress(rgb_format, img_data)
+            img = self.nvjpeg_decoder.decompress("RGB", img_data)
         else:
             img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()

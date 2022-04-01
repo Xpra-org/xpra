@@ -12,6 +12,8 @@ from gi.repository import GLib
 from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
 from OpenGL.GL import (
+    GL_PIXEL_UNPACK_BUFFER, GL_STREAM_DRAW,
+    GL_BUFFER_SIZE,
     GL_PROJECTION, GL_MODELVIEW,
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
@@ -32,6 +34,7 @@ from OpenGL.GL import (
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho,
     glGenTextures, glDisable,
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+    glBindBuffer, glGenBuffers, glGetBufferParameteriv, glBufferData,
     glTexParameteri,
     glTexImage2D,
     glMultiTexCoord2i,
@@ -80,6 +83,7 @@ DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
+NVJPEG = envbool("XPRA_OPENGL_NVJPEG", False)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -1036,6 +1040,73 @@ class GLWindowBackingBase(WindowBackingBase):
 
 
     def paint_jpeg(self, img_data, x : int, y : int, width : int, height : int, options, callbacks):
+        if self.nvjpeg_decoder and NVJPEG:
+            def paint_nvjpeg(gl_context):
+                rgb_format = "RGB"
+
+                self.gl_init()
+
+                from xpra.codecs.cuda_common.cuda_context import cuda_device_context
+                from xpra.codecs.nvjpeg.decoder import get_default_device
+                from pycuda.driver import memcpy_dtod
+                from pycuda.gl import RegisteredBuffer, graphics_map_flags
+
+                pbo = glGenBuffers(1)
+                def copy_buffer(buf, size):
+                    log("copy_buffer(%s, %s)", buf, size)
+                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
+                    glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
+                    bsize = glGetBufferParameteriv(GL_PIXEL_UNPACK_BUFFER, GL_BUFFER_SIZE)
+                    assert bsize==size, "expected size %i but got %i" % (size, bsize)
+                    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+                    cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
+                    log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
+                    mapping = cuda_pbo.map()
+                    ptr = mapping.device_ptr_and_size()[0]
+                    log("copying from %s to mapping=%s at %#x", buf, mapping, ptr)
+                    memcpy_dtod(ptr, buf, size)
+                    mapping.unmap()
+
+                #create an OpenGL compatible context:
+                dev = get_default_device()
+                gldev = cuda_device_context(dev.device_id, dev.device, True)
+                img = self.nvjpeg_decoder.decompress_with_device(gldev, rgb_format, img_data, None, copy_buffer)
+                log("paint_nvjpeg(%s) img=%s, updating fbo", gl_context, img)
+
+                target = GL_TEXTURE_RECTANGLE_ARB
+                glEnable(target)
+                glBindTexture(target, self.textures[TEX_RGB])
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
+                glPixelStorei(GL_UNPACK_ROW_LENGTH, 0)
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+                glTexImage2D(target, 0, self.internal_format, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+
+                self.set_alignment(width, width*3, rgb_format)
+                # Draw textured RGB quad at the right coordinates
+                glBegin(GL_QUADS)
+                glTexCoord2i(0, 0)
+                glVertex2i(x, y)
+                glTexCoord2i(0, height)
+                glVertex2i(x, y+height)
+                glTexCoord2i(width, height)
+                glVertex2i(x+width, y+height)
+                glTexCoord2i(width, 0)
+                glVertex2i(x+width, y)
+                glEnd()
+
+                glBindTexture(target, 0)
+                glDisable(target)
+
+                self.paint_box("jpeg", x, y, width, height)
+                # Present update to screen
+                if not self.draw_needs_refresh:
+                    self.present_fbo(x, y, width, height, options.intget("flush", 0))
+                # present_fbo has reset state already
+                fire_paint_callbacks(callbacks)
+
+            self.idle_add(self.with_gl_context, paint_nvjpeg)
+            return
         if JPEG_YUV and width>=2 and height>=2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data)
             flush = options.intget("flush", 0)
