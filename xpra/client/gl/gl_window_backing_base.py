@@ -34,7 +34,7 @@ from OpenGL.GL import (
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho,
     glGenTextures, glDisable,
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
-    glBindBuffer, glGenBuffers, glGetBufferParameteriv, glBufferData,
+    glBindBuffer, glGenBuffers, glGetBufferParameteriv, glBufferData, glDeleteBuffers,
     glTexParameteri,
     glTexImage2D,
     glMultiTexCoord2i,
@@ -579,6 +579,7 @@ class GLWindowBackingBase(WindowBackingBase):
         """
 
     def close(self):
+        self.free_cuda_context()
         self.close_gl_config()
         #This seems to cause problems, so we rely
         #on destroying the context to clear textures and fbos...
@@ -1045,20 +1046,15 @@ class GLWindowBackingBase(WindowBackingBase):
                 rgb_format = "RGB"
 
                 self.gl_init()
-
-                from xpra.codecs.cuda_common.cuda_context import cuda_device_context
-                from xpra.codecs.nvjpeg.decoder import get_default_device
-                from pycuda.driver import memcpy_dtod
-                from pycuda.gl import RegisteredBuffer, graphics_map_flags
-
                 pbo = glGenBuffers(1)
                 def copy_buffer(buf, size):
                     log("copy_buffer(%s, %s)", buf, size)
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
                     glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
-                    bsize = glGetBufferParameteriv(GL_PIXEL_UNPACK_BUFFER, GL_BUFFER_SIZE)
-                    assert bsize==size, "expected size %i but got %i" % (size, bsize)
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+                    #import-outside-toplevel
+                    from pycuda.driver import memcpy_dtod  #pylint: disable=no-name-in-module
+                    from pycuda.gl import RegisteredBuffer, graphics_map_flags
                     cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
                     log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
                     mapping = cuda_pbo.map()
@@ -1067,10 +1063,8 @@ class GLWindowBackingBase(WindowBackingBase):
                     memcpy_dtod(ptr, buf, size)
                     mapping.unmap()
 
-                #create an OpenGL compatible context:
-                dev = get_default_device()
-                gldev = cuda_device_context(dev.device_id, dev.device, True)
-                img = self.nvjpeg_decoder.decompress_with_device(gldev, rgb_format, img_data, None, copy_buffer)
+                with self.assign_cuda_context(True):
+                    img = self.nvjpeg_decoder.decompress_with_device(rgb_format, img_data, None, copy_buffer)
                 log("paint_nvjpeg(%s) img=%s, updating fbo", gl_context, img)
 
                 target = GL_TEXTURE_RECTANGLE_ARB
@@ -1104,6 +1098,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     self.present_fbo(x, y, width, height, options.intget("flush", 0))
                 # present_fbo has reset state already
                 fire_paint_callbacks(callbacks)
+                glDeleteBuffers(1, [pbo])
 
             self.idle_add(self.with_gl_context, paint_nvjpeg)
             return

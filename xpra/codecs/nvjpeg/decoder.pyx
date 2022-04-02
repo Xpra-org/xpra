@@ -69,19 +69,24 @@ class NVJPEG_Exception(Exception):
     pass
 
 
-def decompress(rgb_format, img_data, options=None):
-    #decompress using the default device:
-    def download_buffer(buf, size):
-        start = monotonic()
-        pixels = bytearray(size)
-        driver.memcpy_dtoh(pixels, buf)
-        end = monotonic()
-        log("nvjpeg downloaded %i bytes in %ims", size, 1000*(end-start))
-        return pixels
-    return decompress_with_device(default_device, rgb_format, img_data, options, download_buffer)
 
-def decompress_with_device(device, rgb_format, img_data, options=None, download=None):
-    log("decompress_with_device(%s, %s, %i bytes, %s)", device, rgb_format, len(img_data), options)
+def download_from_gpu(buf, size):
+    start = monotonic()
+    pixels = bytearray(size)
+    driver.memcpy_dtoh(pixels, buf)
+    end = monotonic()
+    log("nvjpeg downloaded %i bytes in %ims", size, 1000*(end-start))
+    return pixels
+
+def decompress(rgb_format, img_data, options=None):
+    #decompress using the default device,
+    #and download the pixel data from the GPU:
+    with default_device as cuda_context:
+        log("cuda_context=%s for device=%s", cuda_context, default_device.get_info())
+        return decompress_with_device(rgb_format, img_data, options, download_from_gpu)
+
+def decompress_with_device(rgb_format, img_data, options=None, download=None):
+    log("decompress_with_device(%s, %i bytes, %s)", rgb_format, len(img_data), options)
     cdef double start, end
     cdef nvjpegHandle_t nv_handle
     cdef nvjpegJpegState_t jpeg_handle
@@ -106,46 +111,44 @@ def decompress_with_device(device, rgb_format, img_data, options=None, download=
 
     buf = None
     pixels = None
-    with device as cuda_context:
-        log("cuda_context=%s for device=%s", cuda_context, device.get_info())
+    try:
+        errcheck(nvjpegCreateSimple(&nv_handle), "nvjpegCreateSimple")
         try:
-            errcheck(nvjpegCreateSimple(&nv_handle), "nvjpegCreateSimple")
-            try:
-                errcheck(nvjpegJpegStateCreate(nv_handle, &jpeg_handle), "nvjpegJpegStateCreate")
-                with buffer_context(img_data) as bc:
-                    data_len = len(bc)
-                    data_buf = <const unsigned char*> (<uintptr_t> int(bc))
-                    errcheck(nvjpegGetImageInfo(nv_handle, data_buf, data_len,
-                                                nComponents, &subsampling, widths, heights),
-                                                "nvjpegGetImageInfo")
-                    log("got image info: %4ix%-4i YUV%s", widths[0], heights[0], CSS_STR.get(subsampling, subsampling))
-                    width = widths[0]
-                    height = heights[0]
-                    rowstride = width*3
-                    for i in range(1, NVJPEG_MAX_COMPONENT):
-                        nv_image.channel[i] = NULL
-                        nv_image.pitch[i] = 0
-                    nv_image.pitch[0] = rowstride
-                    buf = driver.mem_alloc(rowstride*height)
-                    dmem = <uintptr_t> int(buf)
-                    nv_image.channel[0] = <unsigned char *> dmem
-                    start = monotonic()
-                    with nogil:
-                        r = nvjpegDecode(nv_handle, jpeg_handle,
-                                    data_buf, data_len,
-                                    output_format,
-                                    &nv_image,
-                                    nv_stream)
-                    if r:
-                        raise NVJPEG_Exception("decoding failed: %s" % ERR_STR.get(r, r))
-                    end = monotonic()
-                    log("nvjpegDecode took %ims", 1000*(end-start))
-                if download:
-                    pixels = download(buf, rowstride*height)
-            finally:
-                errcheck(nvjpegJpegStateDestroy(jpeg_handle), "nvjpegJpegStateDestroy")
+            errcheck(nvjpegJpegStateCreate(nv_handle, &jpeg_handle), "nvjpegJpegStateCreate")
+            with buffer_context(img_data) as bc:
+                data_len = len(bc)
+                data_buf = <const unsigned char*> (<uintptr_t> int(bc))
+                errcheck(nvjpegGetImageInfo(nv_handle, data_buf, data_len,
+                                            nComponents, &subsampling, widths, heights),
+                                            "nvjpegGetImageInfo")
+                log("got image info: %4ix%-4i YUV%s", widths[0], heights[0], CSS_STR.get(subsampling, subsampling))
+                width = widths[0]
+                height = heights[0]
+                rowstride = width*3
+                for i in range(1, NVJPEG_MAX_COMPONENT):
+                    nv_image.channel[i] = NULL
+                    nv_image.pitch[i] = 0
+                nv_image.pitch[0] = rowstride
+                buf = driver.mem_alloc(rowstride*height)
+                dmem = <uintptr_t> int(buf)
+                nv_image.channel[0] = <unsigned char *> dmem
+                start = monotonic()
+                with nogil:
+                    r = nvjpegDecode(nv_handle, jpeg_handle,
+                                data_buf, data_len,
+                                output_format,
+                                &nv_image,
+                                nv_stream)
+                if r:
+                    raise NVJPEG_Exception("decoding failed: %s" % ERR_STR.get(r, r))
+                end = monotonic()
+                log("nvjpegDecode took %ims", 1000*(end-start))
+            if download:
+                pixels = download(buf, rowstride*height)
         finally:
-            errcheck(nvjpegDestroy(nv_handle), "nvjpegDestroy")
+            errcheck(nvjpegJpegStateDestroy(jpeg_handle), "nvjpegJpegStateDestroy")
+    finally:
+        errcheck(nvjpegDestroy(nv_handle), "nvjpegDestroy")
     return ImageWrapper(0, 0, width, height, pixels, rgb_format, 24, rowstride, planes=ImageWrapper.PACKED)
 
 
