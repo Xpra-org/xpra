@@ -149,7 +149,7 @@ cdef extern from "X11/Xlib.h":
     int MotionNotify
     int GenericEvent
 
-
+    char *XGetAtomName(Display *display, Atom atom)
 
 
 cdef extern from "X11/extensions/xfixeswire.h":
@@ -260,7 +260,6 @@ cdef extern from "gtk-3.0/gdk/gdktypes.h":
     # FIXME: this should have stricter type checking
     object PyGdkAtom_New(GdkAtom)
     Atom gdk_x11_get_xatom_by_name(char *atom_name)
-    GdkAtom gdk_x11_xatom_to_atom_for_display(GdkDisplay *, Atom)
 
 
 # Basic utilities:
@@ -315,32 +314,20 @@ def get_xatom(str_or_xatom):
     b = strtobytes(str_or_xatom)
     return gdk_x11_get_xatom_by_name(b)
 
-cdef GdkAtom get_gdkatom(xatom):
+def get_pyatom(xatom):
+    display = Gdk.get_default_root_window().get_display()
+    return _get_pyatom(display, xatom)
+
+cdef _get_pyatom(display, int xatom):
     if int(xatom) > 2**32:
         raise Exception("weirdly huge purported xatom: %s" % xatom)
     if xatom==0:
-        return GDK_NONE
-    display = Gdk.get_default_root_window().get_display()
-    cdef GdkDisplay *disp = get_raw_display_for(display)
-    return gdk_x11_xatom_to_atom_for_display(disp, xatom)
-
-def get_pyatom(xatom):
-    cdef GdkAtom gdk_atom = get_gdkatom(xatom)
-    if gdk_atom==GDK_NONE:
-        return ""
-    cdef char *name = gdk_atom_name(gdk_atom)
-    pyname = bytestostr(name)
-    return pyname
-
-
-cdef _get_pyatom(display, int xatom):
-    if xatom==0:
         return ""
     cdef GdkDisplay *disp = get_raw_display_for(display)
-    cdef GdkAtom gdk_atom = gdk_x11_xatom_to_atom_for_display(disp, xatom)
-    if gdk_atom==GDK_NONE:
+    cdef Display *xdisplay = GDK_DISPLAY_XDISPLAY(disp)
+    cdef char *name = XGetAtomName(xdisplay, xatom)
+    if not name:
         return ""
-    cdef char *name = gdk_atom_name(gdk_atom)
     pyname = bytestostr(name)
     return pyname
 
@@ -918,6 +905,8 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
     pyev.display = d
     pyev.send_event = e.xany.send_event
     pyev.serial = e.xany.serial
+    def atom(v):
+        return trap.call_synced(_get_pyatom, d, v)
     # Unmarshal:
     try:
         if etype != XKBNotify:
@@ -959,28 +948,28 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             selectionrequest_e = <XSelectionRequestEvent*> e
             pyev.window = _gw(d, selectionrequest_e.owner)
             pyev.requestor = _gw(d, selectionrequest_e.requestor)
-            pyev.selection = _get_pyatom(d, selectionrequest_e.selection)
-            pyev.target = _get_pyatom(d, selectionrequest_e.target)
-            pyev.property = _get_pyatom(d, selectionrequest_e.property)
+            pyev.selection = atom(selectionrequest_e.selection)
+            pyev.target = atom(selectionrequest_e.target)
+            pyev.property = atom(selectionrequest_e.property)
             pyev.time = int(selectionrequest_e.time)
         elif etype == SelectionClear:
             selectionclear_e = <XSelectionClearEvent*> e
             pyev.window = _gw(d, selectionclear_e.window)
-            pyev.selection = _get_pyatom(d, selectionclear_e.selection)
+            pyev.selection = atom(selectionclear_e.selection)
             pyev.time = int(selectionclear_e.time)
         elif etype == SelectionNotify:
             selection_e = <XSelectionEvent*> e
             pyev.requestor = _gw(d, selection_e.requestor)
-            pyev.selection = _get_pyatom(d, selection_e.selection)
-            pyev.target = _get_pyatom(d, selection_e.target)
-            pyev.property = _get_pyatom(d, selection_e.property)
+            pyev.selection = atom(selection_e.selection)
+            pyev.target = atom(selection_e.target)
+            pyev.property = atom(selection_e.property)
             pyev.time = int(selection_e.time)
         elif etype == XFSelectionNotify:
             selectionnotify_e = <XFixesSelectionNotifyEvent*> e
             pyev.window = _gw(d, selectionnotify_e.window)
             pyev.subtype = selectionnotify_e.subtype
             pyev.owner = _gw(d, selectionnotify_e.owner)
-            pyev.selection = _get_pyatom(d, selectionnotify_e.selection)
+            pyev.selection = atom(selectionnotify_e.selection)
             pyev.timestamp = int(selectionnotify_e.timestamp)
             pyev.selection_timestamp = int(selectionnotify_e.selection_timestamp)
         elif etype == ResizeRequest:
@@ -1006,7 +995,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
                          + "This makes no sense, so I'm ignoring it.",
                          e.xclient.message_type)
                 return GDK_FILTER_CONTINUE  # @UndefinedVariable
-            pyev.message_type = _get_pyatom(d, e.xclient.message_type)
+            pyev.message_type = atom(e.xclient.message_type)
             pyev.format = e.xclient.format
             # I am lazy.  Add this later if needed for some reason.
             if pyev.format != 32:
@@ -1032,7 +1021,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.window = _gw(d, e.xdestroywindow.window)
         elif etype == PropertyNotify:
             pyev.window = _gw(d, e.xany.window)
-            pyev.atom = trap.call_synced(_get_pyatom, d, e.xproperty.atom)
+            pyev.atom = atom(e.xproperty.atom)
             pyev.time = e.xproperty.time
         elif etype == ConfigureNotify:
             pyev.window = _gw(d, e.xconfigure.window)
@@ -1055,7 +1044,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.window = _gw(d, e.xany.window)
             cursor_e = <XFixesCursorNotifyEvent*>e
             pyev.cursor_serial = cursor_e.cursor_serial
-            pyev.cursor_name = trap.call_synced(_get_pyatom, d, cursor_e.cursor_name)
+            pyev.cursor_name = atom(cursor_e.cursor_name)
         elif etype == MotionNotify:
             pyev.window = _gw(d, e.xmotion.window)
             pyev.root = _gw(d, e.xmotion.root)
@@ -1106,7 +1095,7 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
             pyev.event_only = bool(bell_e.event_only)
             pyev.delivered_to = pyev.window
             pyev.window_model = None
-            pyev.bell_name = _get_pyatom(d, bell_e.name)
+            pyev.bell_name = atom(bell_e.name)
         else:
             log.info("not handled: %s", x_event_type_names.get(etype, etype))
             return None
