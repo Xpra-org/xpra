@@ -843,7 +843,8 @@ class WindowSource(WindowIconSource):
         common_encodings = [x for x in self._encoders if x in self.core_encodings and x not in exclude]
         self.common_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in common_encodings)
         if not self.common_encodings:
-            raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
+            raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (
+                csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
         #ensure the encoding chosen is supported by this source:
         if (encoding in self.common_encodings or encoding in ("auto", "grayscale")) and len(self.common_encodings)>1:
             self.encoding = encoding
