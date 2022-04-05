@@ -13,7 +13,6 @@ from OpenGL import version as OpenGL_version
 from OpenGL.error import GLError
 from OpenGL.GL import (
     GL_PIXEL_UNPACK_BUFFER, GL_STREAM_DRAW,
-    GL_BUFFER_SIZE,
     GL_PROJECTION, GL_MODELVIEW,
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
@@ -34,7 +33,7 @@ from OpenGL.GL import (
     glGetString, glViewport, glMatrixMode, glLoadIdentity, glOrtho,
     glGenTextures, glDisable,
     glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
-    glBindBuffer, glGenBuffers, glGetBufferParameteriv, glBufferData, glDeleteBuffers,
+    glBindBuffer, glGenBuffers, glBufferData, glDeleteBuffers,
     glTexParameteri,
     glTexImage2D,
     glMultiTexCoord2i,
@@ -83,7 +82,7 @@ DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
 FBO_RESIZE = envbool("XPRA_OPENGL_FBO_RESIZE", True)
 FBO_RESIZE_DELAY = envint("XPRA_OPENGL_FBO_RESIZE_DELAY", -1)
 CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
-NVJPEG = envbool("XPRA_OPENGL_NVJPEG", False)
+NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 
 CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -1040,32 +1039,37 @@ class GLWindowBackingBase(WindowBackingBase):
                        (width, rowstride, pixel_format), row_length, alignment)
 
 
+    def paint_jpega(self, *args):
+        return self.paint_jpeg(*args)
+
     def paint_jpeg(self, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         if self.nvjpeg_decoder and NVJPEG:
             def paint_nvjpeg(gl_context):
-                rgb_format = "RGB"
-
                 self.gl_init()
                 pbo = glGenBuffers(1)
-                def copy_buffer(buf, size):
-                    log("copy_buffer(%s, %s)", buf, size)
+                def copy_cuda_buffer(rgb_format, buf, size):
+                    log("nvjpeg copy_cuda_buffer(%s, %i, %i)", rgb_format, buf, size)
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
                     glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
-                    #import-outside-toplevel
-                    from pycuda.driver import memcpy_dtod  #pylint: disable=no-name-in-module
+                    #pylint: disable=import-outside-toplevel
+                    from pycuda.driver import memcpy_dtod   #pylint: disable=no-name-in-module
                     from pycuda.gl import RegisteredBuffer, graphics_map_flags
                     cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
                     log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
                     mapping = cuda_pbo.map()
                     ptr = mapping.device_ptr_and_size()[0]
-                    log("copying from %s to mapping=%s at %#x", buf, mapping, ptr)
+                    log("copying %i bytes from %s to mapping=%s at %#x", size, buf, mapping, ptr)
                     memcpy_dtod(ptr, buf, size)
                     mapping.unmap()
 
                 with self.assign_cuda_context(True):
-                    img = self.nvjpeg_decoder.decompress_with_device(rgb_format, img_data, None, copy_buffer)
+                    img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options, copy_cuda_buffer)
                 log("paint_nvjpeg(%s) img=%s, updating fbo", gl_context, img)
+
+                rgb_format = img.get_pixel_format()
+                assert rgb_format in ("RGB", "BGR", "RGBA", "BGRA"), "unexpected rgb format %r" % (rgb_format,)
+                pformat = PIXEL_FORMAT_TO_CONSTANT[rgb_format]
 
                 target = GL_TEXTURE_RECTANGLE_ARB
                 glEnable(target)
@@ -1073,10 +1077,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
                 glPixelStorei(GL_UNPACK_ROW_LENGTH, 0)
                 glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-                glTexImage2D(target, 0, self.internal_format, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
+                glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, GL_UNSIGNED_BYTE, None)
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
 
-                self.set_alignment(width, width*3, rgb_format)
+                self.set_alignment(width, width*len(rgb_format), rgb_format)
                 # Draw textured RGB quad at the right coordinates
                 glBegin(GL_QUADS)
                 glTexCoord2i(0, 0)

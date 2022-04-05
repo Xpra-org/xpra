@@ -4,14 +4,14 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from pycuda import driver
+from pycuda.driver import Memcpy2D, memcpy_dtoh, mem_alloc
 
 from libc.string cimport memset #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from xpra.buffers.membuf cimport memalign, buffer_context
 from xpra.codecs.nvjpeg.nvjpeg cimport (
-    NVJPEG_OUTPUT_RGBI, NVJPEG_OUTPUT_BGRI,
+    NVJPEG_OUTPUT_RGBI, NVJPEG_OUTPUT_BGRI, NVJPEG_OUTPUT_Y,
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
     nvjpegStatus_t, nvjpegChromaSubsampling_t, nvjpegOutputFormat_t,
     nvjpegInputFormat_t, nvjpegBackend_t, nvjpegJpegEncoding_t,
@@ -70,10 +70,11 @@ class NVJPEG_Exception(Exception):
 
 
 
-def download_from_gpu(buf, size):
+def download_from_gpu(rgb_format, buf, size):
+    log("nvjpeg download_from_gpu%s", (rgb_format, buf, size))
     start = monotonic()
     pixels = bytearray(size)
-    driver.memcpy_dtoh(pixels, buf)
+    memcpy_dtoh(pixels, buf)
     end = monotonic()
     log("nvjpeg downloaded %i bytes in %ims", size, 1000*(end-start))
     return pixels
@@ -87,6 +88,7 @@ def decompress(rgb_format, img_data, options=None):
 
 def decompress_with_device(rgb_format, img_data, options=None, download=None):
     log("decompress_with_device(%s, %i bytes, %s)", rgb_format, len(img_data), options)
+    cdef unsigned int alpha_offset = (options or {}).get("alpha-offset", 0)
     cdef double start, end
     cdef nvjpegHandle_t nv_handle
     cdef nvjpegJpegState_t jpeg_handle
@@ -101,22 +103,29 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
         output_format = NVJPEG_OUTPUT_BGRI
     elif rgb_format=="RGB":
         output_format = NVJPEG_OUTPUT_RGBI
+    elif rgb_format=="Y":
+        output_format = NVJPEG_OUTPUT_Y
     else:
         raise ValueError("invalid rgb format %r" % rgb_format)
     cdef nvjpegImage_t nv_image
     cdef cudaStream_t nv_stream = NULL
     cdef nvjpegStatus_t r
     cdef uintptr_t dmem = 0
-    cdef unsigned int rowstride = 0, width = 0, height = 0
+    cdef int rowstride = 0, width = 0, height = 0
 
-    buf = None
     pixels = None
     try:
         errcheck(nvjpegCreateSimple(&nv_handle), "nvjpegCreateSimple")
         try:
             errcheck(nvjpegJpegStateCreate(nv_handle, &jpeg_handle), "nvjpegJpegStateCreate")
             with buffer_context(img_data) as bc:
-                data_len = len(bc)
+                if alpha_offset:
+                    #decompress up to alpha data:
+                    assert len(bc)>alpha_offset, "invalid alpha offset %i for data length %i" % (alpha_offset, len(bc))
+                    data_len = alpha_offset
+                else:
+                    #decompress everything:
+                    data_len = len(bc)
                 data_buf = <const unsigned char*> (<uintptr_t> int(bc))
                 errcheck(nvjpegGetImageInfo(nv_handle, data_buf, data_len,
                                             nComponents, &subsampling, widths, heights),
@@ -129,22 +138,82 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
                     nv_image.channel[i] = NULL
                     nv_image.pitch[i] = 0
                 nv_image.pitch[0] = rowstride
-                buf = driver.mem_alloc(rowstride*height)
-                dmem = <uintptr_t> int(buf)
+                rgb_size = rowstride*height
+                rgb = mem_alloc(rgb_size)
+                dmem = <uintptr_t> int(rgb)
                 nv_image.channel[0] = <unsigned char *> dmem
                 start = monotonic()
                 with nogil:
                     r = nvjpegDecode(nv_handle, jpeg_handle,
-                                data_buf, data_len,
-                                output_format,
-                                &nv_image,
-                                nv_stream)
+                                     data_buf, data_len,
+                                     output_format,
+                                     &nv_image,
+                                     nv_stream)
                 if r:
                     raise NVJPEG_Exception("decoding failed: %s" % ERR_STR.get(r, r))
                 end = monotonic()
-                log("nvjpegDecode took %ims", 1000*(end-start))
+                log("nvjpegDecode to %s took %ims", rgb_format, 1000*(end-start))
+                if alpha_offset:
+                    data_len = len(bc)-alpha_offset
+                    data_buf = <const unsigned char*> (<uintptr_t> int(bc) + alpha_offset)
+                    errcheck(nvjpegGetImageInfo(nv_handle, data_buf, data_len,
+                                                nComponents, &subsampling, widths, heights),
+                                                "nvjpegGetImageInfo")
+                    log("got image info: %4ix%-4i YUV%s", widths[0], heights[0], CSS_STR.get(subsampling, subsampling))
+                    assert width==widths[0] and height==heights[0], "invalid dimensions for alpha channel, expected %ix%i but found %ix%i" % (
+                        widths[0], heights[0], width, height,
+                        )
+                    alpha_size = width*height
+                    alpha = mem_alloc(alpha_size)
+                    dmem = <uintptr_t> int(alpha)
+                    nv_image.pitch[0] = width
+                    nv_image.channel[0] = <unsigned char *> dmem
+                    start = monotonic()
+                    with nogil:
+                        r = nvjpegDecode(nv_handle, jpeg_handle,
+                                         data_buf, data_len,
+                                         NVJPEG_OUTPUT_Y,
+                                         &nv_image,
+                                         nv_stream)
+                    if r:
+                        raise NVJPEG_Exception("decoding failed: %s" % ERR_STR.get(r, r))
+                    end = monotonic()
+                    log("nvjpegDecode to Y took %ims", 1000*(end-start))
+                    #combine RGB and A,
+                    #start by adding one byte of padding: RGB -> RGBX
+                    start = monotonic()
+                    buf = mem_alloc(width*height*4)
+                    memcpy = Memcpy2D()
+                    memcpy.src_x_in_bytes = memcpy.src_y = 0
+                    memcpy.dst_x_in_bytes = memcpy.dst_y = 0
+                    memcpy.src_pitch = 3
+                    memcpy.dst_pitch = 4
+                    memcpy.width_in_bytes = 3
+                    memcpy.set_src_device(rgb)
+                    memcpy.set_dst_device(buf)
+                    memcpy.height = width*height
+                    memcpy(aligned=False)
+                    #fill in the alpha channel:
+                    memcpy = Memcpy2D()
+                    memcpy.src_x_in_bytes = memcpy.src_y = memcpy.dst_y = 0
+                    memcpy.dst_x_in_bytes = 3
+                    memcpy.src_pitch = 1
+                    memcpy.dst_pitch = 4
+                    memcpy.width_in_bytes = 1
+                    memcpy.set_src_device(alpha)
+                    memcpy.set_dst_device(buf)
+                    memcpy.height = alpha_size
+                    memcpy(aligned=False)
+                    rgb_format += "A"
+                    rgb.free()
+                    alpha.free()
+                    buf_size = rgb_size+alpha_size
+                else:
+                    buf = rgb
+                    buf_size = rgb_size
             if download:
-                pixels = download(buf, rowstride*height)
+                pixels = download(rgb_format, buf, buf_size)
+            buf.free()
         finally:
             errcheck(nvjpegJpegStateDestroy(jpeg_handle), "nvjpegJpegStateDestroy")
     finally:
