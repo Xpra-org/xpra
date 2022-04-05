@@ -1039,10 +1039,13 @@ class GLWindowBackingBase(WindowBackingBase):
                        (width, rowstride, pixel_format), row_length, alignment)
 
 
-    def paint_jpega(self, *args):
-        return self.paint_jpeg(*args)
+    def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
+        self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
-    def paint_jpeg(self, img_data, x : int, y : int, width : int, height : int, options, callbacks):
+    def paint_jpega(self, img_data, x, y, width, height, options, callbacks):
+        self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
+
+    def do_paint_jpeg(self, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         if self.nvjpeg_decoder and NVJPEG:
             def paint_nvjpeg(gl_context):
                 self.gl_init()
@@ -1096,7 +1099,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 glBindTexture(target, 0)
                 glDisable(target)
 
-                self.paint_box("jpeg", x, y, width, height)
+                self.paint_box(encoding, x, y, width, height)
                 # Present update to screen
                 if not self.draw_needs_refresh:
                     self.present_fbo(x, y, width, height, options.intget("flush", 0))
@@ -1106,19 +1109,26 @@ class GLWindowBackingBase(WindowBackingBase):
 
             self.idle_add(self.with_gl_context, paint_nvjpeg)
             return
-        if JPEG_YUV and width>=2 and height>=2:
+        if JPEG_YUV and width>=2 and height>=2 and encoding=="jpeg":
             img = self.jpeg_decoder.decompress_to_yuv(img_data)
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, "jpeg", img,
+            self.idle_add(self.gl_paint_planar, YUV2RGB_FULL_SHADER, flush, encoding, img,
                           x, y, w, h, width, height, options, callbacks)
-        else:
+            return
+        if encoding=="jpeg":
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data)
-            w = img.get_width()
-            h = img.get_height()
-            self.idle_add(self.do_paint_rgb, "BGRX", img.get_pixels(), x, y, w, h, width, height,
-                          img.get_rowstride(), options, callbacks)
+        elif encoding=="jpega":
+            alpha_offset = options.intget("alpha-offset", 0)
+            img = self.jpeg_decoder.decompress_to_rgb("BGRA", img_data, alpha_offset)
+        else:
+            raise Exception("invalid encoding %r" % encoding)
+        w = img.get_width()
+        h = img.get_height()
+        rgb_format = img.get_pixel_format()
+        self.idle_add(self.do_paint_rgb, rgb_format, img.get_pixels(), x, y, w, h, width, height,
+                      img.get_rowstride(), options, callbacks)
 
     def paint_webp(self, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         subsampling = options.strget("subsampling")

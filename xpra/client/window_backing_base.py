@@ -457,18 +457,25 @@ class WindowBackingBase:
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        self.do_paint_jpeg("RGBX", img_data, x, y, width, height, options, callbacks)
+        self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
     def paint_jpega(self, img_data, x, y, width, height, options, callbacks):
-        self.do_paint_jpeg("RGBA", img_data, x, y, width, height, options, callbacks)
+        self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def do_paint_jpeg(self, rgb_format, img_data, x, y, width, height, options, callbacks):
+    def do_paint_jpeg(self, encoding, img_data, x, y, width, height, options, callbacks):
         alpha_offset = options.intget("alpha-offset", 0)
         log("do_paint_jpeg: nvjpeg_decoder=%s", self.nvjpeg_decoder)
         if self.nvjpeg_decoder and not alpha_offset:
             with self.assign_cuda_context(False):
-                img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, download=self.nvjpeg_decoder.download_from_gpu)
+                img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data,
+                                                                 download=self.nvjpeg_decoder.download_from_gpu)
         else:
+            if encoding=="jpeg":
+                rgb_format = "RGBX"
+            elif encoding=="jpega":
+                rgb_format = "RGBA"
+            else:
+                raise Exception("invalid encoding %r" % encoding)
             img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
