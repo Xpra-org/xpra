@@ -151,25 +151,30 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef int _has_randr
     cdef object _added_modes
+    cdef object version
 
     def __init__(self):
-        self._has_randr = self.check_randr() and self.check_randr_sizes()
+        self.version = self.query_version()
+        self._has_randr = self.version>(0, ) and self.check_randr_sizes()
         self._added_modes = {}
 
     def __repr__(self):
         return "RandRBindings(%s)" % self.display_name
 
-    def check_randr(self):
+    def get_version(self):
+        return self.version
+
+    def query_version(self):
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         cdef int r = XRRQueryExtension(self.display, &event_base, &ignored)
         log("XRRQueryExtension()=%i", r)
-        if r:
-            log("found XRandR extension")
-            if XRRQueryVersion(self.display, &cmajor, &cminor):
-                log("found XRandR extension version %i.%i", cmajor, cminor)
-                if (cmajor==1 and cminor>=2) or cmajor>=2:
-                    return True
-        return False
+        if not r:
+            return (0, )
+        log("found XRandR extension")
+        if not XRRQueryVersion(self.display, &cmajor, &cminor):
+            return (0, )
+        log("found XRandR extension version %i.%i", cmajor, cminor)
+        return (cmajor, cminor)
 
     def check_randr_sizes(self):
         #check for wayland, which has no sizes:
@@ -510,9 +515,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         assert rsc!=NULL
         try:
             log("get_current_output() screen_resources: crtcs=%s, outputs=%s, modes=%s", rsc.ncrtc, rsc.noutput, rsc.nmode)
-            if rsc.noutput!=1:
-                log.warn("Warning: unexpected number of outputs: %s", rsc.noutput)
+            if rsc.noutput==0:
+                log.error("Error: this display has no outputs")
                 return 0
+            if rsc.noutput>1:
+                log("%s outputs", rsc.noutput)
             return rsc.outputs[0]
         finally:
             XRRFreeScreenResources(rsc)

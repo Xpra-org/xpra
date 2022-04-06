@@ -163,7 +163,7 @@ class X11ServerCore(GTKServerBase):
         #in which case the screen sizes list may be longer than 1
         eprop = prop_get(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", ignore_errors=True, raise_xerrors=False)
         screenlog("_XPRA_RANDR_EXACT_SIZE=%s", eprop)
-        self.randr_exact_size = eprop==1
+        self.randr_exact_size = eprop==1 or RandR.get_version()>=(1, 6)
         if not self.randr_exact_size:
             #ugly hackish way of detecting Xvfb with randr,
             #assume that it has only one resolution pre-defined:
