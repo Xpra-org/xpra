@@ -656,7 +656,22 @@ def get_gcc_version():
             GCC_VERSION = tuple(tmp_version)
     return GCC_VERSION
 
-
+def get_dummy_driver_version():
+    def vernum(s):
+        return tuple(int(v) for v in s.split("-", 1)[0].split("."))
+    #try various rpm names:
+    for rpm_name in ("xorg-x11-drv-dummy", "xf86-video-dummy"):
+        r, out, err = get_status_output(["rpm", "-q", "--queryformat", "%{VERSION}", rpm_name])
+        print("rpm query: out=%s, err=%s" % (out, err))
+        if r==0:
+            return vernum(out)
+    r, out, _ = get_status_output(["dpkg-query", "--showformat=${Version}", "--show", "xserver-xorg-video-dummy"])
+    if r==0:
+        if out.find(":")>=0:
+            #ie: "1:0.3.8-2" -> "0.3.8"
+            out = out.split(":", 1)[1]
+        return vernum(out)
+    return (0, )
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
@@ -1620,17 +1635,25 @@ else:
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])) or Xdummy_wrapper_ENABLED is True:
                     copytodir("fs/bin/xpra_Xdummy", "bin", chmod=0o755)
                 #install xorg*.conf, cuda.conf and nvenc.keys:
-                etc_xpra_files = ["xorg.conf"]
+                etc_xpra_files = {}
+                def addconf(name, dst_name=None):
+                    etc_xpra_files[name] = dst_name
                 if uinput_ENABLED:
-                    etc_xpra_files.append("xorg-uinput.conf")
+                    addconf("xorg-uinput.conf")
                 if nvenc_ENABLED or nvfbc_ENABLED:
-                    etc_xpra_files.append("cuda.conf")
+                    addconf("cuda.conf")
                 if nvenc_ENABLED:
-                    etc_xpra_files.append("nvenc.keys")
+                    addconf("nvenc.keys")
                 if nvfbc_ENABLED:
-                    etc_xpra_files.append("nvfbc.keys")
-                for x in etc_xpra_files:
-                    copytodir("fs/etc/xpra/%s" % x, "/etc/xpra")
+                    addconf("nvfbc.keys")
+                dummy_driver_version = get_dummy_driver_version()
+                print("found dummy driver version %s" % (dummy_driver_version,))
+                if dummy_driver_version < (0, 4):
+                    addconf("xorg.conf")
+                else:
+                    addconf("xorg-randr1.6.conf", "xorg.conf")
+                for src, dst_name in etc_xpra_files.items():
+                    copytodir("fs/etc/xpra/%s" % src, "/etc/xpra", dst_name=dst_name)
                 copytodir("fs/etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
 
             if pam_ENABLED:
