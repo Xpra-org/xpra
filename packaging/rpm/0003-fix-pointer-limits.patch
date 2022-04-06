@@ -1,8 +1,9 @@
---- xf86-video-dummy-0.3.6/src/dummy_driver.c	2014-11-05 19:24:02.668656601 +0700
-+++ xf86-video-dummy-0.3.6.new/src/dummy_driver.c	2014-11-05 19:37:53.076061853 +0700
-@@ -55,6 +55,9 @@
- #include <X11/extensions/xf86dgaproto.h>
- #endif
+diff -urN xf86-video-dummy-0.4.0.bak/src/dummy_driver.c xf86-video-dummy-0.4.0/src/dummy_driver.c
+--- xf86-video-dummy-0.4.0.bak/src/dummy_driver.c	2022-04-06 10:54:34.951837933 +0700
++++ xf86-video-dummy-0.4.0/src/dummy_driver.c	2022-04-06 10:57:20.980932580 +0700
+@@ -48,6 +48,9 @@
+ #include "scrnintstr.h"
+ #include "servermd.h"
  
 +/* Needed for fixing pointer limits on resize */
 +#include "inputstr.h"
@@ -10,7 +11,7 @@
  /* Mandatory functions */
  static const OptionInfoRec *	DUMMYAvailableOptions(int chipid, int busid);
  static void     DUMMYIdentify(int flags);
-@@ -713,6 +716,26 @@
+@@ -1000,6 +1003,26 @@
          RRTellChanged(pScrn->pScreen);
      }
  #endif
