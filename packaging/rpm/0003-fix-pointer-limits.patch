@@ -1,5 +1,6 @@
---- xf86-video-dummy-0.3.6/src/dummy_driver.c	2014-11-05 19:24:02.668656601 +0700
-+++ xf86-video-dummy-0.3.6.new/src/dummy_driver.c	2014-11-05 19:37:53.076061853 +0700
+diff -urN a/src/dummy_driver.c b/src/dummy_driver.c
+--- a/src/dummy_driver.c	2022-04-06 13:35:48.452498077 +0700
++++ b/src/dummy_driver.c	2022-04-06 13:36:08.279371028 +0700
 @@ -55,6 +55,9 @@
  #include <X11/extensions/xf86dgaproto.h>
  #endif
@@ -10,7 +11,7 @@
  /* Mandatory functions */
  static const OptionInfoRec *	DUMMYAvailableOptions(int chipid, int busid);
  static void     DUMMYIdentify(int flags);
-@@ -713,6 +716,26 @@
+@@ -689,6 +692,26 @@
          RRTellChanged(pScrn->pScreen);
      }
  #endif

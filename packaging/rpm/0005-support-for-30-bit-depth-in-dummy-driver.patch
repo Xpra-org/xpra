@@ -1,17 +1,7 @@
---- a/src/dummy.h	2016-12-17 23:33:33.279533389 +0100
-+++ b/src/dummy.h	2016-12-17 23:33:56.695739166 +0100
-@@ -69,7 +69,7 @@
-     int overlay_offset;
-     int videoKey;
-     int interlace;
--    dummy_colors colors[256];
-+    dummy_colors colors[1024];
-     pointer* FBBase;
-     Bool        (*CreateWindow)() ;     /* wrapped CreateWindow */
-     Bool prop;
---- a/src/dummy_driver.c	2016-12-17 23:33:47.446657886 +0100
-+++ b/src/dummy_driver.c	2016-12-17 23:33:56.696739175 +0100
-@@ -317,6 +317,7 @@
+diff -urN a/src/dummy_driver.c b/src/dummy_driver.c
+--- a/src/dummy_driver.c	2022-04-06 13:43:22.348626915 +0700
++++ b/src/dummy_driver.c	2022-04-06 13:43:37.175533701 +0700
+@@ -320,6 +320,7 @@
  	case 15:
  	case 16:
  	case 24:
@@ -19,7 +9,7 @@
  	    break;
  	default:
  	    xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-@@ -331,8 +332,8 @@
+@@ -334,8 +335,8 @@
  	pScrn->rgbBits = 8;
  
      /* Get the depth24 pixmap format */
@@ -30,7 +20,7 @@
  
      /*
       * This must happen after pScrn->display has been set because
-@@ -623,7 +624,7 @@
+@@ -626,7 +627,7 @@
      if(!miCreateDefColormap(pScreen))
  	return FALSE;
  
@@ -39,3 +29,15 @@
                           DUMMYLoadPalette, NULL, 
                           CMAP_PALETTED_TRUECOLOR 
  			     | CMAP_RELOAD_ON_MODE_SWITCH))
+diff -urN xf86-video-dummy-0.3.8.bak/src/dummy.h xf86-video-dummy-0.3.8/src/dummy.h
+--- xf86-video-dummy-0.3.8.bak/src/dummy.h	2022-04-06 13:43:20.004641651 +0700
++++ xf86-video-dummy-0.3.8/src/dummy.h	2022-04-06 13:43:36.995534832 +0700
+@@ -69,7 +69,7 @@
+     int overlay_offset;
+     int videoKey;
+     int interlace;
+-    dummy_colors colors[256];
++    dummy_colors colors[1024];
+     pointer* FBBase;
+     Bool        (*CreateWindow)() ;     /* wrapped CreateWindow */
+     Bool prop;
