@@ -15,7 +15,7 @@ URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
 
-Source0:   https://xorg.freedesktop.org/archive/individual/driver/%{tarball}-%{version}.tar.xz
+Source0:   https://xorg.freedesktop.org/archive/individual/driver/%{tarball}-%{version}.tar.bz2
 Patch2:    0002-Constant-DPI.patch
 Patch3:    0003-fix-pointer-limits.patch
 

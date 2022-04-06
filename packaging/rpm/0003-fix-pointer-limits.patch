@@ -1,6 +1,6 @@
 diff -urN xf86-video-dummy-0.4.0.bak/src/dummy_driver.c xf86-video-dummy-0.4.0/src/dummy_driver.c
---- xf86-video-dummy-0.4.0.bak/src/dummy_driver.c	2022-04-06 10:54:34.951837933 +0700
-+++ xf86-video-dummy-0.4.0/src/dummy_driver.c	2022-04-06 10:57:20.980932580 +0700
+--- a/xf86-video-dummy-0.4.0/src/dummy_driver.c	2022-04-06 10:54:34.951837933 +0700
++++ b/xf86-video-dummy-0.4.0/src/dummy_driver.c	2022-04-06 10:57:20.980932580 +0700
 @@ -48,6 +48,9 @@
  #include "scrnintstr.h"
  #include "servermd.h"
