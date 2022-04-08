@@ -402,9 +402,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
         #monitor settings as set in xorg.conf...
         cdef unsigned int maxPixelClock = 230*1000*1000         #230MHz
-        cdef unsigned int minHSync = 10*1000                    #10KHz
+        cdef unsigned int minHSync = 1*1000                     #1KHz
         cdef unsigned int maxHSync = 300*1000                   #300KHz
-        cdef unsigned int minVSync = 10                         #10Hz
+        cdef unsigned int minVSync = 1                          #1Hz
         cdef unsigned int maxVSync = 300                        #30Hz
         cdef double idealVSync = 50.0
         cdef double timeHFront = 0.07           #0.074219; 0.075; Width of the black border on right edge of the screen
