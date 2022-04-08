@@ -14,8 +14,8 @@ gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
-from xpra.util import first_time, envint, envbool
-from xpra.os_util import strtobytes, WIN32, OSX
+from xpra.util import first_time, envint, envbool, print_nested_dict
+from xpra.os_util import strtobytes, WIN32, OSX, POSIX
 from xpra.log import Logger
 
 log = Logger("gtk", "util")
@@ -712,7 +712,13 @@ def main():
     with program_context("GTK-Version-Info", "GTK Version Info"):
         enable_color()
         print("%s" % get_gtk_version_info())
-        get_screen_sizes()
+        if POSIX and not OSX:
+            from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+            init_posix_display_source()
+        import warnings
+        warnings.simplefilter("ignore")
+        print(get_screen_sizes()[0])
+        print_nested_dict(get_screens_info()[0])
 
 
 if __name__ == "__main__":
