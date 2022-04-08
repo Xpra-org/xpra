@@ -193,6 +193,7 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
                     memcpy.set_dst_device(buf)
                     memcpy.height = width*height
                     memcpy(aligned=False)
+                    rgb.free()
                     #fill in the alpha channel:
                     memcpy = Memcpy2D()
                     memcpy.src_x_in_bytes = memcpy.src_y = memcpy.dst_y = 0
@@ -204,9 +205,10 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
                     memcpy.set_dst_device(buf)
                     memcpy.height = alpha_size
                     memcpy(aligned=False)
-                    rgb_format += "A"
-                    rgb.free()
                     alpha.free()
+                    end = monotonic()
+                    log("alpha merge took %ims", 1000*(end-start))
+                    rgb_format += "A"
                     buf_size = rgb_size+alpha_size
                 else:
                     buf = rgb
