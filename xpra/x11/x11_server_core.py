@@ -680,7 +680,8 @@ class X11ServerCore(GTKServerBase):
             client_w, client_h = 0, 0
             sss = self._server_sources.values()
             for ss in sss:
-                for s in ss.screen_sizes:
+                screen_sizes = getattr(ss, "screen_sizes", ())
+                for s in screen_sizes:
                     if len(s)>=10:
                         #(display_name, width, height, width_mm, height_mm, monitors,
                         # work_x, work_y, work_width, work_height)
