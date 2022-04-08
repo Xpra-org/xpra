@@ -56,6 +56,7 @@ SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
 ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
+DUMMY_DPI = envbool("XPRA_DUMMY_DPI", True)
 
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
@@ -458,11 +459,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def set_dpi(self, xdpi, ydpi):
         #this is used by some newer versions of the dummy driver (xf86-driver-dummy)
         #(and will not be honoured by anything else..)
-        root = get_default_root_window()
-        xid = root.get_xid()
-        raw_prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
-        raw_prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
-        screenlog("set_dpi(%i, %i)", xdpi, ydpi)
+        if DUMMY_DPI:
+            root = get_default_root_window()
+            xid = root.get_xid()
+            raw_prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
+            raw_prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
+            screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
 
     def add_system_tray(self):
