@@ -225,6 +225,9 @@ cdef extern from "X11/extensions/Xrandr.h":
                             RRMode mode, Rotation rotation,
                             RROutput *outputs, int noutputs)
 
+    void XRRSetOutputPrimary(Display *dpy, Window window, RROutput output)
+    RROutput XRRGetOutputPrimary(Display *dpy, Window window)
+
     int XRRGetCrtcGammaSize(Display *dpy, RRCrtc crtc)
     ctypedef struct XRRCrtcGamma:
         int             size
@@ -787,6 +790,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 }
         if TIMESTAMPS:
             info["timestamp"] = int(ci.timestamp)
+        cdef XRRCrtcGamma *gamma
         if ci.mode or ci.width or ci.height or ci.noutput:
             info.update({
                 "x"         : ci.x,
@@ -795,26 +799,26 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 "height"    : ci.height,
                 "mode"      : ci.mode,
                 })
-        log.warn("rotation=%s, rotations=%s", ci.rotation, ci.rotations)
+            gamma = XRRGetCrtcGamma(self.display, crtc)
+            if gamma and gamma.size:
+                info["gamma"] = {
+                    "red"   : tuple(gamma.red[i] for i in range(gamma.size)),
+                    "green" : tuple(gamma.green[i] for i in range(gamma.size)),
+                    "blue"  : tuple(gamma.blue[i] for i in range(gamma.size)),
+                    }
+                XRRFreeGamma(gamma)
         if ci.rotation!=RR_Rotate_0:
             info["rotation"] = get_rotation(ci.rotation)
         if ci.rotations!=RR_Rotate_0:
             info["rotations"] = get_rotations(ci.rotations)
         XRRFreeCrtcInfo(ci)
-        cdef XRRCrtcGamma *gamma = XRRGetCrtcGamma(self.display, crtc)
-        if gamma and gamma.size:
-            info["gamma"] = {
-                "red"   : tuple(gamma.red[i] for i in range(gamma.size)),
-                "green" : tuple(gamma.green[i] for i in range(gamma.size)),
-                "blue"  : tuple(gamma.blue[i] for i in range(gamma.size)),
-                }
-            XRRFreeGamma(gamma)
         return info
 
     def get_all_screen_properties(self):
         self.context_check()
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        cdef RROutput primary = XRRGetOutputPrimary(self.display, window)
         if rsc==NULL:
             log.error("Error: cannot access screen resources")
             return {}
@@ -826,6 +830,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             props.setdefault("modes", {})[i] = self.get_mode_info(&rsc.modes[i])
         try:
             for o in range(rsc.noutput):
+                if primary and primary==rsc.outputs[o]:
+                    props["primary-output"] = o
                 output_info = self.get_output_info(rsc, rsc.outputs[o])
                 if output_info:
                     props.setdefault("outputs", {})[o] = output_info
