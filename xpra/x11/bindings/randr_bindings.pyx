@@ -13,10 +13,11 @@ from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom,
     XDefaultRootWindow, XFree, AnyPropertyType,
     )
-from xpra.util import envint, csv, first_time, decode_str
+from xpra.util import envint, envbool, csv, first_time, decode_str
 from xpra.os_util import strtobytes, bytestostr
 
 
+TIMESTAMPS = envbool("XPRA_RANDR_TIMESTAMPS", False)
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
 assert MAX_NEW_MODES>=2
 
@@ -43,6 +44,37 @@ cdef extern from "X11/extensions/randr.h":
     Connection RR_Connected
     Connection RR_Disconnected
     Connection RR_UnknownConnection
+    int RR_HSyncPositive
+    int RR_HSyncNegative
+    int RR_VSyncPositive
+    int RR_VSyncNegative
+    int RR_Interlace
+    int RR_DoubleScan
+    int RR_CSync
+    int RR_CSyncPositive
+    int RR_CSyncNegative
+    int RR_HSkewPresent
+    int RR_BCast
+    int RR_PixelMultiplex
+    int RR_DoubleClock
+    int RR_ClockDivideBy2
+
+MODE_FLAGS_STR = {
+    RR_HSyncPositive    : "HSyncPositive",
+    RR_HSyncNegative    : "HSyncNegative",
+    RR_VSyncPositive    : "VSyncPositive",
+    RR_VSyncNegative    : "VSyncNegative",
+    RR_Interlace        : "Interlace",
+    RR_DoubleScan       : "DoubleScan",
+    RR_CSync            : "CSync",
+    RR_CSyncPositive    : "CSyncPositive",
+    RR_CSyncNegative    : "CSyncNegative",
+    RR_HSkewPresent     : "HSkewPresent",
+    RR_BCast            : "BCast",
+    RR_PixelMultiplex   : "PixelMultiplex",
+    RR_DoubleClock      : "DoubleClock",
+    RR_ClockDivideBy2   : "ClockDivideBy2",
+    }
 
 ROTATIONS = {
     RR_Rotate_0             : 0,
@@ -67,13 +99,14 @@ def get_rotations(Rotation v):
             rotations.append(rval)
     return rotations
 
-#from render.h:
-DEF SubPixelUnknown = 0
-DEF SubPixelHorizontalRGB = 1
-DEF SubPixelHorizontalBGR = 2
-DEF SubPixelVerticalRGB = 3
-DEF SubPixelVerticalBGR = 4
-DEF SubPixelNone = 5
+
+cdef extern from "X11/extensions/render.h":
+    int SubPixelUnknown
+    int SubPixelHorizontalRGB
+    int SubPixelHorizontalBGR
+    int SubPixelVerticalRGB
+    int SubPixelVerticalBGR
+    int SubPixelNone
 
 SUBPIXEL_STR = {
     SubPixelUnknown : "unknown",
@@ -606,7 +639,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             "id"            : mi.id,
             "width"         : mi.width,
             "height"        : mi.height,
-            "mode-flags"    : mi.modeFlags,
             }
         if mi.name and mi.nameLength:
             info["name"] = bytestostr(mi.name[:mi.nameLength])
@@ -620,6 +652,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             "v-sync-start"  : mi.vSyncStart,
             "v-sync-end"    : mi.vSyncEnd,
             "v-total"       : mi.vTotal,
+            "mode-flags"    : tuple(name for v,name in MODE_FLAGS_STR.items() if mi.modeFlags & v),
             })
         return info
 
@@ -687,6 +720,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 log.error("Error unpacking %s using format %s from %s",
                           prop_name, fmt, data, exc_info=True)
             else:
+                if prop_name=="non-desktop" and value is False:
+                    #no value in reporting this, we can assume it is False when missing
+                    continue
                 properties[prop_name] = value
         XFree(atoms)
         return properties
@@ -696,27 +732,32 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if oi==NULL:
             return {}
         info = {
-            #"timestamp"     : oi.timestamp,
+            "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
+            }
+        if oi.connection!=RR_Disconnected:
+            info.update({
             "mm-width"          : oi.mm_width,
             "mm-height"         : oi.mm_height,
-            "subpixel-order"    : oi.subpixel_order,
-            "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
-            "subpixel-order"    : SUBPIXEL_STR.get(oi.subpixel_order, "unknown"),
             "preferred-mode"    : oi.npreferred,
-            }
+            })
+            if TIMESTAMPS:
+                info["timestamp"] = oi.timestamp
+            so = SUBPIXEL_STR.get(oi.subpixel_order)
+            if so and so!="unknown":
+                info["subpixel-order"] = so
+            if oi.nclone:
+                info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
+            info["properties"] = self.get_output_properties(output)
         if oi.name and oi.nameLen:
             info["name"] = bytestostr(oi.name[:oi.nameLen])
         #for i in range(oi.nmode):
         #    info.setdefault("modes", {})[i] = self.get_mode_info(rsc, &oi.modes[i])
         #info["crtc"] = self.get_crtc_info(rsc, oi.crtc)
-        if oi.nclone:
-            info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
         #for crtc in range(oi.ncrtc):
         #    crtc_info = self.get_crtc_info(rsc, crtc)
         #    if crtc_info:
         #        info.setdefault("crtcs", {})[crtc] = crtc_info
         XRRFreeOutputInfo(oi)
-        info["properties"] = self.get_output_properties(output)
         return info
 
     cdef get_crtc_info(self, XRRScreenResources *rsc, RRCrtc crtc):
@@ -724,17 +765,24 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if ci==NULL:
             return {}
         info = {
+                "noutput"   : ci.noutput,
+                "npossible" : ci.npossible,
+                }
+        if TIMESTAMPS:
+            info["timestamp"] = int(ci.timestamp)
+        if ci.mode or ci.width or ci.height or ci.noutput:
+            info.update({
                 "x"         : ci.x,
                 "y"         : ci.y,
                 "width"     : ci.width,
                 "height"    : ci.height,
-                "timestamp" : int(ci.timestamp),
-                "rotation"  : get_rotation(ci.rotation),
-                "noutput"   : ci.noutput,
-                "rotations" : get_rotations(ci.rotations),
-                "npossible" : ci.npossible,
                 "mode"      : ci.mode,
-                }
+                })
+        log.warn("rotation=%s, rotations=%s", ci.rotation, ci.rotations)
+        if ci.rotation!=RR_Rotate_0:
+            info["rotation"] = get_rotation(ci.rotation)
+        if ci.rotations!=RR_Rotate_0:
+            info["rotations"] = get_rotations(ci.rotations)
         XRRFreeCrtcInfo(ci)
         return info
 
@@ -745,10 +793,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if rsc==NULL:
             log.error("Error: cannot access screen resources")
             return {}
-        props = {
-            "timestamp"         : rsc.timestamp,
-            "config-timestamp"  : rsc.configTimestamp
-            }
+        props = {}
+        if TIMESTAMPS:
+            props["timestamp"] = rsc.timestamp
+            props["config-timestamp"] = rsc.configTimestamp
         for i in range(rsc.nmode):
             props.setdefault("modes", {})[i] = self.get_mode_info(&rsc.modes[i])
         try:
