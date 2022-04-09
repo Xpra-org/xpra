@@ -4,15 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import struct
+
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
 
 from xpra.x11.bindings.xlib cimport (
-    Display, XID, Bool, Status, Drawable, Window, Time,
-    XDefaultRootWindow, XFree,
+    Display, XID, Bool, Status, Drawable, Window, Time, Atom,
+    XDefaultRootWindow, XFree, AnyPropertyType,
     )
 from xpra.util import envint, csv, first_time, decode_str
-from xpra.os_util import strtobytes
+from xpra.os_util import strtobytes, bytestostr
 
 
 MAX_NEW_MODES = envint("XPRA_RANDR_MAX_NEW_MODES", 32)
@@ -30,11 +32,58 @@ cdef extern from "X11/X.h":
 # Randr
 ###################################
 cdef extern from "X11/extensions/randr.h":
-    cdef unsigned int RR_Rotate_0
     ctypedef unsigned long XRRModeFlags
     ctypedef unsigned short Connection
     ctypedef unsigned short SubpixelOrder
     ctypedef unsigned short Rotation
+    Rotation RR_Rotate_0
+    Rotation RR_Rotate_90
+    Rotation RR_Rotate_180
+    Rotation RR_Rotate_270
+    Connection RR_Connected
+    Connection RR_Disconnected
+    Connection RR_UnknownConnection
+
+ROTATIONS = {
+    RR_Rotate_0             : 0,
+    RR_Rotate_90            : 90,
+    RR_Rotate_180           : 180,
+    RR_Rotate_270           : 270,
+    }
+
+CONNECTION_STR = {
+    RR_Connected            : "Connected",
+    RR_Disconnected         : "Disconnected",
+    RR_UnknownConnection    : "Unknown",
+    }
+
+def get_rotation(Rotation v):
+    return ROTATIONS.get(v, 0)
+
+def get_rotations(Rotation v):
+    rotations = []
+    for renum, rval in ROTATIONS.items():
+        if renum & v:
+            rotations.append(rval)
+    return rotations
+
+#from render.h:
+DEF SubPixelUnknown = 0
+DEF SubPixelHorizontalRGB = 1
+DEF SubPixelHorizontalBGR = 2
+DEF SubPixelVerticalRGB = 3
+DEF SubPixelVerticalBGR = 4
+DEF SubPixelNone = 5
+
+SUBPIXEL_STR = {
+    SubPixelUnknown : "unknown",
+    SubPixelHorizontalRGB : "RGB",
+    SubPixelHorizontalBGR : "BGR",
+    SubPixelVerticalRGB : "VRGB",
+    SubPixelVerticalBGR : "VBGR",
+    SubPixelNone        : "none",
+    }
+
 
 cdef extern from "X11/extensions/Xrandr.h":
     ctypedef XID RRMode
@@ -119,6 +168,22 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     XRROutputInfo *XRRGetOutputInfo(Display *dpy, XRRScreenResources *resources, RROutput output)
     void XRRFreeOutputInfo (XRROutputInfo *outputInfo)
+    Atom *XRRListOutputProperties (Display *dpy, RROutput output, int *nprop)
+    void XRRChangeOutputProperty (Display *dpy, RROutput output, Atom property, Atom type,
+                                  int format, int mode, unsigned char *data, int nelements)
+    ctypedef struct XRRPropertyInfo:
+        Bool    pending
+        Bool    range
+        Bool    immutable
+        int     num_values
+        long    *values
+    XRRPropertyInfo *XRRQueryOutputProperty(Display *dpy, RROutput output, Atom property)
+    int XRRGetOutputProperty (Display *dpy, RROutput output,
+                              Atom property, long offset, long length,
+                              Bool _delete, Bool pending, Atom req_type,
+                              Atom *actual_type, int *actual_format,
+                              unsigned long *nitems, unsigned long *bytes_after,
+                              unsigned char **prop)
 
     XRRCrtcInfo *XRRGetCrtcInfo(Display *dpy, XRRScreenResources *resources, RRCrtc crtc)
     void XRRFreeCrtcInfo(XRRCrtcInfo *crtcInfo)
@@ -137,6 +202,7 @@ cdef extern from "X11/extensions/Xrandr.h":
     int XDisplayHeight(Display *display, int screen_number)
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
+
 
 from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
@@ -533,3 +599,167 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef Window window = XDefaultRootWindow(self.display)
         log("XRRSetScreenSize(%#x, %#x, %i, %i, %i, %i)", <uintptr_t> self.display, window, w, h, wmm, hmm)
         XRRSetScreenSize(self.display, window, w, h, wmm, hmm)
+
+
+    cdef get_mode_info(self, XRRModeInfo *mi, with_sync=False):
+        info = {
+            "id"            : mi.id,
+            "width"         : mi.width,
+            "height"        : mi.height,
+            "mode-flags"    : mi.modeFlags,
+            }
+        if mi.name and mi.nameLength:
+            info["name"] = bytestostr(mi.name[:mi.nameLength])
+        if with_sync:
+            info.update({
+            "dot-clock"     : mi.dotClock,
+            "h-sync-start"  : mi.hSyncStart,
+            "h-sync-end"    : mi.hSyncEnd,
+            "h-total"       : mi.hTotal,
+            "h-skew"        : mi.hSkew,
+            "v-sync-start"  : mi.vSyncStart,
+            "v-sync-end"    : mi.vSyncEnd,
+            "v-total"       : mi.vTotal,
+            })
+        return info
+
+    cdef get_output_properties(self, RROutput output):
+        cdef int nprop
+        cdef Atom *atoms = XRRListOutputProperties(self.display, output, &nprop)
+        cdef Atom prop, actual_type
+        cdef int actual_format
+        cdef unsigned long nitems
+        cdef unsigned long bytes_after
+        cdef unsigned char *buf
+        cdef int nbytes
+        cdef XRRPropertyInfo *prop_info
+        log("reading %i properties from output %i", nprop, output)
+        properties = {}
+        for i in range(nprop):
+            prop = atoms[i]
+            prop_name = bytestostr(self.XGetAtomName(prop))
+            buf = NULL
+            r = XRRGetOutputProperty(self.display, output,
+                                     prop, 0, 1024,
+                                     0, 0, AnyPropertyType,
+                                     &actual_type, &actual_format,
+                                     &nitems, &bytes_after,
+                                     &buf)
+            if r or not buf:
+                log.warn("Warning: failed to read output property %s", prop_name)
+                continue
+            if bytes_after:
+                log.warn("Warning: failed to read output property %s", prop_name)
+                log.warn(" data too large")
+                continue
+            if not actual_format:
+                log.warn("Warning: failed to read output property %s", prop_name)
+                log.warn(" invalid format")
+                continue
+            at = bytestostr(self.XGetAtomName(actual_type))
+            if at not in ("INTEGER", "CARDINAL", "ATOM"):
+                log("skipped output property %s", at)
+                continue
+            if actual_format == 8:
+                fmt = b"B"
+            elif actual_format == 16:
+                fmt = b"H"
+            elif actual_format == 32:
+                fmt = b"L"
+            else:
+                raise Exception("invalid format %r" % actual_format)
+            try:
+                bytes_per_item = struct.calcsize(b"@%s" % fmt)
+                nbytes = bytes_per_item * nitems
+                data = (<unsigned char *> buf)[:nbytes]
+                value = struct.unpack(b"@%s" % (fmt*nitems), data)
+                if at=="ATOM":
+                    value = tuple(bytestostr(self.XGetAtomName(v)) for v in value)
+                if nitems==1:
+                    value = value[0]
+                    #convert booleans:
+                    prop_info = XRRQueryOutputProperty(self.display, output, prop)
+                    if prop_info:
+                        if prop_info.num_values==2 and prop_info.values[0] in (0, 1) and prop_info.values[1] in (0, 1):
+                            value = bool(value)
+                        XFree(prop_info)
+            except Exception:
+                log.error("Error unpacking %s using format %s from %s",
+                          prop_name, fmt, data, exc_info=True)
+            else:
+                properties[prop_name] = value
+        XFree(atoms)
+        return properties
+
+    cdef get_output_info(self, XRRScreenResources *rsc, RROutput output):
+        cdef XRROutputInfo *oi = XRRGetOutputInfo(self.display, rsc, output)
+        if oi==NULL:
+            return {}
+        info = {
+            #"timestamp"     : oi.timestamp,
+            "mm-width"          : oi.mm_width,
+            "mm-height"         : oi.mm_height,
+            "subpixel-order"    : oi.subpixel_order,
+            "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
+            "subpixel-order"    : SUBPIXEL_STR.get(oi.subpixel_order, "unknown"),
+            "preferred-mode"    : oi.npreferred,
+            }
+        if oi.name and oi.nameLen:
+            info["name"] = bytestostr(oi.name[:oi.nameLen])
+        #for i in range(oi.nmode):
+        #    info.setdefault("modes", {})[i] = self.get_mode_info(rsc, &oi.modes[i])
+        #info["crtc"] = self.get_crtc_info(rsc, oi.crtc)
+        if oi.nclone:
+            info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
+        #for crtc in range(oi.ncrtc):
+        #    crtc_info = self.get_crtc_info(rsc, crtc)
+        #    if crtc_info:
+        #        info.setdefault("crtcs", {})[crtc] = crtc_info
+        XRRFreeOutputInfo(oi)
+        info["properties"] = self.get_output_properties(output)
+        return info
+
+    cdef get_crtc_info(self, XRRScreenResources *rsc, RRCrtc crtc):
+        cdef XRRCrtcInfo *ci = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[crtc])
+        if ci==NULL:
+            return {}
+        info = {
+                "x"         : ci.x,
+                "y"         : ci.y,
+                "width"     : ci.width,
+                "height"    : ci.height,
+                "timestamp" : int(ci.timestamp),
+                "rotation"  : get_rotation(ci.rotation),
+                "noutput"   : ci.noutput,
+                "rotations" : get_rotations(ci.rotations),
+                "npossible" : ci.npossible,
+                "mode"      : ci.mode,
+                }
+        XRRFreeCrtcInfo(ci)
+        return info
+
+    def get_all_screen_properties(self):
+        self.context_check()
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        if rsc==NULL:
+            log.error("Error: cannot access screen resources")
+            return {}
+        props = {
+            "timestamp"         : rsc.timestamp,
+            "config-timestamp"  : rsc.configTimestamp
+            }
+        for i in range(rsc.nmode):
+            props.setdefault("modes", {})[i] = self.get_mode_info(&rsc.modes[i])
+        try:
+            for o in range(rsc.noutput):
+                output_info = self.get_output_info(rsc, rsc.outputs[o])
+                if output_info:
+                    props.setdefault("outputs", {})[o] = output_info
+            for crtc in range(rsc.ncrtc):
+                crtc_info = self.get_crtc_info(rsc, crtc)
+                if crtc_info:
+                    props.setdefault("crtcs", {})[crtc] = crtc_info
+        finally:
+            XRRFreeScreenResources(rsc)
+        return props

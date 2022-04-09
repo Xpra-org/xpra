@@ -20,6 +20,7 @@ ctypedef XID KeySym
 
 cdef extern from "X11/X.h":
     unsigned long NoSymbol
+    unsigned long AnyPropertyType
 
 cdef extern from "X11/Xutil.h":
     ctypedef struct aspect:
