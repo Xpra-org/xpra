@@ -52,6 +52,7 @@ xinputlog = Logger("xinput")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
+DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
 
 
 class XTestPointerDevice:
@@ -681,6 +682,12 @@ class X11ServerCore(GTKServerBase):
         if wmm==0 or hmm==0:
             wmm = round(desired_w * 25.4 / xdpi)
             hmm = round(desired_h * 25.4 / ydpi)
+        if DUMMY_WIDTH_HEIGHT_MM:
+            #FIXME: we assume there is only one output:
+            output = 0
+            with xsync:
+                RandR.set_output_int_property(output, "WIDTH_MM", wmm)
+                RandR.set_output_int_property(output, "HEIGHT_MM", hmm)
         screenlog("set_dpi(%i, %i)", xdpi, ydpi)
         self.set_dpi(xdpi, ydpi)
 

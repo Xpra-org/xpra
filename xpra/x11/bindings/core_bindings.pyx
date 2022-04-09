@@ -12,7 +12,8 @@ from xpra.x11.bindings.xlib cimport (
     XGetErrorText,
     XUngrabKeyboard, XUngrabPointer,
     XSynchronize,
-    CurrentTime, MappingBusy, GrabModeAsync, AnyModifier
+    CurrentTime, MappingBusy, GrabModeAsync, AnyModifier,
+    PropModeReplace,
     )
 from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t

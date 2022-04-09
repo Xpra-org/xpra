@@ -11,7 +11,7 @@ log = Logger("x11", "bindings", "randr")
 
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom,
-    XDefaultRootWindow, XFree, AnyPropertyType,
+    XDefaultRootWindow, XFree, AnyPropertyType, PropModeReplace,
     )
 from xpra.util import envint, envbool, csv, first_time, decode_str
 from xpra.os_util import strtobytes, bytestostr
@@ -701,6 +701,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 fmt = b"L"
             else:
                 raise Exception("invalid format %r" % actual_format)
+            log.warn("%s : %s / %s", prop_name, at, actual_format)
             try:
                 bytes_per_item = struct.calcsize(b"@%s" % fmt)
                 nbytes = bytes_per_item * nitems
@@ -732,6 +733,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if oi==NULL:
             return {}
         info = {
+            "id"                : output,
             "connection"        : CONNECTION_STR.get(oi.connection, "%i" % oi.connection),
             }
         if oi.connection!=RR_Disconnected:
@@ -811,3 +813,20 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
         return props
+
+
+    def set_output_int_property(self, int output, prop_name, int value):
+        self.context_check()
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        if rsc==NULL:
+            log.error("Error: cannot access screen resources")
+            return {}
+        if output<0 or output>=rsc.noutput:
+            raise Exception("invalid output number %r, only %i outputs" % (output, rsc.noutput))
+        cdef RROutput rro = rsc.outputs[output]
+        cdef Atom prop = self.xatom(prop_name)
+        cdef Atom ptype = self.xatom("INTEGER")
+        data = struct.pack("@L", value)
+        XRRChangeOutputProperty(self.display, rro, prop, ptype,
+                                32, PropModeReplace, data, 1)
