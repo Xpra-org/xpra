@@ -9,7 +9,7 @@ log = Logger("x11", "bindings", "randr")
 
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time,
-    XDefaultRootWindow,
+    XDefaultRootWindow, XFree,
     )
 from xpra.util import envint, csv, first_time, decode_str
 from xpra.os_util import strtobytes
@@ -367,22 +367,25 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 if crtc_info==NULL:
                     log.warn("Warning: no CRTC info for %i", crtc)
                     continue
-                #find the mode info:
-                for i in range(rsc.nmode):
-                    mode_info = &rsc.modes[i]
-                    if mode_info.id==crtc_info.mode:
-                        if mode_info.hTotal and mode_info.vTotal:
-                            rate = round(mode_info.dotClock / (mode_info.hTotal * mode_info.vTotal))
-                            #outputs affected:
-                            output_names = []
-                            for o in range(crtc_info.noutput):
-                                output_info = XRRGetOutputInfo(self.display, rsc, crtc_info.outputs[o])
-                                if output_info!=NULL:
-                                    output_names.append(decode_str(output_info.name))
-                                    XRRFreeOutputInfo(output_info)
-                            log("%s : %s", csv(output_names), rate)
-                            rates[crtc] = rate
-                        break
+                try:
+                    #find the mode info:
+                    for i in range(rsc.nmode):
+                        mode_info = &rsc.modes[i]
+                        if mode_info.id==crtc_info.mode:
+                            if mode_info.hTotal and mode_info.vTotal:
+                                rate = round(mode_info.dotClock / (mode_info.hTotal * mode_info.vTotal))
+                                #outputs affected:
+                                output_names = []
+                                for o in range(crtc_info.noutput):
+                                    output_info = XRRGetOutputInfo(self.display, rsc, crtc_info.outputs[o])
+                                    if output_info!=NULL:
+                                        output_names.append(decode_str(output_info.name))
+                                        XRRFreeOutputInfo(output_info)
+                                log("%s : %s", csv(output_names), rate)
+                                rates[crtc] = rate
+                            break
+                finally:
+                    XRRFreeCrtcInfo(crtc_info)
         finally:
             XRRFreeScreenResources(rsc)
         return rates
