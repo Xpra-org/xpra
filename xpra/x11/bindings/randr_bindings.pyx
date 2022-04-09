@@ -11,7 +11,10 @@ log = Logger("x11", "bindings", "randr")
 
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom,
-    XDefaultRootWindow, XFree, AnyPropertyType, PropModeReplace,
+    XDefaultRootWindow,
+    XFree, XFlush,
+    AnyPropertyType, PropModeReplace,
+    CurrentTime, Success,
     )
 from xpra.util import envint, envbool, csv, first_time, decode_str
 from xpra.os_util import strtobytes, bytestostr
@@ -25,9 +28,6 @@ assert MAX_NEW_MODES>=2
 from libc.stdint cimport uintptr_t  #pylint: disable=syntax-error
 ctypedef unsigned long CARD32
 
-cdef extern from "X11/X.h":
-    unsigned long CurrentTime
-    unsigned long Success
 
 ###################################
 # Randr
@@ -266,7 +266,10 @@ cdef extern from "X11/extensions/Xrandr.h":
         int mwidth
         int mheight
         RROutput *outputs
+    XRRMonitorInfo *XRRAllocateMonitor(Display *dpy, int noutput)
     XRRMonitorInfo *XRRGetMonitors(Display *dpy, Window window, Bool get_active, int *nmonitors)
+    void XRRSetMonitor(Display *dpy, Window window, XRRMonitorInfo *monitor)
+    void XRRDeleteMonitor(Display *dpy, Window window, Atom name)
     void XRRFreeMonitors(XRRMonitorInfo *monitors)
 
 
@@ -873,13 +876,12 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 "width"     : m.width,
                 "height"    : m.height,
                 "mm-width"  : m.mwidth,
-                "mm-height" : m.height,
+                "mm-height" : m.mheight,
                 "outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
                 }
             props.setdefault("monitors", {})[i] = monitor_info
         XRRFreeMonitors(monitors)
         return props
-
 
 
     def set_output_int_property(self, int output, prop_name, int value):
@@ -897,3 +899,84 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         data = struct.pack("@L", value)
         XRRChangeOutputProperty(self.display, rro, prop, ptype,
                                 32, PropModeReplace, data, 1)
+
+
+    def set_crtc_config(self, screen_w, screen_h, monitor_defs):
+        def dpi96(v):
+            return round(v * 25.4 / 96)
+        self.set_screen_size(screen_w, screen_h)
+        self.xrr_set_screen_size(screen_w, screen_h, dpi96(screen_w), dpi96(screen_h))
+        root_w, root_h = self.get_screen_size()
+        log.info("root size: %ix%i", root_w, root_h)
+        count = len(monitor_defs)
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        cdef Status r
+        if rsc==NULL:
+            log.error("Error: cannot access screen resources")
+            return False
+        if rsc.ncrtc<count:
+            log.error("Error: only %i crtcs for %i monitors", rsc.ncrtc, count)
+            return False
+        if rsc.noutput<count:
+            log.error("Error: only %i outputs for %i monitors", rsc.noutput, count)
+            return False
+        cdef RRMode mode = 0
+        cdef int nmonitors
+        cdef XRRMonitorInfo *monitors
+        cdef XRRMonitorInfo *monitor
+        try:
+            for mi, m in monitor_defs.items():
+                assert mi<count, "invalid monitor index %i" % mi
+                #configure an output for each monitor:
+                width = m.get("width", 0)
+                height = m.get("height", 0)
+                x = m.get("x", 0)
+                y = m.get("y", 0)
+                mmw = m.get("mm-width", dpi96(width))
+                mmh = m.get("mm-height", dpi96(height))
+
+                #find a mode:
+                for j in range(rsc.nmode):
+                    if rsc.modes[j].width==width and rsc.modes[j].height==height:
+                        mode = rsc.modes[j].id
+                        log.info("using mode %#x for %ix%i", rsc.modes[j].id, width, height)
+                        break
+                XRRAddOutputMode(self.display, rsc.outputs[mi], mode)
+                log.info("mode added to output %i", mi)
+
+                r = XRRSetCrtcConfig(self.display, rsc, rsc.crtcs[mi],
+                      CurrentTime, x, y, mode,
+                      RR_Rotate_0, &rsc.outputs[mi], 1)
+                if r:
+                    raise Exception("failed to set crtc config for monitor %i" % mi)
+                self.set_output_int_property(mi, "WIDTH_MM", mmw)
+                self.set_output_int_property(mi, "HEIGHT_MM", mmh)
+                log.info("set crtc %i to %ix%i (%ix%i mm) at %i,%i", mi, width, height, mmw, mmh, x, y)
+
+                #monitor:
+                monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+                try:
+                    if mi>=nmonitors:
+                        log.error("Error: only %i monitors found", nmonitors)
+                        continue
+                    monitor = &monitors[mi]
+                    name = m.get("name", "%i" % mi)
+                    primary = m.get("primary", False)
+                    automatic = m.get("automatic", True)
+                    monitor.name = self.xatom(name)
+                    monitor.primary = primary
+                    monitor.automatic = automatic
+                    monitor.width = width
+                    monitor.height = height
+                    monitor.mwidth = mmw
+                    monitor.mheight = mmh
+                    monitor.outputs = &rsc.outputs[mi]
+                    monitor.noutput = 1
+                    XRRSetMonitor(self.display, window, monitor)
+                    log.info("monitor %i is %r", mi, name)
+                finally:
+                    XRRFreeMonitors(monitors)
+        finally:
+            XRRFreeScreenResources(rsc)
+        XFlush(self.display)
