@@ -527,11 +527,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
 
-    def xrr_set_screen_size(self, w, h, xdpi, ydpi):
+    def xrr_set_screen_size(self, w, h, wmm, hmm):
         self.context_check()
         #and now use it:
         cdef Window window = XDefaultRootWindow(self.display)
-        wmm = round(w*25.4/xdpi)
-        hmm = round(h*25.4/ydpi)
         log("XRRSetScreenSize(%#x, %#x, %i, %i, %i, %i)", <uintptr_t> self.display, window, w, h, wmm, hmm)
         XRRSetScreenSize(self.display, window, w, h, wmm, hmm)

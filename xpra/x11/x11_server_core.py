@@ -651,6 +651,7 @@ class X11ServerCore(GTKServerBase):
         ydpi = self.ydpi or self.dpi
         screenlog("set_screen_size(%s, %s, %s) xdpi=%s, ydpi=%s",
                   desired_w, desired_h, bigger, xdpi, ydpi)
+        wmm, hmm = 0, 0
         if xdpi<=0 or ydpi<=0:
             #use some sane defaults: either the command line option, or fallback to 96
             #(96 is better than nothing, because we do want to set the dpi
@@ -659,7 +660,6 @@ class X11ServerCore(GTKServerBase):
             ydpi = self.default_dpi or 96
             #find the "physical" screen dimensions, so we can calculate the required dpi
             #(and do this before changing the resolution)
-            wmm, hmm = 0, 0
             client_w, client_h = 0, 0
             sss = self._server_sources.values()
             for ss in sss:
@@ -678,6 +678,10 @@ class X11ServerCore(GTKServerBase):
                 ydpi = round(client_h * 25.4 / hmm)
                 screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)",
                           xdpi, ydpi, client_w, wmm, client_h, hmm)
+        if wmm==0 or hmm==0:
+            wmm = round(desired_w * 25.4 / xdpi)
+            hmm = round(desired_h * 25.4 / ydpi)
+        screenlog("set_dpi(%i, %i)", xdpi, ydpi)
         self.set_dpi(xdpi, ydpi)
 
         #try to find the best screen size to resize to:
@@ -730,7 +734,7 @@ class X11ServerCore(GTKServerBase):
                 #we can use XRRSetScreenSize:
                 try:
                     with xsync:
-                        RandR.xrr_set_screen_size(w, h, self.xdpi or self.dpi or 96, self.ydpi or self.dpi or 96)
+                        RandR.xrr_set_screen_size(w, h, wmm, hmm)
                 except XError:
                     screenlog("XRRSetScreenSize failed", exc_info=True)
             screenlog("calling RandR.get_screen_size()")
