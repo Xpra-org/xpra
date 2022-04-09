@@ -254,6 +254,21 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     short XRRConfigCurrentRate(XRRScreenConfiguration *config)
 
+    ctypedef struct XRRMonitorInfo:
+        Atom name
+        Bool primary
+        Bool automatic
+        int noutput
+        int x
+        int y
+        int width
+        int height
+        int mwidth
+        int mheight
+        RROutput *outputs
+    XRRMonitorInfo *XRRGetMonitors(Display *dpy, Window window, Bool get_active, int *nmonitors)
+    void XRRFreeMonitors(XRRMonitorInfo *monitors)
+
 
 from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
@@ -828,8 +843,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             props["config-timestamp"] = rsc.configTimestamp
         for i in range(rsc.nmode):
             props.setdefault("modes", {})[i] = self.get_mode_info(&rsc.modes[i])
+        #map RROutput to an index:
+        rroutput_map = {}
         try:
             for o in range(rsc.noutput):
+                rroutput_map[rsc.outputs[o]] = o
                 if primary and primary==rsc.outputs[o]:
                     props["primary-output"] = o
                 output_info = self.get_output_info(rsc, rsc.outputs[o])
@@ -841,7 +859,27 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     props.setdefault("crtcs", {})[crtc] = crtc_info
         finally:
             XRRFreeScreenResources(rsc)
+        cdef int nmonitors
+        cdef XRRMonitorInfo *monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+        cdef XRRMonitorInfo *m
+        for i in range(nmonitors):
+            m = &monitors[i]
+            monitor_info = {
+                "name"      : bytestostr(self.XGetAtomName(m.name)),
+                "primary"   : bool(m.primary),
+                "automatic" : bool(m.automatic),
+                "x"         : m.x,
+                "y"         : m.y,
+                "width"     : m.width,
+                "height"    : m.height,
+                "mm-width"  : m.mwidth,
+                "mm-height" : m.height,
+                "outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
+                }
+            props.setdefault("monitors", {})[i] = monitor_info
+        XRRFreeMonitors(monitors)
         return props
+
 
 
     def set_output_int_property(self, int output, prop_name, int value):
