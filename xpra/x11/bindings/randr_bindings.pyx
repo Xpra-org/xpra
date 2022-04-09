@@ -220,6 +220,21 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     XRRCrtcInfo *XRRGetCrtcInfo(Display *dpy, XRRScreenResources *resources, RRCrtc crtc)
     void XRRFreeCrtcInfo(XRRCrtcInfo *crtcInfo)
+    Status XRRSetCrtcConfig(Display *dpy, XRRScreenResources *resources, RRCrtc crtc,
+                            Time timestamp, int x, int y,
+                            RRMode mode, Rotation rotation,
+                            RROutput *outputs, int noutputs)
+
+    int XRRGetCrtcGammaSize(Display *dpy, RRCrtc crtc)
+    ctypedef struct XRRCrtcGamma:
+        int             size
+        unsigned short  *red
+        unsigned short  *green
+        unsigned short  *blue
+    XRRCrtcGamma *XRRGetCrtcGamma(Display *dpy, RRCrtc crtc)
+    XRRCrtcGamma *XRRAllocGamma (int size)
+    void XRRSetCrtcGamma(Display *dpy, RRCrtc crtc, XRRCrtcGamma *gamma)
+    void XRRFreeGamma(XRRCrtcGamma *gamma)
 
     XRRModeInfo *XRRAllocModeInfo(char *name, int nameLength)
     RRMode XRRCreateMode(Display *dpy, Window window, XRRModeInfo *modeInfo)
@@ -763,7 +778,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return info
 
     cdef get_crtc_info(self, XRRScreenResources *rsc, RRCrtc crtc):
-        cdef XRRCrtcInfo *ci = XRRGetCrtcInfo(self.display, rsc, rsc.crtcs[crtc])
+        cdef XRRCrtcInfo *ci = XRRGetCrtcInfo(self.display, rsc, crtc)
         if ci==NULL:
             return {}
         info = {
@@ -786,6 +801,14 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if ci.rotations!=RR_Rotate_0:
             info["rotations"] = get_rotations(ci.rotations)
         XRRFreeCrtcInfo(ci)
+        cdef XRRCrtcGamma *gamma = XRRGetCrtcGamma(self.display, crtc)
+        if gamma and gamma.size:
+            info["gamma"] = {
+                "red"   : tuple(gamma.red[i] for i in range(gamma.size)),
+                "green" : tuple(gamma.green[i] for i in range(gamma.size)),
+                "blue"  : tuple(gamma.blue[i] for i in range(gamma.size)),
+                }
+            XRRFreeGamma(gamma)
         return info
 
     def get_all_screen_properties(self):
@@ -807,7 +830,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 if output_info:
                     props.setdefault("outputs", {})[o] = output_info
             for crtc in range(rsc.ncrtc):
-                crtc_info = self.get_crtc_info(rsc, crtc)
+                crtc_info = self.get_crtc_info(rsc, rsc.crtcs[crtc])
                 if crtc_info:
                     props.setdefault("crtcs", {})[crtc] = crtc_info
         finally:
