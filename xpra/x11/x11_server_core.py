@@ -598,15 +598,14 @@ class X11ServerCore(GTKServerBase):
         if self.randr_exact_size:
             try:
                 with xsync:
-                    v = RandR.add_screen_size(desired_w, desired_h)
-                    if v:
+                    if RandR.add_screen_size(desired_w, desired_h):
                         #we have to wait a little bit
                         #to make sure that everything sees the new resolution
                         #(ideally this method would be split in two and this would be a callback)
-                        self.randr_sizes_added.append(v)
+                        self.randr_sizes_added.append((desired_w, desired_h))
                         import time
                         time.sleep(0.5)
-                        return v
+                        return desired_w, desired_h
             except XError as e:
                 screenlog("add_screen_size(%s, %s)", desired_w, desired_h, exc_info=True)
                 screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
