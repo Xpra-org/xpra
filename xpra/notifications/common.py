@@ -23,6 +23,8 @@ def parse_image_data(data):
         elif channels==3:
             rgb_format = "BGR"
             fmt = "RGB"
+        if isinstance(pixels, (list, tuple)):
+            pixels = bytes(pixels)
         img = Image.frombytes(fmt, (width, height), pixels, "raw", rgb_format, rowstride)
         if channels==4 and not has_alpha:
             img = img.convert("RGB")
