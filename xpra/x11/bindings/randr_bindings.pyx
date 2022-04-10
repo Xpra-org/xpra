@@ -546,8 +546,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def get_mode_name(self, unsigned int w, unsigned int h):
         return "%sx%s" % (w, h)
 
-    def add_screen_size(self, unsigned int w, unsigned int h, RROutput output):
-        output = self.get_current_output()
+    def add_screen_size(self, unsigned int w, unsigned int h):
+        cdef RROutput output = self.get_current_output()
         mode = self.do_add_screen_size(w, h, output)
         #now add it to the output:
         if mode and output:
