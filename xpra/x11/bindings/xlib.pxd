@@ -199,6 +199,7 @@ cdef extern from "X11/Xlib.h":
     Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return,
                        int *win_x_return, int *win_y_return, unsigned int *mask_return)
     int XFlush(Display *dpy)
+    int XSync(Display *dpy, Bool discard)
 
     # Keyboard bindings
     XModifierKeymap* XGetModifierMapping(Display* display)

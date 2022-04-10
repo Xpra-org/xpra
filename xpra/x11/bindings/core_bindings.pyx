@@ -11,7 +11,7 @@ from xpra.x11.bindings.xlib cimport (
     XFree,
     XGetErrorText,
     XUngrabKeyboard, XUngrabPointer,
-    XSynchronize,
+    XSynchronize, XSync,
     CurrentTime, MappingBusy, GrabModeAsync, AnyModifier,
     PropModeReplace,
     )
@@ -51,8 +51,13 @@ cdef class X11CoreBindingsInstance:
         dn = get_display_name()
         bstr = strtobytes(dn)
         self.display_name = bstr
-        if envbool("XPRA_X_SYNC", False):
-            XSynchronize(self.display, True)
+        self.XSynchronize(envbool("XPRA_X_SYNC", False))
+
+    def XSynchronize(self, enable : bool):
+        XSynchronize(self.display, enable)
+
+    def XSync(self, discard=False):
+        XSync(self.display, discard)
 
     def context_check(self):
         global context_check
