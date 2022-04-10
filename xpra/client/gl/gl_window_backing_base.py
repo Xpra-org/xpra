@@ -1065,6 +1065,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     log("copying %i bytes from %s to mapping=%s at %#x", size, buf, mapping, ptr)
                     memcpy_dtod(ptr, buf, size)
                     mapping.unmap()
+                    cuda_pbo.unregister()
 
                 with self.assign_cuda_context(True):
                     img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options, copy_cuda_buffer)
