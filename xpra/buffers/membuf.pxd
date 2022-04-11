@@ -5,9 +5,9 @@
 
 from cpython.buffer cimport PyBuffer_FillInfo   #pylint: disable=syntax-error
 
-cdef MemBuf getbuf(size_t l)
-cdef MemBuf padbuf(size_t l, size_t padding)
-cdef MemBuf makebuf(void *p, size_t l)
+cdef MemBuf getbuf(size_t l, int readonly=*)
+cdef MemBuf padbuf(size_t l, size_t padding, int readonly=*)
+cdef MemBuf makebuf(void *p, size_t l, int readonly=*)
 
 cdef buffer_context(object obj)
 
@@ -18,6 +18,7 @@ cdef void *memalign(size_t size) nogil
 
 
 cdef class MemBuf:
+    cdef int readonly
     cdef const void *p
     cdef size_t l
     cdef dealloc_callback *dealloc_cb_p

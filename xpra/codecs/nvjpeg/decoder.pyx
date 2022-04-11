@@ -9,7 +9,7 @@ from pycuda.driver import Memcpy2D, memcpy_dtoh, mem_alloc
 from libc.string cimport memset #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
-from xpra.buffers.membuf cimport memalign, buffer_context
+from xpra.buffers.membuf cimport buffer_context
 from xpra.codecs.nvjpeg.nvjpeg cimport (
     NVJPEG_OUTPUT_RGBI, NVJPEG_OUTPUT_BGRI, NVJPEG_OUTPUT_Y,
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
@@ -70,10 +70,10 @@ class NVJPEG_Exception(Exception):
 
 
 
-def download_from_gpu(buf, size):
+def download_from_gpu(buf, size_t size):
     log("nvjpeg download_from_gpu%s", (buf, size))
     start = monotonic()
-    pixels = bytearray(size)
+    cdef MemBuf pixels = getbuf(size, False)
     memcpy_dtoh(pixels, buf)
     end = monotonic()
     log("nvjpeg downloaded %i bytes in %ims", size, 1000*(end-start))
