@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -120,6 +120,7 @@ cdef class BufferContext:
         return "BufferContext(%s)" % self.obj
 
 cdef class MemBufContext:
+    cdef MemBuf membuf
     def __init__(self, membuf):
         assert isinstance(membuf, MemBuf), "%s is not a MemBuf instance: %s" % (membuf, type(membuf))
         self.membuf = membuf
@@ -128,7 +129,7 @@ cdef class MemBufContext:
     def __exit__(self, *_args):
         self.membuf = None
     def __int__(self):
-        return self.membuf.get_mem()
+        return self.membuf.get_mem_ptr()
     def __len__(self):
         return len(self.membuf)
     def __repr__(self):
