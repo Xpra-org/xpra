@@ -70,8 +70,8 @@ class NVJPEG_Exception(Exception):
 
 
 
-def download_from_gpu(rgb_format, buf, size):
-    log("nvjpeg download_from_gpu%s", (rgb_format, buf, size))
+def download_from_gpu(buf, size):
+    log("nvjpeg download_from_gpu%s", (buf, size))
     start = monotonic()
     pixels = bytearray(size)
     memcpy_dtoh(pixels, buf)
@@ -84,9 +84,17 @@ def decompress(rgb_format, img_data, options=None):
     #and download the pixel data from the GPU:
     with default_device as cuda_context:
         log("cuda_context=%s for device=%s", cuda_context, default_device.get_info())
-        return decompress_with_device(rgb_format, img_data, options, download_from_gpu)
+        return decompress_and_download(rgb_format, img_data, options)
 
-def decompress_with_device(rgb_format, img_data, options=None, download=None):
+def decompress_and_download(rgb_format, img_data, options=None):
+    img = decompress_with_device(rgb_format, img_data, options)
+    cuda_buffer = img.get_pixels()
+    pixels = download_from_gpu(cuda_buffer, img.get_rowstride() * img.get_height())
+    cuda_buffer.free()
+    img.set_pixels(pixels)
+    return img
+
+def decompress_with_device(rgb_format, img_data, options=None):
     log("decompress_with_device(%s, %i bytes, %s)", rgb_format, len(img_data), options)
     cdef unsigned int alpha_offset = (options or {}).get("alpha-offset", 0)
     cdef double start, end
@@ -138,21 +146,21 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
                     nv_image.channel[i] = NULL
                     nv_image.pitch[i] = 0
                 nv_image.pitch[0] = rowstride
-                rgb_size = rowstride*height
-                rgb = mem_alloc(rgb_size)
+                rgb = mem_alloc(rowstride*height)
                 dmem = <uintptr_t> int(rgb)
                 nv_image.channel[0] = <unsigned char *> dmem
                 start = monotonic()
                 with nogil:
                     r = nvjpegDecode(nv_handle, jpeg_handle,
-                                     data_buf, data_len,
-                                     output_format,
-                                     &nv_image,
-                                     nv_stream)
+                                 data_buf, data_len,
+                                 output_format,
+                                 &nv_image,
+                                 nv_stream)
                 if r:
                     raise NVJPEG_Exception("decoding failed: %s" % ERR_STR.get(r, r))
                 end = monotonic()
                 log("nvjpegDecode to %s took %ims", rgb_format, 1000*(end-start))
+                pixels = rgb
                 if alpha_offset:
                     data_len = len(bc)-alpha_offset
                     data_buf = <const unsigned char*> (<uintptr_t> int(bc) + alpha_offset)
@@ -182,7 +190,7 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
                     #combine RGB and A,
                     #start by adding one byte of padding: RGB -> RGBX
                     start = monotonic()
-                    buf = mem_alloc(width*height*4)
+                    rgba = mem_alloc(width*height*4)
                     memcpy = Memcpy2D()
                     memcpy.src_x_in_bytes = memcpy.src_y = 0
                     memcpy.dst_x_in_bytes = memcpy.dst_y = 0
@@ -190,7 +198,7 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
                     memcpy.dst_pitch = 4
                     memcpy.width_in_bytes = 3
                     memcpy.set_src_device(rgb)
-                    memcpy.set_dst_device(buf)
+                    memcpy.set_dst_device(rgba)
                     memcpy.height = width*height
                     memcpy(aligned=False)
                     rgb.free()
@@ -202,25 +210,20 @@ def decompress_with_device(rgb_format, img_data, options=None, download=None):
                     memcpy.dst_pitch = 4
                     memcpy.width_in_bytes = 1
                     memcpy.set_src_device(alpha)
-                    memcpy.set_dst_device(buf)
+                    memcpy.set_dst_device(rgba)
                     memcpy.height = alpha_size
                     memcpy(aligned=False)
                     alpha.free()
                     end = monotonic()
                     log("alpha merge took %ims", 1000*(end-start))
+                    rowstride = width*4
                     rgb_format += "A"
-                    buf_size = rgb_size+alpha_size
-                else:
-                    buf = rgb
-                    buf_size = rgb_size
-            if download:
-                pixels = download(rgb_format, buf, buf_size)
-            buf.free()
+                    pixels = rgba
         finally:
             errcheck(nvjpegJpegStateDestroy(jpeg_handle), "nvjpegJpegStateDestroy")
     finally:
         errcheck(nvjpegDestroy(nv_handle), "nvjpegDestroy")
-    return ImageWrapper(0, 0, width, height, pixels, rgb_format, 24, rowstride, planes=ImageWrapper.PACKED)
+    return ImageWrapper(0, 0, width, height, pixels, rgb_format, 24, rowstride, planes=len(rgb_format))
 
 
 def get_device_context():

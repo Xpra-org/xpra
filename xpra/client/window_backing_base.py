@@ -467,8 +467,7 @@ class WindowBackingBase:
         log("do_paint_jpeg: nvjpeg_decoder=%s", self.nvjpeg_decoder)
         if self.nvjpeg_decoder and not alpha_offset:
             with self.assign_cuda_context(False):
-                img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data,
-                                                                 download=self.nvjpeg_decoder.download_from_gpu)
+                img = self.nvjpeg_decoder.decompress_and_download("RGB", img_data)
         else:
             if encoding=="jpeg":
                 rgb_format = "RGBX"

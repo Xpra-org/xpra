@@ -1048,10 +1048,16 @@ class GLWindowBackingBase(WindowBackingBase):
     def do_paint_jpeg(self, encoding, img_data, x : int, y : int, width : int, height : int, options, callbacks):
         if self.nvjpeg_decoder and NVJPEG:
             def paint_nvjpeg(gl_context):
-                self.gl_init()
-                pbo = glGenBuffers(1)
-                def copy_cuda_buffer(rgb_format, buf, size):
-                    log("nvjpeg copy_cuda_buffer(%s, %i, %i)", rgb_format, buf, size)
+                with self.assign_cuda_context(True):
+                    img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options)
+                    log("paint_nvjpeg(%s) img=%s, downloading buffer to pbo", gl_context, img)
+
+                    #'pixels' is a cuda buffer:
+                    pixels = img.get_pixels()
+                    size = img.get_rowstride()*img.get_height()
+
+                    self.gl_init()
+                    pbo = glGenBuffers(1)
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo)
                     glBufferData(GL_PIXEL_UNPACK_BUFFER, size, None, GL_STREAM_DRAW)
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
@@ -1062,14 +1068,11 @@ class GLWindowBackingBase(WindowBackingBase):
                     log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
                     mapping = cuda_pbo.map()
                     ptr = mapping.device_ptr_and_size()[0]
-                    log("copying %i bytes from %s to mapping=%s at %#x", size, buf, mapping, ptr)
-                    memcpy_dtod(ptr, buf, size)
+                    log("copying %i bytes from %s to mapping=%s at %#x", size, pixels, mapping, ptr)
+                    memcpy_dtod(ptr, pixels, size)
                     mapping.unmap()
                     cuda_pbo.unregister()
-
-                with self.assign_cuda_context(True):
-                    img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options, copy_cuda_buffer)
-                log("paint_nvjpeg(%s) img=%s, updating fbo", gl_context, img)
+                    pixels.free()
 
                 rgb_format = img.get_pixel_format()
                 assert rgb_format in ("RGB", "BGR", "RGBA", "BGRA"), "unexpected rgb format %r" % (rgb_format,)
