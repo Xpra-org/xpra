@@ -1066,7 +1066,8 @@ class GLWindowBackingBase(WindowBackingBase):
                     cuda_pbo = RegisteredBuffer(int(pbo), graphics_map_flags.WRITE_DISCARD)
                     log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
                     mapping = cuda_pbo.map()
-                    ptr = mapping.device_ptr_and_size()[0]
+                    ptr, msize = mapping.device_ptr_and_size()
+                    assert msize>=size, "registered buffer size %i too small for pbo size %i" % (msize, size)
                     log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
                     memcpy_dtod(ptr, cuda_buffer, size)
                     mapping.unmap()
