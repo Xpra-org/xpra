@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from cpython.buffer cimport PyBuffer_FillInfo   #pylint: disable=syntax-error
-
 cdef MemBuf getbuf(size_t l, int readonly=*)
 cdef MemBuf padbuf(size_t l, size_t padding, int readonly=*)
 cdef MemBuf makebuf(void *p, size_t l, int readonly=*)
