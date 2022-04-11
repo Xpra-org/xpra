@@ -414,7 +414,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             return True
         finally:
             XRRFreeScreenConfigInfo(config)
-        self.XSync()
 
 
     def get_screen_count(self):
@@ -687,6 +686,48 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         XRRSetScreenSize(self.display, window, w, h, wmm, hmm)
         self.XSync()
 
+
+################################################################
+#Below is for handling fully virtualized monitors with
+#RandR 1.6 and the dummy version 0.4.0 or later
+################################################################
+
+    def is_dummy16(self):
+        #figure out if we're dealing with the dummy with randr 1.6 support
+        if not self._has_randr:
+            log("is_dummy16() no randr!")
+            return False
+        if self.version<(1, 6):
+            log("is_dummy16() randr version too old: %s", self.version)
+            return False
+        self.context_check()
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
+        try:
+            if rsc.ncrtc<16:
+                log("is_dummy16() only %i crtcs", rsc.ncrtc)
+                return False
+            if rsc.noutput<16:
+                log("is_dummy16() only %i outputs", rsc.noutput)
+                return False
+            if rsc.nmode==0:
+                log("is_dummy16() no modes!")
+                return False
+        finally:
+            XRRFreeScreenResources(rsc)
+        cdef int nmonitors
+        cdef XRRMonitorInfo *monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+        try:
+            if not nmonitors:
+                log("is_dummy16() no monitors!")
+                return False
+            for i in range(nmonitors):
+                if monitors[i].noutput!=1:
+                    log("is_dummy16() monitor %i has %i outputs", i, monitors[i].noutput)
+                    return False
+        finally:
+            XRRFreeMonitors(monitors)
+        return True
 
     cdef get_mode_info(self, XRRModeInfo *mi, with_sync=False):
         info = {

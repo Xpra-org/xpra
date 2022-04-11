@@ -30,6 +30,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     )
 from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImport
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
+from xpra.x11.bindings.randr_bindings import RandRBindings  #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase
 from xpra.gtk_common.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
@@ -49,6 +50,7 @@ screenlog = Logger("x11", "screen")
 
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
+X11RandR = RandRBindings()
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
@@ -57,6 +59,7 @@ CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
 ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
 DUMMY_DPI = envbool("XPRA_DUMMY_DPI", True)
+DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", False)
 
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
@@ -417,6 +420,39 @@ class XpraServer(GObject.GObject, X11ServerBase):
     ##########################################################################
     # Manage the virtual screen:
     #
+    def set_screen_size(self, desired_w, desired_h, bigger=True):
+        with xlog:
+            d16 = X11RandR.is_dummy16()
+            screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
+                  (desired_w, desired_h, bigger), self.randr, self.randr_exact_size, d16)
+            if DUMMY_MONITORS and self.randr and self.randr_exact_size and d16:
+                #if we have a single UI client,
+                #see if we can emulate its monitor geometry exactly
+                sss = tuple(x for x in self._server_sources.values() if x.ui_client)
+                screenlog("%i sources=%s", len(sss), sss)
+                if len(sss)==1:
+                    ss = sss[0]
+                    screenlog("screen sizes for %s: %s", ss, ss.screen_sizes)
+                    if ss.screen_sizes and len(ss.screen_sizes[0])>6:
+                        monitors = ss.screen_sizes[0][5]
+                        mdef = {}
+                        for i, m in enumerate(monitors):
+                            mdef[i] = {
+                                "name"      : bytestostr(m[0]),
+                                #"primary"?
+                                #"automatic" : True?
+                                "x"         : int(m[1]),
+                                "y"         : int(m[2]),
+                                "width"     : int(m[3]),
+                                "height"    : int(m[4]),
+                                "mm-width"  : int(m[5]),
+                                "mm-height" : int(m[6]),
+                                }
+                        screenlog("configuring %s", mdef)
+                        X11RandR.set_crtc_config(mdef)
+                        return (desired_w, desired_h)
+        return super().set_screen_size(desired_w, desired_h, bigger)
+
 
     def set_screen_geometry_attributes(self, w, h):
         #only run the default code if there are no clients,
