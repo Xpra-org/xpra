@@ -1051,9 +1051,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 with self.assign_cuda_context(True):
                     img = self.nvjpeg_decoder.decompress_with_device("RGB", img_data, options)
                     log("paint_nvjpeg(%s) img=%s, downloading buffer to pbo", gl_context, img)
-
                     #'pixels' is a cuda buffer:
-                    pixels = img.get_pixels()
+                    cuda_buffer = img.get_pixels()
                     size = img.get_rowstride()*img.get_height()
 
                     self.gl_init()
@@ -1069,10 +1068,10 @@ class GLWindowBackingBase(WindowBackingBase):
                     mapping = cuda_pbo.map()
                     ptr = mapping.device_ptr_and_size()[0]
                     log("copying %i bytes from %s to mapping=%s at %#x", size, pixels, mapping, ptr)
-                    memcpy_dtod(ptr, pixels, size)
+                    memcpy_dtod(ptr, cuda_buffer, size)
                     mapping.unmap()
                     cuda_pbo.unregister()
-                    pixels.free()
+                    cuda_buffer.free()
 
                 rgb_format = img.get_pixel_format()
                 assert rgb_format in ("RGB", "BGR", "RGBA", "BGRA"), "unexpected rgb format %r" % (rgb_format,)
