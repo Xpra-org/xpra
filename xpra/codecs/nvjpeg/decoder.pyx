@@ -223,7 +223,7 @@ def decompress_with_device(rgb_format, img_data, options=None):
             errcheck(nvjpegJpegStateDestroy(jpeg_handle), "nvjpegJpegStateDestroy")
     finally:
         errcheck(nvjpegDestroy(nv_handle), "nvjpegDestroy")
-    return ImageWrapper(0, 0, width, height, pixels, rgb_format, 24, rowstride, planes=len(rgb_format))
+    return ImageWrapper(0, 0, width, height, pixels, rgb_format, len(rgb_format)*8, rowstride, planes=len(rgb_format))
 
 
 def get_device_context():
