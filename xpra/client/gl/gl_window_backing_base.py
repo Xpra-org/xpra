@@ -1067,7 +1067,7 @@ class GLWindowBackingBase(WindowBackingBase):
                     log("RegisteredBuffer%s=%s", (pbo, graphics_map_flags.WRITE_DISCARD), cuda_pbo)
                     mapping = cuda_pbo.map()
                     ptr = mapping.device_ptr_and_size()[0]
-                    log("copying %i bytes from %s to mapping=%s at %#x", size, pixels, mapping, ptr)
+                    log("copying %i bytes from %s to mapping=%s at %#x", size, cuda_buffer, mapping, ptr)
                     memcpy_dtod(ptr, cuda_buffer, size)
                     mapping.unmap()
                     cuda_pbo.unregister()
