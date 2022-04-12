@@ -133,7 +133,11 @@ def get_pillow_icc_info():
         from PIL.ImageCms import get_display_profile
         INTENT_STR = {}
         for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
-            v = getattr(ImageCms, "INTENT_%s" % x, None)
+            intent = getattr(ImageCms, "Intent", None)
+            if intent:
+                v = getattr(intent, x, None)
+            else:
+                v = getattr(ImageCms, "INTENT_%s" % x, None)
             if v:
                 INTENT_STR[v] = x.lower().replace("_", "-")
         screenlog("get_icc_info() intents=%s", INTENT_STR)
