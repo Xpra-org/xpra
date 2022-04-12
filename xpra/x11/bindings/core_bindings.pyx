@@ -11,7 +11,7 @@ from xpra.x11.bindings.xlib cimport (
     XFree,
     XGetErrorText,
     XUngrabKeyboard, XUngrabPointer,
-    XSynchronize, XSync,
+    XSynchronize, XSync, XFlush,
     CurrentTime, MappingBusy, GrabModeAsync, AnyModifier,
     PropModeReplace,
     )
@@ -58,6 +58,9 @@ cdef class X11CoreBindingsInstance:
 
     def XSync(self, discard=False):
         XSync(self.display, discard)
+
+    def XFlush(self):
+        XFlush(self.display)
 
     def context_check(self):
         global context_check

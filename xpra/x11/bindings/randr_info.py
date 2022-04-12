@@ -12,6 +12,7 @@ from xpra.x11.bindings.randr_bindings import RandRBindings  #pylint: disable=no-
 def main():
     init_gdk_display_source()
     randr = RandRBindings()
+    #print(randr.is_dummy16())
     print_nested_dict(randr.get_all_screen_properties())
 
 

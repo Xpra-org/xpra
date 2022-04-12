@@ -1107,4 +1107,4 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 XRRFreeMonitors(monitors)
         finally:
             XRRFreeScreenResources(rsc)
-        XFlush(self.display)
+        self.XSync()
