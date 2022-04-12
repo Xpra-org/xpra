@@ -993,7 +993,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         self.set_screen_size(screen_w, screen_h)
         self.xrr_set_screen_size(screen_w, screen_h, dpi96(screen_w), dpi96(screen_h))
         root_w, root_h = self.get_screen_size()
-        log.info("root size: %ix%i", root_w, root_h)
+        log("root size: %ix%i", root_w, root_h)
         count = len(monitor_defs)
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
@@ -1054,7 +1054,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         mode = self.do_add_screen_size(width, height, output)
                     assert mode!=0, "mode %ix%i not found" % (width, height)
                     XRRAddOutputMode(self.display, output, mode)
-                    log.info("mode %#x added to output %i", mode, mi)
+                    log("mode %#x added to output %i", mode, mi)
 
                 crtc = rsc.crtcs[mi]
                 r = XRRSetCrtcConfig(self.display, rsc, crtc,
@@ -1067,17 +1067,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 log.info("set crtc %i to %ix%i (%ix%i mm) at %i,%i", mi, width, height, mmw, mmh, x, y)
             self.XSync()
             #now configure the monitors
-            #first, rename them to prevent a BadValue when the name already exists
-            #(since we can't rename them all in one call)
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
-            log("found %i active monitors", nmonitors)
+            names = {}
             for mi in range(nmonitors):
-                monitor = &monitors[mi]
-                monitor.name = self.xatom("%i-%i" % (mi, 1000*monotonic()))
-                XRRSetMonitor(self.display, window, monitor)
-            XRRFreeMonitors(monitors)
-            names = []
-            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+                names[mi] = bytestostr(self.XGetAtomName(monitors[mi].name))
+            log("found %i active monitors: %s", nmonitors, csv(names.values()))
             try:
                 for mi, m in monitor_defs.items():
                     if mi>=nmonitors:
@@ -1085,26 +1079,22 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         continue
                     monitor = &monitors[mi]
                     name = m.get("name", "%i" % mi)
-                    #prevent duplicate names:
-                    if name in names:
-                        name += "_%i" % mi
-                    names.append(name)
                     monitor.name = self.xatom(name)
                     monitor.primary = m.get("primary", False)
                     monitor.automatic = m.get("automatic", True)
-                    monitor.x = x
-                    monitor.y = y
-                    monitor.width = width
-                    monitor.height = height
-                    monitor.mwidth = mmw
-                    monitor.mheight = mmh
+                    monitor.x = m.get("x", 0)
+                    monitor.y = m.get("y", 0)
+                    monitor.width = m.get("width", 0)
+                    monitor.height = m.get("height", 0)
+                    monitor.mwidth = m.get("mm-width", dpi96(monitor.width))
+                    monitor.mheight = m.get("mm-height", dpi96(monitor.height))
+                    output = rsc.outputs[mi]
                     monitor.outputs = &output
                     monitor.noutput = 1
                     XRRSetMonitor(self.display, window, monitor)
-                    log.info("monitor %i is %r", mi, name)
+                    log.info("monitor %i is %r %ix%i", mi, name, monitor.width, monitor.height)
                     self.XSync()
             finally:
                 XRRFreeMonitors(monitors)
         finally:
             XRRFreeScreenResources(rsc)
-        self.XSync()
