@@ -1038,7 +1038,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     for k in range(rsc.nmode):
                         if rsc.modes[k].id==output_info.modes[j] and rsc.modes[k].width==width and rsc.modes[k].height==height:
                             mode = output_info.modes[j]
-                            log.info("using existing output mode %#x for %ix%i", mode, width, height)
+                            log("using existing output mode %#x for %ix%i", mode, width, height)
                             break
                     if mode:
                         break
@@ -1048,7 +1048,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     for j in range(rsc.nmode):
                         if rsc.modes[j].width==width and rsc.modes[j].height==height:
                             mode = rsc.modes[j].id
-                            log.info("using screen mode %#x for %ix%i", rsc.modes[j].id, width, height)
+                            log("using screen mode %#x for %ix%i", rsc.modes[j].id, width, height)
                             break
                     if not mode:
                         mode = self.do_add_screen_size(width, height, output)
@@ -1064,7 +1064,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     raise Exception("failed to set crtc config for monitor %i" % mi)
                 self.set_output_int_property(mi, "WIDTH_MM", mmw)
                 self.set_output_int_property(mi, "HEIGHT_MM", mmh)
-                log.info("set crtc %i to %ix%i (%ix%i mm) at %i,%i", mi, width, height, mmw, mmh, x, y)
+                posinfo = ""
+                if x or y:
+                    posinfo = " at %i,%i" % (x, y)
+                log.info("setting dummy crtc %i to %ix%i (%ix%i mm)%s", mi, width, height, mmw, mmh, posinfo)
             self.XSync()
             #now configure the monitors
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
