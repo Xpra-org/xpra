@@ -23,7 +23,7 @@ from xpra.platform.gui import (
     )
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
-from xpra.platform.paths import get_icon_filename
+from xpra.platform.paths import get_icon_filename, get_resources_dir
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import start_thread
 from xpra.os_util import (
@@ -76,10 +76,15 @@ ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
-SIGNAL_WATCHER_COMMAND = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "/usr/libexec/xpra/xpra_signal_listener")
-if not os.path.exists(SIGNAL_WATCHER_COMMAND):
-    log.warn("Warning: %r not found", SIGNAL_WATCHER_COMMAND)
+SIGNAL_WATCHER_COMMAND = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
+if SIGNAL_WATCHER:
     SIGNAL_WATCHER = False
+    for prefix in ("/usr", get_resources_dir()):
+        cmd = prefix+"/libexec/xpra/"+SIGNAL_WATCHER_COMMAND
+        if os.path.exists(cmd):
+            SIGNAL_WATCHER = True
+    if not SIGNAL_WATCHER:
+        log.warn("Warning: %r not found", SIGNAL_WATCHER_COMMAND)
 
 FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 MOUSE_SCROLL_SQRT_SCALE = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
@@ -849,7 +854,7 @@ class WindowClient(StubClientMixin):
     def assign_signal_watcher_pid(self, wid, pid):
         if not SIGNAL_WATCHER:
             return 0
-        if not POSIX or OSX or not pid:
+        if not POSIX or not pid:
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
