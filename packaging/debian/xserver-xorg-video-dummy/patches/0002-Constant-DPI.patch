@@ -1,15 +1,6 @@
---- a/src/dummy.h	2016-12-17 23:02:53.396287041 +0100
-+++ b/src/dummy.h	2016-12-17 23:03:30.319616550 +0100
-@@ -51,6 +51,7 @@
-     /* options */
-     OptionInfoPtr Options;
-     Bool swCursor;
-+    Bool constantDPI;
-     /* proc pointer */
-     CloseScreenProcPtr CloseScreen;
-     xf86CursorInfoPtr CursorInfo;
---- a/src/dummy_driver.c	2016-12-14 21:54:20.000000000 +0100
-+++ b/src/dummy_driver.c	2016-12-17 23:04:59.916416126 +0100
+diff -urN a/src/dummy_driver.c b/src/dummy_driver.c
+--- a/src/dummy_driver.c	2022-04-06 00:16:37.000000000 +0700
++++ b/src/dummy_driver.c	2022-04-06 10:54:34.951837933 +0700
 @@ -17,6 +17,12 @@
  /* All drivers using the mi colormap manipulation need this */
  #include "micmap.h"
@@ -23,7 +14,7 @@
  /* identifying atom needed by magnifiers */
  #include <X11/Xatom.h>
  #include "property.h"
-@@ -115,11 +121,15 @@
+@@ -112,11 +118,15 @@
  };
  
  typedef enum {
@@ -40,7 +31,7 @@
      { -1,                  NULL,           OPTV_NONE,	{0}, FALSE }
  };
  
-@@ -359,6 +369,7 @@
+@@ -625,6 +635,7 @@
      xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, dPtr->Options);
  
      xf86GetOptValBool(dPtr->Options, OPTION_SW_CURSOR,&dPtr->swCursor);
@@ -48,7 +39,7 @@
  
      if (device->videoRam != 0) {
  	pScrn->videoRam = device->videoRam;
-@@ -639,10 +650,45 @@
+@@ -950,10 +961,45 @@
      return TRUE;
  }
  
@@ -94,3 +85,14 @@
      return TRUE;
  }
  
+diff -urN a/xf86-video-dummy-0.4.0/src/dummy.h b/xf86-video-dummy-0.4.0/src/dummy.h
+--- a/xf86-video-dummy-0.4.0.bak/src/dummy.h	2022-04-06 00:16:37.000000000 +0700
++++ b/xf86-video-dummy-0.4.0/src/dummy.h	2022-04-06 10:54:34.951837933 +0700
+@@ -43,6 +43,7 @@
+     /* options */
+     OptionInfoPtr Options;
+     Bool swCursor;
++    Bool constantDPI;
+     /* proc pointer */
+     CloseScreenProcPtr CloseScreen;
+     xf86CursorInfoPtr CursorInfo;

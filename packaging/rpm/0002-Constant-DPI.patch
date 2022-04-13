@@ -85,9 +85,9 @@ diff -urN a/src/dummy_driver.c b/src/dummy_driver.c
      return TRUE;
  }
  
-diff -urN xf86-video-dummy-0.4.0.bak/src/dummy.h xf86-video-dummy-0.4.0/src/dummy.h
---- xf86-video-dummy-0.4.0.bak/src/dummy.h	2022-04-06 00:16:37.000000000 +0700
-+++ xf86-video-dummy-0.4.0/src/dummy.h	2022-04-06 10:54:34.951837933 +0700
+diff -urN a/xf86-video-dummy-0.4.0/src/dummy.h b/xf86-video-dummy-0.4.0/src/dummy.h
+--- a/xf86-video-dummy-0.4.0.bak/src/dummy.h	2022-04-06 00:16:37.000000000 +0700
++++ b/xf86-video-dummy-0.4.0/src/dummy.h	2022-04-06 10:54:34.951837933 +0700
 @@ -43,6 +43,7 @@
      /* options */
      OptionInfoPtr Options;
