@@ -123,6 +123,7 @@ class WindowVideoSource(WindowSource):
             #for older clients, we check an encoding option:
             "scroll" in self.server_core_encodings and self.encoding_options.boolget("scrolling") and not STRICT_MODE)
         self.scroll_min_percent = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
+        self.scroll_preference = self.encoding_options.intget("scrolling.preference", 100)
         self.supports_video_b_frames = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
         self.video_subregion = VideoSubregion(self.timeout_add, self.source_remove, self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
@@ -256,6 +257,9 @@ class WindowVideoSource(WindowSource):
                  "scrolling"      : {
                      "enabled"      : self.supports_scrolling,
                      "min-percent"  : self.scroll_min_percent,
+                     "preference"   : self.scroll_preference,
+                     "event"        : self.last_scroll_event,
+                     "time"         : self.last_scroll_time,
                      }
                  }
         if self._last_pipeline_check>0:
@@ -413,6 +417,7 @@ class WindowVideoSource(WindowSource):
             #for older clients, we check an encoding option:
             "scroll" in self.server_core_encodings and properties.boolget("scrolling", self.supports_scrolling) and not STRICT_MODE)
         self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)
+        self.scroll_preference = properties.intget("scrolling.preference", self.scroll_preference)
         self.video_subregion.supported = properties.boolget("encoding.video_subregion", VIDEO_SUBREGION) and VIDEO_SUBREGION
         if properties.get("scaling.control") is not None:
             self.scaling_control = max(0, min(100, properties.intget("scaling.control", 0)))
@@ -1864,6 +1869,18 @@ class WindowVideoSource(WindowSource):
             scrolllog("no scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
             self.do_free_scroll_data()
             return False
+        speed = options.get("speed", self._current_speed)
+        if speed>=50 or self.scroll_preference<100:
+            now = monotonic()
+            scroll_event_elapsed = now-self.last_scroll_event
+            scroll_encode_elapsed = now-self.last_scroll_time
+            #how long since we last successfully used scroll encoding,
+            #or seen a scroll mouse wheel event:
+            scroll_elapsed = min(scroll_event_elapsed, scroll_encode_elapsed)
+            max_time = 1+min((100-speed)/10, self.scroll_preference/20)
+            if scroll_elapsed>=max_time:
+                scrolllog("no scrolling: elapsed=%.1f, max time=%.1f", scroll_elapsed, max_time)
+                return False
         return self.do_scroll_encode(image, options, self.scroll_min_percent)
 
     def scroll_encode(self, coding, image, options):

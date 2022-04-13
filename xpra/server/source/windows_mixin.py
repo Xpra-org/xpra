@@ -468,6 +468,12 @@ class WindowsMixin(StubSourceMixin):
             ws.cancel_damage()
 
 
+    def record_scroll_event(self, wid):
+        ws = self.window_sources.get(wid)
+        if ws:
+            ws.record_scroll_event()
+
+
     def reinit_encoders(self):
         for ws in tuple(self.window_sources.values()):
             ws.init_encoders()

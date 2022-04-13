@@ -590,9 +590,9 @@ class ShadowServer(GTKShadowServerBase):
         pointer = self._process_mouse_common(proto, wid, pointer)
         if pointer:
             self.get_server_source(proto).user_event()
-            self.button_action(pointer, button, pressed, -1, *args)
+            self.button_action(wid, pointer, button, pressed, -1, *args)
 
-    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, wid, pointer, button, pressed, deviceid=-1, *args):
         event = BUTTON_EVENTS.get((button, pressed))
         if event is None:
             log.warn("no matching event found for button=%s, pressed=%s", button, pressed)

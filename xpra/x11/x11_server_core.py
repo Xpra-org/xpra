@@ -928,6 +928,7 @@ class X11ServerCore(GTKServerBase):
         if not ss:
             return
         wid, button, distance, pointer, modifiers, _buttons = packet[1:7]
+        self.record_wheel_event(wid, button)
         with xsync:
             if self.do_process_mouse_common(proto, wid, pointer):
                 self.last_mouse_user = ss.uuid
@@ -998,19 +999,26 @@ class X11ServerCore(GTKServerBase):
         self._update_modifiers(proto, wid, modifiers)
         #TODO: pass extra args
         if self._process_mouse_common(proto, wid, pointer, deviceid):
-            self.button_action(pointer, button, pressed, deviceid)
+            self.button_action(wid, pointer, button, pressed, deviceid)
 
-    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, wid, pointer, button, pressed, deviceid=-1, *args):
         device = self.get_pointer_device(deviceid)
         assert device, "pointer device %s not found" % deviceid
+        if button in (4, 5) and wid:
+            self.record_wheel_event(wid, button)
         try:
             mouselog("%s%s", device.click, (button, pressed, args))
             with xsync:
                 device.click(button, pressed, *args)
         except XError:
-            mouselog("button_action(%s, %s, %s, %s, %s)", pointer, button, pressed, deviceid, args, exc_info=True)
+            mouselog("button_action(%s, %s, %s, %s, %s, %s)",
+                     wid, pointer, button, pressed, deviceid, args, exc_info=True)
             mouselog.error("Error: failed (un)press mouse button %s", button)
 
+    def record_wheel_event(self, wid, button):
+        mouselog("recording scroll event for button %i", button)
+        for ss in self.window_sources():
+            ss.record_scroll_event(wid)
 
     def make_screenshot_packet_from_regions(self, regions):
         #regions = array of (wid, x, y, PIL.Image)

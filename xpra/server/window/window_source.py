@@ -190,6 +190,7 @@ class WindowSource(WindowIconSource):
         self.av_sync_timer = None
         self.encode_queue = []
         self.encode_queue_max_size = 10
+        self.last_scroll_event = 0
 
         self.server_core_encodings = server_core_encodings
         self.server_encodings = server_encodings
@@ -649,6 +650,8 @@ class WindowSource(WindowIconSource):
         self.batch_config.locked = False
         self.batch_config.delay = self.batch_config.saved
 
+    def record_scroll_event(self):
+        self.last_scroll_event = monotonic()
 
     def suspend(self):
         self.cancel_damage()
