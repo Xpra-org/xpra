@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import struct
-from time import monotonic
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
@@ -17,7 +16,7 @@ from xpra.x11.bindings.xlib cimport (
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
     )
-from xpra.util import envint, envbool, csv, first_time, decode_str
+from xpra.util import envint, envbool, csv, first_time, decode_str, prettify_plug_name
 from xpra.os_util import strtobytes, bytestostr
 
 
@@ -1014,9 +1013,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef XRROutputInfo *output_info
         cdef XRRMonitorInfo *monitors
         cdef XRRMonitorInfo *monitor
+        primary = 0
         try:
             for mi, m in monitor_defs.items():
                 assert mi<count, "invalid monitor index %i" % mi
+
+                if m.get("primary", False):
+                    primary = mi
 
                 #configure an output for each monitor:
                 width = m.get("width", 0)
@@ -1081,9 +1084,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         log.error("Error: only %i monitors found", nmonitors)
                         continue
                     monitor = &monitors[mi]
-                    name = m.get("name", "%i" % mi)
+                    name = prettify_plug_name(m.get("name", "")) or ("%i" % mi)
                     monitor.name = self.xatom(name)
-                    monitor.primary = m.get("primary", False)
+                    monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
                     monitor.x = m.get("x", 0)
                     monitor.y = m.get("y", 0)
