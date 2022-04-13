@@ -1,0 +1,23 @@
+xserver-xorg-video-dummy (1:0.4.0-1) UNRELEASED; urgency=low
+  * new upstream release
+
+ -- Antoine Martin <antoine@xpra.org>  Wed, 13 Apr 2022 13:34:40 +0700
+
+xserver-xorg-video-dummy (1:0.3.8-5) UNRELEASED; urgency=low
+
+  * add fix pointer limits patch
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 23 Dec 2016 12:15:18 +0700
+
+xserver-xorg-video-dummy (1:0.3.8-4) UNRELEASED; urgency=low
+
+  * packaging file path fix
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 22 Dec 2016 18:59:20 +0700
+
+xserver-xorg-video-dummy (1:0.3.8-2) UNRELEASED; urgency=low
+
+  * DPI fixes for xpra
+  * 30-bit display support
+
+ -- Antoine Martin <antoine@xpra.org>  Sat, 17 Dec 2016 17:03:38 +0700
