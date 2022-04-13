@@ -75,7 +75,7 @@ ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
-SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
+SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", POSIX and not OSX)
 SIGNAL_WATCHER_COMMAND = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
 if SIGNAL_WATCHER:
     SIGNAL_WATCHER = False
@@ -853,9 +853,7 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # listen for process signals using a watcher process:
     def assign_signal_watcher_pid(self, wid, pid):
-        if not SIGNAL_WATCHER:
-            return 0
-        if not POSIX or not pid:
+        if not SIGNAL_WATCHER or not pid:
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
