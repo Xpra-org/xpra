@@ -1542,16 +1542,17 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
+    libexec_scripts = []
+    if scripts_ENABLED:
+        libexec_scripts += ["xpra_signal_listener"]
     if LINUX or FREEBSD:
-        libexec_scripts = []
         if scripts_ENABLED:
-            libexec_scripts += ["xpra_udev_product_version", "xpra_signal_listener"]
+            libexec_scripts += ["xpra_udev_product_version"]
         if xdg_open_ENABLED:
             libexec_scripts += ["xdg-open", "gnome-open", "gvfs-open"]
         if server_ENABLED:
             libexec_scripts.append("auth_dialog")
-        if libexec_scripts:
-            add_data_files("libexec/xpra/", ["fs/libexec/xpra/%s" % x for x in libexec_scripts])
+    add_data_files("libexec/xpra/", ["fs/libexec/xpra/%s" % x for x in libexec_scripts])
     if data_ENABLED:
         man_path = "share/man"
         icons_dir = "icons"
