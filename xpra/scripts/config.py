@@ -136,9 +136,11 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
         if warn_fn:
             warn_fn("Warning: sorry, no support for Xdummy on %s" % sys.platform)
         return get_Xvfb_command()
-    if is_arm():
-        #arm struggles to launch Xdummy, so use Xvfb:
-        return get_Xvfb_command()
+    #if is_arm():
+        #arm used to struggle to launch Xdummy because of
+        #the large number of pre-defined resolutions,
+        #but it should work OK now that we use RandR 1.6
+        #return get_Xvfb_command()
     if is_Ubuntu() or is_Debian():
         #These distros do weird things and this can cause the real X11 server to crash
         #see ticket #2834
