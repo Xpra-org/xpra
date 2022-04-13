@@ -23,7 +23,7 @@ from xpra.platform.gui import (
     )
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
-from xpra.platform.paths import get_icon_filename, get_resources_dir
+from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_exec_command
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import start_thread
 from xpra.os_util import (
@@ -82,6 +82,7 @@ if SIGNAL_WATCHER:
     for prefix in ("/usr", get_resources_dir()):
         cmd = prefix+"/libexec/xpra/"+SIGNAL_WATCHER_COMMAND
         if os.path.exists(cmd):
+            SIGNAL_WATCHER_COMMAND = cmd
             SIGNAL_WATCHER = True
     if not SIGNAL_WATCHER:
         log.warn("Warning: %r not found", SIGNAL_WATCHER_COMMAND)
@@ -861,7 +862,7 @@ class WindowClient(StubClientMixin):
             from xpra.child_reaper import getChildReaper
             from subprocess import Popen, PIPE, STDOUT
             try:
-                proc = Popen([SIGNAL_WATCHER_COMMAND],
+                proc = Popen(get_python_exec_command()+[SIGNAL_WATCHER_COMMAND],
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
                              start_new_session=True)
             except OSError as e:
