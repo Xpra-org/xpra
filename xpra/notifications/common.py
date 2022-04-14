@@ -24,6 +24,8 @@ def parse_image_data(data):
                 rgb_format = "RGBX"
         elif channels==3:
             rgb_format = "RGB"
+        if isinstance(pixels, (list, tuple)):
+            pixels = bytes(pixels)
         img = Image.frombuffer("RGBA", (width, height), pixels, "raw", rgb_format, rowstride)
         return image_data(img)
     except Exception as e:
