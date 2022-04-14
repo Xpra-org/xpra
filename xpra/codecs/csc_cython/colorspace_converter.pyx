@@ -743,7 +743,7 @@ cdef class ColorspaceConverter:
 
     cdef packed_image_wrapper(self, char *buf, unsigned char bpp=24):
         pybuf = PyMemoryView_FromMemory(buf, self.dst_sizes[0], True)
-        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, pybuf, self.dst_format, bpp, self.dst_strides[0], ImageWrapper.PACKED)
+        out_image = CythonImageWrapper(0, 0, self.dst_width, self.dst_height, pybuf, self.dst_format, bpp, self.dst_strides[0], planes=ImageWrapper.PACKED)
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
 

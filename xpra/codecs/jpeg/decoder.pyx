@@ -221,7 +221,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3):
         elapsed = monotonic()-start
         log("decompress jpeg to %s: %4i MB/s (%9i bytes in %2.1fms)",
             pixel_format, total_size/elapsed//1024//1024, total_size, 1000*elapsed)
-    return ImageWrapper(0, 0, w, h, pyplanes, pixel_format, 24, pystrides, ImageWrapper.PLANAR_3)
+    return ImageWrapper(0, 0, w, h, pyplanes, pixel_format, 24, pystrides, planes=ImageWrapper.PLANAR_3)
 
 
 def decompress_to_rgb(rgb_format, data, unsigned long alpha_offset=0):
