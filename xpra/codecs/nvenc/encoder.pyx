@@ -2115,9 +2115,9 @@ cdef class Encoder:
                             "supported" : YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED),
                             "threshold" : YUV444_THRESHOLD,
                             },
-                "cuda-device"   : self.cuda_device_info,
-                "cuda"          : self.cuda_info,
-                "pycuda"        : self.pycuda_info,
+                "cuda-device"   : self.cuda_device_info or {},
+                "cuda"          : self.cuda_info or {},
+                "pycuda"        : self.pycuda_info or {},
                 })
         if self.scaling!=(1,1):
             info.update({
