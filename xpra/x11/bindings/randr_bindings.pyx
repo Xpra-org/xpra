@@ -393,6 +393,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                             log("%s : %s", csv(output_names), rate)
                             rates[crtc] = rate
                         break
+                XRRFreeCrtcInfo(crtc_info)
         finally:
             XRRFreeScreenResources(rsc)
         return rates
