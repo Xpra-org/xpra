@@ -867,6 +867,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 "noutput"   : ci.noutput,
                 "npossible" : ci.npossible,
                 }
+        if ci.noutput:
+            info["outputs"] = tuple(int(ci.outputs[i]) for i in range(ci.noutput))
         if TIMESTAMPS:
             info["timestamp"] = int(ci.timestamp)
         cdef XRRCrtcGamma *gamma
@@ -1009,6 +1011,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef RRMode mode
         cdef int nmonitors
         cdef RRCrtc crtc
+        cdef XRRCrtcInfo *crtc_info
         cdef RROutput output
         cdef XRROutputInfo *output_info
         cdef XRRMonitorInfo *monitors
@@ -1071,6 +1074,47 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 if x or y:
                     posinfo = " at %i,%i" % (x, y)
                 log.info("setting dummy crtc %i to %ix%i (%ix%i mm)%s", mi, width, height, mmw, mmh, posinfo)
+            #we may need to disable some crtcs that were enabled with a prior config:
+            log("ncrtc=%i", rsc.ncrtc)
+            for mi in range(rsc.ncrtc):
+                log("monitor(%i)=%s", mi, monitor_defs.get(mi))
+                if monitor_defs.get(mi):
+                    #we've configured this one above
+                    log("crtc %i is already configured", mi)
+                    continue
+                crtc = rsc.crtcs[mi]
+                crtc_info = XRRGetCrtcInfo(self.display, rsc, crtc)
+                if crtc_info==NULL:
+                    log.warn("Warning: no CRTC info for %i", crtc)
+                    continue
+                if crtc_info.noutput==0:
+                    #it is already disabled
+                    log("crtc %i is already disabled", mi)
+                    XRRFreeCrtcInfo(crtc_info)
+                    continue
+                XRRFreeCrtcInfo(crtc_info)
+                output = rsc.outputs[mi]
+                output_info = XRRGetOutputInfo(self.display, rsc, output)
+                if not output_info:
+                    log.error("Error: output %i not found (%#x)", mi, output)
+                    continue
+                #re-configure it to try to prevent problems:
+                # * use no outputs,
+                # * default location,
+                # * smallest mode possible
+                mode = 0
+                mode_size = 0
+                for j in range(output_info.nmode):
+                    size = output_info.modes[j].width*output_info.modes[j].height
+                    if mode_size==0 or size<mode_size:
+                        mode = output_info.modes[j].id
+                XRRFreeOutputInfo(output_info)
+                r = XRRSetCrtcConfig(self.display, rsc, crtc,
+                      CurrentTime, 0, 0, mode,
+                      RR_Rotate_0, &output, 0)
+                if r:
+                    raise Exception("failed to set crtc config for monitor %i" % mi)
+                log.info("disabled dummy crtc %i", mi)
             self.XSync()
             #now configure the monitors
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
