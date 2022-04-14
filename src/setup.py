@@ -2210,24 +2210,33 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             if version!=(0,) and version<(7, 5):
                 print("CUDA version %s is very unlikely to work" % (version,))
                 print("try upgrading to version 7.5 or later")
-            if version>=(7, 5):
-                comp_code_options.append((50, 50))
-                comp_code_options.append((52, 52))
-                comp_code_options.append((53, 53))
-            if version>=(8, 0):
-                comp_code_options.append((60, 60))
-                comp_code_options.append((61, 61))
-                comp_code_options.append((62, 62))
-            if version>=(9, 0):
-                comp_code_options.append((70, 70))
-            if version>=(10, 0):
-                comp_code_options.append((75, 75))
-            if version>=(11, 0):
-                comp_code_options.append((80, 80))
-            if version>=(11, 1):
-                comp_code_options.append((86, 86))
-            for arch, code in comp_code_options:
-                cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
+            if nvcc_version>=(11, 5):
+                cmd += ["-arch=all",
+                        "-Wno-deprecated-gpu-targets",
+                        ]
+                if nvcc_version>=(11, 6):
+                    cmd += ["-Xnvlink", "-ignore-host-info"]
+            else:
+                comp_code_options = []
+                if nvcc_version>=(7, 5):
+                    comp_code_options.append((52, 52))
+                    comp_code_options.append((53, 53))
+                if nvcc_version>=(8, 0):
+                    comp_code_options.append((60, 60))
+                    comp_code_options.append((61, 61))
+                    comp_code_options.append((62, 62))
+                if nvcc_version>=(9, 0):
+                    comp_code_options.append((70, 70))
+                if nvcc_version>=(10, 0):
+                    comp_code_options.append((75, 75))
+                if nvcc_version>=(11, 0):
+                    comp_code_options.append((80, 80))
+                if nvcc_version>=(11, 1):
+                    comp_code_options.append((86, 86))
+                #if nvcc_version>=(11, 6):
+                #    comp_code_options.append((87, 87))
+                for arch, code in comp_code_options:
+                    cmd.append("-gencode=arch=compute_%s,code=sm_%s" % (arch, code))
             print("CUDA compiling %s (%s)" % (kernel.ljust(16), reason))
             print(" %s" % " ".join("'%s'" % x for x in cmd))
             c, stdout, stderr = get_status_output(cmd)
