@@ -258,8 +258,8 @@ class WindowVideoSource(WindowSource):
                      "enabled"      : self.supports_scrolling,
                      "min-percent"  : self.scroll_min_percent,
                      "preference"   : self.scroll_preference,
-                     "event"        : self.last_scroll_event,
-                     "time"         : self.last_scroll_time,
+                     "event"        : int(self.last_scroll_event*1000),
+                     "time"         : int(self.last_scroll_time*1000),
                      }
                  }
         if self._last_pipeline_check>0:
