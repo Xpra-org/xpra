@@ -10,13 +10,14 @@ Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
 Version:   0.4.0
 
-Release:   2.xpra1%{?dist}
+Release:   3.xpra1%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
 
 Source0:   https://xorg.freedesktop.org/archive/individual/driver/%{tarball}-%{version}.tar.xz
 Patch2:    0002-Constant-DPI.patch
+Patch6:    0006-Dummy-Disconnect.patch
 
 ExcludeArch: s390 s390x
 
@@ -38,6 +39,7 @@ if [ "${sha256}" != "e78ceae5c8c0588c7cb658f2afc3a9fac9ef665b52a75b01f8e9c5449a4
 fi
 %setup -q -n %{tarball}-%{version}
 %patch2 -p1
+%patch6 -p1
 autoreconf -vif
 
 %build
@@ -57,6 +59,9 @@ find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Fri Apr 15 2022 Antoine Martin <antoine@xpra.org> - 0.4.0-3.xpra1
+- add disconnect patch
+
 * Sun Apr 10 2022 Antoine Martin <antoine@xpra.org> - 0.4.0-2.xpra1
 - remove redundant pointer limits patch
 

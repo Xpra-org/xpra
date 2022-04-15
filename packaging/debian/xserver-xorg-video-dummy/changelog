@@ -1,3 +1,8 @@
+xserver-xorg-video-dummy (1:0.4.0-2) UNRELEASED; urgency=low
+  * added disconnect patch
+
+ -- Antoine Martin <antoine@xpra.org>  Fri, 15 Apr 2022 21:16:07 +0700
+
 xserver-xorg-video-dummy (1:0.4.0-1) UNRELEASED; urgency=low
   * new upstream release
 
