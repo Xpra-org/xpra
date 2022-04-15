@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import struct
+from time import monotonic
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
@@ -541,21 +542,20 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def set_screen_size(self, width, height):
         return self._set_screen_size(width, height)
 
-    def get_mode_name(self, unsigned int w, unsigned int h):
-        return "%sx%s" % (w, h)
-
     def add_screen_size(self, unsigned int w, unsigned int h):
-        cdef RROutput output = self.get_current_output()
-        mode = self.do_add_screen_size(w, h, output)
+        name = "%sx%s" % (w, h)
+        mode = self.do_add_screen_size(name, w, h)
         #now add it to the output:
-        if mode and output:
+        cdef RROutput output
+        if mode:
+            output = self.get_current_output()
             log("adding mode %#x to output %#x", mode, output)
             XRRAddOutputMode(self.display, output, mode)
         return mode
 
-    cdef do_add_screen_size(self, unsigned int w, unsigned int h, RROutput output):
+    cdef do_add_screen_size(self, name, unsigned int w, unsigned int h):
         self.context_check()
-        log("add_screen_size(%i, %i)", w, h)
+        log("do_add_screen_size(%s, %i, %i)", name, w, h)
         cdef RRMode mode
 
         #monitor settings as set in xorg.conf...
@@ -571,7 +571,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef double timeVBack = 0.06            #0.031901; 0.055664; // Adjust this to move picture up/down
         cdef double yFactor = 1                 #no interlace (0.5) or doublescan (2)
 
-        name = self.get_mode_name(w, h)
         bname = strtobytes(name)
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRModeInfo *new_mode = XRRAllocModeInfo(bname, len(bname))
@@ -648,7 +647,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def remove_screen_size(self, unsigned int w, unsigned int h):
         #TODO: instead of keeping the mode ID,
         #we should query the output and find the mode dynamically...
-        name = self.get_mode_name(w, h)
+        name = "%sx%s" % (w, h)
         cdef RRMode mode = self._added_modes.get(name, 0)
         if mode and self.remove_mode(mode):
             del self._added_modes[name]
@@ -910,10 +909,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             props["config-timestamp"] = rsc.configTimestamp
         for i in range(rsc.nmode):
             props.setdefault("modes", {})[i] = self.get_mode_info(&rsc.modes[i])
-        rroutput_map = {}
         try:
             for o in range(rsc.noutput):
-                rroutput_map[rsc.outputs[o]] = o
                 if primary and primary==rsc.outputs[o]:
                     props["primary-output"] = o
                 output_info = self.get_output_info(rsc, rsc.outputs[o])
@@ -940,7 +937,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 "height"    : m.height,
                 "mm-width"  : m.mwidth,
                 "mm-height" : m.mheight,
-                "outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
+                #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
+                "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
                 }
             props.setdefault("monitors", {})[i] = monitor_info
         XRRFreeMonitors(monitors)
@@ -976,6 +974,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeScreenResources(rsc)
 
     def set_crtc_config(self, monitor_defs):
+        log("set_crtc_config(%s)", monitor_defs)
         def dpi96(v):
             return round(v * 25.4 / 96)
         #first, find the total screen area:
@@ -987,20 +986,22 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             y = m.get("y", 0)
             screen_w = max(screen_w, x+width)
             screen_h = max(screen_h, y+height)
+        log("total screen area is: %ix%i", screen_w, screen_h)
         if not self.has_mode(screen_w, screen_h):
             self.add_screen_size(screen_w, screen_h)
-            import time
-            time.sleep(0.5)
         self.set_screen_size(screen_w, screen_h)
         self.xrr_set_screen_size(screen_w, screen_h, dpi96(screen_w), dpi96(screen_h))
         root_w, root_h = self.get_screen_size()
-        log("root size: %ix%i", root_w, root_h)
+        log("root size is now: %ix%i", root_w, root_h)
         count = len(monitor_defs)
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         cdef Status r
         if rsc==NULL:
             log.error("Error: cannot access screen resources")
+            return False
+        if max(monitor_defs.keys())>=rsc.ncrtc or min(monitor_defs.keys())<0:
+            log.error("Error: invalid monitor indexes in %s", csv(monitor_defs.keys()))
             return False
         if rsc.ncrtc<count:
             log.error("Error: only %i crtcs for %i monitors", rsc.ncrtc, count)
@@ -1011,136 +1012,155 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef RRMode mode
         cdef int nmonitors
         cdef RRCrtc crtc
-        cdef XRRCrtcInfo *crtc_info
+        cdef XRRCrtcInfo *crtc_info = NULL
         cdef RROutput output
-        cdef XRROutputInfo *output_info
+        cdef XRROutputInfo *output_info = NULL
         cdef XRRMonitorInfo *monitors
         cdef XRRMonitorInfo *monitor
         primary = 0
         try:
-            for mi, m in monitor_defs.items():
-                assert mi<count, "invalid monitor index %i" % mi
-
-                if m.get("primary", False):
-                    primary = mi
-
-                #configure an output for each monitor:
-                width = m.get("width", 0)
-                height = m.get("height", 0)
-                x = m.get("x", 0)
-                y = m.get("y", 0)
-                mmw = m.get("mm-width", dpi96(width))
-                mmh = m.get("mm-height", dpi96(height))
-
-                output = rsc.outputs[mi]
-                output_info = XRRGetOutputInfo(self.display, rsc, output)
-                if not output_info:
-                    log.error("Error: output %i not found (%#x)", mi, output)
-                    continue
-                mode = 0
-                #find an existing mode matching this resolution:
-                for j in range(output_info.nmode):
-                    #find this RRMode in the screen modes info:
-                    for k in range(rsc.nmode):
-                        if rsc.modes[k].id==output_info.modes[j] and rsc.modes[k].width==width and rsc.modes[k].height==height:
-                            mode = output_info.modes[j]
-                            log("using existing output mode %#x for %ix%i", mode, width, height)
-                            break
-                    if mode:
-                        break
-                XRRFreeOutputInfo(output_info)
-                if mode==0:
-                    #try to find a screen mode:
-                    for j in range(rsc.nmode):
-                        if rsc.modes[j].width==width and rsc.modes[j].height==height:
-                            mode = rsc.modes[j].id
-                            log("using screen mode %#x for %ix%i", rsc.modes[j].id, width, height)
-                            break
-                    if not mode:
-                        mode = self.do_add_screen_size(width, height, output)
-                    assert mode!=0, "mode %ix%i not found" % (width, height)
-                    XRRAddOutputMode(self.display, output, mode)
-                    log("mode %#x added to output %i", mode, mi)
-
-                crtc = rsc.crtcs[mi]
-                r = XRRSetCrtcConfig(self.display, rsc, crtc,
-                      CurrentTime, x, y, mode,
-                      RR_Rotate_0, &output, 1)
-                if r:
-                    raise Exception("failed to set crtc config for monitor %i" % mi)
-                self.set_output_int_property(mi, "WIDTH_MM", mmw)
-                self.set_output_int_property(mi, "HEIGHT_MM", mmh)
-                posinfo = ""
-                if x or y:
-                    posinfo = " at %i,%i" % (x, y)
-                log.info("setting dummy crtc %i to %ix%i (%ix%i mm)%s", mi, width, height, mmw, mmh, posinfo)
-            #we may need to disable some crtcs that were enabled with a prior config:
-            log("ncrtc=%i", rsc.ncrtc)
+            #re-configure all crtcs:
             for mi in range(rsc.ncrtc):
-                log("monitor(%i)=%s", mi, monitor_defs.get(mi))
-                if monitor_defs.get(mi):
-                    #we've configured this one above
-                    log("crtc %i is already configured", mi)
-                    continue
+                m = monitor_defs.get(mi, {})
                 crtc = rsc.crtcs[mi]
-                crtc_info = XRRGetCrtcInfo(self.display, rsc, crtc)
-                if crtc_info==NULL:
-                    log.warn("Warning: no CRTC info for %i", crtc)
-                    continue
-                if crtc_info.noutput==0:
-                    #it is already disabled
-                    log("crtc %i is already disabled", mi)
-                    XRRFreeCrtcInfo(crtc_info)
-                    continue
-                XRRFreeCrtcInfo(crtc_info)
+                assert rsc.noutput>mi
                 output = rsc.outputs[mi]
-                output_info = XRRGetOutputInfo(self.display, rsc, output)
-                if not output_info:
-                    log.error("Error: output %i not found (%#x)", mi, output)
+                log("monitor %i is crtc %i and output %i: %s", mi, crtc, output, m)
+                crtc_info = XRRGetCrtcInfo(self.display, rsc, crtc)
+                if not crtc_info:
+                    log.error("Error: crtc %i not found (%#x)", mi, crtc)
                     continue
-                #re-configure it to try to prevent problems:
-                # * use no outputs,
-                # * default location,
-                # * smallest mode possible
-                mode = 0
-                mode_size = 0
-                for j in range(output_info.nmode):
-                    size = output_info.modes[j].width*output_info.modes[j].height
-                    if mode_size==0 or size<mode_size:
-                        mode = output_info.modes[j].id
-                XRRFreeOutputInfo(output_info)
-                r = XRRSetCrtcConfig(self.display, rsc, crtc,
-                      CurrentTime, 0, 0, mode,
-                      RR_Rotate_0, &output, 0)
-                if r:
-                    raise Exception("failed to set crtc config for monitor %i" % mi)
-                log.info("disabled dummy crtc %i", mi)
+                try:
+                    if m.get("primary", False):
+                        primary = mi
+                    width = m.get("width", 0)
+                    height = m.get("height", 0)
+
+                    output_info = XRRGetOutputInfo(self.display, rsc, output)
+                    if not output_info:
+                        log.error("Error: output %i not found (%#x)", mi, output)
+                        continue
+                    if crtc_info.noutput==0 and output_info.connection==RR_Disconnected and not m:
+                        #crtc is not enabled and the corresponding output is not connected,
+                        #which is exactly what we want, so just leave it alone
+                        log("crtc and output %i are already disabled", mi)
+                        continue
+                    noutput = 1
+                    mode = 0
+                    if m:
+                        #find an existing mode matching this resolution:
+                        for j in range(output_info.nmode):
+                            #find this RRMode in the screen modes info:
+                            for k in range(rsc.nmode):
+                                if rsc.modes[k].id==output_info.modes[j] and rsc.modes[k].width==width and rsc.modes[k].height==height:
+                                    mode = output_info.modes[j]
+                                    mode_name = bytestostr(rsc.modes[j].name)
+                                    log("using existing output mode %r (%#x) for %ix%i",
+                                        mode_name, mode, width, height)
+                                    break
+                            if mode:
+                                break
+                        if not mode:
+                            #try to find a screen mode not added to this output yet:
+                            mode_name = ""
+                            for j in range(rsc.nmode):
+                                if rsc.modes[j].width==width and rsc.modes[j].height==height:
+                                    mode = rsc.modes[j].id
+                                    mode_name = bytestostr(rsc.modes[j].name)
+                                    log("using screen mode %s (%#x) for %ix%i",
+                                        mode_name, mode, width, height)
+                                    break
+                            if not mode:
+                                mode_name = "%sx%s" % (width, height)
+                                mode = self.do_add_screen_size(mode_name, width, height)
+                            assert mode!=0, "mode %ix%i not found" % (width, height)
+                            XRRAddOutputMode(self.display, output, mode)
+                            log("mode %r (%#x) added to output %i (%i)", mode_name, mode, mi, output)
+                    else:
+                        noutput = 0
+
+                    x = m.get("x", 0)
+                    y = m.get("y", 0)
+                    log("XRRSetCrtcConfig(%#x, %#x, %i, %i, %i, %i, %i, %i, %#x, %i)",
+                            <uintptr_t> self.display, <uintptr_t> rsc, crtc,
+                            CurrentTime, x, y, mode, RR_Rotate_0, <uintptr_t> &output, noutput)
+                    r = XRRSetCrtcConfig(self.display, rsc, crtc,
+                          CurrentTime, x, y, mode,
+                          RR_Rotate_0, &output, noutput)
+                    if r:
+                        raise Exception("failed to set crtc config for monitor %i" % mi)
+                    mmw = m.get("mm-width", dpi96(width))
+                    mmh = m.get("mm-height", dpi96(height))
+                    self.set_output_int_property(mi, "WIDTH_MM", mmw)
+                    self.set_output_int_property(mi, "HEIGHT_MM", mmh)
+                    #this allows us to disconnect the output of this crtc:
+                    self.set_output_int_property(mi, "SUSPENDED", not bool(m))
+                    posinfo = ""
+                    if x or y:
+                        posinfo = " at %i,%i" % (x, y)
+                    log.info("setting dummy crtc %i to %ix%i (%ix%i mm)%s", mi, width, height, mmw, mmh, posinfo)
+                finally:
+                    if output_info:
+                        XRRFreeOutputInfo(output_info)
+                        output_info = NULL
+                    if crtc_info:
+                        XRRFreeCrtcInfo(crtc_info)
+                        crtc_info = NULL
             self.XSync()
             #now configure the monitors
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            if not monitors:
+                log.error("Error: failed to retrieve the list of monitors")
+                return False
+            #start by removing the ones we don't use,
+            #which makes it easier to prevent name Atom conflicts
+            try:
+                for mi in range(nmonitors):
+                    monitor = &monitors[mi]
+                    if mi not in monitor_defs:
+                        log("deleting monitor %i: %s", mi, self.XGetAtomName(monitor.name))
+                        XRRDeleteMonitor(self.display, window, monitor.name)
+                    else:
+                        #use a temporary name that won't conflict:
+                        monitor.name = self.xatom("DUMMY%i-%s" % (mi, monotonic()))
+                        XRRSetMonitor(self.display, window, monitor)
+            finally:
+                XRRFreeMonitors(monitors)
+            self.XSync()
+            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            if not monitors:
+                log.error("Error: failed to retrieve the list of monitors")
+                return False
             names = {}
             for mi in range(nmonitors):
                 names[mi] = bytestostr(self.XGetAtomName(monitors[mi].name))
-            log("found %i active monitors: %s", nmonitors, csv(names.values()))
+            log("found %i monitors still active: %s", nmonitors, csv(names.values()))
             try:
-                for mi, m in monitor_defs.items():
-                    if mi>=nmonitors:
-                        log.error("Error: only %i monitors found", nmonitors)
+                for mi in range(nmonitors):
+                    m = monitor_defs.get(mi, {})
+                    if not m:
+                        log.warn("Warning: no monitor definition for index %i", mi)
                         continue
                     monitor = &monitors[mi]
-                    name = prettify_plug_name(m.get("name", "")) or ("%i" % mi)
+                    log("setting monitor %i: %s", mi, m)
+                    name = (prettify_plug_name(m.get("name", "")) or ("DUMMY%i" % mi))
+                    while name in names.values() and names.get(mi)!=name:
+                        name += "-%i" % mi
+                    names[mi] = name
                     monitor.name = self.xatom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
                     monitor.x = m.get("x", 0)
                     monitor.y = m.get("y", 0)
-                    monitor.width = m.get("width", 0)
-                    monitor.height = m.get("height", 0)
+                    monitor.width = m.get("width", 128)
+                    monitor.height = m.get("height", 128)
                     monitor.mwidth = m.get("mm-width", dpi96(monitor.width))
                     monitor.mheight = m.get("mm-height", dpi96(monitor.height))
+                    assert rsc.noutput>mi, "only %i outputs, cannot set %i" % (rsc.noutput, mi)
                     output = rsc.outputs[mi]
                     monitor.outputs = &output
-                    monitor.noutput = 1
+                    monitor.noutput = 1 if m else 0
+                    log("XRRSetMonitor(%#x, %#x, %#x)", <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> monitor)
                     XRRSetMonitor(self.display, window, monitor)
                     log.info("monitor %i is %r %ix%i", mi, name, monitor.width, monitor.height)
                     self.XSync()
