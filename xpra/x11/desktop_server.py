@@ -310,11 +310,10 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def x11_init(self):
         X11ServerBase.x11_init(self)
         display = Gdk.Display.get_default()
-        screens = display.get_n_screens()
-        for n in range(screens):
-            screen = display.get_screen(n)
-            root = screen.get_root_window()
-            add_event_receiver(root, self)
+        assert display.get_n_screens()==1
+        screen = display.get_screen(0)
+        root = screen.get_root_window()
+        add_event_receiver(root, self)
         add_catchall_receiver("xpra-motion-event", self)
         add_catchall_receiver("xpra-xkb-event", self)
         with xlog:
@@ -456,6 +455,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             capabilities.update({
                                  "pointer.grabs"    : True,
                                  "desktop"          : True,
+                                 "multi-monitors"   : True,
                                  })
             updict(capabilities, "window", {
                 "decorations"            : True,
@@ -469,17 +469,15 @@ class XpraDesktopServer(DesktopServerBaseClass):
         #at present, just one  window is forwarded:
         #the root window covering the whole display
         display = Gdk.Display.get_default()
-        screens = display.get_n_screens()
+        screen = display.get_screen(0)
         with xsync:
-            for n in range(screens):
-                screen = display.get_screen(n)
-                root = screen.get_root_window()
-                model = DesktopModel(root, self.randr_exact_size)
-                model.setup()
-                windowlog("adding root window model %s", model)
-                super()._add_new_window_common(model)
-                model.managed_connect("client-contents-changed", self._contents_changed)
-                model.managed_connect("resized", self._window_resized_signaled)
+            root = screen.get_root_window()
+            model = DesktopModel(root, self.randr_exact_size)
+            model.setup()
+            windowlog("adding root window model %s", model)
+            super()._add_new_window_common(model)
+            model.managed_connect("client-contents-changed", self._contents_changed)
+            model.managed_connect("resized", self._window_resized_signaled)
 
 
     def _window_resized_signaled(self, window):
