@@ -895,6 +895,30 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         XRRFreeCrtcInfo(ci)
         return info
 
+    def get_monitor_properties(self):
+        cdef int nmonitors
+        cdef Window window = XDefaultRootWindow(self.display)
+        cdef XRRMonitorInfo *monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+        cdef XRRMonitorInfo *m
+        props = {}
+        for i in range(nmonitors):
+            m = &monitors[i]
+            props[i] = {
+                "name"      : bytestostr(self.XGetAtomName(m.name)),
+                "primary"   : bool(m.primary),
+                "automatic" : bool(m.automatic),
+                "x"         : m.x,
+                "y"         : m.y,
+                "width"     : m.width,
+                "height"    : m.height,
+                "mm-width"  : m.mwidth,
+                "mm-height" : m.mheight,
+                #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
+                "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
+                }
+        XRRFreeMonitors(monitors)
+        return props
+
     def get_all_screen_properties(self):
         self.context_check()
         cdef Window window = XDefaultRootWindow(self.display)
@@ -922,26 +946,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     props.setdefault("crtcs", {})[crtc] = crtc_info
         finally:
             XRRFreeScreenResources(rsc)
-        cdef int nmonitors
-        cdef XRRMonitorInfo *monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
-        cdef XRRMonitorInfo *m
-        for i in range(nmonitors):
-            m = &monitors[i]
-            monitor_info = {
-                "name"      : bytestostr(self.XGetAtomName(m.name)),
-                "primary"   : bool(m.primary),
-                "automatic" : bool(m.automatic),
-                "x"         : m.x,
-                "y"         : m.y,
-                "width"     : m.width,
-                "height"    : m.height,
-                "mm-width"  : m.mwidth,
-                "mm-height" : m.mheight,
-                #"outputs"   : tuple(rroutput_map.get(m.outputs[j], 0) for j in range(m.noutput)),
-                "outputs"   : tuple(m.outputs[j] for j in range(m.noutput)),
-                }
-            props.setdefault("monitors", {})[i] = monitor_info
-        XRRFreeMonitors(monitors)
+        props["monitors"] = self.get_monitor_properties()
         return props
 
 
