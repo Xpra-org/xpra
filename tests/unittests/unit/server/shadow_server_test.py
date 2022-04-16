@@ -92,7 +92,7 @@ class ShadowServerTest(ServerTestUtil):
 			def get_info(self):
 				return {"type" : "fake"}
 		window = FakeRootWindow()
-		rwm = RootWindowModel(window, FakeCapture())
+		rwm = RootWindowModel(window, FakeCapture(), geometry=window.get_geometry()[:4])
 		assert repr(rwm)
 		assert rwm.get_info()
 		rwm.get_default_window_icon(32)
