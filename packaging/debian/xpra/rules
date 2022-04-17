@@ -6,7 +6,7 @@ export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
 NPROC := $(shell nproc 2> /dev/null || echo 1)
 
-BUILDOPTS := --without-Xdummy --without-Xdummy_wrapper --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ $(EXTRA_BUILDOPTS)
+BUILDOPTS := --pkg-config-path=/usr/lib/xpra/pkgconfig --rpath=/usr/lib/xpra/ $(EXTRA_BUILDOPTS)
 
 %:
 	dh $@ --with python3 --with systemd --without=build-stamp
