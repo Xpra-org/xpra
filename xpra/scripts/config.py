@@ -95,21 +95,21 @@ def get_Xdummy_confdir():
     return base+"/xorg.conf.d/$PID"
 
 def get_Xdummy_command(xorg_cmd="Xorg", log_dir="${XPRA_SESSION_DIR}", xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf"):
-    cmd = [xorg_cmd]    #ie: ["Xorg"] or ["xpra_Xdummy"] or ["./install/bin/xpra_Xdummy"]
-    cmd += [
-          "-noreset", "-novtswitch",
-          "-nolisten", "tcp",
-          "+extension", "GLX",
-          "+extension", "RANDR",
-          "+extension", "RENDER",
-          "-auth", "$XAUTHORITY",
-          "-logfile", "%s/Xorg.log" % log_dir,
-          #must be specified with some Xorg versions (ie: arch linux)
-          #this directory can store xorg config files, it does not need to be created:
-          "-configdir", '"%s"' % get_Xdummy_confdir(),
-          "-config", '"%s"' % xorg_conf,
-          ]
-    return cmd
+    return [
+        #ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
+        xorg_cmd,
+        "-noreset", "-novtswitch",
+        "-nolisten", "tcp",
+        "+extension", "GLX",
+        "+extension", "RANDR",
+        "+extension", "RENDER",
+        "-auth", "$XAUTHORITY",
+        "-logfile", "%s/Xorg.log" % log_dir,
+        #must be specified with some Xorg versions (ie: arch linux)
+        #this directory can store xorg config files, it does not need to be created:
+        "-configdir", '"%s"' % get_Xdummy_confdir(),
+        "-config", '"%s"' % xorg_conf,
+        ]
 
 def get_Xvfb_command(width=8192, height=4096, dpi=96):
     cmd = ["Xvfb",
@@ -127,7 +127,11 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96):
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
                         Xdummy_ENABLED=None, Xdummy_wrapper_ENABLED=None, warn_fn=warn):
-    #returns the xvfb command to use
+    """
+    This function returns the xvfb command to use.
+    It can either be an `Xvfb` command or one that uses `Xdummy`,
+    depending on the platform and file attributes.
+    """
     if WIN32:   # pragma: no cover
         return ""
     if OSX:     # pragma: no cover
@@ -150,68 +154,68 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
         if get_distribution_version_id()=="9":
             return get_Xvfb_command()
 
-    xorg_bin = get_xorg_bin()
-    def Xorg_suid_check():
-        if Xdummy_wrapper_ENABLED is not None:
-            #honour what was specified:
-            use_wrapper = Xdummy_wrapper_ENABLED
-        elif not xorg_bin:
-            if warn_fn:
-                warn_fn("Warning: Xorg binary not found, assuming the wrapper is needed!")
-            use_wrapper = True
-        else:
-            #auto-detect
-            import stat
-            xorg_stat = os.stat(xorg_bin)
-            if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-                if (xorg_stat.st_mode & stat.S_IROTH)==0:
-                    if warn_fn:
-                        warn_fn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
-                    return get_Xvfb_command()
-                debug("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
-                use_wrapper = True
-            else:
-                use_wrapper = False
-        xorg_conf = "${XORG_CONFIG_PREFIX}"+os.path.join(conf_dir, "xorg.conf")
-        if use_wrapper:
-            xorg_cmd = "xpra_Xdummy"
-        else:
-            xorg_cmd = xorg_bin or "Xorg"
-        #so we can run from install dir:
-        if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
-            if bin_dir not in os.environ.get("PATH", "/bin:/usr/bin:/usr/local/bin").split(os.pathsep):
-                xorg_cmd = os.path.join(bin_dir, xorg_cmd)
-        return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf)
-
     if Xdummy_ENABLED is False:
         return get_Xvfb_command()
-    if Xdummy_ENABLED is True:
-        return Xorg_suid_check()
-    debug("Xdummy support unspecified, will try to detect")
-    return Xorg_suid_check()
+
+    if Xdummy_ENABLED is None:
+        debug("Xdummy support unspecified, will try to detect")
+    return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
+
+def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir=None,
+                          Xdummy_wrapper_ENABLED=None, warn_fn=warn):
+    print("detect_xdummy_command%s" % ((conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn),))
+    xorg_bin = get_xorg_bin()
+    if Xdummy_wrapper_ENABLED is not None:
+        #honour what was specified:
+        use_wrapper = Xdummy_wrapper_ENABLED
+    elif not xorg_bin:
+        if warn_fn:
+            warn_fn("Warning: Xorg binary not found, assuming the wrapper is needed!")
+        use_wrapper = True
+    else:
+        #auto-detect
+        import stat
+        xorg_stat = os.stat(xorg_bin)
+        if (xorg_stat.st_mode & stat.S_ISUID)!=0:
+            if (xorg_stat.st_mode & stat.S_IROTH)==0:
+                if warn_fn:
+                    warn_fn("%s is suid and not readable, Xdummy support unavailable" % xorg_bin)
+                return get_Xvfb_command()
+            debug("%s is suid and readable, using the xpra_Xdummy wrapper" % xorg_bin)
+            use_wrapper = True
+        else:
+            use_wrapper = False
+    xorg_conf = "${XORG_CONFIG_PREFIX}"+os.path.join(conf_dir, "xorg.conf")
+    if use_wrapper:
+        xorg_cmd = "xpra_Xdummy"
+    else:
+        xorg_cmd = xorg_bin or "Xorg"
+    #so we can run from install dir:
+    if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
+        if bin_dir not in os.environ.get("PATH", "/bin:/usr/bin:/usr/local/bin").split(os.pathsep):
+            xorg_cmd = os.path.join(bin_dir, xorg_cmd)
+    return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf)
 
 
-def xvfb_cmd_str(xvfb, wrap=False):
+def wrap_cmd_str(cmd):
     xvfb_str = ""
-    while xvfb:
+    cr = " \\\n    "
+    while cmd:
         s = ""
-        while xvfb:
-            item = xvfb[0]
+        while cmd:
+            item = cmd[0]
             l = len(item)
-            if (item.startswith("-") or item.startswith("+")) and len(xvfb)>1:
-                l += len(xvfb[1])
+            if (item.startswith("-") or item.startswith("+")) and len(cmd)>1:
+                l += len(cmd[1])
             if s and len(s)+l>55:
                 break
-            v = xvfb.pop(0)
+            v = cmd.pop(0)
             if not s:
                 s += v
             else:
                 s += " "+v
         if xvfb_str:
-            if wrap:
-                xvfb_str += " \\\n    "
-            else:
-                xvfb_str += " "
+            xvfb_str += cr
         xvfb_str += s
     return xvfb_str
 
@@ -909,7 +913,7 @@ def get_defaults():
         if conf_dir and os.path.exists(conf_dir):
             break
     xvfb = detect_xvfb_command(conf_dir, bin_dir, warn_fn=None)
-    xvfb_str = xvfb_cmd_str(xvfb)
+    xdummy = detect_xdummy_command(conf_dir, bin_dir, warn_fn=None)
 
     ssl_protocol = "TLSv1_2"
 
@@ -955,7 +959,8 @@ def get_defaults():
                     "systemd-run"       : get_default_systemd_run(),
                     "systemd-run-args"  : "",
                     "system-proxy-socket" : SYSTEM_PROXY_SOCKET,
-                    "xvfb"              : xvfb_str,
+                    "xvfb"              : " ".join(xvfb),
+                    "xdummy"            : " ".join(xdummy),
                     "chdir"             : "",
                     "socket-dir"        : "",
                     "sessions-dir"      : get_sessions_dir(),

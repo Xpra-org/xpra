@@ -848,10 +848,16 @@ def detect_xorg_setup(install_dir=None):
     conf_dir = get_conf_dir(install_dir)
     return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
+def detect_xdummy_setup(install_dir=None):
+    from xpra.scripts import config
+    config.debug = config.warn
+    conf_dir = get_conf_dir(install_dir)
+    return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
+
 def build_xpra_conf(install_dir):
-    print("build_xpra_conf(%s)" % install_dir)
     #generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
+    xdummy_command = detect_xdummy_setup(install_dir)
     fake_xinerama = "no"
     if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
         from xpra.x11.fakeXinerama import find_libfakeXinerama
@@ -868,7 +874,7 @@ def build_xpra_conf(install_dir):
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
-        xvfb_cmd_str,
+        wrap_cmd_str,
         get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
         )
@@ -900,7 +906,8 @@ def build_xpra_conf(install_dir):
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
-            'xvfb_command'          : xvfb_cmd_str(xvfb_command, wrap=True),
+            'xvfb_command'          : wrap_cmd_str(xvfb_command),
+            'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
             'fake_xinerama'         : fake_xinerama,
             'ssh_command'           : "auto",
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
@@ -1580,7 +1587,7 @@ else:
         def run(self):
             try:
                 build_base = self.distribution.command_obj['build'].build_base
-            except:
+            except Exception:
                 build_base = self.build_base
             build_xpra_conf(build_base)
 
