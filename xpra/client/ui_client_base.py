@@ -477,11 +477,9 @@ class UIXpraClient(ClientBaseClass):
             if v:
                 w, h = v
                 ss = c.tupleget("screen_sizes")
+                log.info(" remote desktop size is %sx%s", w, h)
                 if ss:
-                    log.info(" remote desktop size is %sx%s with %s screen%s:", w, h, len(ss), engs(ss))
                     log_screen_sizes(w, h, ss)
-                else:
-                    log.info(" remote desktop size is %sx%s", w, h)
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")
