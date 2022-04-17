@@ -18,7 +18,7 @@ from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
 from xpra.log import Logger
 
-log = Logger("x11", "window")
+log = Logger("x11", "window", "damage")
 
 XImage = XImageBindings()
 X11Window = X11WindowBindings()
