@@ -864,7 +864,8 @@ class X11ServerCore(GTKServerBase):
         wid = 0
         for ss in self.window_sources():
             name = strtobytes(event.bell_name or "")
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
+            ss.bell(wid, event.device, event.percent,
+                    event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def _bell_signaled(self, wm, event):
@@ -877,7 +878,8 @@ class X11ServerCore(GTKServerBase):
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self.window_sources():
             name = strtobytes(event.bell_name or "")
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
+            ss.bell(wid, event.device, event.percent,
+                    event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def setup_input_devices(self):
