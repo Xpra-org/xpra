@@ -63,7 +63,12 @@ Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,openssl
 #we need a vfb: either Xdummy or Xvfb
 #        ,xserver-xorg-video-dummy | xserver-xorg-video-dummy-hwe
-        ,xvfb
+        ,xvfb,
+#buster:        ,xserver-xorg-video-dummy
+#bullseye:        ,xserver-xorg-video-dummy
+#bookworm:        ,xserver-xorg-video-dummy
+#trixie:        ,xserver-xorg-video-dummy
+#sid:        ,xserver-xorg-video-dummy
         ,keyboard-configuration
 # for notifications forwarding and dbus server / proxying:
 Recommends: python3-dbus
