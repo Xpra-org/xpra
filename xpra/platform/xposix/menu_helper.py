@@ -177,7 +177,7 @@ def find_resources_icon(*names):
 def find_pixmap_icon(*names):
     if not LOAD_FROM_PIXMAPS:
         return None
-    pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS").split(":")]
+    pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
     pixmaps_dir = "%s/share/pixmaps" % sys.prefix
     pixmaps_dirs += (pixmaps_dir, os.path.join(pixmaps_dir, "comps"))
     for d in pixmaps_dirs:
