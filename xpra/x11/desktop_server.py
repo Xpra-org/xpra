@@ -27,6 +27,7 @@ from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
+from xpra.rectangle import rectangle
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
@@ -43,12 +44,13 @@ screenlog = Logger("screen")
 iconlog = Logger("icon")
 
 MODIFY_GSETTINGS = envbool("XPRA_MODIFY_GSETTINGS", True)
+MULTI_MONITORS = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
 class DesktopModel(WindowModelStub, WindowDamageHandler):
-    __gsignals__ = {}
-    __gsignals__.update(WindowDamageHandler.__common_gsignals__)
-    __gsignals__.update({
+    __common_gsignals__ = {}
+    __common_gsignals__.update(WindowDamageHandler.__common_gsignals__)
+    __common_gsignals__.update({
                          "resized"                  : no_arg_signal,
                          "client-contents-changed"  : one_arg_signal,
                          })
@@ -75,30 +77,24 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
 
 
     _property_names         = [
-        "xid", "client-machine", "window-type",
+        "client-machine", "window-type",
         "shadow", "size-hints", "class-instance",
         "focused", "title", "depth", "icons",
         "content-type",
+        "set-initial-position",
         ]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
-    def __init__(self, root, resize_exact=False):
+    def __init__(self, root):
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
-        self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
-        self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
         self.update_icon()
-        self.resize_exact = resize_exact
-
-    def __repr__(self):
-        return "DesktopModel(%#x)" % self.client_window.get_xid()
+        self.resize_timer = None
+        self.resize_value = None
 
 
     def setup(self):
         WindowDamageHandler.setup(self)
-        screen = self.client_window.get_screen()
-        screen.connect("size-changed", self._screen_size_changed)
-        self.update_size_hints(screen)
         self._depth = X11Window.get_depth(self.client_window.get_xid())
         self._managed = True
         self._setup_done = True
@@ -106,16 +102,8 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     def unmanage(self, exiting=False):
         WindowDamageHandler.destroy(self)
         WindowModelStub.unmanage(self, exiting)
+        self.cancel_resize_timer()
         self._managed = False
-        rpw = self.root_prop_watcher
-        if rpw:
-            self.root_prop_watcher = None
-            rpw.cleanup()
-
-    def root_prop_changed(self, watcher, prop):
-        iconlog("root_prop_changed(%s, %s)", watcher, prop)
-        if self.update_wm_name():
-            self.update_icon()
 
     def update_wm_name(self):
         try:
@@ -145,16 +133,8 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             iconlog("failed to return window icon", exc_info=True)
         return self._updateprop("icons", icons)
 
-
-    def get_geometry(self):
-        return self.client_window.get_geometry()[:4]
-
-    def get_dimensions(self):
-        return self.client_window.get_geometry()[2:4]
-
     def uses_XShm(self):
         return bool(self._xshm_handle)
-
 
     def get_default_window_icon(self, _size):
         icon_name = get_generic_os_name()+".png"
@@ -163,14 +143,14 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return None
         return icon.get_width(), icon.get_height(), "RGBA", icon.get_pixels()
 
+    def get_title(self):
+        return get_wm_name() or "xpra desktop"
 
     def get_property(self, prop):
-        if prop=="xid":
-            return int(self.client_window.get_xid())
         if prop=="depth":
             return self._depth
         if prop=="title":
-            return get_wm_name() or "xpra desktop"
+            return self.get_title()
         if prop=="client-machine":
             return socket.gethostname()
         if prop=="window-type":
@@ -181,7 +161,88 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
             return ("xpra-desktop", "Xpra-Desktop")
         if prop=="content-type":
             return "desktop"
+        if prop=="set-initial-position":
+            return False
         return GObject.GObject.get_property(self, prop)
+
+    def do_xpra_damage_event(self, event):
+        self.emit("client-contents-changed", event)
+
+
+    def resize(self, w, h):
+        geomlog("resize(%i, %i)", w, h)
+        if not RandR.has_randr():
+            geomlog.error("Error: cannot honour resize request,")
+            geomlog.error(" no RandR support on this display")
+            return
+        #FIXME: small race if the user resizes with randr,
+        #at the same time as he resizes the window..
+        self.resize_value = (w, h)
+        if not self.resize_timer:
+            self.resize_timer = self.timeout_add(250, self.do_resize)
+
+    def do_resize(self):
+        raise NotImplementedError
+
+    def cancel_resize_timer(self):
+        rt = self.resize_timer
+        if rt:
+            self.resize_timer = None
+            self.source_remove(rt)
+
+
+class ScreenDesktopModel(DesktopModel):
+    """
+    A desktop model covering the entire screen as a single window.
+    """
+    __gsignals__ = dict(DesktopModel.__common_gsignals__)
+    _property_names         = DesktopModel._property_names+["xid"]
+    _dynamic_property_names = ["size-hints", "title", "icons"]
+
+    def __init__(self, root, resize_exact=False):
+        super().__init__(root)
+        self.resize_exact = resize_exact
+
+    def __repr__(self):
+        return "ScreenDesktopModel(%#x)" % self.client_window.get_xid()
+
+
+    def setup(self):
+        super().setup()
+        screen = self.client_window.get_screen()
+        screen.connect("size-changed", self._screen_size_changed)
+        self.update_size_hints(screen)
+
+
+    def get_geometry(self):
+        return self.client_window.get_geometry()[:4]
+
+    def get_dimensions(self):
+        return self.client_window.get_geometry()[2:4]
+
+
+    def get_property(self, prop):
+        if prop=="xid":
+            return int(self.client_window.get_xid())
+        return super().get_property(prop)
+
+
+    def do_resize(self):
+        self.resize_timer = None
+        rw, rh = self.resize_value
+        try:
+            with xsync:
+                ow, oh = RandR.get_screen_size()
+            w, h = self.set_screen_size(rw, rh, False)
+            if (ow, oh) == (w, h):
+                #this is already the resolution we have,
+                #but the client has other ideas,
+                #so tell the client we ain't budging:
+                self.emit("resized")
+        except Exception as e:
+            geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
+            geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
+            geomlog.error(" %s", str(e) or type(e))
 
     def _screen_size_changed(self, screen):
         w, h = screen.get_width(), screen.get_height()
@@ -255,12 +316,81 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         screenlog("size-hints=%s", size_hints)
         self._updateprop("size-hints", size_hints)
 
+GObject.type_register(ScreenDesktopModel)
+
+
+class MonitorDesktopModel(DesktopModel):
+    """
+    A desktop model representing a single monitor
+    """
+    __gsignals__ = dict(DesktopModel.__common_gsignals__)
+
+    def __repr__(self):
+        return "MonitorDesktopModel(%s)" % (self.monitor_geometry,)
+
+    def __init__(self, root, monitor):
+        super().__init__(root)
+        self.monitor = monitor
+        x = monitor.get("x", 0)
+        y = monitor.get("y", 0)
+        width = monitor.get("width", 0)
+        height = monitor.get("height", 0)
+        self.monitor_geometry = (x, y, width, height)
+        self._updateprop("size-hints", {
+            "minimum-size"          : (640, 350),
+            "maximum-size"          : (8192, 8192),
+            })
+
+    def get_title(self):
+        title = get_wm_name()  # pylint: disable=assignment-from-none
+        name = self.monitor.get("name", "")
+        if name:
+            if not title:
+                return name
+            title += " on %s" % name
+        return title
+
+    def get_geometry(self):
+        return self.monitor_geometry
+
+    def get_dimensions(self):
+        return self.monitor_geometry[2:4]
+
 
     def do_xpra_damage_event(self, event):
-        self.emit("client-contents-changed", event)
+        #ie: <X11:DamageNotify {'send_event': '0', 'serial': '0x4da', 'delivered_to': '0x56e', 'window': '0x56e',
+        #                       'damage': '2097157', 'x': '313', 'y': '174', 'width': '6', 'height': '13'}>)
+        damaged_area = rectangle(event.x, event.y, event.width, event.height)
+        x, y, width, height = self.monitor_geometry
+        monitor_damaged_area = damaged_area.intersection(x, y, width, height)
+        if monitor_damaged_area:
+            #return an event relative to this monitor's coordinates:
+            event.x = monitor_damaged_area.x-x
+            event.y = monitor_damaged_area.y-y
+            event.width = monitor_damaged_area.width
+            event.height = monitor_damaged_area.height
+            self.emit("client-contents-changed", event)
 
-GObject.type_register(DesktopModel)
+    def get_image(self, x, y, width, height):
+        #adjust the coordinates with the monitor's position:
+        mx, my = self.monitor_geometry[:2]
+        #log.error("get_image%s adjusted by %s", (x, y, width, height), (mx, my))
+        image = super().get_image(mx+x, my+y, width, height)
+        if image:
+            image.set_target_x(x)
+            image.set_target_y(y)
+        return image
 
+
+    def do_resize(self):
+        self.resize_timer = None
+        rw, rh = self.resize_value
+        #TODO: re-configure just this one crtc + output + monitor
+        RandR.set_crtc_config()
+        self.monitor_geometry = [0, 0, rw, rh]
+
+
+GObject.type_register(MonitorDesktopModel)
 
 
 DESKTOPSERVER_BASES = [GObject.GObject]
@@ -290,9 +420,12 @@ class XpraDesktopServer(DesktopServerBaseClass):
             if c!=X11ServerBase:
                 c.__init__(self)
         self.session_type = "desktop"
-        self.resize_timer = None
-        self.resize_value = None
+        self.multi_monitors = False
+        if MULTI_MONITORS:
+            with xlog:
+                self.multi_monitors = RandR.is_dummy16()
         self.gsettings_modified = {}
+        self.root_prop_watcher = None
 
     def init(self, opts):
         for c in DESKTOPSERVER_BASES:
@@ -302,7 +435,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def server_init(self):
         X11ServerBase.server_init(self)
         screenlog("server_init() randr=%s", self.randr)
-        if self.randr:
+        if self.randr and not self.multi_monitors:
             from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_DESKTOP_VFB_RESOLUTION
             with xlog:
                 set_initial_resolution(self.initial_resolution or DEFAULT_DESKTOP_VFB_RESOLUTION)
@@ -320,6 +453,15 @@ class XpraDesktopServer(DesktopServerBaseClass):
             X11Keyboard.selectBellNotification(True)
         if MODIFY_GSETTINGS:
             self.modify_gsettings()
+        self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
+        self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
+
+    def root_prop_changed(self, watcher, prop):
+        iconlog("root_prop_changed(%s, %s)", watcher, prop)
+        for window in self._id_to_window.values():
+            window.update_wm_name()
+            window.update_icon()
+
 
     def modify_gsettings(self):
         #try to suspend animations:
@@ -352,11 +494,14 @@ class XpraDesktopServer(DesktopServerBaseClass):
         return modified
 
     def do_cleanup(self):
-        self.cancel_resize_timer()
         remove_catchall_receiver("xpra-motion-event", self)
         X11ServerBase.do_cleanup(self)
         if MODIFY_GSETTINGS:
             self.restore_gsettings()
+        rpw = self.root_prop_watcher
+        if rpw:
+            self.root_prop_watcher = None
+            rpw.cleanup()
 
     def restore_gsettings(self):
         self.do_modify_gsettings(self.gsettings_modified, True)
@@ -375,8 +520,9 @@ class XpraDesktopServer(DesktopServerBaseClass):
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 
     def do_screen_changed(self, screen):
-        #this is not relevant.. don't send it
-        pass
+        if self.multi_monitors:
+            #TODO: update monitors
+            pass
 
     def get_best_screen_size(self, desired_w, desired_h, bigger=False):
         return self.do_get_best_screen_size(desired_w, desired_h, bigger)
@@ -404,13 +550,11 @@ class XpraDesktopServer(DesktopServerBaseClass):
             return root_w, root_h
         return self.set_screen_size(w, h, ss.screen_resize_bigger)
 
-    def cancel_resize_timer(self):
-        rt = self.resize_timer
-        if rt:
-            self.resize_timer = None
-            self.source_remove(rt)
-
     def resize(self, w, h):
+        if self.multi_monitors:
+            import traceback
+            traceback.print_stack()
+            return
         geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")
@@ -455,7 +599,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             capabilities.update({
                                  "pointer.grabs"    : True,
                                  "desktop"          : True,
-                                 "multi-monitors"   : True,
+                                 "multi-monitors"   : self.multi_monitors,
                                  })
             updict(capabilities, "window", {
                 "decorations"            : True,
@@ -466,16 +610,27 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
 
     def load_existing_windows(self):
-        #at present, just one  window is forwarded:
-        #the root window covering the whole display
         display = Gdk.Display.get_default()
         screen = display.get_screen(0)
+        root = screen.get_root_window()
+        if self.multi_monitors:
+            with xlog:
+                monitors = RandR.get_monitor_properties()
+                for i, monitor in monitors.items():
+                    model = MonitorDesktopModel(root, monitor)
+                    model.setup()
+                    screenlog("adding monitor model %s", model)
+                    super().do_add_new_window_common(i+1, model)
+                    model.managed_connect("client-contents-changed", self._contents_changed)
+                    model.managed_connect("resized", self._window_resized_signaled)
+                return
+        #legacy mode: just a single window
         with xsync:
             root = screen.get_root_window()
-            model = DesktopModel(root, self.randr_exact_size)
+            model = ScreenDesktopModel(root, self.randr_exact_size)
             model.setup()
-            windowlog("adding root window model %s", model)
-            super()._add_new_window_common(model)
+            screenlog("adding root window model %s", model)
+            super().do_add_new_window_common(1, model)
             model.managed_connect("client-contents-changed", self._contents_changed)
             model.managed_connect("resized", self._window_resized_signaled)
 
@@ -586,7 +741,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             if oww!=w or owh!=h:
-                self.resize(w, h)
+                window.resize(w, h)
         if len(packet)>=7:
             cprops = packet[6]
             if cprops:
@@ -617,9 +772,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
             window = self._id_to_window.get(wid)
             if not window:
                 mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
-            else:
-                #TODO: just like shadow server, adjust for window position
-                pass
+                return
         with xsync:
             X11ServerBase._move_pointer(self, wid, pos, -1, *args)
 

@@ -957,14 +957,18 @@ class X11ServerCore(GTKServerBase):
                 geom = model.get_geometry()
                 x = geom[0]+rx
                 y = geom[1]+ry
-                log("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
+                mouselog("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
 
     def _move_pointer(self, wid, pos, deviceid=-1, *args):
         #(this is called within an xswallow context)
+        x, y = self._get_pointer_abs_coordinates(wid, pos)
+        self.device_move_pointer(wid, (x, y), deviceid)
+
+    def device_move_pointer(self, wid, pos, deviceid=-1, *args):
         screen_no = -1
         device = self.get_pointer_device(deviceid)
-        x, y = self._get_pointer_abs_coordinates(wid, pos)
+        x, y = pos
         mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s",
                  wid, pos, deviceid, screen_no, device, (x, y))
         try:
