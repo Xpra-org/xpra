@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import socket
+from collections import namedtuple
 from gi.repository import GObject, Gdk, Gio, GLib
 
 from xpra.os_util import get_generic_os_name, load_binary_file
@@ -319,6 +320,9 @@ class ScreenDesktopModel(DesktopModel):
 GObject.type_register(ScreenDesktopModel)
 
 
+MonitorDamageNotify = namedtuple("MonitorDamageNotify", "x,y,width,height")
+
+
 class MonitorDesktopModel(DesktopModel):
     """
     A desktop model representing a single monitor
@@ -364,12 +368,10 @@ class MonitorDesktopModel(DesktopModel):
         x, y, width, height = self.monitor_geometry
         monitor_damaged_area = damaged_area.intersection(x, y, width, height)
         if monitor_damaged_area:
-            #return an event relative to this monitor's coordinates:
-            event.x = monitor_damaged_area.x-x
-            event.y = monitor_damaged_area.y-y
-            event.width = monitor_damaged_area.width
-            event.height = monitor_damaged_area.height
-            self.emit("client-contents-changed", event)
+            #use an event relative to this monitor's coordinates:
+            mod_event = MonitorDamageNotify(monitor_damaged_area.x-x, monitor_damaged_area.y-y,
+                                            monitor_damaged_area.width, monitor_damaged_area.height)
+            self.emit("client-contents-changed", mod_event)
 
     def get_image(self, x, y, width, height):
         #adjust the coordinates with the monitor's position:
