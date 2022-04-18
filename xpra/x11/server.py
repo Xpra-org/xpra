@@ -220,12 +220,12 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def server_init(self):
         X11ServerBase.server_init(self)
-        screenlog("server_init() clobber=%s, randr=%s, initial_resolution=%s",
-                  self.clobber, self.randr, self.initial_resolution)
-        if self.randr and (self.initial_resolution or not self.clobber):
-            from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_VFB_RESOLUTION
+        screenlog("server_init() clobber=%s, randr=%s, initial_resolutions=%s",
+                  self.clobber, self.randr, self.initial_resolutions)
+        if self.randr and (self.initial_resolutions or not self.clobber):
+            from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_VFB_RESOLUTIONS
             with xlog:
-                set_initial_resolution(self.initial_resolution or DEFAULT_VFB_RESOLUTION)
+                set_initial_resolution(self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS)
 
     def validate(self):
         if not X11Window.displayHasXComposite():

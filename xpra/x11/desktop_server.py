@@ -6,7 +6,7 @@
 
 import os
 import socket
-from gi.repository import GObject, Gdk, Gio
+from gi.repository import GObject, Gdk, Gio, GLib
 
 from xpra.os_util import get_generic_os_name, load_binary_file
 from xpra.util import updict, log_screen_sizes, envbool, csv
@@ -179,7 +179,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         #at the same time as he resizes the window..
         self.resize_value = (w, h)
         if not self.resize_timer:
-            self.resize_timer = self.timeout_add(250, self.do_resize)
+            self.resize_timer = GLib.timeout_add(250, self.do_resize)
 
     def do_resize(self):
         raise NotImplementedError
@@ -188,7 +188,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         rt = self.resize_timer
         if rt:
             self.resize_timer = None
-            self.source_remove(rt)
+            GLib.source_remove(rt)
 
 
 class ScreenDesktopModel(DesktopModel):
@@ -434,11 +434,19 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def server_init(self):
         X11ServerBase.server_init(self)
-        screenlog("server_init() randr=%s", self.randr)
-        if self.randr and not self.multi_monitors:
-            from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_DESKTOP_VFB_RESOLUTION
-            with xlog:
-                set_initial_resolution(self.initial_resolution or DEFAULT_DESKTOP_VFB_RESOLUTION)
+        from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_DESKTOP_VFB_RESOLUTIONS
+        screenlog("server_init() randr=%s, multi-monitors=%s, initial-resolutions=%s, default-resolutions=%s",
+                       self.randr, self.multi_monitors, self.initial_resolutions, DEFAULT_DESKTOP_VFB_RESOLUTIONS)
+        if not self.randr:
+            return
+        res = self.initial_resolutions or DEFAULT_DESKTOP_VFB_RESOLUTIONS
+        if not self.multi_monitors and len(res)!=1:
+            log.warn("Warning: cannot set vfb resolution to %s", res)
+            log.warn(" multi monitor mode is not enabled")
+            log.warn(" using %r", res[0])
+            res = (res[0], )
+        with xlog:
+            set_initial_resolution(res)
 
     def x11_init(self):
         X11ServerBase.x11_init(self)
@@ -652,7 +660,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         # which is usually how things work.  (I don't know that anyone cares
         # about this kind of correctness at all, but hey, doesn't hurt.)
         windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
-        for wid,window in sorted(self._id_to_window.items()):
+        for wid, window in sorted(self._id_to_window.items()):
             x, y, w, h = window.get_geometry()
             wprops = self.client_properties.get(wid, {}).get(ss.uuid)
             ss.new_window("new-window", wid, window, x, y, w, h, wprops)

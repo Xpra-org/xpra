@@ -20,7 +20,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid, save_mode
-from xpra.x11.vfb_util import parse_resolution
+from xpra.x11.vfb_util import parse_resolutions
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
@@ -108,10 +108,10 @@ class X11ServerCore(GTKServerBase):
 
     def do_init(self, opts):
         try:
-            self.initial_resolution = parse_resolution(opts.resize_display)
+            self.initial_resolutions = parse_resolutions(opts.resize_display)
         except ValueError:
             pass
-        self.randr = bool(self.initial_resolution) or not (opts.resize_display in FALSE_OPTIONS)
+        self.randr = bool(self.initial_resolutions) or not (opts.resize_display in FALSE_OPTIONS)
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None
