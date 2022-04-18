@@ -59,6 +59,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._yscale = client.yscale
         self._client_properties = client_properties
         self._set_initial_position = metadata.boolget("set-initial-position", False)
+        self._requested_position = metadata.intpair("requested-position", None)
         self.size_constraints = typedict()
         self.geometry_hints = {}
         self.content_type = ""

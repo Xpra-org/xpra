@@ -83,7 +83,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
             if not client_machine:
                 return {}
         return {propname : client_machine}
-    if propname in ("window-type", "shape", "children", "hwnd", "relative-position"):
+    if propname in ("window-type", "shape", "children", "hwnd", "relative-position", "requested-position"):
         v = raw()
         if not v and skip_defaults:
             return {}

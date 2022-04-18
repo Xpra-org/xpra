@@ -840,7 +840,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             ms = list(DEFAULT_METADATA_SUPPORTED)
             #added in 0.15:
             ms += ["command", "workspace", "above", "below", "sticky",
-                   "set-initial-position",  #0.17
+                   "set-initial-position", "requested-position",
                    "content-type",
                    #4.4:
                    "parent", "relative-position",
