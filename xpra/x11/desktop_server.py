@@ -334,7 +334,11 @@ class MonitorDesktopModel(DesktopModel):
 
     def __init__(self, root, monitor):
         super().__init__(root)
+        self.init(monitor)
+
+    def init(self, monitor):
         self.monitor = monitor
+        self.resize_delta = 0, 0
         x = monitor.get("x", 0)
         y = monitor.get("y", 0)
         width = monitor.get("width", 0)
@@ -376,7 +380,6 @@ class MonitorDesktopModel(DesktopModel):
     def get_image(self, x, y, width, height):
         #adjust the coordinates with the monitor's position:
         mx, my = self.monitor_geometry[:2]
-        #log.error("get_image%s adjusted by %s", (x, y, width, height), (mx, my))
         image = super().get_image(mx+x, my+y, width, height)
         if image:
             image.set_target_x(x)
@@ -386,10 +389,18 @@ class MonitorDesktopModel(DesktopModel):
 
     def do_resize(self):
         self.resize_timer = None
-        rw, rh = self.resize_value
-        #TODO: re-configure just this one crtc + output + monitor
-        RandR.set_crtc_config()
-        self.monitor_geometry = [0, 0, rw, rh]
+        saved_width = self.monitor.get("width", 0)
+        saved_height = self.monitor.get("height", 0)
+        width, height = self.resize_value
+        self.monitor.update({
+            "width" : width,
+            "height" : height,
+            })
+        self.resize_delta = width-saved_width, height-saved_height
+        x = self.monitor.get("x", 0)
+        y = self.monitor.get("y", 0)
+        self.monitor_geometry = (x, y, width, height)
+        self.emit("resized")
 
 
 GObject.type_register(MonitorDesktopModel)
@@ -630,9 +641,10 @@ class XpraDesktopServer(DesktopServerBaseClass):
                     model = MonitorDesktopModel(root, monitor)
                     model.setup()
                     screenlog("adding monitor model %s", model)
-                    super().do_add_new_window_common(i+1, model)
+                    wid = i+1
+                    super().do_add_new_window_common(wid, model)
                     model.managed_connect("client-contents-changed", self._contents_changed)
-                    model.managed_connect("resized", self._window_resized_signaled)
+                    model.managed_connect("resized", self.monitor_resized)
                 return
         #legacy mode: just a single window
         with xsync:
@@ -642,17 +654,36 @@ class XpraDesktopServer(DesktopServerBaseClass):
             screenlog("adding root window model %s", model)
             super().do_add_new_window_common(1, model)
             model.managed_connect("client-contents-changed", self._contents_changed)
-            model.managed_connect("resized", self._window_resized_signaled)
+            model.managed_connect("resized", self.send_updated_screen_size)
 
+    def monitor_resized(self, model):
+        delta_x, delta_y = model.resize_delta
+        rwid = self._window_to_id[model]
+        screenlog("monitor_resized(%s) delta=%s, wid=%i", model, (delta_x, delta_y), rwid)
+        #we adjust the position of monitors after this one,
+        #assuming that they are defined left to right!
+        #first the models:
+        monitor_defs = {}
+        for wid, mmodel in sorted(self._id_to_window.items()):
+            monitor = mmodel.monitor
+            if wid>rwid:
+                #shift it by the same amount
+                monitor["x"] = max(0, monitor.get("x", 0)+delta_x)
+                monitor["y"] = max(0, monitor.get("y", 0)+delta_y)
+                mmodel.init(monitor)
+            monitor_defs[monitor["index"]] = monitor
+        #now we can do the virtual crtcs, outputs and monitors
+        with xsync:
+            RandR.set_crtc_config(monitor_defs)
 
-    def _window_resized_signaled(self, window):
+    def send_updated_screen_size(self, model):
         #the vfb has been resized
-        wid = self._window_to_id[window]
-        x, y, w, h = window.get_geometry()
-        geomlog("window_resized_signaled(%s) geometry=%s", window, (x, y, w, h))
+        wid = self._window_to_id[model]
+        x, y, w, h = model.get_geometry()
+        geomlog("send_updated_screen_size(%s) geometry=%s", model, (x, y, w, h))
         for ss in self.window_sources():
-            ss.resize_window(wid, window, w, h)
-            ss.damage(wid, window, 0, 0, w, h)
+            ss.resize_window(wid, model, w, h)
+            ss.damage(wid, model, 0, 0, w, h)
 
 
     def send_initial_windows(self, ss, sharing=False):

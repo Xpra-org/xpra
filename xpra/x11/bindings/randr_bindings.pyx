@@ -904,6 +904,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         for i in range(nmonitors):
             m = &monitors[i]
             props[i] = {
+                "index"     : i,
                 "name"      : bytestostr(self.XGetAtomName(m.name)),
                 "primary"   : bool(m.primary),
                 "automatic" : bool(m.automatic),
