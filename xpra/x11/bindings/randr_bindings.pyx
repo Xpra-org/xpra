@@ -1022,7 +1022,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef RROutput output
         cdef XRROutputInfo *output_info = NULL
         cdef XRRMonitorInfo *monitors
-        cdef XRRMonitorInfo *monitor
+        cdef XRRMonitorInfo monitor
         primary = 0
         try:
             #re-configure all crtcs:
@@ -1122,14 +1122,14 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             #which makes it easier to prevent name Atom conflicts
             try:
                 for mi in range(nmonitors):
-                    monitor = &monitors[mi]
                     if mi not in monitor_defs:
-                        log("deleting monitor %i: %s", mi, self.XGetAtomName(monitor.name))
-                        XRRDeleteMonitor(self.display, window, monitor.name)
+                        name_atom = monitors[mi].name
+                        log("deleting monitor %i: %s", mi, bytestostr(self.XGetAtomName(name_atom)))
+                        XRRDeleteMonitor(self.display, window, name_atom)
                     else:
                         #use a temporary name that won't conflict:
-                        monitor.name = self.xatom("DUMMY%i-%s" % (mi, monotonic()))
-                        XRRSetMonitor(self.display, window, monitor)
+                        monitors[mi].name = self.xatom("DUMMY%i-%s" % (mi, monotonic()))
+                        XRRSetMonitor(self.display, window, &monitors[mi])
             finally:
                 XRRFreeMonitors(monitors)
             self.XSync()
@@ -1145,9 +1145,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 for mi in range(nmonitors):
                     m = monitor_defs.get(mi, {})
                     if not m:
-                        log.warn("Warning: no monitor definition for index %i", mi)
+                        log("no monitor definition for index %i", mi)
                         continue
-                    monitor = &monitors[mi]
                     log("setting monitor %i: %s", mi, m)
                     name = (prettify_plug_name(m.get("name", "")) or ("DUMMY%i" % mi))
                     while name in names.values() and names.get(mi)!=name:
@@ -1165,9 +1164,9 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     assert rsc.noutput>mi, "only %i outputs, cannot set %i" % (rsc.noutput, mi)
                     output = rsc.outputs[mi]
                     monitor.outputs = &output
-                    monitor.noutput = 1 if m else 0
-                    log("XRRSetMonitor(%#x, %#x, %#x)", <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> monitor)
-                    XRRSetMonitor(self.display, window, monitor)
+                    monitor.noutput = 1
+                    log("XRRSetMonitor(%#x, %#x, %#x)", <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> &monitor)
+                    XRRSetMonitor(self.display, window, &monitor)
                     log.info("monitor %i is %r %ix%i", mi, name, monitor.width, monitor.height)
                     self.XSync()
             finally:

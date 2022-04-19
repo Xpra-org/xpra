@@ -14,6 +14,7 @@ from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
 
+from xpra.common import RESOLUTION_ALIASES
 from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.util import envbool, envint
 from xpra.os_util import (
@@ -29,17 +30,6 @@ from xpra.log import Logger
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 
-RESOLUTION_ALIASES = {
-    "QVGA"  : (320, 240),
-    "VGA"   : (640, 480),
-    "SVGA"  : (800, 600),
-    "XGA"   : (1024, 768),
-    "1080P" : (1920, 1080),
-    "FHD"   : (1920, 1080),
-    "4K"    : (3840, 2160),
-    "5K"    : (5120, 2880),
-    "8K"    : (7680, 4320),
-    }
 
 def parse_resolution(s):
     if not s:

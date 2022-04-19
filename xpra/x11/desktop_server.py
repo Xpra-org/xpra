@@ -14,9 +14,11 @@ from xpra.util import updict, log_screen_sizes, envbool, csv
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
 from xpra.server import server_features
+from xpra.server.mixins.window_server import WindowsMixin
 from xpra.gtk_common.gobject_util import one_arg_signal, no_arg_signal
 from xpra.gtk_common.error import XError
 from xpra.gtk_common.gtk_util import get_screen_sizes, get_root_size
+from xpra.x11.vfb_util import parse_resolution
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_catchall_receiver, remove_catchall_receiver,
@@ -28,7 +30,7 @@ from xpra.x11.gtk_x11.window_damage import WindowDamageHandler
 from xpra.x11.bindings.keyboard_bindings import X11KeyboardBindings #@UnresolvedImport
 from xpra.x11.bindings.randr_bindings import RandRBindings #@UnresolvedImport
 from xpra.x11.x11_server_base import X11ServerBase, mouselog
-from xpra.rectangle import rectangle
+from xpra.rectangle import rectangle  #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
@@ -46,6 +48,9 @@ iconlog = Logger("icon")
 
 MODIFY_GSETTINGS = envbool("XPRA_MODIFY_GSETTINGS", True)
 MULTI_MONITORS = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
+
+MIN_SIZE = 640, 350
+MAX_SIZE = 8192, 8192
 
 
 class DesktopModel(WindowModelStub, WindowDamageHandler):
@@ -76,7 +81,6 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                        GObject.ParamFlags.READABLE),
         }
 
-
     _property_names         = [
         "client-machine", "window-type",
         "shadow", "size-hints", "class-instance",
@@ -86,13 +90,15 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
         ]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
-    def __init__(self, root):
+    def __init__(self):
+        display = Gdk.Display.get_default()
+        screen = display.get_screen(0)
+        root = screen.get_root_window()
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
         self.update_icon()
         self.resize_timer = None
         self.resize_value = None
-
 
     def setup(self):
         WindowDamageHandler.setup(self)
@@ -132,7 +138,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
                 icons = (icon,)
         except Exception:
             iconlog("failed to return window icon", exc_info=True)
-        return self._updateprop("icons", icons)
+        self._updateprop("icons", icons)
 
     def uses_XShm(self):
         return bool(self._xshm_handle)
@@ -200,8 +206,8 @@ class ScreenDesktopModel(DesktopModel):
     _property_names         = DesktopModel._property_names+["xid"]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
-    def __init__(self, root, resize_exact=False):
-        super().__init__(root)
+    def __init__(self, resize_exact=False):
+        super().__init__()
         self.resize_exact = resize_exact
 
     def __repr__(self):
@@ -329,11 +335,15 @@ class MonitorDesktopModel(DesktopModel):
     """
     __gsignals__ = dict(DesktopModel.__common_gsignals__)
 
+    #bump the number of receivers,
+    #because we add all the monitor models as receivers for the root window:
+    MAX_RECEIVERS = 20
+
     def __repr__(self):
         return "MonitorDesktopModel(%s)" % (self.monitor_geometry,)
 
-    def __init__(self, root, monitor):
-        super().__init__(root)
+    def __init__(self, monitor):
+        super().__init__()
         self.init(monitor)
 
     def init(self, monitor):
@@ -345,8 +355,8 @@ class MonitorDesktopModel(DesktopModel):
         height = monitor.get("height", 0)
         self.monitor_geometry = (x, y, width, height)
         self._updateprop("size-hints", {
-            "minimum-size"          : (640, 350),
-            "maximum-size"          : (8192, 8192),
+            "minimum-size"          : MIN_SIZE,
+            "maximum-size"          : MAX_SIZE,
             })
 
     def get_title(self):
@@ -453,7 +463,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         if not self.randr:
             return
         res = self.initial_resolutions or DEFAULT_DESKTOP_VFB_RESOLUTIONS
-        if not self.multi_monitors and len(res)!=1:
+        if not self.multi_monitors and len(res)>1:
             log.warn("Warning: cannot set vfb resolution to %s", res)
             log.warn(" multi monitor mode is not enabled")
             log.warn(" using %r", res[0])
@@ -621,6 +631,9 @@ class XpraDesktopServer(DesktopServerBaseClass):
                                  "pointer.grabs"    : True,
                                  "desktop"          : True,
                                  "multi-monitors"   : self.multi_monitors,
+                                 "monitors"         : self.get_monitor_config(),
+                                 "monitors.min-size" : MIN_SIZE,
+                                 "monitors.max-size" : MAX_SIZE,
                                  })
             updict(capabilities, "window", {
                 "decorations"            : True,
@@ -631,50 +644,20 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
 
     def load_existing_windows(self):
-        display = Gdk.Display.get_default()
-        screen = display.get_screen(0)
-        root = screen.get_root_window()
         if self.multi_monitors:
             with xlog:
                 monitors = RandR.get_monitor_properties()
                 for i, monitor in monitors.items():
-                    model = MonitorDesktopModel(root, monitor)
-                    model.setup()
-                    screenlog("adding monitor model %s", model)
-                    wid = i+1
-                    super().do_add_new_window_common(wid, model)
-                    model.managed_connect("client-contents-changed", self._contents_changed)
-                    model.managed_connect("resized", self.monitor_resized)
+                    self.add_monitor_model(i+1, monitor)
                 return
         #legacy mode: just a single window
         with xsync:
-            root = screen.get_root_window()
-            model = ScreenDesktopModel(root, self.randr_exact_size)
+            model = ScreenDesktopModel(self.randr_exact_size)
             model.setup()
             screenlog("adding root window model %s", model)
             super().do_add_new_window_common(1, model)
             model.managed_connect("client-contents-changed", self._contents_changed)
             model.managed_connect("resized", self.send_updated_screen_size)
-
-    def monitor_resized(self, model):
-        delta_x, delta_y = model.resize_delta
-        rwid = self._window_to_id[model]
-        screenlog("monitor_resized(%s) delta=%s, wid=%i", model, (delta_x, delta_y), rwid)
-        #we adjust the position of monitors after this one,
-        #assuming that they are defined left to right!
-        #first the models:
-        monitor_defs = {}
-        for wid, mmodel in sorted(self._id_to_window.items()):
-            monitor = mmodel.monitor
-            if wid>rwid:
-                #shift it by the same amount
-                monitor["x"] = max(0, monitor.get("x", 0)+delta_x)
-                monitor["y"] = max(0, monitor.get("y", 0)+delta_y)
-                mmodel.init(monitor)
-            monitor_defs[monitor["index"]] = monitor
-        #now we can do the virtual crtcs, outputs and monitors
-        with xsync:
-            RandR.set_crtc_config(monitor_defs)
 
     def send_updated_screen_size(self, model):
         #the vfb has been resized
@@ -686,18 +669,159 @@ class XpraDesktopServer(DesktopServerBaseClass):
             ss.damage(wid, model, 0, 0, w, h)
 
 
+    def add_monitor_model(self, wid, monitor):
+        model = MonitorDesktopModel(monitor)
+        model.setup()
+        screenlog("adding monitor model %s", model)
+        super().do_add_new_window_common(wid, model)
+        model.managed_connect("client-contents-changed", self._contents_changed)
+        model.managed_connect("resized", self.monitor_resized)
+        return model
+
+    def monitor_resized(self, model):
+        delta_x, delta_y = model.resize_delta
+        rwid = self._window_to_id[model]
+        screenlog("monitor_resized(%s) delta=%s, wid=%i", model, (delta_x, delta_y), rwid)
+        #we adjust the position of monitors after this one,
+        #assuming that they are defined left to right!
+        #first the models:
+        self._adjust_monitors(rwid, delta_x, delta_y)
+        self.reconfigure_monitors()
+
+    def reconfigure_monitors(self):
+        #now we can do the virtual crtcs, outputs and monitors
+        defs = self.get_monitor_config()
+        self.apply_monitor_config(defs)
+        #and tell the client:
+        self.setting_changed("monitors", defs)
+
+    def _adjust_monitors(self, after_wid, delta_x, delta_y):
+        if delta_x==0 or delta_y==0:
+            return
+        models = dict((wid, model) for wid, model in self._id_to_window.items() if wid>after_wid)
+        for model in models:
+            monitor = model.monitor
+            monitor["x"] = max(0, monitor.get("x", 0)+delta_x)
+            monitor["y"] = max(0, monitor.get("y", 0)+delta_y)
+            model.init(monitor)
+
+    def get_monitor_config(self):
+        monitor_defs = {}
+        for model in self._id_to_window.values():
+            monitor = model.monitor
+            monitor_defs[monitor["index"]] = monitor
+        return monitor_defs
+
+    def apply_monitor_config(self, monitor_defs):
+        for model in self._id_to_window.values():
+            monitor = model.monitor
+            monitor_defs[monitor["index"]] = monitor
+        with xsync:
+            RandR.set_crtc_config(monitor_defs)
+
+    def _process_configure_monitor(self, proto, packet):
+        assert self.multi_monitors, "received a 'configure-monitor' packet but the feature is not enabled!"
+        action = packet[1]
+        if action=="remove":
+            identifier = packet[2]
+            if identifier=="wid":
+                wid = packet[3]
+            elif identifier=="index":
+                index = packet[3]
+                #find the window with this index:
+                wid = None
+                for twid, model in self._id_to_window.items():
+                    if model.monitor.get("index", 0)==index:
+                        wid = twid
+                        break
+                assert wid is not None, "monitor not found for index %r" % index
+            else:
+                raise ValueError("unsupported monitor identifier %r" % identifier)
+            model = self._id_to_window.get(wid)
+            assert model, "monitor %r not found" % wid
+            assert len(self._id_to_window)>1, "cannot remove the last monitor"
+            model.unmanage()
+            rwid = self._remove_window(model)
+            #adjust the position of the other monitors:
+            delta_x = model.monitor.get("width", 0)
+            delta_y = 0 #model.monitor.get("width", 0)
+            self._adjust_monitors(rwid, delta_x, delta_y)
+            self.reconfigure_monitors()
+            return
+        if action=="add":
+            assert len(self._id_to_window)<16, "already too many monitors: %i" % len(self._id_to_window)
+            resolution = packet[2]
+            if isinstance(resolution, str):
+                resolution = parse_resolution(resolution)
+            assert isinstance(resolution, (tuple, list)) and len(resolution)==2
+            width, height = resolution
+            assert isinstance(width, int) and isinstance(height, int)
+            assert (width, height)>=MIN_SIZE and (width, height)<=MAX_SIZE
+            #find the wid to use:
+            #prefer just incrementing the wid, but we cannot go higher than 16
+            def rightof(wid):
+                monitor = self._id_to_window[wid].monitor
+                x = monitor.get("x", 0)+monitor.get("width", 0)
+                y = monitor.get("y", 0) #+monitor.get("height", 0)
+                return x, y
+            wid = self._max_window_id
+            x = y = 0
+            if wid<16:
+                #since we're just appending,
+                #just place to the right of the last monitor:
+                last = max(self._id_to_window)
+                x, y = rightof(last)
+            else:
+                #find a gap we can use in the window ids before 16:
+                prev = None
+                for wid in range(16):
+                    if wid not in self._id_to_window:
+                        break
+                    prev = wid
+                assert wid<=16
+                if prev:
+                    x, y = rightof(prev)
+                self._adjust_monitors(wid-1, width, 0)
+            #now we can add our new monitor:
+            xdpi = self.xdpi or self.dpi or 96
+            ydpi = self.ydpi or self.dpi or 96
+            wmm = round(width * 25.4 / xdpi)
+            hmm = round(height * 25.4 / ydpi)
+            index = wid-1
+            monitor = {
+                "index"     : index,
+                "name"      : "VFB-%i" % index,
+                "x"         : x,
+                "y"         : y,
+                "width"     : width,
+                "height"    : height,
+                "mm-width"  : wmm,
+                "mm-height" : hmm,
+                }
+            with xsync:
+                model = self.add_monitor_model(wid, monitor)
+            self.reconfigure_monitors()
+            #send it to the clients:
+            for ss in self._server_sources.values():
+                if not isinstance(ss, WindowsMixin):
+                    continue
+                self.send_new_monitor(model, ss)
+            return
+        raise ValueError("unsupported 'configure-monitor' action %r" % action)
+
+
     def send_initial_windows(self, ss, sharing=False):
-        # We send the new-window packets sorted by id because this sorts them
-        # from oldest to newest -- and preserving window creation order means
-        # that the earliest override-redirect windows will be on the bottom,
-        # which is usually how things work.  (I don't know that anyone cares
-        # about this kind of correctness at all, but hey, doesn't hurt.)
         windowlog("send_initial_windows(%s, %s) will send: %s", ss, sharing, self._id_to_window)
-        for wid, window in sorted(self._id_to_window.items()):
-            x, y, w, h = window.get_geometry()
-            wprops = self.client_properties.get(wid, {}).get(ss.uuid)
-            ss.new_window("new-window", wid, window, x, y, w, h, wprops)
-            ss.damage(wid, window, 0, 0, w, h)
+        for model in self._id_to_window.values():
+            self.send_new_monitor(model, ss, sharing)
+
+    def send_new_monitor(self, model, ss, sharing=False):
+        x, y, w, h = model.get_geometry()
+        wid = self._window_to_id[model]
+        wprops = self.client_properties.get(wid, {}).get(ss.uuid)
+        ss.new_window("new-window", wid, model, x, y, w, h, wprops)
+        wid = self._window_to_id[model]
+        ss.damage(wid, model, 0, 0, w, h)
 
 
     def _lost_window(self, window, wm_exiting=False):
@@ -870,5 +994,12 @@ class XpraDesktopServer(DesktopServerBaseClass):
             offset_x += w
             offset_y += 0
         return self.make_screenshot_packet_from_regions(regions)
+
+
+    def init_packet_handlers(self):
+        super().init_packet_handlers()
+        self.add_packet_handlers({
+            "configure-monitor"       : self._process_configure_monitor,
+            })
 
 GObject.type_register(XpraDesktopServer)

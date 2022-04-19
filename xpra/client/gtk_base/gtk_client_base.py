@@ -474,6 +474,17 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
 
     ################################
+    # monitors
+    def send_remove_monitor(self, index):
+        assert self.server_monitors
+        self.send("configure-monitor", "remove", "index", index)
+
+    def send_add_monitor(self, resolution="1024x768"):
+        assert self.server_monitors
+        self.send("configure-monitor", "add", resolution)
+
+
+    ################################
     # file handling
     def ask_data_request(self, cb_answer, send_id, dtype, url, filesize, printit, openit):
         self.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)

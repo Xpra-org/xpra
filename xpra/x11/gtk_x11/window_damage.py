@@ -32,6 +32,7 @@ USE_XSHM = envbool("XPRA_XSHM", True)
 class WindowDamageHandler:
 
     XShmEnabled = USE_XSHM
+    MAX_RECEIVERS = 3
 
     __common_gsignals__ = {
                            "xpra-damage-event"     : one_arg_signal,
@@ -61,7 +62,7 @@ class WindowDamageHandler:
             raise Unmanageable("window %#x disappeared already" % self.xid)
         self._border_width = geom[-1]
         self.create_damage_handle()
-        add_event_receiver(self.client_window, self)
+        add_event_receiver(self.client_window, self, self.MAX_RECEIVERS)
 
     def create_damage_handle(self):
         self._damage_handle = X11Window.XDamageCreate(self.xid)
