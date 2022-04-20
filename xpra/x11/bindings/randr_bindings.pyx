@@ -798,7 +798,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             try:
                 bytes_per_item = struct.calcsize(b"@%s" % fmt)
                 nbytes = bytes_per_item * nitems
-                data = (<unsigned char *> buf)[:nbytes]
+                data = buf[:nbytes]
                 value = struct.unpack(b"@%s" % (fmt*nitems), data)
                 if at=="ATOM":
                     value = tuple(bytestostr(self.XGetAtomName(v)) for v in value)
