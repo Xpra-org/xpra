@@ -477,11 +477,9 @@ class UIXpraClient(ClientBaseClass):
             if v:
                 w, h = v
                 ss = c.tupleget("screen_sizes")
+                log.info(" remote desktop size is %sx%s", w, h)
                 if ss:
-                    log.info(" remote desktop size is %sx%s with %s screen%s:", w, h, len(ss), engs(ss))
                     log_screen_sizes(w, h, ss)
-                else:
-                    log.info(" remote desktop size is %sx%s", w, h)
         if c.boolget("proxy"):
             proxy_hostname = c.strget("proxy.hostname")
             proxy_platform = c.strget("proxy.platform")
@@ -572,17 +570,15 @@ class UIXpraClient(ClientBaseClass):
             "sharing", "sharing-toggle", "lock", "lock-toggle",
             "start-new-commands", "client-shutdown", "webcam",
             "bandwidth-limit", "clipboard-limits",
-            "xdg-menu",
+            "xdg-menu", "monitors",
             ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(bytestostr(value)))
             return
         log("_process_setting_change: %s=%s", setting, value)
-        #xdg-menu is too big to log, and we have to update our attribute:
-        if setting=="xdg-menu":
-            self.server_xdg_menu = value
-        else:
+        #thse are too big to log
+        if setting not in ("xdg-menu", "monitors"):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
 

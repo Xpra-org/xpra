@@ -190,6 +190,7 @@ class WindowSource(WindowIconSource):
         self.av_sync_timer = None
         self.encode_queue = []
         self.encode_queue_max_size = 10
+        self.last_scroll_event = 0
 
         self.server_core_encodings = server_core_encodings
         self.server_encodings = server_encodings
@@ -649,6 +650,8 @@ class WindowSource(WindowIconSource):
         self.batch_config.locked = False
         self.batch_config.delay = self.batch_config.saved
 
+    def record_scroll_event(self):
+        self.last_scroll_event = monotonic()
 
     def suspend(self):
         self.cancel_damage()
@@ -843,7 +846,8 @@ class WindowSource(WindowIconSource):
         common_encodings = [x for x in self._encoders if x in self.core_encodings and x not in exclude]
         self.common_encodings = tuple(x for x in PREFERRED_ENCODING_ORDER if x in common_encodings)
         if not self.common_encodings:
-            raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
+            raise Exception("no common encodings found (server: %s vs client: %s, excluding: %s)" % (
+                csv(self._encoders.keys()), csv(self.core_encodings), csv(exclude)))
         #ensure the encoding chosen is supported by this source:
         if (encoding in self.common_encodings or encoding in ("auto", "grayscale")) and len(self.common_encodings)>1:
             self.encoding = encoding
@@ -2026,6 +2030,7 @@ class WindowSource(WindowIconSource):
         image = self.get_damage_image(x, y, w, h)
         if image is None:
             return False
+        log("get_damage_image%s took %ims", (x, y, w, h), 1000*(monotonic()-rgb_request_time))
         sequence = self._sequence
 
         if self.send_window_size:
@@ -2555,8 +2560,11 @@ class WindowSource(WindowIconSource):
             return nodata("cancelled")
         if self.suspended:
             return nodata("suspended")
+        start = monotonic()
         if SCROLL_ALL and self.may_use_scrolling(image, options):
             return nodata("used scrolling instead")
+        end = monotonic()
+        log("scroll detection took %ims", 1000*(end-start))
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()

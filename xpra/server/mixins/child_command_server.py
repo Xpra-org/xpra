@@ -186,6 +186,8 @@ class ChildCommandServer(StubServerMixin):
             "exit-with-children"        : self.exit_with_children,
             "start-after-connect-done"  : self.start_after_connect_done,
             "start-new"                 : self.start_new_commands,
+            "source-env"                : self.source_env,
+            "start-env"                 : self.start_env,
             }
         mp = self.menu_provider
         if mp:

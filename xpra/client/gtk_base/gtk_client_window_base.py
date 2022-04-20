@@ -177,21 +177,34 @@ GDK_SCROLL_MAP = {
     Gdk.ScrollDirection.RIGHT    : 7,
     }
 
-OR_TYPE_HINTS = (
+ALL_WINDOW_TYPES= [
+    Gdk.WindowTypeHint.NORMAL,
     Gdk.WindowTypeHint.DIALOG,
     Gdk.WindowTypeHint.MENU,
     Gdk.WindowTypeHint.TOOLBAR,
-    #Gdk.WindowTypeHint.SPLASHSCREEN,
-    #Gdk.WindowTypeHint.UTILITY,
-    #Gdk.WindowTypeHint.DOCK,
-    #Gdk.WindowTypeHint.DESKTOP,
+    Gdk.WindowTypeHint.SPLASHSCREEN,
+    Gdk.WindowTypeHint.UTILITY,
+    Gdk.WindowTypeHint.DOCK,
+    Gdk.WindowTypeHint.DESKTOP,
     Gdk.WindowTypeHint.DROPDOWN_MENU,
     Gdk.WindowTypeHint.POPUP_MENU,
     Gdk.WindowTypeHint.TOOLTIP,
-    #Gdk.WindowTypeHint.NOTIFICATION,
+    Gdk.WindowTypeHint.NOTIFICATION,
     Gdk.WindowTypeHint.COMBO,
     Gdk.WindowTypeHint.DND,
-    )
+    ]
+FOLLOW_WINDOW_TYPES = []
+for v in os.environ.get("XPRA_FOLLOW_WINDOW_TYPES",
+                        "DIALOG,MENU,TOOLBAR,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,COMBO,DND").split(","):
+    if v.upper() in ("*", "ALL"):
+        FOLLOW_WINDOW_TYPES = ALL_WINDOW_TYPES
+        break
+    hint = getattr(Gdk.WindowTypeHint, v.upper(), None)
+    if hint is None:
+        log.warn("Warning: invalid follow window type specified %r", v)
+        continue
+    FOLLOW_WINDOW_TYPES.append(hint)
+
 
 WINDOW_NAME_TO_HINT = {
     "NORMAL"        : Gdk.WindowTypeHint.NORMAL,
@@ -247,6 +260,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._frozen = False
         self._focus_latest = None
         self._ondeiconify = []
+        self._follow = None
+        self._follow_handler = 0
+        self._follow_position = None
+        self._follow_configure = None
         self.window_state_timer = None
         self.send_iconify_timer = None
         self.remove_pointer_overlay_timer = None
@@ -615,14 +632,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def setup_window(self, *args):
-        log("setup_window%s", args)
+        log("setup_window%s OR=%s", args, self._override_redirect)
         self.set_alpha()
-
-        if self._override_redirect:
-            transient_for = self.get_transient_for()
-            type_hint = self.get_type_hint()
-            if transient_for is not None and type_hint in self.OR_TYPE_HINTS:
-                transient_for._override_redirect_windows.append(self)
 
         self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
@@ -633,35 +644,92 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #try to honour the initial position
         geomlog("setup_window() position=%s, set_initial_position=%s, OR=%s, decorated=%s",
                 self._pos, self._set_initial_position, self.is_OR(), self.get_decorated())
-        if self._pos!=(0, 0) or self._set_initial_position or self.is_OR():
-            x, y = self.adjusted_position(*self._pos)
-            if self.is_OR():
-                #make sure OR windows are mapped on screen
-                if self._client._current_screen_sizes:
-                    w, h = self._size
-                    self.window_offset = self.calculate_window_offset(x, y, w, h)
-                    geomlog("OR offsets=%s", self.window_offset)
-                    if self.window_offset:
-                        x += self.window_offset[0]
-                        y += self.window_offset[1]
-            elif self.get_decorated():
-                #try to adjust for window frame size if we can figure it out:
-                #Note: we cannot just call self.get_window_frame_size() here because
-                #the window is not realized yet, and it may take a while for the window manager
-                #to set the frame-extents property anyway
-                wfs = self._client.get_window_frame_sizes()
-                dx, dy = 0, 0
-                if wfs:
-                    geomlog("setup_window() window frame sizes=%s", wfs)
-                    v = wfs.get("offset")
-                    if v:
-                        dx, dy = v
-                        x = max(0, x-dx)
-                        y = max(0, y-dy)
-                        self._pos = x, y
-                        geomlog("setup_window() adjusted initial position=%s", self._pos)
-            self.move(x, y)
+        #honour "set-initial-position"
+        if self._set_initial_position or self.is_OR():
+            self.set_initial_position(self._requested_position or self._pos)
         self.set_default_size(*self._size)
+
+    def set_initial_position(self, pos):
+        x, y = self.adjusted_position(*pos)
+        if self.is_OR():
+            #make sure OR windows are mapped on screen
+            if self._client._current_screen_sizes:
+                w, h = self._size
+                self.window_offset = self.calculate_window_offset(x, y, w, h)
+                geomlog("OR offsets=%s", self.window_offset)
+                if self.window_offset:
+                    x += self.window_offset[0]
+                    y += self.window_offset[1]
+        elif self.get_decorated():
+            #try to adjust for window frame size if we can figure it out:
+            #Note: we cannot just call self.get_window_frame_size() here because
+            #the window is not realized yet, and it may take a while for the window manager
+            #to set the frame-extents property anyway
+            wfs = self._client.get_window_frame_sizes()
+            dx, dy = 0, 0
+            if wfs:
+                geomlog("setup_window() window frame sizes=%s", wfs)
+                v = wfs.get("offset")
+                if v:
+                    dx, dy = v
+                    x = max(0, x-dx)
+                    y = max(0, y-dy)
+                    self._pos = x, y
+                    geomlog("setup_window() adjusted initial position=%s", self._pos)
+        self.move(x, y)
+
+
+    def finalize_window(self):
+        #find a parent window we should follow when it moves:
+        follow = self._client.find_window(self._metadata, "transient-for") or self._client.find_window(self._metadata, "parent")
+        log("finalize_window() follow=%s", follow)
+        if not follow:
+            return
+        type_hint = self.get_type_hint()
+        log("finalize_window() type_hint=%s, FOLLOW_WINDOW_TYPES=%s", type_hint, FOLLOW_WINDOW_TYPES)
+        if not self._override_redirect and type_hint not in FOLLOW_WINDOW_TYPES:
+            return
+        def follow_configure_event(window, event):
+            follow = self._follow
+            rp = self._follow_position
+            log("follow_configure_event(%s, %s) follow=%s, relative position=%s",
+                     window, event, follow, rp)
+            if not follow or not rp:
+                return
+            fpos = getattr(follow, "_pos", None)
+            log("follow_configure_event: %s moved to %s", follow, fpos)
+            if not fpos:
+                return
+            fx, fy = fpos
+            rx, ry = rp
+            x, y = self.get_position()
+            newx, newy = fx + follow.sx(rx), fy + follow.sy(ry)
+            log("follow_configure_event: new position from %s: %s", self._pos, (newx, newy))
+            if newx!=x or newy!=y:
+                #don't update the relative position on the next configure event,
+                #since we're generating it
+                self._follow_configure = monotonic(), (newx, newy)
+                self.move(newx, newy)
+            return True
+        self.cancel_follow_handler()
+        self._follow = follow
+        def follow_unmapped(window):
+            log("follow_unmapped(%s)", window)
+            self._follow = None
+            self.cancel_follow_handler()
+        follow.connect("unmap", follow_unmapped)
+        self._follow_handler = follow.connect_after("configure-event", follow_configure_event)
+        log("finalize_window() following %s", follow)
+
+
+    def cancel_follow_handler(self):
+        f = self._follow
+        fh = self._follow_handler
+        if f and fh:
+            f.disconnect(fh)
+            self._follow_handler = 0
+            self._follow = None
+
 
     def new_backing(self, bw, bh):
         b = ClientWindowBase.new_backing(self, bw, bh)
@@ -800,6 +868,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def on_unrealize(self, widget):
         eventslog("on_unrealize(%s)", widget)
+        self.cancel_follow_handler()
         remove_window_hooks(self)
 
 
@@ -1864,6 +1933,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.send(*packet)
         self._pos = (x, y)
         self._size = (w, h)
+        self.update_relative_position()
         if not self._override_redirect:
             htf = self.has_toplevel_focus()
             focuslog("mapped: has-toplevel-focus=%s", htf)
@@ -1906,6 +1976,33 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         eventslog.info("window %i has been moved to monitor %i: %s", self._id, mid, plug_name)
 
 
+    def update_relative_position(self):
+        x, y = self.get_position()
+        log("update_relative_position() follow_configure=%s", self._follow_configure)
+        fc = self._follow_configure
+        if fc:
+            event_time, event_pos = fc
+            #until we see the event we caused by calling move(),
+            #or if we timeout (for safety - some platforms may skip events?),
+            #don't update the relative position
+            if monotonic()-event_time>0.1 or fc==event_pos:
+                #next time we will allow the update:
+                self._follow_configure = None
+            return
+        follow = self._follow
+        if not follow:
+            return
+        #adjust our relative position:
+        fpos = getattr(follow, "_pos", None)
+        if not fpos:
+            return
+        fx, fy = fpos
+        rel_pos = x-fx, y-fy
+        self._follow_position = follow.cp(*rel_pos)
+        log("update_relative_position() relative position of %s from %s is %s, follow position=%s",
+                 self._pos, fpos, rel_pos, self._follow_position)
+
+
     def may_send_client_properties(self):
         #if there are client properties the server should know about,
         #we currently have no other way to send them to the server:
@@ -1928,11 +2025,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         ox, oy = self._pos
         dx, dy = x-ox, y-oy
         self._pos = (x, y)
-        if dx!=0 or dy!=0:
-            #window has moved, also move any child OR window:
-            for window in self._override_redirect_windows:
-                x, y = window.get_position()
-                window.move(x+dx, y+dy)
+        self.update_relative_position()
         gdkwin = self.get_window()
         screen = gdkwin.get_screen()
         display = screen.get_display()
@@ -1941,8 +2034,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if self._monitor is not None:
                 self.monitor_changed(monitor)
             self._monitor = monitor
-        geomlog("configure event: current size=%s, new size=%s, backing=%s, iconified=%s",
-                self._size, (w, h), self._backing, self._iconified)
+        geomlog("configure event: current size=%s, new size=%s, moved by=%s, backing=%s, iconified=%s",
+                self._size, (w, h), (dx, dy), self._backing, self._iconified)
         self._size = (w, h)
         self._set_backing_size(w, h)
         self.send_configure_event()
@@ -2127,6 +2220,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_remove_pointer_overlay_timer()
         self.cancel_focus_timer()
         self.cancel_moveresize_timer()
+        self.cancel_follow_handler()
         self.on_realize_cb = {}
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
@@ -2135,6 +2229,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def do_unmap_event(self, event):
+        self.cancel_follow_handler()
         eventslog("do_unmap_event(%s)", event)
         self._unfocus()
         if not self._override_redirect:

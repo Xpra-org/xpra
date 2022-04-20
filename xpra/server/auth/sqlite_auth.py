@@ -33,7 +33,7 @@ class Authenticator(SQLAuthenticator):
         if not os.path.exists(self.filename):
             log.error("Error: sqlauth cannot find the database file '%s'", self.filename)
             return None
-        import sqlite3
+        import sqlite3  #pylint: disable=import-outside-toplevel
         db = sqlite3.connect(self.filename)
         db.row_factory = sqlite3.Row
         cursor = db.cursor()
@@ -66,12 +66,12 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
 
     def __init__(self, uri):
         super().__init__(uri)
-        import sqlite3
+        import sqlite3  #pylint: disable=import-outside-toplevel
         assert sqlite3.paramstyle=="qmark"
         self.param = "?"
 
     def exec_database_sql_script(self, cursor_cb, *sqlargs):
-        import sqlite3
+        import sqlite3  #pylint: disable=import-outside-toplevel
         db = sqlite3.connect(self.uri)
         cursor = db.cursor()
         log("%s.execute%s", cursor, sqlargs)

@@ -223,8 +223,8 @@ class WindowsMixin(StubSourceMixin):
                 v = int(total_pixels / total_time)
             info.setdefault("encoding", {})["pixels_encoded_per_second"] = v
             dinfo = info.setdefault("damage", {})
-            dinfo["in_latency"] = get_list_stats(in_latencies, show_percentile=[9])
-            dinfo["out_latency"] = get_list_stats(out_latencies, show_percentile=[9])
+            dinfo["in_latency"] = get_list_stats(in_latencies, show_percentile=(9,))
+            dinfo["out_latency"] = get_list_stats(out_latencies, show_percentile=(9, ))
         return info
 
 
@@ -466,6 +466,12 @@ class WindowsMixin(StubSourceMixin):
         ws = self.window_sources.get(wid)
         if ws:
             ws.cancel_damage()
+
+
+    def record_scroll_event(self, wid):
+        ws = self.window_sources.get(wid)
+        if ws:
+            ws.record_scroll_event()
 
 
     def reinit_encoders(self):

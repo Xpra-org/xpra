@@ -11,7 +11,7 @@ log = Logger("x11", "bindings", "window")
 
 
 from xpra.x11.bindings.xlib cimport (
-    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time,
+    Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime,
     XRectangle, XEvent, XClassHint,
     XWMHints, XSizeHints,
     XWindowAttributes, XWindowChanges,
@@ -46,7 +46,6 @@ cdef extern from "X11/Xlib.h":
     int CWY
     int CWWidth
     int CWHeight
-    int CurrentTime
     int InputOnly
     int RevertToParent
     int ClientMessage

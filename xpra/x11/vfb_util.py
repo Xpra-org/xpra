@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -14,7 +14,8 @@ from time import monotonic
 from subprocess import Popen, PIPE, call
 import os.path
 
-from xpra.scripts.config import InitException, get_Xdummy_confdir
+from xpra.common import RESOLUTION_ALIASES
+from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
 from xpra.util import envbool, envint
 from xpra.os_util import (
     shellsub,
@@ -29,31 +30,34 @@ from xpra.log import Logger
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 
-RESOLUTION_ALIASES = {
-    "QVGA"  : (320, 240),
-    "VGA"   : (640, 480),
-    "SVGA"  : (800, 600),
-    "XGA"   : (1024, 768),
-    "1080P" : (1920, 1080),
-    "FHD"   : (1920, 1080),
-    "4K"    : (3840, 2160),
-    "5K"    : (5120, 2880),
-    "8K"    : (7680, 4320),
-    }
 
 def parse_resolution(s):
+    if not s:
+        return None
     v = RESOLUTION_ALIASES.get(s.upper())
     if v:
         return v
     res = tuple(int(x) for x in s.replace(",", "x").split("x", 1))
     assert len(res)==2, "invalid resolution string '%s'" % s
     return res
-def parse_env_resolution(envkey="XPRA_DEFAULT_VFB_RESOLUTION", default_res="8192x4096"):
-    s = os.environ.get(envkey, default_res)
-    return parse_resolution(s)
+def parse_resolutions(s):
+    if not s or s.lower() in FALSE_OPTIONS:
+        return None
+    if s.lower() in ("none", "default"):
+        return ()
+    return (parse_resolution(v) for v in s.split(","))
+def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
+                          single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
+                          default_res="8192x4096"):
+    s = os.environ.get(envkey)
+    if s:
+        return parse_resolutions(s)
+    return (parse_resolution(os.environ.get(single_envkey, default_res)), )
 
-DEFAULT_VFB_RESOLUTION = parse_env_resolution()
-DEFAULT_DESKTOP_VFB_RESOLUTION = parse_env_resolution("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION", "1280x1024")
+DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions()
+DEFAULT_DESKTOP_VFB_RESOLUTIONS = parse_env_resolutions("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTIONS",
+                                                        "XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION",
+                                                        "1280x1024")
 PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 
@@ -326,10 +330,10 @@ def kill_xvfb(xvfb_pid):
         os.unlink(xauthority)
 
 
-def set_initial_resolution(res=DEFAULT_VFB_RESOLUTION):
+def set_initial_resolution(resolutions=DEFAULT_VFB_RESOLUTIONS):
     try:
         log = get_vfb_logger()
-        log("set_initial_resolution(%s)", res)
+        log("set_initial_resolution(%s)", resolutions)
         from xpra.x11.bindings.randr_bindings import RandRBindings      #@UnresolvedImport
         #try to set a reasonable display size:
         randr = RandRBindings()
@@ -337,6 +341,28 @@ def set_initial_resolution(res=DEFAULT_VFB_RESOLUTION):
             log.warn("Warning: no RandR support,")
             log.warn(" default virtual display size unchanged")
             return
+        if randr.is_dummy16():
+            monitors = {}
+            x, y = 0, 0
+            for i, res in enumerate(resolutions):
+                assert len(res)==2
+                w, h = res
+                assert isinstance(w, int) and isinstance(h, int)
+                monitors[i] = {
+                    "name"      : "VFB-%i" % i,
+                    "primary"   : i==0,
+                    "width"     : w,
+                    "height"    : h,
+                    "x"         : x,
+                    "y"         : y,
+                    "automatic" : True,
+                    }
+                x += w
+                #arranging vertically:
+                #y += h
+            randr.set_crtc_config(monitors)
+            return
+        res = resolutions[0]
         sizes = randr.get_xrr_screen_sizes()
         size = randr.get_screen_size()
         log("RandR available, current size=%s, sizes available=%s", size, sizes)
@@ -349,7 +375,7 @@ def set_initial_resolution(res=DEFAULT_VFB_RESOLUTION):
             log("RandR setting new screen size to %s", res)
             randr.set_screen_size(*res)
     except Exception as e:
-        log("set_initial_resolution(%s)", res, exc_info=True)
+        log("set_initial_resolution(%s)", resolutions, exc_info=True)
         log.error("Error: failed to set the default screen size:")
         log.error(" %s", e)
 

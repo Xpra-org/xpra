@@ -1,10 +1,23 @@
 # This file is part of Xpra.
-# Copyright (C) 2019-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from xpra.util import envint, csv
+
+
+RESOLUTION_ALIASES = {
+    "QVGA"  : (320, 240),
+    "VGA"   : (640, 480),
+    "SVGA"  : (800, 600),
+    "XGA"   : (1024, 768),
+    "1080P" : (1920, 1080),
+    "FHD"   : (1920, 1080),
+    "4K"    : (3840, 2160),
+    "5K"    : (5120, 2880),
+    "8K"    : (7680, 4320),
+    }
 
 #X11 constants we use for gravity:
 NorthWestGravity = 1

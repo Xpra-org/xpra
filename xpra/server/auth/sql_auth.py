@@ -19,7 +19,7 @@ class Authenticator(SQLAuthenticator):
         assert self.uri, "missing database uri"
 
     def db_cursor(self, *sqlargs):
-        from sqlalchemy import create_engine    #@UnresolvedImport
+        from sqlalchemy import create_engine    #@UnresolvedImport pylint: disable=import-outside-toplevel
         db = create_engine(self.uri)
         cursor = db.cursor()
         cursor.execute(*sqlargs)
@@ -41,7 +41,7 @@ class SQLDatabaseUtil(DatabaseUtilBase):
         self.param = os.environ.get("PARAMSTYLE", "%s")
 
     def exec_database_sql_script(self, cursor_cb, *sqlargs):
-        from sqlalchemy import create_engine    #@UnresolvedImport
+        from sqlalchemy import create_engine    #@UnresolvedImport pylint: disable=import-outside-toplevel
         db = create_engine(self.uri)
         log("%s.execute%s", db, sqlargs)
         result = db.execute(*sqlargs)

@@ -11,8 +11,9 @@ from xpra.x11.bindings.xlib cimport (
     XFree,
     XGetErrorText,
     XUngrabKeyboard, XUngrabPointer,
-    XSynchronize,
-    CurrentTime, MappingBusy, GrabModeAsync, AnyModifier
+    XSynchronize, XSync, XFlush,
+    CurrentTime, MappingBusy, GrabModeAsync, AnyModifier,
+    PropModeReplace,
     )
 from libc.stdlib cimport malloc, free       #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t
@@ -50,8 +51,16 @@ cdef class X11CoreBindingsInstance:
         dn = get_display_name()
         bstr = strtobytes(dn)
         self.display_name = bstr
-        if envbool("XPRA_X_SYNC", False):
-            XSynchronize(self.display, True)
+        self.XSynchronize(envbool("XPRA_X_SYNC", False))
+
+    def XSynchronize(self, enable : bool):
+        XSynchronize(self.display, enable)
+
+    def XSync(self, discard=False):
+        XSync(self.display, discard)
+
+    def XFlush(self):
+        XFlush(self.display)
 
     def context_check(self):
         global context_check

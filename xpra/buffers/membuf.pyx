@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -33,19 +33,19 @@ cdef extern from "memalign.h":
 cdef void free_buf(const void *p, size_t l, void *arg):
     free(<void *>p)
 
-cdef MemBuf getbuf(size_t l):
+cdef MemBuf getbuf(size_t l, int readonly=1):
     cdef const void *p = xmemalign(l)
     assert p!=NULL, "failed to allocate %i bytes of memory" % l
-    return MemBuf_init(p, l, &free_buf, NULL)
+    return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
-cdef MemBuf padbuf(size_t l, size_t padding):
+cdef MemBuf padbuf(size_t l, size_t padding, int readonly=1):
     cdef const void *p = xmemalign(l+padding)
     assert p!=NULL, "failed to allocate %i bytes of memory" % l
-    return MemBuf_init(p, l, &free_buf, NULL)
+    return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
-cdef MemBuf makebuf(void *p, size_t l):
+cdef MemBuf makebuf(void *p, size_t l, int readonly=1):
     assert p!=NULL, "invalid NULL buffer pointer"
-    return MemBuf_init(p, l, &free_buf, NULL)
+    return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
 
 cdef void *memalign(size_t size) nogil:
@@ -57,7 +57,6 @@ def get_membuf(size_t l):
 
 
 cdef class MemBuf:
-
     def __len__(self):
         return self.l
 
@@ -71,7 +70,7 @@ cdef class MemBuf:
         return <uintptr_t> self.p
 
     def __getbuffer__(self, Py_buffer *view, int flags):
-        PyBuffer_FillInfo(view, self, <void *>self.p, self.l, 1, flags)
+        PyBuffer_FillInfo(view, self, <void *>self.p, self.l, self.readonly, flags)
 
     def __releasebuffer__(self, Py_buffer *view):
         pass
@@ -86,8 +85,10 @@ cdef class MemBuf:
 # https://mail.python.org/pipermail/cython-devel/2012-June/002734.html
 cdef MemBuf MemBuf_init(const void *p, size_t l,
                         dealloc_callback *dealloc_cb_p,
-                        void *dealloc_cb_arg):
+                        void *dealloc_cb_arg,
+                        int readonly=1):
     cdef MemBuf ret = MemBuf()
+    ret.readonly = readonly
     ret.p = p
     ret.l = l
     ret.dealloc_cb_p = dealloc_cb_p
@@ -119,6 +120,7 @@ cdef class BufferContext:
         return "BufferContext(%s)" % self.obj
 
 cdef class MemBufContext:
+    cdef MemBuf membuf
     def __init__(self, membuf):
         assert isinstance(membuf, MemBuf), "%s is not a MemBuf instance: %s" % (membuf, type(membuf))
         self.membuf = membuf
@@ -127,7 +129,7 @@ cdef class MemBufContext:
     def __exit__(self, *_args):
         self.membuf = None
     def __int__(self):
-        return self.membuf.get_mem()
+        return self.membuf.get_mem_ptr()
     def __len__(self):
         return len(self.membuf)
     def __repr__(self):

@@ -186,7 +186,8 @@ COLORSPACES = {}
 CODECS = ("vp8", "vp9")
 COLORSPACES["vp8"] = ("YUV420P", )
 VP9_COLORSPACES = ["YUV420P", "YUV444P"]
-if VPX_ENCODER_ABI_VERSION>23 and not OSX:
+cdef int VP9_10BPP = envbool("XPRA_VP9_10BPP", VPX_ENCODER_ABI_VERSION>23 and not OSX)
+if VP9_10BPP:
     VP9_COLORSPACES.append("YUV444P10")
 COLORSPACES["vp9"] = tuple(VP9_COLORSPACES)
 
@@ -399,7 +400,7 @@ cdef class Encoder:
         self.cfg.g_error_resilient = 0              #we currently use TCP, guaranteed delivery
         self.cfg.g_pass = VPX_RC_ONE_PASS
         self.cfg.g_lag_in_frames = 0                #always give us compressed output for each frame without delay
-        self.cfg.rc_resize_allowed = 1
+        self.cfg.rc_resize_allowed = 0
         self.cfg.rc_end_usage = VPX_VBR
         #we choose when to use keyframes (never):
         self.cfg.kf_mode = VPX_KF_DISABLED
@@ -465,10 +466,12 @@ cdef class Encoder:
         if self.bandwidth_limit>0:
             #vpx bitrate values are in Kbps:
             bitrate_kbps = min(self.bandwidth_limit//1024, bitrate_kbps)
-        bitrate_kbps = max(16, min(15000, bitrate_kbps))
+        MIN_BITRATE = 1024
+        MAX_BITRATE = 15000
+        bitrate_kbps = max(MIN_BITRATE, min(MAX_BITRATE, bitrate_kbps))
         log("update_cfg() bitrate(%i,%i,%.3f,%i)=%iKbps",
             self.width, self.height, self.initial_bitrate_per_pixel, self.bandwidth_limit, bitrate_kbps)
-        self.cfg.rc_target_bitrate = max(16, min(15000, bitrate_kbps))
+        self.cfg.rc_target_bitrate = bitrate_kbps
         self.cfg.g_threads = self.max_threads
         self.cfg.rc_min_quantizer = MAX(0, MIN(63, int((80-self.quality) * 0.63)))
         self.cfg.rc_max_quantizer = MAX(self.cfg.rc_min_quantizer, MIN(63, int((100-self.quality) * 0.63)))
@@ -699,13 +702,13 @@ cdef class Encoder:
         #Valid range for VP9: -8..8
         #But we only use positive values, negative values are just too slow
         cdef int minv = 4
-        cdef int range = 12
+        cdef int vrange = 12
         if self.encoding=="vp9":
             minv = 5
-            range = VP9_RANGE
+            vrange = VP9_RANGE
         #note: we don't use the full range since the percentages are mapped to -20% to +120%
-        cdef int value = (speed-20)*3*range//200
-        value = minv + MIN(range, MAX(0, value))
+        cdef int value = (speed-20)*3*vrange//200
+        value = minv + MIN(vrange, MAX(0, value))
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct):

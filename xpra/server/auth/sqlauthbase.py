@@ -151,6 +151,7 @@ def run_dbutil(DatabaseUtilClass=DatabaseUtilBase, conn_str="databaseURI", argv=
         print(" %s %s remove username [password]" % (argv[0], conn_str))
         print(" %s %s authenticate username password" % (argv[0], conn_str))
         return 1
+    #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("SQL Auth", "SQL Auth"):
         l = len(argv)

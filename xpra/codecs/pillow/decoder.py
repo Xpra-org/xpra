@@ -96,7 +96,7 @@ def do_get_encodings():
 def get_encodings():
     return ENCODINGS
 
-ENCODINGS = do_get_encodings()
+ENCODINGS = tuple(do_get_encodings())
 
 def get_info() -> dict:
     return  {
@@ -206,7 +206,7 @@ def selftest(_full=False):
                 log.error("Pillow error decoding %s with data:", encoding)
                 log.error(" %r", hexdata)
                 log.error(" %s", e, exc_info=True)
-                ENCODINGS.remove(encoding)
+                ENCODINGS = tuple(x for x in ENCODINGS if x!=encoding)
 
 
 if __name__ == "__main__":

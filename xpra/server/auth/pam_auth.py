@@ -17,7 +17,7 @@ PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)
 
 def check(username, password, service=PAM_AUTH_SERVICE, check_account=PAM_CHECK_ACCOUNT):
     log("pam check(%s, [..])", username)
-    from xpra.server.pam import pam_session #@UnresolvedImport
+    from xpra.server.pam import pam_session #@UnresolvedImport pylint: disable=import-outside-toplevel
     b = strtobytes
     session = pam_session(b(username), b(password), service)
     if not session.start(b(password)):
@@ -69,9 +69,8 @@ def main(args):
     if a.check(args[2]):
         print("success")
         return 0
-    else:
-        print("failed")
-        return -1
+    print("failed")
+    return -1
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

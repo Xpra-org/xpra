@@ -14,8 +14,8 @@ gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import GLib, GdkPixbuf, Pango, GObject, Gtk, Gdk     #@UnresolvedImport
 
-from xpra.util import first_time, envint, envbool
-from xpra.os_util import strtobytes, WIN32, OSX
+from xpra.util import first_time, envint, envbool, print_nested_dict
+from xpra.os_util import strtobytes, WIN32, OSX, POSIX
 from xpra.log import Logger
 
 log = Logger("gtk", "util")
@@ -285,20 +285,35 @@ def get_screen_sizes(xscale=1, yscale=1):
         monitor_info = [plug_name, xs(geom.x), ys(geom.y), xs(geom.width), ys(geom.height), wmm, hmm]
         screenlog(" monitor %s: %s, model=%s, manufacturer=%s",
                   j, type(monitor).__name__, monitor.get_model(), monitor.get_manufacturer())
+        def vmwx(v):
+            return v<geom.x or v>geom.x+geom.width
+        def vmwy(v):
+            return v<geom.y or v>geom.y+geom.height
+        def valid_workarea(work_x, work_y, work_width, work_height):
+            if vmwx(work_x) or vmwx(work_x+work_width) or vmwy(work_y) or vmwy(work_y+work_height):
+                log("discarding invalid workarea: %s", (work_x, work_y, work_width, work_height))
+                return []
+            return list(swork(work_x, work_y, work_width, work_height))
         if GTK_WORKAREA and hasattr(monitor, "get_workarea"):
             rect = monitor.get_workarea()
-            monitor_info += list(swork(rect.x, rect.y, rect.width, rect.height))
+            monitor_info += valid_workarea(rect.x, rect.y, rect.width, rect.height)
         elif workareas:
-            w = workareas[j]
-            monitor_info += list(swork(*w))
+            monitor_info += valid_workarea(*workareas[j])
         monitors.append(tuple(monitor_info))
     screen = display.get_default_screen()
     sw, sh = screen.get_width(), screen.get_height()
     work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
     workarea = get_workarea()   #pylint: disable=assignment-from-none
+    screenlog(" workarea=%s", workarea)
     if workarea:
         work_x, work_y, work_width, work_height = swork(*workarea)  #pylint: disable=not-an-iterable
-    screenlog(" workarea=%s", workarea)
+        def vwx(v):
+            return v<0 or v>sw
+        def vwy(v):
+            return v<0 or v>sh
+        if vwx(work_x) or vwx(work_x+work_width) or vwy(work_y) or vwy(work_y+work_height):
+            screenlog(" discarding invalid workarea values: %s", workarea)
+            work_x, work_y, work_width, work_height = swork(0, 0, sw, sh)
     wmm = screen.get_width_mm()
     hmm = screen.get_height_mm()
     xdpi = dpi(sw, wmm)
@@ -712,7 +727,13 @@ def main():
     with program_context("GTK-Version-Info", "GTK Version Info"):
         enable_color()
         print("%s" % get_gtk_version_info())
-        get_screen_sizes()
+        if POSIX and not OSX:
+            from xpra.x11.bindings.posix_display_source import init_posix_display_source    #@UnresolvedImport
+            init_posix_display_source()
+        import warnings
+        warnings.simplefilter("ignore")
+        print(get_screen_sizes()[0])
+        print_nested_dict(get_screens_info()[0])
 
 
 if __name__ == "__main__":

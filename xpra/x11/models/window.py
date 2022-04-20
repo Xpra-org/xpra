@@ -138,7 +138,8 @@ class WindowModel(BaseWindowModel):
 
     _property_names         = BaseWindowModel._property_names + [
                               "size-hints", "icon-title", "icons", "decorations",
-                              "modal", "set-initial-position", "iconic",
+                              "modal", "set-initial-position", "requested-position",
+                              "iconic",
                               ]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
                               "size-hints", "icon-title", "icons", "decorations", "modal", "iconic"]
@@ -564,9 +565,12 @@ class WindowModel(BaseWindowModel):
         moved = x!=0 or y!=0
         geomlog("resize_corral_window%s hints=%s, constrained size=%s, geometry=%s, resized=%s, moved=%s",
                 (x, y, w, h), hints, (w, h), (cx, cy, cw, ch), resized, moved)
+        if moved:
+            self._internal_set_property("requested-position", (x, y))
+            self._internal_set_property("set-initial-position", True)
+
         if resized:
             if moved:
-                self._internal_set_property("set-initial-position", True)
                 geomlog("resize_corral_window() move and resize from %s to %s", (cox, coy, cow, coh), (x, y, w, h))
                 self.corral_window.move_resize(x, y, w, h)
                 self.client_window.move(0, 0)
@@ -576,7 +580,6 @@ class WindowModel(BaseWindowModel):
                 self.corral_window.resize(w, h)
                 self._updateprop("geometry", (cx, cy, w, h))
         elif moved:
-            self._internal_set_property("set-initial-position", True)
             geomlog("resize_corral_window() moving corral window from %s to %s", (cox, coy), (x, y))
             self.corral_window.move(x, y)
             self.client_window.move(0, 0)
@@ -601,7 +604,7 @@ class WindowModel(BaseWindowModel):
             ry = y
         if event.value_mask & CWX or event.value_mask & CWY:
             self._internal_set_property("set-initial-position", True)
-            self._updateprop("requested-position", (rx, ry))
+            self._internal_set_property("requested-position", (rx, ry))
 
         rw, rh = self.get_property("requested-size")
         if event.value_mask & CWWidth:
@@ -611,7 +614,7 @@ class WindowModel(BaseWindowModel):
             h = event.height
             rh = h
         if event.value_mask & CWWidth or event.value_mask & CWHeight:
-            self._updateprop("requested-size", (rw, rh))
+            self._internal_set_property("requested-size", (rw, rh))
 
         if event.value_mask & CWStackMode:
             self.emit("restack", event.detail, event.above)
@@ -643,7 +646,9 @@ class WindowModel(BaseWindowModel):
                 w = event.data[3]
             if event.data[0] & 0x800:
                 h = event.data[4]
-            self._internal_set_property("set-initial-position", (event.data[0] & 0x100) or (event.data[0] & 0x200))
+            if (event.data[0] & 0x100) or (event.data[0] & 0x200):
+                self._internal_set_property("set-initial-position", True)
+                self._internal_set_property("requested-position", (x, y))
             #honour hints:
             hints = self.get_property("size-hints")
             w, h = self.calc_constrained_size(w, h, hints)

@@ -7,6 +7,7 @@ import os
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 from xpra.os_util import get_peercred, get_group_id, osexpand, getuid, POSIX
+from xpra.net.bytestreams import SocketConnection
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.util import csv, typedict
 
@@ -67,7 +68,6 @@ class Authenticator(SysAuthenticator):
 
     def do_check_peercred(self, connection, allow_uids=None, allow_gids=None):
         try:
-            from xpra.net.bytestreams import SocketConnection
             if connection and isinstance(connection, SocketConnection):
                 sock = connection._socket
                 peercred = get_peercred(sock)

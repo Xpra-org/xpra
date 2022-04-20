@@ -153,6 +153,8 @@ class WindowBackingBase:
         self.webp_decoder = get_codec("dec_webp")
         self.spng_decoder = get_codec("dec_spng")
         self.avif_decoder = get_codec("dec_avif")
+        self.nvjpeg_decoder = get_codec("dec_nvjpeg")
+        self.cuda_context = None
         self.draw_needs_refresh = True
         self.repaint_all = REPAINT_ALL
         self.mmap = None
@@ -369,8 +371,27 @@ class WindowBackingBase:
         #    pass
         return x, y
 
+    def assign_cuda_context(self, opengl=False):
+        if self.cuda_context is None:
+            from xpra.codecs.nvjpeg.decoder import get_default_device  # @NoMove pylint: disable=no-name-in-module, import-outside-toplevel
+            dev = get_default_device()
+            assert dev
+            #make this an opengl compatible context:
+            from xpra.codecs.cuda_common.cuda_context import cuda_device_context
+            self.cuda_context = cuda_device_context(dev.device_id, dev.device, opengl)
+            #create the context now as this is the part that takes time:
+            self.cuda_context.make_context()
+        return self.cuda_context
+
+
+    def free_cuda_context(self):
+        cc = self.cuda_context
+        if cc:
+            self.cuda_context = None
+            cc.free()
 
     def close(self):
+        self.free_cuda_context()
         self.cancel_fps_refresh()
         self._backing = None
         log("%s.close() video_decoder=%s", self, self._video_decoder)
@@ -436,21 +457,32 @@ class WindowBackingBase:
 
 
     def paint_jpeg(self, img_data, x, y, width, height, options, callbacks):
-        self.do_paint_jpeg("RGBX", img_data, x, y, width, height, options, callbacks)
+        self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
     def paint_jpega(self, img_data, x, y, width, height, options, callbacks):
-        self.do_paint_jpeg("RGBA", img_data, x, y, width, height, options, callbacks)
+        self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def do_paint_jpeg(self, rgb_format, img_data, x, y, width, height, options, callbacks):
+    def do_paint_jpeg(self, encoding, img_data, x, y, width, height, options, callbacks):
         alpha_offset = options.intget("alpha-offset", 0)
-        img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
+        log("do_paint_jpeg: nvjpeg_decoder=%s", self.nvjpeg_decoder)
+        if self.nvjpeg_decoder and not alpha_offset:
+            with self.assign_cuda_context(False):
+                img = self.nvjpeg_decoder.decompress_and_download("RGB", img_data)
+        else:
+            if encoding=="jpeg":
+                rgb_format = "RGBX"
+            elif encoding=="jpega":
+                rgb_format = "RGBA"
+            else:
+                raise Exception("invalid encoding %r" % encoding)
+            img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
         rowstride = img.get_rowstride()
         w = img.get_width()
         h = img.get_height()
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
-                      x, y, w, h, width, height, rowstride, options, callbacks)
+                  x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_avif(self, img_data, x, y, width, height, options, callbacks):
         img = self.avif_decoder.decompress(img_data, options)

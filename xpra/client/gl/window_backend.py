@@ -61,6 +61,7 @@ class FakeClient(AdHocStruct):
         self.pointer_grabbed = None
         def noop(*_args):
             """ pretend this method exists and does something """
+        self.find_window = noop
         self.request_frame_extents = noop
         self.server_window_states = ()
         self.server_window_frame_extents = False
