@@ -83,7 +83,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
             if not client_machine:
                 return {}
         return {propname : client_machine}
-    if propname in ("window-type", "shape", "children", "hwnd"):
+    if propname in ("window-type", "shape", "children", "hwnd", "relative-position", "requested-position"):
         v = raw()
         if not v and skip_defaults:
             return {}
@@ -121,7 +121,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
         return {propname : v}
     if propname == "xid":
         return {propname : hex(raw() or 0)}
-    if propname in ("group-leader", "transient-for"):
+    if propname in ("group-leader", "transient-for", "parent"):
         ref_window = raw()
         if not ref_window:
             return  {}
@@ -135,7 +135,7 @@ def do_make_window_metadata(window, propname, get_window_id=None, skip_defaults=
                 if propname=="group-leader":
                     p["%s-wid" % propname] = wid
                 else:
-                    p["propname"] = wid
+                    p[propname] = wid
         return p
     #the properties below are not actually exported to the client (yet?)
     #it was just easier to handle them here

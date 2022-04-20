@@ -116,12 +116,6 @@ def do_get_download_dir():
     return d
 
 
-def get_libexec_dir():
-    return env_or_delegate("XPRA_LIBEXEC_DIR", do_get_libexec_dir)
-def do_get_libexec_dir():
-    return get_app_dir()
-
-
 def get_mmap_dir():
     return env_or_delegate("XPRA_MMAP_DIR", do_get_mmap_dir)
 def do_get_mmap_dir():
@@ -324,7 +318,6 @@ platform_import(globals(), "paths", False,
                 "do_get_client_socket_dirs",
                 "do_get_default_log_dirs",
                 "do_get_download_dir",
-                "do_get_libexec_dir",
                 "do_get_mmap_dir",
                 "do_get_xpra_tmp_dir",
                 "do_get_script_bin_dirs",
@@ -355,7 +348,6 @@ def get_info():
         "client-socket"     : {"dirs"   : get_client_socket_dirs()},
         "log"               : {"dirs"   : get_default_log_dirs()},
         "download"          : {"dir"    : get_download_dir()},
-        "libexec"           : {"dir"    : get_libexec_dir()},
         "mmap"              : {"dir"    : get_mmap_dir()},
         "xpra-tmp"          : {"dir"    : get_xpra_tmp_dir()},
         "script"            : {"dir"    : get_script_bin_dirs()},

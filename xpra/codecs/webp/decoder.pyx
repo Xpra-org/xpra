@@ -155,7 +155,7 @@ def webp_check(int ret):
     raise Exception("error: %s" % err)
 
 def get_encodings():
-    return ["webp"]
+    return ("webp", )
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)

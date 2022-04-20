@@ -163,9 +163,10 @@ class EncodingServer(StubServerMixin):
                 add_encodings("webp")
                 if "webp" not in lossless:
                     lossless.append("webp")
-        avif = get_codec("enc_avif")
-        if avif:
-            add_encodings("avif")
+        for codec_name in ("avif", "enc_jpeg", "enc_nvjpeg"):
+            codec = get_codec(codec_name)
+            if codec:
+                add_encodings(*codec.get_encodings())
         #look for video encodings with lossless mode:
         for e in ve:
             for colorspace,especs in getVideoHelper().get_encoder_specs(e).items():

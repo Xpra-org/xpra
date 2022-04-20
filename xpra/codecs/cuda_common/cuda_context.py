@@ -435,11 +435,12 @@ def get_device_context(options):
 
 
 class cuda_device_context:
-    __slots__ = ("device_id", "device", "context", "lock")
-    def __init__(self, device_id, device):
+    __slots__ = ("device_id", "device", "context", "lock", "opengl")
+    def __init__(self, device_id, device, opengl=False):
         assert device, "no cuda device"
         self.device_id = device_id
         self.device = device
+        self.opengl = opengl
         self.context = None
         self.lock = RLock()
         log("%r", self)
@@ -450,20 +451,33 @@ class cuda_device_context:
     def __enter__(self):
         assert self.lock.acquire(False), "failed to acquire cuda device lock"
         if not self.context:
-            start = monotonic()
-            cf = driver.ctx_flags
+            self.make_context()
+        return self.push_context()
+
+    def make_context(self):
+        start = monotonic()
+        cf = driver.ctx_flags
+        if self.opengl:
+            from pycuda import gl
+            self.context = gl.make_context(self.device)
+        else:
             self.context = self.device.make_context(flags=cf.SCHED_YIELD | cf.MAP_HOST)
-            end = monotonic()
-            self.context.pop()
-            log("cuda context allocation took %ims", 1000*(end-start))
+        end = monotonic()
+        self.context.pop()
+        log("cuda context allocation took %ims", 1000*(end-start))
+
+    def push_context(self):
         self.context.push()
         return self.context
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.pop_context()
+        self.lock.release()
+
+    def pop_context(self):
         c = self.context
         if c:
             c.pop()
-        self.lock.release()
         #except driver.LogicError as e:
         #log.warn("Warning: PyCUDA %s", e)
         #self.clean()
@@ -481,6 +495,7 @@ class cuda_device_context:
                 "pci_bus_id"   : self.device.pci_bus_id(),
                 "memory"       : int(self.device.total_memory()//1024//1024),
                 },
+            "opengl"    : self.opengl,
             }
         if self.context:
             info["api_version"] = self.context.get_api_version()

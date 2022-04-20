@@ -166,6 +166,14 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT):
         #on win32 sys.stdout can be a "Blackhole",
         #which does not have a fileno
         return
+    #python3 stdout and stderr have a buffer attribute,
+    #which we must use if we want to be able to write bytes:
+    try:
+        import codecs
+        sbuf = getattr(to, "buffer", to)
+        to = codecs.getwriter("utf-8")(sbuf, "replace")
+    except Exception:   # pragma: no cover
+        pass
     from xpra.colorstreamhandler import ColorStreamHandler
     csh = ColorStreamHandler(to)
     csh.setFormatter(logging.Formatter(format_string))

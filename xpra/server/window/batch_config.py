@@ -111,14 +111,14 @@ class DamageBatchConfig:
         if self.locked:
             info["delay"] = self.delay
         else:
-            ld = tuple(x[1] for x in self.last_delays)
+            ld = tuple(x[1] for x in tuple(self.last_delays))
             if ld:
                 ls = get_list_stats(ld)
                 ldv = self.last_delay
                 if ldv:
                     ls["last"] = ldv[1]  #pylint: disable=unsubscriptable-object
                 info["delay"] = ls
-            lad = tuple(x[1] for x in self.last_actual_delays)
+            lad = tuple(x[1] for x in tuple(self.last_actual_delays))
             if lad:
                 ls = get_list_stats(lad, show_percentile=(9,))
                 ladv = self.last_actual_delay

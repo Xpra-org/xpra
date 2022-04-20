@@ -93,8 +93,6 @@ CLIP_CURSOR = WINDOW_HOOKS and envbool("XPRA_WIN32_CLIP_CURSOR", True)
 MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", False)
 LANGCHANGE = WINDOW_HOOKS and envbool("XPRA_WIN32_LANGCHANGE", True)
 
-DPI_AWARE = envbool("XPRA_DPI_AWARE", True)
-DPI_AWARENESS = envint("XPRA_DPI_AWARENESS", 1)
 FORWARD_WINDOWS_KEY = envbool("XPRA_FORWARD_WINDOWS_KEY", True)
 WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
@@ -104,11 +102,12 @@ log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_H
     CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER)
 log("win32 gui settings: UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, LANGCHANGE=%s",
     UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, LANGCHANGE)
-log("win32 gui settings: DPI_AWARE=%s, DPI_AWARENESS=%s, FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
-    DPI_AWARE, DPI_AWARENESS, FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
+log("win32 gui settings: FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
+    FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
 
 
 def do_init():
+    from xpra.platform.win32.dpi import init_dpi
     init_dpi()
     if APP_ID:
         init_appid()
@@ -118,33 +117,6 @@ def do_init():
     except Exception:
         log.error("Error: failed to setup dwm window color matching", exc_info=True)
 
-def init_dpi():
-    #tell win32 we handle dpi
-    if not DPI_AWARE:
-        screenlog.warn("SetProcessDPIAware not set due to environment override")
-        return
-    try:
-        SetProcessDPIAware = user32.SetProcessDPIAware
-        dpiaware = SetProcessDPIAware()
-        screenlog("SetProcessDPIAware: %s()=%s", SetProcessDPIAware, dpiaware)
-        assert dpiaware!=0
-    except Exception as e:
-        screenlog.warn("SetProcessDPIAware() failed: %s", e)
-    if DPI_AWARENESS<=0:
-        screenlog.warn("SetProcessDPIAwareness not set due to environment override")
-        return
-    try:
-        Process_System_DPI_Aware        = 1
-        Process_DPI_Unaware             = 0
-        Process_Per_Monitor_DPI_Aware   = 2
-        assert DPI_AWARENESS in (Process_System_DPI_Aware, Process_DPI_Unaware, Process_Per_Monitor_DPI_Aware)
-        SetProcessDpiAwarenessInternal = user32.SetProcessDpiAwarenessInternal
-        dpiawareness = SetProcessDpiAwarenessInternal(DPI_AWARENESS)
-        screenlog("SetProcessDPIAwareness: %s(%s)=%s", SetProcessDpiAwarenessInternal, DPI_AWARENESS, dpiawareness)
-        assert dpiawareness==0
-    except Exception as e:
-        screenlog("SetProcessDpiAwarenessInternal(%s) failed: %s", DPI_AWARENESS, e)
-        screenlog(" (not available on MS Windows before version 8.1)")
 
 def init_appid():
     from ctypes import HRESULT
@@ -1256,6 +1228,9 @@ def main():
         fake_client.suspend = suspend
         fake_client.resume = resume
         fake_client.keyboard_helper = None
+        def noop(*args):
+            pass
+        fake_client.timeout_add = noop
         def signal_quit(*_args):
             loop.quit()
         fake_client.signal_disconnect_and_quit = signal_quit

@@ -61,6 +61,8 @@ class DisplayClient(StubClientMixin):
         self.server_display = None
         self.server_randr = False
         self.server_opengl = None
+        self.server_multi_monitors = False
+        self.server_monitors = {}
 
 
     def init(self, opts):
@@ -238,6 +240,11 @@ class DisplayClient(StubClientMixin):
         self.server_randr = c.boolget("resize_screen")
         log("server has randr: %s", self.server_randr)
         self.server_opengl = c.dictget("opengl")
+        Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
+        self.server_multi_monitors = c.boolget("multi-monitors", False)
+        self.server_monitors = c.dictget("monitors")
+        log("server multi-monitors=%s, monitors=%s",
+                              self.server_multi_monitors, self.server_monitors)
         return True
 
     def process_ui_capabilities(self, c : typedict):

@@ -10,7 +10,7 @@ from time import monotonic
 from xpra.x11.x11_server_core import X11ServerCore
 from xpra.os_util import is_Wayland, get_loaded_kernel_modules
 from xpra.util import (
-    envbool, envint, merge_dicts,
+    envbool, envint, merge_dicts, AdHocStruct,
     XPRA_DISPLAY_NOTIFICATION_ID, XPRA_SHADOWWAYLAND_NOTIFICATION_ID,
     )
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -84,7 +84,7 @@ def window_matches(wspec, model_class):
             try:
                 re_c = re.compile(re_str, re.IGNORECASE)
             except re.error:
-                log.error("Error: invalid window regular expression %r", m)
+                log.error("Error: invalid window regular expression %r", re_str)
             else:
                 for wxid, vstr in xid_dict.items():
                     if re_c.match(vstr):
@@ -136,36 +136,46 @@ def window_matches(wspec, model_class):
                 #    if cxid not in windows:
                 #        windows.append(cxid)
         #log.error("windows(%s)=%s", self.window_matches, tuple(hex(window) for window in windows))
-        models = []
-        for window in windows:
-            x, y, w, h = wb.getGeometry(window)[:4]
-            absp = wb.get_absolute_position(window)
-            if not absp:
-                continue
-            ox, oy = absp
-            x += ox
-            y += oy
-            if x<=0:
-                if w+x<=0:
-                    continue
-                w += x
-                x = 0
-            if y<=0:
-                if h+y<=0:
-                    continue
-                h += y
-                y = 0
+        models = {}
+        for xid in windows:
+            x, y, w, h = wb.getGeometry(xid)[:4]
+            #absp = wb.get_absolute_position(xid)
             if w>0 and h>0:
-                title = names.get(window, "unknown window")
+                title = names.get(xid, "unknown window")
                 model = model_class(title, (x, y, w, h))
-                models.append(model)
+                models[xid] = model
         log("window_matches(%s, %s)=%s", wspec, model_class, models)
-        return models
+        #find relative position and 'transient-for':
+        for xid, model in models.items():
+            model.xid = xid
+            model.override_redirect = wb.is_override_redirect(xid)
+            model.transient_for = prop_get(wrap(xid), "WM_TRANSIENT_FOR", "window", True)
+            rel_parent = model.transient_for
+            if not rel_parent:
+                parent = xid
+                rel_parent = None
+                while parent>0:
+                    parent = wb.getParent(parent)
+                    rel_parent = models.get(parent)
+                    if rel_parent:
+                        log.warn("%s is the parent of %s", rel_parent, model)
+                        break
+            model.parent = rel_parent
+            #"class-instance", "client-machine", "window-type",
+            if rel_parent:
+                parent_g = rel_parent.get_geometry()
+                dx = model.geometry[0]-parent_g[0]
+                dy = model.geometry[1]-parent_g[1]
+                model.relative_position = dx, dy
+                log("relative_position=%s", model.relative_position)
+        log("window_matches%s models=%s", (wspec, model_class), models)
+        return models.values()
 
 
 class XImageCapture:
     __slots__ = ("xshm", "xwindow")
     def __init__(self, xwindow):
+        log("XImageCapture(%#x)", xwindow)
         self.xshm = None
         self.xwindow = xwindow
         assert USE_XSHM and XImage.has_XShm(), "no XShm support"
@@ -210,6 +220,7 @@ class XImageCapture:
         return True
 
     def get_image(self, x, y, width, height):
+        log("XImageCapture.get_image%s for %#x", (x, y, width, height), self.xwindow)
         if self.xshm is None:
             log("no xshm, cannot get image")
             return None
@@ -255,9 +266,15 @@ def setup_capture(window):
 
 
 class X11ShadowModel(RootWindowModel):
-    __slots__ = ("xid", )
+    __slots__ = ("xid", "override_redirect", "transient_for", "parent", "relative_position")
     def __init__(self, root_window, capture=None, title="", geometry=None):
         super().__init__(root_window, capture, title, geometry)
+        self.property_names += ["transient-for", "parent", "relative-position"]
+        self.dynamic_property_names += ["transient-for", "parent", "relative-position"]
+        self.override_redirect = False
+        self.transient_for = None
+        self.parent = None
+        self.relative_position = None
         try:
             self.xid = root_window.get_xid()
             self.property_names.append("xid")
@@ -268,7 +285,8 @@ class X11ShadowModel(RootWindowModel):
         return self.xid
 
     def __repr__(self):
-        return "X11ShadowModel(%s : %24s : %s)" % (self.capture, self.geometry, self.xid)
+        info = ", OR" if self.override_redirect else ""
+        return "X11ShadowModel(%s : %24s : %#x%s)" % (self.capture, self.geometry, self.xid, info)
 
 
 #FIXME: warning: this class inherits from ServerBase twice..
@@ -389,6 +407,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
 
 def snapshot(filename):
+    #pylint: disable=import-outside-toplevel
     from io import BytesIO
     from xpra.os_util import memoryview_to_bytes
     root = get_default_root_window()
@@ -421,10 +440,14 @@ def main(*args):
     if args[0].endswith(".png"):
         return snapshot(args[0])
     def cb(title, geom):
-        print("%32s : %s"  %(title, geom))
-    from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
-    init_gdk_display_source()
-    window_matches(args, cb)
+        s = AdHocStruct()
+        s.title = title
+        s.geometry = geom
+        return s
+    from xpra.x11.gtk3 import gdk_display_source  #pylint: disable=import-outside-toplevel, no-name-in-module
+    gdk_display_source.init_gdk_display_source()
+    for w in window_matches(args, cb):
+        print("%s"  % (w,))
 
 
 if __name__ == "__main__":

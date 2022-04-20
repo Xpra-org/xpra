@@ -44,6 +44,7 @@ class Authenticator(SysAuthenticatorBase):
         log("check(%s)", repr(token))
         assert self.challenge_sent
         try:
+            #pylint: disable=import-outside-toplevel
             from gssapi import creds as gsscreds
             from gssapi import sec_contexts as gssctx
         except ImportError as e:
@@ -58,6 +59,7 @@ class Authenticator(SysAuthenticatorBase):
 
 
 def main(argv):
+    #pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("GSS-Auth", "GSS-Authentication"):
         if len(argv)!=3:

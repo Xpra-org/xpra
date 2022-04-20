@@ -28,7 +28,7 @@ import xpra
 from xpra.os_util import (
     get_status_output, load_binary_file, get_distribution_version_id,
     BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
-    is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat,
+    is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat, is_openSUSE,
     )
 
 
@@ -114,11 +114,19 @@ def pkg_config_ok(*args):
     return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0]==0
 
 def pkg_config_version(req_version, pkgname):
-    cmd = [PKG_CONFIG, "--modversion", pkgname]
-    r, out, _ = get_status_output(cmd)
+    r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r!=0 or not out:
         return False
-    from distutils.version import LooseVersion
+    out = out.rstrip("\n\r")
+    #workaround for libx264 version numbers:
+    #ie: 0.163.x
+    if out.endswith(".x"):
+        out = out[:-2]
+    try:
+        from packaging.version import parse
+        return parse(out)>=parse(req_version)
+    except ImportError:
+        from distutils.version import LooseVersion
     return LooseVersion(out)>=LooseVersion(req_version)
 
 def is_RH():
@@ -648,7 +656,22 @@ def get_gcc_version():
             GCC_VERSION = tuple(tmp_version)
     return GCC_VERSION
 
-
+def get_dummy_driver_version():
+    def vernum(s):
+        return tuple(int(v) for v in s.split("-", 1)[0].split("."))
+    #try various rpm names:
+    for rpm_name in ("xorg-x11-drv-dummy", "xf86-video-dummy"):
+        r, out, err = get_status_output(["rpm", "-q", "--queryformat", "%{VERSION}", rpm_name])
+        print("rpm query: out=%s, err=%s" % (out, err))
+        if r==0:
+            return vernum(out)
+    r, out, _ = get_status_output(["dpkg-query", "--showformat=${Version}", "--show", "xserver-xorg-video-dummy"])
+    if r==0:
+        if out.find(":")>=0:
+            #ie: "1:0.3.8-2" -> "0.3.8"
+            out = out.split(":", 1)[1]
+        return vernum(out)
+    return (0, )
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
@@ -825,10 +848,16 @@ def detect_xorg_setup(install_dir=None):
     conf_dir = get_conf_dir(install_dir)
     return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
+def detect_xdummy_setup(install_dir=None):
+    from xpra.scripts import config
+    config.debug = config.warn
+    conf_dir = get_conf_dir(install_dir)
+    return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
+
 def build_xpra_conf(install_dir):
-    print("build_xpra_conf(%s)" % install_dir)
     #generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
+    xdummy_command = detect_xdummy_setup(install_dir)
     fake_xinerama = "no"
     if POSIX and not OSX and not (is_Debian() or is_Ubuntu()):
         from xpra.x11.fakeXinerama import find_libfakeXinerama
@@ -845,7 +874,7 @@ def build_xpra_conf(install_dir):
     from xpra.platform.features import DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS
     from xpra.platform.paths import get_socket_dirs
     from xpra.scripts.config import (
-        xvfb_cmd_str,
+        wrap_cmd_str,
         get_default_key_shortcuts, get_default_systemd_run, get_default_pulseaudio_command,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
         )
@@ -877,7 +906,8 @@ def build_xpra_conf(install_dir):
     #no python-avahi on RH / CentOS, need dbus module on *nix:
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH() and dbus_ENABLED))
     SUBS = {
-            'xvfb_command'          : xvfb_cmd_str(xvfb_command, wrap=True),
+            'xvfb_command'          : wrap_cmd_str(xvfb_command),
+            'xdummy_command'        : wrap_cmd_str(xdummy_command).replace("\n", "\n#"),
             'fake_xinerama'         : fake_xinerama,
             'ssh_command'           : "auto",
             'key_shortcuts'         : "".join(("key-shortcut = %s\n" % x) for x in get_default_key_shortcuts()),
@@ -1376,7 +1406,7 @@ if WIN32:
             add_gui_exe("xpra/scripts/bug_report.py",           "bugs.ico",         "Bug_Report")
             add_gui_exe("xpra/platform/win32/gdi_screen_capture.py", "screenshot.ico", "Screenshot")
         if server_ENABLED:
-            add_gui_exe("fs/bin/auth_dialog",                  "authentication.ico", "Auth_Dialog")
+            add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
         if mdns_ENABLED and gtk3_ENABLED:
             add_gui_exe("xpra/client/gtk_base/mdns_gui.py",     "mdns.ico",         "Xpra_Browser")
         #Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
@@ -1519,29 +1549,23 @@ if WIN32:
 #*******************************************************************************
 else:
     #OSX and *nix:
-    if FREEBSD:
-        icons_dir = "icons"
-    else:
-        icons_dir = "pixmaps"
-    if is_Fedora() or is_CentOS() or is_RedHat() or FREEBSD:
-        libexec = "libexec"
-    else:
-        libexec = "lib"
+    libexec_scripts = []
+    if scripts_ENABLED:
+        libexec_scripts += ["xpra_signal_listener"]
     if LINUX or FREEBSD:
         if scripts_ENABLED:
-            scripts += ["fs/bin/xpra_udev_product_version", "fs/bin/xpra_signal_listener"]
-        libexec_scripts = []
+            libexec_scripts += ["xpra_udev_product_version"]
         if xdg_open_ENABLED:
-            libexec_scripts += ["fs/bin/xdg-open", "fs/bin/gnome-open", "fs/bin/gvfs-open"]
+            libexec_scripts += ["xdg-open", "gnome-open", "gvfs-open"]
         if server_ENABLED:
-            libexec_scripts.append("fs/bin/auth_dialog")
-        if libexec_scripts:
-            add_data_files("%s/xpra/" % libexec, libexec_scripts)
+            libexec_scripts.append("auth_dialog")
+    add_data_files("libexec/xpra/", ["fs/libexec/xpra/%s" % x for x in libexec_scripts])
     if data_ENABLED:
         man_path = "share/man"
         icons_dir = "icons"
         if OPENBSD or FREEBSD:
             man_path = "man"
+        if OPENBSD or FREEBSD or is_openSUSE():
             icons_dir = "pixmaps"
         man_pages = ["fs/share/man/man1/xpra.1", "fs/share/man/man1/xpra_launcher.1"]
         if not OSX:
@@ -1563,7 +1587,7 @@ else:
         def run(self):
             try:
                 build_base = self.distribution.command_obj['build'].build_base
-            except:
+            except Exception:
                 build_base = self.build_base
             build_xpra_conf(build_base)
 
@@ -1619,23 +1643,33 @@ else:
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])) or Xdummy_wrapper_ENABLED is True:
                     copytodir("fs/bin/xpra_Xdummy", "bin", chmod=0o755)
                 #install xorg*.conf, cuda.conf and nvenc.keys:
-                etc_xpra_files = ["xorg.conf"]
+                etc_xpra_files = {}
+                def addconf(name, dst_name=None):
+                    etc_xpra_files[name] = dst_name
                 if uinput_ENABLED:
-                    etc_xpra_files.append("xorg-uinput.conf")
+                    addconf("xorg-uinput.conf")
                 if nvenc_ENABLED or nvfbc_ENABLED:
-                    etc_xpra_files.append("cuda.conf")
+                    addconf("cuda.conf")
                 if nvenc_ENABLED:
-                    etc_xpra_files.append("nvenc.keys")
+                    addconf("nvenc.keys")
                 if nvfbc_ENABLED:
-                    etc_xpra_files.append("nvfbc.keys")
-                for x in etc_xpra_files:
-                    copytodir("fs/etc/xpra/%s" % x, "/etc/xpra")
+                    addconf("nvfbc.keys")
+                dummy_driver_version = get_dummy_driver_version()
+                print("found dummy driver version %s" % (dummy_driver_version,))
+                if dummy_driver_version < (0, 4):
+                    addconf("xorg.conf")
+                else:
+                    addconf("xorg-randr1.6.conf", "xorg.conf")
+                for src, dst_name in etc_xpra_files.items():
+                    copytodir("fs/etc/xpra/%s" % src, "/etc/xpra", dst_name=dst_name)
                 copytodir("fs/etc/X11/xorg.conf.d/90-xpra-virtual.conf", "/etc/X11/xorg.conf.d/")
 
             if pam_ENABLED:
                 copytodir("fs/etc/pam.d/xpra", "/etc/pam.d")
 
             systemd_dir = "/lib/systemd/system"
+            if is_openSUSE():
+                systemd_dir = "__UNITDIR__"
             if service_ENABLED:
                 #Linux init service:
                 subs = {}
@@ -1647,11 +1681,18 @@ else:
                     cdir = "/etc/sysconfig"
                 else:
                     cdir = "/etc/default"
-                copytodir("fs/etc/sysconfig/xpra", cdir)
+                if is_openSUSE():
+                    #openSUSE does things differently:
+                    cdir = "__FILLUPDIR__"
+                    shutil.copy("fs/etc/sysconfig/xpra", "fs/etc/sysconfig/sysconfig.xpra")
+                    os.chmod("fs/etc/sysconfig/sysconfig.xpra", 0o644)
+                    copytodir("fs/etc/sysconfig/sysconfig.xpra", cdir)
+                else:
+                    copytodir("fs/etc/sysconfig/xpra", cdir)
                 if cdir!="/etc/sysconfig":
                     #also replace the reference to it in the service file below
                     subs[b"/etc/sysconfig"] = cdir.encode()
-                if os.path.exists("/bin/systemctl"):
+                if os.path.exists("/bin/systemctl") or os.path.exists("/usr/bin/systemctl"):
                     if sd_listen_ENABLED:
                         copytodir("fs/lib/systemd/system/xpra.service", systemd_dir,
                                   subs=subs)
@@ -1670,7 +1711,7 @@ else:
                     #keep everything in our own directory:
                     doc_dir = "%s/share/xpra/doc" % self.install_dir
                 else:
-                    doc_dir = "%s/share/doc/xpra" % self.install_dir
+                    doc_dir = "%s/share/doc/xpra/manual" % self.install_dir
                 convert_doc_dir("./docs", doc_dir)
 
             if data_ENABLED:
@@ -1767,7 +1808,8 @@ if scripts_ENABLED:
 toggle_modules(WIN32, "xpra/scripts/win32_service")
 
 if data_ENABLED:
-    add_data_files(share_xpra,                      ["README.md", "COPYING"])
+    if not is_openSUSE():
+        add_data_files(share_xpra,                      ["README.md", "COPYING"])
     add_data_files(share_xpra,                      ["fs/share/xpra/bell.wav"])
     if LINUX:
         add_data_files(share_xpra,                  ["fs/share/xpra/autostart.desktop"])
@@ -2132,6 +2174,8 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             #GCC 6 uses C++11 by default:
             elif gcc_version>=(6, 0):
                 cmd.append("-std=c++11")
+            if gcc_version>=(12, 0):
+                cmd.append("--allow-unsupported-compiler")
             CL_VERSION = os.environ.get("CL_VERSION")
             if CL_VERSION:
                 cmd += ["--use-local-env", "--cl-version", CL_VERSION]
@@ -2143,7 +2187,9 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 #cmd += ["--dependency-drive-prefix", "/"]
                 cmd += ["-I%s" % os.path.abspath("win32")]
             if nvcc_version>=(11, 5):
-                cmd += ["-arch=all"]
+                cmd += ["-arch=all",
+                        "-Wno-deprecated-gpu-targets",
+                        ]
                 if nvcc_version>=(11, 6):
                     cmd += ["-Xnvlink", "-ignore-host-info"]
             else:
@@ -2268,8 +2314,14 @@ if nvjpeg_ENABLED:
         assert skip_build or cuda_pkgconfig, "failed to locate cuda pkgconfig"
         for k, v in cuda_pkgconfig.items():
             add_to_keywords(nvjpeg_pkgconfig, k, *v)
+    add_cython_ext("xpra.codecs.nvjpeg.common",
+                         ["xpra/codecs/nvjpeg/common.pyx"],
+                         **nvjpeg_pkgconfig)
     add_cython_ext("xpra.codecs.nvjpeg.encoder",
                          ["xpra/codecs/nvjpeg/encoder.pyx"],
+                         **nvjpeg_pkgconfig)
+    add_cython_ext("xpra.codecs.nvjpeg.decoder",
+                         ["xpra/codecs/nvjpeg/decoder.pyx"],
                          **nvjpeg_pkgconfig)
 
 jpeg = jpeg_decoder_ENABLED or jpeg_encoder_ENABLED

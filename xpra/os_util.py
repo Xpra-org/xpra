@@ -395,6 +395,9 @@ def is_CentOS() -> bool:
 def is_RedHat() -> bool:
     return is_distribution_variant(b"RedHat")
 
+def is_openSUSE() -> bool:
+    return is_distribution_variant(b"openSUSE")
+
 
 def is_arm() -> bool:
     import platform

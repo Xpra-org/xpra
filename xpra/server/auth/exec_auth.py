@@ -26,14 +26,11 @@ class Authenticator(SysAuthenticator):
         self.proc = None
         self.timeout_event = False
         if not self.command:
-            #try to find the default auth_dialog executable:
-            from xpra.platform.paths import get_libexec_dir  #pylint: disable=import-outside-toplevel
-            libexec = get_libexec_dir()
-            xpralibexec = os.path.join(libexec, "xpra")
-            log("libexec=%s, xpralibexec=%s", libexec, xpralibexec)
-            if os.path.exists(xpralibexec) and os.path.isdir(xpralibexec):
-                libexec = xpralibexec
-            auth_dialog = os.path.join(libexec, "auth_dialog")
+            if os.name == "posix":
+                auth_dialog = "/usr/libexec/xpra/auth_dialog"
+            else:
+                from xpra.platform.paths import get_app_dir  #pylint: disable=import-outside-toplevel
+                auth_dialog = os.path.join(get_app_dir(), "auth_dialog")
             if EXECUTABLE_EXTENSION:
                 #ie: add ".exe" on MS Windows
                 auth_dialog += ".%s" % EXECUTABLE_EXTENSION

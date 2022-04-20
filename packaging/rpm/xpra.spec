@@ -24,11 +24,6 @@
 %else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc --without-nvjpeg
 %endif
-%if 0%{?fedora}>=36
-%define build_args %{DEFAULT_BUILD_ARGS} --without-enc_ffmpeg --without-dec_avcodec2 --without-csc_swscale --without-nvenc --without-nvfbc --without-nvjpeg
-#until CUDA supports this version of gcc:
-%define with_cuda 0
-%endif
 %if 0%{?el9}
 #no pandoc!
 %define build_args %{DEFAULT_BUILD_ARGS} --without-docs
@@ -418,6 +413,7 @@ rm -rf $RPM_BUILD_ROOT
 %config %{_sysconfdir}/xpra/conf.d/35_webcam.conf
 
 %files common-client
+%{_libexecdir}/xpra/xpra_signal_listener
 %config %{_sysconfdir}/xpra/conf.d/40_client.conf
 %config %{_sysconfdir}/xpra/conf.d/42_client_keyboard.conf
 %{_datadir}/applications/xpra-launcher.desktop
@@ -428,13 +424,13 @@ rm -rf $RPM_BUILD_ROOT
 
 %files common-server
 %{_sysconfdir}/dbus-1/system.d/xpra.conf
-%{_bindir}/xpra_udev_product_version
 /lib/systemd/system/xpra.service
 /lib/systemd/system/xpra.socket
 %{_prefix}/lib/cups/backend/xpraforwarder
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
+%{_libexecdir}/xpra/xpra_udev_product_version
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open
 %{_libexecdir}/xpra/gvfs-open

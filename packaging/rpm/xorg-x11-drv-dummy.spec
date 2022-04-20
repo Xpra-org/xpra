@@ -8,16 +8,16 @@
 
 Summary:   Xorg X11 dummy video driver
 Name:      xorg-x11-drv-dummy
-Version:   0.3.8
-Release:   1.xpra3%{?dist}
+Version:   0.4.0
+
+Release:   3.xpra1%{?dist}
 URL:       http://www.x.org
 License:   MIT
 Group:     User Interface/X Hardware Support
 
-Source0:   ftp://ftp.x.org/pub/individual/driver/%{tarball}-%{version}.tar.bz2
+Source0:   https://xorg.freedesktop.org/archive/individual/driver/%{tarball}-%{version}.tar.xz
 Patch2:    0002-Constant-DPI.patch
-Patch3:    0003-fix-pointer-limits.patch
-Patch5:    0005-support-for-30-bit-depth-in-dummy-driver.patch
+Patch6:    0006-Dummy-Disconnect.patch
 
 ExcludeArch: s390 s390x
 
@@ -33,14 +33,13 @@ X.Org X11 dummy video driver.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "3712bb869307233491e4c570732d6073c0dc3d99adfdb9977396a3fdf84e95b9" ]; then
+if [ "${sha256}" != "e78ceae5c8c0588c7cb658f2afc3a9fac9ef665b52a75b01f8e9c5449a4e1e5a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n %{tarball}-%{version}
 %patch2 -p1
-%patch3 -p1
-%patch5 -p1
+%patch6 -p1
 autoreconf -vif
 
 %build
@@ -57,10 +56,18 @@ make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT -regex ".*\.la$" | xargs rm -f --
 
 %files
-%doc README
 %{driverdir}/dummy_drv.so
 
 %changelog
+* Fri Apr 15 2022 Antoine Martin <antoine@xpra.org> - 0.4.0-3.xpra1
+- add disconnect patch
+
+* Sun Apr 10 2022 Antoine Martin <antoine@xpra.org> - 0.4.0-2.xpra1
+- remove redundant pointer limits patch
+
+* Wed Apr 06 2022 Antoine Martin <antoine@xpra.org> - 0.4.0-1.xpra3
+- new upstream release
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 0.3.8-1.xpra3
 - verify source checksum
 

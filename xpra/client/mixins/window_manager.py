@@ -23,7 +23,7 @@ from xpra.platform.gui import (
     )
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR
 from xpra.platform.features import SYSTEM_TRAY_SUPPORTED
-from xpra.platform.paths import get_icon_filename
+from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_exec_command
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.make_thread import start_thread
 from xpra.os_util import (
@@ -75,7 +75,17 @@ ICON_OVERLAY = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
-SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", True)
+SIGNAL_WATCHER = envbool("XPRA_SIGNAL_WATCHER", POSIX and not OSX)
+SIGNAL_WATCHER_COMMAND = os.environ.get("XPRA_SIGNAL_WATCHER_COMMAND", "xpra_signal_listener")
+if SIGNAL_WATCHER:
+    SIGNAL_WATCHER = False
+    for prefix in ("/usr", get_resources_dir()):
+        cmd = prefix+"/libexec/xpra/"+SIGNAL_WATCHER_COMMAND
+        if os.path.exists(cmd):
+            SIGNAL_WATCHER_COMMAND = cmd
+            SIGNAL_WATCHER = True
+    if not SIGNAL_WATCHER:
+        log.warn("Warning: %r not found", SIGNAL_WATCHER_COMMAND)
 
 FAKE_SUSPEND_RESUME = envint("XPRA_FAKE_SUSPEND_RESUME", 0)
 MOUSE_SCROLL_SQRT_SCALE = envbool("XPRA_MOUSE_SCROLL_SQRT_SCALE", OSX)
@@ -744,6 +754,17 @@ class WindowClient(StubClientMixin):
         if w<1 or h<1:
             log.error("Error: window %i dimensions %ix%i are invalid", wid, w, h)
             w, h = 1, 1
+        rel_pos = metadata.get("relative-position")
+        parent = metadata.get("parent")
+        geomlog("relative-position=%s (parent=%s)", rel_pos, parent)
+        if parent and rel_pos:
+            pwin = self._id_to_window.get(parent)
+            if pwin:
+                #apply scaling to relative position:
+                p_pos = pwin.sp(*rel_pos)
+                x = pwin._pos[0] + p_pos[0]
+                y = pwin._pos[1] + p_pos[1]
+                geomlog("relative position(%s)=%s", rel_pos, (x, y))
         #scaled dimensions of window:
         wx = self.sx(x)
         wy = self.sy(y)
@@ -832,16 +853,14 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # listen for process signals using a watcher process:
     def assign_signal_watcher_pid(self, wid, pid):
-        if not SIGNAL_WATCHER:
-            return 0
-        if not POSIX or OSX or not pid:
+        if not SIGNAL_WATCHER or not pid:
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
             from xpra.child_reaper import getChildReaper
             from subprocess import Popen, PIPE, STDOUT
             try:
-                proc = Popen(["xpra_signal_listener"],
+                proc = Popen(get_python_exec_command()+[SIGNAL_WATCHER_COMMAND],
                              stdin=PIPE, stdout=PIPE, stderr=STDOUT,
                              start_new_session=True)
             except OSError as e:

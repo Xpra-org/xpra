@@ -43,13 +43,8 @@ fake-xinerama = %(fake_xinerama)s
 #        +extension GLX +extension Composite \
 #        -auth $XAUTHORITY \
 #        -screen 8192x4096x24+32
-# - Xdummy (better with DPI patch):
-# xvfb = /usr/bin/Xorg -noreset -nolisten tcp \
-#        +extension GLX +extension RANDR +extension RENDER \
-#        -auth $XAUTHORITY \
-#        -logfile ${XPRA_SESSION_DIR}/Xorg.log \
-#        -configdir "${XPRA_SESSION_DIR}/xorg.conf.d/$PID" \
-#        -config %(conf_dir)s/xorg.conf
+# - Xdummy (better with version 0.4.0 or later):
+#xvfb = %(xdummy_command)s
 #
 # Selecting virtual X server:
 xvfb = %(xvfb_command)s

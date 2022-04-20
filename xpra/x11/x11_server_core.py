@@ -20,7 +20,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.gtk_common.error import XError, xswallow, xsync, xlog, trap, verify_sync
 from xpra.gtk_common.gtk_util import get_default_root_window
 from xpra.server.server_uuid import save_uuid, get_uuid, save_mode
-from xpra.x11.vfb_util import parse_resolution
+from xpra.x11.vfb_util import parse_resolutions
 from xpra.x11.fakeXinerama import find_libfakeXinerama, save_fakeXinerama_config, cleanup_fakeXinerama
 from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk_x11.gdk_display_source import close_gdk_display_source
@@ -52,6 +52,7 @@ xinputlog = Logger("xinput")
 
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
 FAKE_X11_INIT_ERROR = envbool("XPRA_FAKE_X11_INIT_ERROR", False)
+DUMMY_WIDTH_HEIGHT_MM = envbool("XPRA_DUMMY_WIDTH_HEIGHT_MM", True)
 
 
 class XTestPointerDevice:
@@ -107,10 +108,10 @@ class X11ServerCore(GTKServerBase):
 
     def do_init(self, opts):
         try:
-            self.initial_resolution = parse_resolution(opts.resize_display)
+            self.initial_resolutions = parse_resolutions(opts.resize_display)
         except ValueError:
-            pass
-        self.randr = bool(self.initial_resolution) or not (opts.resize_display in FALSE_OPTIONS)
+            self.initial_resolutions = None
+        self.randr = opts.resize_display not in FALSE_OPTIONS
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None
@@ -163,7 +164,7 @@ class X11ServerCore(GTKServerBase):
         #in which case the screen sizes list may be longer than 1
         eprop = prop_get(self.root_window, "_XPRA_RANDR_EXACT_SIZE", "u32", ignore_errors=True, raise_xerrors=False)
         screenlog("_XPRA_RANDR_EXACT_SIZE=%s", eprop)
-        self.randr_exact_size = eprop==1
+        self.randr_exact_size = eprop==1 or RandR.get_version()>=(1, 6)
         if not self.randr_exact_size:
             #ugly hackish way of detecting Xvfb with randr,
             #assume that it has only one resolution pre-defined:
@@ -597,15 +598,14 @@ class X11ServerCore(GTKServerBase):
         if self.randr_exact_size:
             try:
                 with xsync:
-                    v = RandR.add_screen_size(desired_w, desired_h)
-                    if v:
+                    if RandR.add_screen_size(desired_w, desired_h):
                         #we have to wait a little bit
                         #to make sure that everything sees the new resolution
                         #(ideally this method would be split in two and this would be a callback)
-                        self.randr_sizes_added.append(v)
+                        self.randr_sizes_added.append((desired_w, desired_h))
                         import time
                         time.sleep(0.5)
-                        return v
+                        return desired_w, desired_h
             except XError as e:
                 screenlog("add_screen_size(%s, %s)", desired_w, desired_h, exc_info=True)
                 screenlog.warn("Warning: failed to add resolution %ix%i:", desired_w, desired_h)
@@ -651,6 +651,7 @@ class X11ServerCore(GTKServerBase):
         ydpi = self.ydpi or self.dpi
         screenlog("set_screen_size(%s, %s, %s) xdpi=%s, ydpi=%s",
                   desired_w, desired_h, bigger, xdpi, ydpi)
+        wmm, hmm = 0, 0
         if xdpi<=0 or ydpi<=0:
             #use some sane defaults: either the command line option, or fallback to 96
             #(96 is better than nothing, because we do want to set the dpi
@@ -659,11 +660,11 @@ class X11ServerCore(GTKServerBase):
             ydpi = self.default_dpi or 96
             #find the "physical" screen dimensions, so we can calculate the required dpi
             #(and do this before changing the resolution)
-            wmm, hmm = 0, 0
             client_w, client_h = 0, 0
             sss = self._server_sources.values()
             for ss in sss:
-                for s in ss.screen_sizes:
+                screen_sizes = getattr(ss, "screen_sizes", ())
+                for s in screen_sizes:
                     if len(s)>=10:
                         #(display_name, width, height, width_mm, height_mm, monitors,
                         # work_x, work_y, work_width, work_height)
@@ -677,6 +678,16 @@ class X11ServerCore(GTKServerBase):
                 ydpi = round(client_h * 25.4 / hmm)
                 screenlog("calculated DPI: %s x %s (from w: %s / %s, h: %s / %s)",
                           xdpi, ydpi, client_w, wmm, client_h, hmm)
+        if wmm==0 or hmm==0:
+            wmm = round(desired_w * 25.4 / xdpi)
+            hmm = round(desired_h * 25.4 / ydpi)
+        if DUMMY_WIDTH_HEIGHT_MM:
+            #FIXME: we assume there is only one output:
+            output = 0
+            with xsync:
+                RandR.set_output_int_property(output, "WIDTH_MM", wmm)
+                RandR.set_output_int_property(output, "HEIGHT_MM", hmm)
+        screenlog("set_dpi(%i, %i)", xdpi, ydpi)
         self.set_dpi(xdpi, ydpi)
 
         #try to find the best screen size to resize to:
@@ -729,7 +740,7 @@ class X11ServerCore(GTKServerBase):
                 #we can use XRRSetScreenSize:
                 try:
                     with xsync:
-                        RandR.xrr_set_screen_size(w, h, self.xdpi or self.dpi or 96, self.ydpi or self.dpi or 96)
+                        RandR.xrr_set_screen_size(w, h, wmm, hmm)
                 except XError:
                     screenlog("XRRSetScreenSize failed", exc_info=True)
             screenlog("calling RandR.get_screen_size()")
@@ -853,7 +864,8 @@ class X11ServerCore(GTKServerBase):
         wid = 0
         for ss in self.window_sources():
             name = strtobytes(event.bell_name or "")
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
+            ss.bell(wid, event.device, event.percent,
+                    event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def _bell_signaled(self, wm, event):
@@ -866,7 +878,8 @@ class X11ServerCore(GTKServerBase):
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self.window_sources():
             name = strtobytes(event.bell_name or "")
-            ss.bell(wid, event.device, event.percent, event.pitch, event.duration, event.bell_class, event.bell_id, name)
+            ss.bell(wid, event.device, event.percent,
+                    event.pitch, event.duration, event.bell_class, event.bell_id, name)
 
 
     def setup_input_devices(self):
@@ -917,6 +930,7 @@ class X11ServerCore(GTKServerBase):
         if not ss:
             return
         wid, button, distance, pointer, modifiers, _buttons = packet[1:7]
+        self.record_wheel_event(wid, button)
         with xsync:
             if self.do_process_mouse_common(proto, wid, pointer):
                 self.last_mouse_user = ss.uuid
@@ -945,14 +959,18 @@ class X11ServerCore(GTKServerBase):
                 geom = model.get_geometry()
                 x = geom[0]+rx
                 y = geom[1]+ry
-                log("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
+                mouselog("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
 
     def _move_pointer(self, wid, pos, deviceid=-1, *args):
         #(this is called within an xswallow context)
+        x, y = self._get_pointer_abs_coordinates(wid, pos)
+        self.device_move_pointer(wid, (x, y), deviceid)
+
+    def device_move_pointer(self, wid, pos, deviceid=-1, *args):
         screen_no = -1
         device = self.get_pointer_device(deviceid)
-        x, y = self._get_pointer_abs_coordinates(wid, pos)
+        x, y = pos
         mouselog("move_pointer(%s, %s, %s) screen_no=%i, device=%s, position=%s",
                  wid, pos, deviceid, screen_no, device, (x, y))
         try:
@@ -987,19 +1005,26 @@ class X11ServerCore(GTKServerBase):
         self._update_modifiers(proto, wid, modifiers)
         #TODO: pass extra args
         if self._process_mouse_common(proto, wid, pointer, deviceid):
-            self.button_action(pointer, button, pressed, deviceid)
+            self.button_action(wid, pointer, button, pressed, deviceid)
 
-    def button_action(self, pointer, button, pressed, deviceid=-1, *args):
+    def button_action(self, wid, pointer, button, pressed, deviceid=-1, *args):
         device = self.get_pointer_device(deviceid)
         assert device, "pointer device %s not found" % deviceid
+        if button in (4, 5) and wid:
+            self.record_wheel_event(wid, button)
         try:
             mouselog("%s%s", device.click, (button, pressed, args))
             with xsync:
                 device.click(button, pressed, *args)
         except XError:
-            mouselog("button_action(%s, %s, %s, %s, %s)", pointer, button, pressed, deviceid, args, exc_info=True)
+            mouselog("button_action(%s, %s, %s, %s, %s, %s)",
+                     wid, pointer, button, pressed, deviceid, args, exc_info=True)
             mouselog.error("Error: failed (un)press mouse button %s", button)
 
+    def record_wheel_event(self, wid, button):
+        mouselog("recording scroll event for button %i", button)
+        for ss in self.window_sources():
+            ss.record_scroll_event(wid)
 
     def make_screenshot_packet_from_regions(self, regions):
         #regions = array of (wid, x, y, PIL.Image)

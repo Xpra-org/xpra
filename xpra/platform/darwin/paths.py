@@ -164,13 +164,6 @@ def do_get_desktop_background_paths():
         ]
 
 
-def do_get_libexec_dir():
-    from xpra.platform.paths import get_app_dir
-    base = get_app_dir()
-    p = os.path.join(base, "Helpers")
-    return p
-
-
 def do_get_sshpass_command():
     from xpra.platform.paths import get_app_dir
     base = get_app_dir()
@@ -190,6 +183,13 @@ def do_get_xpra_command():
         return [xpra_cmd]
     return ["xpra"]
 
+
+def _get_helpers_dir():
+    from xpra.platform.paths import get_app_dir
+    base = get_app_dir()
+    p = os.path.join(base, "Helpers")
+    return p
+
 def do_get_nodock_command():
     #try to use the subapp:
     from xpra.platform.paths import get_app_dir
@@ -200,7 +200,7 @@ def do_get_nodock_command():
     #appstore builds have script wrappers:
     helper = os.path.join(base, "Resources", "scripts", "Xpra")
     if not os.path.exists(helper):
-        helper = os.path.join(base, "Helpers", "Xpra")
+        helper = os.path.join(_get_helpers_dir(), "Xpra")
     if not os.path.exists(helper):
         #having a dock is still better than
         #trying to run a command that does not exist!
@@ -211,10 +211,9 @@ def do_get_nodock_command():
 def do_get_sound_command():
     return do_get_nodock_command()
 
+
 def do_get_python_exec_command():
-    helpers = do_get_libexec_dir()
-    return [os.path.join(helpers, "Python"), "-c"]
+    return [os.path.join(_get_helpers_dir(), "Python"), "-c"]
 
 def do_get_python_execfile_command():
-    helpers = do_get_libexec_dir()
-    return [os.path.join(helpers, "Python")]
+    return [os.path.join(_get_helpers_dir(), "Python")]

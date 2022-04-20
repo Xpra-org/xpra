@@ -69,6 +69,7 @@ class ServerBaseControlCommands(StubServerMixin):
             ArgsControlCommand("readonly",              "set readonly state for client(s)", min_args=1, max_args=1, validation=[parse_boolean_value]),
             ArgsControlCommand("idle-timeout",          "set the idle tiemout",             validation=[int]),
             ArgsControlCommand("server-idle-timeout",   "set the server idle timeout",      validation=[int]),
+            ArgsControlCommand("start-env",             "modify the environment used to start new commands", min_args=2),
             ArgsControlCommand("start",                 "executes the command arguments in the server context", min_args=1),
             ArgsControlCommand("start-child",           "executes the command arguments in the server context, as a 'child' (honouring exit-with-children)", min_args=1),
             ArgsControlCommand("toggle-feature",        "toggle a server feature on or off, one of: %s" % csv(TOGGLE_FEATURES), min_args=1, max_args=2, validation=[str, parse_boolean_value]),
@@ -204,6 +205,21 @@ class ServerBaseControlCommands(StubServerMixin):
         reschedule = len(self._server_sources)==0
         self.reset_server_timeout(reschedule)
         return "server-idle-timeout set to %s" % t
+
+
+    def control_command_start_env(self, action="set", var_name="", value=None):
+        assert var_name, "the environment variable name must be specified"
+        if action=="unset":
+            assert value is None, "invalid number of arguments for %s" % action
+            if self.start_env.pop(var_name, None) is None:
+                return "%r is not set" % var_name
+            return "%r unset" % var_name
+        if action=="set":
+            assert value, "the value must be specified"
+            self.start_env[var_name] = value
+            return "%s=%s" % (var_name, value)
+        return "invalid start-env subcommand %r" % action
+
 
     def control_command_start(self, *args):
         return self.do_control_command_start(True, *args)

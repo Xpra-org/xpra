@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import re
 from gi.repository import GLib, Gtk
 
@@ -13,6 +14,7 @@ from xpra.util import (
     ellipsizer, repr_ellipsized, reverse_dict, typedict,
     )
 from xpra.os_util import bytestostr, OSX, WIN32
+from xpra.common import RESOLUTION_ALIASES
 from xpra.client.gtk_base.menu_helper import (
     MenuHelper,
     BANDWIDTH_MENU_OPTIONS,
@@ -49,10 +51,14 @@ SHOW_TRANSFERS = envbool("XPRA_SHOW_TRANSFERS", True)
 SHOW_CLIPBOARD_MENU = envbool("XPRA_SHOW_CLIPBOARD_MENU", True)
 SHOW_CLOSE = envbool("XPRA_SHOW_CLOSE", True)
 SHOW_SHUTDOWN = envbool("XPRA_SHOW_SHUTDOWN", True)
+MONITORS_MENU = envbool("XPRA_SHOW_MONITORS_MENU", True)
 WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 
+
+NEW_MONITOR_RESOLUTIONS = os.environ.get("XPRA_NEW_MONITOR_RESOLUTIONS",
+                                         "640x480,1024x768,1600x1200,FHD,4K").split(",")
 
 CLIPBOARD_LABELS = ["Clipboard", "Primary", "Secondary"]
 CLIPBOARD_LABEL_TO_NAME = {
@@ -109,6 +115,8 @@ class GTKTrayMenuBase(MenuHelper):
             menu.append(self.make_audiomenuitem())
         if mixin_features.webcam and WEBCAM_MENU:
             menu.append(self.make_webcammenuitem())
+        if mixin_features.display and MONITORS_MENU:
+            menu.append(self.make_monitorsmenuitem())
         if mixin_features.windows and WINDOWS_MENU:
             menu.append(self.make_windowsmenuitem())
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
@@ -1172,6 +1180,49 @@ class GTKTrayMenuBase(MenuHelper):
             set_sensitive(keyboard, True)
         self.client.after_handshake(set_layout_enabled)
         return keyboard
+
+
+    def make_monitorsmenuitem(self):
+        monitors_menu_item = self.handshake_menuitem("Monitors", "display.png")
+        menu = Gtk.Menu()
+        monitors_menu_item.set_submenu(menu)
+        def populate_monitors(*args):
+            log("populate_monitors%s client server_multi_monitors=%s, server_monitors=%s",
+                     args, self.client.server_multi_monitors, self.client.server_monitors)
+            if not self.client.server_multi_monitors or not self.client.server_monitors:
+                monitors_menu_item.hide()
+                return
+            for x in menu.get_children():
+                menu.remove(x)
+            def monitor_changed(mitem, index):
+                log("monitor_changed(%s, %s)", mitem, index)
+                self.client.send_remove_monitor(index)
+            for i, monitor in self.client.server_monitors.items():
+                mitem = Gtk.CheckMenuItem(label=monitor.get("name", "VFB-%i" % i))
+                mitem.set_active(True)
+                mitem.set_draw_as_radio(True)
+                mitem.connect("toggled", monitor_changed, i)
+                menu.append(mitem)
+            #and finally, an entry for adding a new monitor:
+            add_monitor_item = self.menuitem("Add a monitor")
+            resolutions_menu = Gtk.Menu()
+            add_monitor_item.set_submenu(resolutions_menu)
+            def add_monitor(mitem, resolution):
+                log("add_monitor(%s, %s)", mitem, resolution)
+                #older servers may not have all the aliases:
+                resolution = RESOLUTION_ALIASES.get(resolution, resolution)
+                self.client.send_add_monitor(resolution)
+            for resolution in NEW_MONITOR_RESOLUTIONS:
+                mitem = self.menuitem(resolution)
+                mitem.connect("activate", add_monitor, resolution)
+                resolutions_menu.append(mitem)
+            resolutions_menu.show_all()
+            menu.append(add_monitor_item)
+            menu.show_all()
+        self.client.on_server_setting_changed("monitors", populate_monitors)
+        self.client.after_handshake(populate_monitors)
+        monitors_menu_item.show_all()
+        return monitors_menu_item
 
 
     def make_windowsmenuitem(self):

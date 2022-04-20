@@ -59,6 +59,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._yscale = client.yscale
         self._client_properties = client_properties
         self._set_initial_position = metadata.boolget("set-initial-position", False)
+        self._requested_position = metadata.intpair("requested-position", None)
         self.size_constraints = typedict()
         self.geometry_hints = {}
         self.content_type = ""
@@ -90,6 +91,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.init_window(metadata)
         self.setup_window(bw, bh)
         self.update_metadata(metadata)
+        self.finalize_window()
 
     def __repr__(self):
         return "ClientWindow(%s)" % self._id
@@ -99,7 +101,6 @@ class ClientWindowBase(ClientWidgetBase):
         self._metadata = typedict()
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
-        self._override_redirect_windows = []
         def wn(w):
             return WORKSPACE_NAMES.get(w, w)
         workspace = typedict(self._client_properties).intget("workspace", None)
@@ -119,6 +120,9 @@ class ClientWindowBase(ClientWidgetBase):
         sc = typedict(metadata.dictget("size-constraints", {}))
         self.window_gravity = OVERRIDE_GRAVITY or sc.intget("gravity", DEFAULT_GRAVITY)
         self.set_decorated(metadata.boolget("decorations", True))
+
+    def finalize_window(self):
+        pass
 
 
     def get_info(self):
@@ -223,7 +227,6 @@ class ClientWindowBase(ClientWidgetBase):
     def destroy(self):
         #ensure we clear reference to other windows:
         self.group_leader = None
-        self._override_redirect_windows = []
         self._metadata = {}
         if self._backing:
             self._backing.close()

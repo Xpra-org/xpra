@@ -32,7 +32,7 @@ def parse_uid(v) -> int:
             log("uid '%s' is not an int", v)
     if POSIX:
         try:
-            import pwd
+            import pwd  #pylint: disable=import-outside-toplevel
             return pwd.getpwnam(v or DEFAULT_UID).pw_uid
         except Exception as e:
             log("parse_uid(%s)", v, exc_info=True)
@@ -48,7 +48,7 @@ def parse_gid(v) -> int:
             log("gid '%s' is not an int", v)
     if POSIX:
         try:
-            import grp          #@UnresolvedImport
+            import grp          #@UnresolvedImport pylint: disable=import-outside-toplevel
             return grp.getgrnam(v or DEFAULT_GID).gr_gid
         except Exception as e:
             log("parse_gid(%s)", v, exc_info=True)
@@ -228,7 +228,7 @@ class SysAuthenticator(SysAuthenticatorBase):
         self.pw = None
         if POSIX:
             try:
-                import pwd
+                import pwd  #pylint: disable=import-outside-toplevel
                 self.pw = pwd.getpwnam(self.username)
             except Exception:
                 log("cannot load password database entry for '%s'", self.username, exc_info=True)

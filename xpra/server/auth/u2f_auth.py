@@ -55,6 +55,7 @@ class Authenticator(SysAuthenticator):
                         key_strs[f] = key_hexstring
                         log("u2f_auth: loaded public key from file '%s': %s", f, key_hexstring)
         #parse public key data:
+        #pylint: disable=import-outside-toplevel
         from cryptography.hazmat.primitives.serialization import load_der_public_key
         from cryptography.hazmat.backends import default_backend
         for origin, key_hexstring in key_strs.items():
@@ -111,6 +112,7 @@ class Authenticator(SysAuthenticator):
                 struct.pack(b'>I', counter) + \
                 client_param
         #check all the public keys:
+        #pylint: disable=import-outside-toplevel
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.asymmetric import ec
         errors = {}

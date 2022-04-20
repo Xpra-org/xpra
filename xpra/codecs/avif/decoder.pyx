@@ -127,7 +127,7 @@ def decompress(data, options=None, yuv=False):
                     size = image.yuvRowBytes[i]*height//ydiv
                     planes.append(image.yuvPlanes[i][:size])
                     strides.append(image.yuvRowBytes[i])
-                return ImageWrapper(0, 0, width, height, planes, yuv_format, 24, strides, ImageWrapper.PLANAR_3)
+                return ImageWrapper(0, 0, width, height, planes, yuv_format, 24, strides, planes=ImageWrapper.PLANAR_3)
 
             # * decoder->image alpha data (alphaRange, alphaPlane, alphaRowBytes)
             # * this frame's sequence timing
@@ -151,7 +151,7 @@ def decompress(data, options=None, yuv=False):
             may_save_image("avif", data)
             if decoder.imageCount>1:
                 log.warn("Warning: more than one image in avif data")
-            return ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, ImageWrapper.PACKED)
+            return ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
     finally:
         avifDecoderDestroy(decoder)
 
