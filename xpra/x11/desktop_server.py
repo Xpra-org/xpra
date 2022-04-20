@@ -10,6 +10,7 @@ from collections import namedtuple
 from gi.repository import GObject, Gdk, Gio, GLib
 
 from xpra.os_util import get_generic_os_name, load_binary_file
+from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util import updict, log_screen_sizes, envbool, csv
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
@@ -340,14 +341,14 @@ class MonitorDesktopModel(DesktopModel):
     MAX_RECEIVERS = 20
 
     def __repr__(self):
-        return "MonitorDesktopModel(%s)" % (self.monitor_geometry,)
+        return "MonitorDesktopModel(%s : %s)" % (self.name, self.monitor_geometry)
 
     def __init__(self, monitor):
         super().__init__()
         self.init(monitor)
 
     def init(self, monitor):
-        self.monitor = monitor
+        self.name = monitor.get("name", "")
         self.resize_delta = 0, 0
         x = monitor.get("x", 0)
         y = monitor.get("y", 0)
@@ -361,11 +362,10 @@ class MonitorDesktopModel(DesktopModel):
 
     def get_title(self):
         title = get_wm_name()  # pylint: disable=assignment-from-none
-        name = self.monitor.get("name", "")
-        if name:
+        if self.name:
             if not title:
-                return name
-            title += " on %s" % name
+                return self.name
+            title += " on %s" % self.name
         return title
 
     def get_geometry(self):
@@ -373,6 +373,17 @@ class MonitorDesktopModel(DesktopModel):
 
     def get_dimensions(self):
         return self.monitor_geometry[2:4]
+
+
+    def get_definition(self):
+        x, y, width, height = self.monitor_geometry
+        return {
+            "x"         : x,
+            "y"         : y,
+            "width"     : width,
+            "height"    : height,
+            "name"      : self.name,
+            }
 
 
     def do_xpra_damage_event(self, event):
@@ -460,7 +471,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         from xpra.x11.vfb_util import set_initial_resolution, DEFAULT_DESKTOP_VFB_RESOLUTIONS
         screenlog("server_init() randr=%s, multi-monitors=%s, initial-resolutions=%s, default-resolutions=%s",
                        self.randr, self.multi_monitors, self.initial_resolutions, DEFAULT_DESKTOP_VFB_RESOLUTIONS)
-        if not self.randr:
+        if not self.randr or self.initial_resolutions==():
             return
         res = self.initial_resolutions or DEFAULT_DESKTOP_VFB_RESOLUTIONS
         if not self.multi_monitors and len(res)>1:
@@ -691,31 +702,58 @@ class XpraDesktopServer(DesktopServerBaseClass):
     def reconfigure_monitors(self):
         #now we can do the virtual crtcs, outputs and monitors
         defs = self.get_monitor_config()
+        screenlog("reconfigure_monitors() definitions=%s", defs)
         self.apply_monitor_config(defs)
         #and tell the client:
         self.setting_changed("monitors", defs)
 
+    def validate_monitors(self):
+        for model in self._id_to_window.values():
+            x, y, width, height = model.get_geometry()
+            if x+width>=MAX_SIZE[0] or y+height>=MAX_SIZE[1]:
+                new_x, new_y = 0, 0
+                mdef = model.get_definition()
+                mdef.update({
+                    "x"         : new_x,
+                    "y"         : new_y,
+                    })
+                model.init(mdef)
+
     def _adjust_monitors(self, after_wid, delta_x, delta_y):
-        if delta_x==0 or delta_y==0:
-            return
         models = dict((wid, model) for wid, model in self._id_to_window.items() if wid>after_wid)
-        for model in models:
-            monitor = model.monitor
-            monitor["x"] = max(0, monitor.get("x", 0)+delta_x)
-            monitor["y"] = max(0, monitor.get("y", 0)+delta_y)
-            model.init(monitor)
+        screenlog("adjust_monitors(%i, %i, %i) models=%s", after_wid, delta_x, delta_y, models)
+        if (delta_x==0 and delta_y==0) or not models:
+            return
+        for wid, model in models.items():
+            self._adjust_monitor(model, delta_x, delta_y)
+
+    def _adjust_monitor(self, model, delta_x, delta_y):
+        screenlog("adjust_monitors(%s, %i, %i)", model, delta_x, delta_y)
+        if (delta_x==0 and delta_y==0):
+            return
+        x, y = model.get_geometry()[:2]
+        new_x = max(0, x+delta_x)
+        new_y = max(0, y+delta_y)
+        if new_x!=x or new_y!=y:
+            screenlog("adjusting monitor %s from %s to %s",
+                      model, (x, y), (new_x, new_y))
+            mdef = model.get_definition()
+            mdef.update({
+                "x"         : new_x,
+                "y"         : new_y,
+                })
+            model.init(mdef)
 
     def get_monitor_config(self):
         monitor_defs = {}
-        for model in self._id_to_window.values():
-            monitor = model.monitor
-            monitor_defs[monitor["index"]] = monitor
+        for wid, model in self._id_to_window.items():
+            monitor = model.get_definition()
+            i = wid-1
+            monitor["index"] = i
+            monitor_defs[i] = monitor
         return monitor_defs
 
     def apply_monitor_config(self, monitor_defs):
-        for model in self._id_to_window.values():
-            monitor = model.monitor
-            monitor_defs[monitor["index"]] = monitor
         with xsync:
             RandR.set_crtc_config(monitor_defs)
 
@@ -724,27 +762,23 @@ class XpraDesktopServer(DesktopServerBaseClass):
         action = packet[1]
         if action=="remove":
             identifier = packet[2]
+            value = packet[3]
             if identifier=="wid":
-                wid = packet[3]
+                wid = value
             elif identifier=="index":
-                index = packet[3]
-                #find the window with this index:
-                wid = None
-                for twid, model in self._id_to_window.items():
-                    if model.monitor.get("index", 0)==index:
-                        wid = twid
-                        break
-                assert wid is not None, "monitor not found for index %r" % index
+                #index is zero-based
+                wid = value+1
             else:
                 raise ValueError("unsupported monitor identifier %r" % identifier)
             model = self._id_to_window.get(wid)
+            screenlog("removing %s %i : %s", identifier, value, model)
             assert model, "monitor %r not found" % wid
             assert len(self._id_to_window)>1, "cannot remove the last monitor"
+            delta_x = -model.get_definition().get("width", 0)
+            delta_y = 0 #model.monitor.get("width", 0)
             model.unmanage()
             rwid = self._remove_window(model)
             #adjust the position of the other monitors:
-            delta_x = model.monitor.get("width", 0)
-            delta_y = 0 #model.monitor.get("width", 0)
             self._adjust_monitors(rwid, delta_x, delta_y)
             self.reconfigure_monitors()
             return
@@ -760,9 +794,9 @@ class XpraDesktopServer(DesktopServerBaseClass):
             #find the wid to use:
             #prefer just incrementing the wid, but we cannot go higher than 16
             def rightof(wid):
-                monitor = self._id_to_window[wid].monitor
-                x = monitor.get("x", 0)+monitor.get("width", 0)
-                y = monitor.get("y", 0) #+monitor.get("height", 0)
+                mdef = self._id_to_window[wid].get_definition()
+                x = mdef.get("x", 0)+mdef.get("width", 0)
+                y = mdef.get("y", 0) #+monitor.get("height", 0)
                 return x, y
             wid = self._max_window_id
             x = y = 0
@@ -782,6 +816,9 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 if prev:
                     x, y = rightof(prev)
                 self._adjust_monitors(wid-1, width, 0)
+            #ensure no monitors end up too far to the right or bottom:
+            #(better have them overlap - though we could do something smarter here)
+            self.validate_monitors()
             #now we can add our new monitor:
             xdpi = self.xdpi or self.dpi or 96
             ydpi = self.ydpi or self.dpi or 96
@@ -806,6 +843,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 if not isinstance(ss, WindowsMixin):
                     continue
                 self.send_new_monitor(model, ss)
+            self.refresh_all_windows()
             return
         raise ValueError("unsupported 'configure-monitor' action %r" % action)
 

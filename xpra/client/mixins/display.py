@@ -240,10 +240,10 @@ class DisplayClient(StubClientMixin):
         self.server_randr = c.boolget("resize_screen")
         log("server has randr: %s", self.server_randr)
         self.server_opengl = c.dictget("opengl")
-        Logger("opengl")("server opengl=%s", self.server_opengl)
+        Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
         self.server_multi_monitors = c.boolget("multi-monitors", False)
         self.server_monitors = c.dictget("monitors")
-        Logger("screen").warn("server multi-monitors=%s, monitors=%s",
+        log("server multi-monitors=%s, monitors=%s",
                               self.server_multi_monitors, self.server_monitors)
         return True
 

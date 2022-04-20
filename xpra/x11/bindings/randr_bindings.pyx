@@ -1026,30 +1026,29 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         primary = 0
         try:
             #re-configure all crtcs:
-            for mi in range(rsc.ncrtc):
-                m = monitor_defs.get(mi, {})
-                crtc = rsc.crtcs[mi]
-                assert rsc.noutput>mi
-                output = rsc.outputs[mi]
-                log("monitor %i is crtc %i and output %i: %s", mi, crtc, output, m)
+            for i in range(rsc.ncrtc):
+                m = monitor_defs.get(i, {})
+                crtc = rsc.crtcs[i]
+                assert rsc.noutput>i
+                output = rsc.outputs[i]
+                log("%i: crtc %i and output %i: %s", i, crtc, output, m)
                 crtc_info = XRRGetCrtcInfo(self.display, rsc, crtc)
                 if not crtc_info:
-                    log.error("Error: crtc %i not found (%#x)", mi, crtc)
+                    log.error("Error: crtc %i not found (%#x)", i, crtc)
                     continue
                 try:
                     if m.get("primary", False):
-                        primary = mi
+                        primary = i
                     width = m.get("width", 0)
                     height = m.get("height", 0)
-
                     output_info = XRRGetOutputInfo(self.display, rsc, output)
                     if not output_info:
-                        log.error("Error: output %i not found (%#x)", mi, output)
+                        log.error("Error: output %i not found (%#x)", i, output)
                         continue
                     if crtc_info.noutput==0 and output_info.connection==RR_Disconnected and not m:
                         #crtc is not enabled and the corresponding output is not connected,
                         #which is exactly what we want, so just leave it alone
-                        log("crtc and output %i are already disabled", mi)
+                        log("crtc and output %i are already disabled", i)
                         continue
                     noutput = 1
                     mode = 0
@@ -1081,7 +1080,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                 mode = self.do_add_screen_size(mode_name, width, height)
                             assert mode!=0, "mode %ix%i not found" % (width, height)
                             XRRAddOutputMode(self.display, output, mode)
-                            log("mode %r (%#x) added to output %i (%i)", mode_name, mode, mi, output)
+                            log("mode %r (%#x) added to output %i (%i)", mode_name, mode, i, output)
                     else:
                         noutput = 0
 
@@ -1094,17 +1093,18 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                           CurrentTime, x, y, mode,
                           RR_Rotate_0, &output, noutput)
                     if r:
-                        raise Exception("failed to set crtc config for monitor %i" % mi)
+                        raise Exception("failed to set crtc config for monitor %i" % i)
                     mmw = m.get("mm-width", dpi96(width))
                     mmh = m.get("mm-height", dpi96(height))
-                    self.set_output_int_property(mi, "WIDTH_MM", mmw)
-                    self.set_output_int_property(mi, "HEIGHT_MM", mmh)
+                    self.set_output_int_property(i, "WIDTH_MM", mmw)
+                    self.set_output_int_property(i, "HEIGHT_MM", mmh)
                     #this allows us to disconnect the output of this crtc:
-                    self.set_output_int_property(mi, "SUSPENDED", not bool(m))
+                    self.set_output_int_property(i, "SUSPENDED", not bool(m))
                     posinfo = ""
                     if x or y:
                         posinfo = " at %i,%i" % (x, y)
-                    log.info("setting dummy crtc %i to %ix%i (%ix%i mm)%s", mi, width, height, mmw, mmh, posinfo)
+                    log.info("setting dummy crtc and output %i to %ix%i (%ix%i mm)%s",
+                             i, width, height, mmw, mmh, posinfo)
                 finally:
                     if output_info:
                         XRRFreeOutputInfo(output_info)
@@ -1118,18 +1118,20 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
                 return False
-            #start by removing the ones we don't use,
-            #which makes it easier to prevent name Atom conflicts
+            log("got %i monitors for %s crtcs", nmonitors, len(monitor_defs))
+            #start by renaming the ones we do use and removing the ones we don't,
+            #which makes it easier to prevent name Atom conflicts:
             try:
+                #we only need as many monitors as we have crtcs,
+                #delete any extra ones:
+                for mi in range(nmonitors, len(monitor_defs)):
+                    name_atom = monitors[mi].name
+                    log("deleting monitor %i: %s", mi, bytestostr(self.XGetAtomName(name_atom)))
+                    XRRDeleteMonitor(self.display, window, name_atom)
+                #use a temporary name that won't conflict when we modify the monitors:
                 for mi in range(nmonitors):
-                    if mi not in monitor_defs:
-                        name_atom = monitors[mi].name
-                        log("deleting monitor %i: %s", mi, bytestostr(self.XGetAtomName(name_atom)))
-                        XRRDeleteMonitor(self.display, window, name_atom)
-                    else:
-                        #use a temporary name that won't conflict:
-                        monitors[mi].name = self.xatom("DUMMY%i-%s" % (mi, monotonic()))
-                        XRRSetMonitor(self.display, window, &monitors[mi])
+                    monitors[mi].name = self.xatom("DUMMY%i-%s" % (mi, monotonic()))
+                    XRRSetMonitor(self.display, window, &monitors[mi])
             finally:
                 XRRFreeMonitors(monitors)
             self.XSync()
@@ -1141,17 +1143,16 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             for mi in range(nmonitors):
                 names[mi] = bytestostr(self.XGetAtomName(monitors[mi].name))
             log("found %i monitors still active: %s", nmonitors, csv(names.values()))
+            active_names = []
             try:
-                for mi in range(nmonitors):
-                    m = monitor_defs.get(mi, {})
-                    if not m:
-                        log("no monitor definition for index %i", mi)
-                        continue
-                    log("setting monitor %i: %s", mi, m)
-                    name = (prettify_plug_name(m.get("name", "")) or ("DUMMY%i" % mi))
+                mi = 0
+                for i, m  in monitor_defs.items():
+                    log("matching monitor index %i to %i: %s", mi, i, m)
+                    name = (prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi))
                     while name in names.values() and names.get(mi)!=name:
                         name += "-%i" % mi
                     names[mi] = name
+                    active_names.append(name)
                     monitor.name = self.xatom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
@@ -1161,14 +1162,29 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     monitor.height = m.get("height", 128)
                     monitor.mwidth = m.get("mm-width", dpi96(monitor.width))
                     monitor.mheight = m.get("mm-height", dpi96(monitor.height))
-                    assert rsc.noutput>mi, "only %i outputs, cannot set %i" % (rsc.noutput, mi)
-                    output = rsc.outputs[mi]
+                    assert rsc.noutput>i, "only %i outputs, cannot set %i" % (rsc.noutput, i)
+                    output = rsc.outputs[i]
                     monitor.outputs = &output
                     monitor.noutput = 1
                     log("XRRSetMonitor(%#x, %#x, %#x)", <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> &monitor)
                     XRRSetMonitor(self.display, window, &monitor)
                     log.info("monitor %i is %r %ix%i", mi, name, monitor.width, monitor.height)
                     self.XSync()
+                    mi += 1
+            finally:
+                XRRFreeMonitors(monitors)
+            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            if not monitors:
+                log.error("Error: failed to retrieve the list of monitors")
+                return False
+            #delete inactive monitors:
+            try:
+                for mi in range(nmonitors):
+                    name_atom = monitors[mi].name
+                    name = bytestostr(self.XGetAtomName(name_atom))
+                    if name not in active_names:
+                        log("deleting monitor %i: %s", mi, name)
+                        XRRDeleteMonitor(self.display, window, name_atom)
             finally:
                 XRRFreeMonitors(monitors)
         finally:

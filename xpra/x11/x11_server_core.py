@@ -110,8 +110,8 @@ class X11ServerCore(GTKServerBase):
         try:
             self.initial_resolutions = parse_resolutions(opts.resize_display)
         except ValueError:
-            pass
-        self.randr = bool(self.initial_resolutions) or not (opts.resize_display in FALSE_OPTIONS)
+            self.initial_resolutions = None
+        self.randr = opts.resize_display not in FALSE_OPTIONS
         self.randr_exact_size = False
         self.fake_xinerama = "no"      #only enabled in seamless server
         self.current_xinerama_config = None

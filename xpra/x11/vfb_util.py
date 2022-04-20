@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE, call
 import os.path
 
 from xpra.common import RESOLUTION_ALIASES
-from xpra.scripts.config import InitException, get_Xdummy_confdir
+from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
 from xpra.util import envbool, envint
 from xpra.os_util import (
     shellsub,
@@ -41,8 +41,10 @@ def parse_resolution(s):
     assert len(res)==2, "invalid resolution string '%s'" % s
     return res
 def parse_resolutions(s):
-    if not s:
+    if not s or s.lower() in FALSE_OPTIONS:
         return None
+    if s.lower() in ("none", "default"):
+        return ()
     return (parse_resolution(v) for v in s.split(","))
 def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
                           single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
@@ -373,7 +375,7 @@ def set_initial_resolution(resolutions=DEFAULT_VFB_RESOLUTIONS):
             log("RandR setting new screen size to %s", res)
             randr.set_screen_size(*res)
     except Exception as e:
-        log("set_initial_resolution(%s)", res, exc_info=True)
+        log("set_initial_resolution(%s)", resolutions, exc_info=True)
         log.error("Error: failed to set the default screen size:")
         log.error(" %s", e)
 

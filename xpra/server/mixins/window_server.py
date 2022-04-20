@@ -310,10 +310,12 @@ class WindowServer(StubServerMixin):
             self._set_client_properties(proto, wid, window, client_properties)
             ss.update_batch(wid, window, batch_props)
 
-    def _refresh_windows(self, proto, wid_windows, opts):
+    def _refresh_windows(self, proto, wid_windows, opts=None):
         ss = self.get_server_source(proto)
-        if ss is None:
-            return
+        if ss:
+            self.do_refresh_windows(ss, wid_windows, opts)
+
+    def do_refresh_windows(self, ss, wid_windows, opts=None):
         for wid, window in wid_windows.items():
             if window is None or not window.is_managed():
                 continue
@@ -325,6 +327,10 @@ class WindowServer(StubServerMixin):
     def _idle_refresh_all_windows(self, proto):
         self.idle_add(self._refresh_windows, proto, self._id_to_window, {})
 
+    def refresh_all_windows(self):
+        for ss in tuple(self._server_sources.values()):
+            if not isinstance(ss, WindowsMixin):
+                self.do_refresh_windows(ss, self._id_to_window)
 
     def get_window_position(self, _window):
         #where the window is actually mapped on the server screen:

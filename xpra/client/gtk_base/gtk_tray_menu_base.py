@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import re
 from gi.repository import GLib, Gtk
 
@@ -55,6 +56,9 @@ WINDOWS_MENU = envbool("XPRA_SHOW_WINDOWS_MENU", True)
 START_MENU = envbool("XPRA_SHOW_START_MENU", True)
 MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 
+
+NEW_MONITOR_RESOLUTIONS = os.environ.get("XPRA_NEW_MONITOR_RESOLUTIONS",
+                                         "640x480,1024x768,1600x1200,FHD,4K").split(",")
 
 CLIPBOARD_LABELS = ["Clipboard", "Primary", "Secondary"]
 CLIPBOARD_LABEL_TO_NAME = {
@@ -1191,7 +1195,7 @@ class GTKTrayMenuBase(MenuHelper):
             for x in menu.get_children():
                 menu.remove(x)
             def monitor_changed(mitem, index):
-                log("monitor_changed(%s, %s)", monitor, index)
+                log("monitor_changed(%s, %s)", mitem, index)
                 self.client.send_remove_monitor(index)
             for i, monitor in self.client.server_monitors.items():
                 mitem = Gtk.CheckMenuItem(label=monitor.get("name", "VFB-%i" % i))
@@ -1204,11 +1208,11 @@ class GTKTrayMenuBase(MenuHelper):
             resolutions_menu = Gtk.Menu()
             add_monitor_item.set_submenu(resolutions_menu)
             def add_monitor(mitem, resolution):
-                log("add_monitor(%s)", resolution)
+                log("add_monitor(%s, %s)", mitem, resolution)
                 #older servers may not have all the aliases:
                 resolution = RESOLUTION_ALIASES.get(resolution, resolution)
                 self.client.send_add_monitor(resolution)
-            for resolution in ("1024x768", "1080p", "4k"):
+            for resolution in NEW_MONITOR_RESOLUTIONS:
                 mitem = self.menuitem(resolution)
                 mitem.connect("activate", add_monitor, resolution)
                 resolutions_menu.append(mitem)
