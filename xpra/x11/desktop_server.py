@@ -10,7 +10,6 @@ from collections import namedtuple
 from gi.repository import GObject, Gdk, Gio, GLib
 
 from xpra.os_util import get_generic_os_name, load_binary_file
-from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util import updict, log_screen_sizes, envbool, csv
 from xpra.platform.paths import get_icon, get_icon_filename
 from xpra.platform.gui import get_wm_name
@@ -35,12 +34,11 @@ from xpra.rectangle import rectangle  #@UnresolvedImport
 from xpra.gtk_common.error import xsync, xlog
 from xpra.log import Logger
 
-log = Logger("server")
-
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
 RandR = RandRBindings()
 
+log = Logger("server")
 windowlog = Logger("server", "window")
 geomlog = Logger("server", "window", "geometry")
 metadatalog = Logger("x11", "metadata")
@@ -92,8 +90,7 @@ class DesktopModel(WindowModelStub, WindowDamageHandler):
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
     def __init__(self):
-        display = Gdk.Display.get_default()
-        screen = display.get_screen(0)
+        screen = Gdk.Screen.get_default()
         root = screen.get_root_window()
         WindowDamageHandler.__init__(self, root)
         WindowModelStub.__init__(self)
@@ -410,17 +407,10 @@ class MonitorDesktopModel(DesktopModel):
 
     def do_resize(self):
         self.resize_timer = None
-        saved_width = self.monitor.get("width", 0)
-        saved_height = self.monitor.get("height", 0)
+        x, y, saved_width, saved_height = self.monitor_geometry
         width, height = self.resize_value
-        self.monitor.update({
-            "width" : width,
-            "height" : height,
-            })
-        self.resize_delta = width-saved_width, height-saved_height
-        x = self.monitor.get("x", 0)
-        y = self.monitor.get("y", 0)
         self.monitor_geometry = (x, y, width, height)
+        self.resize_delta = width-saved_width, height-saved_height
         self.emit("resized")
 
 
@@ -446,6 +436,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         "xpra-xkb-event"        : one_arg_signal,
         "xpra-cursor-event"     : one_arg_signal,
         "xpra-motion-event"     : one_arg_signal,
+        "xpra-configure-event"  : one_arg_signal,
         }
 
     def __init__(self):
@@ -458,6 +449,10 @@ class XpraDesktopServer(DesktopServerBaseClass):
         if MULTI_MONITORS:
             with xlog:
                 self.multi_monitors = RandR.is_dummy16()
+        if self.multi_monitors:
+            self.reconfigure_timer = 0
+        else:
+            self.resize_timer = 0
         self.gsettings_modified = {}
         self.root_prop_watcher = None
 
@@ -562,9 +557,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 
     def do_screen_changed(self, screen):
-        if self.multi_monitors:
-            #TODO: update monitors
-            pass
+        pass
 
     def get_best_screen_size(self, desired_w, desired_h, bigger=False):
         return self.do_get_best_screen_size(desired_w, desired_h, bigger)
@@ -594,9 +587,7 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def resize(self, w, h):
         if self.multi_monitors:
-            import traceback
-            traceback.print_stack()
-            return
+            raise Exception("resize should not be called in multi-monitors mode")
         geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")
@@ -660,7 +651,11 @@ class XpraDesktopServer(DesktopServerBaseClass):
                 monitors = RandR.get_monitor_properties()
                 for i, monitor in monitors.items():
                     self.add_monitor_model(i+1, monitor)
-                return
+            #does not fire: (because of GTK?)
+            #RandR.select_crtc_output_changes()
+            #screen = Gdk.Screen.get_default()
+            #screen.connect("monitors-changed", self.monitors_changed)
+            return
         #legacy mode: just a single window
         with xsync:
             model = ScreenDesktopModel(self.randr_exact_size)
@@ -678,6 +673,20 @@ class XpraDesktopServer(DesktopServerBaseClass):
         for ss in self.window_sources():
             ss.resize_window(wid, model, w, h)
             ss.damage(wid, model, 0, 0, w, h)
+
+    ################################################################
+    #per-monitor
+    def do_xpra_configure_event(self, event):
+        #the root window changed,
+        #check to see if a monitor has been modified
+        #do this via a timer to avoid running multiple times
+        #as we get multiple events for the same change
+        log("do_xpra_configure_event(%s)", event)
+        if not self.reconfigure_timer:
+            self.reconfigure_timer = self.timeout_add(50, self.do_reconfigure)
+
+    def do_reconfigure(self):
+        self.reconfigure_timer = 0
 
 
     def add_monitor_model(self, wid, monitor):
