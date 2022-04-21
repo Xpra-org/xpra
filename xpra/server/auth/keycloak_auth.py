@@ -94,7 +94,7 @@ class Authenticator(SysAuthenticator):
           log("failed to load response %r", response, exc_info=True)
           return False
 
-        log("check(%r)", response, exc_info=True)
+        log("check(%r)", response)
 
         auth_code = response.get("code")
         error = response.get("error")
@@ -107,6 +107,7 @@ class Authenticator(SysAuthenticator):
         if not auth_code:
           log.error("Error: keycloak authentication failed")
           log.error("Invalid response received from authorization endpoint")
+          return False
 
         try:
           from keycloak import KeycloakOpenID
