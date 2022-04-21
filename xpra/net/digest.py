@@ -67,8 +67,8 @@ def gendigest(digest, password, salt):
         salt = salt.ljust(16, b"\x00")[:16]
         v = generate_response(password, salt)
         return hexstr(v)
-    if digest in ("xor", "kerberos", "gss"):
-        #kerberos and gss use xor because we need to use the actual token
+    if digest in ("xor", "kerberos", "gss", "keycloak"):
+        #kerberos, gss and keycloak use xor because we need to use the actual token
         #at the other end
         salt = salt.ljust(len(password), b"\x00")[:len(password)]
         from xpra.buffers.cyxor import xor_str           #@UnresolvedImport pylint: disable=import-outside-toplevel

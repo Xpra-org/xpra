@@ -41,6 +41,7 @@ Here is the full list:
 |[kerberos-password](../../xpra/server/auth/kerberos_password_auth.py)|Uses kerberos to authenticate a username + password|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
 |[kerberos-ticket](../../xpra/server/auth/kerberos_ticket_auth.py)|Uses a kerberos ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
 |[gss_auth](../../xpra/trunk/src/xpra/server/auth/gss_auth.py)|Uses a GSS ticket to authenticate a client|[#1691](../https://github.com/Xpra-org/xpra/issues/1691)|
+|[keycloak](../../xpra/server/auth/keycloak_auth.py)|Uses a keycloak token to authenticate a client|[#3334](../https://github.com/Xpra-org/xpra/issues/3334)|
 |[ldap](../../xpra/server/auth/ldap_auth.py)|Uses ldap via [python-ldap](https://www.python-ldap.org/en/latest/)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
 |[ldap3](../../xpra/server/auth/ldap3_auth.py)|Uses ldap via [python-ldap3](https://github.com/cannatag/ldap3)|[#1791](../https://github.com/Xpra-org/xpra/issues/1791)|
 |[u2f](../../xpra/trunk/src/xpra/server/auth/u2f_auth.py)|[Universal 2nd Factor](https://en.wikipedia.org/wiki/Universal_2nd_Factor)|[#1789](../https://github.com/Xpra-org/xpra/issues/1789)|
@@ -134,7 +135,7 @@ The steps below assume that the client and server have been configured to use au
 * if the server is not configured for authentication, the client connection should be accepted and a warning will be printed
 * if the client is not configured for authentication, a password dialog may show up, and the connection will fail with an authentication error if the correct value is not supplied
 * if multiple authentication modules are specified, the client may bring up multiple authentication dialogs
-* how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `kerberos`, `gss`, `u2f` and finally `prompt`
+* how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `kerberos`, `gss`, `keycloak`, `u2f` and finally `prompt`
 </details>
 <details>
   <summary>module and platform specific notes</summary>
