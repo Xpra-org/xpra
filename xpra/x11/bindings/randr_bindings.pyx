@@ -61,6 +61,12 @@ cdef extern from "X11/extensions/randr.h":
     int RR_DoubleClock
     int RR_ClockDivideBy2
 
+    int RRScreenChangeNotifyMask
+    int RRCrtcChangeNotifyMask
+    int RROutputChangeNotifyMask
+    int RROutputPropertyNotifyMask
+
+
 MODE_FLAGS_STR = {
     RR_HSyncPositive    : "HSyncPositive",
     RR_HSyncNegative    : "HSyncNegative",
@@ -127,6 +133,8 @@ cdef extern from "X11/extensions/Xrandr.h":
 
     Bool XRRQueryExtension(Display *, int *, int *)
     Status XRRQueryVersion(Display *, int * major, int * minor)
+
+    void XRRSelectInput(Display *dpy, Window window, int mask)
     ctypedef struct XRRScreenSize:
         int width, height
         int mwidth, mheight
@@ -328,6 +336,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def has_randr(self):
         return bool(self._has_randr)
+
+    def select_crtc_output_changes(self):
+        cdef int mask = RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask | RROutputChangeNotifyMask | RROutputPropertyNotifyMask
+        cdef Window root = XDefaultRootWindow(self.display)
+        XRRSelectInput(self.display, root, mask)
 
     cdef _get_xrr_screen_sizes(self):
         cdef int num_sizes = 0
@@ -940,7 +953,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     props["primary-output"] = o
                 output_info = self.get_output_info(rsc, rsc.outputs[o])
                 if output_info:
-                    props.setdefault("outputs", {})[o] = output_info
+                    oid = output_info["id"]
+                    props.setdefault("outputs", {})[oid] = output_info
             for crtc in range(rsc.ncrtc):
                 crtc_info = self.get_crtc_info(rsc, rsc.crtcs[crtc])
                 if crtc_info:
@@ -980,6 +994,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeScreenResources(rsc)
 
     def set_crtc_config(self, monitor_defs):
+        self.context_check()
         log("set_crtc_config(%s)", monitor_defs)
         def dpi96(v):
             return round(v * 25.4 / 96)
@@ -1025,7 +1040,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef XRRMonitorInfo monitor
         primary = 0
         try:
-            #re-configure all crtcs:
             for i in range(rsc.ncrtc):
                 m = monitor_defs.get(i, {})
                 crtc = rsc.crtcs[i]
