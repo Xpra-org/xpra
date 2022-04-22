@@ -203,7 +203,9 @@ def configure_logging(options, mode):
         )
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
-        "start", "start-desktop", "upgrade", "upgrade-seamless", "upgrade-desktop", "recover",
+        "start", "start-desktop", "start-monitor",
+        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
+        "recover",
         "attach", "listen", "shadow", "proxy",
         "_sound_record", "_sound_play",
         "stop", "print", "showconfig",
@@ -443,6 +445,7 @@ def do_run_mode(script_file, cmdline, error_cb, options, args, mode, defaults):
 
     if mode in (
         "start", "start-desktop",
+        "monitor", "start-monitor",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "shadow", "proxy",
         ):
@@ -1694,7 +1697,7 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
     mode = MODE_ALIAS.get(mode, mode)
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
-    if mode in ("start", "start-desktop") and parse_bool("attach", options.attach) is True:
+    if mode in ("start", "start-desktop", "start-monitor") and parse_bool("attach", options.attach) is True:
         if args and not display_is_remote:
             #maybe the server is already running for the display specified
             #then we don't even need to bother trying to start it:
@@ -1725,21 +1728,24 @@ def run_server(script_file, cmdline, error_cb, options, args, mode, defaults):
                 options.resize_display = "%ix%i" % (root_w, root_h)
 
     if mode in (
-        "start", "start-desktop",
-        "upgrade", "upgrade-seamless", "upgrade-desktop",
+        "start", "start-desktop", "start-monitor",
+        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         ) and (OSX or WIN32):
         raise InitException("%s is not supported on this platform" % mode)
 
     if (
-        mode in ("start", "start-desktop", "upgrade", "upgrade-seamless", "upgrade-desktop") and not supports_server
+        mode in ("start", "start-desktop", "start-monitor",
+                 "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor") and not supports_server
         ) or (
         mode=="shadow" and not supports_shadow
         ) or (
         mode=="proxy" and not supports_proxy
         ) or (
-        mode not in ("start", "start-desktop", "upgrade", "upgrade-seamless", "upgrade-desktop", "shadow", "proxy")
+        mode not in ("start", "start-desktop", "start-monitor",
+                     "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
+                     "shadow", "proxy")
         ):
-        raise InitException("%s is not supported by this local installation" % mode)
+        raise InitException("%s is not supported by this build of xpra" % mode)
 
     if mode in ("start", "start-desktop") and args and parse_bool("attach", options.attach) is True:
         assert not display_is_remote

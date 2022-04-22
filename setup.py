@@ -1927,7 +1927,7 @@ if xinput_ENABLED:
                 )
 
 toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
-toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models")
+toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop")
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.gtk3")
     #GTK3 display source:

@@ -29,6 +29,7 @@ from xpra.scripts.config import (
 MODE_ALIAS = {
     "seamless"  : "start",
     "desktop"   : "start-desktop",
+    "monitor"   : "start-monitor",
     }
 
 def enabled_str(v, true_str="yes", false_str="no") -> str:
@@ -716,6 +717,7 @@ def get_server_modes():
     if supports_server:
         server_modes.append("start")
         server_modes.append("start-desktop")
+        server_modes.append("start-monitor")
         server_modes.append("upgrade")
     if supports_shadow:
         server_modes.append("shadow")
@@ -731,6 +733,7 @@ def get_usage():
     if supports_server:
         command_options += ["start [DISPLAY]",
                            "start-desktop [DISPLAY]",
+                           "start-monitor [DISPLAY]",
                            "upgrade [DISPLAY]",
                            "upgrade-desktop [DISPLAY]",
                            "recover [DISPLAY]",
@@ -1843,6 +1846,7 @@ def do_parse_cmdline(cmdline, defaults):
         "attach",
         "start", "seamless",
         "start-desktop", "desktop",
+        "start-monitor", "monitor",
         "upgrade", "upgrade-seamless", "upgrade-desktop",
         "recover",
         "shadow", "proxy",

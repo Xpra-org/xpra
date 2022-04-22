@@ -295,8 +295,12 @@ def set_server_features(opts):
     server_features.rfb             = b(opts.rfb_upgrade) and impcheck("server.rfb")
 
 
+def make_monitor_server():
+    from xpra.x11.desktop.monitor_server import XpraMonitorServer
+    return XpraMonitorServer()
+
 def make_desktop_server():
-    from xpra.x11.desktop_server import XpraDesktopServer
+    from xpra.x11.desktop.desktop_server import XpraDesktopServer
     return XpraDesktopServer()
 
 def make_server(clobber):
@@ -599,9 +603,11 @@ def is_splash_enabled(mode, daemon, splash, display):
 MODE_TO_NAME = {
     "start"             : "Seamless",
     "start-desktop"     : "Desktop",
+    "start-monitor"     : "Monitor",
     "upgrade"           : "Upgrade",
     "upgrade-seamless"  : "Seamless Upgrade",
     "upgrade-desktop"   : "Desktop Upgrade",
+    "upgrade-monitor"   : "Monitor Upgrade",
     "shadow"            : "Shadow",
     "proxy"             : "Proxy",
     }
@@ -626,8 +632,8 @@ def request_exit(uri):
 
 def do_run_server(script_file, cmdline, error_cb, opts, extra_args, mode, display_name, defaults):
     assert mode in (
-        "start", "start-desktop",
-        "upgrade", "upgrade-seamless", "upgrade-desktop",
+        "start", "start-desktop", "start-monitor",
+        "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "shadow", "proxy",
         )
     validate_encryption(opts)
@@ -690,7 +696,8 @@ def _do_run_server(script_file, cmdline,
 
     use_display = parse_bool("use-display", opts.use_display)
     starting  = mode == "start"
-    starting_desktop = mode == "start-desktop"
+    starting_desktop = mode=="start-desktop"
+    starting_monitor = mode=="start-monitor"
     upgrading = mode.startswith("upgrade")
     shadowing = mode == "shadow"
     proxying  = mode == "proxy"
@@ -953,7 +960,7 @@ def _do_run_server(script_file, cmdline,
     if env_script:
         write_session_file("server.env", env_script)
     write_session_file("cmdline", "\n".join(cmdline)+"\n")
-    upgrading_seamless = upgrading_desktop = False
+    upgrading_seamless = upgrading_desktop = upgrading_monitor = False
     if upgrading:
         #if we had saved the start / start-desktop config, reload it:
         mode = apply_config(opts, mode)
@@ -962,7 +969,8 @@ def _do_run_server(script_file, cmdline,
         if mode.startswith("start-"):
             mode = mode[len("start-"):]
         upgrading_desktop = mode=="desktop"
-        upgrading_seamless = not upgrading_desktop
+        upgrading_monitor = mode=="monitor"
+        upgrading_seamless = not (upgrading_desktop or upgrading_monitor)
 
     write_session_file("config", get_options_file_contents(opts, mode))
 
@@ -1014,7 +1022,7 @@ def _do_run_server(script_file, cmdline,
         warn(" you should also enable the sync-xvfb option")
         warn(" to keep the Xephyr window updated")
 
-    if not (shadowing or starting_desktop or upgrading_desktop):
+    if not (shadowing or starting_desktop or upgrading_desktop or upgrading_monitor):
         opts.rfb_upgrade = 0
         if opts.bind_rfb:
             get_util_logger().warn("Warning: bind-rfb sockets cannot be used with '%s' mode" % mode)
@@ -1257,7 +1265,7 @@ def _do_run_server(script_file, cmdline,
         dbus_pid, dbus_env = reload_dbus_attributes(display_name)
         if not dbus_pid and dbus_env:
             no_gtk()
-            assert starting or starting_desktop or proxying
+            assert starting or starting_desktop or starting_monitor or proxying
             try:
                 from xpra.server.dbus.dbus_start import start_dbus
             except ImportError as e:
@@ -1299,7 +1307,7 @@ def _do_run_server(script_file, cmdline,
             #all unix domain sockets:
             ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
             forward_xdg_open = bool(opts.forward_xdg_open) or (
-                opts.forward_xdg_open is None and mode.find("desktop")<0)
+                opts.forward_xdg_open is None and mode.find("desktop")<0 and mode.find("monitor")<0)
             if ud_paths:
                 if forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):
                     os.environ["PATH"] = "/usr/libexec/xpra"+os.pathsep+os.environ.get("PATH", "")
@@ -1340,9 +1348,11 @@ def _do_run_server(script_file, cmdline,
     else:
         if starting or upgrading_seamless:
             app = make_server(clobber)
-        else:
-            assert starting_desktop or upgrading_desktop
+        elif starting_desktop or upgrading_desktop:
             app = make_desktop_server()
+        else:
+            assert starting_monitor or upgrading_monitor
+            app = make_monitor_server()
         app.init_virtual_devices(devices)
 
     def server_not_started(msg="server not started"):
