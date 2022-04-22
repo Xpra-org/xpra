@@ -683,10 +683,90 @@ class XpraDesktopServer(DesktopServerBaseClass):
         #as we get multiple events for the same change
         log("do_xpra_configure_event(%s)", event)
         if not self.reconfigure_timer:
-            self.reconfigure_timer = self.timeout_add(50, self.do_reconfigure)
+            self.reconfigure_timer = self.timeout_add(50, self.reconfigure)
+
+    def reconfigure(self):
+        try:
+            self.do_reconfigure()
+        finally:
+            self.reconfigure_timer = 0
 
     def do_reconfigure(self):
-        self.reconfigure_timer = 0
+        #verify that our models are up to date
+        #we look for the crtcs because that's what tools like `xrandr` can modify easily
+        # ie: xrandr --output DUMMY1 --mode 1024x768
+        mdefs = {}
+        with xlog:
+            info = RandR.get_all_screen_properties()
+            crtcs = info.get("crtcs")
+            outputs = info.get("outputs")
+            monitors = info.get("monitors")
+            def find_monitor(output_id):
+                for minfo in monitors.values():
+                    if output_id in minfo.get("outputs", ()):
+                        return minfo
+                return None
+            screenlog("do_reconfigure() crtcs=%s", crtcs)
+            screenlog("do_reconfigure() outputs=%s", outputs)
+            screenlog("do_reconfigure() monitors=%s", monitors)
+            if not crtcs or not outputs:
+                return
+            for i, crtc_info in crtcs.items():
+                #find the monitor for this crtc:
+                if crtc_info.get("noutput", 0)!=1:
+                    screenlog("no outputs on crtc %i", i)
+                    continue
+                output_id = crtc_info.get("outputs")[0]
+                output_info = outputs.get(output_id)
+                if not output_info:
+                    screenlog("output %i not found")
+                    continue
+                if output_info.get("connection")!="Connected":
+                    screenlog("output %i is not connected", output_id)
+                    continue
+                monitor_info = find_monitor(output_id)
+                if not monitor_info:
+                    screenlog("no monitor found for output id %i", output_id)
+                    return
+                #get the geometry from the crtc:
+                mdef = dict((k,v) for k,v in crtc_info.items() if k in ("x", "y", "width", "height"))
+                #add the milimeter dimensions from the output:
+                mdef.update((k, v) for k,v in output_info.items() if k in ("mm-width", "mm-height"))
+                #and some monitor attributes:
+                mdef.update((k, v) for k,v in output_info.items() if k in ("primary", "automatic", "name"))
+                mdefs[i] = mdef
+                screenlog("do_reconfigure() %i: %s", i, mdef)
+            if self.sync_monitors_to_models(mdefs):
+                self.reconfigure_monitors()
+
+    def sync_monitors_to_models(self, monitors):
+        #now update the monitor models with this data:
+        screenlog("sync_monitors_to_models(%s)", monitors)
+        mods = 0
+        for i, monitor in monitors.items():
+            wid = i+1
+            model = self._id_to_window.get(wid)
+            if not model:
+                #found a new monitor!
+                screenlog("found a new monitor: %s", monitor)
+                self.add_monitor_model(wid, monitor)
+                continue
+            mdef = model.get_definition()
+            diff = [k for k in ("x", "y", "width", "height") if monitor.get(k)!=mdef.get(k)]
+            screenlog("model %i geometry modified %s from %s to %s",
+                      wid, diff, [mdef.get(k) for k in diff], [monitor.get(k) for k in diff])
+            if diff:
+                #re-initialize with new geometry:
+                log("was %s, now %s", mdef, monitor)
+                model.init(monitor)
+                model.emit("resized")
+                mods += 1
+            if mdef.get("name", "")!=monitor.get("name", ""):
+                model.name = monitor.get("name")
+                screenlog("monitor name has changed to %r", model.name)
+                #name is used to generate the window "title":
+                self.notify("title")
+        return mods
 
 
     def add_monitor_model(self, wid, monitor):
@@ -700,8 +780,15 @@ class XpraDesktopServer(DesktopServerBaseClass):
 
     def monitor_resized(self, model):
         delta_x, delta_y = model.resize_delta
-        rwid = self._window_to_id[model]
-        screenlog("monitor_resized(%s) delta=%s, wid=%i", model, (delta_x, delta_y), rwid)
+        wid = self._window_to_id[model]
+        w, h = model.get_dimensions()
+        screenlog("monitor_resized(%s) size=%s, delta=%s, wid=%i",
+                        model, (w, h), (delta_x, delta_y), wid)
+        for ss in self.window_sources():
+            ss.resize_window(wid, model, w, h)
+        if self.reconfigure_timer:
+            #we're in the process of adjusting things
+            return
         #we adjust the position of monitors after this one,
         #assuming that they are defined left to right!
         #first the models:

@@ -1039,6 +1039,8 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef XRRMonitorInfo *monitors
         cdef XRRMonitorInfo monitor
         primary = 0
+        #we can't have monitor names the same as output names!?
+        output_names = []
         try:
             for i in range(rsc.ncrtc):
                 m = monitor_defs.get(i, {})
@@ -1059,6 +1061,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     if not output_info:
                         log.error("Error: output %i not found (%#x)", i, output)
                         continue
+                    output_names.append(bytestostr(output_info.name[:output_info.nameLen]))
                     if crtc_info.noutput==0 and output_info.connection==RR_Disconnected and not m:
                         #crtc is not enabled and the corresponding output is not connected,
                         #which is exactly what we want, so just leave it alone
@@ -1133,18 +1136,24 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 log.error("Error: failed to retrieve the list of monitors")
                 return False
             log("got %i monitors for %s crtcs", nmonitors, len(monitor_defs))
-            #start by renaming the ones we do use and removing the ones we don't,
-            #which makes it easier to prevent name Atom conflicts:
+            #start by removing the ones we don't use:
             try:
                 #we only need as many monitors as we have crtcs,
-                #delete any extra ones:
-                for mi in range(nmonitors, len(monitor_defs)):
+                for mi in range(len(monitor_defs), nmonitors):
                     name_atom = monitors[mi].name
                     log("deleting monitor %i: %s", mi, bytestostr(self.XGetAtomName(name_atom)))
                     XRRDeleteMonitor(self.display, window, name_atom)
-                #use a temporary name that won't conflict when we modify the monitors:
+            finally:
+                XRRFreeMonitors(monitors)
+            self.XSync()
+            #rename the ones we do use
+            #which makes it easier to prevent name Atom conflicts:
+            #we use a temporary name that is guaranteed to never conflict
+            #when we finally modify the monitors to use the unique name we actually want:
+            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
+            try:
                 for mi in range(nmonitors):
-                    monitors[mi].name = self.xatom("DUMMY%i-%s" % (mi, monotonic()))
+                    monitors[mi].name = self.xatom("VFB%i-%s" % (mi, monotonic()))
                     XRRSetMonitor(self.display, window, &monitors[mi])
             finally:
                 XRRFreeMonitors(monitors)
@@ -1153,21 +1162,22 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             if not monitors:
                 log.error("Error: failed to retrieve the list of monitors")
                 return False
-            names = {}
-            for mi in range(nmonitors):
-                names[mi] = bytestostr(self.XGetAtomName(monitors[mi].name))
-            log("found %i monitors still active: %s", nmonitors, csv(names.values()))
-            active_names = []
             try:
+                names = {}
+                for mi in range(nmonitors):
+                    names[mi] = bytestostr(self.XGetAtomName(monitors[mi].name))
+                log("found %i monitors still active: %s", nmonitors, csv(names.values()))
+                active_names = {}
                 mi = 0
                 for i, m  in monitor_defs.items():
                     log("matching monitor index %i to %i: %s", mi, i, m)
                     name = (prettify_plug_name(m.get("name", "")) or ("VFB-%i" % mi))
-                    while name in names.values() and names.get(mi)!=name:
+                    if name in output_names:
+                        name = "VFB-%i" % mi
+                    while (name in names.values() or name in active_names.values()) and names.get(mi)!=name and active_names.get(mi)!=name:
                         name += "-%i" % mi
-                    names[mi] = name
-                    active_names.append(name)
-                    monitor.name = self.xatom(name)
+                    active_names[mi] = name
+                    monitors[mi].name = self.xatom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
                     monitor.x = m.get("x", 0)
@@ -1180,25 +1190,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     output = rsc.outputs[i]
                     monitor.outputs = &output
                     monitor.noutput = 1
-                    log("XRRSetMonitor(%#x, %#x, %#x)", <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> &monitor)
-                    XRRSetMonitor(self.display, window, &monitor)
-                    log.info("monitor %i is %r %ix%i", mi, name, monitor.width, monitor.height)
-                    self.XSync()
+                    log("XRRSetMonitor(%#x, %#x, %#x) output=%i",
+                        <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> &monitor, output)
+                    log.info("monitor %i is %r %ix%i", mi, name, monitors[mi].width, monitors[mi].height)
+                    XRRSetMonitor(self.display, window, &monitors[mi])
                     mi += 1
-            finally:
-                XRRFreeMonitors(monitors)
-            monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
-            if not monitors:
-                log.error("Error: failed to retrieve the list of monitors")
-                return False
-            #delete inactive monitors:
-            try:
-                for mi in range(nmonitors):
-                    name_atom = monitors[mi].name
-                    name = bytestostr(self.XGetAtomName(name_atom))
-                    if name not in active_names:
-                        log("deleting monitor %i: %s", mi, name)
-                        XRRDeleteMonitor(self.display, window, name_atom)
             finally:
                 XRRFreeMonitors(monitors)
         finally:
