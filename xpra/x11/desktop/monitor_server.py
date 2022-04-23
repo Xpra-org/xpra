@@ -352,28 +352,6 @@ class XpraMonitorServer(DesktopServerBase):
         self.refresh_all_windows()
 
 
-    def _set_window_state(self, proto, wid, window, new_window_state):
-        if not new_window_state:
-            return []
-        metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
-        changes = []
-        #boolean: but not a wm_state and renamed in the model... (iconic vs iconified!)
-        iconified = new_window_state.get("iconified")
-        if iconified is not None:
-            if window._updateprop("iconic", iconified):
-                changes.append("iconified")
-        focused = new_window_state.get("focused")
-        if focused is not None:
-            if window._updateprop("focused", focused):
-                changes.append("focused")
-        return changes
-
-
-    def _process_close_window(self, proto, packet):
-        #disconnect?
-        pass
-
-
     def init_packet_handlers(self):
         super().init_packet_handlers()
         self.add_packet_handlers({
