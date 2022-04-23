@@ -1190,9 +1190,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     output = rsc.outputs[i]
                     monitor.outputs = &output
                     monitor.noutput = 1
-                    log("XRRSetMonitor(%#x, %#x, %#x) output=%i",
-                        <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> &monitor, output)
-                    log.info("monitor %i is %r %ix%i", mi, name, monitors[mi].width, monitors[mi].height)
+                    log("XRRSetMonitor(%#x, %#x, %#x) output=%i, geometry=%s (%ix%i mm)",
+                        <uintptr_t> self.display, <uintptr_t> window, <uintptr_t> &monitor, output,
+                        (monitor.x, monitor.y, monitor.width, monitor.height),
+                        monitor.mwidth, monitor.mheight)
+                    log.info("monitor %i is %r %ix%i", mi, name, monitor.width, monitor.height)
                     XRRSetMonitor(self.display, window, &monitors[mi])
                     mi += 1
             finally:
