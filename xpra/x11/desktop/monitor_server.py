@@ -58,7 +58,7 @@ class XpraMonitorServer(DesktopServerBase):
         capabilities = super().make_hello(source)
         if source.wants_features:
             capabilities.update({
-                                 #"desktop"          : True,
+                                 "monitor"          : True,
                                  "multi-monitors"   : True,
                                  "monitors"         : self.get_monitor_config(),
                                  "monitors.min-size" : MIN_SIZE,
@@ -140,6 +140,7 @@ class XpraMonitorServer(DesktopServerBase):
                 screenlog("do_reconfigure() %i: %s", i, mdef)
             if self.sync_monitors_to_models(mdefs):
                 self.reconfigure_monitors()
+        self.refresh_all_windows()
 
     def sync_monitors_to_models(self, monitors):
         #now update the monitor models with this data:
@@ -194,7 +195,7 @@ class XpraMonitorServer(DesktopServerBase):
         #we adjust the position of monitors after this one,
         #assuming that they are defined left to right!
         #first the models:
-        self._adjust_monitors(rwid, delta_x, delta_y)
+        self._adjust_monitors(wid, delta_x, delta_y)
         self.reconfigure_monitors()
 
     def reconfigure_monitors(self):
@@ -255,6 +256,77 @@ class XpraMonitorServer(DesktopServerBase):
         with xsync:
             RandR.set_crtc_config(monitor_defs)
 
+
+    def remove_monitor(self, wid):
+        screenlog("removing monitor for wid %i : %s", wid, model)
+        model = self._id_to_window.get(wid)
+        assert model, "monitor %r not found" % wid
+        assert len(self._id_to_window)>1, "cannot remove the last monitor"
+        delta_x = -model.get_definition().get("width", 0)
+        delta_y = 0 #model.monitor.get("width", 0)
+        model.unmanage()
+        wid = self._remove_window(model)
+        #adjust the position of the other monitors:
+        self._adjust_monitors(wid, delta_x, delta_y)
+        self.reconfigure_monitors()
+
+    def add_monitor(self, width, height):
+        assert len(self._id_to_window)<16, "already too many monitors: %i" % len(self._id_to_window)
+        assert isinstance(width, int) and isinstance(height, int)
+        assert (width, height)>=MIN_SIZE and (width, height)<=MAX_SIZE
+        #find the wid to use:
+        #prefer just incrementing the wid, but we cannot go higher than 16
+        def rightof(wid):
+            mdef = self._id_to_window[wid].get_definition()
+            x = mdef.get("x", 0)+mdef.get("width", 0)
+            y = mdef.get("y", 0) #+monitor.get("height", 0)
+            return x, y
+        wid = self._max_window_id
+        x = y = 0
+        if wid<16:
+            #since we're just appending,
+            #just place to the right of the last monitor:
+            last = max(self._id_to_window)
+            x, y = rightof(last)
+        else:
+            #find a gap we can use in the window ids before 16:
+            prev = None
+            for wid in range(16):
+                if wid not in self._id_to_window:
+                    break
+                prev = wid
+            assert wid<=16
+            if prev:
+                x, y = rightof(prev)
+            self._adjust_monitors(wid-1, width, 0)
+        #ensure no monitors end up too far to the right or bottom:
+        #(better have them overlap - though we could do something smarter here)
+        self.validate_monitors()
+        #now we can add our new monitor:
+        xdpi = self.xdpi or self.dpi or 96
+        ydpi = self.ydpi or self.dpi or 96
+        wmm = round(width * 25.4 / xdpi)
+        hmm = round(height * 25.4 / ydpi)
+        index = wid-1
+        monitor = {
+            "index"     : index,
+            "name"      : "VFB-%i" % index,
+            "x"         : x,
+            "y"         : y,
+            "width"     : width,
+            "height"    : height,
+            "mm-width"  : wmm,
+            "mm-height" : hmm,
+            }
+        with xsync:
+            model = self.add_monitor_model(wid, monitor)
+        self.reconfigure_monitors()
+        #send it to the clients:
+        for ss in self._server_sources.values():
+            if not isinstance(ss, WindowsMixin):
+                continue
+            self.send_new_desktop_model(model, ss)
+
     def _process_configure_monitor(self, proto, packet):
         action = packet[1]
         if action=="remove":
@@ -267,82 +339,17 @@ class XpraMonitorServer(DesktopServerBase):
                 wid = value+1
             else:
                 raise ValueError("unsupported monitor identifier %r" % identifier)
-            model = self._id_to_window.get(wid)
-            screenlog("removing %s %i : %s", identifier, value, model)
-            assert model, "monitor %r not found" % wid
-            assert len(self._id_to_window)>1, "cannot remove the last monitor"
-            delta_x = -model.get_definition().get("width", 0)
-            delta_y = 0 #model.monitor.get("width", 0)
-            model.unmanage()
-            rwid = self._remove_window(model)
-            #adjust the position of the other monitors:
-            self._adjust_monitors(rwid, delta_x, delta_y)
-            self.reconfigure_monitors()
-            return
-        if action=="add":
-            assert len(self._id_to_window)<16, "already too many monitors: %i" % len(self._id_to_window)
+            self.remove_monitor(wid)
+        elif action=="add":
             resolution = packet[2]
             if isinstance(resolution, str):
                 resolution = parse_resolution(resolution)
             assert isinstance(resolution, (tuple, list)) and len(resolution)==2
             width, height = resolution
-            assert isinstance(width, int) and isinstance(height, int)
-            assert (width, height)>=MIN_SIZE and (width, height)<=MAX_SIZE
-            #find the wid to use:
-            #prefer just incrementing the wid, but we cannot go higher than 16
-            def rightof(wid):
-                mdef = self._id_to_window[wid].get_definition()
-                x = mdef.get("x", 0)+mdef.get("width", 0)
-                y = mdef.get("y", 0) #+monitor.get("height", 0)
-                return x, y
-            wid = self._max_window_id
-            x = y = 0
-            if wid<16:
-                #since we're just appending,
-                #just place to the right of the last monitor:
-                last = max(self._id_to_window)
-                x, y = rightof(last)
-            else:
-                #find a gap we can use in the window ids before 16:
-                prev = None
-                for wid in range(16):
-                    if wid not in self._id_to_window:
-                        break
-                    prev = wid
-                assert wid<=16
-                if prev:
-                    x, y = rightof(prev)
-                self._adjust_monitors(wid-1, width, 0)
-            #ensure no monitors end up too far to the right or bottom:
-            #(better have them overlap - though we could do something smarter here)
-            self.validate_monitors()
-            #now we can add our new monitor:
-            xdpi = self.xdpi or self.dpi or 96
-            ydpi = self.ydpi or self.dpi or 96
-            wmm = round(width * 25.4 / xdpi)
-            hmm = round(height * 25.4 / ydpi)
-            index = wid-1
-            monitor = {
-                "index"     : index,
-                "name"      : "VFB-%i" % index,
-                "x"         : x,
-                "y"         : y,
-                "width"     : width,
-                "height"    : height,
-                "mm-width"  : wmm,
-                "mm-height" : hmm,
-                }
-            with xsync:
-                model = self.add_monitor_model(wid, monitor)
-            self.reconfigure_monitors()
-            #send it to the clients:
-            for ss in self._server_sources.values():
-                if not isinstance(ss, WindowsMixin):
-                    continue
-                self.send_new_desktop_model(model, ss)
-            self.refresh_all_windows()
-            return
-        raise ValueError("unsupported 'configure-monitor' action %r" % action)
+            self.add_monitor(width, height)
+        else:
+            raise ValueError("unsupported 'configure-monitor' action %r" % action)
+        self.refresh_all_windows()
 
 
     def _set_window_state(self, proto, wid, window, new_window_state):
