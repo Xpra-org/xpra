@@ -530,6 +530,19 @@ class UIXpraClient(ClientBaseClass):
                 msg += ", %i tray%s" % (trays, engs(trays))
         log.info(msg)
 
+    def _process_new_window(self, packet):
+        window = super()._process_new_window(packet)
+        log.error("process new window: %s", window)
+        if self.desktop_fullscreen and self._remote_server_mode in ("X11 desktop", "X11 monitor"):
+            from gi.repository import Gdk
+            screen = Gdk.Screen.get_default()
+            n = screen.get_n_monitors()
+            monitor = (len(self._id_to_window)-1) % n
+            window.fullscreen_on_monitor(screen, monitor)
+            log("fullscreen_on_monitor: %i", monitor)
+        return window
+
+
     def handshake_complete(self):
         oh = self._on_handshake
         self._on_handshake = None

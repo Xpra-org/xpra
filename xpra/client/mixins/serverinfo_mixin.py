@@ -54,6 +54,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_lib_versions = {}
         self._remote_subcommands = ()
         self._remote_server_log = None
+        self._remote_server_mode = ""
 
     def parse_server_capabilities(self, c : typedict) -> bool:
         p = self._protocol
@@ -82,6 +83,7 @@ class ServerInfoMixin(StubClientMixin):
         self._remote_python_version = c.strget("python.version")
         self._remote_subcommands = c.strtupleget("subcommands")
         self._remote_server_log = c.strget("server-log")
+        self._remote_server_mode = c.strget("server.mode", "server")
         self._remote_lib_versions = get_remote_lib_versions(c)
         #linux distribution is a tuple of different types, ie: ('Linux Fedora' , 20, 'Heisenbug')
         pld = c.tupleget("platform.linux_distribution")

@@ -777,7 +777,7 @@ class WindowClient(StubClientMixin):
             client_properties = packet[7]
         geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s",
                 wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
-        self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
+        return self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
 
     def make_new_window(self, wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties):
         client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
@@ -1047,7 +1047,7 @@ class WindowClient(StubClientMixin):
 
 
     def _process_new_window(self, packet):
-        self._process_new_common(packet, False)
+        return self._process_new_common(packet, False)
 
     def _process_new_override_redirect(self, packet):
         if self.modal_windows:
@@ -1060,7 +1060,7 @@ class WindowClient(StubClientMixin):
                 if window.get_modal():
                     metalog("temporarily removing modal flag from %s", wid)
                     window.set_modal(False)
-        self._process_new_common(packet, True)
+        return self._process_new_common(packet, True)
 
 
     def _process_initiate_moveresize(self, packet):
