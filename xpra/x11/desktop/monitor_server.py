@@ -67,6 +67,14 @@ class XpraMonitorServer(DesktopServerBase):
         return capabilities
 
 
+    def configure_best_screen_size(self):
+        #don't try to match the client
+        from gi.repository import Gdk
+        screen = Gdk.Screen.get_default()
+        root = screen.get_root_window()
+        return root.get_geometry()[2:4]
+
+
     def load_existing_windows(self):
         with xlog:
             monitors = RandR.get_monitor_properties()
