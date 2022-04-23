@@ -1177,7 +1177,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     while (name in names.values() or name in active_names.values()) and names.get(mi)!=name and active_names.get(mi)!=name:
                         name += "-%i" % mi
                     active_names[mi] = name
-                    monitors[mi].name = self.xatom(name)
+                    monitor.name = self.xatom(name)
                     monitor.primary = m.get("primary", primary==mi)
                     monitor.automatic = m.get("automatic", True)
                     monitor.x = m.get("x", 0)
@@ -1195,7 +1195,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                         (monitor.x, monitor.y, monitor.width, monitor.height),
                         monitor.mwidth, monitor.mheight)
                     log.info("monitor %i is %r %ix%i", mi, name, monitor.width, monitor.height)
-                    XRRSetMonitor(self.display, window, &monitors[mi])
+                    XRRSetMonitor(self.display, window, &monitor)
                     mi += 1
             finally:
                 XRRFreeMonitors(monitors)
