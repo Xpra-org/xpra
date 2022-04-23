@@ -532,7 +532,6 @@ class UIXpraClient(ClientBaseClass):
 
     def _process_new_window(self, packet):
         window = super()._process_new_window(packet)
-        log.error("process new window: %s", window)
         if self.desktop_fullscreen and self._remote_server_mode in ("X11 desktop", "X11 monitor"):
             from gi.repository import Gdk
             screen = Gdk.Screen.get_default()
