@@ -109,4 +109,5 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
         return (cmajor, cminor) >= min_version
 
     def get_pid(self, Window xid):
+        self.context_check("get_pid")
         return get_pid(self.display, xid)

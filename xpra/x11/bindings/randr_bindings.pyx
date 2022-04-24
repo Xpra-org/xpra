@@ -567,7 +567,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return mode
 
     cdef do_add_screen_size(self, name, unsigned int w, unsigned int h):
-        self.context_check()
+        self.context_check("do_add_screen_size")
         log("do_add_screen_size(%s, %i, %i)", name, w, h)
         cdef RRMode mode
 
@@ -666,7 +666,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             del self._added_modes[name]
 
     def remove_mode(self, RRMode mode):
-        self.context_check()
+        self.context_check("remove_mode")
         cdef RROutput output = self.get_current_output()
         log("remove_mode(%i) output=%i", mode, output)
         if mode and output:
@@ -674,7 +674,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRDestroyMode(self.display, mode)
 
     cdef RROutput get_current_output(self):
-        self.context_check()
+        self.context_check("get_current_output")
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         assert rsc!=NULL
@@ -690,7 +690,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeScreenResources(rsc)
 
     def xrr_set_screen_size(self, w, h, wmm, hmm):
-        self.context_check()
+        self.context_check("xrr_set_screen_size")
         #and now use it:
         cdef Window window = XDefaultRootWindow(self.display)
         log("XRRSetScreenSize(%#x, %#x, %i, %i, %i, %i)", <uintptr_t> self.display, window, w, h, wmm, hmm)
@@ -704,6 +704,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 ################################################################
 
     def is_dummy16(self):
+        self.context_check("is_dummy16")
         #figure out if we're dealing with the dummy with randr 1.6 support
         if not self._has_randr:
             log("is_dummy16() no randr!")
@@ -711,7 +712,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if self.version<(1, 6):
             log("is_dummy16() randr version too old: %s", self.version)
             return False
-        self.context_check()
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         try:
@@ -909,6 +909,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return info
 
     def get_monitor_properties(self):
+        self.context_check("get_monitor_properties")
         cdef int nmonitors
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRMonitorInfo *monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
@@ -934,7 +935,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         return props
 
     def get_all_screen_properties(self):
-        self.context_check()
+        self.context_check("get_all_screen_properties")
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         cdef RROutput primary = XRRGetOutputPrimary(self.display, window)
@@ -966,7 +967,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
 
     def set_output_int_property(self, int output, prop_name, int value):
-        self.context_check()
+        self.context_check("set_output_int_property")
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         if rsc==NULL:
@@ -982,7 +983,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                 32, PropModeReplace, data, 1)
 
     def has_mode(self, unsigned int w, unsigned int h):
-        self.context_check()
+        self.context_check("has_mode")
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
         try:
@@ -994,7 +995,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeScreenResources(rsc)
 
     def set_crtc_config(self, monitor_defs):
-        self.context_check()
+        self.context_check("set_crtc_config")
         log("set_crtc_config(%s)", monitor_defs)
         def dpi96(v):
             return round(v * 25.4 / 96)

@@ -11,6 +11,8 @@ from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.keyboard.layouts import xkbmap_query_tostring
 from xpra.log import Logger
 from xpra.os_util import is_X11, is_Wayland, bytestostr
+if not is_Wayland():
+    from xpra.gtk_common.error import xsync
 
 log = Logger("keyboard", "posix")
 
@@ -48,7 +50,6 @@ class Keyboard(KeyboardBase):
                 log.warn(" (incomplete wayland support)")
             return {}, [], []
         try:
-            from xpra.gtk_common.error import xsync
             with xsync:
                 mod_mappings = self.keyboard_bindings.get_modifier_mappings()
                 if mod_mappings:
@@ -72,7 +73,6 @@ class Keyboard(KeyboardBase):
         if not self.keyboard_bindings:
             return  {}
         try:
-            from xpra.gtk_common.error import xsync
             with xsync:
                 return self.keyboard_bindings.get_keycode_mappings()
         except Exception:
@@ -108,7 +108,8 @@ class Keyboard(KeyboardBase):
                     query_struct["layout"] = layout
             log("query_struct(%s)=%s", locale, query_struct)
             return None, None, query_struct
-        query_struct = self.keyboard_bindings.getXkbProperties()
+        with xsync:
+            query_struct = self.keyboard_bindings.getXkbProperties()
         _query = xkbmap_query_tostring(query_struct)
         log("get_keymap_spec() Xkb query tostring(%s)=%r", query_struct, _query)
         #we no longer support servers via xkbmap_print:
@@ -175,7 +176,8 @@ class Keyboard(KeyboardBase):
         options = ""
         v = None
         if self.keyboard_bindings:
-            props = self.keyboard_bindings.getXkbProperties()
+            with xsync:
+                props = self.keyboard_bindings.getXkbProperties()
             v = props.get("layout")
             variant = props.get("variant", "")
             options = props.get("options", "")

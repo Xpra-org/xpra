@@ -267,7 +267,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
 
     def setxkbmap(self, rules_name, model, layout, variant, options):
-        self.context_check()
+        self.context_check("setxkbmap")
         log("setxkbmap(%s, %s, %s, %s, %s)", rules_name, model, layout, variant, options)
         if not self.hasXkb():
             log.error("Error: no Xkb support in this X11 server, cannot set keymap")
@@ -376,6 +376,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return self.get_layout_group()
 
     def get_layout_group(self):
+        self.context_check("XkbGetState")
         cdef XkbStateRec xkb_state
         cdef Status r = XkbGetState(self.display, XkbUseCoreKbd, &xkb_state)
         if r:
@@ -416,6 +417,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             }
 
     def getXkbProperties(self):
+        self.context_check("getXkbProperties")
         if not self.hasXkb():
             log.warn("Warning: no Xkb support")
             return {}
@@ -491,6 +493,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
 
     def get_xkb_keycode_mappings(self):
+        self.context_check("get_xkb_keycode_mappings")
         if not self.hasXkb():
             return {}
         mask = 255
@@ -524,6 +527,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return self.min_keycode, self.max_keycode
 
     cdef XModifierKeymap* get_keymap(self, load):
+        self.context_check("get_keymap")
         if self.work_keymap==NULL and load:
             self.work_keymap = XGetModifierMapping(self.display)
             log("retrieved work keymap: %#x", <unsigned long> self.work_keymap)
@@ -552,6 +556,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return keysym
 
     def parse_keysym(self, symbol):
+        self.context_check("parse_keysym")
         return int(self._parse_keysym(symbol))
 
     cdef _keysym_str(self, keysym_val):
@@ -596,7 +601,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return self._parse_keycode(keycode_str)
 
     cdef xmodmap_setkeycodes(self, keycodes, new_keysyms):
-        self.context_check()
+        self.context_check("xmodmap_setkeycodes")
         cdef KeySym keysym
         cdef int keycode, i
         cdef int first_keycode = min(keycodes.keys())
@@ -652,6 +657,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             free(ckeysyms)
 
     cdef KeysymToKeycodes(self, KeySym keysym):
+        self.context_check("KeysymToKeycodes")
         if not self.hasXkb():
             return []
         cdef int i, j
@@ -669,7 +675,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             returns a dict: {keycode, [keysyms]}
             for all the keycodes
         """
-        self.context_check()
+        self.context_check("XGetKeyboardMapping")
         cdef int keysyms_per_keycode
         cdef KeySym keysym
         cdef KeyCode keycode
@@ -755,7 +761,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             returns a dict: {modifier_index, [keycodes]}
             for all keycodes (see above for list)
         """
-        self.context_check()
+        self.context_check("XGetKeyboardMapping")
         cdef int keysyms_per_keycode
         cdef KeyCode keycode
         min_keycode,max_keycode = self._get_minmax_keycodes()
@@ -826,6 +832,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             keycode[modifier*keymap.max_keypermod+i] = 0
 
     cdef xmodmap_addmodifier(self, int modifier, keysyms):
+        self.context_check("xmodmap_addmodifier")
         cdef KeyCode keycode
         cdef KeySym keysym
         cdef XModifierKeymap* keymap = self.get_keymap(True)
@@ -868,6 +875,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return down
 
     def get_keycodes_down(self):
+        self.context_check("get_keycodes_down")
         if not self.hasXkb():
             {}
         cdef char* key
@@ -898,6 +906,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             XTestFakeKeyEvent(self.display, keycode, False, 0)
 
     cdef native_xmodmap(self, instructions):
+        self.context_check("native_xmodmap")
         cdef XModifierKeymap* keymap
         cdef int modifier
         self.set_work_keymap(NULL)
@@ -957,7 +966,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return self.native_xmodmap(xmodmap_data)
 
     def grab_key(self, xwindow, keycode, modifiers):
-        self.context_check()
+        self.context_check("grab_key")
         XGrabKey(self.display, keycode, modifiers,
                  xwindow,
                  # Really, grab the key even if it's also in another window we own
@@ -970,7 +979,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                  GrabModeAsync)
 
     def ungrab_all_keys(self):
-        self.context_check()
+        self.context_check("ungrab_all_keys")
         cdef Window root_window = XDefaultRootWindow(self.display)
         XUngrabKey(self.display, AnyKey, AnyModifier, root_window)
 
@@ -978,7 +987,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
     cdef Atom get_xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
-        self.context_check()
+        self.context_check("get_xatom")
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
         bstr = strtobytes(str_or_int)
@@ -986,6 +995,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return XInternAtom(self.display, string, False)
 
     def device_bell(self, xwindow, deviceSpec, bellClass, bellID, percent, name):
+        self.context_check("device_bell")
         if not self.hasXkb():
             return
         cdef Atom name_atom = self.get_xatom(name)
@@ -997,6 +1007,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
 
     def hasXTest(self):
+        self.context_check("hasXTest")
         if self.XTest_checked:
             return self.XTest_version_major>0 or self.XTest_version_minor>0
         self.XTest_checked = True
@@ -1018,25 +1029,25 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
     def xtest_fake_key(self, keycode, is_press):
         if not self.hasXTest():
             return False
-        self.context_check()
+        self.context_check("xtest_fake_key")
         return XTestFakeKeyEvent(self.display, keycode, is_press, 0)
 
     def xtest_fake_button(self, button, is_press):
         if not self.hasXTest():
             return False
-        self.context_check()
+        self.context_check("xtest_fake_button")
         return XTestFakeButtonEvent(self.display, button, is_press, 0)
 
     def xtest_fake_motion(self, int screen, int x, int y, int delay=0):
         if not self.hasXTest():
             return False
-        self.context_check()
+        self.context_check("xtest_fake_motion")
         return XTestFakeMotionEvent(self.display, screen, x, y, delay)
 
     def xtest_fake_relative_motion(self, int x, int y, int delay=0):
         if not self.hasXTest():
             return False
-        self.context_check()
+        self.context_check("xtest_fake_relative_motion")
         return XTestFakeRelativeMotionEvent(self.display, x, y, delay)
 
 
@@ -1051,6 +1062,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return (delay, interval)
 
     def set_key_repeat_rate(self, delay, interval):
+        self.context_check("set_key_repeat_rate")
         if not self.hasXkb():
             log.warn("Warning: cannot set key repeat rate without Xkb support")
             return False
@@ -1061,6 +1073,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
 
     def hasXFixes(self):
+        self.context_check("hasXFixes")
         cdef int evbase, errbase
         if not self.XFixes_checked:
             self.XFixes_checked = True
@@ -1076,9 +1089,9 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return bool(self.XFixes_present)
 
     def get_cursor_image(self):
+        self.context_check("get_cursor_image")
         if not self.hasXFixes():
             return None
-        self.context_check()
         cdef XFixesCursorImage* image = NULL
         cdef int n, i = 0
         cdef unsigned char r, g, b, a
@@ -1110,6 +1123,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
 
     def selectCursorChange(self, on):
+        self.context_check("selectCursorChange")
         if not self.hasXFixes():
             log.warn("Warning: no cursor change notifications without XFixes support")
             return
@@ -1123,6 +1137,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
 
     def selectBellNotification(self, on):
+        self.context_check("selectBellNotification")
         if not self.hasXkb():
             log.warn("Warning: no system bell events without Xkb support")
             return
@@ -1133,7 +1148,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
 
     def query_pointer(self):
-        self.context_check()
+        self.context_check("query_pointer")
         cdef Window root_window = XDefaultRootWindow(self.display)
         cdef Window root, child
         cdef int root_x, root_y

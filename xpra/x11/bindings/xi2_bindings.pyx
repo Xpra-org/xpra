@@ -335,6 +335,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         return matches
 
     def get_xi_version(self, int major=2, int minor=2):
+        self.context_check("get_xi_version")
         cdef int rmajor = major, rminor = minor
         cdef int rc = XIQueryVersion(self.display, &rmajor, &rminor)
         if rc == BadRequest:
@@ -411,7 +412,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             add_x_event_type_name(event, name)
 
     def select_xi2_events(self):
-        self.context_check()
+        self.context_check("select_xi2_events")
         cdef Window win = XDefaultRootWindow(self.display)
         log("select_xi2_events() root window=%#x", win)
         assert XI_LASTEVENT<MAX_XI_EVENTS, "bug: source needs to be updated, XI_LASTEVENT=%i" % XI_LASTEVENT
@@ -438,6 +439,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         XFlush(self.display)
 
     def parse_xi_event(self, display, uintptr_t _cookie):
+        self.context_check("parse_xi_event")
         cdef XGenericEventCookie *cookie = <XGenericEventCookie*> _cookie
         cdef XIHierarchyEvent *hierarchy_e
         cdef XIRawEvent *raw
@@ -544,7 +546,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
 
     def get_devices(self, show_all=True, show_disabled=False):
         log("get_devices(%s, %s)", show_all, show_disabled)
-        self.context_check()
+        self.context_check("get_devices")
         global XI_USE
         cdef int ndevices, i, j
 
@@ -581,6 +583,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         return dinfo
 
     def get_device_properties(self, deviceid):
+        self.context_check("get_device_properties")
         cdef int nprops, i
         cdef Atom *atoms = XIListProperties(self.display, deviceid, &nprops)
         if atoms==NULL or nprops==0:

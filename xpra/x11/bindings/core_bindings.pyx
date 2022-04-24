@@ -40,8 +40,8 @@ cdef object context_check = noop
 def set_context_check(fn):
     global context_check
     context_check = fn
-cdef call_context_check():
-    context_check()
+def call_context_check(*args):
+    context_check(*args)
 
 
 cdef class X11CoreBindingsInstance:
@@ -64,9 +64,9 @@ cdef class X11CoreBindingsInstance:
     def XFlush(self):
         XFlush(self.display)
 
-    def context_check(self):
+    def context_check(self, *args):
         global context_check
-        context_check()
+        context_check(*args)
 
     def get_display_name(self):
         return self.display_name
@@ -77,7 +77,7 @@ cdef class X11CoreBindingsInstance:
     cdef Atom xatom(self, str_or_int):
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
-        self.context_check()
+        self.context_check("xatom")
         if isinstance(str_or_int, (int, long)):
             return <Atom> str_or_int
         bstr = strtobytes(str_or_int)
@@ -106,7 +106,7 @@ cdef class X11CoreBindingsInstance:
         return self.xatom(str_or_int)
 
     def XGetAtomName(self, Atom atom):
-        self.context_check()
+        self.context_check("XGetAtomName")
         cdef char *v = XGetAtomName(self.display, atom)
         if v==NULL:
             return None

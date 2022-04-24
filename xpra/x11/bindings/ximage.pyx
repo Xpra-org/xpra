@@ -10,7 +10,9 @@ from xpra.os_util import bytestostr
 from xpra.x11.bindings.display_source import get_display_name
 from xpra.log import Logger
 
-from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance, call_context_check
+
+from xpra.x11.bindings.core_bindings import call_context_check
+from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
     XColor, Visual, VisualID, XVisualInfo, VisualIDMask,
@@ -413,7 +415,7 @@ cdef class XImageWrapper:
     cdef free_image(self):
         ximagedebug("%s.free_image() image=%#x", self, <uintptr_t> self.image)
         if self.image!=NULL:
-            call_context_check()
+            call_context_check("XImageWrapper.free_image()")
             XDestroyImage(self.image)
             self.image = NULL
             global ximage_counter
@@ -666,7 +668,7 @@ cdef class XShmWrapper:
             shmdt(self.shminfo.shmaddr)
             self.shminfo.shmaddr = <char *> -1
             self.shminfo.shmid = -1
-        call_context_check()
+        call_context_check("XShmWrapper.free()")
 
 
 cdef class XShmImageWrapper(XImageWrapper):
@@ -840,7 +842,7 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
         return bool(self.has_xshm)
 
     def get_XShmWrapper(self, xwindow):
-        self.context_check()
+        self.context_check("get_XShmWrapper")
         cdef XWindowAttributes attrs
         if XGetWindowAttributes(self.display, xwindow, &attrs)==0:
             return None
@@ -849,13 +851,13 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
         return xshm
 
     def get_ximage(self, drawable, x, y, width, height):
-        self.context_check()
+        self.context_check("get_ximage")
         return get_image(self.display, drawable, x, y, width, height)
 
     def get_xcomposite_pixmap(self, xwindow):
-        self.context_check()
+        self.context_check("get_xcomposite_pixmap")
         return xcomposite_name_window_pixmap(self.display, xwindow)
 
     def get_xwindow_pixmap_wrapper(self, xwindow):
-        self.context_check()
+        self.context_check("get_xwindow_pixmap_wrapper")
         return window_pixmap_wrapper(self.display, xwindow)

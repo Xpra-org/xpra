@@ -237,9 +237,11 @@ class XLogContext:
 xlog = XLogContext()
 
 
-def verify_sync():
+def verify_sync(*args):
     if trap.depth<=0:
         log.error("Error: unmanaged X11 context")
+        if args:
+            log.error(" %s" % args[0], *(args[1:]))
         stack = traceback.extract_stack()[:-1]
         s = traceback.format_list(stack)
         for x in s:

@@ -284,7 +284,8 @@ class KeyboardConfig(KeyboardConfigBase):
             log.error("Error: compute_client_modifier_keycodes: %s" % e, exc_info=True)
 
     def compute_modifier_map(self):
-        self.modifier_map = grok_modifier_map(Gdk.Display.get_default(), self.xkbmap_mod_meanings)
+        with xlog:
+            self.modifier_map = grok_modifier_map(Gdk.Display.get_default(), self.xkbmap_mod_meanings)
         log("modifier_map(%s)=%s", self.xkbmap_mod_meanings, self.modifier_map)
 
 

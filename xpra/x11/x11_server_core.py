@@ -316,19 +316,20 @@ class X11ServerCore(GTKServerBase):
         save_uuid(str(self.uuid))
 
     def set_keyboard_repeat(self, key_repeat):
-        if key_repeat:
-            self.key_repeat_delay, self.key_repeat_interval = key_repeat
-            if self.key_repeat_delay>0 and self.key_repeat_interval>0:
-                X11Keyboard.set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
-                keylog.info("setting key repeat rate from client: %sms delay / %sms interval",
-                            self.key_repeat_delay, self.key_repeat_interval)
-        else:
-            #dont do any jitter compensation:
-            self.key_repeat_delay = -1
-            self.key_repeat_interval = -1
-            #but do set a default repeat rate:
-            X11Keyboard.set_key_repeat_rate(500, 30)
-            keylog("keyboard repeat disabled")
+        with xlog:
+            if key_repeat:
+                self.key_repeat_delay, self.key_repeat_interval = key_repeat
+                if self.key_repeat_delay>0 and self.key_repeat_interval>0:
+                    X11Keyboard.set_key_repeat_rate(self.key_repeat_delay, self.key_repeat_interval)
+                    keylog.info("setting key repeat rate from client: %sms delay / %sms interval",
+                                self.key_repeat_delay, self.key_repeat_interval)
+            else:
+                #dont do any jitter compensation:
+                self.key_repeat_delay = -1
+                self.key_repeat_interval = -1
+                #but do set a default repeat rate:
+                X11Keyboard.set_key_repeat_rate(500, 30)
+                keylog("keyboard repeat disabled")
 
     def make_hello(self, source):
         capabilities = super().make_hello(source)
