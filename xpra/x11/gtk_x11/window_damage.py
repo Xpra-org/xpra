@@ -91,7 +91,7 @@ class WindowDamageHandler:
         sh = self._xshm_handle
         if sh:
             self._xshm_handle = None
-            sh.cleanup()
+            trap.swallow_synced(sh.cleanup)
         #note: this should be redundant since we cleared the
         #reference to self.client_window and shortcut out in do_get_property_contents_handle
         #but it's cheap anyway
@@ -194,7 +194,7 @@ class WindowDamageHandler:
             if e.msg.startswith("BadMatch"):
                 log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
-                log.warn("get_image(%s, %s, %s, %s) get_image %s", x, y, width, height, e, exc_info=True)
+                log.warn("Warning: cannot capture image of geometry %", (x, y, width, height), exc_info=True)
             return None
 
 
