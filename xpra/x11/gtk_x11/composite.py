@@ -13,7 +13,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
     remove_event_receiver,          #@UnresolvedImport
     get_parent,                     #@UnresolvedImport
     )
-from xpra.gtk_common.error import trap
+from xpra.gtk_common.error import trap, xlog
 from xpra.x11.gtk_x11.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
 from xpra.x11.bindings.window_bindings import constants, X11WindowBindings #@UnresolvedImport
@@ -51,7 +51,8 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
 
     def do_destroy(self, win):
         trap.swallow_synced(X11Window.XCompositeUnredirectWindow, self.xid)
-        WindowDamageHandler.do_destroy(self, win)
+        with xlog:
+            WindowDamageHandler.do_destroy(self, win)
 
     def invalidate_pixmap(self):
         lt = self._listening_to

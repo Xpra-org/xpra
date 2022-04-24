@@ -40,6 +40,8 @@ cdef object context_check = noop
 def set_context_check(fn):
     global context_check
     context_check = fn
+cdef call_context_check():
+    context_check()
 
 
 cdef class X11CoreBindingsInstance:

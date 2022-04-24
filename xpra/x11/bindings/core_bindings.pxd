@@ -6,6 +6,8 @@
 
 from xpra.x11.bindings.xlib cimport Display, Atom
 
+cdef call_context_check()
+
 cdef class X11CoreBindingsInstance:
     cdef Display * display
     cdef char * display_name

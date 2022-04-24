@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@ from xpra.os_util import bytestostr
 from xpra.x11.bindings.display_source import get_display_name
 from xpra.log import Logger
 
+from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance, call_context_check
 from xpra.x11.bindings.xlib cimport (
     XImage, Display, Pixmap,
     XColor, Visual, VisualID, XVisualInfo, VisualIDMask,
@@ -412,6 +413,7 @@ cdef class XImageWrapper:
     cdef free_image(self):
         ximagedebug("%s.free_image() image=%#x", self, <uintptr_t> self.image)
         if self.image!=NULL:
+            call_context_check()
             XDestroyImage(self.image)
             self.image = NULL
             global ximage_counter
@@ -664,6 +666,7 @@ cdef class XShmWrapper:
             shmdt(self.shminfo.shmaddr)
             self.shminfo.shmaddr = <char *> -1
             self.shminfo.shmid = -1
+        call_context_check()
 
 
 cdef class XShmImageWrapper(XImageWrapper):
@@ -815,7 +818,6 @@ cdef window_pixmap_wrapper(Display *xdisplay, Window xwindow):
     pw.init(xdisplay, xwindow, width, height)
     return pw
 
-from xpra.x11.bindings.core_bindings cimport X11CoreBindingsInstance
 
 cdef XImageBindingsInstance singleton = None
 def XImageBindings():
