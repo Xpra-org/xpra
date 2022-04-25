@@ -1,12 +1,12 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from gi.repository import GObject, Gtk, Gdk
 
-from xpra.gtk_common.error import trap
+from xpra.gtk_common.error import xlog
 from xpra.x11.bindings.window_bindings import constants     #@UnresolvedImport
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus     #@UnresolvedImport
 from xpra.x11.gtk_x11.prop import prop_set
@@ -207,7 +207,8 @@ class WorldWindow(Gtk.Window):
         def do_reset_x_focus():
             self._take_focus()
             root_set("_NET_ACTIVE_WINDOW", "u32", XNone)
-        trap.swallow_synced(do_reset_x_focus)
+        with xlog:
+            do_reset_x_focus()
 
     def _after_set_focus(self, *_args):
         focuslog("after_set_focus")

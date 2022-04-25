@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2012-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -11,7 +11,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             )
-from xpra.gtk_common.error import trap, xsync, xswallow, XError
+from xpra.gtk_common.error import xsync, xswallow, xlog, XError
 from xpra.x11.common import Unmanageable
 
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
@@ -87,11 +87,13 @@ class WindowDamageHandler:
         dh = self._damage_handle
         if dh:
             self._damage_handle = None
-            trap.swallow_synced(X11Window.XDamageDestroy, dh)
+            with xlog:
+                X11Window.XDamageDestroy(dh)
         sh = self._xshm_handle
         if sh:
             self._xshm_handle = None
-            trap.swallow_synced(sh.cleanup)
+            with xlog:
+                sh.cleanup()
         #note: this should be redundant since we cleared the
         #reference to self.client_window and shortcut out in do_get_property_contents_handle
         #but it's cheap anyway
@@ -105,8 +107,9 @@ class WindowDamageHandler:
             sh.discard()
         if dh and self.client_window:
             #"Synchronously modifies the regions..." so unsynced?
-            if not trap.swallow_synced(X11Window.XDamageSubtract, dh):
-                self.invalidate_pixmap()
+            with xlog:
+                X11Window.XDamageSubtract(dh)
+            self.invalidate_pixmap()
 
     def invalidate_pixmap(self):
         ch = self._contents_handle
@@ -157,7 +160,8 @@ class WindowDamageHandler:
             return None
         if self._contents_handle is None:
             log("refreshing named pixmap")
-            trap.swallow_synced(self._set_pixmap)
+            with xlog:
+                self._set_pixmap()
         return self._contents_handle
 
 
