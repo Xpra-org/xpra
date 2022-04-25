@@ -1470,7 +1470,7 @@ class WindowSource(WindowIconSource):
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.statistics.resize_events.append(now)
-            log("window dimensions changed: %ix%i", ww, wh)
+            log("window dimensions changed from %s to %s", self.window_dimensions, (ww, wh))
             self.window_dimensions = ww, wh
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
         if ww==0 or wh==0:
