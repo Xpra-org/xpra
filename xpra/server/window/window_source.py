@@ -13,7 +13,7 @@ from math import sqrt
 from collections import deque
 from time import monotonic
 
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time, decode_str, repr_ellipsized
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.server.window.windowicon_source import WindowIconSource
@@ -100,6 +100,13 @@ LOSSLESS_WINDOW_TYPES = set(os.environ.get("XPRA_LOSSLESS_WINDOW_TYPES",
 COMPRESS_FMT_PREFIX = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
 COMPRESS_FMT_SUFFIX = ", sequence %5i, client_options=%-50s, options=%s"
 COMPRESS_FMT        = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to %5iKB)"+COMPRESS_FMT_SUFFIX
+
+
+if POSIX and not OSX:
+    from xpra.gtk_common.error import xlog
+    ui_context = xlog
+else:
+    ui_context = DummyContextManager()
 
 
 class DelayedRegions:
@@ -1445,8 +1452,8 @@ class WindowSource(WindowIconSource):
         if self.window_dimensions != (ww, wh):
             self.statistics.last_resized = now
             self.statistics.resize_events.append(now)
-            self.window_dimensions = ww, wh
             log("window dimensions changed: %ix%i", ww, wh)
+            self.window_dimensions = ww, wh
             self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
         if ww==0 or wh==0:
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
@@ -1945,7 +1952,10 @@ class WindowSource(WindowIconSource):
         if image.is_thread_safe():
             image.free()
         else:
-            self.idle_add(image.free)
+            def do_free_image():
+                with ui_context:
+                    image.free()
+            self.idle_add(do_free_image)
 
 
     def get_damage_image(self, x, y, w, h):
