@@ -17,7 +17,7 @@ from gi.repository import Gtk               #@UnresolvedImport
 
 
 from xpra.os_util import strtobytes, bytestostr
-from xpra.gtk_common.error import trap, XError
+from xpra.gtk_common.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util import csv
 
@@ -906,7 +906,8 @@ cdef parse_xevent(GdkXEvent * e_gdk) with gil:
     pyev.send_event = e.xany.send_event
     pyev.serial = e.xany.serial
     def atom(v):
-        return trap.call_synced(_get_pyatom, d, v)
+        with xsync:
+            return _get_pyatom(d, v)
     # Unmarshal:
     try:
         if etype != XKBNotify:
