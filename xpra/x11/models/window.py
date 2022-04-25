@@ -9,7 +9,7 @@ from gi.repository import GObject, Gtk, Gdk
 from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
-from xpra.gtk_common.error import XError, XSwallowContext, xlog
+from xpra.gtk_common.error import XError, xsync, xswallow, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
 from xpra.x11.gtk_x11.prop import prop_set, prop_get
@@ -18,7 +18,7 @@ from xpra.x11.bindings.window_bindings import X11WindowBindings #@UnresolvedImpo
 from xpra.x11.common import Unmanageable
 from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel, constants
-from xpra.x11.models.core import sanestr, xswallow, xsync
+from xpra.x11.models.core import sanestr
 from xpra.x11.gtk_x11.gdk_bindings import (
     add_event_receiver, remove_event_receiver,
     get_children,
@@ -339,7 +339,7 @@ class WindowModel(BaseWindowModel):
             geom = None
             #use a new context so we will XSync right here
             #and detect if the window is already gone:
-            with XSwallowContext():
+            with xswallow:
                 geom = X11Window.getGeometry(self.xid)
             if geom is not None:
                 if self.client_reparented:
