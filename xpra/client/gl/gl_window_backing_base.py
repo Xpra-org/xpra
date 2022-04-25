@@ -55,7 +55,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 
 from xpra.os_util import (
     strtobytes, bytestostr, hexstr,
-    POSIX,
+    POSIX, OSX,
     DummyContextManager,
     )
 from xpra.util import envint, envbool, repr_ellipsized, first_time
@@ -195,7 +195,7 @@ if envbool("XPRA_ZEROCOPY_OPENGL_UPLOAD", True):
         zerocopy_upload = is_pyopengl_memoryview_safe(OpenGL_version.__version__, OpenGL_accelerate.__version__)
 
 
-if POSIX:
+if POSIX and not OSX:
     from xpra.gtk_common.error import xsync
     paint_context_manager = xsync
 else:
