@@ -275,7 +275,7 @@ class SSHServer(paramiko.ServerInterface):
                        "_proxy_start"           : "seamless",
                        "_proxy_start_desktop"   : "desktop",
                        "_proxy_shadow_start"    : "shadow",
-                       }.get(subcommand, subcommand.replace("_proxy", ""))
+                       }.get(subcommand, subcommand.replace("_proxy_", ""))
         log.info("ssh channel starting proxy %s session", server_mode)
         cmd = get_xpra_command()+[subcommand]+args
         try:
