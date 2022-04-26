@@ -45,7 +45,7 @@ def parse_resolutions(s):
         return None
     if s.lower() in ("none", "default"):
         return ()
-    return (parse_resolution(v) for v in s.split(","))
+    return tuple(parse_resolution(v) for v in s.split(","))
 def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
                           single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
                           default_res="8192x4096"):
