@@ -911,7 +911,6 @@ class WindowVideoSource(WindowSource):
             for i, region in enumerate(regions):
                 w, h, image, coding = region
                 call_encode(w, h, image, coding, flush-i)
-                log.info("call_encode: %s", flush-i)
         return True
 
     def get_frame_encode_delay(self, options):
