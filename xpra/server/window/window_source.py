@@ -12,7 +12,7 @@ import threading
 from math import sqrt
 from collections import deque
 
-from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time
+from xpra.os_util import memoryview_to_bytes, strtobytes, bytestostr, monotonic_time, POSIX, OSX, DummyContextManager
 from xpra.util import envint, envbool, csv, typedict, first_time
 from xpra.server.window.windowicon_source import WindowIconSource
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
@@ -95,6 +95,13 @@ LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", ("rgb", "png", "png/P", "png/
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", ("webp", "png", "rgb24", "rgb32"))
 
 MAX_WINDOW_SIZE = 2**15-2**13
+
+
+if POSIX and not OSX:
+    from xpra.gtk_common.error import xlog
+    ui_context = xlog
+else:
+    ui_context = DummyContextManager()
 
 
 class DelayedRegions(object):
@@ -1793,7 +1800,10 @@ class WindowSource(WindowIconSource):
         if image.is_thread_safe():
             image.free()
         else:
-            self.idle_add(image.free)
+            def do_free_image():
+                with ui_context:
+                    image.free()
+            self.idle_add(do_free_image)
 
 
     def process_damage_region(self, damage_time, x, y, w, h, coding, options, flush=None):
