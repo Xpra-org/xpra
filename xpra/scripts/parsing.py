@@ -595,14 +595,21 @@ def parse_display_name(error_cb, opts, display_name, find_session_by_name=False)
 
     if display_name.startswith(":"):
         assert not WIN32, "X11 display names are not supported on MS Windows"
+        options = None
+        display = display_name
+        if display_name.find(",")>0:
+            display, options = display_name.split(",", 1)
         desc.update({
                 "type"          : "unix-domain",
                 "local"         : True,
-                "display"       : display_name,
-                "socket_dirs"   : opts.socket_dirs})
-        opts.display = display_name
+                "display"       : display,
+                "socket_dirs"   : opts.socket_dirs,
+                })
+        opts.display = display
         if opts.socket_dir:
             desc["socket_dir"] = opts.socket_dir
+        if options:
+            desc["options"] = options
         return desc
 
     if protocol in ("tcp", "ssl", "ws", "wss", "vnc"):

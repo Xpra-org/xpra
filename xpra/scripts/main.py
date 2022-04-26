@@ -1849,7 +1849,11 @@ def run_remote_server(script_file, cmdline, error_cb, opts, args, mode, defaults
         #add special flags to "display_as_args"
         proxy_args = []
         if params.get("display") is not None:
-            proxy_args.append(params["display"])
+            geometry = params.get("geometry")
+            display = params["display"]
+            if mode=="shadow" and geometry:
+                display += ",%s" % (geometry, )
+            proxy_args.append(display)
         for x in get_start_server_args(opts, compat=True):
             proxy_args.append(x)
         #we have consumed the start[-child] options
@@ -2289,7 +2293,11 @@ def start_server_subprocess(script_file, args, mode, opts,
     if display_name.startswith("S"):
         matching_display = None
     else:
-        matching_display = display_name
+        if display_name.startswith(":") and display_name.find(",")>0:
+            #remove options from display name
+            matching_display = display_name.split(",", 1)[0]
+        else:
+            matching_display = display_name
     if WIN32:
         assert mode=="shadow"
         assert display_name
@@ -2474,14 +2482,13 @@ def run_proxy(error_cb, opts, script_file, args, mode, defaults):
             if not args and mode=="_proxy_shadow_start":
                 try:
                     display_name = pick_shadow_display(dotxpra, args)
+                    args = [display_name]
                 except Exception:
                     #failed to guess!
                     pass
-                else:
-                    args = [display_name]
             elif args:
                 display = pick_display(error_cb, opts, args)
-                display_name = display.get("display_name")
+                display_name = display.get("display")
             if display_name:
                 state = dotxpra.get_display_state(display_name)
                 if state!=DotXpra.DEAD:
