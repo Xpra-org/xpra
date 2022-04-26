@@ -1325,6 +1325,11 @@ def get_client_app(script_file, cmdline, error_cb, opts, extra_args, mode):
     try:
         if mode!="listen":
             app.show_progress(60, "connecting to server")
+        if mode!="attach" and not extra_args:
+            #try to guess the server intended:
+            server_socket = os.environ.get("XPRA_SERVER_SOCKET")
+            if server_socket:
+                extra_args = ["socket://%s" % server_socket]
         display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args)
         if len(extra_args)==1 and opts.password:
             uri = extra_args[0]
