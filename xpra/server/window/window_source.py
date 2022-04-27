@@ -1458,7 +1458,6 @@ class WindowSource(WindowIconSource):
             #we may fire damage ourselves,
             #in which case the dimensions may be zero (if so configured by the client)
             return
-        ww, wh = self.window.get_dimensions()
         now = monotonic()
         if options is None:
             options = {}
@@ -1467,12 +1466,7 @@ class WindowSource(WindowIconSource):
             self.statistics.last_damage_events.append((now, x,y,w,h))
             self.global_statistics.damage_events_count += 1
             self.statistics.damage_events_count += 1
-        if self.window_dimensions != (ww, wh):
-            self.statistics.last_resized = now
-            self.statistics.resize_events.append(now)
-            log("window dimensions changed from %s to %s", self.window_dimensions, (ww, wh))
-            self.window_dimensions = ww, wh
-            self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+        ww, wh = self.may_update_window_dimensions()
         if ww==0 or wh==0:
             damagelog("damage%s window size %ix%i ignored", (x, y, w, h, options), ww, wh)
             return
@@ -1580,6 +1574,16 @@ class WindowSource(WindowIconSource):
         due = now+expire_delay/1000.0
         self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
 
+    def may_update_window_dimensions(self):
+        ww, wh = self.window.get_dimensions()
+        if self.window_dimensions != (ww, wh):
+            now = monotonic()
+            self.statistics.last_resized = now
+            self.statistics.resize_events.append(now)
+            log("window dimensions changed from %s to %s", self.window_dimensions, (ww, wh))
+            self.window_dimensions = ww, wh
+            self.encode_queue_max_size = max(2, min(30, MAX_SYNC_BUFFER_SIZE//(ww*wh*4)))
+        return ww, wh
 
     def get_packets_backlog(self):
         s = self.statistics
@@ -1984,10 +1988,15 @@ class WindowSource(WindowIconSource):
         def nodata(msg, *args):
             log("get_damage_image: "+msg, *args)
             return None
-        if w==0 or h==0:
-            return nodata("dropped, zero dimensions")
         if not self.window.is_managed():
             return nodata("the window %s is not managed", self.window)
+        ww, wh = self.may_update_window_dimensions()
+        if x+w>ww or y+h>wh:
+            #window is now smaller than the region we're trying to request
+            w = ww-x
+            h = wh-y
+        if w==0 or h==0:
+            return nodata("dropped, zero dimensions")
         self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
