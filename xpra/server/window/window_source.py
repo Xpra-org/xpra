@@ -1967,6 +1967,8 @@ class WindowSource(WindowIconSource):
             return nodata("dropped, zero dimensions")
         if not self.window.is_managed():
             return nodata("the window %s is not managed", self.window)
+        if x+w<0 or y+h<0:
+            return nodata("dropped, window is offscreen at %i,%i" % (x, y))
         self._sequence += 1
         sequence = self._sequence
         if self.is_cancelled(sequence):
