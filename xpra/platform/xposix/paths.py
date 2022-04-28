@@ -118,7 +118,7 @@ def get_runtime_dir():
                 runtime_dir = d+"/$UID"
                 break
         if not runtime_dir:
-           return "$XDG_RUNTIME_DIR"
+            return "$XDG_RUNTIME_DIR"
     return runtime_dir
 
 def _get_xpra_runtime_dir():
