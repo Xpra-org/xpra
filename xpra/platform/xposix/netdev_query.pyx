@@ -283,13 +283,15 @@ def get_send_buffer_info(sock):
     info = {
         "sndbuf_size"   : send_buffer_size,
         }
-    #SIOCINQ = 0x541B
-    SIOCOUTQ = 0x5411
-    unacked = struct.unpack("I", fcntl.ioctl(sock.fileno(), SIOCOUTQ, b'\0\0\0\0'))[0]
-    info["sndbuf_unacked"] = unacked
-    SIOCOUTQNSD = 0x894B
-    bytes_in_queue = struct.unpack("I", fcntl.ioctl(sock.fileno(), SIOCOUTQNSD, b'\0\0\0\0'))[0]
-    info["sndbuf_bytes"] = bytes_in_queue
+    fno = sock.fileno()
+    if fno>0:
+        def getioctl(k):
+            return struct.unpack("I", fcntl.ioctl(fno, k, b'\0\0\0\0'))[0]
+        #SIOCINQ = 0x541B
+        SIOCOUTQ = 0x5411
+        info["sndbuf_unacked"] = getioctl(SIOCOUTQ)
+        SIOCOUTQNSD = 0x894B
+        info["sndbuf_bytes"] = getioctl(SIOCOUTQNSD)
     return info
 
 def get_tcp_info(sock):
