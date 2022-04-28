@@ -163,6 +163,8 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir=None,
 
 def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir=None,
                           Xdummy_wrapper_ENABLED=None, warn_fn=warn):
+    if not POSIX or OSX:
+        return get_Xvfb_command()
     xorg_bin = get_xorg_bin()
     if Xdummy_wrapper_ENABLED is not None:
         #honour what was specified:
