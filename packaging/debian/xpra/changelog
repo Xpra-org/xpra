@@ -1,6 +1,7 @@
 xpra (4.3.3-1) UNRELEASED; urgency=low
   * major bugs:
     - X11 server crashes with quickly disappearing odd sized video windows
+    - MS Windows clients mishandling some window hints (ie: Firefox)
     - connection errors when non-user-interactive clients are connected
     - bencode network error with cuda and bencoder
     - workaround VAAPI server crashes
@@ -37,7 +38,7 @@ xpra (4.3.3-1) UNRELEASED; urgency=low
     - make it possible to run the client without some cython extensions
     - restore ability to disable smooth scrolling
     - carefully access subprocess file descriptors
-    - map `ffplay` to video application type
+    - map `ffplay` to video application type, `unityhub` as browser type
     - incomplete socket dirs validation
     - `jpeg` and `nvjpeg` encoders could go missing with unusual settings
     - Xorg dummy patch refresh
@@ -66,7 +67,7 @@ xpra (4.3.3-1) UNRELEASED; urgency=low
   * window mapping 'event' markers should not be stored as client properties
   * use strings for all client properties
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 15 Feb 2022 22:30:31 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Thu, 28 Apr 2022 20:16:38 +0700
 
 xpra (4.3.2-1) UNRELEASED; urgency=low
   * color mismatch with jpeg video and html5 client (don't use YUV input)

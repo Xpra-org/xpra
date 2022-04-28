@@ -614,9 +614,10 @@ fi
 
 
 %changelog
-* Tue Feb 15 2022 Antoine Martin <antoine@xpra.org> 4.3.3-10
+* Thu Apr 28 2022 Antoine Martin <antoine@xpra.org> 4.3.3-10
 - major bugs:
    X11 server crashes with quickly disappearing odd sized video windows
+   MS Windows clients mishandling some window hints (ie: Firefox)
    connection errors when non-user-interactive clients are connected
    bencode network error with cuda and bencoder
    workaround VAAPI server crashes
@@ -653,7 +654,7 @@ fi
    make it possible to run the client without some cython extensions
    restore ability to disable smooth scrolling
    carefully access subprocess file descriptors
-   map `ffplay` to video application type
+   map `ffplay` to video application type, `unityhub` as browser type
    incomplete socket dirs validation
    `jpeg` and `nvjpeg` encoders could go missing with unusual settings
    Xorg dummy patch refresh
