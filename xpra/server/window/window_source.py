@@ -1991,6 +1991,8 @@ class WindowSource(WindowIconSource):
         if not self.window.is_managed():
             return nodata("the window %s is not managed", self.window)
         ww, wh = self.may_update_window_dimensions()
+        if x+w<0 or y+h<0:
+            return nodata("dropped, window is offscreen at %i,%i" % (x, y))
         if x+w>ww or y+h>wh:
             #window is now smaller than the region we're trying to request
             w = ww-x
