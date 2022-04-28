@@ -293,8 +293,12 @@ def get_send_buffer_info(sock):
     return info
 
 def get_tcp_info(sock):
-    tcpi = get_socket_tcp_info(sock)
-    bi = get_send_buffer_info(sock)
-    log("get_send_buffer_status(%s)=%s", sock, bi)
-    tcpi.update(bi)
-    return tcpi
+    info = {}
+    try:
+        info.update(get_socket_tcp_info(sock))
+        info.update(get_send_buffer_info(sock))
+    except (OSError, ValueError) as e:
+        log("get_tcp_info(%s)", sock, exc_info=True)
+        log.error("Error querying tcp socket information: %s", e)
+    log("get_tcp_info(%s)=%s", sock, info)
+    return info

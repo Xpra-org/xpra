@@ -477,7 +477,7 @@ def get_socket_options(sock, level, options) -> dict:
             continue
         try:
             v = sock.getsockopt(level, opt)
-        except socket.error:
+        except (OSError, socket.error):
             log("sock.getsockopt(%i, %s)", level, k, exc_info=True)
             errs.append(k)
         else:
@@ -485,7 +485,6 @@ def get_socket_options(sock, level, options) -> dict:
                 opts[k] = v
     if errs:
         fileno = getattr(sock, "fileno", None)
-        #if fileno()==-1
         if fileno and fileno()==-1:
             log("socket is closed, ignoring: %s", csv(errs))
         else:
