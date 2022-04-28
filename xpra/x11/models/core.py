@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ from socket import gethostname
 from gi.repository import GObject, Gdk, GLib
 
 from xpra.util import envbool, first_time
-from xpra.os_util import bytestostr
+from xpra.os_util import bytestostr, get_proc_cmdline
 from xpra.x11.common import Unmanageable
 from xpra.gtk_common.gobject_util import one_arg_signal, two_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow
@@ -224,6 +224,7 @@ class CoreX11WindowModel(WindowModelStub):
                                "WM_NAME", "_NET_WM_NAME",
                                "WM_PROTOCOLS", "WM_CLASS", "WM_WINDOW_ROLE",
                                "_NET_WM_OPAQUE_REGION",
+                               "WM_COMMAND",
                                ]
     _DEFAULT_NET_WM_ALLOWED_ACTIONS = []
     _MODELTYPE = "Core"
@@ -605,6 +606,9 @@ class CoreX11WindowModel(WindowModelStub):
         metalog("WM_COMMAND=%s", command)
         if command:
             command = command.strip("\0")
+        else:
+            pid = self.get_property("pid")
+            command = b" ".join(get_proc_cmdline(pid) or ())
         self._updateprop("command", command)
 
     def _handle_class_change(self):

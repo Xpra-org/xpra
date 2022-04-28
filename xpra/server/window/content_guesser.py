@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import re
 import os.path
 
 from xpra.util import ellipsizer
-from xpra.os_util import load_binary_file, getuid, OSX, POSIX, LINUX
+from xpra.os_util import getuid, OSX, POSIX
 from xpra.platform.paths import get_user_conf_dirs, get_system_conf_dirs
 from xpra.log import Logger
 
@@ -17,14 +17,6 @@ log = Logger("window", "util")
 DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")
 CONTENT_TYPE_DEFS = os.environ.get("XPRA_CONTENT_TYPE_DEFS","")
 
-
-def get_proc_cmdline(pid):
-    if pid and LINUX:
-        #try to find the command via /proc:
-        proc_cmd_line = os.path.join("/proc", "%s" % pid, "cmdline")
-        if os.path.exists(proc_cmd_line):
-            return load_binary_file(proc_cmd_line).rstrip(b"\0")
-    return None
 
 def getprop(window, prop):
     try:
@@ -124,15 +116,10 @@ def guess_content_type_from_defs(window) -> str:
         if prop_name not in window.get_property_names():
             continue
         prop_value = window.get_property(prop_name)
-        #special case for "command":
-        #we can look it up using proc on Linux
-        if not prop_value and prop_name=="command":
-            pid = getprop(window, "pid")
-            prop_value = get_proc_cmdline(pid)
         #some properties return lists of values,
         #in which case we try to match any of them:
         log("guess_content_type_from_defs(%s) prop(%s)=%s", window, prop_name, prop_value)
-        if isinstance(prop_value, (list,tuple)):
+        if isinstance(prop_value, (list, tuple)):
             values = prop_value
         else:
             values = [prop_value]
@@ -230,10 +217,6 @@ def load_command_to_type():
 def guess_content_type_from_command(window):
     if POSIX and not OSX:
         command = getprop(window, "command")
-        if not command and LINUX:
-            pid = getprop(window, "pid")
-            command = get_proc_cmdline(pid)
-        log("guess_content_type_from_command(%s) command=%s", window, command)
         if command:
             ctt = load_command_to_type()
             cmd = os.path.basename(command)

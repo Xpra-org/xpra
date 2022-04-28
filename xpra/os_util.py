@@ -502,6 +502,14 @@ def load_binary_file(filename) -> bytes:
         get_util_logger().warn(" %s", e)
         return None
 
+def get_proc_cmdline(pid):
+    if pid and LINUX:
+        #try to find the command via /proc:
+        proc_cmd_line = os.path.join("/proc", "%s" % pid, "cmdline")
+        if os.path.exists(proc_cmd_line):
+            return load_binary_file(proc_cmd_line).rstrip(b"\0").split(b"\0")
+    return None
+
 def parse_encoded_bin_data(data):
     if not data:
         return None
