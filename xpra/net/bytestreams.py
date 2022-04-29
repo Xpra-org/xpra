@@ -458,7 +458,7 @@ def get_socket_options(sock, level, options):
             continue
         try:
             v = sock.getsockopt(level, opt)
-        except socket.error:
+        except (OSError, socket.error):
             log("sock.getsockopt(%i, %s)", level, k, exc_info=True)
             errs.append(k)
         else:
