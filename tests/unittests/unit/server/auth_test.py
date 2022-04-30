@@ -415,9 +415,15 @@ class TestAuth(unittest.TestCase):
         t(digests=("xor", "keycloak", ))
         t(digests=("keycloak", ))
         #we can't provide a valid response:
-        f(digests=("keycloak", ), response="")
-        f(digests=("keycloak", ), response="foo")
+        #these are not valid json strings:
+        for invalid in (True, False, 10, 1.1, [1, 2, 3], (4, 5, 6)):
+            f(digests=("keycloak", ), response=invalid)
+        #these are valid json strings, but not valid reponses (not dicts for a start):
+        for invalid in (b"\"hello\"", "\"foo\"", "\"foobar\""):
+            f(digests=("keycloak", ), response=invalid)
+        #these are valid json strings that return a dict, but no valid authorization code:
         f(digests=("keycloak", ), response="{\"foo\":\"bar\"}")
+        f(digests=("keycloak", ), response="{\"error\": 404, \"code\":\"authorization_code\"}")
         f(digests=("keycloak", ), response="{\"code\":\"authorization_code\"}")
         #non-https URL should fail:
         f(server_url="http://localhost:8080/")
