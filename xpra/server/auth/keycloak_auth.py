@@ -10,7 +10,7 @@ import json
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
-KEYCLOAK_SERVER_URL = os.environ.get("XPRA_KEYCLOAK_SERVER_URL", "http://localhost:8080/auth/")
+KEYCLOAK_SERVER_URL = os.environ.get("XPRA_KEYCLOAK_SERVER_URL", "https://localhost:8080/auth/")
 KEYCLOAK_REALM_NAME = os.environ.get("XPRA_KEYCLOAK_REALM_NAME", "example_realm")
 KEYCLOAK_CLIENT_ID  = os.environ.get("XPRA_KEYCLOAK_CLIENT_ID", "example_client")
 KEYCLOAK_CLIENT_SECRET_KEY = os.environ.get("XPRA_KEYCLOAK_CLIENT_SECRET_KEY", "secret")
@@ -33,7 +33,7 @@ class Authenticator(SysAuthenticator):
         # use keycloak as default prompt
         kwargs["prompt"] = kwargs.pop("prompt", "keycloak")
 
-        if KEYCLOAK_GRANT_TYPE != "authorization_code":
+        if self.grant_type != "authorization_code":
             raise NotImplementedError("Warning: only grant type \"authorization_code\" is currently supported")
 
         super().__init__(**kwargs)
@@ -42,16 +42,15 @@ class Authenticator(SysAuthenticator):
 
         try:
             from oauthlib.oauth2 import WebApplicationClient
-
             # Get authorization code
-            client = WebApplicationClient(KEYCLOAK_CLIENT_ID)
-            authorization_url = KEYCLOAK_SERVER_URL + 'realms/' + KEYCLOAK_REALM_NAME + '/protocol/openid-connect/auth'
+            client = WebApplicationClient(self.client_id)
+            authorization_url = self.server_url + 'realms/' + self.realm_name + '/protocol/openid-connect/auth'
             self.salt = client.prepare_request_uri(
                 authorization_url,
-                redirect_uri = KEYCLOAK_REDIRECT_URI,
-                scope = [KEYCLOAK_SCOPE],
+                redirect_uri = self.redirect_uri,
+                scope = [self.redirect_uri],
             )
-        except ImportError as e:
+        except ImportError as e:    # pragma: no cover
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use keycloak authentication:")
             log.warn(" %s", e)
@@ -110,10 +109,10 @@ class Authenticator(SysAuthenticator):
             from keycloak.exceptions import KeycloakError
 
             # Configure client
-            keycloak_openid = KeycloakOpenID(server_url=KEYCLOAK_SERVER_URL,
-                              client_id=KEYCLOAK_CLIENT_ID,
-                              realm_name=KEYCLOAK_REALM_NAME,
-                              client_secret_key=KEYCLOAK_CLIENT_SECRET_KEY)
+            keycloak_openid = KeycloakOpenID(server_url=self.server_url,
+                              client_id=self.client_id,
+                              realm_name=self.realm_name,
+                              client_secret_key=self.client_id)
 
             # Get well_known
             config_well_know = keycloak_openid.well_know()
@@ -121,8 +120,8 @@ class Authenticator(SysAuthenticator):
 
             # Get token
             token = keycloak_openid.token(code=auth_code,
-                                          grant_type=[KEYCLOAK_GRANT_TYPE],
-                                          redirect_uri=KEYCLOAK_REDIRECT_URI)
+                                          grant_type=[self.grant_type],
+                                          redirect_uri=self.redirect_uri)
 
             # Verify token
             access_token = token.get("access_token")
@@ -161,7 +160,7 @@ class Authenticator(SysAuthenticator):
             return False
 
 
-def main(args):
+def main(args): # pragma: no cover
     if len(args)!=2:
         print("invalid number of arguments")
         print("usage:")

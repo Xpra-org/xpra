@@ -384,6 +384,44 @@ class TestAuth(unittest.TestCase):
         exec_cmd("/bin/true", True)
         exec_cmd("/bin/false", False)
 
+    def test_keycloak(self):
+        try:
+            self._init_auth("keycloak")
+        except ImportError as e:
+            print("Warning: keycloak auth test skipped")
+            print(" %s", e)
+            return
+        def t(digests=None, response=None, **kwargs):
+            a = self._init_auth("keycloak", **kwargs)
+            assert a.requires_challenge(), "%s should require a challenge" % a
+            if digests is not None:
+                assert a.get_challenge(digests), "cannot get challenge for digests %s" % (digests,)
+            if response is not None:
+                assert a.check(response), "check failed for response %s" % (response,)
+            return a
+        def f(digests=None, response=None, **kwargs):
+            try:
+                t(digests, response, **kwargs)
+            except Exception:
+                pass
+            else:
+                raise Exception("keycloak auth should have failed with arguments: %s" % (kwargs,))
+        t()
+        #only 'authorization_code' is supported:
+        f(grant_type="foo")
+        t(grant_type="authorization_code")
+        #only 'keycloak' digest is supported:
+        f(digests=("xor", ))
+        t(digests=("xor", "keycloak", ))
+        t(digests=("keycloak", ))
+        #we can't provide a valid response:
+        f(digests=("keycloak", ), response="")
+        f(digests=("keycloak", ), response="foo")
+        f(digests=("keycloak", ), response="{\"foo\":\"bar\"}")
+        f(digests=("keycloak", ), response="{\"code\":\"authorization_code\"}")
+        #non-https URL should fail:
+        f(server_url="http://localhost:8080/")
+
 
 def main():
     import logging
