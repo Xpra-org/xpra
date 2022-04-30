@@ -72,20 +72,22 @@ class Authenticator(SysAuthenticator):
         assert self.challenge_sent
         if not response_json:
             log.error("Error: keycloak authentication failed")
-            log.error("Invalid response received from authorization endpoint")
+            log.error(" invalid response received from authorization endpoint")
             return False
 
         try:
             response = json.loads(response_json)
         except json.JSONDecodeError:
             log.error("Error: keycloak authentication failed")
-            log.error("Invalid response received from authorization endpoint")
+            log.error(" invalid response received from authorization endpoint")
             log("failed to parse json: %r", response_json, exc_info=True)
             return False
+        print("json.loads(%s)=%s", response_json, response)
 
+        log.enable_debug()
         if not isinstance(response, dict):
             log.error("Error: keycloak authentication failed")
-            log.error("Invalid response received from authorization endpoint")
+            log.error(" invalid response received from authorization endpoint")
             log("response is of type %r but dict type is required", type(response), exc_info=True)
             log("failed to load response %r", response, exc_info=True)
             return False
@@ -101,7 +103,7 @@ class Authenticator(SysAuthenticator):
 
         if not auth_code:
             log.error("Error: keycloak authentication failed")
-            log.error("Invalid response received from authorization endpoint")
+            log.error(" invalid response received from authorization endpoint")
             return False
 
         try:
@@ -179,5 +181,5 @@ def main(args): # pragma: no cover
     print("success")
     return 0
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main(sys.argv))
