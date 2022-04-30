@@ -140,6 +140,8 @@ Suggests: openssh-server
         ,gnome-shell-extension-appindicator
 # password prompts:
         ,pinentry-gnome3
+# keycloak authentication:
+        ,python3-oauthlib
 # for webcam support:
         ,python3-opencv
 # only useful when connecting using a JSON / YAML only client:
