@@ -105,9 +105,16 @@ class Authenticator(SysAuthenticator):
             return False
 
         try:
+            # pylint: disable=import-outside-toplevel
             from keycloak import KeycloakOpenID
             from keycloak.exceptions import KeycloakError
+        except ImportError as e:
+            log("check(..)", exc_info=True)
+            log.warn("Warning: cannot use keycloak authentication:")
+            log.warn(" %s", e)
+            return False
 
+        try:
             # Configure client
             keycloak_openid = KeycloakOpenID(server_url=self.server_url,
                               client_id=self.client_id,
@@ -152,11 +159,6 @@ class Authenticator(SysAuthenticator):
         except KeycloakError as e:
             log.error("Error: keycloak authentication failed")
             log.error(" error code %s: %s", e.response_code, e.error_message)
-            return False
-        except ImportError as e:
-            log("check(..)", exc_info=True)
-            log.warn("Warning: cannot use keycloak authentication:")
-            log.warn(" %s", e)
             return False
 
 
