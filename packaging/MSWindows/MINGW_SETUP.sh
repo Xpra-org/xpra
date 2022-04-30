@@ -32,14 +32,14 @@ PACMAN="pacman"
 #most packages get installed here: (python, gtk, etc):
 $PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify
 #media libraries (more than we actually need):
-$PACMAN --noconfirm --needed -S ${XPKG}ffmpeg ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+$PACMAN --noconfirm --needed -S ${XPKG}ffmpeg ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
 $PACMAN --noconfirm --needed -S ${XPKG}lz4 heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
 #python GStreamer bindings:
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil libavif oauthlib; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces rencode setproctitle pyu2f ldap ldap3 bcrypt pynacl lz4 brotli pyopengl nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
 $PACMAN --noconfirm --needed -S ${XPKG}cython
