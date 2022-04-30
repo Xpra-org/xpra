@@ -59,12 +59,11 @@ if server_path:
     filename = os.path.abspath(arg)
     #sys.stderr.write("arg: '%s'\n" % x)
     if arg.find("://")>0:
-        #this is a URL and may be escaped:
-        from urllib.parse import unquote
-        arg = unquote(arg)
         proto, filename = arg.split("://", 1)
         if proto=="file":
-            send_control_command("send-file", filename, "open", "*")
+            #this is a URL and may be escaped:
+            from urllib.parse import unquote
+            send_control_command("send-file", unquote(filename), "open", "*")
         else:
             send_control_command("open-url", arg, "*")
     elif os.path.exists(arg) and os.path.isfile(arg):
