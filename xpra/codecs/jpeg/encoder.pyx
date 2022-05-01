@@ -196,11 +196,12 @@ cdef class Encoder:
 
     def clean(self):
         self.width = self.height = self.quality = 0
-        r = tjDestroy(self.compressor)
-        self.compressor = NULL
-        if r:
-            log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
-            log.error(" %s", get_error_str())
+        if self.compressor:
+            r = tjDestroy(self.compressor)
+            self.compressor = NULL
+            if r:
+                log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
+                log.error(" %s", get_error_str())
 
     def get_encoding(self):
         return self.encoding
