@@ -68,8 +68,7 @@ cdef extern from "sys/shm.h":
 
 cdef extern from "errno.h" nogil:
     int errno
-    enum:
-        EINVAL
+    int EINVAL
 
 ctypedef unsigned long CARD32
 ctypedef unsigned short CARD16
