@@ -2012,7 +2012,7 @@ class WindowSource(WindowIconSource):
         if w==0 or h==0:
             return nodata("invalid dimensions: %ix%i", w, h)
         if self.is_cancelled(sequence):
-            image.free()
+            self.free_image_wrapper(image)
             return nodata("sequence %i is cancelled", sequence)
         pixel_format = image.get_pixel_format()
         image_depth = image.get_depth()
@@ -2576,7 +2576,7 @@ class WindowSource(WindowIconSource):
         """
         def nodata(msg, *args):
             log("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
-            image.free()
+            self.free_image_wrapper(image)
         if self.is_cancelled(sequence):
             return nodata("cancelled")
         if self.suspended:
