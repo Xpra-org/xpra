@@ -873,7 +873,7 @@ class WindowVideoSource(WindowSource):
             log("get_window_pixmap: no pixel data for window %s, wid=%s", self.window, self.wid)
             return
         if self.is_cancelled(sequence):
-            image.free()
+            self.free_image_wrapper(image)
             return
         self.pixel_format = image.get_pixel_format()
         self.image_depth = image.get_depth()
