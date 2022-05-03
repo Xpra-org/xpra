@@ -873,7 +873,7 @@ class WindowVideoSource(WindowSource):
             image.freeze()
         def call_encode(ew, eh, eimage, encoding, flush):
             if self.is_cancelled(sequence):
-                image.free()
+                self.free_image_wrapper(image)
                 log("call_encode: sequence %s is cancelled", sequence)
                 return
             now = monotonic()
