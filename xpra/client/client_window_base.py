@@ -318,31 +318,44 @@ class ClientWindowBase(ClientWidgetBase):
                 "server-machine"  : getattr(self._client, "_remote_hostname", None) or UNKNOWN_MACHINE,
                 "server-display"  : getattr(self._client, "_remote_display", None) or "<unknown display>",
                 }
+            def validhostname(value):
+                if value not in (
+                    "localhost",
+                    "localhost.localdomain",
+                    "",
+                    None):
+                    return None
+                return value
             def getvar(var):
                 #"hostname" is magic:
                 #we try harder to find a useful value to show:
                 if var in ("hostname", "hostinfo"):
-                    if var=="hostinfo" and getattr(self._client, "mmap_enabled", False):
-                        #this is a local connection for sure
-                        server_display = getattr(self._client, "server_display", None)
-                        if server_display:
-                            return server_display
+                    server_display = getattr(self._client, "server_display", None)
+                    if var=="hostinfo" and getattr(self._client, "mmap_enabled", False) and server_display:
+                        #this is a local connection for sure and we can specify the display directly:
+                        return server_display
+                    import socket
+                    local_hostname = validhostname(socket.gethostname())
                     #try to find the hostname:
                     proto = getattr(self._client, "_protocol", None)
+                    target = None
                     if proto:
                         conn = getattr(proto, "_conn", None)
                         if conn:
-                            hostname = conn.info.get("host") or bytestostr(conn.target)
+                            hostname = conn.info.get("host")
+                            target = bytestostr(conn.target)
                             if hostname:
+                                if local_hostname==hostname and server_display:
+                                    return server_display
                                 return hostname
                     for m in ("client-machine", "server-machine"):
-                        value = getvar(m)
-                        if value not in (
-                            "localhost",
-                            "localhost.localdomain",
-                            "",
-                            None):
+                        value = validhostname(getvar(m))
+                        if value and value!=local_hostname:
                             return value
+                    if server_display:
+                        return server_display
+                    if target:
+                        return target
                     return UNKNOWN_MACHINE
                 value = metadata.get(var) or self._metadata.get(var)
                 if value is None:
