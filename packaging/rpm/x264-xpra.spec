@@ -8,7 +8,7 @@ Version:     20211215
 Release:     1%{?dist}
 Summary:     x264 library for xpra
 Group:       Applications/Multimedia
-License:     GPL
+License:     GPLv2+
 URL:	     http://www.videolan.org/developers/x264.html
 Source0:     https://github.com/mirror/x264/archive/%{commit}.zip
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
