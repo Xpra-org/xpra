@@ -16,7 +16,7 @@ Release:     1%{?dist}
 Summary:     ffmpeg libraries for xpra
 
 Group:       Applications/Multimedia
-License:     GPL
+License:     LGPLv3+
 URL:	     http://www.ffmpeg.org
 Source0:     http://www.ffmpeg.org/releases/ffmpeg-%{version}.tar.xz
 BuildRoot:   %(mktemp -ud %{_tmppath}/%{real_name}-%{version}-%{release}-XXXXXX)
