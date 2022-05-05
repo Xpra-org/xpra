@@ -659,7 +659,8 @@ cdef class XShmWrapper:
         xshmdebug("XShmWrapper.free() has_shm=%s, image=%#x, shmid=%#x", has_shm, <uintptr_t> self.image, self.shminfo.shmid)
         if has_shm:
             XShmDetach(self.display, &self.shminfo)
-        if self.image!=NULL:
+        has_image = self.image!=NULL
+        if has_image:
             XDestroyImage(self.image)
             self.image = NULL
         if has_shm:
@@ -667,7 +668,8 @@ cdef class XShmWrapper:
             shmdt(self.shminfo.shmaddr)
             self.shminfo.shmaddr = <char *> -1
             self.shminfo.shmid = -1
-        call_context_check("XShmWrapper.free()")
+        if has_shm or has_image:
+            call_context_check("XShmWrapper.free()")
 
 
 cdef class XShmImageWrapper(XImageWrapper):
