@@ -266,6 +266,7 @@ STRUCT_KNOWN_FILTERS = {
                 "webp"          : "libwebp encoder and decoder",
                 "avif"          : "libavif encoder and decoder",
                 "webcam"        : "webcam access",
+                "evdi"          : "evdi virtual monitor",
                 },
     "Pointer" : {
                 "mouse"         : "Mouse motion",

@@ -208,6 +208,7 @@ webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
 keyboard_ENABLED        = DEFAULT
 v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and not OPENBSD)
+evdi_ENABLED            = DEFAULT and POSIX and pkg_config_version("1.10", "evdi")
 #ffmpeg 3.1 or later is required
 dec_avcodec2_ENABLED    = DEFAULT and BITS==64 and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = DEFAULT and BITS==64 and pkg_config_ok("--exists", "libswscale")
@@ -240,7 +241,7 @@ SWITCHES = [
     "nvenc", "cuda_kernels", "cuda_rebuild", "nvfbc",
     "vpx", "webp", "pillow", "spng_decoder", "spng_encoder", "jpeg_encoder", "jpeg_decoder",
     "nvjpeg",
-    "v4l2",
+    "v4l2", "evdi",
     "dec_avcodec2", "csc_swscale",
     "csc_cython", "csc_libyuv",
     "bencode", "cython_bencode", "rencodeplus",
@@ -1015,6 +1016,7 @@ def clean():
                    "xpra/codecs/enc_ffmpeg/encoder.c",
                    "xpra/codecs/v4l2/pusher.c",
                    "xpra/codecs/v4l2/constants.pxi",
+                   "xpra/codecs/evdi/capture.cpp",
                    "xpra/codecs/libav_common/av_log.c",
                    "xpra/codecs/webp/encoder.c",
                    "xpra/codecs/webp/decoder.c",
@@ -2433,6 +2435,16 @@ if v4l2_ENABLED:
     add_cython_ext("xpra.codecs.v4l2.pusher",
                 ["xpra/codecs/v4l2/pusher.pyx"],
                 **v4l2_pkgconfig)
+
+
+toggle_packages(evdi_ENABLED, "xpra.codecs.evdi")
+if evdi_ENABLED:
+    evdi_pkgconfig = pkgconfig("evdi")
+    print("evdi_pkgconfig=%s" % (evdi_pkgconfig,))
+    add_cython_ext("xpra.codecs.evdi.capture",
+                ["xpra/codecs/evdi/capture.pyx"],
+                language="c++",
+                **evdi_pkgconfig)
 
 
 toggle_packages(bencode_ENABLED, "xpra.net.bencode")

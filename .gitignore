@@ -129,6 +129,7 @@ tests/unittests/test-file*
 /xpra/codecs/nvjpeg/encoder.c
 /xpra/codecs/nvjpeg/decoder.c
 /xpra/codecs/nvjpeg/common.c
+/xpra/codecs/evdi/capture.c
 /xpra/gtk_common/gdk_atoms.c
 /xpra/gtk_common/gtk3/gdk_atoms.c
 /xpra/gtk_common/gtk3/gdk_bindings.c

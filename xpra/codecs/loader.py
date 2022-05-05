@@ -39,7 +39,7 @@ ENCODER_CODECS = filt("enc_rgb", "enc_pillow", "enc_spng", "enc_webp", "enc_jpeg
 ENCODER_VIDEO_CODECS = filt("enc_vpx", "enc_x264", "enc_x265", "nvenc", "enc_ffmpeg")
 DECODER_CODECS = filt("dec_pillow", "dec_spng", "dec_webp", "dec_jpeg", "dec_nvjpeg", "dec_avif")
 DECODER_VIDEO_CODECS = filt("dec_vpx", "dec_avcodec2")
-SOURCES = filt("v4l2", )
+SOURCES = filt("v4l2", "evdi")
 
 ALL_CODECS = filt(*set(CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES))
 
@@ -198,6 +198,7 @@ CODEC_OPTIONS = {
     "dec_avcodec2"  : ("avcodec2 decoder",  "dec_avcodec2", "decoder", "Decoder"),
     #sources:
     "v4l2"          : ("v4l2 source",       "v4l2",         "pusher", "Pusher"),
+    "evdi"          : ("evdi source",       "evdi",         "capture", "Capture"),
     }
 
 def load_codec(name):
