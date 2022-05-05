@@ -176,7 +176,7 @@ class XpraMonitorServer(DesktopServerBase):
                 model.name = monitor.get("name")
                 screenlog("monitor name has changed to %r", model.name)
                 #name is used to generate the window "title":
-                self.notify("title")
+                model.notify("title")
         return mods
 
 
