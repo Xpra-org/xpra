@@ -11,7 +11,7 @@ from xpra.x11.gtk_x11.gdk_bindings import (
             add_event_receiver,             #@UnresolvedImport
             remove_event_receiver,          #@UnresolvedImport
             )
-from xpra.gtk_common.error import xsync, xswallow, xlog, XError
+from xpra.gtk_common.error import xsync, xlog, XError
 from xpra.x11.common import Unmanageable
 
 from xpra.x11.bindings.ximage import XImageBindings #@UnresolvedImport
@@ -116,7 +116,7 @@ class WindowDamageHandler:
         log("invalidating named pixmap, contents handle=%s", ch)
         if ch:
             self._contents_handle = None
-            with xswallow:
+            with xlog:
                 ch.cleanup()
 
     def has_xshm(self):
