@@ -16,7 +16,7 @@ from xpra.net.common import may_log_packet
 from xpra.os_util import bytestostr, WIN32
 from xpra.util import (
     typedict, flatten_dict, updict, merge_dicts, envbool, csv,
-    SERVER_EXIT, SERVER_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
+    SERVER_EXIT, CONNECTION_ERROR, SERVER_SHUTDOWN, DETACH_REQUEST,
     NEW_CLIENT, DONE, SESSION_BUSY,
     )
 from xpra.net.bytestreams import set_socket_timeout
@@ -415,7 +415,7 @@ class ServerBase(ServerBaseClass):
             log("_process_hello_ui%s", (ss, c, auth_caps, send_ui, share_count))
             log.error("Error: processing new connection from %s:", p or ss, exc_info=True)
             if p:
-                self.disconnect_client(p, SERVER_ERROR, "error accepting new connection")
+                self.disconnect_client(p, CONNECTION_ERROR, "error accepting new connection")
 
     def parse_hello(self, ss, c, send_ui):
         for bc in SERVER_BASES:

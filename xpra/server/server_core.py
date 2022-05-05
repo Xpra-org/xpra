@@ -70,6 +70,7 @@ from xpra.util import (
     dump_all_frames, envint, envbool, envfloat,
     SERVER_SHUTDOWN, SERVER_UPGRADE, LOGIN_TIMEOUT, DONE, PROTOCOL_ERROR,
     SERVER_ERROR, VERSION_ERROR, CLIENT_REQUEST, SERVER_EXIT,
+    CONNECTION_ERROR,
     )
 from xpra.log import Logger, get_info as get_log_info
 
@@ -2149,11 +2150,11 @@ class ServerCore:
             log.error("Error setting up new connection for")
             log.error(" %s:", proto)
             log.error(" %s", e)
-            self.disconnect_client(proto, SERVER_ERROR, str(e))
+            self.disconnect_client(proto, CONNECTION_ERROR, str(e))
         except Exception as e:
             #log exception but don't disclose internal details to the client
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
-            self.disconnect_client(proto, SERVER_ERROR, "error accepting new connection")
+            self.disconnect_client(proto, CONNECTION_ERROR, "error accepting new connection")
 
     def hello_oked(self, proto, _packet, c, _auth_caps):
         generic_request = c.strget("request")

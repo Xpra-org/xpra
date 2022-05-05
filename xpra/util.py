@@ -54,6 +54,7 @@ CONTROL_COMMAND_ERROR   = "control command error"
 AUTHENTICATION_ERROR    = "authentication error"
 PERMISSION_ERROR        = "permission error"
 SERVER_ERROR            = "server error"
+CONNECTION_ERROR        = "connection error"
 SESSION_NOT_FOUND       = "session not found error"
 #informational (not a problem):
 DONE                    = "done"

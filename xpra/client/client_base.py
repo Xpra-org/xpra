@@ -41,7 +41,7 @@ from xpra.util import (
     flatten_dict, typedict, updict, parse_simple_dict, noerr,
     repr_ellipsized, ellipsizer, nonl,
     envbool, envint, disconnect_is_an_error, dump_all_frames, engs, csv, obsc,
-    SERVER_UPGRADE,
+    SERVER_UPGRADE, CONNECTION_ERROR,
     )
 from xpra.client.mixins.serverinfo_mixin import ServerInfoMixin
 from xpra.client.mixins.fileprint_mixin import FilePrintMixin
@@ -49,6 +49,7 @@ from xpra.exit_codes import (EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_U
         EXIT_PASSWORD_REQUIRED, EXIT_PASSWORD_FILE_ERROR, EXIT_INCOMPATIBLE_VERSION,
         EXIT_ENCRYPTION, EXIT_FAILURE, EXIT_PACKET_FAILURE, EXIT_CONNECTION_FAILED,
         EXIT_NO_AUTHENTICATION, EXIT_INTERNAL_ERROR, EXIT_UPGRADE,
+        EXIT_STR,
         )
 
 log = Logger("client")
@@ -651,7 +652,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log.warn(" %s", reason)
         for x in extra_info:
             log.warn(" %s", x)
-        self.quit(EXIT_FAILURE)
+        if reason==CONNECTION_ERROR or not self.completed_startup:
+            self.quit(EXIT_CONNECTION_FAILED)
+        else:
+            self.quit(EXIT_FAILURE)
 
     def server_disconnect(self, reason, *extra_info):
         self.quit(self.server_disconnect_exit_code(reason, *extra_info))
@@ -682,11 +686,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if c!="unknown" or not e.startswith("rencode"):
                 netlog.error("  or maybe this server does not support '%s' compression or '%s' packet encoding?", c, e)
             exit_code = EXIT_CONNECTION_FAILED
-            exit_str = "Connection failed"
+        elif not self.completed_startup:
+            exit_code = EXIT_CONNECTION_FAILED
         else:
             exit_code = EXIT_CONNECTION_LOST
-            exit_str = "Connection lost"
         if self.exit_code is None:
+            exit_str = EXIT_STR.get(exit_code,
+                                    str(exit_code)).lower().replace("_", " ").replace("connection", "Connection")
             self.warn_and_quit(exit_code, exit_str)
 
 

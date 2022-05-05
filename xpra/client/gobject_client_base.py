@@ -25,7 +25,7 @@ from xpra.os_util import (
 from xpra.simple_stats import std_unit
 from xpra.client.client_base import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import (
-    EXIT_OK, EXIT_CONNECTION_LOST, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
+    EXIT_OK, EXIT_CONNECTION_FAILED, EXIT_TIMEOUT, EXIT_INTERNAL_ERROR,
     EXIT_FAILURE, EXIT_UNSUPPORTED, EXIT_REMOTE_ERROR, EXIT_FILE_TOO_BIG,
     EXIT_IO_ERROR, EXIT_NO_DATA,
     )
@@ -172,7 +172,7 @@ class CommandConnectClient(GObjectXpraClient):
             if len(packet)>1:
                 details = ": %s" % csv(packet[1:])
             log.warn("Connection failed%s", details)
-            self.quit(EXIT_CONNECTION_LOST)
+            self.quit(EXIT_CONNECTION_FAILED)
         else:
             self.quit(EXIT_OK)
 
