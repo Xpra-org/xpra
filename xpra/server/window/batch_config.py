@@ -51,7 +51,7 @@ TIME_UNIT = ival("TIME_UNIT", 1, 1, 1000)                   #per second
 MIN_DELAY = ival("MIN_DELAY", 16, 0, 1000)                  #assume 60fps 1000/60=16.66
 START_DELAY = ival("START_DELAY", 50, 1, 1000)
 MAX_DELAY = ival("MAX_DELAY", 500, 1, 15000)
-EXPIRE_DELAY = ival("EXPIRE_DELAY", 50, 10, 1000)
+EXPIRE_DELAY = ival("EXPIRE_DELAY", 250, 10, 1000)
 TIMEOUT_DELAY = ival("TIMEOUT_DELAY", 15000, 100, 100000)
 
 
