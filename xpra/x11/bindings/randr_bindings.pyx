@@ -1121,8 +1121,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     posinfo = ""
                     if x or y:
                         posinfo = " at %i,%i" % (x, y)
-                    log.info("setting dummy crtc and output %i to %ix%i (%ix%i mm)%s",
-                             i, width, height, mmw, mmh, posinfo)
+                    if width==height==mmw==mmh==0:
+                        log.info("disabling dummy crtc and output %i", i)
+                    else:
+                        log.info("setting dummy crtc and output %i to %ix%i (%ix%i mm)%s",
+                                 i, width, height, mmw, mmh, posinfo)
                 finally:
                     if output_info:
                         XRRFreeOutputInfo(output_info)
