@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -38,17 +38,3 @@ class AutoPropGObjectMixin:
         else:
             self._gproperties[name] = value
         self.notify(name)
-
-
-# Collects the results from signal handlers for a given signal into a list,
-# ignoring all handlers that return None.  (This filtering is useful because
-# the intended use of this method is to "poll" all connected objects, so it's
-# pretty useless to call a default do_* method... but even if such a method is
-# not defined, a default implementation will still be called automatically,
-# and that implementation simply returns None.)
-def non_none_list_accumulator(_ihint, return_accu, handler_return):
-    if return_accu is None:
-        return_accu = []
-    if handler_return is not None:
-        return_accu += [handler_return]
-    return True, return_accu

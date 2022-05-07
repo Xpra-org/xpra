@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2022 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ from gi.repository import GObject, Gtk, Gdk
 
 from xpra.util import envint, envbool, typedict
 from xpra.common import MAX_WINDOW_SIZE
-from xpra.gtk_common.gobject_util import one_arg_signal, non_none_list_accumulator, SIGNAL_RUN_LAST
+from xpra.gtk_common.gobject_util import one_arg_signal
 from xpra.gtk_common.error import XError, xsync, xswallow, xlog
 from xpra.x11.gtk_x11 import GDKX11Window
 from xpra.x11.gtk_x11.send_wm import send_wm_take_focus
@@ -130,7 +130,6 @@ class WindowModel(BaseWindowModel):
         })
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__.update({
-        "ownership-election"            : (SIGNAL_RUN_LAST, GObject.TYPE_PYOBJECT, (), non_none_list_accumulator),
         "child-map-request-event"       : one_arg_signal,
         "child-configure-request-event" : one_arg_signal,
         "xpra-destroy-event"            : one_arg_signal,
@@ -431,35 +430,27 @@ class WindowModel(BaseWindowModel):
     # Hooks for WM
     #########################################
 
-    def ownership_election(self):
-        #returns True if we have updated the geometry
-        candidates = self.emit("ownership-election")
-        if candidates:
-            rating, winner = sorted(candidates)[-1]
-            if rating < 0:
-                winner = None
-        else:
-            winner = None
-        old_owner = self.get_property("owner")
-        log("ownership_election() winner=%s, old owner=%s, candidates=%s", winner, old_owner, candidates)
-        if old_owner is winner:
-            return False
-        if old_owner is not None:
-            self.corral_window.hide()
-            self.corral_window.reparent(self.parking_window, 0, 0)
-        self._internal_set_property("owner", winner)
-        if winner is not None:
-            winner.take_window(self, self.corral_window)
+    def show(self):
+        self._update_client_geometry()
+        self.corral_window.show_unraised()
+
+    def hide(self):
+        self.corral_window.hide()
+        self.corral_window.reparent(self.parking_window, 0, 0)
+        self.send_configure_notify()
+
+    def set_owner(self, owner):
+        self._internal_set_property("owner", owner)
+        if owner:
             self._update_client_geometry()
             self.corral_window.show_unraised()
-            return True
+        else:
+            self.send_configure_notify()
+
+    def send_configure_notify(self):
         with xswallow:
             X11Window.sendConfigureNotify(self.xid)
-        return False
 
-    def maybe_recalculate_geometry_for(self, maybe_owner):
-        if maybe_owner and self.get_property("owner") is maybe_owner:
-            self._update_client_geometry()
 
     def _update_client_geometry(self):
         """ figure out where we're supposed to get the window geometry from,
@@ -481,6 +472,7 @@ class WindowModel(BaseWindowModel):
             geomlog("_update_client_geometry: ignored, owner=%s, setup_done=%s", owner, self._setup_done)
             w, h = self.get_property("geometry")[2:4]
             def window_position(_w, _h):
+                #return 0, 0
                 return self.get_property("geometry")[:2]
         self._do_update_client_geometry(w, h, window_position)
 
@@ -494,7 +486,7 @@ class WindowModel(BaseWindowModel):
         geomlog("_do_update_client_geometry: position=%ix%i (from %s)", x, y, window_position_cb)
         self.corral_window.move_resize(x, y, w, h)
         self._updateprop("geometry", (x, y, w, h))
-        with xswallow:
+        with xlog:
             X11Window.configureAndNotify(self.xid, 0, 0, w, h)
 
     def do_xpra_configure_event(self, event):

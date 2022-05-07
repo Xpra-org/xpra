@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -89,8 +89,7 @@ class DesktopManager(Gtk.Widget):
     def add_window(self, model, x, y, w, h):
         self._models[model] = DesktopState([x, y, w, h])
         model.managed_connect("unmanaged", self._unmanaged)
-        model.managed_connect("ownership-election", self._elect_me)
-        model.ownership_election()
+        model.send_configure_notify()
 
     def window_geometry(self, model):
         return self._models[model].geom
@@ -106,9 +105,10 @@ class DesktopManager(Gtk.Widget):
 
     def show_window(self, model):
         self._models[model].shown = True
-        model.ownership_election()
+        model.set_owner(self)
         if model.get_property("iconic"):
             model.set_property("iconic", False)
+        model.show()
 
     def is_shown(self, model):
         if model.is_OR() or model.is_tray():
@@ -119,12 +119,12 @@ class DesktopManager(Gtk.Widget):
         log("DesktopManager.configure_window(%s, %s, %s, %s, %s, %s)", win, x, y, w, h, resize_counter)
         model = self._models[win]
         new_geom = [x, y, w, h]
-        update_geometry = False
-        if model.geom!=new_geom:
+        update_geometry = model.geom!=new_geom
+        if update_geometry:
             if resize_counter>0 and resize_counter<model.resize_counter:
                 log("resize ignored: counter %s vs %s", resize_counter, model.resize_counter)
+                update_geometry = False
             else:
-                update_geometry = True
                 model.geom = new_geom
         if not self.visible(win):
             model.shown = True
@@ -134,15 +134,14 @@ class DesktopManager(Gtk.Widget):
             #but when we have multiple clients, this keeps things in sync
             if win.get_property("iconic"):
                 win.set_property("iconic", False)
-            if win.ownership_election():
-                #window has been configured already
-                update_geometry = False
+            win.show()
+            return
         if update_geometry:
-            win.maybe_recalculate_geometry_for(self)
+            win._update_client_geometry()
 
     def hide_window(self, model):
         self._models[model].shown = False
-        model.ownership_election()
+        model.hide()
 
     def visible(self, model):
         return self._models[model].shown
@@ -151,25 +150,6 @@ class DesktopManager(Gtk.Widget):
 
     def _unmanaged(self, model, _wm_exiting):
         del self._models[model]
-
-    def _elect_me(self, model):
-        if self.visible(model):
-            return (1, self)
-        return (-1, self)
-
-    def take_window(self, _model, window):
-        #log.info("take_window(%s, %s)", model, window)
-        if not self.get_realized():
-            #with GTK3, the widget is never realized??
-            return
-        gdkwin = self.get_window()
-        assert gdkwin, "DesktopManager does not have a gdk window"
-        if REPARENT_ROOT:
-            parent = gdkwin.get_screen().get_root_window()
-        else:
-            parent = gdkwin
-        log("take_window: reparenting %s to %s", window, parent)
-        window.reparent(parent, 0, 0)
 
     def window_size(self, model):
         w, h = self._models[model].geom[2:4]
@@ -425,8 +405,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         for window in tuple(self._window_to_id.keys()):
             x, y, w, h = self._desktop_manager.window_geometry(window)
             if x>=desired_w or y>=desired_h:
-                x = min(x, desired_w-10)
-                y = min(y, desired_h-10)
+                x = min(x, desired_w-64)
+                y = min(y, desired_h-64)
                 geomlog("clamped window %s", window)
                 self._desktop_manager.update_window_geometry(window, x, y, w, h)
         with xlog:
