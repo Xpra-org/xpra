@@ -468,29 +468,25 @@ class WindowModel(BaseWindowModel):
         owner = self.get_property("owner")
         if owner is not None:
             geomlog("_update_client_geometry: using owner=%s (setup_done=%s)", owner, self._setup_done)
-            def window_size():
-                return  owner.window_size(self)
+            w, h = owner.window_size(self)
             def window_position(w, h):
-                return  owner.window_position(self, w, h)
+                return owner.window_position(self, w, h)
         elif not self._setup_done:
             #try to honour initial size and position requests during setup:
-            def window_size():
-                return self.get_property("requested-size")
+            w, h = self.get_property("requested-size")
             def window_position(_w, _h):
                 return self.get_property("requested-position")
-            geomlog("_update_client_geometry: using initial size=%s and position=%s", window_size, window_position)
+            geomlog("_update_client_geometry: using initial size=%s and position=%s", (w, h), window_position)
         else:
             geomlog("_update_client_geometry: ignored, owner=%s, setup_done=%s", owner, self._setup_done)
-            def window_size():
-                return self.get_property("geometry")[2:4]
+            w, h = self.get_property("geometry")[2:4]
             def window_position(_w, _h):
                 return self.get_property("geometry")[:2]
-        self._do_update_client_geometry(window_size, window_position)
+        self._do_update_client_geometry(w, h, window_position)
 
 
-    def _do_update_client_geometry(self, window_size_cb, window_position_cb):
-        allocated_w, allocated_h = window_size_cb()
-        geomlog("_do_update_client_geometry: allocated %ix%i (from %s)", allocated_w, allocated_h, window_size_cb)
+    def _do_update_client_geometry(self, allocated_w, allocated_h, window_position_cb):
+        geomlog("_do_update_client_geometry(%i, %i, %s)", allocated_w, allocated_h, window_position_cb)
         hints = self.get_property("size-hints")
         w, h = self.calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
