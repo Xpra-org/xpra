@@ -421,6 +421,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
     # Manage the virtual screen:
     #
     def set_screen_size(self, desired_w, desired_h, bigger=True):
+        #clamp all window models to the new screen size:
+        for window in tuple(self._window_to_id.keys()):
+            x, y, w, h = self._desktop_manager.window_geometry(window)
+            if x>=desired_w or y>=desired_h:
+                x = min(x, desired_w-10)
+                y = min(y, desired_h-10)
+                geomlog("clamped window %s", window)
+                self._desktop_manager.update_window_geometry(window, x, y, w, h)
         with xlog:
             d16 = X11RandR.is_dummy16()
             screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
