@@ -143,9 +143,7 @@ class ServerBaseControlCommands(StubServerMixin):
             return "cannot map tray window %s" % wid
         if window.is_OR():
             return "cannot map override redirect window %s" % wid
-        dm = getattr(self, "_desktop_manager", None)
-        assert dm, "%r does not have a desktop manager" % self
-        dm.show_window(window)
+        window.show()
         #window.set_owner(dm)
         #iconic = window.get_property("iconic")
         #if iconic:
@@ -165,9 +163,7 @@ class ServerBaseControlCommands(StubServerMixin):
             return "cannot map tray window %s" % wid
         if window.is_OR():
             return "cannot map override redirect window %s" % wid
-        dm = getattr(self, "_desktop_manager", None)
-        assert dm, "%r does not have a desktop manager" % self
-        dm.hide_window(window)
+        window.hide()
         self.repaint_root_overlay()
         return "unmapped window %s" % wid
 

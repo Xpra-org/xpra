@@ -84,9 +84,22 @@ class WindowModel(BaseWindowModel):
 
     __gproperties__ = dict(BaseWindowModel.__common_properties__)
     __gproperties__.update({
-        "owner": (GObject.TYPE_PYOBJECT,
-                  "Owner", "",
-                  GObject.ParamFlags.READABLE),
+        # Client(s) state, is this window shown somewhere?
+        # (then it can't be iconified)
+        "shown": (GObject.TYPE_BOOLEAN,
+                  "Is this window shown somewhere", "",
+                  False,
+                  GObject.ParamFlags.READWRITE),
+        # To prevent resizing loops,
+        # the client must provide this counter when resizing the window
+        # (and if the counter has been incremented since, we ignore the request)
+        "resize-counter": (GObject.TYPE_INT64,
+                           "", "",
+                           0, GObject.G_MAXINT64, 1,
+                           GObject.ParamFlags.READWRITE),
+        "client-geometry": (GObject.TYPE_PYOBJECT,
+                            "The current window geometry used by client(s)", "",
+                            GObject.ParamFlags.READWRITE),
         # Interesting properties of the client window, that will be
         # automatically kept up to date:
         "requested-position": (GObject.TYPE_PYOBJECT,
@@ -244,6 +257,9 @@ class WindowModel(BaseWindowModel):
         #this is here to trigger X11 errors if any are pending
         #or if the window is deleted already:
         self.client_window.get_geometry()
+        self._internal_set_property("shown", False)
+        self._internal_set_property("resize-counter", 0)
+        self._internal_set_property("client-geometry", None)
 
 
     def _clamp_to_desktop(self, x, y, w, h):
@@ -330,7 +346,6 @@ class WindowModel(BaseWindowModel):
 
     def do_unmanaged(self, wm_exiting):
         log("unmanaging window: %s (%s - %s)", self, self.corral_window, self.client_window)
-        self._internal_set_property("owner", None)
         cwin = self.corral_window
         if cwin:
             self.corral_window = None
@@ -377,6 +392,7 @@ class WindowModel(BaseWindowModel):
             if X11Window.is_mapped(self.xid):
                 self.last_unmap_serial = X11Window.Unmap(self.xid)
                 log("client window %#x unmapped, serial=%#x", self.xid, self.last_unmap_serial)
+                self._internal_set_property("shown", False)
 
     def map(self):
         with xsync:
@@ -431,21 +447,18 @@ class WindowModel(BaseWindowModel):
     #########################################
 
     def show(self):
+        self.map()
+        self._internal_set_property("shown", True)
+        if self.get_property("iconic"):
+            self.set_property("iconic", False)
         self._update_client_geometry()
         self.corral_window.show_unraised()
 
     def hide(self):
+        self._internal_set_property("shown", False)
         self.corral_window.hide()
         self.corral_window.reparent(self.parking_window, 0, 0)
         self.send_configure_notify()
-
-    def set_owner(self, owner):
-        self._internal_set_property("owner", owner)
-        if owner:
-            self._update_client_geometry()
-            self.corral_window.show_unraised()
-        else:
-            self.send_configure_notify()
 
     def send_configure_notify(self):
         with xswallow:
@@ -456,34 +469,27 @@ class WindowModel(BaseWindowModel):
         """ figure out where we're supposed to get the window geometry from,
             and call do_update_client_geometry which will send a Configure and Notify
         """
-        owner = self.get_property("owner")
-        if owner is not None:
-            geomlog("_update_client_geometry: using owner=%s (setup_done=%s)", owner, self._setup_done)
-            w, h = owner.window_size(self)
-            def window_position(w, h):
-                return owner.window_position(self, w, h)
+        geometry = self.get_property("client-geometry")
+        if geometry is not None:
+            geomlog("_update_client_geometry: using client-geometry=%s", geometry)
         elif not self._setup_done:
             #try to honour initial size and position requests during setup:
             w, h = self.get_property("requested-size")
-            def window_position(_w, _h):
-                return self.get_property("requested-position")
-            geomlog("_update_client_geometry: using initial size=%s and position=%s", (w, h), window_position)
+            x, y = self.get_property("requested-position")
+            geometry = x, y, w, h 
+            geomlog("_update_client_geometry: using initial geometry=%s", geometry)
         else:
-            geomlog("_update_client_geometry: ignored, owner=%s, setup_done=%s", owner, self._setup_done)
-            w, h = self.get_property("geometry")[2:4]
-            def window_position(_w, _h):
-                #return 0, 0
-                return self.get_property("geometry")[:2]
-        self._do_update_client_geometry(w, h, window_position)
+            geometry = self.get_property("geometry")
+            geomlog("_update_client_geometry: using current geometry=%s", geometry)
+        self._do_update_client_geometry(geometry)
 
 
-    def _do_update_client_geometry(self, allocated_w, allocated_h, window_position_cb):
-        geomlog("_do_update_client_geometry(%i, %i, %s)", allocated_w, allocated_h, window_position_cb)
+    def _do_update_client_geometry(self, geometry):
+        geomlog("_do_update_client_geometry(%s)", geometry)
         hints = self.get_property("size-hints")
+        x, y, allocated_w, allocated_h = geometry
         w, h = self.calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
-        x, y = window_position_cb(w, h)
-        geomlog("_do_update_client_geometry: position=%ix%i (from %s)", x, y, window_position_cb)
         self.corral_window.move_resize(x, y, w, h)
         self._updateprop("geometry", (x, y, w, h))
         with xlog:

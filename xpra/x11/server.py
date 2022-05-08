@@ -64,107 +64,6 @@ DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", True)
 WINDOW_SIGNALS = os.environ.get("XPRA_WINDOW_SIGNALS", "SIGINT,SIGTERM,SIGQUIT,SIGCONT,SIGUSR1,SIGUSR2").split(",")
 
 
-class DesktopState:
-    __slots__ = ("geom", "resize_counter", "shown")
-    def __init__(self, geom, resize_counter=0, shown=False):
-        self.geom = geom
-        self.resize_counter = resize_counter
-        self.shown = shown
-    def __repr__(self):
-        return "DesktopState(%s, %i, %s)" % (self.geom, self.resize_counter, self.shown)
-
-class DesktopManager(Gtk.Widget):
-    __slots__ = ("_models")
-    def __init__(self):
-        self._models = {}
-        super().__init__()
-        self.set_property("can-focus", True)
-        self.realize()
-
-    def __repr__(self):
-        return "DesktopManager(%s)" % len(self._models)
-
-    ## For communicating with the main WM:
-
-    def add_window(self, model, x, y, w, h):
-        self._models[model] = DesktopState([x, y, w, h])
-        model.managed_connect("unmanaged", self._unmanaged)
-        model.send_configure_notify()
-
-    def window_geometry(self, model):
-        return self._models[model].geom
-
-    def update_window_geometry(self, model, x, y, w, h):
-        self._models[model].geom = [x, y, w, h]
-
-    def get_resize_counter(self, window, inc=0):
-        model = self._models[window]
-        v = model.resize_counter+inc
-        model.resize_counter = v
-        return v
-
-    def show_window(self, model):
-        self._models[model].shown = True
-        model.set_owner(self)
-        if model.get_property("iconic"):
-            model.set_property("iconic", False)
-        model.show()
-
-    def is_shown(self, model):
-        if model.is_OR() or model.is_tray():
-            return True
-        return self._models[model].shown
-
-    def configure_window(self, win, x, y, w, h, resize_counter=0):
-        log("DesktopManager.configure_window(%s, %s, %s, %s, %s, %s)", win, x, y, w, h, resize_counter)
-        model = self._models[win]
-        new_geom = [x, y, w, h]
-        update_geometry = model.geom!=new_geom
-        if update_geometry:
-            if resize_counter>0 and resize_counter<model.resize_counter:
-                log("resize ignored: counter %s vs %s", resize_counter, model.resize_counter)
-                update_geometry = False
-            else:
-                model.geom = new_geom
-        if not self.visible(win):
-            model.shown = True
-            win.map()
-            #Note: this will fire a metadata change event, which will fire a message to the client(s),
-            #which is wasteful when we only have one client and it is the one that configured the window,
-            #but when we have multiple clients, this keeps things in sync
-            if win.get_property("iconic"):
-                win.set_property("iconic", False)
-            win.show()
-            return
-        if update_geometry:
-            win._update_client_geometry()
-
-    def hide_window(self, model):
-        self._models[model].shown = False
-        model.hide()
-
-    def visible(self, model):
-        return self._models[model].shown
-
-    ## For communicating with WindowModels:
-
-    def _unmanaged(self, model, _wm_exiting):
-        del self._models[model]
-
-    def window_size(self, model):
-        w, h = self._models[model].geom[2:4]
-        return w, h
-
-    def window_position(self, model, w=None, h=None):
-        x, y, w0, h0 = self._models[model].geom
-        if (w is not None and abs(w0-w)>1) or (h is not None and abs(h0-h)>1):
-            log("Uh-oh, our size doesn't fit window sizing constraints: "
-                     "%sx%s vs %sx%s", w0, h0, w, h)
-        return x, y
-
-GObject.type_register(DesktopManager)
-
-
 class XpraServer(GObject.GObject, X11ServerBase):
     __gsignals__ = {
         "xpra-child-map-event"  : one_arg_signal,
@@ -388,12 +287,15 @@ class XpraServer(GObject.GObject, X11ServerBase):
         info.update({
                      "focused"  : bool(self._has_focus and self._window_to_id.get(window, -1)==self._has_focus),
                      "grabbed"  : bool(self._has_grab and self._window_to_id.get(window, -1)==self._has_grab),
-                     "shown"    : self._desktop_manager.is_shown(window),
                      })
-        try:
-            info["client-geometry"] = self._desktop_manager.window_geometry(window)
-        except KeyError:
-            pass        #OR or tray window
+        if not (window.is_OR() or window.is_tray()):
+            info["shown"] = window.get_property("shown")
+            try:
+                cg = window.get_property("client-geometry")
+                if cg:
+                    info["client-geometry"] = cg
+            except KeyError:
+                pass        #OR or tray window
         return info
 
 
@@ -403,12 +305,14 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def set_screen_size(self, desired_w, desired_h, bigger=True):
         #clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
-            x, y, w, h = self._desktop_manager.window_geometry(window)
-            if x>=desired_w or y>=desired_h:
-                x = min(x, desired_w-64)
-                y = min(y, desired_h-64)
-                geomlog("clamped window %s", window)
-                self._desktop_manager.update_window_geometry(window, x, y, w, h)
+            cg = window.get_property("client-geometry")
+            if cg:
+                x, y, w, h = cg
+                if x>=desired_w or y>=desired_h:
+                    x = min(x, desired_w-64)
+                    y = min(y, desired_h-64)
+                    geomlog("clamped window %s", window)
+                    window.set_property("client-geometry", (x, y, w, h))
         with xlog:
             d16 = X11RandR.is_dummy16()
             screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
@@ -504,20 +408,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
     # Manage windows:
     #
 
-    def is_shown(self, window):
-        return self._desktop_manager.is_shown(window)
-
     def load_existing_windows(self):
         if not self._wm:
             return
-
-        ### Create our window managing data structures:
-        self._desktop_manager = DesktopManager()
-        add_to = self._wm.get_property("toplevel")
-        #may be missing with GTK3..
-        if add_to:
-            add_to.add(self._desktop_manager)
-        self._desktop_manager.show_all()
 
         ### Load in existing windows:
         for window in self._wm.get_property("windows"):
@@ -590,8 +483,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
             else:
                 #code more or less duplicated from send_new_window_packet:
                 if not sharing:
-                    self._desktop_manager.hide_window(window)
-                x, y, w, h = self._desktop_manager.window_geometry(window)
+                    window.hide()
+                x, y, w, h = window.get_property("geometry")
                 wprops = self.client_properties.get(wid, {}).get(ss.uuid)
                 ss.new_window("new-window", wid, window, x, y, w, h, wprops)
 
@@ -640,10 +533,10 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def _add_new_window(self, window):
         self._add_new_window_common(window)
-        x, y, w, h = window.get_property("geometry")
-        log("Discovered new ordinary window: %s (geometry=%s)", window, (x, y, w, h))
-        self._desktop_manager.add_window(window, x, y, w, h)
+        geometry = window.get_property("geometry")
+        log("Discovered new ordinary window: %s (geometry=%s)", window, geometry)
         window.managed_connect("notify::geometry", self._window_resized_signaled)
+        window.send_configure_notify()
         self._send_new_window_packet(window)
         if PRE_MAP:
             #pre-map the window if any client supports this,
@@ -652,25 +545,25 @@ class XpraServer(GObject.GObject, X11ServerBase):
             if sources:
                 wid = self._window_to_id.get(window)
                 log("pre-mapping window %i for %s", wid, sources)
-                self._desktop_manager.configure_window(window, x, y, w, h)
-                self._desktop_manager.show_window(window)
+                self.client_configure_window(window, geometry)
+                window.show()
                 for s in sources:
-                    s.map_window(wid, window, (x, y, w, h))
+                    s.map_window(wid, window, geometry)
                 self.schedule_configure_damage(wid, 0)
 
 
     def _window_resized_signaled(self, window, *args):
         x, y, nw, nh = window.get_property("geometry")[:4]
-        geom = self._desktop_manager.window_geometry(window)
+        geom = window.get_property("client-geometry")
         geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s",
                 window, args, (x, y, nw, nh), geom)
         if geom==[x, y, nw, nh]:
             geomlog("XpraServer._window_resized_signaled: unchanged")
             #unchanged
             return
-        self._desktop_manager.update_window_geometry(window, x, y, nw, nh)
+        window.set_property("client-geometry", (x, y, nw, nh))
         lcce = self.last_client_configure_event
-        if not self._desktop_manager.is_shown(window):
+        if not window.get_property("shown"):
             self.size_notify_clients(window)
             return
         if self.snc_timer>0:
@@ -692,8 +585,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if lcce>0 and lcce!=self.last_client_configure_event:
             geomlog("size_notify_clients: we have received a new client resize since")
             return
-        x, y, nw, nh = self._desktop_manager.window_geometry(window)
-        resize_counter = self._desktop_manager.get_resize_counter(window, 1)
+        x, y, nw, nh = window.get_property("client-geometry")
+        resize_counter = window.get_property("resize-counter")
         for ss in self.window_sources():
             ss.move_resize_window(wid, window, x, y, nw, nh, resize_counter)
             #refresh to ensure the client gets the new window contents:
@@ -786,8 +679,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
     def show_all_windows(self):
         for w in self._id_to_window.values():
-            self._desktop_manager.show_window(w)
-
+            w.show()
 
     def _show_desktop(self, wm, show):
         log("show_desktop(%s, %s)", wm, show)
@@ -848,8 +740,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
 
 
     def _send_new_window_packet(self, window):
-        geometry = self._desktop_manager.window_geometry(window)
-        self._do_send_new_window_packet("new-window", window, geometry)
+        self._do_send_new_window_packet("new-window", window, window.get_property("geometry"))
 
     def _send_new_or_window_packet(self, window):
         geometry = window.get_property("geometry")
@@ -870,7 +761,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             self.repaint_root_overlay()
 
     def _contents_changed(self, window, event):
-        if window.is_OR() or window.is_tray() or self._desktop_manager.visible(window):
+        if window.is_OR() or window.is_tray() or window.get_property("shown"):
             self.refresh_window_area(window, event.x, event.y, event.width, event.height, options={"damage" : True})
 
 
@@ -970,7 +861,30 @@ class XpraServer(GObject.GObject, X11ServerBase):
         #used to adjust the pointer position with multiple clients
         if window is None or window.is_OR() or window.is_tray():
             return None
-        return self._desktop_manager.window_position(window)
+        pos = window.get_property("client-geometry")
+        if not pos:
+            pos = window.get_property("geometry")
+            if not pos:
+                return None
+        return pos[:2]
+
+
+    def client_configure_window(self, win, geometry, resize_counter=0):
+        log("client_configure_window(%s, %s, %s)", win, geometry, resize_counter)
+        old_geom = win.get_property("client-geometry")
+        update_geometry = geometry!=old_geom
+        if update_geometry:
+            counter = win.get_property("resize-counter")
+            if 0<resize_counter<counter:
+                log("resize ignored: counter %s vs %s", resize_counter, counter)
+                update_geometry = False
+            else:
+                win.set_property("client-geometry", geometry)
+        if not win.get_property("shown"):
+            win.show()
+            return
+        if update_geometry:
+            win._update_client_geometry()
 
 
     def _process_map_window(self, proto, packet):
@@ -996,12 +910,11 @@ class XpraServer(GObject.GObject, X11ServerBase):
         self._set_client_properties(proto, wid, window, cp)
         if not self.ui_driver:
             self.set_ui_driver(ss)
-        if self.ui_driver==ss.uuid or not self._desktop_manager.is_shown(window):
+        if self.ui_driver==ss.uuid or not window.get_property("shown"):
             if len(packet)>=8:
                 self._set_window_state(proto, wid, window, packet[7])
-            ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h)
-            self._desktop_manager.configure_window(window, ax, ay, aw, ah)
-            self._desktop_manager.show_window(window)
+            geometry = self._clamp_window(proto, wid, window, x, y, w, h)
+            self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
 
 
@@ -1022,7 +935,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #optional window_state added in 0.15 to update flags
             #during iconification events:
             self._set_window_state(proto, wid, window, packet[3])
-        if self._desktop_manager.is_shown(window):
+        if window.get_property("shown"):
             geomlog("client %s unmapped window %s - %s", ss, wid, window)
             for ss in self.window_sources():
                 ss.unmap_window(wid, window)
@@ -1030,7 +943,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             iconified = len(packet)>=3 and bool(packet[2])
             if iconified and not window.get_property("iconic"):
                 window.set_property("iconic", True)
-            self._desktop_manager.hide_window(window)
+            window.hide()
             self.repaint_root_overlay()
 
     def _clamp_window(self, proto, wid, window, x, y, w, h, resize_counter=0):
@@ -1045,7 +958,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             #tell this client to honour the new location
             ss = self.get_server_source(proto)
             if ss:
-                resize_counter = max(resize_counter, self._desktop_manager.get_resize_counter(window, 1))
+                resize_counter = max(resize_counter, window.get_property("resize-counter"))
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return x, y, w, h
 
@@ -1070,12 +983,17 @@ class XpraServer(GObject.GObject, X11ServerBase):
         if not self.ui_driver:
             self.set_ui_driver(ss)
         is_ui_driver = self.ui_driver==ss.uuid
-        shown = self._desktop_manager.is_shown(window)
+        shown = True
         if window.is_OR() or window.is_tray() or skip_geometry or self.readonly:
             size_changed = False
         else:
-            oww, owh = self._desktop_manager.window_size(window)
-            size_changed = oww!=w or owh!=h
+            shown = window.get_property("shown")
+            cg = window.get_property("client-geometry")
+            if not cg:
+                size_changed = True
+            else:
+                oww, owh = cg[:2]
+                size_changed = oww!=w or owh!=h
         if is_ui_driver or size_changed or not shown:
             damage = False
             if is_ui_driver and len(packet)>=13 and server_features.input_devices and not self.readonly:
@@ -1105,23 +1023,31 @@ class XpraServer(GObject.GObject, X11ServerBase):
                     if changes:
                         damage = True
                 if not skip_geometry:
-                    owx, owy, oww, owh = self._desktop_manager.window_geometry(window)
+                    cg = window.get_property("client-geometry")
                     resize_counter = 0
                     if len(packet)>=8:
                         resize_counter = packet[7]
-                    geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
-                    ax, ay, aw, ah = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
-                    self._desktop_manager.configure_window(window, ax, ay, aw, ah, resize_counter)
-                    resized = oww!=aw or owh!=ah
+                    geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], cg)
+                    geometry = self._clamp_window(proto, wid, window, x, y, w, h, resize_counter)
+                    self.client_configure_window(window, geometry, resize_counter)
+                    ax, ay, aw, ah = geometry
+                    resized = False
+                    if cg:
+                        owx, owy, oww, owh = cg
+                        resized = oww!=aw or owh!=ah
+                        if owx!=ax or owy!=ay:
+                            damage = True
+                    else:
+                        resized = True
                     if resized and SHARING_SYNC_SIZE:
                         #try to ensure this won't trigger a resizing loop:
                         counter = max(0, resize_counter-1)
                         for s in self.window_sources():
                             if s!=ss:
                                 s.resize_window(wid, window, aw, ah, resize_counter=counter)
-                    damage |= owx!=ax or owy!=ay or resized
+                    damage |= resized
             if not shown and not skip_geometry:
-                self._desktop_manager.show_window(window)
+                window.show()
                 damage = True
             self.repaint_root_overlay()
         else:

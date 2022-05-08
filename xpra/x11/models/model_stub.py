@@ -126,6 +126,12 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
         return v
 
 
+    def show(self):
+        """
+        implemented for real windows only,
+        trays and OR windows are always "shown" somewhere
+        """
+
     #temporary? / convenience access methods:
     def is_OR(self) -> bool:
         """ Is this an override-redirect window? """
