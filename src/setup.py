@@ -2151,9 +2151,9 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             nvcc_versions[vnum] = filename
     assert nvcc_versions, "cannot find nvcc compiler!"
     #choose the most recent one:
-    version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
+    nvcc_version, nvcc = list(reversed(sorted(nvcc_versions.items())))[0]
     if len(nvcc_versions)>1:
-        print(" using version %s from %s" % (version, nvcc))
+        print(" using version %s from %s" % (nvcc_version, nvcc))
     if WIN32:
         cuda_path = os.path.dirname(nvcc)           #strip nvcc.exe
         cuda_path = os.path.dirname(cuda_path)      #strip /bin/
@@ -2190,7 +2190,7 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
             #GCC 6 uses C++11 by default:
             elif gcc_version>=[6, 0]:
                 cmd.append("-std=c++11")
-            if gcc_version>=(12, 0):
+            if gcc_version>=[12, 0]:
                 cmd.append("--allow-unsupported-compiler")
             CL_VERSION = os.environ.get("CL_VERSION")
             if CL_VERSION:
@@ -2203,11 +2203,11 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 #cmd += ["--dependency-drive-prefix", "/"]
                 cmd += ["-I%s" % os.path.abspath("win32")]
             comp_code_options = []
-            if version<(11,):
+            if nvcc_version<(11,):
                 comp_code_options.append((30, 30))
             comp_code_options.append((35, 35))
             #see: http://docs.nvidia.com/cuda/maxwell-compatibility-guide/#building-maxwell-compatible-apps-using-cuda-6-0
-            if version!=(0,) and version<(7, 5):
+            if nvcc_version!=(0,) and nvcc_version<(7, 5):
                 print("CUDA version %s is very unlikely to work" % (version,))
                 print("try upgrading to version 7.5 or later")
             if nvcc_version>=(11, 5):
