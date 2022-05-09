@@ -739,7 +739,7 @@ class WindowSource(WindowIconSource):
 
     def window_opaque_region_changed(self, window, *args):
         self._opaque_region = window.get_property("opaque-region") or ()
-        log("window_opaque_region_changed(window, %s) opaque-region=%s", window, args, self._opaque_region)
+        log("window_opaque_region_changed(%s, %s) opaque-region=%s", window, args, self._opaque_region)
         self.update_encoding_options()
 
     def set_client_properties(self, properties):
