@@ -669,7 +669,8 @@ class WindowModel(BaseWindowModel):
             geomlog("update_size_constraints%s less restrictive, no need to recalculate", (minw, minh, maxw, maxh))
             return
         geomlog("update_size_constraints%s recalculating client geometry", (minw, minh, maxw, maxh))
-        self._update_client_geometry()
+        if self.get_property("shown"):
+            self._update_client_geometry()
 
     #########################################
     # X11 properties synced to Python objects
@@ -758,7 +759,7 @@ class WindowModel(BaseWindowModel):
         # reduces the chance for us to get caught in loops:
         if self._updateprop("size-hints", hints):
             metalog("updated: size-hints=%s", hints)
-            if self._setup_done:
+            if self._setup_done and self.get_property("shown"):
                 self._update_client_geometry()
 
 
