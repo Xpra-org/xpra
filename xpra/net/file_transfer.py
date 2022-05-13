@@ -350,6 +350,11 @@ class FileTransferHandler(FileTransferAttributes):
             osclose(fd)
             progress(-1, "write error (%s)" % e)
             return
+        filesize = chunk_state[6]
+        if written>filesize:
+            filelog.error("Error: too much data received")
+            progress(-1, "file size mismatch")
+            return
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
         if has_more:
             progress(written)
@@ -459,7 +464,7 @@ class FileTransferHandler(FileTransferAttributes):
             l = len(self.receive_chunks_in_progress)
             if l>=MAX_CONCURRENT_FILES:
                 self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress: %i" % l, 0)
-                os.close(fd)
+                osclose(fd)
                 return
             digest = hashlib.sha256()
             chunk = 0
@@ -722,7 +727,8 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         if ask:
             return self.send_data_request(action, "file", filename, mimetype, data, filesize, printit, openit, options)
-        self.do_send_file(filename, mimetype, data, filesize, printit, openit, options)
+        send_id = uuid.uuid4().hex
+        self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
     def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0, printit=False, openit=True, options=None):
