@@ -24,6 +24,10 @@
 %else
 %define build_args %{DEFAULT_BUILD_ARGS} --without-cuda_kernels --without-nvenc --without-nvfbc --without-nvjpeg
 %endif
+%if 0%{?el9}
+#no pandoc!
+%define build_args %{DEFAULT_BUILD_ARGS} --without-docs
+%endif
 %global selinux_variants mls targeted
 %define selinux_modules cups_xpra xpra_socketactivation
 #we never want to depend on proprietary nvidia bits,
@@ -78,7 +82,9 @@ Group:				Networking
 BuildArch:			noarch
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 2.1
+%if !0%{?el9}
 BuildRequires:		pandoc
+%endif
 BuildRequires:		libfakeXinerama
 %description common
 This package contains the files which are shared between all the xpra packages.
@@ -380,7 +386,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/cuda
 %{_datadir}/man/man1/xpra*.1*
 %{_datadir}/man/man1/run_scaled.1*
+%if !0%{?el9}
 %{_docdir}/xpra
+%endif
 %{_datadir}/metainfo/xpra.appdata.xml
 %{_datadir}/icons/xpra.png
 %{_datadir}/icons/xpra-mdns.png
