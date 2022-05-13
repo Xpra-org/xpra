@@ -265,14 +265,16 @@ class FileTransferHandler(FileTransferAttributes):
     def _check_chunk_receiving(self, chunk_id, chunk_no):
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
         filelog("_check_chunk_receiving(%s, %s) chunk_state=%s", chunk_id, chunk_no, chunk_state)
-        if chunk_state:
-            if chunk_state[-4]:
-                #transfer has been cancelled
-                return
-            chunk_state[-2] = 0     #this timer has been used
-            if chunk_state[-1]==0:
-                filelog.error("Error: chunked file transfer '%s' timed out", chunk_id)
-                self.receive_chunks_in_progress.pop(chunk_id, None)
+        if not chunk_state:
+            #transfer not found
+            return
+        if chunk_state[-4]:
+            #transfer has been cancelled
+            return
+        chunk_state[-2] = 0     #this timer has been used
+        if chunk_state[-1]==0:
+            filelog.error("Error: chunked file transfer '%s' timed out", chunk_id)
+            self.receive_chunks_in_progress.pop(chunk_id, None)
 
     def cancel_download(self, send_id, message="Cancelled"):
         filelog("cancel_download(%s, %s)", send_id, message)
@@ -349,6 +351,11 @@ class FileTransferHandler(FileTransferAttributes):
             self.cancel_file(chunk_id, "write error: %s" % e, chunk)
             osclose(fd)
             progress(-1, "write error (%s)" % e)
+            return
+        filesize = chunk_state[6]
+        if written>filesize:
+            filelog.error("Error: too much data received")
+            progress(-1, "file data size mismatch")
             return
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
         if has_more:
@@ -456,13 +463,13 @@ class FileTransferHandler(FileTransferAttributes):
             return
         self.file_descriptors.add(fd)
         if chunk_id:
+            chunk = 0
             l = len(self.receive_chunks_in_progress)
             if l>=MAX_CONCURRENT_FILES:
-                self.send("ack-file-chunk", chunk_id, False, "too many file transfers in progress: %i" % l, 0)
-                os.close(fd)
+                self.cancel_file(chunk_id, "too many file transfers in progress: %i" % l, chunk)
+                osclose(fd)
                 return
             digest = hashlib.sha256()
-            chunk = 0
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             chunk_state = [
                 monotonic(),
@@ -707,7 +714,7 @@ class FileTransferHandler(FileTransferAttributes):
             if openit:
                 if not self.remote_open_files:
                     l.info("opening the file after transfer is disabled on the remote end")
-                    l.info(" sending only, the file will need to be opended manually")
+                    l.info(" sending only, the file will need to be opened manually")
                     openit = False
                     action = "upload"
                 else:
@@ -722,7 +729,8 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         if ask:
             return self.send_data_request(action, "file", filename, mimetype, data, filesize, printit, openit, options)
-        self.do_send_file(filename, mimetype, data, filesize, printit, openit, options)
+        send_id = uuid.uuid4().hex
+        self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
     def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0, printit=False, openit=True, options=None):
