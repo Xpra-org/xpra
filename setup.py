@@ -28,7 +28,8 @@ import xpra
 from xpra.os_util import (
     get_status_output, load_binary_file, get_distribution_version_id,
     BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
-    is_Ubuntu, is_Debian, is_Fedora, is_CentOS, is_RedHat, is_openSUSE,
+    is_Ubuntu, is_Debian, is_Fedora,
+    is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE,
     )
 
 
@@ -690,7 +691,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
 
     #for distros that don't patch distutils,
     #we have to add the python cflags:
-    if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat()):
+    if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux()):
         import sysconfig
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', cflag)
@@ -1675,7 +1676,7 @@ else:
             if service_ENABLED:
                 #Linux init service:
                 subs = {}
-                if is_RedHat() or is_CentOS() or is_Fedora():
+                if is_RedHat() or is_CentOS() or is_AlmaLinux() or is_RockyLinux() or is_Fedora():
                     cdir = "/etc/sysconfig"
                 elif is_Debian() or is_Ubuntu():
                     cdir = "/etc/default"
