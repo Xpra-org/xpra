@@ -29,7 +29,7 @@ from xpra.os_util import (
     get_status_output, load_binary_file, get_distribution_version_id,
     BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD,
     is_Ubuntu, is_Debian, is_Fedora,
-    is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat, is_openSUSE,
+    is_CentOS, is_AlmaLinux, is_RockyLinux, is_RedHat,
     )
 
 
