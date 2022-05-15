@@ -256,10 +256,10 @@ class FileTransferHandler(FileTransferAttributes):
         return info
 
 
-    def digest_mismatch(self, filename, digest, expected_digest, algo="sha1"):
-        filelog.error("Error: data does not match, invalid %s file digest for '%s'", algo, filename)
-        filelog.error(" received %s, expected %s", digest, expected_digest)
-        raise Exception("failed %s digest verification" % algo)
+    def digest_mismatch(self, filename, digest, expected_digest):
+        filelog.error("Error: data does not match, invalid %s file digest for '%s'", digest.name, filename)
+        filelog.error(" received %s, expected %s", digest.hexdigest(), expected_digest)
+        raise Exception("failed %s digest verification" % digest.name)
 
 
     def _check_chunk_receiving(self, chunk_id, chunk_no):
@@ -342,7 +342,8 @@ class FileTransferHandler(FileTransferAttributes):
         written = chunk_state[9]
         try:
             os.write(fd, file_data)
-            digest.update(file_data)
+            if digest:
+                digest.update(file_data)
             written += len(file_data)
             chunk_state[9] = written
         except OSError as e:
@@ -367,20 +368,24 @@ class FileTransferHandler(FileTransferAttributes):
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             chunk_state[-2] = timer
             return
+        #we have received all the packets
         self.receive_chunks_in_progress.pop(chunk_id, None)
         osclose(fd)
+        if digest:
+            options = chunk_state[7]
+            expected_digest = options.strget(digest.name)   #ie: "sha256"
+            if expected_digest and digest.hexdigest()!=expected_digest:
+                progress(-1, "checksum mismatch")
+                filename = chunk_state[2]
+                self.digest_mismatch(filename, digest, expected_digest)
+                return
+            filelog("%s digest matches: %s", digest.name, expected_digest)
         #check file size and digest then process it:
         filename, mimetype, printit, openit, filesize, options = chunk_state[2:8]
         if written!=filesize:
             filelog.error("Error: expected a file of %i bytes, got %i", filesize, written)
             progress(-1, "file size mismatch")
             return
-        expected_digest = options.strget("sha1")
-        if expected_digest and digest.hexdigest()!=expected_digest:
-            progress(-1, "checksum mismatch")
-            self.digest_mismatch(filename, digest, expected_digest, "sha1")
-            return
-
         progress(written)
         start_time = chunk_state[0]
         elapsed = monotonic()-start_time
@@ -462,6 +467,11 @@ class FileTransferHandler(FileTransferAttributes):
                 self.send("ack-file-chunk", chunk_id, False, "failed to create file: %s" % e, 0)
             return
         self.file_descriptors.add(fd)
+        digest = None
+        for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
+            if options.get(hash_fn):
+                digest = getattr(hashlib, hash_fn)()
+                break
         if chunk_id:
             chunk = 0
             l = len(self.receive_chunks_in_progress)
@@ -469,7 +479,6 @@ class FileTransferHandler(FileTransferAttributes):
                 self.cancel_file(chunk_id, "too many file transfers in progress: %i" % l, chunk)
                 osclose(fd)
                 return
-            digest = hashlib.sha256()
             timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             chunk_state = [
                 monotonic(),
@@ -488,17 +497,12 @@ class FileTransferHandler(FileTransferAttributes):
             l.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
             return
         #check digest if present:
-        def check_digest(algo="sha256", libfn=hashlib.sha256):
-            digest = options.get(algo)
-            if digest:
-                h = libfn()
-                h.update(file_data)
-                l("%s digest: %s - expected: %s", algo, h.hexdigest(), digest)
-                if digest!=h.hexdigest():
-                    self.digest_mismatch(filename, digest, h.hexdigest(), algo)
-        check_digest("sha256", hashlib.sha256)
-        check_digest("sha1", hashlib.sha1)
-        check_digest("md5", hashlib.md5)
+        if digest:
+            expected_digest = options.strget(digest.name)   #ie: "sha256"
+            if expected_digest and digest.hexdigest()!=expected_digest:
+                self.digest_mismatch(basefilename, digest, expected_digest)
+                return
+            filelog("%s digest matches: %s", digest.name, expected_digest)
         try:
             os.write(fd, file_data)
         finally:
