@@ -901,21 +901,24 @@ class FileTransferHandler(FileTransferAttributes):
     def _check_chunk_sending(self, chunk_id, chunk_no):
         chunk_state = self.send_chunks_in_progress.get(chunk_id)
         filelog("_check_chunk_sending(%s, %s) chunk_state found: %s", chunk_id, chunk_no, bool(chunk_state))
-        if chunk_state:
-            chunk_state[3] = 0         #timer has fired
-            if chunk_state[-1]==chunk_no:
-                filelog.error("Error: chunked file transfer '%s' timed out", chunk_id)
-                filelog.error(" on chunk %i", chunk_no)
-                self.cancel_sending(chunk_id)
+        if not chunk_state:
+            #transfer already removed
+            return
+        chunk_state[3] = 0         #timer has fired
+        if chunk_state[-1]==chunk_no:
+            filelog.error("Error: chunked file transfer '%s' timed out", chunk_id)
+            filelog.error(" on chunk %i", chunk_no)
+            self.cancel_sending(chunk_id)
 
     def cancel_sending(self, chunk_id):
         chunk_state = self.send_chunks_in_progress.pop(chunk_id, None)
         filelog("cancel_sending(%s) chunk state found: %s", chunk_id, bool(chunk_state))
-        if chunk_state:
-            timer = chunk_state[3]
-            if timer:
-                chunk_state[3] = 0
-                self.source_remove(timer)
+        if not chunk_state:
+            return
+        timer = chunk_state[3]
+        if timer:
+            chunk_state[3] = 0
+            self.source_remove(timer)
 
     def _process_ack_file_chunk(self, packet):
         #the other end received our send-file or send-file-chunk,
