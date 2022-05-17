@@ -305,6 +305,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
     def set_screen_size(self, desired_w, desired_h, bigger=True):
         #clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
+            if window.is_tray():
+                continue
             cg = window.get_property("client-geometry")
             if cg:
                 x, y, w, h = cg
