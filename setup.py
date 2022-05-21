@@ -691,7 +691,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
 
     #for distros that don't patch distutils,
     #we have to add the python cflags:
-    if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux()):
+    if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux() or is_openSUSE()):
         import sysconfig
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', cflag)
