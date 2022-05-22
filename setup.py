@@ -141,6 +141,7 @@ ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 print("ARCH=%s" % (ARCH,))
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
+CPP = os.environ.get("CPP", "cpp")
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
 shadow_ENABLED = SHADOW_SUPPORTED and DEFAULT
@@ -2359,7 +2360,7 @@ if v4l2_ENABLED:
         ENABLE_DEVICE_CAPS = 0
         if os.path.exists(videodev2_h):
             try:
-                with subprocess.Popen("cpp -fpreprocessed %s | grep -q device_caps" % videodev2_h,
+                with subprocess.Popen("%s -fpreprocessed %s | grep -q device_caps" % (CPP, videodev2_h),
                                      shell=True) as proc:
                     ENABLE_DEVICE_CAPS = proc.wait()==0
             except OSError:
