@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 4.3.3
+%define version 4.3.4
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-enc_x265	--pkg-config-path=%{_libdir}/xpra/pkgconfig --rpath=%{_libdir}/xpra --without-cuda_rebuild
@@ -622,6 +622,27 @@ fi
 
 
 %changelog
+* Tue May 24 2022 Antoine Martin <antoine@xpra.org> 4.3.4-10
+* major bugs:
+   opening files with special characters remotely
+   always free X11 images safely
+   GDK crash when updating parked windows geometry
+   webcam forwarding with older clients
+* minor:
+   extra file transfers safety checks
+   support CSP headers for stream saver of html5 client version 6
+   always expose the server socket in the session environment
+* build:
+   RHEL9 build fixes: missing python cairo, no pandoc
+   support building on Alma Linux and Rocky Linux
+   build using CUDA 11.7
+   honour the CPP build environment variable
+   use the correct license short names
+* cosmetic:
+   jpeg cleanup warnings
+   errno Cython source name conflict
+   include details in conversion failure messages
+
 * Thu Apr 28 2022 Antoine Martin <antoine@xpra.org> 4.3.3-10
 - major bugs:
    X11 server crashes with quickly disappearing odd sized video windows

@@ -1,3 +1,26 @@
+xpra (4.3.4-1) UNRELEASED; urgency=low
+  * major bugs:
+    - opening files with special characters remotely
+    - always free X11 images safely
+    - GDK crash when updating parked windows geometry
+    - webcam forwarding with older clients
+  * minor:
+    - extra file transfers safety checks
+    - support CSP headers for stream saver of html5 client version 6
+    - always expose the server socket in the session environment
+  * build:
+    - RHEL9 build fixes: missing python cairo, no pandoc
+    - support building on Alma Linux and Rocky Linux
+    - build using CUDA 11.7
+    - honour the CPP build environment variable
+    - use the correct license short names
+  * cosmetic:
+    - jpeg cleanup warnings
+    - errno Cython source name conflict
+    - include details in conversion failure messages
+
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 24 May 2022 16:24:42 +0700
+
 xpra (4.3.3-1) UNRELEASED; urgency=low
   * major bugs:
     - X11 server crashes with quickly disappearing odd sized video windows
