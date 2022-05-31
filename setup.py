@@ -1964,6 +1964,8 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
     propsys_pkgconfig = pkgconfig()
     if debug_ENABLED:
         add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-DDEBUG")
+    if WIN32:
+        add_to_keywords(propsys_pkgconfig, 'extra_compile_args', "-Wno-error=address")
     add_to_keywords(propsys_pkgconfig, 'extra_link_args', "-luuid", "-lshlwapi", "-lole32", "-static-libgcc")
     add_cython_ext("xpra.platform.win32.propsys",
                 ["xpra/platform/win32/propsys.pyx", "xpra/platform/win32/setappid.cpp"],
@@ -2037,6 +2039,7 @@ if nvfbc_ENABLED:
     nvfbc_pkgconfig = pkgconfig("nvfbc")
     if WIN32:
         add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-endif-labels")
+        add_to_keywords(nvfbc_pkgconfig, 'extra_compile_args', "-Wno-error=address")
     platform = sys.platform.rstrip("0123456789")
     add_cython_ext("xpra.codecs.nvfbc.fbc_capture_%s" % platform,
                          ["xpra/codecs/nvfbc/fbc_capture_%s.pyx" % platform],
@@ -2316,6 +2319,8 @@ if dec_avcodec2_ENABLED:
 toggle_packages(csc_libyuv_ENABLED, "xpra.codecs.csc_libyuv")
 if csc_libyuv_ENABLED:
     libyuv_pkgconfig = pkgconfig("libyuv")
+    if WIN32:
+        add_to_keywords(libyuv_pkgconfig, 'extra_compile_args', "-Wno-error=address")
     add_cython_ext("xpra.codecs.csc_libyuv.colorspace_converter",
                 ["xpra/codecs/csc_libyuv/colorspace_converter.pyx"],
                 language="c++",
