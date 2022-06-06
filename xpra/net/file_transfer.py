@@ -273,7 +273,7 @@ class FileTransferHandler(FileTransferAttributes):
             #transfer has been cancelled
             return
         chunk_state[-2] = 0     #this timer has been used
-        if chunk_state[-1]==0:
+        if chunk_state[-1]==chunk_no:
             filelog.error("Error: chunked file transfer '%s' timed out", chunk_id)
             self.receive_chunks_in_progress.pop(chunk_id, None)
 
