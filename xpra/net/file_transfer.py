@@ -890,8 +890,9 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_id = uuid.uuid4().hex
             options["file-chunk-id"] = chunk_id
             #timer to check that the other end is requesting more chunks:
-            timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, 0)
-            chunk_state = [monotonic(), data, chunk_size, timer, 0]
+            chunk_no = 0
+            timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk_no)
+            chunk_state = [monotonic(), data, chunk_size, timer, chunk_no]
             self.send_chunks_in_progress[chunk_id] = chunk_state
             cdata = ""
             filelog("using chunks, sending initial file-chunk-id=%s, for chunk size=%s",
