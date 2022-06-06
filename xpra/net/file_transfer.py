@@ -620,20 +620,20 @@ class FileTransferHandler(FileTransferAttributes):
             #which may point back to us!
             self.exec_open_command(url)
         else:
-            import webbrowser
+            import webbrowser  #pylint: disable=import-outside-toplevel
             webbrowser.open_new_tab(url)
 
     def exec_open_command(self, url):
         filelog("exec_open_command(%s)", url)
         try:
-            import shlex
+            import shlex  #pylint: disable=import-outside-toplevel
             command = shlex.split(self.open_command)+[url]
         except ImportError as e:
             filelog("exec_open_command(%s) no shlex: %s", url, e)
             command = self.open_command.split(" ")
         filelog("exec_open_command(%s) command=%s", url, command)
         try:
-            proc = subprocess.Popen(command, env=self.get_open_env(), shell=WIN32)
+            proc = subprocess.Popen(command, env=self.get_open_env(), shell=WIN32)  # pylint: disable=consider-using-with
         except Exception as e:
             filelog("exec_open_command(%s)", url, exc_info=True)
             filelog.error("Error: cannot open '%s': %s", url, e)
@@ -695,7 +695,8 @@ class FileTransferHandler(FileTransferAttributes):
     def do_send_open_url(self, url, send_id=""):
         self.send("open-url", url, send_id)
 
-    def send_file(self, filename, mimetype, data, filesize=0, printit=False, openit=False, options=None):
+    def send_file(self, filename, mimetype, data, filesize=0,
+                  printit=False, openit=False, options=None):
         if printit:
             l = printlog
             if not self.printing:
@@ -738,7 +739,8 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
-    def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0, printit=False, openit=True, options=None):
+    def send_data_request(self, action, dtype, url, mimetype="", data="", filesize=0,
+                          printit=False, openit=True, options=None):
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data)>=MAX_CONCURRENT_FILES:
             filelog.warn("Warning: %s dropped", action)
