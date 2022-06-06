@@ -943,7 +943,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error("Error: cannot find the file transfer id '%r'", chunk_id)
             return
         if chunk_state[-1]!=chunk:
-            filelog.error("Error: chunk number mismatch (%i vs %i)", chunk_state, chunk)
+            filelog.error("Error: chunk number mismatch (%i vs %i)", chunk_state[-1], chunk)
             self.cancel_sending(chunk_id)
             return
         start_time, data, chunk_size, timer, chunk = chunk_state
