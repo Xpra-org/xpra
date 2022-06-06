@@ -827,13 +827,13 @@ def do_run_server(error_cb, opts, mode, xpra_file, extra_args, desktop_display=N
         #all unix domain sockets:
         ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype=="unix-domain"]
         if ud_paths:
+            os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
             #choose one so our xdg-open override script can use to talk back to us:
             if opts.forward_xdg_open:
                 for x in ("/usr/libexec/xpra", "/usr/lib/xpra"):
                     xdg_override = os.path.join(x, "xdg-open")
                     if os.path.exists(xdg_override):
                         os.environ["PATH"] = x+os.pathsep+os.environ.get("PATH", "")
-                        os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
                         break
         else:
             log.warn("Warning: no local server sockets,")
