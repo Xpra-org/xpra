@@ -705,6 +705,10 @@ class X11ServerCore(GTKServerBase):
         else:
             screenlog("fakeXinerama can only be enabled for a single client (found %s)" % len(ui_clients))
         xinerama_changed = save_fakeXinerama_config(self.fake_xinerama and len(ui_clients)==1, source, screen_sizes)
+        with xsync:
+            if RandR.is_dummy16():
+                #don't bother - randr16 does it better
+                xinerama_changed = False
         #we can only keep things unchanged if xinerama was also unchanged
         #(many apps will only query xinerama again if they get a randr notification)
         if (w==root_w and h==root_h) and not xinerama_changed:
