@@ -1137,7 +1137,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 log.info(summary)
                 log.info(body)
                 return
-            actions = (OK, "OK", DISABLE, "Disable this warning")
+            actions = (OK, "OK", DISABLE, "Don't show this warning again")
             self.may_notify(XPRA_OPENGL_NOTIFICATION_ID, summary, body, actions,
                             icon_name="opengl", callback=notify_callback)
         #wait for the main loop to run:
