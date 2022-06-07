@@ -642,7 +642,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             mode = XRRCreateMode(self.display, window, new_mode)
             log("XRRCreateMode returned %#x" % mode)
             if mode<=0:
-                return None
+                return 0
             self._added_modes[name] = int(mode)
         finally:
             XRRFreeModeInfo(new_mode)
