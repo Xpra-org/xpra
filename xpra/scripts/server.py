@@ -1451,7 +1451,7 @@ def attach_client(options, defaults):
             continue
         if c!=d:
             if OPTION_TYPES.get(x)==list:
-                v = ",".join(str(i) for i in x)
+                v = ",".join(str(i) for i in c)
             else:
                 v = str(c)
             cmd.append("--%s=%s" % (x, v))
