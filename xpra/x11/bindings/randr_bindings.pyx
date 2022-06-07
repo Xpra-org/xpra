@@ -1042,6 +1042,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         primary = 0
         #we can't have monitor names the same as output names!?
         output_names = []
+        new_modes = {}
         try:
             for i in range(rsc.ncrtc):
                 m = monitor_defs.get(i, {})
@@ -1095,7 +1096,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                     break
                             if not mode:
                                 mode_name = "%sx%s" % (width, height)
-                                mode = self.do_add_screen_size(mode_name, width, height)
+                                #may have already been added:
+                                mode = new_modes.get(mode_name, 0)
+                                if not mode:
+                                    mode = self.do_add_screen_size(mode_name, width, height)
+                                    new_modes[mode_name] = mode
                             assert mode!=0, "mode %ix%i not found" % (width, height)
                             XRRAddOutputMode(self.display, output, mode)
                             log("mode %r (%#x) added to output %i (%i)", mode_name, mode, i, output)
