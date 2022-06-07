@@ -30,11 +30,10 @@ def parse_scale(scale):
         try:
             if scale.endswith("%"):
                 return float(scale[:-1])/100
-            else:
-                return float(scale)
+            return float(scale)
         except ValueError:
             #try parsing as a fraction:
-            from fractions import Fraction
+            from fractions import Fraction  # pylint: disable=import-outside-toplevel
             return float(Fraction(scale))
     except ValueError:
         usage("invalid scale value '%s'" % (scale,))
